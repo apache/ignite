@@ -1836,26 +1836,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * Gets consistentId from history for given topology version.
      *
      * @param topVer Topology version.
-     * @param id Node ID.
      * @return Compacted consistent id.
      */
-    public Short consistentId(AffinityTopologyVersion topVer, UUID id) {
-        Map<UUID, Short> consistentIdMap = resolveDiscoCache(CU.cacheId(null), topVer).consistentIdMap();
-
-        return consistentIdMap == null ? null : consistentIdMap.get(id);
+    public Map<UUID, Short> consistentId(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(CU.cacheId(null), topVer).consistentIdMap();
     }
 
     /**
      * Gets consistentId from history for given topology version.
      *
      * @param topVer Topology version.
-     * @param constId Node consistentID.
-     * @return Compacted consistent id.
+     * @return Compacted consistent id map.
      */
-    public UUID nodeIdMap(AffinityTopologyVersion topVer, Short constId) {
-        Map<Short, UUID> consistentIdMap = resolveDiscoCache(CU.cacheId(null), topVer).nodeIdMap();
-
-        return consistentIdMap == null ? null : consistentIdMap.get(constId);
+    public  Map<Short, UUID> nodeIdMap(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(CU.cacheId(null), topVer).nodeIdMap();
     }
 
     /**

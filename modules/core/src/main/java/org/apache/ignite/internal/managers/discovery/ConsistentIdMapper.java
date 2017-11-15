@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -50,7 +51,12 @@ public class ConsistentIdMapper {
      * @return Compact ID of node for given baseline topology.
      */
     public short mapToCompactId(AffinityTopologyVersion topVer, UUID nodeId) {
-        Short constId = discoveryMgr.consistentId(topVer, nodeId);
+        Map<UUID, Short> m = discoveryMgr.consistentId(topVer);
+
+        if (m == null)
+            throw new IllegalStateException("Unable to find consistent id map [topVer" + topVer + ']');
+
+        Short constId = m.get(nodeId);
 
         if (constId == null)
             throw new IllegalStateException("Unable to find consistentId by UUID [nodeId=" + nodeId + ", topVer=" + topVer + ']');
@@ -66,7 +72,12 @@ public class ConsistentIdMapper {
      * @return Compact ID of node for given baseline topology.
      */
     public UUID mapToUuid(AffinityTopologyVersion topVer, short nodeConstId) {
-        UUID constId = discoveryMgr.nodeIdMap(topVer, nodeConstId);
+        Map<Short, UUID> map = discoveryMgr.nodeIdMap(topVer);
+
+        if (map == null)
+            return null;
+
+        UUID constId = map.get(nodeConstId);
 
         if (constId == null)
             throw new IllegalStateException("Unable to find UUID by constId [nodeId=" + nodeConstId + ", topVer=" + topVer + ']');
@@ -88,7 +99,15 @@ public class ConsistentIdMapper {
         if (txNodes == null)
             return null;
 
+        Map<Object, Short> constIdMap = baselineTop.consistentIdMapping();
+
+        Map<UUID, Short> m = discoveryMgr.consistentId(topVer);
+
+        int bltNodes = m.size();
+
         Map<Short, Collection<Short>> consistentMap = U.newHashMap(txNodes.size());
+
+        int nodeCnt = 0;
 
         for (Map.Entry<UUID, Collection<UUID>> e : txNodes.entrySet()) {
             UUID node = e.getKey();
@@ -97,8 +116,16 @@ public class ConsistentIdMapper {
 
             Collection<Short> backups = new ArrayList<>(backupNodes.size());
 
-            for (UUID backup : backupNodes)
+            for (UUID backup : backupNodes) {
+                if (m.containsKey(backup))
+                    nodeCnt++;
+
                 backups.add(mapToCompactId(topVer, backup));
+            }
+
+            // Optimization for short store full nodes set.
+            if (backups.size() == nodeCnt && nodeCnt == (bltNodes - 1))
+                backups = Collections.singletonList(Short.MAX_VALUE);
 
             consistentMap.put(mapToCompactId(topVer, node), backups);
         }
