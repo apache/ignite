@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,9 +45,12 @@ public class ClientCacheConfigurationSerializer {
      * @param writer Writer.
      * @param cfg Configuration.
      */
-    static void write(BinaryRawWriter writer, CacheConfiguration cfg) {
+    static void write(BinaryRawWriterEx writer, CacheConfiguration cfg) {
         assert writer != null;
         assert cfg != null;
+
+        // Reserve for length.
+        int pos = writer.reserveInt();
 
         writeEnumInt(writer, cfg.getAtomicityMode(), CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE);
         writer.writeInt(cfg.getBackups());
@@ -101,6 +105,9 @@ public class ClientCacheConfigurationSerializer {
                 writeQueryEntity(writer, e);
         } else
             writer.writeInt(0);
+
+        // Write length (so that part of the config can be skipped).
+        writer.writeInt(pos, writer.out().position() - pos);
     }
 
     /**
@@ -110,6 +117,8 @@ public class ClientCacheConfigurationSerializer {
      * @return Configuration.
      */
     static CacheConfiguration read(BinaryRawReader reader) {
+        reader.readInt();  // Skip length.
+
         CacheConfiguration cfg = new CacheConfiguration()
                 .setAtomicityMode(CacheAtomicityMode.fromOrdinal(reader.readInt()))
                 .setBackups(reader.readInt())

@@ -155,6 +155,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             // Configuration should be written with a system marshaller.
             var writer = BinaryUtils.Marshaller.StartMarshal(stream);
+            var pos = writer.Stream.Position;
+            writer.WriteInt(0);  // Reserve for length.
 
             writer.WriteInt((int)cfg.AtomicityMode);
             writer.WriteInt(cfg.Backups);
@@ -188,6 +190,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             writer.WriteCollectionRaw(cfg.KeyConfiguration);
             writer.WriteCollectionRaw(cfg.QueryEntities);
+
+            // Write length (so that part of the config can be skipped).
+            var len = writer.Stream.Position - pos - 4;
+            writer.Stream.WriteInt(len, pos);
         }
         /// <summary>
         /// Reads the config.
@@ -198,6 +204,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             // Configuration should be read with system marshaller.
             var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
+
+            var len = reader.ReadInt();
+            var pos = reader.Stream.Position;
 
             cfg.AtomicityMode = (CacheAtomicityMode)reader.ReadInt();
             cfg.Backups = reader.ReadInt();
@@ -230,6 +239,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             cfg.WriteSynchronizationMode = (CacheWriteSynchronizationMode)reader.ReadInt();
             cfg.KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
             cfg.QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
+
+            Debug.Assert(len == reader.Stream.Position - pos);
         }
 
         /// <summary>
