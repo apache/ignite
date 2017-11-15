@@ -116,11 +116,8 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param active New cluster state.
      */
     public void setTransitionResult(UUID reqId, boolean active) {
-        if (reqId.equals(transitionReqId)) {
-            assert transitionRes == null : this;
-
+        if (reqId.equals(transitionReqId))
             transitionRes = active;
-        }
     }
 
     /**

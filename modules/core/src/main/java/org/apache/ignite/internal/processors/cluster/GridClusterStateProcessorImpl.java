@@ -242,7 +242,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
                 && !ctx.isDaemon()
                 && !state.active()
                 && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes()))
-                changeGlobalState0(true, state.baselineTopology());
+                changeGlobalState0(true, state.baselineTopology(), false);
 
         return null;
     }
@@ -377,6 +377,9 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
                     msg.requestId(),
                     topVer,
                     nodeIds);
+
+                if (msg.forceChangeBaselineTopology())
+                    globalState.setTransitionResult(msg.requestId(), true);
 
                 AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
 
@@ -570,7 +573,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         else
             newBlt = BaselineTopology.build(baselineNodes, newBltId);
 
-        return changeGlobalState0(activate, newBlt);
+        return changeGlobalState0(activate, newBlt, forceChangeBaselineTopology);
     }
 
     /** */
@@ -587,7 +590,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** */
     private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
-            BaselineTopology blt) {
+        BaselineTopology blt, boolean forceChangeBaselineTopology) {
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
@@ -653,7 +656,8 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
             ctx.localNodeId(),
             storedCfgs,
             activate,
-            blt);
+            blt,
+            forceChangeBaselineTopology);
 
         try {
             if (log.isInfoEnabled())

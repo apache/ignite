@@ -56,6 +56,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @Nullable private BaselineTopology baselineTopology;
 
     /** */
+    private boolean forceChangeBaselineTopology;
+
+    /** */
     @GridToStringExclude
     private transient ExchangeActions exchangeActions;
 
@@ -70,7 +73,8 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         UUID initiatingNodeId,
         @Nullable List<StoredCacheData> storedCfgs,
         boolean activate,
-        BaselineTopology baselineTopology
+        BaselineTopology baselineTopology,
+        boolean forceChangeBaselineTopology
     ) {
         assert reqId != null;
         assert initiatingNodeId != null;
@@ -80,6 +84,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         this.storedCfgs = storedCfgs;
         this.activate = activate;
         this.baselineTopology = baselineTopology;
+        this.forceChangeBaselineTopology = forceChangeBaselineTopology;
     }
 
     /**
@@ -138,6 +143,13 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      */
     public boolean activate() {
         return activate;
+    }
+
+    /**
+     * @return Force change BaselineTopology flag.
+     */
+    public boolean forceChangeBaselineTopology() {
+        return forceChangeBaselineTopology;
     }
 
     /**

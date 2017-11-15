@@ -88,8 +88,6 @@ public class IgniteChangingBaselineCacheRemoveFailoverTest extends GridCacheAbst
     @Override protected void beforeTest() throws Exception {
         GridTestUtils.deleteDbFiles();
 
-        fail("Issue with transactions failing during BaselineTopology change has to be resolved.");
-
         startGrids(GRIDS_COUNT);
 
         startGrid(GRIDS_COUNT);
