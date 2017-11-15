@@ -871,7 +871,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                                 ip: _.head(node.attributes['org.apache.ignite.ips'].split(', ')),
                                 version: node.attributes['org.apache.ignite.build.ver'],
                                 gridName: node.attributes['org.apache.ignite.ignite.name'],
-                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`
+                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`,
+                                client: node.attributes['org.apache.ignite.cache.client']
                             });
                         });
 
@@ -1338,7 +1339,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             if (_.isEmpty(name))
                 return Promise.resolve(null);
 
-            const nodes = cacheNodes(name);
+            const nodes = _.filter(cacheNodes(name), (node) => !node.client);
 
             if (local) {
                 return Nodes.selectNode(nodes, name)
