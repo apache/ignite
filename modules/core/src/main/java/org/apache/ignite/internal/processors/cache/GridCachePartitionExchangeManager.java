@@ -1357,7 +1357,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             return;
 
         try {
-            sendLocalPartitions(node, msg.exchangeId());
+            final GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(),
+                null,
+                null,
+                null,
+                null);
+
+            exchFut.onReceivePartitionRequest(node);
         }
         finally {
             leaveBusy();
