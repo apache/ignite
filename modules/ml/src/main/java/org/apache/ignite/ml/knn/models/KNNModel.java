@@ -67,6 +67,12 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
         return classLabel;
     }
 
+
+    // can be default method in model interface or in abstract class
+    public void normalizeWith(Normalization normalization){
+        // TODO : https://ru.wikipedia.org/wiki/%D0%9C%D0%B5%D1%82%D0%BE%D0%B4_k-%D0%B1%D0%BB%D0%B8%D0%B6%D0%B0%D0%B9%D1%88%D0%B8%D1%85_%D1%81%D0%BE%D1%81%D0%B5%D0%B4%D0%B5%D0%B9
+    }
+
     @Override
     public <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path) {
 
@@ -88,8 +94,9 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
         }
 
         int i = 0;
+        final Iterator<Double> iterator = distanceIdxPairs.keySet().iterator();
         while(i < k) {
-            double key = distanceIdxPairs.keySet().iterator().next();
+            double key = iterator.next();
             Set<Integer> idxs = distanceIdxPairs.get(key);
             for (Integer idx : idxs){
                 res[i] = new LabeledVector(trainingData.getRow(idx), training.labels().get(idx));  // TODO: refactor LV and LD communication
@@ -114,7 +121,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
 
     private double classify(LabeledVector[] neighbors, Vector v, KNNStrategy strategy){
 
-        TreeMap<Double, Double> classVotes = new TreeMap<>();
+        Map<Double, Double> classVotes = new HashMap<>();
         for (int i = 0; i < neighbors.length; i++) {
             LabeledVector neighbor = neighbors[i];
             double classLabel = (double) neighbor.label(); // TODO: handle casting correctly and for different types
@@ -130,7 +137,11 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
             }
         }
 
-        return classVotes.lastKey();
+        return getClassWithMaxVotes(classVotes);
+    }
+
+    private double getClassWithMaxVotes(Map<Double, Double> classVotes) {
+        return Collections.max(classVotes.entrySet(), Map.Entry.comparingByValue()).getKey();
     }
 
 
