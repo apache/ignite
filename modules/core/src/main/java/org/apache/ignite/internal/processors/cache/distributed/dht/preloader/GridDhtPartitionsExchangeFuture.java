@@ -1617,6 +1617,25 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param node Sender node.
+     */
+    public void onReceivePartitionRequest(final ClusterNode node) {
+        assert !cctx.kernalContext().clientNode();
+        assert !node.isDaemon() && !CU.clientNode(node) : node;
+
+        initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                try {
+                    sendLocalPartitions(node);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send message to coordinator: " + e);
+                }
+            }
+        });
+    }
+
+    /**
+     * @param node Sender node.
      * @param msg Full partition info.
      */
     public void onReceive(final ClusterNode node, final GridDhtPartitionsFullMessage msg) {
