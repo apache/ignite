@@ -215,9 +215,7 @@ BOOST_AUTO_TEST_CASE(StatementAttributeQueryTimeout)
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
     BOOST_REQUIRE_EQUAL(timeout, 0);
 
-    timeout = 7;
-
-    ret = SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, &timeout, 0);
+    ret = SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(7), 0);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 

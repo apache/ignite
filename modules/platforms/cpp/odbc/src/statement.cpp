@@ -287,7 +287,7 @@ namespace ignite
 
                 case SQL_ATTR_QUERY_TIMEOUT:
                 {
-                    SqlUlen uTimeout = *reinterpret_cast<SqlUlen*>(value);
+                    SqlUlen uTimeout = reinterpret_cast<SqlUlen>(value);
 
                     if (uTimeout > INT32_MAX)
                     {
