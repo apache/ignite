@@ -562,9 +562,16 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
+            // Check if topology is changed while retrying on locked topology.
+            if (h2.serverTopologyChanged(topVer) && ctx.cache().context().tm().userTx() != null) {
+                throw new CacheException(new TransactionException("Server topology is changed during query " +
+                    "execution inside a transaction. It's recommended to rollback and retry transaction whenever " +
+                    "possible."));
+            }
+
             List<Integer> cacheIds = qry.cacheIds();
 
-            Collection<ClusterNode> nodes = null;
+            Collection<ClusterNode> nodes;
 
             // Explicit partition mapping for unstable topology.
             Map<ClusterNode, IntArray> partsMap = null;
@@ -758,16 +765,8 @@ public class GridReduceQueryExecutor {
                         }
                     }
                 }
-                else {
-                    // If some messages were not sent, and we are inside transaction, break query execution.
-                    // Otherwise, exchange on server node left will be waiting forever for current tx.
-                    if (ctx.cache().context().tm().userTx() != null)
-                        throw new CacheException(new TransactionException("Some of topology nodes failed during query " +
-                            "execution inside transaction. It's recommended to rollback and retry transaction whenever " +
-                            "possible."));
-                    else
-                        retry = true; // In other cases retry is possible.
-                }
+                else // Send failed.
+                    retry = true;
 
                 Iterator<List<?>> resIter = null;
 

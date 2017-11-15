@@ -2482,14 +2482,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param ver Version to compare.
+     * @param readyVer Ready topology version.
      *
-     * @return {@code true} If topology version changed comparing to given version.
+     * @return {@code true} If pending distributed exchange exists because server topology is changed.
      */
-    public boolean topologyVersionChanged(AffinityTopologyVersion ver) {
+    public boolean serverTopologyChanged(AffinityTopologyVersion readyVer) {
         GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
 
-        return fut.initialVersion().compareTo(ver) > 0;
+        AffinityTopologyVersion initVer = fut.initialVersion();
+
+        return initVer.compareTo(readyVer) > 0 && !fut.firstEvent().node().isClient();
     }
 
     /**
