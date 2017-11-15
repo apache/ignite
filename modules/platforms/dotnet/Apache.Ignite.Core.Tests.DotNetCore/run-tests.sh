@@ -17,4 +17,5 @@
 #
 
 dotnet nuget locals all --clear
+
 dotnet test
