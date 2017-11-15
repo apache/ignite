@@ -274,14 +274,12 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        Cursor cursor = find(ses, null, null);
-
-        long res = 0;
-
-        while (cursor.next())
-            res++;
-
-        return res;
+        try {
+            return treeForRead(threadLocalSegment()).size();
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
     }
 
     /** {@inheritDoc} */
