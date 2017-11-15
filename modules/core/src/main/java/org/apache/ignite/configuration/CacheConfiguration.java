@@ -200,8 +200,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Rebalance timeout. */
     private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
 
-    /** Cache expiration policy. */
+    /** Cache eviction policy. */
+    @Deprecated
     private EvictionPolicy evictPlc;
+
+    /** Cache eviction policy factory. */
+    private Factory evictPlcFactory;
 
     /** */
     private boolean onheapCache;
@@ -395,6 +399,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
         evictPlc = cc.getEvictionPolicy();
+        evictPlcFactory = cc.getEvictionPolicyFactory();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
         grpName = cc.getGroupName();
         indexedTypes = cc.getIndexedTypes();
@@ -553,7 +558,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * which means that evictions are disabled for cache.
      *
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
+     *
+     * @deprecated Use {@link #getEvictionPolicyFactory()} instead.
      */
+    @Deprecated
     @SuppressWarnings({"unchecked"})
     @Nullable public EvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
@@ -562,11 +570,39 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache eviction policy.
      *
-     * @param evictPlc Cache expiration policy.
+     * @param evictPlc Cache eviction policy.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link #setEvictionPolicyFactory(Factory)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setEvictionPolicy(@Nullable EvictionPolicy evictPlc) {
         this.evictPlc = evictPlc;
+
+        return this;
+    }
+
+    /**
+     * Gets cache eviction policy factory. By default, returns {@code null}
+     * which means that evictions are disabled for cache.
+     *
+     * @return Cache eviction policy factory or {@code null} if evictions should be disabled
+     * or if {@link #getEvictionPolicy()} should be used instead.
+     */
+    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
+        return evictPlcFactory;
+    }
+
+    /**
+     * Sets cache eviction policy factory.
+     * Note: Eviction policy factory should be {@link Serializable}.
+     *
+     * @param evictPlcFactory Cache eviction policy factory.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEvictionPolicyFactory(
+        @Nullable Factory<? extends EvictionPolicy<? super K, ? super V>> evictPlcFactory) {
+        this.evictPlcFactory = evictPlcFactory;
 
         return this;
     }
@@ -664,7 +700,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * never be evicted.
      * <p>
      * If not provided, any entry may be evicted depending on
-     * {@link #getEvictionPolicy() eviction policy} configuration.
+     * {@link #getEvictionPolicyFactory()} eviction policy} configuration.
      *
      * @return Eviction filter or {@code null}.
      */
@@ -1551,9 +1587,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether copy of of the value stored in cache should be created
-     * for cache operation implying return value. Also if this flag is set copies are created for values
+     * Gets the flag indicating whether a copy of the value stored in the on-heap cache
+     * (see {@link #isOnheapCacheEnabled()} should be created for a cache operation return the value.
+     *
+     * Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
+     *
+     * If the on-heap cache is disabled then this flag is of no use.
      *
      * @return Copy on read flag.
      */
