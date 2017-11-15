@@ -15,23 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.group.chain;
+package org.apache.ignite.ml.trainers.group;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 
-public class ResultAndChanges<R> {
+public class ResultAndUpdates<R> {
     private R res;
     private Map<String, Map> updates = new ConcurrentHashMap<>();
 
-    public ResultAndChanges(R res) {
+    public ResultAndUpdates(R res) {
         this.res = res;
     }
 
-    public static <R> ResultAndChanges<R> of(R res) {
-        return new ResultAndChanges<>(res);
+    ResultAndUpdates(R res, Map<String, Map> updates) {
+        this.res = res;
+        this.updates = updates;
+    }
+
+    public static <R> ResultAndUpdates<R> of(R res) {
+        return new ResultAndUpdates<>(res);
     }
 
     public <K, V> void update(IgniteCache<K, V> cache, K key, V val) {
@@ -39,6 +47,26 @@ public class ResultAndChanges<R> {
 
         updates.computeIfAbsent(name, s -> new ConcurrentHashMap());
         updates.get(name).put(key, val);
+    }
+
+    public R result() {
+        return res;
+    }
+
+    static <R> ResultAndUpdates<R> sum(IgniteBinaryOperator<R> op, R identity, Collection<ResultAndUpdates<R>> resultsAndUpdates) {
+        Map<String, Map> allUpdates = new HashMap<>();
+
+        for (ResultAndUpdates<R> ru : resultsAndUpdates) {
+            for (String cacheName : ru.updates.keySet()) {
+                allUpdates.computeIfAbsent(cacheName, s -> new HashMap());
+
+                allUpdates.get(cacheName).putAll(ru.updates.get(cacheName));
+            }
+        }
+
+        R res = resultsAndUpdates.stream().map(ResultAndUpdates::result).reduce(identity, op);
+
+        return new ResultAndUpdates<>(res, allUpdates);
     }
 
     void processUpdates(Ignite ignite) {

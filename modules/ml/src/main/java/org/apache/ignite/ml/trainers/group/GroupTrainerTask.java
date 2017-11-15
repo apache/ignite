@@ -35,31 +35,30 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
-import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
-import org.apache.ignite.ml.trainers.group.chain.ResultAndChanges;
 import org.jetbrains.annotations.Nullable;
 
 public class GroupTrainerTask<K, S, V, G, U extends Serializable> extends ComputeTaskAdapter<Void, U> {
     private final IgniteSupplier<G> contextExtractor;
-    private UUID trainingUUID;
-    private IgniteFunction<EntryAndContext<K, V, G>, ResultAndChanges<U>> worker;
+    private final UUID trainingUUID;
+    private IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<U>> worker;
+    private final U identity;
     // TODO: Also use this reducer on local steps.
-    private IgniteBinaryOperator<U> reducer;
-    private String cacheName;
-    private S data;
-    private IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier;
-    private IgniteCache<GroupTrainerCacheKey, V> cache;
-    private Ignite ignite;
+    private final IgniteBinaryOperator<U> reducer;
+    private final String cacheName;
+    private final S data;
+    private final IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier;
+    private final IgniteCache<GroupTrainerCacheKey, V> cache;
+    private final Ignite ignite;
 
     public GroupTrainerTask(UUID trainingUUID,
         IgniteSupplier<G> ctxExtractor,
-        IgniteFunction<EntryAndContext<K, V, G>, ResultAndChanges<U>> remoteWorker,
+        IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<U>> remoteWorker,
         IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier,
+        U identity,
         IgniteBinaryOperator<U> reducer,
         String cacheName,
         S data,
@@ -68,10 +67,12 @@ public class GroupTrainerTask<K, S, V, G, U extends Serializable> extends Comput
         this.contextExtractor = ctxExtractor;
         this.worker = remoteWorker;
         this.keysSupplier = keysSupplier;
+        this.identity = identity;
         this.reducer = reducer;
         this.cacheName = cacheName;
         this.cache = ignite.getOrCreateCache(cacheName);
         this.data = data;
+        this.ignite = ignite;
     }
 
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
@@ -85,7 +86,7 @@ public class GroupTrainerTask<K, S, V, G, U extends Serializable> extends Comput
 
         for (ClusterNode node : subgrid) {
             if (key2Node.get(node).size() > 0)
-                res.put(new LocalProcessorJob<>(worker, keysSupplier, reducer, trainingUUID, cacheName, data), node);
+                res.put(new LocalProcessorJob<>(contextExtractor, worker, keysSupplier, identity, reducer, trainingUUID, cacheName), node);
         }
 
         return res;
@@ -98,8 +99,7 @@ public class GroupTrainerTask<K, S, V, G, U extends Serializable> extends Comput
 
     @Nullable @Override
     public U reduce(List<ComputeJobResult> results) throws IgniteException {
-        // TODO: safe rewrite.
-        return results.stream().map(res -> (U)res.getData()).reduce(reducer).get();
+        return results.stream().map(res -> (U)res.getData()).reduce(reducer).orElse(identity);
     }
 
     protected Affinity<GroupTrainerCacheKey> affinity() {

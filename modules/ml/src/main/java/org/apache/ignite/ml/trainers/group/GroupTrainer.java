@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -29,7 +28,6 @@ import org.apache.ignite.ml.trainers.Trainer;
 import org.apache.ignite.ml.trainers.group.chain.CacheContext;
 import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
-import org.apache.ignite.ml.trainers.group.chain.ResultAndChanges;
 
 public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends Distributive<K>> implements Trainer<M, T> {
     IgniteCache<GroupTrainerCacheKey<K>, V> cache;
@@ -56,7 +54,7 @@ public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends 
             thenDistributed(this::initGlobal, (t, lc) -> data::keys, this::reduceGlobalInitData).
             thenLocally(this::processInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
-            thenDistributed(this::extractContextForModelCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), this::reduceFinalResults).
+            thenDistributed(this::extractContextForModelCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), defaultFinalResult(), this::reduceFinalResults).
             thenLocally(this::mapFinalResult).
             process(data, ctx);
 
@@ -67,7 +65,7 @@ public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends 
 
     protected abstract LC initialLocalContext(T data);
 
-    protected abstract ResultAndChanges<IR> initGlobal(T data, GroupTrainerCacheKey<K> key);
+    protected abstract ResultAndUpdates<IR> initGlobal(T data, GroupTrainerCacheKey<K> key);
 
     protected abstract IR reduceGlobalInitData(IR data1, IR data2);
 
@@ -81,7 +79,9 @@ public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends 
 
     protected abstract Stream<GroupTrainerCacheKey<K>> finalResultKeys(I data, LC locCtx);
 
-    protected abstract <G> ResultAndChanges<R> getFinalResults(I data, LC locCtx, EntryAndContext<K, V, G> entryAndCtx);
+    protected abstract <G> ResultAndUpdates<R> getFinalResults(I data, LC locCtx, EntryAndContext<K, V, G> entryAndCtx);
+
+    protected abstract R defaultFinalResult();
 
     protected abstract R reduceFinalResults(R res1, R res2);
 
