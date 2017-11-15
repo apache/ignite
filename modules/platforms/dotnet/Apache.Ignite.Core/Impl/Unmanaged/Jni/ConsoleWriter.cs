@@ -36,5 +36,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             var target = isError ? Console.Error : Console.Out;
             target.Write(message);
         }
+
+        /** <inheritdoc /> */
+        public override object InitializeLifetimeService()
+        {
+            // Ensure that cross-AppDomain reference lives forever.
+            return null;
+        }
     }
 }

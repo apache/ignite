@@ -96,7 +96,12 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
                 Object[] params = readParameterRow(reader, paramNum);
 
-                res = new OdbcQueryExecuteRequest(schema, sql, params);
+                int timeout = 0;
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) >= 0)
+                    timeout = reader.readInt();
+
+                res = new OdbcQueryExecuteRequest(schema, sql, params, timeout);
 
                 break;
             }
@@ -113,7 +118,12 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 for (int i = 0; i < rowNum; ++i)
                     params[i] = readParameterRow(reader, paramRowLen);
 
-                res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params);
+                int timeout = 0;
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) >= 0)
+                    timeout = reader.readInt();
+
+                res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params, timeout);
 
                 break;
             }
