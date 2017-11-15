@@ -303,31 +303,43 @@ namespace Apache.Ignite.Core.Impl
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
 
-            // Get paths from the Windows Registry
-            foreach (var regPath in JreRegistryKeys)
+            if (!IsRunningOnUnix())
             {
-                using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
+                // Get paths from the Windows Registry
+                foreach (var regPath in JreRegistryKeys)
                 {
-                    if (jSubKey == null)
-                        continue;
-
-                    var curVer = jSubKey.GetValue("CurrentVersion") as string;
-
-                    // Current version comes first
-                    var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
-
-                    foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
+                    using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
                     {
-                        using (var verKey = jSubKey.OpenSubKey(ver))
-                        {
-                            var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+                        if (jSubKey == null)
+                            continue;
 
-                            if (dllPath != null)
-                                yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                        var curVer = jSubKey.GetValue("CurrentVersion") as string;
+
+                        // Current version comes first
+                        var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
+
+                        foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
+                        {
+                            using (var verKey = jSubKey.OpenSubKey(ver))
+                            {
+                                var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+
+                                if (dllPath != null)
+                                    yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                            }
                         }
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Determines whether we are on Linux/MacOS.
+        /// </summary>
+        internal static bool IsRunningOnUnix()
+        {
+            var p = (int)Environment.OSVersion.Platform;
+            return (p == 4) || (p == 6) || (p == 128);
         }
 
         /// <summary>
