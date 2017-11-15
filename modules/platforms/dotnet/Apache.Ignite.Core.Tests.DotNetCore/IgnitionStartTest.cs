@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
         /// Fixture cleanup.
         /// </summary>
         [ClassCleanup]
-        public void ClassCleanup()
+        public static void ClassCleanup()
         {
             Ignition.StopAll(true);
         }
