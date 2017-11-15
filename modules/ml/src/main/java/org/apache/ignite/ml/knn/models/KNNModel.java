@@ -33,16 +33,16 @@ import java.util.*;
  */
 public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelFormat> {
     /** Amount of nearest neighbors */
-    private final int k;
+    protected final int k;
 
     /** Distance measure */
-    private final DistanceMeasure distanceMeasure;
+    protected final DistanceMeasure distanceMeasure;
 
     /** Training dataset */
-    private final LabeledDataset<Matrix, Vector>  training;
+    protected final LabeledDataset<Matrix, Vector>  training;
 
     /** kNN strategy */
-    private final KNNStrategy strategy;
+    protected final KNNStrategy strategy;
 
     /**
      *
@@ -78,7 +78,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
 
     }
 
-    private LabeledVector[] findKNearestNeighbors(Vector v){
+    protected LabeledVector[] findKNearestNeighbors(Vector v){
         LabeledVector[] res = new LabeledVector[k];
         Matrix trainingData = training.data();
 
