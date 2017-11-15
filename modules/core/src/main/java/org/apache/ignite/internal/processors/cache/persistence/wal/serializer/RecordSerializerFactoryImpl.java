@@ -17,10 +17,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  *
@@ -32,11 +33,11 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
     /** Write pointer. */
     private boolean writePointer;
 
-    /** Read type filter. */
-    private IgnitePredicate<WALRecord.RecordType> readTypeFilter;
+    /** Read record filter. */
+    private IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter;
 
     /**
-     * Marshalled mode.
+     * Marshalled mode flag.
      * Records are not deserialized in this mode, {@link MarshalledRecord} with binary representation are read instead.
      */
     private boolean marshalledMode;
@@ -58,7 +59,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
 
         switch (ver) {
             case 1:
-                if (readTypeFilter != null)
+                if (recordDeserializeFilter != null)
                     throw new IgniteCheckedException("Read type filter is allowed only for version 2 or higher.");
 
                 return new RecordV1Serializer(new RecordDataV1Serializer(cctx), writePointer);
@@ -66,7 +67,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
             case 2:
                 RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(new RecordDataV1Serializer(cctx));
 
-                return new RecordV2Serializer(dataV2Serializer, writePointer, marshalledMode, skipPositionCheck, readTypeFilter);
+                return new RecordV2Serializer(dataV2Serializer, writePointer, marshalledMode, skipPositionCheck, recordDeserializeFilter);
 
             default:
                 throw new IgniteCheckedException("Failed to create a serializer with the given version " +
@@ -84,7 +85,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
     /**
      * @param writePointer New write pointer.
      */
-    public RecordSerializerFactoryImpl writePointer(boolean writePointer) {
+    @Override public RecordSerializerFactoryImpl writePointer(boolean writePointer) {
         this.writePointer = writePointer;
 
         return this;
@@ -93,15 +94,16 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
     /**
      * @return Read type filter.
      */
-    public IgnitePredicate<WALRecord.RecordType> readTypeFilter() {
-        return readTypeFilter;
+    public IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter() {
+        return recordDeserializeFilter;
     }
 
     /**
      * @param readTypeFilter New read type filter.
      */
-    public RecordSerializerFactoryImpl readTypeFilter(IgnitePredicate<WALRecord.RecordType> readTypeFilter) {
-        this.readTypeFilter = readTypeFilter;
+    @Override public RecordSerializerFactoryImpl recordDeserializeFilter(
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter) {
+        this.recordDeserializeFilter = readTypeFilter;
 
         return this;
     }
@@ -117,7 +119,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
      * @param marshalledMode New marshalled mode. Records are not deserialized in this mode,  with binary representation
      * are read instead.
      */
-    public RecordSerializerFactoryImpl marshalledMode(boolean marshalledMode) {
+    @Override public RecordSerializerFactoryImpl marshalledMode(boolean marshalledMode) {
         this.marshalledMode = marshalledMode;
 
         return this;
@@ -134,7 +136,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
      * @param skipPositionCheck New skip position check flag. Should be set for reading compacted wal file with skipped
      * physical records.
      */
-    public RecordSerializerFactoryImpl skipPositionCheck(boolean skipPositionCheck) {
+    @Override public RecordSerializerFactoryImpl skipPositionCheck(boolean skipPositionCheck) {
         this.skipPositionCheck = skipPositionCheck;
 
         return this;

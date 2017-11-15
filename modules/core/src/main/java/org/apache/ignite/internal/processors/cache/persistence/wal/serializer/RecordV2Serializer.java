@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofExc
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.*;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * <li>CRC or zero padding</li>
  * </ul>
  * Also, optimization for skipping deserialization of records of unwanted types.
- * If {@link #readTypeFilter} is specified, {@link FilteredRecord} is read instead of unnecessary record.
+ * If {@link #recordFilter} is specified, {@link FilteredRecord} is read instead of unnecessary record.
  */
 public class RecordV2Serializer implements RecordSerializer {
     /** Length of WAL Pointer: Index (8) + File offset (4) + Record length (4) */
@@ -74,7 +74,7 @@ public class RecordV2Serializer implements RecordSerializer {
      * Record type filter.
      * {@link FilteredRecord} is deserialized instead of original record if type doesn't match filter.
      */
-    private final IgnitePredicate<RecordType> readTypeFilter;
+    private final IgniteBiPredicate<RecordType, WALPointer> recordFilter;
 
     /** Record read/write functional interface. */
     private final RecordIO recordIO = new RecordIO() {
@@ -96,7 +96,7 @@ public class RecordV2Serializer implements RecordSerializer {
 
             FileWALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck);
 
-            if (readTypeFilter != null && !readTypeFilter.apply(recType)) {
+            if (recordFilter != null && !recordFilter.apply(recType, ptr)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
 
                 assert toSkip >= 0 : "Too small saved record length: " + ptr;
@@ -147,15 +147,15 @@ public class RecordV2Serializer implements RecordSerializer {
      * @param dataSerializer V2 data serializer.
      * @param marshalledMode Marshalled mode.
      * @param skipPositionCheck Skip position check mode.
-     * @param readTypeFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record
+     * @param recordFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record
      */
     public RecordV2Serializer(RecordDataV2Serializer dataSerializer, boolean writePointer,
-        boolean marshalledMode, boolean skipPositionCheck, IgnitePredicate<RecordType> readTypeFilter) {
+        boolean marshalledMode, boolean skipPositionCheck, IgniteBiPredicate<RecordType, WALPointer> recordFilter) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
         this.marshalledMode = marshalledMode;
         this.skipPositionCheck = skipPositionCheck;
-        this.readTypeFilter = readTypeFilter;
+        this.recordFilter = recordFilter;
     }
 
     /** {@inheritDoc} */

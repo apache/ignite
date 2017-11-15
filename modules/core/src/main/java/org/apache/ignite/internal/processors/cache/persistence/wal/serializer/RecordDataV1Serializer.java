@@ -390,9 +390,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case HEADER_RECORD:
                 long magic = in.readLong();
 
-                if (magic != HeaderRecord.MAGIC)
-                    throw new EOFException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.MAGIC) +
-                            ", actual=" + U.hexLong(magic) + ']');
+                if (magic != HeaderRecord.REGULAR_MAGIC && magic != HeaderRecord.COMPACTED_MAGIC)
+                    throw new EOFException("Magic is corrupted [actual=" + U.hexLong(magic) + ']');
 
                 int ver = in.readInt();
 
@@ -911,7 +910,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case HEADER_RECORD:
-                buf.putLong(HeaderRecord.MAGIC);
+                buf.putLong(HeaderRecord.REGULAR_MAGIC);
 
                 buf.putInt(((HeaderRecord)record).version());
 

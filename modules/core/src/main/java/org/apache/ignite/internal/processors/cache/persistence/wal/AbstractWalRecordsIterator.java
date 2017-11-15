@@ -30,10 +30,9 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -282,20 +281,27 @@ public abstract class AbstractWalRecordsIterator
             FileIO fileIO = ioFactory.create(desc.file);
 
             try {
-                int serVer = FileWriteAheadLogManager.readSerializerVersion(fileIO);
+                IgniteBiTuple<Integer, Boolean> tup = FileWriteAheadLogManager.readSerializerVersionAndCompactedFlag(fileIO);
 
-                RecordSerializer ser = serializerFactory.createSerializer(serVer);
+                int serVer = tup.get1();
+
+                boolean isCompacted = tup.get2();
 
                 FileInput in = new FileInput(fileIO, buf);
 
                 if (start != null && desc.idx == start.index()) {
-                    // Make sure we skip header with serializer version.
-                    long startOffset = Math.max(start.fileOffset(), fileIO.position());
+                    if (isCompacted)
+                        serializerFactory.recordDeserializeFilter(new StartSeekingFilter(start));
+                    else {
+                        // Make sure we skip header with serializer version.
+                        long startOff = Math.max(start.fileOffset(), fileIO.position());
 
-                    in.seek(startOffset);
+                        in.seek(startOff);
+                    }
                 }
 
-                return new FileWriteAheadLogManager.ReadFileHandle(fileIO, desc.idx, sharedCtx.igniteInstanceName(), ser, in);
+                return new FileWriteAheadLogManager.ReadFileHandle(
+                    fileIO, desc.idx, sharedCtx.igniteInstanceName(), serializerFactory.createSerializer(serVer), in);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {
@@ -327,4 +333,29 @@ public abstract class AbstractWalRecordsIterator
         }
     }
 
+    /**
+     * Filter that drops all records until given start pointer is reached.
+     */
+    private static class StartSeekingFilter implements P2<WALRecord.RecordType, WALPointer> {
+        /** Start pointer. */
+        private final FileWALPointer start;
+
+        /** Start reached flag. */
+        private boolean startReached;
+
+        /**
+         * @param start Start.
+         */
+        StartSeekingFilter(FileWALPointer start) {
+            this.start = start;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(WALRecord.RecordType type, WALPointer pointer) {
+            if (start.fileOffset() == ((FileWALPointer)pointer).fileOffset())
+                startReached = true;
+
+            return startReached;
+        }
+    }
 }

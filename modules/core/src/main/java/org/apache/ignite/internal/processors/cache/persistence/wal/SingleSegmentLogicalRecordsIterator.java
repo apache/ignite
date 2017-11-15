@@ -21,14 +21,14 @@ import java.io.FileNotFoundException;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.RecordTypes;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.internal.util.typedef.P2;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,7 +60,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         long archivedSegIdx,
         File archiveDir
     ) throws IgniteCheckedException {
-        super(log, sharedCtx, initFilteredSerializerFactory(sharedCtx), ioFactory, bufSize);
+        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize);
 
         this.archivedSegIdx = archivedSegIdx;
         this.archiveDir = archiveDir;
@@ -71,17 +71,12 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     /**
      * @param sharedCtx Shared context.
      */
-    private static RecordSerializerFactory initFilteredSerializerFactory(GridCacheSharedContext sharedCtx)
+    private static RecordSerializerFactory initLogicalRecordsSerializerFactory(GridCacheSharedContext sharedCtx)
         throws IgniteCheckedException {
-        IgnitePredicate<WALRecord.RecordType> logicalRecordsFilter = new P1<WALRecord.RecordType>() {
-            private final Set<WALRecord.RecordType> skip = RecordTypes.DELTA_TYPE_SET;
 
-            @Override public boolean apply(WALRecord.RecordType type) {
-                return !skip.contains(type);
-            }
-        };
-
-        return new RecordSerializerFactoryImpl(sharedCtx).readTypeFilter(logicalRecordsFilter).marshalledMode(true);
+        return new RecordSerializerFactoryImpl(sharedCtx)
+            .recordDeserializeFilter(new LogicalRecordsFilter())
+            .marshalledMode(true);
     }
 
     /** {@inheritDoc} */
@@ -107,8 +102,16 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         }
     }
 
-    /** {@inheritDoc} todo for debug only, remove */
-    @Override protected void advance() throws IgniteCheckedException {
-        super.advance();
+    /**
+     *
+     */
+    private static class LogicalRecordsFilter implements P2<WALRecord.RecordType, WALPointer> {
+        /** Records type to skip. */
+        private final Set<WALRecord.RecordType> skip = RecordTypes.DELTA_TYPE_SET;
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(WALRecord.RecordType type, WALPointer ptr) {
+            return !skip.contains(type);
+        }
     }
 }

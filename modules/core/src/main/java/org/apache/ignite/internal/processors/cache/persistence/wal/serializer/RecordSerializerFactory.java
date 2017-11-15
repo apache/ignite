@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  *
@@ -30,4 +33,24 @@ public interface RecordSerializerFactory {
      * @return record serializer.
      */
     public RecordSerializer createSerializer(int ver) throws IgniteCheckedException;
+
+    /**
+     * @param writePointer Write pointer.
+     */
+    public RecordSerializerFactory writePointer(boolean writePointer);
+
+    /**
+     * @param readTypeFilter Read type filter.
+     */
+    public RecordSerializerFactory recordDeserializeFilter(IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter);
+
+    /**
+     * @param marshalledMode Marshalled mode.
+     */
+    public RecordSerializerFactory marshalledMode(boolean marshalledMode);
+
+    /**
+     * @param skipPositionCheck Skip position check.
+     */
+    public RecordSerializerFactory skipPositionCheck(boolean skipPositionCheck);
 }

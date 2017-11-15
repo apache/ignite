@@ -60,7 +60,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true))
-            .setWalMode(WALMode.LOG_ONLY);
+            .setWalMode(WALMode.LOG_ONLY)
+            .setWalSegmentSize(512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 
