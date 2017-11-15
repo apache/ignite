@@ -92,7 +92,7 @@ namespace ignite
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(impl::binary::BinaryWriterImpl& writer) const;
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
 
         private:
             /** Protocol version. */
@@ -126,8 +126,10 @@ namespace ignite
              * @param schema Schema.
              * @param sql SQL query.
              * @param params Query arguments.
+             * @param timeout Timeout.
              */
-            QueryExecuteRequest(const std::string& schema, const std::string& sql, const app::ParameterSet& params);
+            QueryExecuteRequest(const std::string& schema, const std::string& sql, const app::ParameterSet& params,
+                int32_t timeout);
 
             /**
              * Destructor.
@@ -137,8 +139,9 @@ namespace ignite
             /**
              * Write request using provided writer.
              * @param writer Writer.
+             * @param ver Version.
              */
-            void Write(impl::binary::BinaryWriterImpl& writer) const;
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
         private:
             /** Schema name. */
@@ -149,6 +152,9 @@ namespace ignite
 
             /** Parameters bindings. */
             const app::ParameterSet& params;
+
+            /** Timeout. */
+            int32_t timeout;
         };
 
         /**
@@ -165,9 +171,10 @@ namespace ignite
              * @param params Query arguments.
              * @param begin Beginng of the interval.
              * @param end End of the interval.
+             * @param timeout Timeout.
              */
             QueryExecuteBatchtRequest(const std::string& schema, const std::string& sql,
-                                          const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last);
+                const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last, int32_t timeout);
 
             /**
              * Destructor.
@@ -177,8 +184,9 @@ namespace ignite
             /**
              * Write request using provided writer.
              * @param writer Writer.
+             * @param ver Version.
              */
-            void Write(impl::binary::BinaryWriterImpl& writer) const;
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
         private:
             /** Schema name. */
@@ -198,6 +206,9 @@ namespace ignite
 
             /** Last page flag. */
             bool last;
+
+            /** Timeout. */
+            int32_t timeout;
         };
 
         /**
@@ -222,7 +233,7 @@ namespace ignite
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(impl::binary::BinaryWriterImpl& writer) const;
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
 
         private:
             /** Query ID. */
@@ -252,7 +263,7 @@ namespace ignite
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(impl::binary::BinaryWriterImpl& writer) const;
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
 
         private:
             /** Query ID. */
@@ -286,7 +297,7 @@ namespace ignite
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(impl::binary::BinaryWriterImpl& writer) const;
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
 
         private:
             /** Schema search pattern. */
@@ -325,7 +336,7 @@ namespace ignite
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(impl::binary::BinaryWriterImpl& writer) const;
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
 
         private:
             /** Column search pattern. */
@@ -372,7 +383,7 @@ namespace ignite
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(impl::binary::BinaryWriterImpl& writer) const;
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
 
         private:
             /** Schema. */

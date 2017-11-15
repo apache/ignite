@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -43,7 +44,6 @@ import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -196,7 +196,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param args Arguments.
      * @return Query instance.
      */
-    private SqlFieldsQuery makeQuery(String schema, String sql, Object[] args) {
+    private SqlFieldsQuery makeQuery(String schema, String sql, Object[] args, int timeout) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
         qry.setArgs(args);
@@ -207,6 +207,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setCollocated(collocated);
         qry.setLazy(lazy);
         qry.setSchema(schema);
+
+        qry.setTimeout(timeout, TimeUnit.SECONDS);
 
         return qry;
     }
@@ -235,7 +237,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                     ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
+            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout());
 
             QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFieldsNoCache(qry, true);
 
@@ -278,7 +280,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                         ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
+            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout());
 
             Object[][] paramSet = req.arguments();
 

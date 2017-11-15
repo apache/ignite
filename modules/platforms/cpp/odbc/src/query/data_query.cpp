@@ -28,15 +28,16 @@ namespace ignite
     {
         namespace query
         {
-            DataQuery::DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
-                const std::string& sql, const app::ParameterSet& params) :
+            DataQuery::DataQuery(diagnostic::Diagnosable& diag, Connection& connection, const std::string& sql,
+                const app::ParameterSet& params, int32_t& timeout) :
                 Query(diag, QueryType::DATA),
                 connection(connection),
                 sql(sql),
                 params(params),
                 resultMeta(),
                 cursor(),
-                rowsAffected(0)
+                rowsAffected(0),
+                timeout(timeout)
             {
                 // No-op.
             }
@@ -168,6 +169,8 @@ namespace ignite
                     cursor.reset();
 
                     resultMeta.clear();
+
+                    rowsAffected = 0;
                 }
 
                 return result;
@@ -187,7 +190,7 @@ namespace ignite
             {
                 const std::string& schema = connection.GetSchema();
 
-                QueryExecuteRequest req(schema, sql, params);
+                QueryExecuteRequest req(schema, sql, params, timeout);
                 QueryExecuteResponse rsp;
 
                 try
