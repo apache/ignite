@@ -18,10 +18,10 @@
 :: Runs tests on WSL (Windows Subsystem for Linux).
 :: Ignite.NET must be built on Windows, but cross-platform tests can be run on Linux.
 
-pushd
+pushd .\
 
 cd ..
-..\build -skipJava -version 0.0.1
+build -skipJava -version 0.0.1
 
 popd
 
