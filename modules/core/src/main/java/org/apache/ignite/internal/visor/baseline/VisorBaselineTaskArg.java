@@ -20,98 +20,80 @@ package org.apache.ignite.internal.visor.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.cluster.BaselineNode;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Result for {@link VisorBaselineCollectorTask}.
+ * Argument for {@link VisorBaselineTask}.
  */
-public class VisorBaselineCollectorTaskResult extends VisorDataTransferObject {
+public class VisorBaselineTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private VisorBaselineOperation op;
 
     /** */
     private long topVer;
 
     /** */
-    private List<VisorBaselineNode> baseline;
-
-    /** */
-    private List<VisorBaselineNode> others;
+    private List<String> consistentIds;
 
     /**
      * Default constructor.
      */
-    public VisorBaselineCollectorTaskResult() {
+    public VisorBaselineTaskArg() {
         // No-op.
     }
 
     /**
-     * Constructor.
-     *
-     * @param topVer Current topology version.
-     * @param baseline Nodes to convert to DTO.
-     * @param others Other baseline.
+     * @param topVer Topology version.
      */
-    public VisorBaselineCollectorTaskResult(long topVer, Collection<BaselineNode> baseline, Collection<ClusterNode> others) {
+    public VisorBaselineTaskArg(VisorBaselineOperation op, long topVer, List<String> consistentIds) {
+        this.op = op;
         this.topVer = topVer;
-
-        if (!F.isEmpty(baseline)) {
-            this.baseline = new ArrayList<>();
-            this.others = new ArrayList<>();
-
-            for (BaselineNode node : baseline)
-                this.baseline.add(new VisorBaselineNode(node));
-
-            for (ClusterNode node : others)
-                this.others.add(new VisorBaselineNode(node));
-        }
+        this.consistentIds = consistentIds;
     }
 
     /**
-     * @return Current topology version.
+     * @return Base line operation.
+     */
+    public VisorBaselineOperation getOperation() {
+        return op;
+    }
+
+    /**
+     * @return Topology version.
      */
     public long getTopologyVersion() {
         return topVer;
     }
 
     /**
-     * @return Baseline nodes.
+     * @return Consistent IDs.
      */
-    public List<VisorBaselineNode> getBaseline() {
-        return baseline;
-    }
-
-    /**
-     * @return Other nodes.
-     */
-    public List<VisorBaselineNode> getOthers() {
-        return others;
+    public List<String> getConsistentIds() {
+        return consistentIds;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeEnum(out, op);
         out.writeLong(topVer);
-        U.writeCollection(out, baseline);
-        U.writeCollection(out, others);
+        U.writeCollection(out, consistentIds);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        op = VisorBaselineOperation.fromOrdinal(in.readByte());
         topVer = in.readLong();
-        baseline = U.readList(in);
-        others = U.readList(in);
+        consistentIds = U.readList(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorBaselineCollectorTaskResult.class, this);
+        return S.toString(VisorBaselineTaskArg.class, this);
     }
 }

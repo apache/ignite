@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Datatransfer object for {@link BaselineNode}.
+ * Data transfer object for {@link BaselineNode}.
  */
 public class VisorBaselineNode extends VisorDataTransferObject {
     /** */
@@ -38,9 +38,6 @@ public class VisorBaselineNode extends VisorDataTransferObject {
 
     /** */
     private Map<String, Object> attrs;
-
-    /** */
-    private boolean alive;
 
     /**
      * Default constructor.
@@ -57,42 +54,32 @@ public class VisorBaselineNode extends VisorDataTransferObject {
     public VisorBaselineNode(BaselineNode node) {
         consistentId = String.valueOf(node.consistentId());
         attrs = node.attributes();
-        alive = true; // TODO WC-251 node.alive();
     }
 
     /**
      * @return Node consistent ID.
      */
-    public String consistentId() {
+    public String getConsistentId() {
         return consistentId;
     }
 
     /**
      * @return Node attributes.
      */
-    public Map<String, Object> attributes() {
+    public Map<String, Object> getAttributes() {
         return attrs;
-    }
-
-    /**
-     * @return {@code true} If node is alive.
-     */
-    public boolean isAlive() {
-        return alive;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, consistentId);
         U.writeMap(out, attrs);
-        out.writeBoolean(alive);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         consistentId = U.readString(in);
         attrs = U.readMap(in);
-        alive = in.readBoolean();
     }
 
     /** {@inheritDoc} */

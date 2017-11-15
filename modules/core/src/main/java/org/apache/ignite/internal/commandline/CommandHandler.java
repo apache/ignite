@@ -22,26 +22,36 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientAuthenticationException;
+import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridServerUnreachableException;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineAddTask;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineCollectorTask;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineCollectorTaskResult;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineRemoveTask;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineSetTask;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineVersionTask;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.SET;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.VERSION;
 
 /**
  * Class that execute several commands passed via command line.
@@ -90,16 +100,19 @@ public class CommandHandler {
     private static final String DELIM = "--------------------------------------------------------------------------------";
 
     /** */
-    private static final int EXIT_CODE_OK = 0;
+    public static final int EXIT_CODE_OK = 0;
 
     /** */
-    private static final int EXIT_CODE_INVALID_ARGUMENTS = 1;
+    public static final int EXIT_CODE_INVALID_ARGUMENTS = 1;
 
     /** */
-    private static final int EXIT_CODE_CONNECTION_FAILED = 2;
+    public static final int EXIT_CODE_CONNECTION_FAILED = 2;
 
     /** */
-    private static final int EXIT_CODE_UNEXPECTED_ERROR = 3;
+    public static final int ERR_AUTHENTICATION_FAILED = 3;
+
+    /** */
+    public static final int EXIT_CODE_UNEXPECTED_ERROR = 4;
 
     /**
      * Output specified string to console.
@@ -108,16 +121,6 @@ public class CommandHandler {
      */
     private void log(String s) {
         System.out.println(s);
-    }
-
-    /**
-     * Output some data to console.
-     *
-     * @param fmt Format string.
-     * @param args Arguments.
-     */
-    private void logFmt(String fmt, Object... args) {
-        System.out.printf(fmt, args);
     }
 
     /**
@@ -131,9 +134,13 @@ public class CommandHandler {
      * Print error to console.
      *
      * @param errCode Error code to return.
+     * @param s Optional message.
      * @param e Error to print.
      */
-    private int error(int errCode, Throwable e) {
+    private int error(int errCode, String s, Throwable e) {
+        if (!F.isEmpty(s))
+            log(s);
+
         String msg = e.getMessage();
 
         if (F.isEmpty(msg))
@@ -182,34 +189,59 @@ public class CommandHandler {
      * @param client Client.
      * @throws GridClientException If failed to activate.
      */
-    private void activate(GridClient client) throws GridClientException {
-        GridClientClusterState state = client.state();
+    private void activate(GridClient client) throws Throwable {
+        try {
+            GridClientClusterState state = client.state();
 
-        state.active(true);
+            state.active(true);
+
+            log("Cluster activated");
+        }
+        catch (Throwable e) {
+            log("Failed to activate cluster.");
+
+            throw e;
+        }
     }
 
     /**
      * Deactivate cluster.
      *
      * @param client Client.
-     * @throws GridClientException If failed to deactivate.
+     * @throws Throwable If failed to deactivate.
      */
-    private void deactivate(GridClient client) throws GridClientException {
-        GridClientClusterState state = client.state();
+    private void deactivate(GridClient client) throws Throwable {
+        try {
+            GridClientClusterState state = client.state();
 
-        state.active(false);
+            state.active(false);
+
+            log("Cluster deactivated");
+        }
+        catch (Throwable e) {
+            log("Failed to deactivate cluster.");
+
+            throw e;
+        }
     }
 
     /**
      * Print cluster state.
      *
      * @param client Client.
-     * @throws GridClientException If failed to print state.
+     * @throws Throwable If failed to print state.
      */
-    private void state(GridClient client) throws GridClientException {
-        GridClientClusterState state = client.state();
+    private void state(GridClient client) throws Throwable {
+        try {
+            GridClientClusterState state = client.state();
 
-        log("Cluster is " + (state.active() ? "active" : "inactive"));
+            log("Cluster is " + (state.active() ? "active" : "inactive"));
+        }
+        catch (Throwable e) {
+            log("Failed to get cluster state.");
+
+            throw e;
+        }
     }
 
     /**
@@ -242,8 +274,9 @@ public class CommandHandler {
      * @param client Client.
      * @param baselineAct Baseline action to execute.  @throws GridClientException If failed to execute baseline action.
      * @param baselineArgs Baseline action arguments.
+     * @throws Throwable If failed to execute baseline action.
      */
-    private void baseline(GridClient client, String baselineAct, String baselineArgs) throws GridClientException {
+    private void baseline(GridClient client, String baselineAct, String baselineArgs) throws Throwable {
         switch (baselineAct) {
             case BASELINE_ADD:
                 baselineAdd(client, baselineArgs);
@@ -267,38 +300,84 @@ public class CommandHandler {
     }
 
     /**
-     * @param client Client.
+     * Prepare task argument.
+     *
+     * @param op Operation.
+     * @param s Argument from command line.
+     * @return Task argument.
      */
-    private void baselinePrint(GridClient client) throws GridClientException {
-        VisorBaselineCollectorTaskResult res = executeTask(client, VisorBaselineCollectorTask.class, null);
+    private VisorBaselineTaskArg arg(VisorBaselineOperation op, String s) {
+        switch (op) {
+            case ADD:
+            case REMOVE:
+            case SET:
+                if(F.isEmpty(s))
+                    throw new IllegalArgumentException("Empty list of consistent IDs");
 
+                List<String> consistentIds = new ArrayList<>();
+
+                for (String consistentId : s.split(","))
+                    consistentIds.add(consistentId.trim());
+
+                return new VisorBaselineTaskArg(op, -1, consistentIds);
+
+            case VERSION:
+                try {
+                    long topVer = Long.parseLong(s);
+
+                    return new VisorBaselineTaskArg(op, topVer, null);
+                }
+                catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid topology version: " + s, e);
+                }
+
+            default:
+                return new VisorBaselineTaskArg(op, -1, null);
+        }
+    }
+
+    /**
+     * Print baseline topology.
+     *
+     * @param res Task result with baseline topology.
+     */
+    private void baselinePrint0(VisorBaselineTaskResult res) {
+        log("Cluster state: " + (res.isActive() ? "active" : "inactive"));
         log("Current topology version: " + res.getTopologyVersion());
         nl();
 
-        List<VisorBaselineNode> baseline = res.getBaseline();
+        Map<String, VisorBaselineNode> baseline = res.getBaseline();
+        Map<String, VisorBaselineNode> servers = res.getServers();
 
         if (F.isEmpty(baseline))
-            log("Base line baseline not found!");
+            log("Baseline nodes not found.");
         else {
             log("Baseline nodes:");
 
-            for(VisorBaselineNode node : baseline)
-                logFmt("    ConsistentID=%s, STATE=%s%n", node.consistentId(), node.isAlive() ? "ONLINE" : "OFFLINE");
+            for(VisorBaselineNode node : baseline.values()) {
+                log("    ConsistentID=" + node.getConsistentId() + ", STATE=" +
+                    (servers.containsKey(node.getConsistentId()) ? "ONLINE" : "OFFLINE"));
+            }
 
             log(DELIM);
             log("Number of baseline nodes: " + baseline.size());
 
             nl();
 
-            List<VisorBaselineNode> others = res.getOthers();
+            List<VisorBaselineNode> others = new ArrayList<>();
+
+            for (VisorBaselineNode node : servers.values()) {
+                if (!baseline.containsKey(node.getConsistentId()))
+                    others.add(node);
+            }
 
             if (F.isEmpty(others))
-                log("Other nodes not found!");
+                log("Other nodes not found.");
             else {
                 log("Other nodes:");
 
                 for(VisorBaselineNode node : others)
-                    log("    ConsistentID=" + node.consistentId() /* TODO WC-251 add IP? */);
+                    log("    ConsistentID=" + node.getConsistentId());
 
                 log("Number of other nodes: " + others.size());
             }
@@ -306,35 +385,113 @@ public class CommandHandler {
     }
 
     /**
+     * Print current baseline.
+     *
      * @param client Client.
-     * @param baselineArgs Baseline action arguments.
      */
-    private void baselineAdd(GridClient client, String baselineArgs) throws GridClientException {
-        executeTask(client, VisorBaselineAddTask.class, baselineArgs);
+    private void baselinePrint(GridClient client) throws GridClientException {
+        VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(COLLECT, ""));
+
+        baselinePrint0(res);
     }
 
     /**
+     * Add nodes to baseline.
+     *
      * @param client Client.
      * @param baselineArgs Baseline action arguments.
+     * @throws Throwable If failed to add nodes to baseline.
      */
-    private void baselineRemove(GridClient client, String baselineArgs) throws GridClientException {
-        executeTask(client, VisorBaselineRemoveTask.class, baselineArgs);
+    private void baselineAdd(GridClient client, String baselineArgs) throws Throwable {
+        try {
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(ADD, baselineArgs));
+
+            baselinePrint0(res);
+        }
+        catch (Throwable e) {
+            log("Failed to add nodes to baseline.");
+
+            throw e;
+        }
     }
 
     /**
+     * Remove nodes from baseline.
+     *
      * @param client Client.
-     * @param baselineArgs Baseline action arguments.
+     * @param consistentIds Consistent IDs.
+     * @throws Throwable If failed to remove nodes from baseline.
      */
-    private void baselineSet(GridClient client, String baselineArgs) throws GridClientException {
-        executeTask(client, VisorBaselineSetTask.class, baselineArgs);
+    private void baselineRemove(GridClient client, String consistentIds) throws Throwable {
+        try {
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(REMOVE, consistentIds));
+
+            baselinePrint0(res);
+        }
+        catch (Throwable e) {
+            log("Failed to remove nodes from baseline.");
+
+            throw e;
+        }
     }
 
     /**
+     * Set baseline.
+     *
      * @param client Client.
-     * @param baselineArgs Baseline action arguments.
+     * @param consistentIds Consistent IDs.
+     * @throws Throwable If failed to set baseline.
      */
-    private void baselineVersion(GridClient client, String baselineArgs) throws GridClientException {
-        executeTask(client, VisorBaselineVersionTask.class, baselineArgs);
+    private void baselineSet(GridClient client, String consistentIds) throws Throwable {
+        try {
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(SET, consistentIds));
+
+            baselinePrint0(res);
+        }
+        catch (Throwable e) {
+            log("Failed to set baseline.");
+
+            throw e;
+        }
+    }
+
+    /**
+     * Set baseline by topology version.
+     *
+     * @param client Client.
+     * @param arg Argument from command line.
+     */
+    private void baselineVersion(GridClient client, String arg) throws GridClientException {
+        try {
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(VERSION, arg));
+
+            baselinePrint0(res);
+        }
+        catch (Throwable e) {
+            log("Failed to set baseline with specified topology version.");
+
+            throw e;
+        }
+    }
+
+    /**
+     * @param e Exception to check.
+     * @return {@code true} if specified exception is {@link GridClientAuthenticationException}.
+     */
+    private boolean isAuthError(Throwable e) {
+        return X.hasCause(e, GridClientAuthenticationException.class);
+    }
+
+    /**
+     * @param e Exception to check.
+     * @return {@code true} if specified exception is a connection error.
+     */
+    private boolean isConnectionError(Throwable e) {
+        return e instanceof GridClientClosedException ||
+            e instanceof GridClientConnectionResetException ||
+            e instanceof GridClientDisconnectedException ||
+            e instanceof GridClientHandshakeException ||
+            e instanceof GridServerUnreachableException;
     }
 
     /**
@@ -371,6 +528,7 @@ public class CommandHandler {
                 log("    " + EXIT_CODE_OK + " - successful execution.");
                 log("    " + EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.");
                 log("    " + EXIT_CODE_CONNECTION_FAILED + " - connection failed.");
+                log("    " + ERR_AUTHENTICATION_FAILED + " - authentication failed.");
                 log("    " + EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.");
 
                 return EXIT_CODE_OK;
@@ -470,10 +628,17 @@ public class CommandHandler {
             return 0;
         }
         catch (IllegalArgumentException e) {
-            return error(EXIT_CODE_INVALID_ARGUMENTS, e);
+            return error(EXIT_CODE_INVALID_ARGUMENTS, "Check arguments.", e);
         }
         catch (Throwable e) {
-            return error(EXIT_CODE_UNEXPECTED_ERROR, e);
+            if (isAuthError(e))
+                return error(ERR_AUTHENTICATION_FAILED, "Authentication error.", e);
+
+            if (isConnectionError(e))
+                return error(EXIT_CODE_CONNECTION_FAILED, "Connection to cluster failed.", e);
+
+
+            return error(EXIT_CODE_UNEXPECTED_ERROR, "", e);
         }
     }
 

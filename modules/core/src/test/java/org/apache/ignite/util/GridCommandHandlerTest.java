@@ -26,8 +26,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 
 /**
  * Command line handler test.
@@ -92,7 +96,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         CommandHandler cmd = new CommandHandler();
 
-        assertEquals(0, cmd.execute("--activate"));
+        assertEquals(EXIT_CODE_OK, cmd.execute("--activate"));
 
         assertTrue(ignite.active());
     }
@@ -113,7 +117,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         CommandHandler cmd = new CommandHandler();
 
-        assertEquals(0, cmd.execute("--deactivate"));
+        assertEquals(EXIT_CODE_OK, cmd.execute("--deactivate"));
 
         assertFalse(ignite.active());
     }
@@ -130,27 +134,129 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         CommandHandler cmd = new CommandHandler();
 
-        assertEquals(0, cmd.execute("--state"));
+        assertEquals(EXIT_CODE_OK, cmd.execute("--state"));
 
         ignite.active(true);
 
-        assertEquals(0, cmd.execute("--state"));
+        assertEquals(EXIT_CODE_OK, cmd.execute("--state"));
     }
 
     /**
-     * Test baseline manipulations works via control.sh
+     * Test baseline collect works via control.sh
      *
      * @throws Exception If failed.
      */
-    public void testBaseline() throws Exception {
+    public void testBaselineCollect() throws Exception {
         Ignite ignite = startGrids(1);
 
         assertFalse(ignite.active());
 
-        ignite.active(true); // Baseline can be changed only on active cluster.
+        ignite.active(true);
 
         CommandHandler cmd = new CommandHandler();
 
         cmd.execute("--baseline");
+    }
+
+    /**
+     * @param ignites Ignites.
+     * @return Local node consistent ID.
+     */
+    private String consistentIds(Ignite... ignites) {
+        String res = "";
+
+        for(Ignite ignite : ignites) {
+            String consistentId = ignite.cluster().localNode().consistentId().toString();
+
+            if (!F.isEmpty(res))
+                res += ", ";
+
+            res += consistentId;
+        }
+
+        return res;
+    }
+
+    /**
+     * Test baseline add items works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    public void testBaselineAdd() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        assertFalse(ignite.active());
+
+        ignite.active(true);
+
+        CommandHandler cmd = new CommandHandler();
+
+        Ignite other = startGrid(2);
+
+        assertEquals(EXIT_CODE_OK, cmd.execute("--baseline", "add", consistentIds(other)));
+        assertEquals(EXIT_CODE_OK, cmd.execute("--baseline", "add", consistentIds(other)));
+    }
+
+    /**
+     * Test baseline remove works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    public void testBaselineRemove() throws Exception {
+        Ignite ignite = startGrids(1);
+        Ignite other = startGrid("nodeToStop");
+
+        assertFalse(ignite.active());
+
+        ignite.active(true);
+
+        String offlineNodeConsId = consistentIds(other);
+
+        stopGrid("nodeToStop");
+
+        CommandHandler cmd = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, cmd.execute("--baseline"));
+        assertEquals(EXIT_CODE_OK, cmd.execute("--baseline", "remove", offlineNodeConsId));
+    }
+
+    /**
+     * Test baseline set works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    public void testBaselineSet() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        assertFalse(ignite.active());
+
+        ignite.active(true);
+
+        Ignite other = startGrid(2);
+
+        CommandHandler cmd = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, cmd.execute("--baseline", "set", consistentIds(ignite, other)));
+    }
+
+    /**
+     * Test baseline set by topology version works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    public void testBaselineVersion() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        assertFalse(ignite.active());
+
+        ignite.active(true);
+
+        CommandHandler cmd = new CommandHandler();
+
+        startGrid(2);
+
+        assertEquals(EXIT_CODE_OK, cmd.execute("--baseline"));
+
+        assertEquals(EXIT_CODE_OK, cmd.execute("--baseline", "version", String.valueOf(ignite.cluster().topologyVersion())));
     }
 }
