@@ -22,9 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -39,6 +37,7 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
+import org.apache.ignite.ml.util.Utils;
 import org.jetbrains.annotations.Nullable;
 
 public class GroupTrainerTask<K, S, V, G, U extends Serializable> extends ComputeTaskAdapter<Void, U> {
@@ -79,15 +78,8 @@ public class GroupTrainerTask<K, S, V, G, U extends Serializable> extends Comput
         @Nullable Void arg) throws IgniteException {
         Map<ComputeJob, ClusterNode> res = new HashMap<>();
 
-        Set<GroupTrainerCacheKey> keys = keysSupplier.get().
-            collect(Collectors.toSet());
-
-        Map<ClusterNode, Collection<GroupTrainerCacheKey>> key2Node = affinity().mapKeysToNodes(keys);
-
-        for (ClusterNode node : subgrid) {
-            if (key2Node.get(node).size() > 0)
-                res.put(new LocalProcessorJob<>(contextExtractor, worker, keysSupplier, identity, reducer, trainingUUID, cacheName), node);
-        }
+        for (ClusterNode node : subgrid)
+            res.put(new LocalProcessorJob<>(contextExtractor, worker, keysSupplier, identity, reducer, trainingUUID, cacheName), node);
 
         return res;
     }

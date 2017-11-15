@@ -41,7 +41,6 @@ public class LocalProcessorJob<K, V, G, O extends Serializable> implements Compu
     private IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<O>> worker;
     private UUID trainingUUID;
     private String cacheName;
-    private Ignite ignite;
     private IgniteCache<GroupTrainerCacheKey<K>, V> cache;
     private IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keySupplier;
     private IgniteBinaryOperator<O> reducer;
@@ -59,9 +58,6 @@ public class LocalProcessorJob<K, V, G, O extends Serializable> implements Compu
         this.reducer = reducer;
         this.trainingUUID = trainingUUID;
         this.cacheName = cacheName;
-
-        ignite = Ignition.localIgnite();
-        cache = ignite.getOrCreateCache(cacheName);
     }
 
     @Override public void cancel() {
@@ -69,6 +65,7 @@ public class LocalProcessorJob<K, V, G, O extends Serializable> implements Compu
     }
 
     @Override public O execute() throws IgniteException {
+        cache = ignite().getOrCreateCache(cacheName);
         G ctx = contextExtractor.get();
 
         List<ResultAndUpdates<O>> resultsAndUpdates = selectLocalEntries().parallel().
@@ -78,23 +75,26 @@ public class LocalProcessorJob<K, V, G, O extends Serializable> implements Compu
 
         ResultAndUpdates<O> totalRes = ResultAndUpdates.sum(reducer, identity, resultsAndUpdates);
 
-        totalRes.processUpdates(ignite);
+        totalRes.processUpdates(ignite());
 
         return totalRes.result();
     }
 
-//    protected abstract Stream<Map.Entry<GroupTrainerCacheKey<K>, V>> localEntries();
+    private static Ignite ignite() {
+        return Ignition.localIgnite();
+    }
 
     // TODO: do it more optimally.
     private Stream<Map.Entry<GroupTrainerCacheKey<K>, V>> selectLocalEntries() {
         Set<GroupTrainerCacheKey<K>> keys = keySupplier.get().
             filter(k -> affinity().mapKeyToNode(k).isLocal()).
+            filter(k -> k.trainingUUID().equals(trainingUUID)).
             collect(Collectors.toSet());
 
         return cache.getAll(keys).entrySet().stream();
     }
 
     private Affinity<GroupTrainerCacheKey> affinity() {
-        return ignite.affinity(cacheName);
+        return ignite().affinity(cacheName);
     }
 }
