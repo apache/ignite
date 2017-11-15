@@ -2489,6 +2489,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public boolean serverTopologyChanged(AffinityTopologyVersion readyVer) {
         GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
 
+        if (fut.isDone())
+            return false;
+
         AffinityTopologyVersion initVer = fut.initialVersion();
 
         return initVer.compareTo(readyVer) > 0 && !fut.firstEvent().node().isClient();

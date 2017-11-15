@@ -59,6 +59,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -562,7 +563,7 @@ public class GridReduceQueryExecutor {
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
             // Check if topology is changed while retrying on locked topology.
-            if (h2.serverTopologyChanged(topVer) && ctx.cache().context().tm().userTx() != null) {
+            if (h2.serverTopologyChanged(topVer) && ctx.cache().context().lockedTopologyVersion(null) != null) {
                 throw new CacheException(new TransactionException("Server topology is changed during query " +
                     "execution inside a transaction. It's recommended to rollback and retry transaction whenever " +
                     "possible."));

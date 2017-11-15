@@ -26,7 +26,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test for distributed queries with node restarts inside transactions.
  */
-public class IgniteCacheQueryNodeRestartTxSelfTest extends IgniteCacheQueryNodeRestartSelfTest {
+public class IgniteCacheQueryNodeRestartTxSelfTest extends IgniteCacheQueryNodeRestartSelfTest2 {
     /** {@inheritDoc} */
     @Override protected void runQuery(IgniteEx grid, Runnable qryRunnable) {
         try(Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
