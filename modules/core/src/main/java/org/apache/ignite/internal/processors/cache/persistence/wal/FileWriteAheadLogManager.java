@@ -66,6 +66,7 @@ import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -203,7 +204,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         IgniteSystemProperties.getInteger(IGNITE_WAL_SERIALIZER_VERSION, LATEST_SERIALIZER_VERSION);
 
     /** Latest segment cleared by {@link #truncate(WALPointer)}. */
-    private volatile long lastTruncatedArchiveIdx;
+    private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
@@ -325,7 +326,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
 
-            lastTruncatedArchiveIdx = tup == null ? 0 : tup.get1();
+            lastTruncatedArchiveIdx = tup == null ? -1 : tup.get1() - 1;
 
             archiver = new FileArchiver(tup == null ? -1 : tup.get2());
 
@@ -744,14 +745,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public int walArchiveSegments() {
-        long oldest = lastTruncatedArchiveIdx;
+        long lastTruncated = lastTruncatedArchiveIdx;
 
         long lastArchived = archiver.lastArchivedAbsoluteIndex();
 
         if (lastArchived == -1)
             return 0;
 
-        int res = (int)(lastArchived - oldest);
+        int res = (int)(lastArchived - lastTruncated);
 
         return res >= 0 ? res : 0;
     }
@@ -1141,7 +1142,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private long curAbsWalIdx = -1;
 
         /** Last archived file index (absolute, 0-based). Guarded by <code>this</code>. */
-        private long lastAbsArchivedIdx = -1;
+        private volatile long lastAbsArchivedIdx = -1;
 
         /** current thread stopping advice */
         private volatile boolean stopped;
@@ -1167,7 +1168,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @return Last archived segment absolute index.
          */
-        private synchronized long lastArchivedAbsoluteIndex() {
+        private long lastArchivedAbsoluteIndex() {
             return lastAbsArchivedIdx;
         }
 
@@ -1253,7 +1254,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         wait();
 
                     if (curAbsWalIdx != 0 && lastAbsArchivedIdx == -1)
-                        lastAbsArchivedIdx = curAbsWalIdx - 1;
+                        changeLastArchivedIndexAndWakeupCompressor(curAbsWalIdx - 1);
                 }
 
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
@@ -1284,7 +1285,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 formatFile(res.getOrigWorkFile());
 
                             // Then increase counter to allow rollover on clean working file
-                            lastAbsArchivedIdx = toArchive;
+                            changeLastArchivedIndexAndWakeupCompressor(toArchive);
 
                             notifyAll();
                         }
@@ -1304,6 +1305,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             catch (InterruptedException ignore) {
                 Thread.currentThread().interrupt();
             }
+        }
+
+        /**
+         * @param idx Index.
+         */
+        private void changeLastArchivedIndexAndWakeupCompressor(long idx) {
+            lastAbsArchivedIdx = idx;
+
+            if (compressor != null)
+                compressor.onNextSegmentArchived();
         }
 
         /**
@@ -1333,7 +1344,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     return curAbsWalIdx;
                 }
             }
-            catch (InterruptedException e) {
+           catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 throw new IgniteInterruptedCheckedException(e);
@@ -1468,7 +1479,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private volatile long lastCompressedSegmentIdx = -1L;
 
         /** All segments prior to this (inclusive) can be compressed. */
-        private volatile long lastAllowedToCompressSegmentIdx;
+        private volatile long lastAllowedToCompressSegmentIdx = -1L;
 
         private void init() {
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
@@ -1489,10 +1500,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @param lastCpStartIdx Segment index to allow compression until (exclusively).
          */
-        public synchronized void allowCompressionUntil(long lastCpStartIdx) {
+        synchronized void allowCompressionUntil(long lastCpStartIdx) {
             lastAllowedToCompressSegmentIdx = lastCpStartIdx - 1;
 
-            notifyAll();
+            notify();
+        }
+
+        /**
+         * Callback for waking up compressor when new segment is archived.
+         */
+        synchronized void onNextSegmentArchived() {
+            notify();
         }
 
         /**
@@ -1501,18 +1519,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private synchronized long reserveNextSegmentOrWait() throws InterruptedException {
             long segmentToCompress = lastCompressedSegmentIdx + 1;
 
-            while (segmentToCompress > lastAllowedToCompressSegmentIdx)
-                wait(1000); // Next segment is still potentially needed for crash recovery. todo notify on checkpoint
-
-            while (segmentToCompress > lastArchivedIndex() /* todo: use archiver's method */)
-                wait(1000); // Next segment has not been archived yet. todo notify on archivation of next segment
+            while (segmentToCompress > Math.max(lastAllowedToCompressSegmentIdx, archiver.lastArchivedAbsoluteIndex()))
+                wait();
 
             boolean reserved = false;
 
             // Reserving segment to prevent its concurrent truncation.
             while (!reserved) {
-                if (lastTruncatedArchiveIdx != 0)
-                    segmentToCompress = Math.max(segmentToCompress, lastTruncatedArchiveIdx + 1);
+                segmentToCompress = Math.max(segmentToCompress, lastTruncatedArchiveIdx + 1);
 
                 try {
                     reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
@@ -1528,7 +1542,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          *
          */
-        public void deleteObsoleteRawSegments() {
+        private void deleteObsoleteRawSegments() {
             FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_FILTER));
 
             FileArchiver archiver0 = archiver;
@@ -1565,27 +1579,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     try (SingleSegmentLogicalRecordsIterator iter = new SingleSegmentLogicalRecordsIterator(
                         log, cctx, ioFactory, tlbSize, nextSegment, walArchiveDir);
                          ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(tmpZip)))) {
-                        zos.putNextEntry(new ZipEntry(FileDescriptor.fileName(nextSegment)));
+                        zos.putNextEntry(new ZipEntry(""));
 
                         zos.write(prepareSerializerVersionBuffer(nextSegment, serializerVersion).array()); // WAL segment header.
 
-                        ByteBuffer buf = ByteBuffer.allocate(tlbSize);
-
                         for (IgniteBiTuple<WALPointer, WALRecord> tuple : iter) {
-                            FileWALPointer ptr = (FileWALPointer)tuple.get1();
+                            WALRecord rec = tuple.get2();
 
-                            if (ptr.length() > buf.capacity())
-                                buf = ByteBuffer.allocate(ptr.length());
-                            else
-                                buf.clear();
-
-                            WALRecord record = tuple.get2();
-
-                            record.position(ptr); // Keep position from old file to make possible finding record by old WAL pointer.
-
-                            serializer.writeRecord(record, buf);
-
-                            zos.write(buf.array(), 0, buf.position());
+                            zos.write(((MarshalledRecord)rec).data());
                         }
                     }
                     finally {
@@ -1649,6 +1650,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
                         FileIO io = ioFactory.create(unzipTmp)) {
+                        zis.getNextEntry();
 
                         int bytesRead;
 

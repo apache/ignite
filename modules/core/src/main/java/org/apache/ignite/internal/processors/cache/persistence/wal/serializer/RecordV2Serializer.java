@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
@@ -61,6 +62,15 @@ public class RecordV2Serializer implements RecordSerializer {
     private final boolean writePointer;
 
     /**
+     * Marshalled mode.
+     * Records are not deserialized in this mode, {@link MarshalledRecord} with binary representation are read instead.
+     */
+    private final boolean marshalledMode;
+
+    /** Skip position check flag. Should be set for reading compacted wal file with skipped physical records. */
+    private final boolean skipPositionCheck;
+
+    /**
      * Record type filter.
      * {@link FilteredRecord} is deserialized instead of original record if type doesn't match filter.
      */
@@ -84,7 +94,7 @@ public class RecordV2Serializer implements RecordSerializer {
             if (recType == WALRecord.RecordType.SWITCH_SEGMENT_RECORD)
                 throw new SegmentEofException("Reached end of segment", null);
 
-            FileWALPointer ptr = readPositionAndCheckPoint(in, expPtr);
+            FileWALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck);
 
             if (readTypeFilter != null && !readTypeFilter.apply(recType)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
@@ -94,6 +104,22 @@ public class RecordV2Serializer implements RecordSerializer {
                 in.readFully(new byte[toSkip]);
 
                 return new FilteredRecord();
+            }
+            else if (marshalledMode) {
+                ByteBuffer buf = ByteBuffer.allocate(ptr.length());
+
+                buf.put((byte)(recType.ordinal() + 1));
+
+                buf.putLong(ptr.index());
+                buf.putInt(ptr.fileOffset());
+                buf.putInt(ptr.length());
+
+                in.readFully(buf.array(), buf.position(), buf.remaining());
+
+                // Unwind reading CRC.
+                in.buffer().position(in.buffer().position() - CRC_SIZE);
+
+                return new MarshalledRecord(recType, ptr, buf.array());
             }
             else
                 return dataSerializer.readRecord(recType, in);
@@ -118,15 +144,17 @@ public class RecordV2Serializer implements RecordSerializer {
 
     /**
      * Create an instance of Record V2 serializer.
-     *
      * @param dataSerializer V2 data serializer.
+     * @param marshalledMode Marshalled mode.
+     * @param skipPositionCheck Skip position check mode.
      * @param readTypeFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record
-     * if type doesn't match filter.
      */
     public RecordV2Serializer(RecordDataV2Serializer dataSerializer, boolean writePointer,
-        IgnitePredicate<RecordType> readTypeFilter) {
+        boolean marshalledMode, boolean skipPositionCheck, IgnitePredicate<RecordType> readTypeFilter) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
+        this.marshalledMode = marshalledMode;
+        this.skipPositionCheck = skipPositionCheck;
         this.readTypeFilter = readTypeFilter;
     }
 
@@ -157,12 +185,14 @@ public class RecordV2Serializer implements RecordSerializer {
 
     /**
      * @param in Data input to read pointer from.
+     * @param skipPositionCheck Flag for skipping position check.
      * @return Read file WAL pointer.
      * @throws IOException If failed to write.
      */
     public static FileWALPointer readPositionAndCheckPoint(
         DataInput in,
-        WALPointer expPtr
+        WALPointer expPtr,
+        boolean skipPositionCheck
     ) throws IgniteCheckedException, IOException {
         long idx = in.readLong();
         int fileOffset = in.readInt();
@@ -170,7 +200,7 @@ public class RecordV2Serializer implements RecordSerializer {
 
         FileWALPointer p = (FileWALPointer)expPtr;
 
-        if (!F.eq(idx, p.index()) || !F.eq(fileOffset, p.fileOffset()))
+        if (!F.eq(idx, p.index()) || (skipPositionCheck && !F.eq(fileOffset, p.fileOffset())))
             throw new WalSegmentTailReachedException(
                 "WAL segment tail is reached. [ " +
                         "Expected next state: {Index=" + p.index() + ",Offset=" + p.fileOffset() + "}, " +

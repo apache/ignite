@@ -81,7 +81,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
             }
         };
 
-        return new RecordSerializerFactoryImpl(sharedCtx).readTypeFilter(logicalRecordsFilter);
+        return new RecordSerializerFactoryImpl(sharedCtx).readTypeFilter(logicalRecordsFilter).marshalledMode(true);
     }
 
     /** {@inheritDoc} */

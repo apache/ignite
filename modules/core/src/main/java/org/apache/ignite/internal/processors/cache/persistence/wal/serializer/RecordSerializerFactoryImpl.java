@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -33,6 +34,15 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
 
     /** Read type filter. */
     private IgnitePredicate<WALRecord.RecordType> readTypeFilter;
+
+    /**
+     * Marshalled mode.
+     * Records are not deserialized in this mode, {@link MarshalledRecord} with binary representation are read instead.
+     */
+    private boolean marshalledMode;
+
+    /** Skip position check flag. Should be set for reading compacted wal file with skipped physical records. */
+    private boolean skipPositionCheck;
 
     /**
      * @param cctx Cctx.
@@ -56,7 +66,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
             case 2:
                 RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(new RecordDataV1Serializer(cctx));
 
-                return new RecordV2Serializer(dataV2Serializer, writePointer, readTypeFilter);
+                return new RecordV2Serializer(dataV2Serializer, writePointer, marshalledMode, skipPositionCheck, readTypeFilter);
 
             default:
                 throw new IgniteCheckedException("Failed to create a serializer with the given version " +
@@ -92,6 +102,40 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
      */
     public RecordSerializerFactoryImpl readTypeFilter(IgnitePredicate<WALRecord.RecordType> readTypeFilter) {
         this.readTypeFilter = readTypeFilter;
+
+        return this;
+    }
+
+    /**
+     * @return Marshalled mode. Records are not deserialized in this mode,  with binary representation are read instead.
+     */
+    public boolean marshalledMode() {
+        return marshalledMode;
+    }
+
+    /**
+     * @param marshalledMode New marshalled mode. Records are not deserialized in this mode,  with binary representation
+     * are read instead.
+     */
+    public RecordSerializerFactoryImpl marshalledMode(boolean marshalledMode) {
+        this.marshalledMode = marshalledMode;
+
+        return this;
+    }
+
+    /**
+     * @return Skip position check flag. Should be set for reading compacted wal file with skipped physical records.
+     */
+    public boolean skipPositionCheck() {
+        return skipPositionCheck;
+    }
+
+    /**
+     * @param skipPositionCheck New skip position check flag. Should be set for reading compacted wal file with skipped
+     * physical records.
+     */
+    public RecordSerializerFactoryImpl skipPositionCheck(boolean skipPositionCheck) {
+        this.skipPositionCheck = skipPositionCheck;
 
         return this;
     }

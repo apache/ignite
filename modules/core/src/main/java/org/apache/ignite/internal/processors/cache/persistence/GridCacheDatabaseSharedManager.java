@@ -1447,6 +1447,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.pageStore().beginRecover();
         }
+        else
+            cctx.wal().allowCompressionUntil(status.startPtr);
 
         long start = U.currentTimeMillis();
         int applied = 0;
