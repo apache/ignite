@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -1151,6 +1153,221 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(map.size(), size(tree.find(null, null)));
+
+        assertNoLocks();
+    }
+
+    /**
+     * Verifies that tree size() method behaves correctly on single-threaded
+     * addition and removal of elements in random order.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testSizeForPutRmvSequential() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+//        X.println(" " + pageMem.pageSize());
+
+        int itemCnt = (int) Math.pow(MAX_PER_PAGE, 5) + rnd.nextInt(MAX_PER_PAGE * MAX_PER_PAGE);
+
+        Long[] items = new Long[itemCnt];
+        for (int i = 0; i < itemCnt; ++i)
+            items[i] = (long) i;
+
+        TestTree testTree = createTestTree(true);
+        TreeMap<Long,Long> goldenMap = new TreeMap<>();
+
+        assertEquals(0, testTree.size());
+
+        Collections.shuffle(Arrays.asList(items), rnd);
+
+        for (Long row : items) {
+
+//            X.println(" <-- " + row);
+
+            assertEquals(goldenMap.put(row, row), testTree.put(row));
+            assertEquals(row, testTree.findOne(row));
+            assertEquals(goldenMap.size(), testTree.size());
+            assertNoLocks();
+        }
+
+        Collections.shuffle(Arrays.asList(items), rnd);
+
+        for (Long row : items) {
+
+//            X.println(" <-- " + keyToRmv);
+
+            assertEquals(row, goldenMap.remove(row));
+            assertEquals(row, testTree.remove(row));
+
+            assertEquals(goldenMap.size(), testTree.size());
+            assertNull(testTree.findOne(row));
+            assertNoLocks();
+        }
+    }
+
+    /**
+     * FIXME: method and description
+     *
+     * @throws Exception If failed.
+     */
+    public void IGNORE_testSizeForRandomPutRmvMultithreaded_3_70_0() throws Exception {
+        MAX_PER_PAGE = 3;
+        CNT = 70;
+
+        doTestSizeForRandomPutRmvMultithreaded(false);
+    }
+
+    /**
+     * FIXME: fix method and description
+     *
+     * @param canGetRow Can get row from inner page.
+     * @throws Exception If failed.
+     */
+    private void doTestSizeForRandomPutRmvMultithreaded(boolean canGetRow) throws Exception {
+        final TestTree tree = createTestTree(canGetRow);
+
+        final Map<Long,Long> map = new ConcurrentHashMap8<>();
+
+        final int loops = reuseList == null ? 20_000 : 60_000;
+
+        final GridStripedLock lock = new GridStripedLock(256);
+
+        final String[] ops = {"put", "rmv", "inv_put", "inv_rmv"};
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < loops && !stop.get(); i++) {
+                    final Long x = (long)DataStructure.randomInt(CNT);
+                    final int op = DataStructure.randomInt(4);
+
+                    if (i % 10000 == 0)
+                        X.println(" --> " + ops[op] + "_" + i + "  " + x);
+
+                    Lock l = lock.getLock(x.longValue());
+
+                    l.lock();
+
+                    try {
+                        if (op == 0) { // Put.
+                            assertEquals(map.put(x, x), tree.put(x));
+
+                            assertNoLocks();
+                        }
+                        else if (op == 1) { // Remove.
+                            if (map.remove(x) != null) {
+                                assertEquals(x, tree.remove(x));
+
+                                assertNoLocks();
+                            }
+
+                            assertNull(tree.remove(x));
+
+                            assertNoLocks();
+                        }
+                        else if (op == 2) {
+                            tree.invoke(x, null, new IgniteTree.InvokeClosure<Long>() {
+                                IgniteTree.OperationType opType;
+
+                                @Override public void call(@Nullable Long row) {
+                                    opType = PUT;
+
+                                    if (row != null)
+                                        assertEquals(x, row);
+                                }
+
+                                @Override public Long newRow() {
+                                    return x;
+                                }
+
+                                @Override public IgniteTree.OperationType operationType() {
+                                    return opType;
+                                }
+                            });
+
+                            map.put(x,x);
+                        }
+                        else if (op == 3) {
+                            tree.invoke(x, null, new IgniteTree.InvokeClosure<Long>() {
+                                IgniteTree.OperationType opType;
+
+                                @Override public void call(@Nullable Long row) {
+                                    if (row != null) {
+                                        assertEquals(x, row);
+                                        opType = REMOVE;
+                                    }
+                                    else
+                                        opType = NOOP;
+                                }
+
+                                @Override public Long newRow() {
+                                    return null;
+                                }
+
+                                @Override public IgniteTree.OperationType operationType() {
+                                    return opType;
+                                }
+                            });
+
+                            map.remove(x);
+                        }
+                        else
+                            fail();
+                    }
+                    finally {
+                        l.unlock();
+                    }
+                }
+
+                return null;
+            }
+        }, Runtime.getRuntime().availableProcessors(), "put-remove");
+
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stop.get()) {
+                    Thread.sleep(5000);
+
+                    X.println(TestTree.printLocks());
+                }
+
+                return null;
+            }
+        }, 1, "printLocks");
+
+        IgniteInternalFuture<?> fut3 = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stop.get()) {
+                    // FIXME: may differ
+                    assertEquals(map.size(), tree.size());
+                }
+
+                return null;
+            }
+        }, 4, "find");
+
+        asyncRunFut = new GridCompoundFuture<>();
+
+        asyncRunFut.add((IgniteInternalFuture)fut);
+        asyncRunFut.add((IgniteInternalFuture)fut2);
+        asyncRunFut.add((IgniteInternalFuture)fut3);
+
+        asyncRunFut.markInitialized();
+
+        try {
+            fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stop.set(true);
+
+            asyncRunFut.get();
+        }
+
+        info("size: " + map.size());
+
+        assertEquals(map.size(), tree.size());
+
+        tree.validateTree();
 
         assertNoLocks();
     }
