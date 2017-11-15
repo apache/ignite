@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,33 +15,40 @@
  * limitations under the License.
  */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+// TODO: Code style
+using System;
+using Apache.Ignite.Core.Discovery.Tcp;
+using Apache.Ignite.Core.Discovery.Tcp.Static;
 
 namespace Apache.Ignite.Core.Tests.DotNetCore
 {
-    /// <summary>
-    /// Tests Ignite startup.
-    /// </summary>
-    [TestClass]
-    public class IgnitionStartTest
+    internal static class TestUtils
     {
         /// <summary>
-        /// Tests that Ignite starts with default configuration.
+        /// Gets the static discovery.
         /// </summary>
-        [TestMethod]
-        public void TestIgniteStartsWithDefaultConfig()
+        public static TcpDiscoverySpi GetStaticDiscovery()
         {
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            Assert.IsNotNull(ignite);
+            return new TcpDiscoverySpi
+            {
+                IpFinder = new TcpDiscoveryStaticIpFinder
+                {
+                    Endpoints = new[] { "127.0.0.1:47500" }
+                },
+                SocketTimeout = TimeSpan.FromSeconds(0.3)
+            };
         }
 
         /// <summary>
-        /// Fixture cleanup.
+        /// Gets the default code-based test configuration.
         /// </summary>
-        [ClassCleanup]
-        public void ClassCleanup()
+        public static IgniteConfiguration GetTestConfiguration()
         {
-            Ignition.StopAll(true);
+            return new IgniteConfiguration
+            {
+                DiscoverySpi = GetStaticDiscovery(),
+                Localhost = "127.0.0.1",
+            };
         }
     }
 }
