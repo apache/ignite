@@ -22,6 +22,7 @@ namespace Apache.Ignite
     using System.Configuration;
     using System.Linq;
     using System.ServiceProcess;
+    using System.Threading;
     using Apache.Ignite.Config;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Impl;
@@ -97,9 +98,12 @@ namespace Apache.Ignite
                         IgniteService.DoInstall(allArgs);
                     else
                     {
-                        Ignition.Start(Configurator.GetConfiguration(allArgs));
+                        var ignite = Ignition.Start(Configurator.GetConfiguration(allArgs));
 
-                        IgniteManager.DestroyJvm();
+                        // Wait until stopped.
+                        var evt = new ManualResetEventSlim(false);
+                        ignite.Stopped += (s, a) => evt.Set();
+                        evt.Wait();
                     }
 
                     return;

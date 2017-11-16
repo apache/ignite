@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,39 +15,17 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
+namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
+    using System;
+    using System.Runtime.InteropServices;
+
     /// <summary>
-    /// Unmanaged context.
-    /// Wrapper around native ctx pointer to track finalization.
+    /// Delegates for JavaVM JNI entity.
     /// </summary>
-    internal unsafe class UnmanagedContext
+    internal static class JvmDelegates
     {
-        /** Context */
-        private readonly void* _nativeCtx;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public UnmanagedContext(void* ctx)
-        {
-            _nativeCtx = ctx;
-        }
-
-        /// <summary>
-        /// Gets the native context pointer.
-        /// </summary>
-        public void* NativeContext
-        {
-            get { return _nativeCtx; }
-        }
-
-        /// <summary>
-        /// Destructor.
-        /// </summary>
-        ~UnmanagedContext()
-        {
-            UnmanagedUtils.DeleteContext(_nativeCtx); // Release CPP object.
-        }
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate JniResult AttachCurrentThread(IntPtr jvm, out IntPtr env, IntPtr args);
     }
 }
