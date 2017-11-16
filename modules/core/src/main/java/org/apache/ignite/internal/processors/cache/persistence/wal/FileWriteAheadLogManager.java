@@ -2404,9 +2404,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             boolean compacted;
             if (hdrMagicNum == HeaderRecord.REGULAR_MAGIC)
-                compacted = true;
-            else if (hdrMagicNum == HeaderRecord.COMPACTED_MAGIC)
                 compacted = false;
+            else if (hdrMagicNum == HeaderRecord.COMPACTED_MAGIC)
+                compacted = true;
             else {
                 throw new IOException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.REGULAR_MAGIC) +
                     ", actual=" + U.hexLong(hdrMagicNum) + ']');
