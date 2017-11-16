@@ -248,7 +248,8 @@ namespace Apache.Ignite.Core
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(env, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null, cbs.IgniteId);
+                    UU.IgnitionStart(env, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null, cbs.IgniteId,
+                        cfg.RedirectJavaConsoleOutput);
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
@@ -549,6 +550,7 @@ namespace Apache.Ignite.Core
                     {
                         Assembly assembly = Assembly.LoadFrom(s);
 
+                        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                         if (assembly != null)
                             continue;
                     }
