@@ -93,11 +93,12 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
             if (cacheId() != 0) {
                 DynamicCacheDescriptor desc = cacheDescriptor(ctx);
 
-                String schema = QueryUtils.normalizeSchemaName(desc.cacheName(),
-                        desc.cacheConfiguration().getSqlSchema());
+                if (qry.getSchema() == null) {
+                    String schema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+                            desc.cacheConfiguration().getSqlSchema());
 
-                if (qry.getSchema() == null)
                     qry.setSchema(schema);
+                }
             }
 
             List<FieldsQueryCursor<List<?>>> curs = ctx.kernalContext().query()
