@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -99,6 +100,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new QueryIndex());
             CheckDefaultValueAttributes(new DataStorageConfiguration());
             CheckDefaultValueAttributes(new DataRegionConfiguration());
+            CheckDefaultValueAttributes(new CacheClientConfiguration());
         }
 
         /// <summary>
