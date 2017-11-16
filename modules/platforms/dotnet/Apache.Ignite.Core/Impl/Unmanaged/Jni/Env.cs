@@ -469,6 +469,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             if (err == IntPtr.Zero)
             {
+                // TODO: Why does this happen?
                 return;
             }
 
