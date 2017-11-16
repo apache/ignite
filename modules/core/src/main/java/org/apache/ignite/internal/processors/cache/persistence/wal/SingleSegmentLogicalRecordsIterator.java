@@ -36,6 +36,9 @@ import org.jetbrains.annotations.Nullable;
  * Iterates over logical records of one WAL segment from archive. Used for WAL archive compression.
  */
 public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsIterator {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Segment initialized flag. */
     private boolean segmentInitialized;
 
@@ -106,6 +109,9 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
      *
      */
     private static class LogicalRecordsFilter implements P2<WALRecord.RecordType, WALPointer> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
         /** Records type to skip. */
         private final Set<WALRecord.RecordType> skip = RecordTypes.DELTA_TYPE_SET;
 

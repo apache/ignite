@@ -337,6 +337,9 @@ public abstract class AbstractWalRecordsIterator
      * Filter that drops all records until given start pointer is reached.
      */
     private static class StartSeekingFilter implements P2<WALRecord.RecordType, WALPointer> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
         /** Start pointer. */
         private final FileWALPointer start;
 
