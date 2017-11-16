@@ -191,7 +191,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < NODES_CNT; i++) {
             final int inx = i;
-            final boolean flag = RND.nextBoolean();
+            final boolean shoudClose = RND.nextBoolean();
 
             futs.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -201,7 +201,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
                     lock.lock();
 
-                    if (flag) {
+                    if (shoudClose) {
                         try {
                             grid(inx).close();
                         }
@@ -252,7 +252,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < NODES_CNT; i++) {
             final int inx = i;
-            final boolean flag = RND.nextBoolean();
+            final boolean shoudClose = RND.nextBoolean();
 
             futs.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -264,7 +264,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
                     lock1.lock();
                     lock2.lock();
 
-                    if (flag) {
+                    if (shoudClose) {
                         try {
                             grid(inx).close();
                         }
