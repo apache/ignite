@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,13 +58,6 @@ public class DiscoCache {
     /** Daemon nodes. */
     private final List<ClusterNode> daemonNodes;
 
-    /** All server nodes. */
-    private final List<ClusterNode> srvNodesWithCaches;
-
-    /** All nodes with at least one cache configured. */
-    @GridToStringInclude
-    private final List<ClusterNode> allNodesWithCaches;
-
     /** All remote nodes with at least one cache configured. */
     @GridToStringInclude
     private final List<ClusterNode> rmtNodesWithCaches;
@@ -96,8 +90,6 @@ public class DiscoCache {
      * @param allNodes All nodes.
      * @param srvNodes Server nodes.
      * @param daemonNodes Daemon nodes.
-     * @param srvNodesWithCaches Server nodes with at least one cache configured.
-     * @param allNodesWithCaches All nodes with at least one cache configured.
      * @param rmtNodesWithCaches Remote nodes with at least one cache configured.
      * @param allCacheNodes Cache nodes by cache name.
      * @param cacheGrpAffNodes Affinity nodes by cache group ID.
@@ -113,8 +105,6 @@ public class DiscoCache {
         List<ClusterNode> allNodes,
         List<ClusterNode> srvNodes,
         List<ClusterNode> daemonNodes,
-        List<ClusterNode> srvNodesWithCaches,
-        List<ClusterNode> allNodesWithCaches,
         List<ClusterNode> rmtNodesWithCaches,
         Map<Integer, List<ClusterNode>> allCacheNodes,
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
@@ -128,8 +118,6 @@ public class DiscoCache {
         this.allNodes = allNodes;
         this.srvNodes = srvNodes;
         this.daemonNodes = daemonNodes;
-        this.srvNodesWithCaches = srvNodesWithCaches;
-        this.allNodesWithCaches = allNodesWithCaches;
         this.rmtNodesWithCaches = rmtNodesWithCaches;
         this.allCacheNodes = allCacheNodes;
         this.cacheGrpAffNodes = cacheGrpAffNodes;
@@ -184,27 +172,17 @@ public class DiscoCache {
         return daemonNodes;
     }
 
-    /** @return Server nodes with at least one cache configured. */
-    public List<ClusterNode> serverNodesWithCaches() {
-        return srvNodesWithCaches;
-    }
-
     /**
-     * Gets all remote nodes that have at least one cache configured.
+     * Gets all alive remote nodes that have at least one cache configured.
      *
      * @return Collection of nodes.
      */
-    public List<ClusterNode> remoteNodesWithCaches() {
-        return rmtNodesWithCaches;
-    }
-
-    /**
-     * Gets collection of nodes with at least one cache configured.
-     *
-     * @return Collection of nodes.
-     */
-    public List<ClusterNode> allNodesWithCaches() {
-        return allNodesWithCaches;
+    public Collection<ClusterNode> remoteAliveNodesWithCaches() {
+        return F.view(rmtNodesWithCaches, new P1<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
+                return alives.contains(node.id());
+            }
+        });
     }
 
     /**
@@ -221,32 +199,17 @@ public class DiscoCache {
     }
 
     /**
-     * Gets collection of server nodes with at least one cache configured.
-     *
-     * @return Collection of nodes.
-     */
-    public Collection<ClusterNode> aliveServerNodesWithCaches() {
-        return F.view(serverNodesWithCaches(), new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode node) {
-                return alives.contains(node.id());
-            }
-        });
-    }
-
-    /**
      * @return Oldest alive server node.
      */
     public @Nullable ClusterNode oldestAliveServerNode(){
-        Iterator<ClusterNode> it = aliveServerNodes().iterator();
-        return it.hasNext() ? it.next() : null;
-    }
+        for (int i = 0; i < srvNodes.size(); i++) {
+            ClusterNode srv = srvNodes.get(i);
 
-    /**
-     * @return Oldest alive server node with at least one cache configured.
-     */
-    public @Nullable ClusterNode oldestAliveServerNodeWithCache(){
-        Iterator<ClusterNode> it = aliveServerNodesWithCaches().iterator();
-        return it.hasNext() ? it.next() : null;
+            if (alives.contains(srv.id()))
+                return srv;
+        }
+
+        return null;
     }
 
     /**

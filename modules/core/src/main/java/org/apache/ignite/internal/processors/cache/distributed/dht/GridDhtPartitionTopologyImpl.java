@@ -333,7 +333,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (grp.affinityNode()) {
             ClusterNode loc = ctx.localNode();
 
-            ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
+            ClusterNode oldest = discoCache.oldestAliveServerNode();
 
             GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
@@ -473,7 +473,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         lastTopChangeVer = readyTopVer = evts.topologyVersion();
                     }
 
-                    ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
+                    ClusterNode oldest = discoCache.oldestAliveServerNode();
 
                     if (log.isDebugEnabled()) {
                         log.debug("Partition map beforeExchange [exchId=" + exchFut.exchangeId() +
@@ -2082,7 +2082,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private long updateLocal(int p, GridDhtPartitionState state, long updateSeq, AffinityTopologyVersion affVer) {
         assert lock.isWriteLockedByCurrentThread();
 
-        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
+        ClusterNode oldest = discoCache.oldestAliveServerNode();
 
         assert oldest != null || ctx.kernalContext().clientNode();
 
