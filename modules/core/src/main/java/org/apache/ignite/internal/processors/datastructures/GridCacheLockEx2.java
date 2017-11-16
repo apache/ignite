@@ -50,11 +50,6 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
     }
 
     /** {@inheritDoc} */
-    @Override public int getHoldCount() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isHeldByCurrentThread() {
         throw new UnsupportedOperationException();
     }

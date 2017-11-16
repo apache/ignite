@@ -156,6 +156,11 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
+    @Override public int getHoldCount() throws IgniteException {
+        return sync.reentrantCount.get();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isLocked() throws IgniteException {
         try {
             if (sync.reentrantCount.get() > 0)

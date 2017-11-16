@@ -286,6 +286,11 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
+    @Override public int getHoldCount() throws IgniteException {
+        return sync.reentrantCount.get();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isLocked() throws IgniteException {
         ctx.kernalContext().gateway().readLock();
 
