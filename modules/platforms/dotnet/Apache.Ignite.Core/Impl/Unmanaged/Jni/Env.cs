@@ -244,6 +244,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
 
         /// <summary>
+        /// Gets the object class.
+        /// </summary>
+        private GlobalRef GetObjectClass(GlobalRef obj)
+        {
+            var res = _getObjectClass(_envPtr, obj.Target);
+
+            ExceptionCheck();
+
+            return NewGlobalRef(res);
+        }
+
+        /// <summary>
         /// Gets the static method identifier.
         /// </summary>
         public IntPtr GetStaticMethodId(GlobalRef clazz, string name, string signature)
@@ -457,57 +469,26 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             if (err == IntPtr.Zero)
             {
-                Console.WriteLine("WTF!!");
+                return;
             }
 
-            long err0 = err.ToInt64();
-            Debug.Assert(err != IntPtr.Zero);
-
-            Console.WriteLine("Exception:" + err);
             _exceptionClear(_envPtr);
-            Console.WriteLine("Exception2");
 
-
-            Console.WriteLine("Exception3");
-            var cls = _getObjectClass(_envPtr, err);
-            Console.WriteLine("Exception4:" + cls);
-            
-            var methodId = _jvm.MethodId;
-            var clsName = _callObjectMethod(_envPtr, cls, methodId.ClassGetName, null);
-            Console.WriteLine("ClsName:" + clsName);
-            var msg = _callObjectMethod(_envPtr, err, methodId.ThrowableGetMessage, null);
-            Console.WriteLine("Msg:" + msg);
-            var trace = _callStaticObjectMethod(_envPtr, methodId.PlatformUtils.Target,
-                methodId.PlatformUtilsGetStackTrace, &err0);
-            Console.WriteLine("Trace:" + trace);
-
-            try
+            using (var errRef = NewGlobalRef(err))
             {
-                throw new JavaException(
-                    JStringToString(clsName),
-                    JStringToString(msg),
-                    JStringToString(trace));
-            }
-            finally 
-            {
-                if (cls != IntPtr.Zero)
-                {
-                    _deleteLocalRef(_envPtr, cls);
-                }
+                var errRef0 = (long) errRef.Target;
+                var methodId = _jvm.MethodId;
 
-                if (clsName != IntPtr.Zero)
+                using (var cls = GetObjectClass(errRef))
+                using (var clsName = CallObjectMethod(cls, methodId.ClassGetName))
+                using (var msg = CallObjectMethod(errRef, methodId.ThrowableGetMessage))
+                using (var trace = CallStaticObjectMethod(methodId.PlatformUtils,
+                    methodId.PlatformUtilsGetStackTrace, &errRef0))
                 {
-                    _deleteLocalRef(_envPtr, clsName);
-                }
-
-                if (msg != IntPtr.Zero)
-                {
-                    _deleteLocalRef(_envPtr, msg);
-                }
-
-                if (trace != IntPtr.Zero)
-                {
-                    _deleteLocalRef(_envPtr, trace);
+                    throw new JavaException(
+                        JStringToString(clsName),
+                        JStringToString(msg),
+                        JStringToString(trace));
                 }
             }
         }
