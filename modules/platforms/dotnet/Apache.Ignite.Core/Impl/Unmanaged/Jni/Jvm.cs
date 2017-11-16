@@ -278,16 +278,48 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             private readonly byte ignoreUnrecognized;
         }
 
+        private static class JniNativeMethods
+        {
+            internal static JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
+                JvmInitArgs* args)
+            {
+                return Os.IsWindows
+                    ? JniNativeMethodsWindows.JNI_CreateJavaVM(out pvm, out penv, args)
+                    : JniNativeMethodsLinux.JNI_CreateJavaVM(out pvm, out penv, args);
+            }
+
+            internal static JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size, out int size2)
+            {
+                return Os.IsWindows
+                    ? JniNativeMethodsWindows.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
+                    : JniNativeMethodsLinux.JNI_GetCreatedJavaVMs(out pvm, size, out size2);
+            }
+        }
+
         /// <summary>
         /// DLL imports.
         /// </summary>
-        private static class JniNativeMethods
+        private static class JniNativeMethodsWindows
         {
             [DllImport("jvm.dll", CallingConvention = CallingConvention.StdCall)]
             internal static extern JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
                 JvmInitArgs* args);
 
             [DllImport("jvm.dll", CallingConvention = CallingConvention.StdCall)]
+            internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
+                [Out] out int size2);
+        }
+
+        /// <summary>
+        /// DLL imports.
+        /// </summary>
+        private static class JniNativeMethodsLinux
+        {
+            [DllImport("libjvm.so", CallingConvention = CallingConvention.StdCall)]
+            internal static extern JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
+                JvmInitArgs* args);
+
+            [DllImport("libjvm.so", CallingConvention = CallingConvention.StdCall)]
             internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
                 [Out] out int size2);
         }
