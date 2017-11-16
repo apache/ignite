@@ -106,10 +106,13 @@ public class SqlParserUtils {
 
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             try {
-                return sign * Integer.parseInt(lex.token());
+                long val = sign * Long.parseLong(lex.token());
+                if (val >= Integer.MIN_VALUE && val <= Integer.MAX_VALUE)
+                    return (int) val;
+                // fall through
             }
             catch (NumberFormatException e) {
-                // No-op.
+                // fall through
             }
         }
 
