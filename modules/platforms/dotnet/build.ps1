@@ -137,7 +137,7 @@ else {
 }
 
 # Copy (relevant) jars
-$libsDir = "$PSScriptRoot\bin\Libs"
+$libsDir = "$PSScriptRoot\bin\libs"
 mkdir -Force $libsDir; del -Force $libsDir\*.*
 
 ls $jarDirs.Split(',') *.jar -recurse `
