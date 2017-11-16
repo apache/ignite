@@ -57,15 +57,12 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             var ggHome = IgniteHome.Resolve(cfg, log);
-            Console.WriteLine("IGNITE_HOME: " + cpStr); // TODO
 
             if (!string.IsNullOrWhiteSpace(ggHome))
                 AppendHomeClasspath(ggHome, forceTestClasspath, cpStr);
 
             if (log != null)
                 log.Debug("Classpath resolved to: " + cpStr);
-
-            Console.WriteLine("Classpath: " + cpStr);  // TODO
 
             return ClasspathPrefix + cpStr;
         }
