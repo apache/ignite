@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Apache.Ignite.Core.Log;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Apache.Ignite.Core.Tests.DotNetCore
@@ -28,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
     /// <summary>
     /// Tests Ignite startup.
     /// </summary>
-    [TestClass]
+    [TestClass]  // TODO: MsTest sucks, does not show output.
     public class IgnitionStartTest
     {
         /// <summary>
@@ -42,7 +41,6 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
 
             var cfg = TestUtils.GetTestConfiguration();
             cfg.JvmDllPath = jvmDll;
-            //cfg.Logger = new MyLogger();
 
             var ignite = Ignition.Start(cfg);
             Assert.IsNotNull(ignite);
@@ -56,6 +54,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
 
         private static IEnumerable<string> FindJvmDll()
         {
+            // TODO: Consider JAVA_HOME
             const string javaExec = "/usr/bin/java";
             if (!File.Exists(javaExec))
             {
@@ -110,20 +109,6 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
             process.WaitForExit();
 
             return res;
-        }
-
-        private class MyLogger : ILogger
-        {
-            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
-                string nativeErrorInfo, Exception ex)
-            {
-                Console.WriteLine(message, args);
-            }
-
-            public bool IsEnabled(LogLevel level)
-            {
-                return level > LogLevel.Trace;
-            }
         }
     }
 }
