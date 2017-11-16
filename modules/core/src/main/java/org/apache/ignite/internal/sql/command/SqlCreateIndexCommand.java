@@ -184,6 +184,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
             lex.shift();
 
             int stmtInlineSize = SqlParserUtils.parseInt(lex);
+
             if (stmtInlineSize < 0)
                 throw error(lex, "Inline size should be positive: " + stmtInlineSize);
 

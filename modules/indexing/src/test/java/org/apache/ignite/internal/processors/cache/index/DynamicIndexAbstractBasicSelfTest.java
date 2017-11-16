@@ -682,6 +682,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         initialize(mode, atomicityMode, near);
 
         String prevFallbackPropVal = System.getProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
+
         try {
             System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "true");
 

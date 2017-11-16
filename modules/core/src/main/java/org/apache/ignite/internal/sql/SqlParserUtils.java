@@ -101,6 +101,7 @@ public class SqlParserUtils {
 
         if (lex.lookAhead().tokenType() == SqlLexerTokenType.MINUS) {
             sign = -1;
+
             lex.shift();
         }
 
