@@ -380,10 +380,20 @@ namespace Apache.Ignite.Core.Tests
             var proc = System.Diagnostics.Process.Start(procStart);
             Assert.IsNotNull(proc);
 
-            IgniteProcess.AttachProcessConsoleReader(proc);
+            try
+            {
+                IgniteProcess.AttachProcessConsoleReader(proc);
 
-            Assert.IsTrue(proc.WaitForExit(19000));
-            Assert.AreEqual(0, proc.ExitCode);
+                Assert.IsTrue(proc.WaitForExit(19000));
+                Assert.AreEqual(0, proc.ExitCode);
+            }
+            finally
+            {
+                if (!proc.HasExited)
+                {
+                    proc.Kill();
+                }
+            }
         }
 
         /// <summary>
