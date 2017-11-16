@@ -239,6 +239,23 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     }
 
     /**
+     * Asserts that cache topology (indicated by cache metrics) has appropriate status.
+     *
+     * @param cacheName Cache name.
+     * @param valid Validation status.
+     */
+    void assertCacheTopologyStatus(String cacheName, boolean valid) {
+        List<Ignite> nodes = nodes();
+
+        assertFalse(nodes.isEmpty());
+
+        for (Ignite node : nodes) {
+            assertEquals(node.cache(cacheName).metrics().isValidForWriting(), valid);
+            assertTrue(node.cache(cacheName).metrics().isValidForReading());
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testTopologyValidator() throws Exception {
@@ -251,6 +268,10 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         putInvalid(CACHE_NAME_2);
         removeInvalid(CACHE_NAME_2);
 
+        assertCacheTopologyStatus(DEFAULT_CACHE_NAME, true);
+        assertCacheTopologyStatus(CACHE_NAME_1, false);
+        assertCacheTopologyStatus(CACHE_NAME_2, false);
+
         startGrid(1);
 
         putValid(DEFAULT_CACHE_NAME);
@@ -260,6 +281,10 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
         putValid(CACHE_NAME_2);
         remove(CACHE_NAME_2);
+
+        assertCacheTopologyStatus(DEFAULT_CACHE_NAME, true);
+        assertCacheTopologyStatus(CACHE_NAME_1, true);
+        assertCacheTopologyStatus(CACHE_NAME_2, true);
 
         startGrid(2);
 
@@ -272,6 +297,10 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
         putValid(CACHE_NAME_2);
         remove(CACHE_NAME_2);
+
+        assertCacheTopologyStatus(DEFAULT_CACHE_NAME, true);
+        assertCacheTopologyStatus(CACHE_NAME_1, false);
+        assertCacheTopologyStatus(CACHE_NAME_2, true);
 
         client = true;
 
@@ -286,5 +315,9 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
         putValid(CACHE_NAME_2);
         remove(CACHE_NAME_2);
+
+        assertCacheTopologyStatus(DEFAULT_CACHE_NAME, true);
+        assertCacheTopologyStatus(CACHE_NAME_1, false);
+        assertCacheTopologyStatus(CACHE_NAME_2, true);
     }
 }
