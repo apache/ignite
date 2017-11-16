@@ -71,8 +71,8 @@ import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -1480,10 +1480,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private volatile boolean stopped;
 
         /** Last successfully compressed segment. */
-        private volatile long lastCompressedSegmentIdx = -1L;
+        private volatile long lastCompressedIdx = -1L;
 
         /** All segments prior to this (inclusive) can be compressed. */
-        private volatile long lastAllowedToCompressSegmentIdx = -1L;
+        private volatile long lastAllowedToCompressIdx = -1L;
 
         private void init() {
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
@@ -1498,14 +1498,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileDescriptor[] alreadyCompressed = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER));
 
             if (alreadyCompressed.length > 0)
-                lastCompressedSegmentIdx = alreadyCompressed[alreadyCompressed.length - 1].getIdx();
+                lastCompressedIdx = alreadyCompressed[alreadyCompressed.length - 1].getIdx();
         }
 
         /**
          * @param lastCpStartIdx Segment index to allow compression until (exclusively).
          */
         synchronized void allowCompressionUntil(long lastCpStartIdx) {
-            lastAllowedToCompressSegmentIdx = lastCpStartIdx - 1;
+            lastAllowedToCompressIdx = lastCpStartIdx - 1;
 
             notify();
         }
@@ -1518,17 +1518,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
-         *
+         * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
+         * Waits if there's no segment to archive right now.
          */
         private synchronized long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException {
-            long segmentToCompress = lastCompressedSegmentIdx + 1;
+            long segmentToCompress = lastCompressedIdx + 1;
 
-            while (!stopped && segmentToCompress > Math.max(
-                lastAllowedToCompressSegmentIdx, archiver.lastArchivedAbsoluteIndex()))
+            while (segmentToCompress > Math.max(lastAllowedToCompressIdx, archiver.lastArchivedAbsoluteIndex())) {
                 wait();
 
-            if (stopped)
-                return -1;
+                if (stopped)
+                    return -1;
+            }
 
             segmentToCompress = Math.max(segmentToCompress, lastTruncatedArchiveIdx + 1);
 
@@ -1550,7 +1551,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (archiver0 != null && archiver0.reserved(desc.idx))
                     return;
 
-                if (desc.idx < lastCompressedSegmentIdx) {
+                if (desc.idx < lastCompressedIdx) {
                     if (!desc.file.delete())
                         U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                             desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
@@ -1595,7 +1596,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
-                    lastCompressedSegmentIdx = nextSegment;
+                    lastCompressedIdx = nextSegment;
                 }
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e); // todo what do with ioexception?
@@ -1635,7 +1636,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override public void run() {
-            while (!Thread.currentThread().isInterrupted()) {
+            while (!Thread.currentThread().isInterrupted() && !stopped) {
                 try {
                     long segmentToDecompress = segmentsQueue.take();
 
@@ -1716,633 +1717,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             U.join(this);
         }
     }
-
-//    /**
-//     *
-//     */
-//    private class FileCompressor extends Thread {
-//        /** */
-//        private Throwable exception;
-//
-//        /** */
-//        private volatile boolean stopped;
-//
-//        /** */
-//        private long lastCompressedSegment = -1L;
-//
-//        /** */
-//        private long lastSegmentWithCheckpointMarkerInArchive;
-//
-//        /** */
-//        private final FileArchiver fileArchiver;
-//
-//        /** */
-//        private final TreeSet<Long> checkpointMarkerSegments = new TreeSet<>();
-//
-//        /** */
-//        private final CompactFactory compactFactory = new CompactFactoryImpl();
-//
-//        /**
-//         *
-//         */
-//        private FileCompressor(FileArchiver archiver) {
-//            super("wal-file-compressor%" + cctx.igniteInstanceName());
-//
-//            assert archiver != null;
-//
-//            fileArchiver = archiver;
-//        }
-//
-//        private void init() {
-//            File[] toDelete = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
-//
-//            for (File f : toDelete) {
-//                if (stopped)
-//                    return;
-//
-//                f.delete();
-//            }
-//
-//            // Find last compressed segment.
-//            File[] compactedArchives = walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
-//
-//            if (!F.isEmpty(compactedArchives)) {
-//                long maxArchivedSegIdx = -1L;
-//
-//                for (File f : compactedArchives) {
-//                    CompactDescriptor desc = CompactDescriptor.parse(f.getAbsolutePath());
-//
-//                    if (desc.endSeg > maxArchivedSegIdx)
-//                        maxArchivedSegIdx = desc.endSeg;
-//                }
-//
-//                assert maxArchivedSegIdx != -1L;
-//
-//                synchronized (this) {
-//                    lastCompressedSegment = maxArchivedSegIdx;
-//                }
-//            }
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public void run() {
-//            init();
-//
-//            while (!Thread.currentThread().isInterrupted() || !stopped) {
-//                try {
-//                    CompactDescriptor compactDesc = waitAvailableSegmentsForCompacting();
-//
-//                    reserveSegments(compactDesc);
-//
-//                    CompactWriter compactWriter = compactFactory.createWriter(0, compactDesc);
-//
-//                    CompactionIterator iter = new CompactionIterator(
-//                        compactDesc,
-//                        walArchiveDir.getPath(),
-//                        cctx.igniteInstanceName(),
-//                        recSerFactory,
-//                        serializer,
-//                        ioFactory,
-//                        compactWriter,
-//                        igCfg.getPersistentStoreConfiguration().getTlbSize(),
-//                        log
-//                    );
-//
-//                    try {
-//                        while (iter.hasNext()) {
-//                            iter.next();
-//
-//                            if (stopped)
-//                                break;
-//                        }
-//                    }
-//                    finally {
-//                        iter.closeCurrentWalSegment();
-//                    }
-//
-//                    synchronized (this) {
-//                        lastCompressedSegment = compactDesc.endSeg;
-//
-//                        SortedSet<Long> toRemove = checkpointMarkerSegments.headSet(lastCompressedSegment);
-//                        // Remove compressed segments with chp marker.
-//                        checkpointMarkerSegments.removeAll(new ArrayList<>(toRemove));
-//                    }
-//
-//                    releaseSegments(compactDesc);
-//
-//                    for (long idx = compactDesc.startSeg; idx <= compactDesc.endSeg; idx++) {
-//                        File segFile = new File(walArchiveDir, FileDescriptor.fileName(idx));
-//
-//                        segFile.delete();
-//                    }
-//
-//                }
-//                catch (Throwable e) {
-//                    exception = e;
-//
-//                    e.printStackTrace();
-//                }
-//            }
-//
-//            if (log != null && log.isInfoEnabled())
-//                log.info(getName() + " - stopped.");
-//        }
-//
-//        /**
-//         *
-//         */
-//        private CompactDescriptor waitAvailableSegmentsForCompacting() throws InterruptedException {
-//            long endSeg;
-//
-//            long last;
-//
-//            long startSeg;
-//
-//            assert BATCH_SIZE >= 0;
-//
-//            synchronized (this) {
-//                while ((last = lastCompressedSegment) + BATCH_SIZE >= (endSeg = readyForCompressingSegIdx()))
-//                    wait();
-//
-//                startSeg = last == -1L ? 0 : last + 1;
-//
-//                if (BATCH_SIZE != 0 && endSeg - last > BATCH_SIZE)
-//                    endSeg = last + BATCH_SIZE;
-//            }
-//
-//            return new CompactDescriptor(startSeg, endSeg, walArchiveDir.getPath());
-//        }
-//
-//        /**
-//         *
-//         */
-//        private long readyForCompressingSegIdx() {
-//            return lastSegmentWithCheckpointMarkerInArchive - 1;
-//        }
-//
-//        /**
-//         *
-//         */
-//        private void reserveSegments(CompactDescriptor cDesc) {
-//            fileArchiver.reserve(cDesc.endSeg);
-//        }
-//
-//        /**
-//         *
-//         */
-//        private void releaseSegments(CompactDescriptor cDesc) {
-//            fileArchiver.release(cDesc.endSeg);
-//        }
-//
-//        /**
-//         *
-//         */
-//        public void shutdown() throws IgniteInterruptedCheckedException {
-//            synchronized (this) {
-//                stopped = true;
-//
-//                notifyAll();
-//            }
-//
-//            U.join(this);
-//        }
-//
-//        /**
-//         *
-//         */
-//        private void advanceCheckpointMarker(long idx, long lastArchivedSegIdx) {
-//            synchronized (this) {
-//                checkpointMarkerSegments.add(idx);
-//
-//                SortedSet<Long> head = checkpointMarkerSegments.headSet(lastArchivedSegIdx);
-//
-//                if (!head.isEmpty()) {
-//                    lastSegmentWithCheckpointMarkerInArchive = head.last();
-//
-//                    notifyAll();
-//                }
-//            }
-//        }
-//    }
-//
-//    /**
-//     *
-//     */
-//    private static class CompactDescriptor {
-//
-//        /** */
-//        private final long startSeg;
-//
-//        /** */
-//        private final long endSeg;
-//
-//        /** */
-//        private final String path;
-//
-//        /** */
-//        private final String name;
-//
-//        /**
-//         *
-//         */
-//        private CompactDescriptor(long startSeg, long endSeg, String path) {
-//            this.startSeg = startSeg;
-//            this.endSeg = endSeg;
-//            this.path = path;
-//
-//            SB b1 = new SB();
-//
-//            String segmentStr = Long.toString(startSeg);
-//
-//            for (int i = segmentStr.length(); i < 16; i++)
-//                b1.a('0');
-//
-//            SB b2 = new SB();
-//
-//            long cnt = endSeg - startSeg;
-//
-//            String cntStr = Long.toString(cnt == 0 ? 1 : cnt);
-//
-//            this.name = "seg-" + b1.a(segmentStr) + "-" + cntStr;
-//        }
-//
-//        public static CompactDescriptor parse(String fullPath) {
-//            File f = new File(fullPath);
-//
-//            String fileName = f.getName();
-//
-//            String[] parts = fileName.split("-");
-//
-//            Long startIdx = Long.valueOf(parts[1]);
-//
-//            return new CompactDescriptor(startIdx, startIdx + Long.valueOf(parts[2]), f.getPath());
-//        }
-//    }
-//
-//    /**
-//     *
-//     */
-//    private static class CompactionIterator extends AbstractWalRecordsIterator {
-//        /** */
-//        private static final boolean SKIP_DELTA_RECORD_FILTER_ENABLE =
-//            IgniteSystemProperties.getBoolean(IGNITE_WAL_ARCHIVE_COMPACT_SKIP_DELTA_RECORD, true);
-//
-//        /** */
-//        private final IgniteBiTuple<WALPointer, WALRecord> resFakeTuple = new IgniteBiTuple<>();
-//
-//        /** */
-//        private final IgnitePredicate<WALRecord.RecordType> walDeltaRecordsFilter = new P1<WALRecord.RecordType>() {
-//            private final Set<WALRecord.RecordType> skip = RecordTypes.DELTA_TYPE_SET;
-//
-//            @Override public boolean apply(WALRecord.RecordType type) {
-//                return skip.contains(type);
-//            }
-//        };
-//
-//        /** */
-//        private final String directoryPath;
-//
-//        /** */
-//        private final long startSegIdx;
-//
-//        /** */
-//        private final long endSegIdx;
-//
-//        /** */
-//        private final CompactWriter compactWriter;
-//
-//        /**
-//         *
-//         */
-//        private CompactionIterator(
-//            CompactDescriptor desc,
-//            String directoryPath,
-//            String gridName,
-//            RecordSerializerFactory recSerFactory,
-//            RecordSerializer serializer,
-//            FileIOFactory ioFactory,
-//            CompactWriter compactWriter,
-//            int bufSize,
-//            IgniteLogger log
-//        ) throws IgniteCheckedException {
-//            super(
-//                gridName,
-//                recSerFactory,
-//                serializer,
-//                ioFactory,
-//                log,
-//                bufSize);
-//
-//            assert !F.isEmpty(directoryPath);
-//            assert compactWriter != null;
-//
-//            this.directoryPath = directoryPath;
-//            this.startSegIdx = desc.startSeg;
-//            this.endSegIdx = desc.endSeg;
-//            this.compactWriter = compactWriter;
-//
-//            advance();
-//        }
-//
-//        @Override protected ReadFileHandle advanceSegment(
-//            @Nullable ReadFileHandle curWalSegment
-//        ) throws IgniteCheckedException {
-//            long idx = -1L;
-//
-//            if (curWalSegment != null && curWalSegment.idx == endSegIdx)
-//                return null;
-//
-//            if (curWalSegment == null)
-//                idx = startSegIdx;
-//            else if (curWalSegment.idx < endSegIdx)
-//                idx = curWalSegment.idx + 1;
-//
-//            assert idx != -1L;
-//
-//            try {
-//                String fileName = FileDescriptor.fileName(idx);
-//
-//                compactWriter.advance(fileName);
-//
-//                File file = new File(directoryPath, fileName);
-//
-//                return initReadHandle(new FileDescriptor(file), null);
-//            }
-//            catch (FileNotFoundException e) {
-//                if (log.isInfoEnabled())
-//                    log.info("Missing " + idx + " WAL segment: " + e.getMessage());
-//
-//                return null;
-//            }
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
-//            @Nullable final FileWriteAheadLogManager.ReadFileHandle hnd
-//        ) {
-//            if (hnd == null)
-//                return null;
-//
-//            try {
-//                FileInput in = hnd.in;
-//
-//                int startPos = (int)in.position();
-//
-//                final FileWALPointer ptr = new FileWALPointer(hnd.idx, startPos, 0);
-//
-//                // Todo do not create real rec.
-//                final WALRecord rec = hnd.ser.readRecord(in, ptr);
-//
-//                if (SKIP_DELTA_RECORD_FILTER_ENABLE && walDeltaRecordsFilter.apply(rec.type()))
-//                    return resFakeTuple;
-//
-//                assert compactWriter != null;
-//
-//                // todo recalculate wal point.
-//
-//                int recSize = rec.size();
-//
-//                in.seek(startPos);
-//
-//                in.ensure(recSize);
-//
-//                compactWriter.write(in.buffer(), recSize);
-//
-//                in.seek(startPos + recSize);
-//
-//                return resFakeTuple;
-//            }
-//            catch (IOException | IgniteCheckedException e) {
-//                if (!(e instanceof SegmentEofException)) {
-//                    if (log != null && log.isInfoEnabled())
-//                        log.info(e.getMessage());
-//                }
-//
-//                return null;
-//            }
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Nullable @Override protected ReadFileHandle closeCurrentWalSegment() throws IgniteCheckedException {
-//            ReadFileHandle h = super.closeCurrentWalSegment();
-//
-//            try {
-//                compactWriter.close();
-//            }
-//            catch (Exception e) {
-//                throw new IgniteException(e);
-//            }
-//
-//            return h;
-//        }
-//    }
-//
-//    /**
-//     *
-//     */
-//    private interface CompactFactory {
-//        /**
-//         * 0 - Standard java zip {@link ZipOutputStream}.
-//         */
-//        public CompactWriter createWriter(int type, CompactDescriptor desc);
-//
-//        /**
-//         * 0 - Standard java zip {@link ZipInputStream}.
-//         */
-//        public CompactReader createReader(int type, CompactDescriptor desc);
-//    }
-//
-//    /**
-//     *
-//     */
-//    private interface CompactWriter extends AutoCloseable {
-//        /**
-//         * @param name Next entry name.
-//         */
-//        public void advance(String name);
-//
-//        /**
-//         * @param buf Wal record byte buffer.
-//         */
-//        public void write(ByteBuffer buf, int size);
-//    }
-//
-//    /**
-//     *
-//     */
-//    private interface CompactReader extends AutoCloseable {
-//
-//        /**
-//         *
-//         */
-//        public String advance();
-//
-//        /**
-//         *
-//         */
-//        public int read(ByteBuffer buf);
-//    }
-//
-//    /**
-//     *
-//     */
-//    private static class CompactFactoryImpl implements CompactFactory {
-//        private static final int DEFAULT_COMPACTION_LEVEL = 9;
-//
-//        @Override public CompactWriter createWriter(int type, CompactDescriptor desc) {
-//            switch (type) {
-//                case 0:
-//                    assert desc != null;
-//
-//                    return new StandardZipWriter(desc.path, desc.name, DEFAULT_COMPACTION_LEVEL);
-//                default:
-//                    throw new UnsupportedOperationException("Unsupported compact writer type:" + type);
-//            }
-//        }
-//
-//        @Override public CompactReader createReader(int type, CompactDescriptor desc) {
-//            switch (type) {
-//                case 0:
-//                    assert desc != null;
-//
-//                    return new StandardZipReader(desc.path, desc.name);
-//                default:
-//                    throw new UnsupportedOperationException("Unsupported compact reader type:" + type);
-//            }
-//        }
-//    }
-//
-//    /**
-//     *
-//     */
-//    private static class StandardZipWriter extends AbstractStandardZip implements CompactWriter {
-//        /** */
-//        private static final String TMP_SUFFIX = SUFFIX + ".tmp";
-//
-//        /** */
-//        private ZipOutputStream out;
-//
-//        /** */
-//        private File archiveTmp;
-//
-//        /**
-//         *
-//         */
-//        private StandardZipWriter(String dir, String name, int zipLevel) {
-//            assert dir != null;
-//            assert name != null;
-//            assert zipLevel >= 0 && zipLevel <= 9;
-//
-//            try {
-//                archive = new File(dir, name + SUFFIX);
-//                archiveTmp = new File(dir, name + TMP_SUFFIX);
-//
-//                assert !archive.exists();
-//                assert !archiveTmp.exists();
-//
-//                archiveTmp.createNewFile();
-//
-//                out = new ZipOutputStream(new FileOutputStream(archiveTmp));
-//
-//                out.setLevel(zipLevel);
-//            }
-//            catch (IOException e) {
-//                throw new IgniteException(e);
-//            }
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public void advance(String name) {
-//            try {
-//                out.putNextEntry(new ZipEntry(name));
-//            }
-//            catch (IOException e) {
-//                throw new IgniteException(e);
-//            }
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public void write(ByteBuffer buf, int size) {
-//            try {
-//                byte[] toWrite = buf.array();
-//
-//                out.write(toWrite, 0, size);
-//            }
-//            catch (IOException e) {
-//                throw new IgniteException(e);
-//            }
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public void close() {
-//            try {
-//                out.close();
-//
-//                Files.move(archiveTmp.toPath(), archive.toPath());
-//            }
-//            catch (IOException e) {
-//                throw new IgniteException(e);
-//            }
-//        }
-//    }
-//
-//    private static class StandardZipReader extends AbstractStandardZip implements CompactReader {
-//
-//        /** */
-//        private ZipInputStream in;
-//
-//        private StandardZipReader(String dir, String name) {
-//            try {
-//                in = new ZipInputStream(new FileInputStream(new File(dir, name + SUFFIX)));
-//            }
-//            catch (FileNotFoundException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//
-//        @Override public String advance() {
-//            try {
-//                ZipEntry entry = in.getNextEntry();
-//
-//                return entry.getName();
-//            }
-//            catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//            return null;
-//        }
-//
-//        @Override public int read(ByteBuffer buf) {
-//            try {
-//                byte[] array = buf.array();
-//
-//                return in.read(array);
-//            }
-//            catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//
-//            return 0;
-//        }
-//
-//        @Override public void close() {
-//            try {
-//                in.close();
-//            }
-//            catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//    }
-//
-//    private abstract static class AbstractStandardZip {
-//        /** */
-//        protected static final String SUFFIX = "-archive.zip";
-//
-//        /** */
-//        protected File archive;
-//
-//    }
 
     /**
      * Validate files depending on {@link DataStorageConfiguration#getWalSegments()}  and create if need.
