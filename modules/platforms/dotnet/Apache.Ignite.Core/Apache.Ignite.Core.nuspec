@@ -62,7 +62,7 @@ More info: https://apacheignite-net.readme.io/
             Library files (jars) should not be included in project, so that NuGet package restore works properly.
             We keep jars in NuGet dir and copy them over in PostBuild event.
         -->
-        <file src="..\bin\Libs\*.jar" target="Libs" />
+        <file src="..\bin\libs\*.jar" target="libs" />
     
         <!-- LINQPad samples -->
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />
