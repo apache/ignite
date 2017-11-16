@@ -15,33 +15,34 @@
  * limitations under the License.
  */
 
-using System;
-
-namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
+namespace Apache.Ignite.Core.Impl.Binary
 {
-    using System.Diagnostics.CodeAnalysis;
+    using System;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Console writer.
+    /// Serializer for <see cref="MultidimensionalArrayHolder"/>. Unwraps underlying object automatically.
     /// </summary>
-    internal sealed class ConsoleWriter : MarshalByRefObject
+    internal sealed class MultidimensionalArraySerializer : IBinarySerializerInternal
     {
-        /// <summary>
-        /// Writes the specified message to console.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
-            Justification = "Only instance methods can be called across AppDomain boundaries.")]
-        public void Write(string message, bool isError)
+        /** <inheritdoc /> */
+        public void WriteBinary<T>(T obj, BinaryWriter writer)
         {
-            var target = isError ? Console.Error : Console.Out;
-            target.Write(message);
+            TypeCaster<MultidimensionalArrayHolder>.Cast(obj).WriteBinary(writer);
         }
 
         /** <inheritdoc /> */
-        public override object InitializeLifetimeService()
+        public T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos, Type typeOverride)
         {
-            // Ensure that cross-AppDomain reference lives forever.
-            return null;
+            var holder = new MultidimensionalArrayHolder(reader);
+
+            return (T) holder.Array;
+        }
+
+        /** <inheritdoc /> */
+        public bool SupportsHandles
+        {
+            get { return true; }
         }
     }
 }

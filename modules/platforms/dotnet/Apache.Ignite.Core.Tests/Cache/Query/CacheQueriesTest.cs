@@ -754,6 +754,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests query timeouts.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestSqlQueryTimeout()
         {
             var cache = Cache();
@@ -773,6 +774,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests fields query timeouts.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestSqlFieldsQueryTimeout()
         {
             var cache = Cache();
