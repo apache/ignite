@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
@@ -49,18 +50,22 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 /**
  *
  */
-public class OutputVariousInformation {
+public class OutputAckInformation {
     /**
      * @param log Logger.
      */
-    OutputVariousInformation(IgniteLogger log, IgniteConfiguration cfg) {
+    OutputAckInformation(GridLoggerProxy log, IgniteConfiguration cfg, GridKernalContextImpl ctx) {
         this.cfg = cfg;
 
         this.log = log;
+
+        this.ctx = ctx;
     }
+    /**Implementation of kernal context. */
+    private GridKernalContextImpl ctx;
 
     /** Logger. */
-    private IgniteLogger log;
+    private GridLoggerProxy log;
 
     /** Configuration. */
     private IgniteConfiguration cfg;
@@ -118,6 +123,8 @@ public class OutputVariousInformation {
                 if (fileName != null)
                     U.quiet(false, "  ^-- Logging to file '" + fileName + '\'');
 
+                U.quiet(false, "  ^-- Logging by '" + log.getLoggerInfo() + '\'');
+
                 U.quiet(false,
                         "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite.{sh|bat}",
                         "");
@@ -133,6 +140,16 @@ public class OutputVariousInformation {
 
         if (log.isInfoEnabled())
             log.info("Config URL: " + System.getProperty(IGNITE_CONFIG_URL, "n/a"));
+    }
+
+    /**
+     * Acks configuration.
+     */
+    void ackConfiguration(IgniteConfiguration cfg) {
+        assert log != null;
+
+        if (log.isInfoEnabled())
+            log.info(cfg.toString());
     }
 
     /**
@@ -207,7 +224,7 @@ public class OutputVariousInformation {
             // By default SSL is enabled, that's why additional check for null is needed.
             // See http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
             sb.a("ssl: ").a(onOff(Boolean.getBoolean("com.sun.management.jmxremote.ssl") ||
-                    System.getProperty("com.sun.management.jmxremote.ssl") == null));
+                System.getProperty("com.sun.management.jmxremote.ssl") == null));
         }
 
         sb.a(")");
@@ -233,6 +250,16 @@ public class OutputVariousInformation {
     }
 
     /**
+     * Acks Logger configuration.
+     */
+    void ackLogger() {
+        assert log != null;
+
+        if (log.isInfoEnabled())
+            log.info("Logger: " + log.getLoggerInfo() );
+    }
+
+    /**
      * Prints out class paths in debug mode.
      *
      * @param rtBean Java runtime bean.
@@ -242,9 +269,14 @@ public class OutputVariousInformation {
 
         // Ack all class paths.
         if (log.isDebugEnabled()) {
-            log.debug("Boot class path: " + rtBean.getBootClassPath());
-            log.debug("Class path: " + rtBean.getClassPath());
-            log.debug("Library path: " + rtBean.getLibraryPath());
+            try {
+                log.debug("Boot class path: " + rtBean.getBootClassPath());
+                log.debug("Class path: " + rtBean.getClassPath());
+                log.debug("Library path: " + rtBean.getLibraryPath());
+            }
+            catch (Exception ignore) {
+                // No-op: ignore for Java 9+ and non-standard JVMs.
+            }
         }
     }
 
@@ -253,6 +285,7 @@ public class OutputVariousInformation {
      */
     void ackSystemProperties() {
         assert log != null;
+
         if (log.isDebugEnabled() && S.INCLUDE_SENSITIVE)
             for (Map.Entry<Object, Object> entry : snapshot().entrySet())
                 log.debug("System property [" + entry.getKey() + '=' + entry.getValue() + ']');
@@ -273,14 +306,14 @@ public class OutputVariousInformation {
      *
      */
     void ackMemoryConfiguration() {
-        MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
+        DataStorageConfiguration memCfg = cfg.getDataStorageConfiguration();
 
         if (memCfg == null)
             return;
 
-        U.log(log, "System cache's MemoryPolicy size is configured to " +
-                (memCfg.getSystemCacheInitialSize() / (1024 * 1024)) + " MB. " +
-                "Use MemoryConfiguration.systemCacheMemorySize property to change the setting.");
+        U.log(log, "System cache's DataRegion size is configured to " +
+                (memCfg.getSystemRegionInitialSize() / (1024 * 1024)) + " MB. " +
+                "Use DataStorageConfiguration.systemCacheMemorySize property to change the setting.");
     }
 
     /**
@@ -299,12 +332,12 @@ public class OutputVariousInformation {
             for (CacheConfiguration c : cacheCfgs) {
                 String cacheName = U.maskName(c.getName());
 
-                String memPlcName = c.getMemoryPolicyName();
+                String memPlcName = c.getDataRegionName();
 
                 if (CU.isSystemCache(cacheName))
                     memPlcName = "sysMemPlc";
-                else if (memPlcName == null && cfg.getMemoryConfiguration() != null)
-                    memPlcName = cfg.getMemoryConfiguration().getDefaultMemoryPolicyName();
+                else if (memPlcName == null && cfg.getDataStorageConfiguration() != null)
+                    memPlcName = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
                 if (!memPlcNamesMapping.containsKey(memPlcName))
                     memPlcNamesMapping.put(memPlcName, new ArrayList<String>());
@@ -315,7 +348,7 @@ public class OutputVariousInformation {
             }
 
             for (Map.Entry<String, ArrayList<String>> e : memPlcNamesMapping.entrySet()) {
-                sb.a("in '").a(e.getKey()).a("' memoryPolicy: [");
+                sb.a("in '").a(e.getKey()).a("' dataRegion: [");
 
                 for (String s : e.getValue())
                     sb.a("'").a(s).a("', ");
@@ -397,7 +430,7 @@ public class OutputVariousInformation {
     /**
      * Prints security status.
      */
-    void ackSecurity(GridKernalContextImpl ctx) {
+    void ackSecurity() {
         assert log != null;
 
         U.quietAndInfo(log, "Security status [authentication=" + onOff(ctx.security().enabled())
@@ -409,9 +442,7 @@ public class OutputVariousInformation {
      *
      * @param rtBean Java runtime bean.
      */
-    void ackStart(RuntimeMXBean rtBean, GridKernalContextImpl ctx) {
-        igniteInstanceName = cfg.getIgniteInstanceName();
-
+    void ackStart(RuntimeMXBean rtBean) {
         ClusterNode locNode = ctx.cluster().get().localNode();
 
         if (log.isQuiet()) {
@@ -459,9 +490,7 @@ public class OutputVariousInformation {
      * @param b Boolean value to convert.
      * @return Result string.
      */
-    private String onOff(boolean b) {
-        return b ? "on" : "off";
-    }
+    private String onOff(boolean b) { return b ? "on" : "off"; }
 
     /**
      * @return Whether or not REST is enabled.
