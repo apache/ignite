@@ -23,7 +23,19 @@ export default {
         static $inject = ['WebConsoleNavbarSrv'];
 
         constructor(webConsoleNavbarSrv, ...args) {
-            this.items = webConsoleNavbarSrv.items = args;
+            Object.assign(this, { webConsoleNavbarSrv });
+
+            this.webConsoleNavbarSrv.items$.next(args);
+        }
+
+        $onInit() {
+            this.items$ = this.webConsoleNavbarSrv.items$
+                .do((items) => this.items = items)
+                .subscribe(() => {});
+        }
+
+        $onDestroy() {
+            this.items$.unsubscribe();
         }
     }
 };

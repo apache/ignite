@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+
 export default class {
     static $inject = [];
 
     constructor() {
-
+        this.items$ = new BehaviorSubject([]);
     }
 
     visible(text, visible) {
-        if (!this.items)
-            return;
-
-        const item = _.find(this.items, { text });
+        const items = this.items$.getValue();
+        const item = _.find(items, { text });
 
         if (item)
             item.hidden = !visible;
