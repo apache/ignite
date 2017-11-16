@@ -99,12 +99,10 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         ctx.kernalContext().gateway().readLock();
 
         try {
-            try {
-                sync.acquireInterruptibly();
-            }
-            catch (InterruptedException e) {
-                throw new IgniteInterruptedException(e);
-            }
+            sync.acquireInterruptibly();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedException(e);
         }
         finally {
             ctx.kernalContext().gateway().readUnlock();
@@ -116,12 +114,10 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         ctx.kernalContext().gateway().readLock();
 
         try {
-            try {
-                return sync.tryAcquire();
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            return sync.tryAcquire();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             ctx.kernalContext().gateway().readUnlock();
