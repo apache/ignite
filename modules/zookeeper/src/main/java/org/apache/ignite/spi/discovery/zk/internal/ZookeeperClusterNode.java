@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.zk;
+package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -184,7 +184,7 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
     /**
      * @param loc Local node flag.
      */
-    void local(boolean loc) {
+    public void local(boolean loc) {
         this.loc = loc;
     }
 
