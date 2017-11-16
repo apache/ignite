@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System;
     using System.Text;
     using System.IO;
+    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
@@ -32,6 +33,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
         /** Classpath prefix. */
         private const string ClasspathPrefix = "-Djava.class.path=";
+
+        /** Classpath separator. */
+        private static readonly string ClasspathSeparator = Os.IsWindows ? ";" : ":";
 
         /// <summary>
         /// Creates classpath from the given configuration, or default classpath if given config is null.
@@ -52,8 +56,8 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 cpStr.Append(cfg.JvmClasspath);
 
-                if (!cfg.JvmClasspath.EndsWith(";"))
-                    cpStr.Append(';');
+                if (!cfg.JvmClasspath.EndsWith(ClasspathSeparator))
+                    cpStr.Append(ClasspathSeparator);
             }
 
             var ggHome = IgniteHome.Resolve(cfg, log);
@@ -128,13 +132,13 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 Path.Combine(path, "target", "classes"),
                 Path.Combine(path, "target", "test-classes"),
-                Path.Combine(path, "target", "libs"),
+                Path.Combine(path, "target", "libs")
             };
 
             foreach (var dir in dirs)
             {
                 if (Directory.Exists(dir))
-                    cp.Append(dir).Append(";");
+                    cp.Append(dir).Append(ClasspathSeparator);
             }
         }
 
@@ -145,13 +149,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="cpStr">Classpath string builder.</param>
         private static void AppendJars(string path, StringBuilder cpStr)
         {
-            Console.WriteLine("AppendJars: " + path + ", Exists: " + Directory.Exists(path));
             if (Directory.Exists(path))
             {
-                foreach (string jar in Directory.EnumerateFiles(path, "*.jar"))
+                foreach (var jar in Directory.EnumerateFiles(path, "*.jar"))
                 {
-                    cpStr.Append(jar);
-                    cpStr.Append(';');
+                    cpStr.Append(jar).Append(ClasspathSeparator);
                 }
             }
         }
