@@ -115,7 +115,9 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
             }
         }
 
-        /** */
+        /**
+         * @return {@true} if some thread waiting for release, {@false} if not.
+         */
         protected boolean isLocked() {
             return lock.isLocked();
         }
