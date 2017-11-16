@@ -1497,6 +1497,12 @@ public abstract class GridAbstractTest extends TestCase {
                 U.clearClassCache();
                 MarshallerExclusions.clearCache();
                 BinaryEnumCache.clear();
+
+                if(!Ignition.allGrids().isEmpty()) {
+                    log.error("Not all nodes was stopped.");
+
+                    throw new IllegalStateException("Not all nodes was stopped.");
+                }
             }
 
             Thread.currentThread().setContextClassLoader(clsLdr);
