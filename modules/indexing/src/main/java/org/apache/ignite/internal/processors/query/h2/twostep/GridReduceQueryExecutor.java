@@ -555,7 +555,7 @@ public class GridReduceQueryExecutor {
 
             List<Integer> cacheIds = qry.cacheIds();
 
-            Collection<ClusterNode> nodes;
+            Collection<ClusterNode> nodes = null;
 
             // Explicit partition mapping for unstable topology.
             Map<ClusterNode, IntArray> partsMap = null;
