@@ -188,6 +188,28 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests the fields query on a missing cache.
+        /// </summary>
+        [Test]
+        public void TestFieldsQueryMissingCache()
+        {
+            var cache = Client.GetCache<int, Person>("I do not exist");
+            var qry = new SqlFieldsQuery("select name from person")
+            {
+                Schema = CacheName
+            };
+
+            // Schema is set => cache does not matter.
+            var res = cache.Query(qry).GetAll();
+            Assert.AreEqual(Count, res.Count);
+
+            // Schema not set => exception.
+            qry.Schema = null;
+            var ex = Assert.Throws<IgniteClientException>(() => cache.Query(qry).GetAll());
+            Assert.AreEqual("Cache doesn't exist: I do not exist", ex.Message);
+        }
+
+        /// <summary>
         /// Tests the DML.
         /// </summary>
         [Test]

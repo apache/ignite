@@ -89,17 +89,15 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
         ctx.incrementCursors();
 
         try {
-            // When schema is not specified, try using cache.
-            // Query may have all schema names included, so we don't throw an error yet if we can't find schema.
-            if (qry.getSchema() == null) {
+            // If qry.schema is set, we do not care about cacheId.
+            // Otherwise if cacheId is provided (not 0), we must get schema from that cache.
+            if (qry.getSchema() == null && cacheId() != 0) {
                 DynamicCacheDescriptor desc = cacheDescriptor(ctx);
 
-                if (desc != null) {
-                    String schema = QueryUtils.normalizeSchemaName(desc.cacheName(),
-                            desc.cacheConfiguration().getSqlSchema());
+                String schema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+                        desc.cacheConfiguration().getSqlSchema());
 
-                    qry.setSchema(schema);
-                }
+                qry.setSchema(schema);
             }
 
             List<FieldsQueryCursor<List<?>>> curs = ctx.kernalContext().query()
