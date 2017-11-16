@@ -107,9 +107,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /** */
         private readonly EnvDelegates.ThrowNew _throwNew;
 
-        /** */
-        private bool _inExceptionCheck;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="Env" /> class.
         /// </summary>
@@ -242,18 +239,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 throw new IgniteException("Java class is not found (did you set IGNITE_HOME environment " +
                                           "variable?): " + name);
             }
-
-            return NewGlobalRef(res);
-        }
-
-        /// <summary>
-        /// Gets the object class.
-        /// </summary>
-        private GlobalRef GetObjectClass(GlobalRef obj)
-        {
-            var res = _getObjectClass(_envPtr, obj.Target);
-
-            ExceptionCheck();
 
             return NewGlobalRef(res);
         }
@@ -463,45 +448,61 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private void ExceptionCheck()
         {
-            if (_inExceptionCheck)
-                return;
-
             if (!_exceptionCheck(_envPtr))
             {
                 return;
             }
 
-            // Recursion guard.
-            _inExceptionCheck = true;
+            var err = _exceptionOccurred(_envPtr);
+            long err0 = err.ToInt64();
+            Debug.Assert(err != IntPtr.Zero);
+
+            Console.WriteLine("Exception:" + err0);
+            _exceptionClear(_envPtr);
+            Console.WriteLine("Exception2");
+
+
+            Console.WriteLine("Exception3");
+            var cls = _getObjectClass(_envPtr, err);
+            Console.WriteLine("Exception4:" + cls);
+            
+            var methodId = _jvm.MethodId;
+            var clsName = _callObjectMethod(_envPtr, cls, methodId.ClassGetName, null);
+            Console.WriteLine("ClsName:" + clsName);
+            var msg = _callObjectMethod(_envPtr, err, methodId.ThrowableGetMessage, null);
+            Console.WriteLine("Msg:" + msg);
+            var trace = _callStaticObjectMethod(_envPtr, methodId.PlatformUtils.Target,
+                methodId.PlatformUtilsGetStackTrace, &err0);
+            Console.WriteLine("Trace:" + trace);
 
             try
             {
-                var err = _exceptionOccurred(_envPtr);
-                Debug.Assert(err != IntPtr.Zero);
-
-                _exceptionClear(_envPtr);
-
-                using (var errRef = NewGlobalRef(err))
-                {
-                    var errRef0 = (long)errRef.Target;
-                    var methodId = _jvm.MethodId;
-
-                    using (var cls = GetObjectClass(errRef))
-                    using (var clsName = CallObjectMethod(cls, methodId.ClassGetName))
-                    using (var msg = CallObjectMethod(errRef, methodId.ThrowableGetMessage))
-                    using (var trace = CallStaticObjectMethod(methodId.PlatformUtils,
-                        methodId.PlatformUtilsGetStackTrace, &errRef0))
-                    {
-                        throw new JavaException(
-                            JStringToString(clsName),
-                            JStringToString(msg),
-                            JStringToString(trace));
-                    }
-                }
+                throw new JavaException(
+                    JStringToString(clsName),
+                    JStringToString(msg),
+                    JStringToString(trace));
             }
-            finally
+            finally 
             {
-                _inExceptionCheck = false;
+                if (cls != IntPtr.Zero)
+                {
+                    _deleteLocalRef(_envPtr, cls);
+                }
+
+                if (clsName != IntPtr.Zero)
+                {
+                    _deleteLocalRef(_envPtr, clsName);
+                }
+
+                if (msg != IntPtr.Zero)
+                {
+                    _deleteLocalRef(_envPtr, msg);
+                }
+
+                if (trace != IntPtr.Zero)
+                {
+                    _deleteLocalRef(_envPtr, trace);
+                }
             }
         }
 
