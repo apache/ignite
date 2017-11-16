@@ -210,6 +210,34 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests fields query with custom schema.
+        /// </summary>
+        [Test]
+        public void TestFieldsQueryCustomSchema()
+        {
+            var cache1 = Client.GetCache<int, Person>(CacheName);
+            var cache2 = Client.GetCache<int, Person>(CacheName2);
+
+            cache1.RemoveAll();
+
+            var qry = new SqlFieldsQuery("select name from person");
+
+            // Schema not set: cache name is used.
+            Assert.AreEqual(0, cache1.Query(qry).Count());
+            Assert.AreEqual(Count, cache2.Query(qry).Count());
+
+            // Schema set to first cache: no results both cases.
+            qry.Schema = cache1.Name;
+            Assert.AreEqual(0, cache1.Query(qry).Count());
+            Assert.AreEqual(0, cache2.Query(qry).Count());
+
+            // Schema set to second cache: full results both cases.
+            qry.Schema = cache2.Name;
+            Assert.AreEqual(Count, cache1.Query(qry).Count());
+            Assert.AreEqual(Count, cache2.Query(qry).Count());
+        }
+
+        /// <summary>
         /// Tests the DML.
         /// </summary>
         [Test]
