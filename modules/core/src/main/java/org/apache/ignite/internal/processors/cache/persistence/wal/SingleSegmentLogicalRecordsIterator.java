@@ -22,6 +22,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Iterates over logical records of one WAL segment from archive. Used for WAL archive compression.
+ * Doesn't deserialize actual record data, returns {@link MarshalledRecord} instances instead.
  */
 public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsIterator {
     /** Serial version uid. */
