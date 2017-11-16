@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
 
             var cfg = TestUtils.GetTestConfiguration();
             cfg.JvmDllPath = jvmDll;
-            cfg.Logger = new MyLogger();
+            //cfg.Logger = new MyLogger();
 
             var ignite = Ignition.Start(cfg);
             Assert.IsNotNull(ignite);

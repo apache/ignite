@@ -4,6 +4,12 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
+
+    <StartupObject>Apache.Ignite.Core.Tests.DotNetCore.TestRunner</StartupObject>
+
+    <ApplicationIcon />
+
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
