@@ -139,25 +139,33 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip");
 
+    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
+    public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = new FileFilter() {
+        @Override public boolean accept(File file) {
+            return !file.isDirectory() && (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
+                WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
+        }
+    };
+
     /** */
     private static final Pattern WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip\\.tmp");
 
     /** */
-    public static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = new FileFilter() {
+    private static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = new FileFilter() {
         @Override public boolean accept(File file) {
             return !file.isDirectory() && WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
         }
     };
 
     /** */
-    public static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = new FileFilter() {
+    private static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = new FileFilter() {
         @Override public boolean accept(File file) {
             return !file.isDirectory() && WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
         }
     };
 
     /** Latest serializer version to use. */
-    public static final int LATEST_SERIALIZER_VERSION = 2;
+    private static final int LATEST_SERIALIZER_VERSION = 2;
 
     /** */
     private final boolean alwaysWriteFullPages;
@@ -1644,6 +1652,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Segments queue. */
         private PriorityBlockingQueue<Long> segmentsQueue = new PriorityBlockingQueue<>();
 
+        /** Byte array for draining data. */
+        private byte[] arr = new byte[tlbSize];
+
         /** {@inheritDoc} */
         @Override public void run() {
             while (!Thread.currentThread().isInterrupted() && !stopped) {
@@ -1672,14 +1683,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         zis.getNextEntry();
 
                         int bytesRead;
-
-                        while ((bytesRead = zis.read(tlb.get().array())) > 0) {
-                            tlb.get().clear();
-
-                            tlb.get().limit(bytesRead);
-
-                            io.write(tlb.get());
-                        }
+                        while ((bytesRead = zis.read(arr)) > 0)
+                            io.write(arr, 0, bytesRead);
                     }
 
                     Files.move(unzipTmp.toPath(), unzip.toPath());
@@ -1692,7 +1697,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Thread.currentThread().interrupt();
                 }
                 catch (IOException e) {
-                    U.error(log, "Unexpected error during WAL compression", e);
+                    U.error(log, "Unexpected error during WAL decompression", e);
 
                     unzipTmp.delete();
                     unzip.delete();

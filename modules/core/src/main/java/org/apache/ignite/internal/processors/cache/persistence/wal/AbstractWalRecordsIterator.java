@@ -109,7 +109,7 @@ public abstract class AbstractWalRecordsIterator
      * @return found WAL file descriptors
      */
     protected static FileWriteAheadLogManager.FileDescriptor[] loadFileDescriptors(@NotNull final File walFilesDir) throws IgniteCheckedException {
-        final File[] files = walFilesDir.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
+        final File[] files = walFilesDir.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
         if (files == null) {
             throw new IgniteCheckedException("WAL files directory does not not denote a " +
@@ -291,7 +291,7 @@ public abstract class AbstractWalRecordsIterator
 
                 if (start != null && desc.idx == start.index()) {
                     if (isCompacted)
-                        serializerFactory.recordDeserializeFilter(new StartSeekingFilter(start));
+                        serializerFactory.recordDeserializeFilter(new StartSeekingFilter(start)).skipPositionCheck(true);
                     else {
                         // Make sure we skip header with serializer version.
                         long startOff = Math.max(start.fileOffset(), fileIO.position());

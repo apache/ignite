@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
@@ -104,7 +105,7 @@ public class RecordV2Serializer implements RecordSerializer {
                 return new FilteredRecord();
             }
             else if (marshalledMode) {
-                ByteBuffer buf = ByteBuffer.allocate(ptr.length());
+                ByteBuffer buf = ByteBuffer.allocate(ptr.length()).order(ByteOrder.nativeOrder());
 
                 buf.put((byte)(recType.ordinal() + 1));
 
@@ -198,7 +199,7 @@ public class RecordV2Serializer implements RecordSerializer {
 
         FileWALPointer p = (FileWALPointer)expPtr;
 
-        if (!F.eq(idx, p.index()) || (skipPositionCheck && !F.eq(fileOffset, p.fileOffset())))
+        if (!F.eq(idx, p.index()) || (!skipPositionCheck && !F.eq(fileOffset, p.fileOffset())))
             throw new WalSegmentTailReachedException(
                 "WAL segment tail is reached. [ " +
                         "Expected next state: {Index=" + p.index() + ",Offset=" + p.fileOffset() + "}, " +
