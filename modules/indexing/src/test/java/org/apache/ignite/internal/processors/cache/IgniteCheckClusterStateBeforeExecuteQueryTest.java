@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.database;
+package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
