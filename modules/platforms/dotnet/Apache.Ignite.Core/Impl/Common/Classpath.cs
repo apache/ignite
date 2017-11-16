@@ -130,17 +130,22 @@ namespace Apache.Ignite.Core.Impl.Common
             if (path.EndsWith("rest-http", StringComparison.OrdinalIgnoreCase))
                 return;
 
-            var dirs = new[]
+            var dir = Path.Combine(path, "target", "classes");
+            if (Directory.Exists(dir))
             {
-                Path.Combine(path, "target", "classes"),
-                Path.Combine(path, "target", "test-classes"),
-                Path.Combine(path, "target", "libs")
-            };
+                cp.Append(dir).Append(ClasspathSeparator);
+            }
 
-            foreach (var dir in dirs)
+            dir = Path.Combine(path, "target", "test-classes");
+            if (Directory.Exists(dir))
             {
-                if (Directory.Exists(dir))
-                    cp.Append(dir).Append(ClasspathSeparator);
+                cp.Append(dir).Append(ClasspathSeparator);
+            }
+
+            dir = Path.Combine(path, "target", "libs");
+            if (Directory.Exists(dir))
+            {
+                AppendJars(dir, cp);
             }
         }
 
