@@ -25,4 +25,8 @@ powershell -executionpolicy remotesigned -file build.ps1 -skipJava -version 0.0.
 
 popd
 
-bash run-tests.sh
+bash -c "dotnet nuget locals all --clear"
+
+echo Starting tests...
+
+bash -c "dotnet test"
