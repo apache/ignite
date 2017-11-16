@@ -116,6 +116,35 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the disabled redirect.
+        /// </summary>
+        [Test]
+        public void TestDisabledRedirect()
+        {
+            // Run test in new process because JVM is initialized only once.
+            const string envVar = "ConsoleRedirectTest.TestDisabledRedirect";
+
+            if (Environment.GetEnvironmentVariable(envVar) == "true")
+            {
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(false));
+                Assert.IsTrue(cfg.RedirectJavaConsoleOutput);
+
+                cfg.RedirectJavaConsoleOutput = false;
+
+                using (Ignition.Start(cfg))
+                {
+                    Assert.AreEqual("", _errSb.ToString());
+                    Assert.AreEqual("", _outSb.ToString());
+                }
+            }
+            else
+            {
+                Environment.SetEnvironmentVariable(envVar, "true");
+                TestUtils.RunTestInNewProcess(GetType().FullName, "TestDisabledRedirect");
+            }
+        }
+
+        /// <summary>
         /// Tests multiple appdomains and multiple console handlers.
         /// </summary>
         [Test]

@@ -124,5 +124,23 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return res;
         }
+
+        /// <summary>
+        /// Reads the string collection.
+        /// </summary>
+        public static ICollection<string> ReadStringCollection(this IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            var cnt = reader.ReadInt();
+            var res = new List<string>(cnt);
+
+            for (var i = 0; i < cnt; i++)
+            {
+                res.Add(reader.ReadString());
+            }
+
+            return res;
+        }
     }
 }

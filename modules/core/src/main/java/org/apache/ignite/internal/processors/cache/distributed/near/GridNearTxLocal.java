@@ -4211,14 +4211,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** {@inheritDoc} */
     @Override public void onTimeout() {
         if (state(MARKED_ROLLBACK, true) || (state() == MARKED_ROLLBACK)) {
-            if (log.isDebugEnabled())
-                log.debug("Will rollback tx on timeout: " + this);
-
             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
-                    // Note: if rollback asynchonously on timeout should not clear thread map
+                    // Note: if rollback asynchronously on timeout should not clear thread map
                     // since thread started tx still should be able to see this tx.
                     rollbackNearTxLocalAsync(true);
+
+                    U.warn(log, "Transaction was rolled back because the timeout is reached: " + GridNearTxLocal.this);
                 }
             });
         }

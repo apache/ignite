@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,18 +15,22 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
-{
-    /// <summary>
-    /// Client status codes.
-    /// </summary>
-    internal enum ClientStatus
-    {
-        Success = 0,
-        Fail = 1,
-        InvalidOpCode = 2,
-        CacheDoesNotExist = 1000,
-        CacheExists = 1001,
-        TooManyCursors = 1010
+package org.apache.ignite.internal.processors.cache.distributed.near;
+
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.transactions.Transaction;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+
+/**
+ * Test for distributed queries with node restarts inside transactions.
+ */
+public class IgniteCacheQueryNodeRestartTxSelfTest extends IgniteCacheQueryNodeRestartSelfTest2 {
+    /** {@inheritDoc} */
+    @Override protected void runQuery(IgniteEx grid, Runnable qryRunnable) {
+        try(Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            qryRunnable.run();
+        }
     }
 }

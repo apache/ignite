@@ -96,6 +96,7 @@
     <Compile Include="Binary\TimestampAttribute.cs" />
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
     <Compile Include="Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Configuration\DataRegionConfiguration.cs" />
@@ -116,7 +117,10 @@
     <Compile Include="Configuration\WalMode.cs" />
     <Compile Include="Impl\Binary\BinaryTypeId.cs" />
     <Compile Include="Impl\Binary\IBinaryRawWriteAware.cs" />
+    <Compile Include="Impl\Binary\MultidimensionalArrayHolder.cs" />
+    <Compile Include="Impl\Binary\MultidimensionalArraySerializer.cs" />
     <Compile Include="Impl\Client\Cache\CacheFlags.cs" />
+    <Compile Include="Impl\Client\Cache\ClientCacheConfigurationSerializer.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\PlatformQueryQursorBase.cs" />
     <Compile Include="Impl\Binary\BinaryProcessorClient.cs" />
