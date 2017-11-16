@@ -38,6 +38,10 @@ public class ResultAndUpdates<R> {
         this.updates = updates;
     }
 
+    public static <R> ResultAndUpdates<R> empty() {
+        return new ResultAndUpdates<>(null);
+    }
+
     public static <R> ResultAndUpdates<R> of(R res) {
         return new ResultAndUpdates<>(res);
     }

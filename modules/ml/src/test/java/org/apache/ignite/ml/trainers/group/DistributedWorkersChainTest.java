@@ -134,7 +134,6 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         DistributedTrainerWorkersChain<TestLocalContext, Double, Integer, Integer, TestGroupTrainingContext<Double, Integer, TestLocalContext>, Integer> chain = DC.create();
         CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheCtx = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
         int init = 1;
-        int newData = 10;
         TestLocalContext locCtx = new TestLocalContext(0);
 
         UUID trainingUUID = UUID.randomUUID();

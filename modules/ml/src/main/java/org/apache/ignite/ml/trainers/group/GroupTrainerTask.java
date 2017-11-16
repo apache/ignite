@@ -37,7 +37,6 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
-import org.apache.ignite.ml.util.Utils;
 import org.jetbrains.annotations.Nullable;
 
 public class GroupTrainerTask<K, S, V, G, U extends Serializable> extends ComputeTaskAdapter<Void, U> {

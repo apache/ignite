@@ -17,9 +17,24 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-import java.util.UUID;
-import java.util.stream.Stream;
+public class TestGroupTrainerLocalContext {
+    private int cnt = 0;
+    private int maxCnt;
 
-public interface Distributive<K> {
-    Stream<GroupTrainerCacheKey<K>> initialKeys(UUID trainingUUID);
+    public TestGroupTrainerLocalContext(int cnt) {
+        this.cnt = cnt;
+        maxCnt = 0;
+    }
+
+    public int cnt() {
+        return cnt;
+    }
+
+    public void setCnt(int cnt) {
+        this.cnt = cnt;
+    }
+
+    public int maxCnt() {
+        return maxCnt;
+    }
 }

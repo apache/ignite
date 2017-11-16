@@ -17,9 +17,16 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-import java.util.UUID;
-import java.util.stream.Stream;
+import org.apache.ignite.ml.Model;
 
-public interface Distributive<K> {
-    Stream<GroupTrainerCacheKey<K>> initialKeys(UUID trainingUUID);
+public class ConstModel<T> implements Model<T, T> {
+    private T c;
+
+    public ConstModel(T c) {
+        this.c = c;
+    }
+
+    @Override public T predict(T val) {
+        return c;
+    }
 }

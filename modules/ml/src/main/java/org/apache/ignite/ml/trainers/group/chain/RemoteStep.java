@@ -15,7 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.group;
+package org.apache.ignite.ml.trainers.group.chain;
 
-public class GroupTrainingTask {
+import java.util.stream.Stream;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
+import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
+
+public interface RemoteStep<L, K, V, G, I, O> {
+    G extractRemoteContext(I input, L locCtx);
+
+    ResultAndUpdates<O> distributedWorker(I input, L locCtx, EntryAndContext<K, V, G> entryAndContext);
+
+    IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier(I input, L locCtx);
+
+    O identity();
+
+    O reduce(O arg1, O arg2);
 }

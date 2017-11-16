@@ -29,17 +29,14 @@ import org.apache.ignite.ml.trainers.group.chain.CacheContext;
 import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
-public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends Distributive<K>> implements Trainer<M, T> {
+public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends Distributive<K>, G> implements Trainer<M, T> {
     IgniteCache<GroupTrainerCacheKey<K>, V> cache;
-    int nodeLocalEntitiesCount;
     Ignite ignite;
 
     public GroupTrainer(
         IgniteCache<GroupTrainerCacheKey<K>, V> cache,
-        int initialNodeLocalEntitiesCnt,
         Ignite ignite) {
         this.cache = cache;
-        this.nodeLocalEntitiesCount = initialNodeLocalEntitiesCnt;
         this.ignite = ignite;
     }
 
@@ -51,7 +48,7 @@ public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends 
         DistributedTrainerWorkersChain<LC, K, V, T, GroupTrainingContext<K, V, LC>, T> chain = (i, c) -> i;
 
         M res = chain.
-            thenDistributed(this::initGlobal, (t, lc) -> data::keys, this::reduceGlobalInitData).
+            thenDistributed(this::initGlobal, (t, lc) -> data::initialKeys, this::reduceGlobalInitData).
             thenLocally(this::processInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
             thenDistributed(this::extractContextForModelCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), defaultFinalResult(), this::reduceFinalResults).
@@ -73,13 +70,13 @@ public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends 
 
     protected abstract DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep();
 
-    protected abstract boolean shouldContinue(I data);
+    protected abstract boolean shouldContinue(I data, LC locCtx);
 
-    protected abstract <G> G extractContextForModelCreation(I data, LC locCtx);
+    protected abstract G extractContextForModelCreation(I data, LC locCtx);
 
     protected abstract Stream<GroupTrainerCacheKey<K>> finalResultKeys(I data, LC locCtx);
 
-    protected abstract <G> ResultAndUpdates<R> getFinalResults(I data, LC locCtx, EntryAndContext<K, V, G> entryAndCtx);
+    protected abstract ResultAndUpdates<R> getFinalResults(I data, LC locCtx, EntryAndContext<K, V, G> entryAndCtx);
 
     protected abstract R defaultFinalResult();
 

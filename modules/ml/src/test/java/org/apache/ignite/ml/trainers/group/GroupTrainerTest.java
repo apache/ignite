@@ -17,9 +17,10 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-import java.util.UUID;
-import java.util.stream.Stream;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-public interface Distributive<K> {
-    Stream<GroupTrainerCacheKey<K>> initialKeys(UUID trainingUUID);
+public class GroupTrainerTest extends GridCommonAbstractTest {
+    public void testGroupTrainer() {
+
+    }
 }

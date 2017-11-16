@@ -17,5 +17,33 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-public abstract class GroupTrainingJob {
+import java.util.UUID;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+public class SimpleDistributive implements Distributive<Double> {
+    private int limit;
+    private int eachNumberCount;
+    private int iterCnt;
+
+    public SimpleDistributive(int limit, int iterCnt) {
+        this.limit = limit;
+        this.iterCnt = iterCnt;
+    }
+
+    @Override public Stream<GroupTrainerCacheKey<Double>> initialKeys(UUID trainingUUID) {
+        return IntStream.range(0, limit).mapToObj(i -> new GroupTrainerCacheKey<>(i, 0.0, trainingUUID));
+    }
+
+    public int limit() {
+        return limit;
+    }
+
+    public int iterCnt() {
+        return iterCnt;
+    }
+
+    public int eachNumberCount() {
+        return eachNumberCount;
+    }
 }

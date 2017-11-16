@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -67,6 +68,10 @@ public interface DistributedTrainerWorkersChain<L, K, V, I, C extends HasCacheCo
         return then(nextStep);
     }
 
+    default <O1 extends Serializable, G> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributed(RemoteStep<L, K, V, G, O, O1> step) {
+        return thenDistributed(step::extractRemoteContext, step::distributedWorker, step::keysSupplier, step.identity(), step::reduce);
+    }
+
     default <O1 extends Serializable> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributed(
         IgniteBiFunction<O, GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
@@ -84,12 +89,12 @@ public interface DistributedTrainerWorkersChain<L, K, V, I, C extends HasCacheCo
         return thenDistributed((o, lc) -> null, (o, lc, context) -> distributedWorker.apply(o, context.entry().getKey()), kf, null, reducer);
     }
 
-    default DistributedTrainerWorkersChain<L, K, V, I, C, O> thenWhile(IgnitePredicate<O> cond, DistributedTrainerWorkersChain<L, K, V, O, C, O> chain) {
+    default DistributedTrainerWorkersChain<L, K, V, I, C, O> thenWhile(IgniteBiPredicate<O, L> cond, DistributedTrainerWorkersChain<L, K, V, O, C, O> chain) {
         DistributedTrainerWorkersChain<L, K, V, I, C, O> me = this;
         return (input, context) -> {
             O res = me.process(input, context);
 
-            while (cond.apply(res))
+            while (cond.apply(res, context.localContext()))
                 res = chain.process(res, context);
 
             return res;
