@@ -36,6 +36,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         public static IntPtr Load(string dllPath)
         {
+            // TODO: Handle errors in a platform-specific way.
             if (Os.IsWindows)
             {
                 return Windows.LoadLibrary(dllPath);

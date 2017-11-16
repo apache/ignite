@@ -53,13 +53,13 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
 
             // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
             var file = BashExecute("readlink -f /usr/bin/java");
-            if (!File.Exists(file))
-            {
-                return Enumerable.Empty<string>();
-            }
+            Console.WriteLine("Full java path: " + file);
+            Console.WriteLine("File exists: " + File.Exists(file));
 
             // /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so
             var libFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file), "../lib/"));
+            Console.WriteLine("Lib folder: " + libFolder);
+            Console.WriteLine("Directory exists: " + Directory.Exists(libFolder));
             if (!Directory.Exists(libFolder))
             {
                 return Enumerable.Empty<string>();

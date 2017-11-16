@@ -266,22 +266,22 @@ namespace Apache.Ignite.Core.Impl
 
             if (filePath != null)
             {
-                ptr = NativeMethods.LoadLibrary(filePath);
+                ptr = DllLoader.Load(filePath);
 
                 if (ptr == IntPtr.Zero)
-                    res = Marshal.GetLastWin32Error();
+                    res = Marshal.GetLastWin32Error();  // TODO
                 else
                     return res;
             }
 
             // Failed to load using file path, fallback to simple name.
-            ptr = NativeMethods.LoadLibrary(simpleName);
+            ptr = DllLoader.Load(simpleName);
 
             if (ptr == IntPtr.Zero)
             {
                 // Preserve the first error code, if any.
                 if (res == 0)
-                    res = Marshal.GetLastWin32Error();
+                    res = Marshal.GetLastWin32Error();  // TODO
             }
             else
                 res = 0;
