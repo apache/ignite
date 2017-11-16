@@ -530,6 +530,35 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     }
 
     /**
+     * Verifies that neither BaselineTopology nor BaselineTopologyHistory are changed when cluster is deactivated.
+     */
+    public void testBaselineTopologyRemainsTheSameOnClusterDeactivation() throws Exception {
+        startGrids(2);
+
+        IgniteEx srv = grid(0);
+
+        srv.active(true);
+
+        awaitPartitionMapExchange();
+
+        assertTrue(srv.active());
+
+        srv.active(false);
+
+        BaselineTopology blt = getBaselineTopology(srv);
+
+        BaselineTopologyHistory bltHist = getBaselineTopologyHistory(srv);
+
+        assertEquals(0, blt.id());
+
+        assertEquals(2, blt.consistentIds().size());
+
+        assertEquals(1, blt.branchingHistory().size());
+
+        assertEquals(0, bltHist.history().size());
+    }
+
+    /**
      *
      */
     public void testBaselineHistorySyncWithNewNode() throws Exception {

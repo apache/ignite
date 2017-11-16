@@ -556,7 +556,10 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
         BaselineTopology currentBlt = globalState.baselineTopology();
 
-        int newBltId = currentBlt == null ? 0 : currentBlt.id() + 1;
+        int newBltId = 0;
+
+        if (currentBlt != null)
+            newBltId = activate ? currentBlt.id() + 1 : currentBlt.id();
 
         if (forceChangeBaselineTopology)
             newBlt = BaselineTopology.build(baselineNodes, newBltId);
