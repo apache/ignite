@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.baseline;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -33,9 +32,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Failover test for cache putAll operations when BaselineTopology is changed up
+ * (new node is added to BaselineTopology).
  */
-public class IgniteChangingBaselineCachePutAllFailoverTest extends CachePutAllFailoverAbstractTest {
+public class IgniteChangingBaselineUpCachePutAllFailoverTest extends CachePutAllFailoverAbstractTest {
     /** */
     private static final int GRIDS_COUNT = 5;
 
@@ -95,13 +95,9 @@ public class IgniteChangingBaselineCachePutAllFailoverTest extends CachePutAllFa
 
                 U.sleep(15_000);
 
-                ThreadLocalRandom tlr = ThreadLocalRandom.current();
+                log.info("Starting node");
 
-                int idx = tlr.nextInt(1, GRIDS_COUNT);
-
-                log.info("Stopping node " + idx);
-
-                stopGrid(idx);
+                startGrid(GRIDS_COUNT);
 
                 IgniteEx ig0 = grid(0);
 

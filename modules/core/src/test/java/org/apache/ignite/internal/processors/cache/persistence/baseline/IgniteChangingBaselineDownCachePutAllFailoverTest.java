@@ -19,48 +19,26 @@ package org.apache.ignite.internal.processors.cache.persistence.baseline;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailoverAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-
 /**
- *
+ * Failover test for cache putAll operations when BaselineTopology is changed down
+ * (existing node gets stopped and removed from BaselineTopology).
  */
-public class IgniteChangingBaselineCacheRemoveFailoverTest extends GridCacheAbstractRemoveFailureTest {
+public class IgniteChangingBaselineDownCachePutAllFailoverTest extends CachePutAllFailoverAbstractTest {
     /** */
-    private static final int GRIDS_COUNT = 4;
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearCache() {
-        return null;
-    }
+    private static final int GRIDS_COUNT = 5;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -68,11 +46,12 @@ public class IgniteChangingBaselineCacheRemoveFailoverTest extends GridCacheAbst
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)
-                    .setInitialSize(512 * 1024 * 1024)
-                    .setMaxSize(512 * 1024 * 1024)
-                    .setCheckpointPageBufferSize(512 * 1024 * 1024)
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setInitialSize(200 * 1024 * 1024)
+                        .setMaxSize(200 * 1024 * 1024)
+                        .setCheckpointPageBufferSize(200 * 1024 * 1024)
                 )
         );
 
@@ -90,18 +69,9 @@ public class IgniteChangingBaselineCacheRemoveFailoverTest extends GridCacheAbst
 
         startGrids(GRIDS_COUNT);
 
-        startGrid(GRIDS_COUNT);
-
         grid(0).active(true);
 
         awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        GridTestUtils.deleteDbFiles();
     }
 
     /** {@inheritDoc} */
@@ -112,32 +82,33 @@ public class IgniteChangingBaselineCacheRemoveFailoverTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture createAndRunConcurrentAction(final AtomicBoolean stop, final AtomicReference<CyclicBarrier> cmp) {
-        return GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        GridTestUtils.deleteDbFiles();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteInternalFuture createAndRunConcurrentAction(final AtomicBoolean finished, final long endTime) {
+        return GridTestUtils.runAsync(new Callable() {
+            @Override public Object call() throws Exception {
                 Thread.currentThread().setName("restart-thread");
 
-                U.sleep(random(5000, 10_000));
+                U.sleep(15_000);
 
-                log.info("Stopping node " + GRIDS_COUNT);
+                ThreadLocalRandom tlr = ThreadLocalRandom.current();
 
-                stopGrid(GRIDS_COUNT);
+                int idx = tlr.nextInt(1, GRIDS_COUNT);
+
+                log.info("Stopping node " + idx);
+
+                stopGrid(idx);
 
                 IgniteEx ig0 = grid(0);
 
                 ig0.cluster().setBaselineTopology(baselineNodes(ig0.cluster().forServers().nodes()));
 
-                while (!stop.get()) {
-                    CyclicBarrier barrier = cmp.get();
-
-                    if (barrier != null) {
-                        log.info("Wait data check.");
-
-                        barrier.await(60_000, TimeUnit.MILLISECONDS);
-
-                        log.info("Finished wait data check.");
-                    }
-                }
+                U.sleep(3_000);
 
                 return null;
             }
