@@ -46,6 +46,13 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
     /**
      * Tests correct reuse of discovery cache.
      *
