@@ -65,7 +65,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         private static class Windows
         {
-            [DllImport("kernel32.dll")]
+            [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
             internal static extern IntPtr LoadLibrary(string filename);
         }
 
@@ -74,7 +75,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         private static class Linux
         {
-            [DllImport("libdl.so")]
+            [DllImport("libdl.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlopen(string filename, int flags);
         }
 
@@ -83,7 +85,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         private static class Mono
         {
-            [DllImport("__Internal")]
+            [DllImport("__Internal", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlopen(string filename, int flags);
         }
 
@@ -92,7 +95,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         private static class Core
         {
-            [DllImport("libcoreclr.so")]
+            [DllImport("libcoreclr.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlopen(string filename, int flags);
         }
     }
