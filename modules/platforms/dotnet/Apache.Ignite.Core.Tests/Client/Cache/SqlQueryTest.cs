@@ -199,13 +199,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Schema = CacheName
             };
 
-            // Schema is set => cache does not matter.
-            var res = cache.Query(qry).GetAll();
-            Assert.AreEqual(Count, res.Count);
-
-            // Schema not set => exception.
-            qry.Schema = null;
+            // Schema is set => we still check for cache existence.
             var ex = Assert.Throws<IgniteClientException>(() => cache.Query(qry).GetAll());
+            Assert.AreEqual("Cache doesn't exist: I do not exist", ex.Message);
+
+            // Schema not set => also exception.
+            qry.Schema = null;
+            ex = Assert.Throws<IgniteClientException>(() => cache.Query(qry).GetAll());
             Assert.AreEqual("Cache doesn't exist: I do not exist", ex.Message);
         }
 
