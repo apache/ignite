@@ -589,7 +589,16 @@ public interface Ignite extends AutoCloseable {
     public IgniteLock reentrantLock(String name, boolean failoverSafe, boolean fair, boolean create)
         throws IgniteException;
 
-    /** */
+    /**
+     * Gets or creates reentrant lock. If reentrant lock is not found in cache and {@code create} flag
+     * is {@code true}, it is created using provided name.
+     *
+     * @param name Name of the lock.
+     * @param fair If {@code True}, fair lock will be created.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return ReentrantLock for the given name.
+     * @throws IgniteException If reentrant lock could not be fetched or created.
+     */
     public IgniteLock reentrantLock(String name, boolean fair, boolean create) throws IgniteException;
 
     /**
