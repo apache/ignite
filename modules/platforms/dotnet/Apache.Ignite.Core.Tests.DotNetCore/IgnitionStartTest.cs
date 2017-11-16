@@ -39,7 +39,10 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
             var jvmDll = FindJvmDll().FirstOrDefault();
             Console.WriteLine(jvmDll);
 
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            var cfg = TestUtils.GetTestConfiguration();
+            cfg.JvmDllPath = jvmDll;
+
+            var ignite = Ignition.Start(cfg);
             Assert.IsNotNull(ignite);
         }
 
