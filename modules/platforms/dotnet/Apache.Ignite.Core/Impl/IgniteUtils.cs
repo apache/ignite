@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
     using Microsoft.Win32;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
@@ -303,7 +304,7 @@ namespace Apache.Ignite.Core.Impl
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
 
-            if (!IsRunningOnUnix())
+            if (Os.IsWindows)
             {
                 // Get paths from the Windows Registry
                 foreach (var regPath in JreRegistryKeys)
@@ -331,15 +332,6 @@ namespace Apache.Ignite.Core.Impl
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Determines whether we are on Linux/MacOS.
-        /// </summary>
-        internal static bool IsRunningOnUnix()
-        {
-            var p = (int)Environment.OSVersion.Platform;
-            return (p == 4) || (p == 6) || (p == 128);
         }
 
         /// <summary>

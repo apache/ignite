@@ -137,6 +137,7 @@
     <Compile Include="Impl\IPlatformTargetInternal.cs" />
     <Compile Include="Impl\DataRegionMetrics.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
+    <Compile Include="Impl\Unmanaged\DllLoader.cs" />
     <Compile Include="Impl\Unmanaged\Jni\AppDomains.cs" />
     <Compile Include="Impl\Unmanaged\Jni\CallbackDelegates.cs" />
     <Compile Include="Impl\Unmanaged\Jni\Callbacks.cs" />
@@ -153,6 +154,7 @@
     <Compile Include="Impl\Unmanaged\Jni\JniResult.cs" />
     <Compile Include="Impl\Unmanaged\Jni\Jvm.cs" />
     <Compile Include="Impl\Unmanaged\Jni\JvmDelegates.cs" />
+    <Compile Include="Impl\Unmanaged\Os.cs" />
     <Compile Include="PersistentStore\CheckpointWriteOrder.cs" />
     <Compile Include="PersistentStore\IPersistentStoreMetrics.cs" />
     <Compile Include="PersistentStore\Package-Info.cs" />
