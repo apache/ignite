@@ -22,7 +22,7 @@ import java.util.Set;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 
 /**
- *
+ * Utility class for handling WAL record types.
  */
 public final class RecordTypes {
     /** */

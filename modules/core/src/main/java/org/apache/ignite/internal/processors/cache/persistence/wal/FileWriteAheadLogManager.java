@@ -744,7 +744,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void allowCompressionUntil(WALPointer ptr) {
-        compressor.allowCompressionUntil(((FileWALPointer)ptr).index());
+        if (compressor != null)
+            compressor.allowCompressionUntil(((FileWALPointer)ptr).index());
     }
 
     /** {@inheritDoc} */
@@ -1474,6 +1475,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /**
      * Responsible for compressing WAL archive segments.
+     * Also responsible for deleting raw copies of already compressed WAL archive segments if they are not reserved.
      */
     private class FileCompressor extends Thread {
         /** Current thread stopping advice. */
@@ -1683,7 +1685,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
+         * Asynchronously decompresses WAL segment which is present only in .zip file.
          *
+         * @return Future which is completed once file is decompressed.
          */
         synchronized IgniteInternalFuture<Void> decompressFile(long idx) {
             if (decompressionFutures.containsKey(idx))

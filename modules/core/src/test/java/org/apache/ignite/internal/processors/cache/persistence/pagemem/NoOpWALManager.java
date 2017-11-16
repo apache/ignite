@@ -78,7 +78,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
 
     /** {@inheritDoc} */
     @Override public void allowCompressionUntil(WALPointer ptr) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */

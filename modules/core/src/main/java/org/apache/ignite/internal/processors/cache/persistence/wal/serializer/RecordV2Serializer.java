@@ -48,8 +48,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * <li>Data</li>
  * <li>CRC or zero padding</li>
  * </ul>
- * Also, optimization for skipping deserialization of records of unwanted types.
- * If {@link #recordFilter} is specified, {@link FilteredRecord} is read instead of unnecessary record.
  */
 public class RecordV2Serializer implements RecordSerializer {
     /** Length of WAL Pointer: Index (8) + File offset (4) + Record length (4) */

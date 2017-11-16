@@ -82,9 +82,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
         return writePointer;
     }
 
-    /**
-     * @param writePointer New write pointer.
-     */
+    /** {@inheritDoc} */
     @Override public RecordSerializerFactoryImpl writePointer(boolean writePointer) {
         this.writePointer = writePointer;
 
@@ -98,9 +96,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
         return recordDeserializeFilter;
     }
 
-    /**
-     * @param readTypeFilter New read type filter.
-     */
+    /** {@inheritDoc} */
     @Override public RecordSerializerFactoryImpl recordDeserializeFilter(
         IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter) {
         this.recordDeserializeFilter = readTypeFilter;
@@ -115,10 +111,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
         return marshalledMode;
     }
 
-    /**
-     * @param marshalledMode New marshalled mode. Records are not deserialized in this mode,  with binary representation
-     * are read instead.
-     */
+    /** {@inheritDoc} */
     @Override public RecordSerializerFactoryImpl marshalledMode(boolean marshalledMode) {
         this.marshalledMode = marshalledMode;
 
@@ -132,10 +125,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
         return skipPositionCheck;
     }
 
-    /**
-     * @param skipPositionCheck New skip position check flag. Should be set for reading compacted wal file with skipped
-     * physical records.
-     */
+    /** {@inheritDoc} */
     @Override public RecordSerializerFactoryImpl skipPositionCheck(boolean skipPositionCheck) {
         this.skipPositionCheck = skipPositionCheck;
 
