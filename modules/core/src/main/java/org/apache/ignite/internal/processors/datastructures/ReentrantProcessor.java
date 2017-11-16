@@ -22,7 +22,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 
-/** */
+/** Base class for all acquiring processors. */
 public abstract class ReentrantProcessor<T>
     implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, Boolean>, Externalizable {
 
@@ -48,6 +48,6 @@ public abstract class ReentrantProcessor<T>
         return false;
     }
 
-    /** */
+    /** Specific operation around a locking with the state. */
     protected abstract LockedModified lock(GridCacheLockState2Base<T> state);
 }

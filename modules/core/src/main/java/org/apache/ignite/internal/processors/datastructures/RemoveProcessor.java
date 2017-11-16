@@ -27,7 +27,7 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/** Remove node from the lock state and return next owner if necessary. */
 public final class RemoveProcessor<T> implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, T>,
     Externalizable {
 
