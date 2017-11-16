@@ -351,8 +351,15 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                 if (baselineTop.isEmpty())
                     throw new IgniteException("BaselineTopology must contain at least one node.");
 
-                if (onlineBaselineNodesRequestedForRemoval(baselineTop))
-                    throw new IgniteException("Removing online nodes from BaselineTopology is not supported.");
+                Collection<Object> onlineNodes = onlineBaselineNodesRequestedForRemoval(baselineTop);
+
+                if (onlineNodes != null) {
+                    if (!onlineNodes.isEmpty())
+                        throw new IgniteException("Removing online nodes from BaselineTopology is not supported: " + onlineNodes);
+                }
+                else
+                    //should never happen, actually: if cluster was activated, we expect it to have a BaselineTopology.
+                    throw new IgniteException("Previous BaselineTopology was not found.");
             }
 
             ctx.state().changeGlobalState(true, baselineTop, true).get();
@@ -366,14 +373,16 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** */
-    private boolean onlineBaselineNodesRequestedForRemoval(Collection<BaselineNode> newBlt) {
+    @Nullable private Collection<Object> onlineBaselineNodesRequestedForRemoval(Collection<BaselineNode> newBlt) {
         BaselineTopology blt = ctx.state().clusterState().baselineTopology();
         Set<Object> bltConsIds;
 
         if (blt == null)
-            return true;
+            return null;
         else
             bltConsIds = blt.consistentIds();
+
+        ArrayList<Object> onlineNodesRequestedForRemoval = new ArrayList<>();
 
         Collection<Object> aliveNodesConsIds = getConsistentIds(ctx.discovery().aliveServerNodes());
 
@@ -382,11 +391,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         for (Object oldBltConsId : bltConsIds) {
             if (aliveNodesConsIds.contains(oldBltConsId)) {
                 if (!newBltConsIds.contains(oldBltConsId))
-                    return true;
+                    onlineNodesRequestedForRemoval.add(oldBltConsId);
             }
         }
 
-        return false;
+        return onlineNodesRequestedForRemoval;
     }
 
     /** */

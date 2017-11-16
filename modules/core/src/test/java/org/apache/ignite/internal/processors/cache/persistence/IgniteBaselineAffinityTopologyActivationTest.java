@@ -128,7 +128,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     public void testOnlineNodesCannotBeRemovedFromBaselineTopology() throws Exception {
         Ignite nodeA = startGridWithConsistentId("A");
         Ignite nodeB = startGridWithConsistentId("B");
-        Ignite nodeC = startGridWithConsistentId("C");
+        Ignite nodeC = startGridWithConsistentId("OnlineConsID");
 
         nodeC.active(true);
 
@@ -138,7 +138,9 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             nodeC.cluster().setBaselineTopology(Arrays.asList((BaselineNode) nodeA.cluster().localNode(),
                 nodeB.cluster().localNode()));
         } catch (IgniteException e) {
-            assertTrue(e.getMessage().startsWith("Removing online nodes"));
+            String errMsg = e.getMessage();
+            assertTrue(errMsg.startsWith("Removing online nodes"));
+            assertTrue(errMsg.contains("[OnlineConsID]"));
 
             expectedExceptionIsThrown = true;
         }
