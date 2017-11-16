@@ -17,6 +17,7 @@
 
 // TODO: Code style
 using System;
+using System.Collections.Generic;
 using Apache.Ignite.Core.Discovery.Tcp;
 using Apache.Ignite.Core.Discovery.Tcp.Static;
 
@@ -48,7 +49,18 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
+                JvmOptions = JvmDebugOpts
             };
         }
+
+        private static readonly IList<string> JvmDebugOpts =
+            new List<string>
+            {
+                "-Xdebug",
+                "-Xnoagent",
+                "-Djava.compiler=NONE",
+                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+            };
+
     }
 }

@@ -107,6 +107,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /** */
         private readonly EnvDelegates.ThrowNew _throwNew;
 
+        /** */
+        private bool _inExceptionCheck;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Env" /> class.
         /// </summary>
@@ -460,32 +463,45 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private void ExceptionCheck()
         {
+            if (_inExceptionCheck)
+                return;
+
             if (!_exceptionCheck(_envPtr))
             {
                 return;
             }
 
-            var err = _exceptionOccurred(_envPtr);
-            Debug.Assert(err != IntPtr.Zero);
+            // Recursion guard.
+            _inExceptionCheck = true;
 
-            _exceptionClear(_envPtr);
-
-            using (var errRef = NewGlobalRef(err))
+            try
             {
-                var errRef0 = (long) errRef.Target;
-                var methodId = _jvm.MethodId;
+                var err = _exceptionOccurred(_envPtr);
+                Debug.Assert(err != IntPtr.Zero);
 
-                using (var cls = GetObjectClass(errRef))
-                using (var clsName = CallObjectMethod(cls, methodId.ClassGetName))
-                using (var msg = CallObjectMethod(errRef, methodId.ThrowableGetMessage))
-                using (var trace = CallStaticObjectMethod(methodId.PlatformUtils,
-                    methodId.PlatformUtilsGetStackTrace, &errRef0))
+                _exceptionClear(_envPtr);
+
+                using (var errRef = NewGlobalRef(err))
                 {
-                    throw new JavaException(
-                        JStringToString(clsName),
-                        JStringToString(msg),
-                        JStringToString(trace));
+                    var errRef0 = (long)errRef.Target;
+                    var methodId = _jvm.MethodId;
+
+                    using (var cls = GetObjectClass(errRef))
+                    using (var clsName = CallObjectMethod(cls, methodId.ClassGetName))
+                    using (var msg = CallObjectMethod(errRef, methodId.ThrowableGetMessage))
+                    using (var trace = CallStaticObjectMethod(methodId.PlatformUtils,
+                        methodId.PlatformUtilsGetStackTrace, &errRef0))
+                    {
+                        throw new JavaException(
+                            JStringToString(clsName),
+                            JStringToString(msg),
+                            JStringToString(trace));
+                    }
                 }
+            }
+            finally
+            {
+                _inExceptionCheck = false;
             }
         }
 
