@@ -65,7 +65,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     }
 
     /**
-     * @param size Amount of elements in the vector.
+     * @param size    Amount of elements in the vector.
      * @param acsMode Random or sequential access mode.
      */
     public SparseDistributedVectorStorage(int size, int acsMode) {
@@ -110,6 +110,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
 
     /**
      * Gets cache
+     *
      * @return cache
      */
     public IgniteCache<RowColMatrixKey, Double> cache() {
@@ -118,6 +119,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
 
     /**
      * Gets access mode
+     *
      * @return code of access mode
      */
     public int accessMode() {
@@ -126,6 +128,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
 
     /**
      * Gets vector element by element index
+     *
      * @param i Vector element index.
      * @return vector element
      */
@@ -134,13 +137,14 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
         return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, getCacheKey(i))).call(() -> {
             IgniteCache<RowColMatrixKey, Double> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
             Double res = cache.get(getCacheKey(i));
-            if(res == null) return 0.0;
+            if (res == null) return 0.0;
             return res;
         });
     }
 
     /**
      * Sets vector element by index
+     *
      * @param i Vector element index.
      * @param v Value to set at given index.
      */
@@ -178,7 +182,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         acsMode = in.readInt();
-        uuid = (UUID)in.readObject();
+        uuid = (UUID) in.readObject();
         cache = ignite().getOrCreateCache(in.readUTF());
     }
 
@@ -233,14 +237,15 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        SparseDistributedVectorStorage that = (SparseDistributedVectorStorage)obj;
+        SparseDistributedVectorStorage that = (SparseDistributedVectorStorage) obj;
 
-        return size == that.size  && acsMode == that.acsMode
-            && uuid.equals(that.uuid) && (cache != null ? cache.equals(that.cache) : that.cache == null);
+        return size == that.size && acsMode == that.acsMode
+                && uuid.equals(that.uuid) && (cache != null ? cache.equals(that.cache) : that.cache == null);
     }
 
     /**
      * Builds cache key for vector element
+     *
      * @param idx Index
      * @return RowColMatrixKey
      */

@@ -737,15 +737,18 @@ public abstract class AbstractMatrix implements Matrix {
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public Vector getCol(int col) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Vector getCol(int col) {
         checkColumnIndex(col);
         Vector res;
-        if(isDistributed()) res = MatrixUtil.likeVector(this, rowSize());
+        if (isDistributed()) res = MatrixUtil.likeVector(this, rowSize());
         else res = new DenseLocalOnHeapVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
-            res.setX(i, getX(i,col));
+            res.setX(i, getX(i, col));
 
         return res;
     }

@@ -60,22 +60,20 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
 
 
     /**
-     *
      * @param data Data to fill storage
      */
     public SparseBlockDistributedVector(double[] data) {
         setStorage(new BlockVectorStorage(data.length));
         for (int i = 0; i < data.length; i++) {
             double val = data[i];
-            if(val != 0.0) storage().set(i, val);
+            if (val != 0.0) storage().set(i, val);
         }
     }
 
 
-
     /** */
     public BlockVectorStorage storage() {
-        return (BlockVectorStorage)getStorage();
+        return (BlockVectorStorage) getStorage();
     }
 
     /**
@@ -136,6 +134,6 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
 
     /** */
     public UUID getUUID() {
-        return ((BlockVectorStorage)getStorage()).getUUID();
+        return ((BlockVectorStorage) getStorage()).getUUID();
     }
 }

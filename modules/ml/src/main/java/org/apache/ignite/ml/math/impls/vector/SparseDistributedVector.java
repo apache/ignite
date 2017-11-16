@@ -59,7 +59,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
     }
 
     /**
-     * @param size Vector size.
+     * @param size    Vector size.
      * @param acsMode Vector elements access mode..
      */
     public SparseDistributedVector(int size, int acsMode) {
@@ -76,22 +76,20 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
     }
 
     /**
-     *
      * @param data
      */
     public SparseDistributedVector(double[] data) {
         setStorage(new SparseDistributedVectorStorage(data.length, StorageConstants.RANDOM_ACCESS_MODE));
         for (int i = 0; i < data.length; i++) {
             double value = data[i];
-            if(value != 0.0) storage().set(i, value);
+            if (value != 0.0) storage().set(i, value);
         }
     }
 
 
-
     /** */
     public SparseDistributedVectorStorage storage() {
-        return (SparseDistributedVectorStorage)getStorage();
+        return (SparseDistributedVectorStorage) getStorage();
     }
 
     /**
@@ -154,6 +152,6 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
 
     /** */
     public UUID getUUID() {
-        return ((SparseDistributedVectorStorage)getStorage()).getUUID();
+        return ((SparseDistributedVectorStorage) getStorage()).getUUID();
     }
 }
