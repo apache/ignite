@@ -107,7 +107,9 @@
     <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
     <Compile Include="Client\Cache\CacheTest.cs" />
     <Compile Include="Client\Cache\CacheTestNoMeta.cs" />
+    <Compile Include="Client\Cache\ClientCacheConfigurationTest.cs" />
     <Compile Include="Client\Cache\EmptyObject.cs" />
+    <Compile Include="Client\Cache\CreateCacheTest.cs" />
     <Compile Include="Client\Cache\ScanQueryTest.cs" />
     <Compile Include="Client\Cache\Person.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
