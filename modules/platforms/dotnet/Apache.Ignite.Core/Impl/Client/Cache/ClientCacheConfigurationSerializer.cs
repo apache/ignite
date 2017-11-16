@@ -247,6 +247,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// Throws the unsupported exception if property is not default.
         /// </summary>
         // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
+        // ReSharper disable UnusedParameter.Local
         private static void ThrowUnsupportedIfNotDefault<T>(T obj, string propertyName, T defaultValue = default(T))
         {
             if (!Equals(obj, defaultValue))

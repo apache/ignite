@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Client.Cache
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
