@@ -2125,6 +2125,11 @@
                     <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="redirectJavaConsoleOutput" type="xs:boolean">
+              <xs:annotation>
+                <xs:documentation>Whether Java console output should be redirected to Console.Out and Console.Error.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

@@ -23,6 +23,6 @@ import row from './row.directive.js';
 export default angular
     .module('list-editable-cols', [
     ])
-    .directive(cols.name, cols)
+    .directive('listEditableCols', cols)
     .directive('listEditableItemView', row)
     .directive('listEditableItemEdit', row);

@@ -199,6 +199,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
     public abstract GridH2Row put(GridH2Row row);
 
     /**
+     * Puts row.
+     *
+     * @param row Row.
+     * @return {@code True} if existing row row has been replaced.
+     */
+    public abstract boolean putx(GridH2Row row);
+
+    /**
      * Remove row from index.
      *
      * @param row Row.
@@ -207,13 +215,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
     public abstract GridH2Row remove(SearchRow row);
 
     /**
-     * Remove row from index, does not return removed row.
+     * Removes row from index.
      *
      * @param row Row.
+     * @return {@code True} if row has been removed.
      */
-    public void removex(SearchRow row) {
-        remove(row);
-    }
+    public abstract boolean removex(SearchRow row);
 
     /**
      * @param ses Session.
