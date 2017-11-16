@@ -2966,7 +2966,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        GridCacheVersionedFuture<IgniteInternalTx> fut = (GridCacheVersionedFuture<IgniteInternalTx>)prepFut;
+        GridCacheMvccFuture<IgniteInternalTx> fut = (GridCacheMvccFuture<IgniteInternalTx>)prepFut;
 
         return fut != null && fut.onOwnerChanged(entry, owner);
     }
@@ -3177,10 +3177,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public final void prepare(boolean awaitLastFuture) throws IgniteCheckedException {
-        if (awaitLastFuture)
-            txState().awaitLastFuture(cctx);
-
+    public final void prepare() throws IgniteCheckedException {
         prepareNearTxLocal().get();
     }
 
@@ -3411,11 +3408,19 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * Prepares next batch of entries in dht transaction.
      *
-     * @param req Prepare request.
+     * @param reads Read entries.
+     * @param writes Write entries.
+     * @param txNodes Transaction nodes mapping.
+     * @param last {@code True} if this is last prepare request.
      * @return Future that will be completed when locks are acquired.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsyncLocal(GridNearTxPrepareRequest req) {
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsyncLocal(
+        @Nullable Collection<IgniteTxEntry> reads,
+        @Nullable Collection<IgniteTxEntry> writes,
+        Map<UUID, Collection<UUID>> txNodes,
+        boolean last
+    ) {
         long timeout = remainingTime();
 
         if (state() != PREPARING) {
@@ -3440,11 +3445,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             timeout,
             0,
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
-            req.last(),
+            last,
             needReturnValue() && implicit());
 
         try {
-            userPrepare((serializable() && optimistic()) ? F.concat(false, req.writes(), req.reads()) : req.writes());
+            userPrepare((serializable() && optimistic()) ? F.concat(false, writes, reads) : writes);
 
             // Make sure to add future before calling prepare on it.
             cctx.mvcc().addFuture(fut);
@@ -3452,7 +3457,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (isSystemInvalidate())
                 fut.complete();
             else
-                fut.prepare(req);
+                fut.prepare(reads, writes, txNodes);
         }
         catch (IgniteTxTimeoutCheckedException | IgniteTxOptimisticCheckedException e) {
             fut.onError(e);
