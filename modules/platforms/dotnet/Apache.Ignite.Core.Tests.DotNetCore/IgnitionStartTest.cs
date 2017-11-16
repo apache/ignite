@@ -46,6 +46,10 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
 
             var ignite = Ignition.Start(cfg);
             Assert.IsNotNull(ignite);
+
+            var cache = ignite.CreateCache<int, int>("foo");
+            cache[1] = 1;
+            Assert.AreEqual(1, cache[1]);
         }
 
         private static IEnumerable<string> FindJvmDll()
