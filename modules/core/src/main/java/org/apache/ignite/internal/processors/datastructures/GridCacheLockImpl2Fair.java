@@ -161,6 +161,11 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isHeldByCurrentThread() throws IgniteException {
+        return sync.reentrantCount.get() > 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isLocked() throws IgniteException {
         try {
             if (sync.reentrantCount.get() > 0)
@@ -179,6 +184,27 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasQueuedThreads() throws IgniteException {
+        if (sync.reentrantCount.get() > 0)
+            return true;
+
+        if (sync.isGloballyLocked)
+            return true;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasQueuedThread(Thread thread) throws IgniteException {
+        Latch latch = sync.latches.get(thread.getId());
+
+        if (latch == null)
+            return false;
+
+        return latch.isLocked();
     }
 
     /** {@inheritDoc} */

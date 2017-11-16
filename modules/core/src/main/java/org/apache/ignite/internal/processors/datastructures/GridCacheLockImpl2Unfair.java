@@ -291,6 +291,11 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isHeldByCurrentThread() throws IgniteException {
+        return sync.reentrantCount.get() > 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isLocked() throws IgniteException {
         ctx.kernalContext().gateway().readLock();
 
@@ -303,6 +308,16 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         finally {
             ctx.kernalContext().gateway().readUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasQueuedThreads() throws IgniteException {
+        return sync.hasQueuedThreads();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasQueuedThread(Thread thread) throws IgniteException {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -571,6 +586,22 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             assert globalSync != null;
 
             this.globalSync = globalSync;
+        }
+
+        /** */
+        private boolean hasQueuedThreads() {
+            if (reentrantCount.get() > 0)
+                return true;
+
+            if (isGloballyLocked || lock.isLocked())
+                return true;
+
+            return false;
+        }
+
+        /** */
+        private boolean hasQueuedThread(Thread thread) {
+            return lock.hasQueuedThread(thread);
         }
 
         /** */

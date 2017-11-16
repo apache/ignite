@@ -50,21 +50,6 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isHeldByCurrentThread() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasQueuedThreads() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasQueuedThread(Thread thread) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean hasWaiters(IgniteCondition condition) {
         throw new UnsupportedOperationException();
     }
@@ -128,6 +113,11 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
             finally {
                 lock.unlock();
             }
+        }
+
+        /** */
+        protected boolean isLocked() {
+            return lock.isLocked();
         }
 
         /**
