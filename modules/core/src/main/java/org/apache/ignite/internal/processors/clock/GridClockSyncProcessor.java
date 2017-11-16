@@ -153,6 +153,9 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         try {
             stopping = false;
 
+            if (srv != null)
+                srv.beforeStop();
+
             if (timeCoord != null) {
                 timeCoord.cancel();
 
@@ -160,9 +163,6 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
 
                 timeCoord = null;
             }
-
-            if (srv != null)
-                srv.beforeStop();
         }
         finally {
             rw.writeUnlock();

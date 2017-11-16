@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             }
 
             Assert.AreEqual(1, _dumps.Count);
-            ops = _dumps.First();
+            var ops = _dumps.First();
             Assert.AreEqual(3, ops.Count);
 
             Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write && Cache1.Equals(op.CacheName) && 1.Equals(op.Key) && 1.Equals(op.Value)));

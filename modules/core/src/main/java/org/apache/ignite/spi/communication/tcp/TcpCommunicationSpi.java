@@ -65,7 +65,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -94,6 +93,7 @@ import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -529,15 +529,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         if (c.failed) {
                             ses.send(new RecoveryLastReceivedMessage(-1));
 
-                            for (GridNioSession ses0 : nioSrvr.sessions()) {
-                                ConnectionKey key0 = ses0.meta(CONN_IDX_META);
-
-                                if (ses0.accepted() && key0 != null &&
-                                    key0.nodeId().equals(connKey.nodeId()) &&
-                                    key0.connectionIndex() == connKey.connectionIndex() &&
-                                    key0.connectCount() < connKey.connectCount())
-                                    ses0.close();
-                            }
+                            closeStaleConnections(connKey);
                         }
                     }
                 }
@@ -557,10 +549,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         if (oldClient instanceof GridTcpNioCommunicationClient) {
                             if (log.isInfoEnabled())
                                 log.info("Received incoming connection when already connected " +
-                                "to this node, rejecting [locNode=" + locNode.id() +
-                                ", rmtNode=" + sndId + ']');
+                                    "to this node, rejecting [locNode=" + locNode.id() +
+                                    ", rmtNode=" + sndId + ']');
 
                             ses.send(new RecoveryLastReceivedMessage(-1));
+
+                            closeStaleConnections(connKey);
 
                             return;
                         }
@@ -589,10 +583,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                                 if (log.isInfoEnabled())
                                     log.info("Received incoming connection when already connected " +
-                                    "to this node, rejecting [locNode=" + locNode.id() +
-                                    ", rmtNode=" + sndId + ']');
+                                        "to this node, rejecting [locNode=" + locNode.id() +
+                                        ", rmtNode=" + sndId + ']');
 
                                 ses.send(new RecoveryLastReceivedMessage(-1));
+
+                                closeStaleConnections(connKey);
 
                                 fut.onDone(oldClient);
 
@@ -644,6 +640,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
                         }
                     }
+                }
+            }
+
+            /**
+             * @param connKey Connection key.
+             */
+            private void closeStaleConnections(ConnectionKey connKey) {
+                for (GridNioSession ses0 : nioSrvr.sessions()) {
+                    ConnectionKey key0 = ses0.meta(CONN_IDX_META);
+
+                    if (ses0.accepted() && key0 != null &&
+                        key0.nodeId().equals(connKey.nodeId()) &&
+                        key0.connectionIndex() == connKey.connectionIndex() &&
+                        key0.connectCount() < connKey.connectCount())
+                        ses0.close();
                 }
             }
 
