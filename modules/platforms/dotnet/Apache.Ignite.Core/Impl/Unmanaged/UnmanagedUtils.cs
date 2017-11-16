@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         #region NATIVE METHODS: PROCESSOR
 
         internal static void IgnitionStart(Env env, string cfgPath, string gridName,
-            bool clientMode, bool userLogger, long igniteId)
+            bool clientMode, bool userLogger, long igniteId, bool redirectConsole)
         {
             using (var mem = IgniteManager.Memory.Allocate().GetStream())
             using (var cfgPath0 = env.NewStringUtf(cfgPath))
@@ -38,10 +38,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 mem.WriteBool(clientMode);
                 mem.WriteBool(userLogger);
-
-                // Additional data.
-                mem.WriteBool(false);
-                mem.WriteBool(false);
+                mem.WriteBool(redirectConsole);
 
                 long* args = stackalloc long[5];
                 args[0] = cfgPath == null ? 0 : cfgPath0.Target.ToInt64();
