@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.Vector;
 import java.io.Serializable;
 import java.util.Arrays;
 
-/** Fuzzy C-Means model representation */
+/** Fuzzy C-Means model representation. */
 public class FuzzyCMeansModelFormat implements Serializable {
     /** Centers of clusters. */
     private final Vector[] centers;
@@ -31,18 +31,23 @@ public class FuzzyCMeansModelFormat implements Serializable {
     /** Distance measure. */
     private final DistanceMeasure measure;
 
-    /** */
+    /**
+     * Constructor that retains result of clusterization and distance measure.
+     *
+     * @param centers Centers found while clusterization.
+     * @param measure Distance measure.
+     */
     public FuzzyCMeansModelFormat(Vector[] centers, DistanceMeasure measure) {
         this.centers = centers;
         this.measure = measure;
     }
 
-    /** */
+    /** Distance measure used while clusterization. */
     public DistanceMeasure getMeasure() {
         return measure;
     }
 
-    /** */
+    /** Get cluster centers. */
     public Vector[] getCenters() {
         return centers;
     }

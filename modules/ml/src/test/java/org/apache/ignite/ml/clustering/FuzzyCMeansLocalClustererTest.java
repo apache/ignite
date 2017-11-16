@@ -30,7 +30,7 @@ import java.util.Comparator;
 
 import static org.junit.Assert.*;
 
-/** Tests that checks local Fuzzy C-Means clusterer */
+/** Tests that checks local Fuzzy C-Means clusterer. */
 public class FuzzyCMeansLocalClustererTest {
 
     /** Test FCM on points that forms three clusters on the line. */

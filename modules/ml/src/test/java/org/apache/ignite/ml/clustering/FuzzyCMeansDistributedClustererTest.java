@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
 
-/** Tests that checks distributed Fuzzy C-Means clusterer */
+/** Tests that checks distributed Fuzzy C-Means clusterer. */
 public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 3;
 

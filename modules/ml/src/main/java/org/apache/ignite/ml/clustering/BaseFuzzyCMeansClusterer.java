@@ -44,7 +44,7 @@ public abstract class BaseFuzzyCMeansClusterer<T extends Matrix> implements Clus
      *
      * @param measure Distance measure.
      * @param exponentialWeight Specific constant which is used in calculating of membership matrix.
-     * @param stopCondition Flag that tells when algorithm should stop
+     * @param stopCondition Flag that tells when algorithm should stop.
      * @param maxDelta The maximum distance between old and new centers or maximum difference between new and old
      *                 membership matrix elements for which algorithm must stop.
      */
@@ -77,7 +77,7 @@ public abstract class BaseFuzzyCMeansClusterer<T extends Matrix> implements Clus
         return measure.compute(v1, v2);
     }
 
-    /** Enumeration that contains different conditions under which algorithm must stop */
+    /** Enumeration that contains different conditions under which algorithm must stop. */
     public enum StopCondition {
         /** Algorithm stops if the maximum distance between new and old centers is less than {@link #maxDelta}. */
         STABLE_CENTERS,

@@ -8,6 +8,7 @@ import org.apache.ignite.ml.math.Vector;
 
 import java.util.Arrays;
 
+/** This class incapsulates result of clusterization. */
 public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<FuzzyCMeansModelFormat> {
     /** Centers of clusters. */
     private Vector[] centers;

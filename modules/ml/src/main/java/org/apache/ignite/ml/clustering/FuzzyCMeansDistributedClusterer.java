@@ -62,7 +62,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      *
      * @param measure Distance measure.
      * @param exponentialWeight Specific constant which is used in calculating of membership matrix.
-     * @param stopCondition Flag that tells when algorithm should stop
+     * @param stopCondition Flag that tells when algorithm should stop.
      * @param maxDelta The maximum distance between old and new centers or maximum difference between new and old
      *                 membership matrix elements for which algorithm must stop.
      * @param cMeansMaxIterations The maximum number of FCM iterations.
@@ -163,9 +163,9 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      * Calculate new distances from each point to the nearest center.
      *
      * @param cacheName Cache name of point matrix.
-     * @param uuid Uuid of point matrix
-     * @param newCenters The list of centers that was added on previous step
-     * @return Hash map with distances
+     * @param uuid Uuid of point matrix.
+     * @param newCenters The list of centers that was added on previous step.
+     * @return Hash map with distances.
      */
     private ConcurrentHashMap<Integer, Double> getNewCosts(String cacheName, UUID uuid,
                                                            List<Vector> newCenters) {
