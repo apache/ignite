@@ -88,18 +88,21 @@ public class ZookeeperClient implements Watcher {
 
         connectStartTime = System.currentTimeMillis();
 
-        zk = new ZooKeeper(connectString, sesTimeout, this);
+        String threadName = Thread.currentThread().getName();
+
+        // ZK generates internal threads' names using current thread name.
+        Thread.currentThread().setName("zk-" + igniteInstanceName);
+
+        try {
+            zk = new ZooKeeper(connectString, sesTimeout, this);
+        }
+        finally {
+            Thread.currentThread().setName(threadName);
+        }
 
         connTimer = new Timer("zk-timer-" + igniteInstanceName);
 
         scheduleConnectionCheck();
-    }
-
-    /**
-     *
-     */
-    private void scheduleConnectionCheck() {
-        connTimer.schedule(new ConnectionTimeoutTask(connectStartTime), connLossTimeout);
     }
 
     /** {@inheritDoc} */
@@ -294,6 +297,15 @@ public class ZookeeperClient implements Watcher {
         }
 
         connTimer.cancel();
+    }
+
+    /**
+     *
+     */
+    private void scheduleConnectionCheck() {
+        assert state == ConnectionState.Disconnected : state;
+
+        connTimer.schedule(new ConnectionTimeoutTask(connectStartTime), connLossTimeout);
     }
 
     /**
