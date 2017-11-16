@@ -454,10 +454,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
 
             var err = _exceptionOccurred(_envPtr);
+
+            if (err == IntPtr.Zero)
+            {
+                Console.WriteLine("WTF!!");
+            }
+
             long err0 = err.ToInt64();
             Debug.Assert(err != IntPtr.Zero);
 
-            Console.WriteLine("Exception:" + err0);
+            Console.WriteLine("Exception:" + err);
             _exceptionClear(_envPtr);
             Console.WriteLine("Exception2");
 
