@@ -59,7 +59,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
     /** Key for shared lock state. */
     private final GridCacheInternalKey key;
 
-    /** ReleasedMessage handler. */
+    /** {@ReleasedMessage} handler. */
     private final IgniteInClosure<GridCacheIdMessage> releaser;
 
     /**
@@ -349,7 +349,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         /** Key for shared lock state. */
         private final GridCacheInternalKey key;
 
-        /** */
+        /** The latch for a waiting a {@ReleasedMessage}, failed or return {@true} by the acquire processor. */
         private final Latch latch;
 
         /** Reentrant lock projection. */
@@ -437,8 +437,8 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         }
 
         /** */
-        private IgniteInternalFuture<EntryProcessorResult<Boolean>> tryAcquireOrAdd() {
-            return lockView.invokeAsync(key, acquireProcessor);
+        private void tryAcquireOrAdd() {
+            lockView.invokeAsync(key, acquireProcessor).listen(acquireListener);
         }
 
         /**
@@ -498,7 +498,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
 
         /** */
         private void acquire() {
-            tryAcquireOrAdd().listen(acquireListener);
+            tryAcquireOrAdd();
 
             waitForReleaseUninterruptibly();
         }
@@ -510,7 +510,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
          * @return {@true} if locked, or {@false} if InterruptedException has been thrown or timeout.
          */
         private boolean acquire(long timeout, TimeUnit unit) throws InterruptedException {
-            tryAcquireOrAdd().listen(acquireListener);
+            tryAcquireOrAdd();
 
             try {
                 if (!waitForRelease(timeout, unit)) {
@@ -531,7 +531,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
          * @return {@true} if locked, or {@false} if InterruptedException has been thrown.
          */
         private void acquireInterruptibly() throws InterruptedException {
-            tryAcquireOrAdd().listen(acquireListener);
+            tryAcquireOrAdd();
 
             try {
                 waitForRelease();
@@ -547,12 +547,12 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             return lockView.get(key);
         }
 
-        /** */
+        /** Async release lock. */
         private void release() {
             lockView.invokeAsync(key, releaseProcessor).listen(releaseListener);
         }
 
-        /** */
+        /** Remove node. */
         private void remove(UUID id) {
             lockView.invokeAsync(key, new RemoveProcessor<>(id)).listen(releaseListener);
         }
@@ -612,7 +612,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             if (isGloballyLocked || lock.isLocked())
                 return true;
 
-            ArrayDeque<UUID> nodes = globalSync.forceGet().nodes;
+            ArrayDeque<UUID> nodes = globalSync.forceGet().owners;
 
             return !(nodes == null || nodes.isEmpty() ||
                 // The unlock method calls invokeAsync, so release processor can still work on primary node.

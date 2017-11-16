@@ -170,7 +170,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
             if (sync.isGloballyLocked)
                 return true;
 
-            ArrayDeque<LockOwner> nodes = sync.forceGet().nodes;
+            ArrayDeque<LockOwner> nodes = sync.forceGet().owners;
 
             return !(nodes == null || nodes.isEmpty() ||
                 // The unlock method calls invokeAsync, so release processor can still work on primary node.

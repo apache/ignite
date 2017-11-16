@@ -46,13 +46,13 @@ public final class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUI
 
     /** {@inheritDoc} */
     @Override public UUID onNodeRemoved(UUID id) {
-        if (nodesSet.remove(id)) {
-            final boolean lockReleased = nodes.getFirst().equals(id);
+        if (ownerSet.remove(id)) {
+            final boolean lockReleased = owners.getFirst().equals(id);
 
-            nodes.remove(id);
+            owners.remove(id);
 
-            if (lockReleased && !nodes.isEmpty())
-                return nodes.getFirst();
+            if (lockReleased && !owners.isEmpty())
+                return owners.getFirst();
         }
 
         return null;

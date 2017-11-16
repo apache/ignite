@@ -47,12 +47,12 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
 
     /** {@inheritDoc} */
     @Override public LockOwner onNodeRemoved(UUID id) {
-        if (nodes == null || nodes.isEmpty())
+        if (owners == null || owners.isEmpty())
             return null;
 
-        final boolean lockReleased = nodes.getFirst().nodeId.equals(id);
+        final boolean lockReleased = owners.getFirst().nodeId.equals(id);
 
-        Iterator<LockOwner> iter = nodes.iterator();
+        Iterator<LockOwner> iter = owners.iterator();
 
         LockOwner nextOwner = null;
 
@@ -60,7 +60,7 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
             LockOwner tuple = iter.next();
 
             if (tuple.nodeId.equals(id)) {
-                nodesSet.remove(tuple);
+                ownerSet.remove(tuple);
                 iter.remove();
             }
             else if (lockReleased && nextOwner == null)

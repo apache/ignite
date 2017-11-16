@@ -33,10 +33,10 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
 
     /** Queue containing nodes that are waiting to acquire this lock. */
     @GridToStringInclude
-    public ArrayDeque<T> nodes;
+    public ArrayDeque<T> owners;
 
     /** For fast contains. */
-    public HashSet<T> nodesSet;
+    public HashSet<T> ownerSet;
 
     /**
      * Constructor.
@@ -44,8 +44,8 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
      * @param gridStartTime Cluster start time.
      */
     public GridCacheLockState2Base(long gridStartTime) {
-        nodes = new ArrayDeque<>();
-        nodesSet = new HashSet<>();
+        owners = new ArrayDeque<>();
+        ownerSet = new HashSet<>();
 
         this.gridStartTime = gridStartTime;
     }
@@ -61,7 +61,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     @Override public int hashCode() {
         int result = (int)(gridStartTime ^ (gridStartTime >>> 32));
 
-        result = 31 * result + (nodes != null ? nodes.hashCode() : 0);
+        result = 31 * result + (owners != null ? owners.hashCode() : 0);
 
         return result;
     }
@@ -76,7 +76,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
 
         GridCacheLockState2Base state = (GridCacheLockState2Base)o;
 
-        if (nodes != null ? !nodes.equals(state.nodes) : state.nodes != null)
+        if (owners != null ? !owners.equals(state.owners) : state.owners != null)
             return false;
 
         return true;
@@ -96,23 +96,23 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     public LockedModified lockIfFree(T owner) {
         LockedModified result = new LockedModified(true, false);
 
-        if (nodes == null) {
-            nodes = new ArrayDeque<>();
+        if (owners == null) {
+            owners = new ArrayDeque<>();
         }
 
-        if (nodesSet == null)
-            nodesSet = new HashSet<>();
+        if (ownerSet == null)
+            ownerSet = new HashSet<>();
 
-        if (nodes.isEmpty()) {
-            nodes.add(owner);
-            nodesSet.add(owner);
+        if (owners.isEmpty()) {
+            owners.add(owner);
+            ownerSet.add(owner);
 
             result.modified = true;
 
             return result;
         }
 
-        if (nodes.getFirst().equals(owner))
+        if (owners.getFirst().equals(owner))
             return result;
 
         result.locked = false;
@@ -124,29 +124,29 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     public LockedModified lockOrRemove(T owner) {
         LockedModified result = new LockedModified(true, false);
 
-        if (nodes == null) {
-            nodes = new ArrayDeque<>();
+        if (owners == null) {
+            owners = new ArrayDeque<>();
         }
 
-        if (nodesSet == null)
-            nodesSet = new HashSet<>();
+        if (ownerSet == null)
+            ownerSet = new HashSet<>();
 
-        if (nodes.isEmpty()) {
-            nodes.add(owner);
-            nodesSet.add(owner);
+        if (owners.isEmpty()) {
+            owners.add(owner);
+            ownerSet.add(owner);
 
             result.modified = true;
 
             return result;
         }
 
-        if (nodes.getFirst().equals(owner))
+        if (owners.getFirst().equals(owner))
             return result;
 
         result.locked = false;
 
-        if (nodesSet.remove(owner)) {
-            nodes.remove(owner);
+        if (ownerSet.remove(owner)) {
+            owners.remove(owner);
             result.modified = true;
         }
 
@@ -157,29 +157,29 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     public LockedModified lockOrAdd(T owner) {
         LockedModified result = new LockedModified(true, false);
 
-        if (nodes == null) {
-            nodes = new ArrayDeque<>();
+        if (owners == null) {
+            owners = new ArrayDeque<>();
         }
 
-        if (nodesSet == null)
-            nodesSet = new HashSet<>();
+        if (ownerSet == null)
+            ownerSet = new HashSet<>();
 
-        if (nodes.isEmpty()) {
-            nodes.add(owner);
-            nodesSet.add(owner);
+        if (owners.isEmpty()) {
+            owners.add(owner);
+            ownerSet.add(owner);
 
             result.modified = true;
 
             return result;
         }
 
-        if (nodes.getFirst().equals(owner))
+        if (owners.getFirst().equals(owner))
             return result;
 
         // Optimization for fast contains.
-        if (!nodesSet.contains(owner)) {
-            nodes.add(owner);
-            nodesSet.add(owner);
+        if (!ownerSet.contains(owner)) {
+            owners.add(owner);
+            ownerSet.add(owner);
 
             result.modified = true;
         }
@@ -191,15 +191,15 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
 
     /** Remove node from first position in waiting list. */
     public T unlock(T owner) {
-        if (nodes == null || nodes.isEmpty() || !nodes.getFirst().equals(owner))
+        if (owners == null || owners.isEmpty() || !owners.getFirst().equals(owner))
             return null;
 
-        nodesSet.remove(nodes.removeFirst());
+        ownerSet.remove(owners.removeFirst());
 
-        if (nodes.isEmpty())
+        if (owners.isEmpty())
             return null;
 
-        return nodes.getFirst();
+        return owners.getFirst();
     }
 
     /**
@@ -217,12 +217,12 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(gridStartTime);
 
-        out.writeBoolean(nodes != null);
+        out.writeBoolean(owners != null);
 
-        if (nodes != null) {
-            out.writeInt(nodes.size());
+        if (owners != null) {
+            out.writeInt(owners.size());
 
-            for (T item : nodes) {
+            for (T item : owners) {
                 writeItem(out, item);
             }
         }
@@ -238,16 +238,16 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
         if (in.readBoolean()) {
             int size = in.readInt();
 
-            nodes = new ArrayDeque<>(size);
+            owners = new ArrayDeque<>(size);
 
             for (int i = 0; i < size; i++)
-                nodes.add(readItem(in));
+                owners.add(readItem(in));
 
-            nodesSet = new HashSet<>(nodes);
+            ownerSet = new HashSet<>(owners);
         }
         else {
-            nodes = null;
-            nodesSet = null;
+            owners = null;
+            ownerSet = null;
         }
     }
 }
