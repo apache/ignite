@@ -292,7 +292,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             throw new IgniteOutOfMemoryException("Not enough memory allocated " +
                 "(consider increasing memory policy size or enabling evictions) " +
                 "[policyName=" + memoryPolicyCfg.getName() +
-                ", size=" + U.readableSize(memoryPolicyCfg.getMaxSize(), true) + "]"
+                ", size=" + U.readableSize(memoryPolicyCfg.getMaxSize(), false) + "]"
             );
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
