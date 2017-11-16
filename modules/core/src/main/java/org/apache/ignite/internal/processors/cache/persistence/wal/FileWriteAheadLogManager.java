@@ -49,7 +49,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -1566,6 +1565,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             init();
 
             while (!Thread.currentThread().isInterrupted() && !stopped) {
+                File tmpZip = null;
+                File zip = null;
+
                 try {
                     deleteObsoleteRawSegments();
 
@@ -1573,10 +1575,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (nextSegment == -1)
                         continue;
 
-                    File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip" + ".tmp");
+                    tmpZip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip" + ".tmp");
                     assert !tmpZip.exists();
 
-                    File zip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip");
+                    zip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip");
                     assert !zip.exists();
 
                     try (SingleSegmentLogicalRecordsIterator iter = new SingleSegmentLogicalRecordsIterator(
@@ -1601,7 +1603,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     lastCompressedIdx = nextSegment;
                 }
                 catch (IgniteCheckedException | IOException e) {
-                    U.error(log, "Unexpected error during WAL compression", e); // todo what do with ioexception?
+                    U.error(log, "Unexpected error during WAL compression", e);
+
+                    if (tmpZip != null)
+                        tmpZip.delete();
+
+                    if (zip != null)
+                        zip.delete();
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -1639,8 +1647,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** {@inheritDoc} */
         @Override public void run() {
             while (!Thread.currentThread().isInterrupted() && !stopped) {
+                File unzipTmp = null;
+                File unzip = null;
+
+                long segmentToDecompress = -1L;
+
                 try {
-                    long segmentToDecompress = segmentsQueue.take();
+                    segmentToDecompress = segmentsQueue.take();
 
                     if (stopped)
                         break;
@@ -1648,10 +1661,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
                     assert zip.exists();
 
-                    File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
+                    unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
                     assert !unzipTmp.exists();
 
-                    File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
+                    unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
                     assert !unzip.exists();
 
                     try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
@@ -1679,7 +1692,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Thread.currentThread().interrupt();
                 }
                 catch (IOException e) {
-                    throw new IgniteException(e); // todo decide what do with FNF
+                    U.error(log, "Unexpected error during WAL compression", e);
+
+                    unzipTmp.delete();
+                    unzip.delete();
+
+                    synchronized (this) {
+                        GridFutureAdapter<Void> failFut = decompressionFutures.remove(segmentToDecompress);
+
+                        if (failFut != null)
+                            failFut.onDone(e);
+                    }
                 }
             }
         }
