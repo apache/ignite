@@ -276,7 +276,6 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets the collection of names of currently available caches, or empty collection if there are no caches.
-        /// Note that null string is a valid cache name.
         /// </summary>
         /// <returns>Collection of names of currently available caches.</returns>
         ICollection<string> GetCacheNames();

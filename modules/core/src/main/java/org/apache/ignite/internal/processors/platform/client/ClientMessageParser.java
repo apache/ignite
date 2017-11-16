@@ -37,11 +37,18 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheCl
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheClearRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheContainsKeyRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheContainsKeysRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheCreateWithConfigurationRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheCreateWithNameRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheDestroyRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetAndPutIfAbsentRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetAndPutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetAndRemoveRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetAndReplaceRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetConfigurationRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetNamesRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetOrCreateWithConfigurationRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetOrCreateWithNameRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetSizeRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutAllRequest;
@@ -147,16 +154,37 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     private static final short OP_CACHE_REMOVE_ALL = 28;
 
     /** */
-    private static final short OP_QUERY_SQL = 29;
+    private static final short OP_CACHE_CREATE_WITH_NAME = 29;
 
     /** */
-    private static final short OP_QUERY_SQL_CURSOR_GET_PAGE = 30;
+    private static final short OP_CACHE_GET_OR_CREATE_WITH_NAME = 30;
 
     /** */
-    private static final short OP_QUERY_SQL_FIELDS = 31;
+    private static final short OP_CACHE_DESTROY = 31;
 
     /** */
-    private static final short OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 32;
+    private static final short OP_CACHE_GET_NAMES = 32;
+
+    /** */
+    private static final short OP_CACHE_GET_CONFIGURATION = 33;
+
+    /** */
+    private static final short OP_CACHE_CREATE_WITH_CONFIGURATION = 34;
+
+    /** */
+    private static final short OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION = 35;
+
+    /** */
+    private static final short OP_QUERY_SQL = 36;
+
+    /** */
+    private static final short OP_QUERY_SQL_CURSOR_GET_PAGE = 37;
+
+    /** */
+    private static final short OP_QUERY_SQL_FIELDS = 38;
+
+    /** */
+    private static final short OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 39;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -276,6 +304,27 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_CACHE_REMOVE_ALL:
                 return new ClientCacheRemoveAllRequest(reader);
+
+            case OP_CACHE_CREATE_WITH_NAME:
+                return new ClientCacheCreateWithNameRequest(reader);
+
+            case OP_CACHE_GET_OR_CREATE_WITH_NAME:
+                return new ClientCacheGetOrCreateWithNameRequest(reader);
+
+            case OP_CACHE_DESTROY:
+                return new ClientCacheDestroyRequest(reader);
+
+            case OP_CACHE_GET_NAMES:
+                return new ClientCacheGetNamesRequest(reader);
+
+            case OP_CACHE_GET_CONFIGURATION:
+                return new ClientCacheGetConfigurationRequest(reader);
+
+            case OP_CACHE_CREATE_WITH_CONFIGURATION:
+                return new ClientCacheCreateWithConfigurationRequest(reader);
+
+            case OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION:
+                return new ClientCacheGetOrCreateWithConfigurationRequest(reader);
 
             case OP_QUERY_SQL:
                 return new ClientCacheSqlQueryRequest(reader);

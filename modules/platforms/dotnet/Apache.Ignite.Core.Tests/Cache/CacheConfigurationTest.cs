@@ -578,7 +578,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Gets the custom cache configuration.
         /// </summary>
-        private static CacheConfiguration GetCustomCacheConfiguration(string name = null)
+        public static CacheConfiguration GetCustomCacheConfiguration(string name = null)
         {
             return new CacheConfiguration
             {

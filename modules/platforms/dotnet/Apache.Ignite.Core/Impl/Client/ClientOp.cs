@@ -50,9 +50,16 @@ namespace Apache.Ignite.Core.Impl.Client
         CacheGetSize = 26,
         CacheRemoveKeys = 27,
         CacheRemoveAll = 28,
-        QuerySql = 29,
-        QuerySqlCursorGetPage = 30,
-        QuerySqlFields = 31,
-        QuerySqlFieldsCursorGetPage = 32
+        CacheCreateWithName = 29,
+        CacheGetOrCreateWithName = 30,
+        CacheDestroy = 31,
+        CacheGetNames = 32,
+        CacheGetConfiguration = 33,
+        CacheCreateWithConfiguration = 34,
+        CacheGetOrCreateWithConfiguration = 35,
+        QuerySql = 36,
+        QuerySqlCursorGetPage = 37,
+        QuerySqlFields = 38,
+        QuerySqlFieldsCursorGetPage = 39
     }
 }

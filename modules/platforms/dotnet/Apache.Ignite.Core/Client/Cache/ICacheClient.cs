@@ -234,5 +234,10 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
         /// <returns>Cache size across all nodes.</returns>
         long GetSize(params CachePeekMode[] modes);
+
+        /// <summary>
+        /// Gets the cache configuration.
+        /// </summary>
+        CacheClientConfiguration GetConfiguration();
     }
 }

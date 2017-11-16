@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client.
         /// </summary>
-        private IIgniteClient Client { get; set; }
+        public IIgniteClient Client { get; set; }
 
         /// <summary>
         /// Gets the cache.
