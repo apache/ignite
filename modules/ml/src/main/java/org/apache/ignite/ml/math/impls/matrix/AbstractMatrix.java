@@ -737,11 +737,8 @@ public abstract class AbstractMatrix implements Matrix {
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Vector getCol(int col) {
+    /** {@inheritDoc} */
+    @Override public Vector getCol(int col) {
         checkColumnIndex(col);
         Vector res;
         if (isDistributed()) res = MatrixUtil.likeVector(this, rowSize());
