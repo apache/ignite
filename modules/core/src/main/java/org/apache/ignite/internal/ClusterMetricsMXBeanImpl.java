@@ -17,314 +17,345 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 
 /**
- * Local node metrics MBean.
+ * Cluster metrics MBean.
  */
-public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
-    /** Grid node. */
-    private final ClusterNode node;
+public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
+    /** Grid cluster. */
+    private final ClusterGroup cluster;
+
+    /** Cached value of cluster metrics. */
+    private volatile ClusterMetrics clusterMetricsSnapshot;
+
+    /** Cluster metrics expire time. */
+    private volatile long clusterMetricsExpireTime;
+
+    /** Cluster metrics update mutex. */
+    private final Object clusterMetricsMux = new Object();
+
 
     /**
-     * @param node Node to manage.
+     * @param cluster Cluster group to manage.
      */
-    public ClusterLocalNodeMetricsMXBeanImpl(ClusterNode node) {
-        assert node != null;
+    public ClusterMetricsMXBeanImpl(ClusterGroup cluster) {
+        assert cluster != null;
 
-        this.node = node;
+        this.cluster = cluster;
+    }
+
+    /**
+     * Gets a metrics snapshot for this cluster group.
+     *
+     * @return Metrics snapshot.
+     */
+    private ClusterMetrics metrics() {
+        if (clusterMetricsExpireTime < System.currentTimeMillis()) {
+            synchronized (clusterMetricsMux) {
+                if (clusterMetricsExpireTime < System.currentTimeMillis()) {
+                    clusterMetricsSnapshot = cluster.metrics();
+
+                    clusterMetricsExpireTime = System.currentTimeMillis() + cluster.ignite().configuration()
+                        .getMetricsUpdateFrequency();
+                }
+            }
+        }
+
+        return clusterMetricsSnapshot;
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalCpus() {
-        return node.metrics().getTotalCpus();
+        return metrics().getTotalCpus();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageActiveJobs() {
-        return node.metrics().getAverageActiveJobs();
+        return metrics().getAverageActiveJobs();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageCancelledJobs() {
-        return node.metrics().getAverageCancelledJobs();
+        return metrics().getAverageCancelledJobs();
     }
 
     /** {@inheritDoc} */
     @Override public double getAverageJobExecuteTime() {
-        return node.metrics().getAverageJobExecuteTime();
+        return metrics().getAverageJobExecuteTime();
     }
 
     /** {@inheritDoc} */
     @Override public double getAverageJobWaitTime() {
-        return node.metrics().getAverageJobWaitTime();
+        return metrics().getAverageJobWaitTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageRejectedJobs() {
-        return node.metrics().getAverageRejectedJobs();
+        return metrics().getAverageRejectedJobs();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageWaitingJobs() {
-        return node.metrics().getAverageWaitingJobs();
+        return metrics().getAverageWaitingJobs();
     }
 
     /** {@inheritDoc} */
     @Override public float getBusyTimePercentage() {
-        return node.metrics().getBusyTimePercentage() * 100;
+        return metrics().getBusyTimePercentage() * 100;
     }
 
     /** {@inheritDoc} */
     @Override public int getCurrentActiveJobs() {
-        return node.metrics().getCurrentActiveJobs();
+        return metrics().getCurrentActiveJobs();
     }
 
     /** {@inheritDoc} */
     @Override public int getCurrentCancelledJobs() {
-        return node.metrics().getCurrentCancelledJobs();
+        return metrics().getCurrentCancelledJobs();
     }
 
     /** {@inheritDoc} */
     @Override public long getCurrentIdleTime() {
-        return node.metrics().getCurrentIdleTime();
+        return metrics().getCurrentIdleTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getCurrentJobExecuteTime() {
-        return node.metrics().getCurrentJobExecuteTime();
+        return metrics().getCurrentJobExecuteTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getCurrentJobWaitTime() {
-        return node.metrics().getCurrentJobWaitTime();
+        return metrics().getCurrentJobWaitTime();
     }
 
     /** {@inheritDoc} */
     @Override public int getCurrentRejectedJobs() {
-        return node.metrics().getCurrentRejectedJobs();
+        return metrics().getCurrentRejectedJobs();
     }
 
     /** {@inheritDoc} */
     @Override public int getCurrentWaitingJobs() {
-        return node.metrics().getCurrentWaitingJobs();
+        return metrics().getCurrentWaitingJobs();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalExecutedTasks() {
-        return node.metrics().getTotalExecutedTasks();
+        return metrics().getTotalExecutedTasks();
     }
 
     /** {@inheritDoc} */
     @Override public int getCurrentDaemonThreadCount() {
-        return node.metrics().getCurrentDaemonThreadCount();
+        return metrics().getCurrentDaemonThreadCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapMemoryCommitted() {
-        return node.metrics().getHeapMemoryCommitted();
+        return metrics().getHeapMemoryCommitted();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapMemoryInitialized() {
-        return node.metrics().getHeapMemoryInitialized();
+        return metrics().getHeapMemoryInitialized();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapMemoryMaximum() {
-        return node.metrics().getHeapMemoryMaximum();
+        return metrics().getHeapMemoryMaximum();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapMemoryTotal() {
-        return node.metrics().getHeapMemoryTotal();
+        return metrics().getHeapMemoryTotal();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapMemoryUsed() {
-        return node.metrics().getHeapMemoryUsed();
+        return metrics().getHeapMemoryUsed();
     }
 
     /** {@inheritDoc} */
     @Override public float getIdleTimePercentage() {
-        return node.metrics().getIdleTimePercentage() * 100;
+        return metrics().getIdleTimePercentage() * 100;
     }
 
     /** {@inheritDoc} */
     @Override public long getLastUpdateTime() {
-        return node.metrics().getLastUpdateTime();
+        return metrics().getLastUpdateTime();
     }
 
     /** {@inheritDoc} */
     @Override public int getMaximumActiveJobs() {
-        return node.metrics().getMaximumActiveJobs();
+        return metrics().getMaximumActiveJobs();
     }
 
     /** {@inheritDoc} */
     @Override public int getMaximumCancelledJobs() {
-        return node.metrics().getMaximumCancelledJobs();
+        return metrics().getMaximumCancelledJobs();
     }
 
     /** {@inheritDoc} */
     @Override public long getMaximumJobExecuteTime() {
-        return node.metrics().getMaximumJobExecuteTime();
+        return metrics().getMaximumJobExecuteTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getMaximumJobWaitTime() {
-        return node.metrics().getMaximumJobWaitTime();
+        return metrics().getMaximumJobWaitTime();
     }
 
     /** {@inheritDoc} */
     @Override public int getMaximumRejectedJobs() {
-        return node.metrics().getMaximumRejectedJobs();
+        return metrics().getMaximumRejectedJobs();
     }
 
     /** {@inheritDoc} */
     @Override public int getMaximumWaitingJobs() {
-        return node.metrics().getMaximumWaitingJobs();
+        return metrics().getMaximumWaitingJobs();
     }
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryCommitted() {
-        return node.metrics().getNonHeapMemoryCommitted();
+        return metrics().getNonHeapMemoryCommitted();
     }
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryInitialized() {
-        return node.metrics().getNonHeapMemoryInitialized();
+        return metrics().getNonHeapMemoryInitialized();
     }
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryMaximum() {
-        return node.metrics().getNonHeapMemoryMaximum();
+        return metrics().getNonHeapMemoryMaximum();
     }
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryTotal() {
-        return node.metrics().getNonHeapMemoryTotal();
+        return metrics().getNonHeapMemoryTotal();
     }
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryUsed() {
-        return node.metrics().getNonHeapMemoryUsed();
+        return metrics().getNonHeapMemoryUsed();
     }
 
     /** {@inheritDoc} */
     @Override public int getMaximumThreadCount() {
-        return node.metrics().getMaximumThreadCount();
+        return metrics().getMaximumThreadCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getStartTime() {
-        return node.metrics().getStartTime();
+        return metrics().getStartTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getNodeStartTime() {
-        return node.metrics().getNodeStartTime();
+        return metrics().getNodeStartTime();
     }
 
     /** {@inheritDoc} */
     @Override public double getCurrentCpuLoad() {
-        return node.metrics().getCurrentCpuLoad() * 100;
+        return metrics().getCurrentCpuLoad() * 100;
     }
 
     /** {@inheritDoc} */
     @Override public double getAverageCpuLoad() {
-        return node.metrics().getAverageCpuLoad() * 100;
+        return metrics().getAverageCpuLoad() * 100;
     }
 
     /** {@inheritDoc} */
     @Override public double getCurrentGcCpuLoad() {
-        return node.metrics().getCurrentGcCpuLoad() * 100;
+        return metrics().getCurrentGcCpuLoad() * 100;
     }
 
     /** {@inheritDoc} */
     @Override public int getCurrentThreadCount() {
-        return node.metrics().getCurrentThreadCount();
+        return metrics().getCurrentThreadCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalBusyTime() {
-        return node.metrics().getTotalBusyTime();
+        return metrics().getTotalBusyTime();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalCancelledJobs() {
-        return node.metrics().getTotalCancelledJobs();
+        return metrics().getTotalCancelledJobs();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalExecutedJobs() {
-        return node.metrics().getTotalExecutedJobs();
+        return metrics().getTotalExecutedJobs();
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalJobsExecutionTime() {
-        return node.metrics().getTotalJobsExecutionTime();
+        return metrics().getTotalJobsExecutionTime();
     }
 
 
     /** {@inheritDoc} */
     @Override public long getTotalIdleTime() {
-        return node.metrics().getTotalIdleTime();
+        return metrics().getTotalIdleTime();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalRejectedJobs() {
-        return node.metrics().getTotalRejectedJobs();
+        return metrics().getTotalRejectedJobs();
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalStartedThreadCount() {
-        return node.metrics().getTotalStartedThreadCount();
+        return metrics().getTotalStartedThreadCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getUpTime() {
-        return node.metrics().getUpTime();
+        return metrics().getUpTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getLastDataVersion() {
-        return node.metrics().getLastDataVersion();
+        return metrics().getLastDataVersion();
     }
 
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
-        return node.metrics().getSentMessagesCount();
+        return metrics().getSentMessagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getSentBytesCount() {
-        return node.metrics().getSentBytesCount();
+        return metrics().getSentBytesCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getReceivedMessagesCount() {
-        return node.metrics().getReceivedMessagesCount();
+        return metrics().getReceivedMessagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getReceivedBytesCount() {
-        return node.metrics().getReceivedBytesCount();
+        return metrics().getReceivedBytesCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
-        return node.metrics().getOutboundMessagesQueueSize();
+        return metrics().getOutboundMessagesQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
-        return node.metrics().getTotalNodes();
+        return metrics().getTotalNodes();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ClusterLocalNodeMetricsMXBeanImpl.class, this);
+        return S.toString(ClusterMetricsMXBeanImpl.class, this);
     }
 }
