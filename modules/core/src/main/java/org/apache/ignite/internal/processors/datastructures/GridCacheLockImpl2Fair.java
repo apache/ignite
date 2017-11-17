@@ -378,7 +378,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         private final GridCacheInternalKey key;
 
         /**
-         * Latchs for a waiting a {@link ReleasedThreadMessage}, failed or return {@code true} by the acquire
+         * Latches for a waiting a {@link ReleasedThreadMessage}, failed or return {@code true} by the acquire
          * processor.
          */
         private final ConcurrentHashMap<Long, Latch> latches = new ConcurrentHashMap<>();
