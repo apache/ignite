@@ -73,7 +73,8 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         DistributedTrainerWorkersChain<TestLocalContext, Double, Integer, Integer, TestGroupTrainingContext<Double, Integer, TestLocalContext>, Integer> chain = DC.create();
 
         CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheC = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
-        Integer res = chain.process(1, new TestGroupTrainingContext<>(new TestLocalContext(0), UUID.randomUUID(),
+        UUID trainingUUID = UUID.randomUUID();
+        Integer res = chain.process(1, new TestGroupTrainingContext<>(new TestLocalContext(0, trainingUUID), trainingUUID,
             cacheC, ignite));
 
         Assert.assertEquals(1L, (long)res);
@@ -85,11 +86,12 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheCtx = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
         int init = 1;
         int initLocCtxData = 0;
-        TestLocalContext locCtx = new TestLocalContext(initLocCtxData);
+        UUID trainingUUID = UUID.randomUUID();
+        TestLocalContext locCtx = new TestLocalContext(initLocCtxData, trainingUUID);
 
         Integer res = chain.
             thenLocally((prev, lc) -> prev + 1).
-            process(init, new TestGroupTrainingContext<>(locCtx, UUID.randomUUID(),
+            process(init, new TestGroupTrainingContext<>(locCtx, trainingUUID,
             cacheCtx, ignite));
 
         Assert.assertEquals(init + 1, (long)res);
@@ -102,12 +104,13 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheCtx = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
         int init = 1;
         int initLocCtxData = 0;
-        TestLocalContext locCtx = new TestLocalContext(initLocCtxData);
+        UUID trainingUUID = UUID.randomUUID();
+        TestLocalContext locCtx = new TestLocalContext(initLocCtxData, trainingUUID);
 
         Integer res = chain.
             thenLocally((prev, lc) -> prev + 1).
             thenLocally((prev, lc) -> prev * 5).
-            process(init, new TestGroupTrainingContext<>(locCtx, UUID.randomUUID(),
+            process(init, new TestGroupTrainingContext<>(locCtx, trainingUUID,
                 cacheCtx, ignite));
 
         Assert.assertEquals((init + 1) * 5, (long)res);
@@ -119,11 +122,12 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheCtx = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
         int init = 1;
         int newData = 10;
-        TestLocalContext locCtx = new TestLocalContext(0);
+        UUID trainingUUID = UUID.randomUUID();
+        TestLocalContext locCtx = new TestLocalContext(0, trainingUUID);
 
         Integer res = chain.
             thenLocally((prev, lc) -> { lc.setData(newData); return prev;}).
-            process(init, new TestGroupTrainingContext<>(locCtx, UUID.randomUUID(),
+            process(init, new TestGroupTrainingContext<>(locCtx, trainingUUID,
                 cacheCtx, ignite));
 
         Assert.assertEquals(newData, locCtx.data());
@@ -134,9 +138,9 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         DistributedTrainerWorkersChain<TestLocalContext, Double, Integer, Integer, TestGroupTrainingContext<Double, Integer, TestLocalContext>, Integer> chain = DC.create();
         CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheCtx = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
         int init = 1;
-        TestLocalContext locCtx = new TestLocalContext(0);
-
         UUID trainingUUID = UUID.randomUUID();
+        TestLocalContext locCtx = new TestLocalContext(0, trainingUUID);
+
         Map<GroupTrainerCacheKey<Double>, Integer> m = new HashMap<>();
         m.put(new GroupTrainerCacheKey<>(0, 1.0, trainingUUID), 1);
         m.put(new GroupTrainerCacheKey<>(1, 2.0, trainingUUID), 2);

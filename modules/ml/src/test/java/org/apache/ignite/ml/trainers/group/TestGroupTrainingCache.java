@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.trainers.group;
 
+import java.util.Arrays;
+import java.util.UUID;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -49,5 +52,15 @@ public class TestGroupTrainingCache {
         cfg.setName(CACHE_NAME);
 
         return ignite.getOrCreateCache(cfg);
+    }
+
+    public static Stream<GroupTrainerCacheKey<Double>> allKeys(int limit, int eachNumberCnt, UUID trainingUUID) {
+        GroupTrainerCacheKey<Double>[] a =new GroupTrainerCacheKey[limit * eachNumberCnt];
+
+        for (int num = 0; num < limit; num++)
+            for (int i = 0; i < eachNumberCnt; i++)
+                a[num * eachNumberCnt + i] = new GroupTrainerCacheKey<>(num, (double)i, trainingUUID);
+
+        return Arrays.stream(a);
     }
 }

@@ -17,10 +17,49 @@
 
 package org.apache.ignite.ml.trainers.group;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 public class GroupTrainerTest extends GridCommonAbstractTest {
+    /** Count of nodes. */
+    private static final int NODE_COUNT = 4;
+
+    /** Grid instance. */
+    protected Ignite ignite;
+
+    /**
+     * Default constructor.
+     */
+    public GroupTrainerTest() {
+        super(false);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void beforeTest() throws Exception {
+        ignite = grid(NODE_COUNT);
+        TestGroupTrainingCache.getOrCreate(ignite).removeAll();
+        TestGroupTrainingSecondCache.getOrCreate(ignite).removeAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        for (int i = 1; i <= NODE_COUNT; i++)
+            startGrid(i);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
     public void testGroupTrainer() {
+        TestGroupTrainer trainer = new TestGroupTrainer(ignite);
+
+        ConstModel<Integer> mdl = trainer.train(new SimpleDistributive(5, 3, 2));
+
+        System.out.println(mdl.predict(10));
 
     }
 }

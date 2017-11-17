@@ -17,12 +17,13 @@
 
 package org.apache.ignite.ml.trainers.group.chain;
 
+import java.io.Serializable;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
 
-public interface RemoteStep<L, K, V, G, I, O> {
+public interface RemoteStep<L, K, V, G, I, O extends Serializable> {
     G extractRemoteContext(I input, L locCtx);
 
     ResultAndUpdates<O> distributedWorker(I input, L locCtx, EntryAndContext<K, V, G> entryAndContext);

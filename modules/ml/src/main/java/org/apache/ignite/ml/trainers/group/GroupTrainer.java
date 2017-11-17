@@ -28,8 +28,9 @@ import org.apache.ignite.ml.trainers.Trainer;
 import org.apache.ignite.ml.trainers.group.chain.CacheContext;
 import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
+import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
-public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends Distributive<K>, G> implements Trainer<M, T> {
+public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IR extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends Distributive<K>, G> implements Trainer<M, T> {
     IgniteCache<GroupTrainerCacheKey<K>, V> cache;
     Ignite ignite;
 
@@ -42,25 +43,25 @@ public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends 
 
     @Override public M train(T data) {
         UUID trainingUUID = UUID.randomUUID();
-        LC locCtx = initialLocalContext(data);
+        LC locCtx = initialLocalContext(data, trainingUUID);
 
         GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, trainingUUID, new CacheContext<>(cache), ignite);
         DistributedTrainerWorkersChain<LC, K, V, T, GroupTrainingContext<K, V, LC>, T> chain = (i, c) -> i;
 
         M res = chain.
-            thenDistributed(this::initGlobal, (t, lc) -> data::initialKeys, this::reduceGlobalInitData).
+            thenDistributed(this::initGlobal, (t, lc) -> () -> data.initialKeys(trainingUUID), this::reduceGlobalInitData).
             thenLocally(this::processInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
             thenDistributed(this::extractContextForModelCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), defaultFinalResult(), this::reduceFinalResults).
             thenLocally(this::mapFinalResult).
             process(data, ctx);
 
-        cleanup();
+        cleanup(locCtx);
 
         return res;
     }
 
-    protected abstract LC initialLocalContext(T data);
+    protected abstract LC initialLocalContext(T data, UUID trainingUUID);
 
     protected abstract ResultAndUpdates<IR> initGlobal(T data, GroupTrainerCacheKey<K> key);
 
@@ -84,5 +85,5 @@ public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends 
 
     protected abstract M mapFinalResult(R res, LC locCtx);
 
-    protected abstract void cleanup();
+    protected abstract void cleanup(LC locCtx);
 }

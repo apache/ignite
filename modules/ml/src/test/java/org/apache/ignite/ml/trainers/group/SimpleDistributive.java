@@ -26,8 +26,9 @@ public class SimpleDistributive implements Distributive<Double> {
     private int eachNumberCount;
     private int iterCnt;
 
-    public SimpleDistributive(int limit, int iterCnt) {
+    public SimpleDistributive(int limit, int eachNumberCount, int iterCnt) {
         this.limit = limit;
+        this.eachNumberCount = eachNumberCount;
         this.iterCnt = iterCnt;
     }
 

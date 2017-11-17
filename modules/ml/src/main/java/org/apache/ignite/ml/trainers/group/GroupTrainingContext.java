@@ -26,7 +26,7 @@ import org.apache.ignite.ml.trainers.group.chain.HasCacheContext;
 import org.apache.ignite.ml.trainers.group.chain.HasLocalContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
-public class GroupTrainingContext<K, V, L> implements HasCacheContext<GroupTrainerCacheKey<K>, V>, HasLocalContext<L>, HasTrainingUUID {
+public class GroupTrainingContext<K, V, L extends HasTrainingUUID> implements HasCacheContext<GroupTrainerCacheKey<K>, V>, HasLocalContext<L> {
     private L localContext;
     private UUID trainingUUID;
     private CacheContext<GroupTrainerCacheKey<K>, V> cacheContext;
@@ -47,10 +47,6 @@ public class GroupTrainingContext<K, V, L> implements HasCacheContext<GroupTrain
 
     @Override public L localContext() {
         return localContext;
-    }
-
-    @Override public UUID trainingUUID() {
-        return trainingUUID;
     }
 
     @Override public CacheContext<GroupTrainerCacheKey<K>, V> cacheContext() {

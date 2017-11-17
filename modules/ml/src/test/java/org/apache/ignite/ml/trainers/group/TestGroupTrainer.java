@@ -18,10 +18,12 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.trainers.group.chain.DC;
 import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
@@ -30,8 +32,8 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         super(TestGroupTrainingCache.getOrCreate(ignite), ignite);
     }
 
-    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleDistributive data) {
-        return new TestGroupTrainerLocalContext(data.iterCnt());
+    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleDistributive data, UUID trainingUUID) {
+        return new TestGroupTrainerLocalContext(data.iterCnt(), data.eachNumberCount(), data.limit(), trainingUUID);
     }
 
     @Override protected ResultAndUpdates<Integer> initGlobal(SimpleDistributive data, GroupTrainerCacheKey<Double> key) {
@@ -60,7 +62,14 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     @Override
     protected DistributedTrainerWorkersChain<TestGroupTrainerLocalContext,
         Double, Integer, Double, GroupTrainingContext<Double, Integer, TestGroupTrainerLocalContext>, Double> trainingLoopStep() {
-        return null;
+        // TODO: here we should explicitly create variable because we cannot infer context type, think about it.
+        DistributedTrainerWorkersChain<TestGroupTrainerLocalContext, Double, Integer, Double, GroupTrainingContext<Double, Integer, TestGroupTrainerLocalContext>, Double> chain = DC.
+            create(new TestTrainingLoopStep());
+        return chain.
+            thenLocally((aDouble, context) -> {
+            context.incCnt();
+            return aDouble;
+        });
     }
 
     @Override protected boolean shouldContinue(Double data, TestGroupTrainerLocalContext locCtx) {
@@ -68,12 +77,13 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     @Override protected Void extractContextForModelCreation(Double data, TestGroupTrainerLocalContext locCtx) {
+        // No context is needed.
         return null;
     }
 
     @Override
     protected Stream<GroupTrainerCacheKey<Double>> finalResultKeys(Double data, TestGroupTrainerLocalContext locCtx) {
-        return null;
+        return TestGroupTrainingCache.allKeys(locCtx.limit(), locCtx.eachNumberCnt(), locCtx.trainingUUID());
     }
 
     @Override protected ResultAndUpdates<Integer> getFinalResults(Double data, TestGroupTrainerLocalContext locCtx,
@@ -83,6 +93,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     @Override protected Integer defaultFinalResult() {
+        // Default result is null;
         return null;
     }
 
@@ -94,6 +105,8 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return new ConstModel<>(res);
     }
 
-    @Override protected void cleanup() {
+    @Override protected void cleanup(TestGroupTrainerLocalContext locCtx) {
+        Stream<GroupTrainerCacheKey<Double>> toRemote = TestGroupTrainingCache.allKeys(locCtx.limit(), locCtx.eachNumberCnt(), locCtx.trainingUUID());
+        TestGroupTrainingCache.getOrCreate(ignite).removeAll(toRemote.collect(Collectors.toSet()));
     }
 }

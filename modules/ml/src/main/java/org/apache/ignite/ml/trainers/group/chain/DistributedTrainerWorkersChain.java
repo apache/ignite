@@ -34,7 +34,7 @@ import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.GroupTrainerTask;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
 
-public interface DistributedTrainerWorkersChain<L, K, V, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L> & HasTrainingUUID, O> extends BaseWorkersChain<I, C, O> {
+public interface DistributedTrainerWorkersChain<L extends HasTrainingUUID, K, V, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L>, O> extends BaseWorkersChain<I, C, O> {
     default DistributedTrainerWorkersChain<L, K, V, I, C, I> create() {
         return (input, context) -> input;
     }
@@ -55,7 +55,7 @@ public interface DistributedTrainerWorkersChain<L, K, V, I, C extends HasCacheCo
             IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier = kf.apply(input, locCtx);
 
             Ignite ignite = context.ignite();
-            UUID trainingUUID = context.trainingUUID();
+            UUID trainingUUID = context.localContext().trainingUUID();
             String cacheName = context.cacheContext().cacheName();
             ClusterGroup grp = ignite.cluster().forDataNodes(cacheName);
 
