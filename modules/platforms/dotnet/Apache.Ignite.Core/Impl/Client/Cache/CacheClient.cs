@@ -327,6 +327,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             return DoOutInOp(ClientOp.CacheGetSize, w => WritePeekModes(modes, w), s => s.ReadLong());
         }
 
+        /** <inheritDoc /> */
+        public CacheClientConfiguration GetConfiguration()
+        {
+            return DoOutInOp(ClientOp.CacheGetConfiguration, null, s => new CacheClientConfiguration(s));
+        }
+
         /// <summary>
         /// Does the out in op.
         /// </summary>
