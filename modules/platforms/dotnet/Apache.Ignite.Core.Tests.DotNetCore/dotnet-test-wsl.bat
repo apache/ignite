@@ -30,3 +30,5 @@ bash -c "dotnet nuget locals all --clear"
 echo Starting tests...
 
 bash -c "dotnet test"
+
+pause.

@@ -15,16 +15,27 @@
  * limitations under the License.
  */
 
-// TODO: Code style
-using System;
-using System.Collections.Generic;
-using Apache.Ignite.Core.Discovery.Tcp;
-using Apache.Ignite.Core.Discovery.Tcp.Static;
-
 namespace Apache.Ignite.Core.Tests.DotNetCore
 {
+    using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
+
+    /// <summary>
+    /// Test utils.
+    /// </summary>
     internal static class TestUtils
     {
+        private static readonly IList<string> JvmDebugOpts =
+            new List<string>
+            {
+                "-Xdebug",
+                "-Xnoagent",
+                "-Djava.compiler=NONE",
+                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+            };
+
         /// <summary>
         /// Gets the static discovery.
         /// </summary>
@@ -34,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
             {
                 IpFinder = new TcpDiscoveryStaticIpFinder
                 {
-                    Endpoints = new[] { "127.0.0.1:47500" }
+                    Endpoints = new[] {"127.0.0.1:47500"}
                 },
                 SocketTimeout = TimeSpan.FromSeconds(0.3)
             };
@@ -49,18 +60,9 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
-                JvmOptions = JvmDebugOpts
+                JvmOptions = JvmDebugOpts,
+                AutoGenerateIgniteInstanceName = true
             };
         }
-
-        private static readonly IList<string> JvmDebugOpts =
-            new List<string>
-            {
-                "-Xdebug",
-                "-Xnoagent",
-                "-Djava.compiler=NONE",
-                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-            };
-
     }
 }

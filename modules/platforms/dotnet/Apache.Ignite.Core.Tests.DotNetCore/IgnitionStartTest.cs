@@ -41,10 +41,12 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
             Assert.AreEqual(1, cache[1]);
 
             // Second node.
-            cfg.AutoGenerateIgniteInstanceName = true;
             var ignite2 = Ignition.Start(cfg);
-
             Assert.AreEqual(2, ignite2.GetCluster().GetNodes().Count);
+
+            // Stop node.
+            Ignition.Stop(ignite.Name, true);
+            Assert.AreEqual(1, ignite2.GetCluster().GetNodes().Count);
         }
 
         /// <summary>
