@@ -306,22 +306,15 @@ namespace Apache.Ignite.Core.Impl
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPaths(string configJvmDllPath)
         {
             if (!string.IsNullOrEmpty(configJvmDllPath))
+            {
                 yield return new KeyValuePair<string, string>("IgniteConfiguration.JvmDllPath", configJvmDllPath);
+            }
 
             var javaHomeDir = Environment.GetEnvironmentVariable(EnvJavaHome);
 
             if (!string.IsNullOrEmpty(javaHomeDir))
             {
-                foreach (var path in new string[] {
-                    // JRE paths
-                    @"bin\server",
-                    @"bin\client",
-
-                    // JDK paths
-                    @"jre\bin\server",
-                    @"jre\bin\client",
-                    @"jre\bin\default"
-                })
+                foreach (var path in JvmDllLookupPaths)
                 {
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
@@ -330,28 +323,39 @@ namespace Apache.Ignite.Core.Impl
 
             if (Os.IsWindows)
             {
-                // Get paths from the Windows Registry
-                foreach (var regPath in JreRegistryKeys)
+                // Get paths from the Windows Registry.
+                foreach (var keyValuePair in GetJvmDllPathsFromRegistry())
                 {
-                    using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
+                    yield return keyValuePair;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets Jvm dll paths from Windows registry.
+        /// </summary>
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromRegistry()
+        {
+            foreach (var regPath in JreRegistryKeys)
+            {
+                using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
+                {
+                    if (jSubKey == null)
+                        continue;
+
+                    var curVer = jSubKey.GetValue("CurrentVersion") as string;
+
+                    // Current version comes first
+                    var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
+
+                    foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
                     {
-                        if (jSubKey == null)
-                            continue;
-
-                        var curVer = jSubKey.GetValue("CurrentVersion") as string;
-
-                        // Current version comes first
-                        var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
-
-                        foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
+                        using (var verKey = jSubKey.OpenSubKey(ver))
                         {
-                            using (var verKey = jSubKey.OpenSubKey(ver))
-                            {
-                                var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+                            var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
 
-                                if (dllPath != null)
-                                    yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
-                            }
+                            if (dllPath != null)
+                                yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
                         }
                     }
                 }
