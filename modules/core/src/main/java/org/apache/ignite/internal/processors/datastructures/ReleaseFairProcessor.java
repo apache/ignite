@@ -83,6 +83,7 @@ public final class ReleaseFairProcessor
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         UUID nodeId = new UUID(in.readLong(), in.readLong());
+
         owner = new LockOwner(nodeId, in.readLong());
     }
 }
