@@ -341,9 +341,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             archiver = new FileArchiver(tup == null ? -1 : tup.get2());
 
-            compressor = new FileCompressor();
+            //compressor = new FileCompressor();
 
-            decompressor = new FileDecompressor();
+            //decompressor = new FileDecompressor();
 
             if (mode != WALMode.NONE) {
                 if (log.isInfoEnabled())
