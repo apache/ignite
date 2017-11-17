@@ -24,16 +24,10 @@
  */
 module.exports = {
     implements: 'mongo',
-    inject: ['require(passport-local-mongoose)', 'settings', 'ignite_modules/mongo:*', 'mongoose']
+    inject: ['require(passport-local-mongoose)', 'settings', 'mongoose']
 };
 
-module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose) {
-    // Use native promises
-    mongoose.Promise = global.Promise;
-
-    // Connect to mongoDB database.
-    mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}});
-
+const defineSchema = (passportMongo, mongoose) => {
     const Schema = mongoose.Schema;
     const ObjectId = mongoose.Schema.Types.ObjectId;
     const result = { connection: mongoose.connection };
@@ -1078,16 +1072,67 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     // Define Notifications model.
     result.Notifications = mongoose.model('Notifications', NotificationsSchema);
 
-    // Registering the routes of all plugin modules
-    for (const name in pluginMongo) {
-        if (pluginMongo.hasOwnProperty(name))
-            pluginMongo[name].register(mongoose, result);
-    }
-
     result.handleError = function(res, err) {
         // TODO IGNITE-843 Send error to admin
         res.status(err.code || 500).send(err.message);
     };
 
     return result;
+};
+
+module.exports.factory = function(passportMongo, settings, mongoose) {
+    // Use native promises
+    mongoose.Promise = global.Promise;
+
+    console.log('Trying to connect to local MongoDB...');
+
+    // Connect to mongoDB database.
+    return mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}})
+        .catch(() => {
+            console.log('Failed to connect to local MongoDB, will try to download and start embedded MongoDB');
+
+            const {MongodHelper} = require('mongodb-prebuilt');
+            const {MongoDBDownload} = require('mongodb-download');
+
+            const helper = new MongodHelper(['--port', '27017', '--dbpath', `${process.cwd()}/user_data`]);
+
+            helper.mongoBin.mongoDBPrebuilt.mongoDBDownload = new MongoDBDownload({
+                downloadDir: `${process.cwd()}/libs/mongodb`,
+                version: '3.4.7'
+            });
+
+            let mongodRun;
+
+            if (settings.packaged) {
+                mongodRun = new Promise((resolve, reject) => {
+                    helper.resolveLink = resolve;
+                    helper.rejectLink = reject;
+
+                    helper.mongoBin.runCommand()
+                        .then(() => {
+                            helper.mongoBin.childProcess.removeAllListeners('close');
+
+                            helper.mongoBin.childProcess.stderr.on('data', (data) => helper.stderrHandler(data));
+                            helper.mongoBin.childProcess.stdout.on('data', (data) => helper.stdoutHandler(data));
+                            helper.mongoBin.childProcess.on('close', (code) => helper.closeHandler(code));
+                        });
+                });
+            }
+            else
+                mongodRun = helper.run();
+
+            return mongodRun
+                .catch((err) => console.log('Failed to start embedded MongoDB', err))
+                .then(() => {
+                    console.log('Embedded MongoDB successfully started');
+
+                    return mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}});
+                })
+                .catch((err) => {
+                    console.log('Failed to connect to embedded MongoDB', err);
+
+                    return Promise.reject(err);
+                });
+        })
+        .then(() => defineSchema(passportMongo, mongoose));
 };
