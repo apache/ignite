@@ -510,13 +510,15 @@ namespace Apache.Ignite.Linq.Impl
 
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel, int index)
+        public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel,
+            int index)
         {
             base.VisitAdditionalFromClause(fromClause, queryModel, index);
+
             var subQuery = fromClause.FromExpression as SubQueryExpression;
             if (subQuery != null)
             {
-                _builder.AppendFormat("(");
+                _builder.Append("(");
 
                 VisitQueryModel(subQuery.QueryModel, true);
 
