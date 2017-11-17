@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridAbstractCommunicationSelfTest;
-import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -75,22 +74,6 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     /** {@inheritDoc} */
     @Override public void testSendToManyNodes() throws Exception {
         super.testSendToManyNodes();
-
-        // Test statistics.
-        for (CommunicationSpi spi : spis.values()) {
-            ConcurrentMap<UUID, GridCommunicationClient> clients = U.field(spi, "clients");
-            TcpCommunicationStatistics stats = U.field(spi, "stats");
-
-            // Each SPI sent/received exactly 1 GridTestMessage to/from each client
-            assertEquals(stats.receivedMessagesByType().get(GridTestMessage.class.getSimpleName()).intValue(), clients.size());
-            assertEquals(stats.sentMessagesByType().get(GridTestMessage.class.getSimpleName()).intValue(), clients.size());
-
-            // Each SPI sent/received at least 1 message to/from each client.
-            for (UUID nodeId : clients.keySet()) {
-                assertTrue(stats.receivedMessagesByNode().get(nodeId.toString()) >= 1);
-                assertTrue(stats.sentMessagesByNode().get(nodeId.toString()) >= 1);
-            }
-        }
 
         // Test idle clients remove.
         for (CommunicationSpi spi : spis.values()) {
