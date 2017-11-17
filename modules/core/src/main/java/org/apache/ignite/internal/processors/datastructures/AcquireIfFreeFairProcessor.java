@@ -39,7 +39,7 @@ public final class AcquireIfFreeFairProcessor extends ReentrantProcessor<LockOwn
     }
 
     /** */
-    public AcquireIfFreeFairProcessor(LockOwner owner) {
+    AcquireIfFreeFairProcessor(LockOwner owner) {
         assert owner != null;
 
         this.owner = owner;

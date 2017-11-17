@@ -39,7 +39,7 @@ public final class AcquireOrRemoveFairProcessor extends ReentrantProcessor<LockO
     }
 
     /** */
-    public AcquireOrRemoveFairProcessor(LockOwner owner) {
+    AcquireOrRemoveFairProcessor(LockOwner owner) {
         assert owner != null;
 
         this.owner = owner;

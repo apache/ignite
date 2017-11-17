@@ -46,7 +46,7 @@ public final class ReleaseFairProcessor
     }
 
     /** */
-    public ReleaseFairProcessor(LockOwner owner) {
+    ReleaseFairProcessor(LockOwner owner) {
         assert owner != null;
 
         this.owner = owner;

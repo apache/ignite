@@ -57,7 +57,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
      * @param key Key for shared lock state.
      * @param lockView Reentrant lock projection.
      */
-    public GridCacheLockImpl2Fair(String name,
+    GridCacheLockImpl2Fair(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> lockView) {
 
@@ -238,7 +238,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         private static final long serialVersionUID = 181741851451L;
 
         /** Message index. */
-        static final int CACHE_MSG_IDX = nextIndexId();
+        private static final int CACHE_MSG_IDX = nextIndexId();
 
         /** Thread id. */
         long threadId;

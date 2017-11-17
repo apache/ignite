@@ -23,31 +23,33 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayDeque;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The base class for shared lock state.
  *
  * @param <T> Lock owner.
  */
-public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureValue {
+abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureValue {
     /** */
     private long gridStartTime;
 
     /** Queue containing nodes that are waiting to acquire this lock. */
     @GridToStringInclude
-    public ArrayDeque<T> owners;
+    ArrayDeque<T> owners;
 
     /** For fast contains. */
-    public HashSet<T> ownerSet;
+    HashSet<T> ownerSet;
 
     /**
      * Constructor.
      *
      * @param gridStartTime Cluster start time.
      */
-    public GridCacheLockState2Base(long gridStartTime) {
+    GridCacheLockState2Base(long gridStartTime) {
         owners = new ArrayDeque<>();
         ownerSet = new HashSet<>();
 
@@ -57,7 +59,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridCacheLockState2Base() {
+    GridCacheLockState2Base() {
         // No-op.
     }
 
@@ -80,7 +82,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
 
         GridCacheLockState2Base state = (GridCacheLockState2Base)o;
 
-        return owners != null ? owners.equals(state.owners) : state.owners == null;
+        return Objects.equals(owners, state.owners);
     }
 
     /** {@inheritDoc} */
@@ -94,7 +96,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     }
 
     /** Will take lock if it is free. */
-    public LockedModified lockIfFree(T owner) {
+    LockedModified lockIfFree(T owner) {
         LockedModified result = new LockedModified(true, false);
 
         if (owners == null) {
@@ -122,7 +124,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     }
 
     /** Will take lock if it is free, or remove node from the waiting queue. */
-    public LockedModified lockOrRemove(T owner) {
+    LockedModified lockOrRemove(T owner) {
         LockedModified result = new LockedModified(true, false);
 
         if (owners == null) {
@@ -155,7 +157,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     }
 
     /** Will take lock if it is free, or will add node to the waiting queue. */
-    public LockedModified lockOrAdd(T owner) {
+    LockedModified lockOrAdd(T owner) {
         LockedModified result = new LockedModified(true, false);
 
         if (owners == null) {
@@ -191,7 +193,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     }
 
     /** Remove node from first position in waiting list. */
-    public T unlock(T owner) {
+    @Nullable T unlock(T owner) {
         if (owners == null || owners.isEmpty() || !owners.getFirst().equals(owner))
             return null;
 
@@ -209,7 +211,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
      * @param id Failed node.
      * @return A lock-owner which can take lock cause other node has failed.
      */
-    public abstract T onNodeRemoved(UUID id);
+    @Nullable abstract T onNodeRemoved(UUID id);
 
     /** Write T object to stream. */
     protected abstract void writeItem(ObjectOutput out, T item) throws IOException;

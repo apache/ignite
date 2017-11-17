@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /** The unfair implementation for shared lock state. */
 public final class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUID> {
@@ -40,12 +41,12 @@ public final class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUI
      *
      * @param gridStartTime Cluster start time.
      */
-    public GridCacheLockState2Unfair(long gridStartTime) {
+    GridCacheLockState2Unfair(long gridStartTime) {
         super(gridStartTime);
     }
 
     /** {@inheritDoc} */
-    @Override public UUID onNodeRemoved(UUID id) {
+    @Nullable @Override UUID onNodeRemoved(UUID id) {
         if (ownerSet.remove(id)) {
             boolean lockReleased = owners.getFirst().equals(id);
 

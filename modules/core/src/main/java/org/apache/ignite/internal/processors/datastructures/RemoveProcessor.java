@@ -49,7 +49,7 @@ public final class RemoveProcessor<T>
     }
 
     /** */
-    public RemoveProcessor(UUID nodeId) {
+    RemoveProcessor(UUID nodeId) {
         assert nodeId != null;
 
         this.nodeId = nodeId;

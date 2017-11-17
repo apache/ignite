@@ -22,7 +22,7 @@ public final class AcquireUnfairProcessor extends ReentrantProcessor<UUID> {
     }
 
     /** */
-    public AcquireUnfairProcessor(UUID nodeId) {
+    AcquireUnfairProcessor(UUID nodeId) {
         assert nodeId != null;
 
         this.nodeId = nodeId;

@@ -26,7 +26,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
  *
  * @param <T> Lock owner.
  */
-public abstract class ReentrantProcessor<T>
+abstract class ReentrantProcessor<T>
     implements CacheEntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, Boolean>, Externalizable {
 
     /** {@inheritDoc} */

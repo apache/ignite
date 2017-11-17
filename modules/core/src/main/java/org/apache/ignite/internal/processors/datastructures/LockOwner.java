@@ -42,7 +42,7 @@ public final class LockOwner implements Externalizable {
     }
 
     /** */
-    public LockOwner(UUID nodeId, long threadId) {
+    LockOwner(UUID nodeId, long threadId) {
         assert nodeId != null;
 
         this.nodeId = nodeId;

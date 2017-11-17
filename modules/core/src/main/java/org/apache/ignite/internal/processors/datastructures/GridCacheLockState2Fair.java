@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /** The fair implementation for shared lock state. */
 public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockOwner> {
@@ -41,12 +42,12 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
      *
      * @param gridStartTime Cluster start time.
      */
-    public GridCacheLockState2Fair(long gridStartTime) {
+    GridCacheLockState2Fair(long gridStartTime) {
         super(gridStartTime);
     }
 
     /** {@inheritDoc} */
-    @Override public LockOwner onNodeRemoved(UUID id) {
+    @Nullable @Override LockOwner onNodeRemoved(UUID id) {
         if (owners == null || owners.isEmpty())
             return null;
 

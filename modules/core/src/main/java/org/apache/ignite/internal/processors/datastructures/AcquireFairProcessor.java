@@ -22,7 +22,7 @@ public final class AcquireFairProcessor extends ReentrantProcessor<LockOwner> {
     }
 
     /** */
-    public AcquireFairProcessor(LockOwner owner) {
+    AcquireFairProcessor(LockOwner owner) {
         assert owner != null;
 
         this.owner = owner;

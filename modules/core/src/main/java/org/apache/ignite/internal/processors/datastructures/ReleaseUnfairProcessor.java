@@ -44,7 +44,7 @@ public final class ReleaseUnfairProcessor implements CacheEntryProcessor<GridCac
     }
 
     /** */
-    public ReleaseUnfairProcessor(UUID nodeId) {
+    ReleaseUnfairProcessor(UUID nodeId) {
         assert nodeId != null;
 
         this.nodeId = nodeId;

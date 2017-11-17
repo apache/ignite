@@ -67,7 +67,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
      */
-    public GridCacheLockImpl2Unfair(String name, GridCacheInternalKey key,
+    GridCacheLockImpl2Unfair(String name, GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<UUID>> lockView) {
         assert name != null;
         assert key != null;
@@ -110,7 +110,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         private static final long serialVersionUID = 181741851451L;
 
         /** Message index. */
-        static final int CACHE_MSG_IDX = nextIndexId();
+        private static final int CACHE_MSG_IDX = nextIndexId();
 
         /** Lock name. */
         String name;

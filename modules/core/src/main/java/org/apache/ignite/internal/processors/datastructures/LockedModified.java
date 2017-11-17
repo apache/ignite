@@ -23,7 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /** Simple tuple for a result. {@link org.apache.ignite.internal.util.lang.IgnitePair} with {@code Boolean} too heavy. */
-class LockedModified implements Externalizable {
+public class LockedModified implements Externalizable {
     /** */
     private static final long serialVersionUID = -5203497119206054926L;
 
