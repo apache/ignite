@@ -30,7 +30,6 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -534,7 +533,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         }
 
         /**
-         * Acquire the global lock.
+         * Acquire the global lock with timeout.
          *
          * @param timeout The maximum time to wait.
          * @param unit The time unit of the {@code timeout} argument.
@@ -580,8 +579,8 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         /**
          * Return shared lock state directly.
          *
-         * @return
-         * @throws IgniteCheckedException
+         * @return Shared lock state.
+         * @throws IgniteCheckedException If failed.
          */
         @Nullable private GridCacheLockState2Base<UUID> forceGet() throws IgniteCheckedException {
             return lockView.get(key);
@@ -632,7 +631,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             this.globalSync = globalSync;
         }
 
-        /** {@link IgniteLock#hasQueuedThreads()} */
+        /** {@link GridCacheLockEx2#hasQueuedThreads()} */
         private boolean hasQueuedThreads() {
             if (reentrantCount.get() > 0)
                 return true;
@@ -641,14 +640,14 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
 
         }
 
-        /** {@link IgniteLock#hasQueuedThread(Thread)} */
+        /** {@link GridCacheLockEx2#hasQueuedThread(Thread)} */
         private boolean hasQueuedThread(Thread thread) {
             assert thread != null;
 
             return lock.hasQueuedThread(thread);
         }
 
-        /** {@link IgniteLock#isLocked()} */
+        /** {@link GridCacheLockEx2#isLocked()} */
         private boolean isLocked() throws IgniteCheckedException {
             if (reentrantCount.get() > 0)
                 return true;

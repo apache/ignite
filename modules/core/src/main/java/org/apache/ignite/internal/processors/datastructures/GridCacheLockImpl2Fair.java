@@ -53,6 +53,8 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
     private final Sync sync;
 
     /**
+     * Constructor.
+     *
      * @param name Reentrant lock name.
      * @param key Key for shared lock state.
      * @param lockView Reentrant lock projection.
@@ -254,6 +256,8 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         }
 
         /**
+         * Constructor.
+         *
          * @param id Cache id.
          * @param threadId Thread id.
          * @param name Lock name.
@@ -394,19 +398,21 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         /** {@link ReleasedThreadMessage} handler. */
         private final IgniteInClosure<GridCacheIdMessage> releaser;
 
-        /** Only for correct isLocked. */
+        /** Only for correct {@link GridCacheLockEx2#isLocked}. */
         private volatile boolean isGloballyLocked = false;
 
         /**
+         * Constructor.
+         *
          * @param nodeId Local node id.
          * @param key Key for shared lock state.
          * @param lockView Reentrant lock projection.
          * @param ctx Cache context.
          * @param log Logger.
          */
-        private Sync(UUID nodeId, GridCacheInternalKey key, IgniteInternalCache<GridCacheInternalKey,
+        private Sync(final UUID nodeId, final GridCacheInternalKey key, IgniteInternalCache<GridCacheInternalKey,
             GridCacheLockState2Base<LockOwner>> lockView,
-            GridCacheContext<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> ctx,
+            final GridCacheContext<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> ctx,
             final IgniteLogger log) {
 
             assert nodeId != null;
@@ -492,7 +498,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         }
 
         /** Acquire the lock or add to waiting list. */
-        private void tryAcquireOrAdd() {
+        private void acquireOrAdd() {
             final Latch latch = getLatch();
 
             AcquireFairProcessor processor = acquireProcessor.get();
@@ -574,23 +580,29 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
             }
         }
 
-        /** */
-        private void waitForReleaseUninterruptibly() {
+        /** Waiting for releasing the latch. */
+        private void awaitUninterruptibly() {
             getLatch().awaitUninterruptibly();
         }
 
-        /** */
-        private void waitForRelease() throws InterruptedException {
+        /**
+         * Waiting for releasing the latch.
+         *
+         * @throws InterruptedException If interrupted.
+         */
+        private void await() throws InterruptedException {
             getLatch().await();
         }
 
         /**
+         * Waiting for releasing the latch.
+         *
          * @param timeout The maximum time to wait.
          * @param unit The time unit of the {@code timeout} argument.
          * @return {@code true} if await finished well, {@code false} if timeout.
          * @throws InterruptedException If interrupted.
          */
-        private boolean waitForRelease(long timeout, TimeUnit unit) throws InterruptedException {
+        private boolean await(long timeout, TimeUnit unit) throws InterruptedException {
             assert unit != null;
 
             return getLatch().await(timeout, unit);
@@ -604,16 +616,23 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
                 return;
             }
 
-            tryAcquireOrAdd();
+            acquireOrAdd();
 
-            waitForReleaseUninterruptibly();
+            awaitUninterruptibly();
 
             reentrantCount.increment();
 
             isGloballyLocked = true;
         }
 
-        /** Try acquire the lock once. */
+        /**
+         * Acquire the lock with timeout.
+         *
+         * @param timeout The maximum time to wait.
+         * @param unit The time unit of the {@code timeout} argument.
+         * @return {@code true} if locked, or {@code false} if timeout.
+         * @throws InterruptedException If interrupted.
+         */
         private boolean tryAcquire(long timeout, TimeUnit unit) throws InterruptedException {
             assert unit != null;
 
@@ -623,10 +642,10 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
                 return true;
             }
 
-            tryAcquireOrAdd();
+            acquireOrAdd();
 
             try {
-                if (waitForRelease(timeout, unit)) {
+                if (await(timeout, unit)) {
                     reentrantCount.increment();
 
                     isGloballyLocked = true;
@@ -656,7 +675,11 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
             return true;
         }
 
-        /** Acquire the lock interruptibly. */
+        /**
+         * Acquire the lock.
+         *
+         * @throws InterruptedException If interrupted.
+         */
         private void acquireInterruptibly() throws InterruptedException {
             if (reentrantCount.get() > 0) {
                 reentrantCount.increment();
@@ -664,10 +687,10 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
                 return;
             }
 
-            tryAcquireOrAdd();
+            acquireOrAdd();
 
             try {
-                waitForRelease();
+                await();
             }
             catch (InterruptedException e) {
                 if (!acquireOrRemove())
@@ -679,12 +702,17 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
             isGloballyLocked = true;
         }
 
-        /** */
+        /**
+         * Return shared lock state directly.
+         *
+         * @return Shared lock state.
+         * @throws IgniteCheckedException If failed.
+         */
         @Nullable private GridCacheLockState2Base<LockOwner> forceGet() throws IgniteCheckedException {
             return lockView.get(key);
         }
 
-        /** Release the lock. */
+        /** Async release the lock. */
         private void release() {
             assert reentrantCount.get() > 0;
 
@@ -713,7 +741,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         private void remove(UUID id) {
             assert id != null;
 
-            lockView.invokeAsync(key, new RemoveProcessor<>(id)).listen(releaseListener);
+            lockView.invokeAsync(key, new RemoveProcessor<LockOwner>(id)).listen(releaseListener);
         }
     }
 }
