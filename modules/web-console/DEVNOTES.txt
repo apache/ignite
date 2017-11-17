@@ -35,6 +35,6 @@ How to migrate model:
 Ignite Web Console Direct-Install Maven Build Instructions
 ==========================================================
 To build direct-install archive from sources run following command in Ignite project root folder:
-"mvn clean package -pl :ignite-web-console -am -P web-console -DskipTests=true"
+"mvn clean package -pl :ignite-web-agent,:ignite-web-console -am -P web-console -DskipTests=true"
 
 Assembled archive can be found here: `$IGNITE_HOME/modules/web-console/target/ignite-web-console-direct-install-*.zip`.
