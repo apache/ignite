@@ -104,6 +104,7 @@
     <Compile Include="Cache\Configuration\MemoryPolicyConfiguration.cs" />
     <Compile Include="Cache\Configuration\PartitionLossPolicy.cs" />
     <Compile Include="Cache\IMemoryMetrics.cs" />
+    <Compile Include="Cache\Query\IFieldsQueryCursor.cs" />
     <Compile Include="Client\Cache\ICacheClient.cs" />
     <Compile Include="Client\IgniteClientConfiguration.cs" />
     <Compile Include="Client\IgniteClientException.cs" />
@@ -121,10 +122,13 @@
     <Compile Include="Impl\Binary\MultidimensionalArraySerializer.cs" />
     <Compile Include="Impl\Client\Cache\CacheFlags.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheConfigurationSerializer.cs" />
+    <Compile Include="Impl\Client\Cache\Query\ClientFieldsQueryCursor.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\PlatformQueryQursorBase.cs" />
     <Compile Include="Impl\Binary\BinaryProcessorClient.cs" />
     <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
+    <Compile Include="Impl\Client\Cache\Query\ClientQueryCursorBase.cs" />
+    <Compile Include="Impl\Client\Cache\Query\StatementType.cs" />
     <Compile Include="Impl\Client\ClientStatus.cs" />
     <Compile Include="Events\LocalEventListener.cs" />
     <Compile Include="Impl\DataStorageMetrics.cs" />
