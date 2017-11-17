@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-using System;
-using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Apache.Ignite.Core.Tests.DotNetCore
@@ -24,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
     /// <summary>
     /// Tests Ignite startup.
     /// </summary>
-    [TestClass]  // TODO: MsTest sucks, does not show output.
+    [TestClass]
     public class IgnitionStartTest
     {
         /// <summary>
@@ -42,7 +40,11 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
             cache[1] = 1;
             Assert.AreEqual(1, cache[1]);
 
-            Console.WriteLine(cache.Single());
+            // Second node.
+            cfg.AutoGenerateIgniteInstanceName = true;
+            var ignite2 = Ignition.Start(cfg);
+
+            Assert.AreEqual(2, ignite2.GetCluster().GetNodes().Count);
         }
 
         /// <summary>
