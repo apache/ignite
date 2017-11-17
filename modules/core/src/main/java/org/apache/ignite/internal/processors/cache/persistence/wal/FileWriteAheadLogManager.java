@@ -316,12 +316,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log work directory"
             );
 
+            log.warning("Work Files:" + Arrays.toString(walWorkDir.listFiles()));
+
             walArchiveDir = initDirectory(
                 dsCfg.getWalArchivePath(),
                 DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
                 resolveFolders.folderName(),
                 "write ahead log archive directory"
             );
+
+            log.warning("Archive Files:" + Arrays.toString(walWorkDir.listFiles()));
+
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVersion);
 
