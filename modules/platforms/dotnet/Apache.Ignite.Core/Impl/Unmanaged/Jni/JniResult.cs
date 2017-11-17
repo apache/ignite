@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.distributed.keys;
-
-import java.util.UUID;
-
-/**
- * Base matrix cache key.
- */
-public interface MatrixCacheKey {
-    /**
-     * @return matrix id.
-     */
-    public UUID matrixId();
-
-    /**
-     * @return affinity key.
-     */
-    public Object affinityKey();
+namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
+{
+    /// <summary>
+    /// JNI call result.
+    /// </summary>
+    internal enum JniResult
+    {
+        Success = 0,
+        // ReSharper disable UnusedMember.Global
+        // Some statuses are not used directly, but will be displayed as part of error message.
+        Error = -1,
+        ThreadDetached = -2,
+        VersionError = -3,
+        NotEnoughMemory = -4,
+        AlreadyExists = -5,
+        InvalidArguments = -6
+    }
 }

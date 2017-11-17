@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,28 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
+namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
+    using System.Runtime.InteropServices;
 
     /// <summary>
-    /// Unmanaged target.
+    /// JavaVM interface.
     /// </summary>
-    internal unsafe interface IUnmanagedTarget : IDisposable
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct JvmInterface
     {
-        /// <summary>
-        /// Context.
-        /// </summary>
-        void* Context { get; }
+        // ReSharper disable MemberCanBePrivate.Global
+        public IntPtr reserved0;
+        public IntPtr reserved1;
+        public IntPtr reserved2;
 
-        /// <summary>
-        /// Target.
-        /// </summary>
-        void* Target { get; }
-
-        /// <summary>
-        /// Creates new instance with same context and different target.
-        /// </summary>
-        IUnmanagedTarget ChangeTarget(void* target);
+        public IntPtr DestroyJavaVM;
+        public IntPtr AttachCurrentThread;
+        public IntPtr DetachCurrentThread;
+        public IntPtr GetEnv;
+        public IntPtr AttachCurrentThreadAsDaemon;
     }
 }

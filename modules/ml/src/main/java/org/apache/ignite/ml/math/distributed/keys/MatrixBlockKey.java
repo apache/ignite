@@ -15,36 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.impls.matrix;
+package org.apache.ignite.ml.math.distributed.keys;
 
-import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 
 /**
- * Block for {@link SparseBlockDistributedMatrix}.
+ * Cache key for blocks in {@link SparseBlockDistributedMatrix}.
+ *
+ * TODO: check if using {@link IgnitePair} will be better for block id.
  */
-public final class BlockEntry extends SparseLocalOnHeapMatrix {
-    /** Max block size. */
-    public static final int MAX_BLOCK_SIZE = 32;
+public interface MatrixBlockKey extends DataStructureCacheKey {
+    /**
+     * @return block row id.
+     */
+    public long blockRowId();
 
-    /** */
-    public BlockEntry() {
-        // No-op.
-    }
-
-    /** */
-    public BlockEntry(int row, int col) {
-        super(row, col);
-
-        assert col <= MAX_BLOCK_SIZE;
-        assert row <= MAX_BLOCK_SIZE;
-    }
-
-    /** */
-    public BlockEntry(Matrix mtx) {
-        assert mtx.columnSize() <= MAX_BLOCK_SIZE;
-        assert mtx.rowSize() <= MAX_BLOCK_SIZE;
-
-        setStorage(mtx.getStorage());
-    }
-
+    /**
+     * @return block col id.
+     */
+    public long blockColId();
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,39 +15,34 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
+namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
+    using Apache.Ignite.Core.Impl.Common;
+
     /// <summary>
-    /// Unmanaged context.
-    /// Wrapper around native ctx pointer to track finalization.
+    /// Serializer for <see cref="MultidimensionalArrayHolder"/>. Unwraps underlying object automatically.
     /// </summary>
-    internal unsafe class UnmanagedContext
+    internal sealed class MultidimensionalArraySerializer : IBinarySerializerInternal
     {
-        /** Context */
-        private readonly void* _nativeCtx;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public UnmanagedContext(void* ctx)
+        /** <inheritdoc /> */
+        public void WriteBinary<T>(T obj, BinaryWriter writer)
         {
-            _nativeCtx = ctx;
+            TypeCaster<MultidimensionalArrayHolder>.Cast(obj).WriteBinary(writer);
         }
 
-        /// <summary>
-        /// Gets the native context pointer.
-        /// </summary>
-        public void* NativeContext
+        /** <inheritdoc /> */
+        public T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos, Type typeOverride)
         {
-            get { return _nativeCtx; }
+            var holder = new MultidimensionalArrayHolder(reader);
+
+            return (T) holder.Array;
         }
 
-        /// <summary>
-        /// Destructor.
-        /// </summary>
-        ~UnmanagedContext()
+        /** <inheritdoc /> */
+        public bool SupportsHandles
         {
-            UnmanagedUtils.DeleteContext(_nativeCtx); // Release CPP object.
+            get { return true; }
         }
     }
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,24 +15,17 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
+namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
+    using System;
     using System.Runtime.InteropServices;
 
     /// <summary>
-    /// Unmanaged callback handler function pointers.
+    /// Delegates for JavaVM JNI entity.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    internal unsafe struct UnmanagedCallbackHandlers
+    internal static class JvmDelegates
     {
-        internal void* target;
-
-        internal void* error;
-
-        internal void* loggerLog;
-        internal void* loggerIsLevelEnabled;
-
-        internal void* inLongOutLong;
-        internal void* inLongLongObjectOutLong;
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate JniResult AttachCurrentThread(IntPtr jvm, out IntPtr env, IntPtr args);
     }
 }

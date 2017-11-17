@@ -1704,10 +1704,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow)
+    public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable)
         throws IgniteCheckedException {
         assert cctx != null;
         assert newRow != null;
+        assert prevRowAvailable || prevRow == null;
 
         KeyCacheObject key = newRow.key();
 
@@ -1727,7 +1729,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, newRow.value(), true);
 
-            if (prevRow != null) {
+            if (prevRowAvailable && prevRow != null) {
                 QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
                     coctx,
                     key,
@@ -1738,14 +1740,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (prevValDesc != null)
                         idx.remove(cctx, prevValDesc, prevRow);
 
-                    prevRow = null; // Row has already been removed from another table indexes
+                    // Row has already been removed from another table indexes
+                    prevRow = null;
                 }
             }
 
             if (desc == null)
                 return;
 
-            idx.store(cctx, desc, newRow, prevRow);
+            idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
         }
         finally {
             busyLock.leaveBusy();
@@ -1941,6 +1944,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param qry Query.
      * @param keepBinary Keep binary flag.
+     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
+     *      more then one SQL statement.
      * @return Cursor.
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
@@ -1951,6 +1956,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (qry.isLocal())
             throw new IgniteException("Local query is not supported without specific cache.");
+
+        if (!ctx.state().publicApiActiveState()) {
+            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                "join the cluster. To activate the cluster call Ignite.active(true).");
+        }
 
         if (qry.getSchema() == null)
             qry.setSchema(QueryUtils.DFLT_SCHEMA);
