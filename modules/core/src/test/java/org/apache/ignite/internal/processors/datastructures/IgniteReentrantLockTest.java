@@ -17,17 +17,13 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -35,8 +31,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-/** Tests for {@link org.apache.ignite.internal.processors.datastructures.GridCacheLockImpl2Fair}
- * and for {@link org.apache.ignite.internal.processors.datastructures.GridCacheLockImpl2Unfair} */
+/**
+ * Tests for {@link org.apache.ignite.internal.processors.datastructures.GridCacheLockImpl2Fair} and for {@link
+ * org.apache.ignite.internal.processors.datastructures.GridCacheLockImpl2Unfair}
+ */
 public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -93,6 +91,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
     /**
      * Test a sequential lock acquiring and releasing.
+     *
      * @throws Exception If failed.
      */
     public void testReentrantLock() throws Exception {
@@ -286,27 +285,32 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReentrantLockMultinodeFailover(final boolean fair) throws Exception {
-        List<IgniteInternalFuture<Void>> futs = new ArrayList<>(NODES_CNT);
+        final AtomicInteger inx = new AtomicInteger(0);
 
-        for (int i = 0; i < NODES_CNT; i++) {
-            final int inx = i;
-            final boolean shoudClose = RND.nextBoolean();
+        GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    int i = inx.getAndIncrement();
 
-            futs.add(GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    IgniteLock lock = createReentrantLock(inx, fair ? "lock1" : "lock2", fair);
+                    boolean shoudClose;
+
+                    synchronized (RND) {
+                        shoudClose = RND.nextBoolean();
+                    }
+
+                    IgniteLock lock = createReentrantLock(i, fair ? "lock1" : "lock2", fair);
 
                     lock.lock();
 
                     if (shoudClose) {
                         try {
-                            grid(inx).close();
+                            grid(i).close();
                         }
                         catch (Exception ignored) {
                             lock.unlock();
                         }
 
-                        return null;
+                        return;
                     }
 
                     try {
@@ -317,14 +321,12 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
                     finally {
                         lock.unlock();
                     }
-
-                    return null;
                 }
-            }));
-        }
-
-        for (IgniteInternalFuture<?> fut : futs)
-            fut.get(60_000L);
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, NODES_CNT, "worker").get(30_000L);
     }
 
     /**
@@ -351,30 +353,35 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReentrantLockMultinodeFailoverMultilocks(final boolean fair) throws Exception {
-        List<IgniteInternalFuture<Void>> futs = new ArrayList<>(NODES_CNT * 2);
+        final AtomicInteger inx = new AtomicInteger(0);
 
-        for (int i = 0; i < NODES_CNT; i++) {
-            final int inx = i;
-            final boolean shoudClose = RND.nextBoolean();
+        GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    int i = inx.getAndIncrement();
 
-            futs.add(GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    IgniteLock lock1 = createReentrantLock(inx, fair ? "lock1f" : "lock1u", fair);
-                    IgniteLock lock2 = createReentrantLock(inx, fair ? "lock2f" : "lock2u", fair);
+                    boolean shoudClose;
+
+                    synchronized (RND) {
+                        shoudClose = RND.nextBoolean();
+                    }
+
+                    IgniteLock lock1 = createReentrantLock(i, fair ? "lock1f" : "lock1u", fair);
+                    IgniteLock lock2 = createReentrantLock(i, fair ? "lock2f" : "lock2u", fair);
 
                     lock1.lock();
                     lock2.lock();
 
                     if (shoudClose) {
                         try {
-                            grid(inx).close();
+                            grid(i).close();
                         }
                         catch (Exception ignored) {
                             lock2.unlock();
                             lock1.unlock();
                         }
 
-                        return null;
+                        return;
                     }
 
                     try {
@@ -387,14 +394,12 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
                         lock2.unlock();
                         lock1.unlock();
                     }
-
-                    return null;
                 }
-            }));
-        }
-
-        for (IgniteInternalFuture<?> fut : futs)
-            fut.get(60_000L);
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, NODES_CNT, "worker").get(30_000L);
     }
 
     /**
