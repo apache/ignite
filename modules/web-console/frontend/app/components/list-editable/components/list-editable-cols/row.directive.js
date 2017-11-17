@@ -33,7 +33,8 @@ export default function() {
                 el.addClass(ctrl.rowClass);
 
             ctrl.colDefs.forEach(({ cellClass }, index) => {
-                children[index].classList.add(...(Array.isArray(cellClass) ? cellClass : [cellClass]));
+                if (cellClass)
+                    children[index].classList.add(...(Array.isArray(cellClass) ? cellClass : cellClass.split(' ')));
             });
         }
     };

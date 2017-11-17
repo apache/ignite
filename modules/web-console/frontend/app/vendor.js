@@ -53,6 +53,8 @@ import 'jszip';
 import 'nvd3';
 import 'lodash';
 
+import 'angular1-async-filter';
+
 import 'angular-gridster/dist/angular-gridster.min.css';
 import 'angular-tree-control/css/tree-control-attribute.css';
 import 'angular-tree-control/css/tree-control.css';
