@@ -635,7 +635,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                 });
                         }
 
-                        releasers.putIfAbsent(key.name(), ((GridCacheLockEx2)ret.get1()).getReleaser());
+                        releasers.putIfAbsent(key.name(), ((GridCacheLockEx2)dsMap.get(key)).getReleaser());
                     }
 
                     return old;
