@@ -321,13 +321,9 @@ namespace Apache.Ignite.Core.Impl
                 }
             }
 
-            if (Os.IsWindows)
+            foreach (var keyValuePair in GetJvmDllPathsFromRegistry().Concat(GetJvmDllPathsFromSymlink()))
             {
-                // Get paths from the Windows Registry.
-                foreach (var keyValuePair in GetJvmDllPathsFromRegistry())
-                {
-                    yield return keyValuePair;
-                }
+                yield return keyValuePair;
             }
         }
 
@@ -336,6 +332,11 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromRegistry()
         {
+            if (!Os.IsWindows)
+            {
+                yield break;
+            }
+
             foreach (var regPath in JreRegistryKeys)
             {
                 using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
@@ -360,6 +361,19 @@ namespace Apache.Ignite.Core.Impl
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the JVM DLL paths from symlink.
+        /// </summary>
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromSymlink()
+        {
+            if (Os.IsWindows)
+            {
+                yield break;
+            }
+
+            yield return new KeyValuePair<string, string>("'whereis java'", ""); // TODO
         }
 
         /// <summary>
