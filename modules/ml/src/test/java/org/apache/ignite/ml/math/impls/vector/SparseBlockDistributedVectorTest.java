@@ -17,14 +17,17 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-
-import java.io.*;
 
 import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 
@@ -35,12 +38,16 @@ import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 public class SparseBlockDistributedVectorTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
+
     /** Precision. */
     private static final double PRECISION = 0.0;
+
     /** Grid instance. */
     private Ignite ignite;
+
     /** Vector size */
     private final int size = MathTestConstants.STORAGE_SIZE;
+
     /** Vector for tests */
     private SparseBlockDistributedVector sparseBlockDistributedVector;
 
@@ -86,9 +93,9 @@ public class SparseBlockDistributedVectorTest extends GridCommonAbstractTest {
         sparseBlockDistributedVector = new SparseBlockDistributedVector(size);
 
         for (int i = 0; i < size; i++) {
-                double v = Math.random();
-                sparseBlockDistributedVector.set(i, v);
-                assertEquals("Unexpected value for vector element[" + i + "]", v, sparseBlockDistributedVector.get(i), PRECISION);
+            double v = Math.random();
+            sparseBlockDistributedVector.set(i, v);
+            assertEquals("Unexpected value for vector element[" + i + "]", v, sparseBlockDistributedVector.get(i), PRECISION);
         }
     }
 
@@ -123,19 +130,19 @@ public class SparseBlockDistributedVectorTest extends GridCommonAbstractTest {
 
         sparseBlockDistributedVector.assign(2.0);
         for (int i = 0; i < sparseBlockDistributedVector.size(); i++)
-                assertEquals(UNEXPECTED_VAL, 2.0, sparseBlockDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, 2.0, sparseBlockDistributedVector.get(i), PRECISION);
 
         sparseBlockDistributedVector.plus(3.0);
         for (int i = 0; i < sparseBlockDistributedVector.size(); i++)
-                assertEquals(UNEXPECTED_VAL, 5.0, sparseBlockDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, 5.0, sparseBlockDistributedVector.get(i), PRECISION);
 
         sparseBlockDistributedVector.times(2.0);
         for (int i = 0; i < sparseBlockDistributedVector.size(); i++)
-                assertEquals(UNEXPECTED_VAL, 10.0, sparseBlockDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, 10.0, sparseBlockDistributedVector.get(i), PRECISION);
 
         sparseBlockDistributedVector.divide(10.0);
         for (int i = 0; i < sparseBlockDistributedVector.size(); i++)
-                assertEquals(UNEXPECTED_VAL, 1.0, sparseBlockDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, 1.0, sparseBlockDistributedVector.get(i), PRECISION);
     }
 
 
@@ -148,7 +155,7 @@ public class SparseBlockDistributedVectorTest extends GridCommonAbstractTest {
 
         sparseBlockDistributedVector.map(i -> 100.0);
         for (int i = 0; i < sparseBlockDistributedVector.size(); i++)
-                assertEquals(UNEXPECTED_VAL, 100.0, sparseBlockDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, 100.0, sparseBlockDistributedVector.get(i), PRECISION);
     }
 
     /** */
@@ -172,10 +179,9 @@ public class SparseBlockDistributedVectorTest extends GridCommonAbstractTest {
         assertNotNull(sparseBlockDistributedVector.like(1));
     }
 
-
     /** */
     private void initVector(Vector v) {
         for (int i = 0; i < v.size(); i++)
-                v.set(i, 1.0);
+            v.set(i, 1.0);
     }
 }

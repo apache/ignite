@@ -21,7 +21,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
-import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -32,10 +31,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 public class SparseDistributedVectorStorageTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
+
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
+
     /** */
     private static final String UNEXPECTED_ATTRIBUTE_VALUE = "Unexpected attribute value.";
+
     /** Grid instance. */
     private Ignite ignite;
 

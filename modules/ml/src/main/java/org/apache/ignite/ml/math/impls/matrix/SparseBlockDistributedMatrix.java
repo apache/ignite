@@ -17,6 +17,11 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -37,10 +42,7 @@ import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+
 
 /**
  * Sparse block distributed matrix. This matrix represented by blocks 32x32 {@link MatrixBlockEntry}.
@@ -71,6 +73,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
      */
     public SparseBlockDistributedMatrix(double[][] data) {
         assert data.length > 0;
+
         setStorage(new BlockMatrixStorage(data.length, getMaxAmountOfColumns(data)));
 
         for (int i = 0; i < data.length; i++)

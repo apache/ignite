@@ -19,6 +19,14 @@ package org.apache.ignite.ml.math.impls.storage.matrix;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -34,37 +42,33 @@ import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.SparseMatrixKey;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 /**
  * {@link MatrixStorage} implementation for {@link SparseDistributedMatrix}.
  */
 public class SparseDistributedMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants, DistributedStorage<RowColMatrixKey> {
     /** Cache name used for all instances of {@link SparseDistributedMatrixStorage}. */
     private static final String CACHE_NAME = "ML_SPARSE_MATRICES_CONTAINER";
+
     /** Amount of rows in the matrix. */
     private int rows;
+
     /** Amount of columns in the matrix. */
     private int cols;
+
     /** Row or column based storage mode. */
     private int stoMode;
+
     /** Random or sequential access mode. */
     private int acsMode;
+
     /** Matrix uuid. */
     private UUID uuid;
 
     /** Actual distributed storage. */
     private IgniteCache<
-        RowColMatrixKey /* Row or column index with matrix uuid. */,
-        Map<Integer, Double> /* Map-based row or column. */
-        > cache = null;
+            RowColMatrixKey /* Row or column index with matrix uuid. */,
+            Map<Integer, Double> /* Map-based row or column. */
+            > cache = null;
 
     /**
      *
@@ -304,7 +308,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         SparseDistributedMatrixStorage that = (SparseDistributedMatrixStorage)obj;
 
         return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
-            && uuid.equals(that.uuid) && (cache != null ? cache.equals(that.cache) : that.cache == null);
+                && uuid.equals(that.uuid) && (cache != null ? cache.equals(that.cache) : that.cache == null);
     }
 
     /** */

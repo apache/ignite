@@ -17,6 +17,14 @@
 
 package org.apache.ignite.ml.math.impls.storage.matrix;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -24,9 +32,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
@@ -36,11 +41,6 @@ import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.*;
-
 import static org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry.MAX_BLOCK_SIZE;
 
 /**
@@ -49,12 +49,16 @@ import static org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry.MAX_BLOCK_
 public class BlockVectorStorage extends CacheUtils implements VectorStorage, StorageConstants, DistributedStorage<VectorBlockKey> {
     /** Cache name used for all instances of {@link BlockVectorStorage}. */
     private static final String CACHE_NAME = "ML_BLOCK_SPARSE_MATRICES_CONTAINER";
+
     /** */
     private int blocks;
+
     /** Amount of columns in the vector. */
     private int size;
+
     /** Matrix uuid. */
     private UUID uuid;
+
     /** Block size about 8 KB of data. */
     private int maxBlockEdge = MAX_BLOCK_SIZE;
 
@@ -79,17 +83,13 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         assert size > 0;
 
         this.size = size;
-
         this.blocks = size % maxBlockEdge == 0 ? size / maxBlockEdge : size / maxBlockEdge + 1;
 
         cache = newCache();
-
         uuid = UUID.randomUUID();
     }
 
-    /**
-     *
-     */
+    /** */
     public IgniteCache<VectorBlockKey, VectorBlockEntry> cache() {
         return cache;
     }
@@ -107,14 +107,6 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     /** {@inheritDoc} */
     @Override public int size() {
         return size;
-    }
-
-
-    /**
-     * @return Blocks in row.
-     */
-    public int blocksInRow() {
-        return blocks;
     }
 
     /** {@inheritDoc} */
@@ -185,8 +177,8 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
 
     /** {@inheritDoc} */
     @Override public Set<VectorBlockKey> getAllKeys() {
-        int maxIndex = size - 1;
-        long maxBlockId = getBlockId(maxIndex);
+        int maxIdx = size - 1;
+        long maxBlockId = getBlockId(maxIdx);
 
         Set<VectorBlockKey> keyset = new HashSet<>();
 
@@ -257,6 +249,9 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         return entry;
     }
 
+    /**
+     * Get empty block entry by the given block id.
+     */
     @NotNull
     private VectorBlockEntry getEmptyBlockEntry(long blockId) {
         VectorBlockEntry entry;

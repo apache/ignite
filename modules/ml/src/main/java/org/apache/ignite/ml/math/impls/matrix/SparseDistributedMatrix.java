@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -31,10 +35,6 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorage;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Sparse distributed matrix implementation based on data grid.
@@ -82,7 +82,6 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
             for (int j = 0; j < data[i].length; j++)
                 storage().set(i,j,data[i][j]);
     }
-
 
     /**
      * @param rows Amount of rows in the matrix.

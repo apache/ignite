@@ -17,6 +17,13 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Collection;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -30,10 +37,6 @@ import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
-import java.io.*;
-import java.util.Collection;
-import java.util.Set;
-
 import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 
 /**
@@ -43,14 +46,19 @@ import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
+
     /** Precision. */
     private static final double PRECISION = 0.0;
+
     /** Grid instance. */
     private Ignite ignite;
+
     /** Matrix rows */
     private final int rows = MathTestConstants.STORAGE_SIZE;
+
     /** Matrix cols */
     private final int cols = MathTestConstants.STORAGE_SIZE;
+
     /** Matrix for tests */
     private SparseBlockDistributedMatrix cacheMatrix;
 
@@ -282,9 +290,7 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
      * Simple test for two square matrices.
      */
     public void testSquareMatrixTimes(){
-        int size = rows;
-
-        squareMatrixTimesLogic(size);
+        squareMatrixTimesLogic(rows);
     }
 
     /**
@@ -372,25 +378,20 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
                     assertEquals(UNEXPECTED_VAL + " for "+ i +":"+ j, 0, res.get(i, j), PRECISION);
     }
 
+    /** */
     public void testMatrixVectorTimes(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         SparseBlockDistributedMatrix a = new SparseBlockDistributedMatrix(new double[][] {{2.0, 4.0, 0.0}, {-2.0, 1.0, 3.0}, {-1.0, 0.0, 1.0}});
         SparseBlockDistributedVector b = new SparseBlockDistributedVector(new double[] {1.0, 2.0, -1.0});
-        SparseBlockDistributedVector result = new SparseBlockDistributedVector(new double[] {10, -3.0, -2.0});
+        SparseBlockDistributedVector res = new SparseBlockDistributedVector(new double[] {10, -3.0, -2.0});
 
 
-        Vector calculatedResult = a.times(b);
+        Vector calculatedRes = a.times(b);
 
-        for(int i = 0; i < calculatedResult.size(); i++)
-            assertEquals(UNEXPECTED_VAL + " for "+ i, result.get(i), calculatedResult.get(i), PRECISION);
-
-
+        for(int i = 0; i < calculatedRes.size(); i++)
+            assertEquals(UNEXPECTED_VAL + " for "+ i, res.get(i), calculatedRes.get(i), PRECISION);
     }
-
-
-
-
 
     /** */
     private void initMtx(Matrix m) {

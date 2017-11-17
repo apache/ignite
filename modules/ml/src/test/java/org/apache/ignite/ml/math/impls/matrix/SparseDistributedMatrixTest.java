@@ -33,10 +33,8 @@ import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
-import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
-import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -50,16 +48,22 @@ import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
+
     /** Precision. */
     private static final double PRECISION = 0.0;
+
     /** */
     private static final int MATRIX_SIZE = 10;
+
     /** Grid instance. */
     private Ignite ignite;
+
     /** Matrix rows */
     private final int rows = MathTestConstants.STORAGE_SIZE;
+
     /** Matrix cols */
     private final int cols = MathTestConstants.STORAGE_SIZE;
+
     /** Matrix for tests */
     private SparseDistributedMatrix cacheMatrix;
 
@@ -217,11 +221,9 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
 
         Matrix copiedMtx = cacheMatrix.copy();
 
-        for (int i = 0; i < cacheMatrix.rowSize(); i++) {
-            for (int j = 0; j < cacheMatrix.columnSize(); j++) {
-                assert copiedMtx.get(i,j) == cacheMatrix.get(i,j);
-            }
-        }
+        for (int i = 0; i < cacheMatrix.rowSize(); i++)
+            for (int j = 0; j < cacheMatrix.columnSize(); j++)
+                assert copiedMtx.get(i, j) == cacheMatrix.get(i, j);
     }
 
     /** */
@@ -244,21 +246,21 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         Set<RowColMatrixKey> keySet2 = ((SparseDistributedMatrixStorage)cacheMatrix2.getStorage()).getAllKeys();
 
         assert cache.containsKeys(keySet1) ||
-            keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
+                keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
         assert cache.containsKeys(keySet2) ||
-            keySet2.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
+                keySet2.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
 
         cacheMatrix2.destroy();
 
         assert cache.containsKeys(keySet1) ||
-            keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
+                keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
         assert !cache.containsKeys(keySet2) &&
-            keySet2.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue() == null));
+                keySet2.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue() == null));
 
         cacheMatrix1.destroy();
 
         assert !cache.containsKeys(keySet1) &&
-            keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue() == null));
+                keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue() == null));
     }
 
     /** */

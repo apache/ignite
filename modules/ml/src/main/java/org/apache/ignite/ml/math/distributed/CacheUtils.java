@@ -17,6 +17,17 @@
 
 package org.apache.ignite.ml.math.distributed;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BinaryOperator;
+import java.util.stream.Stream;
+import javax.cache.Cache;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -36,15 +47,15 @@ import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.MatrixBlockKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.VectorBlockKey;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.ml.math.functions.*;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteConsumer;
+import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry;
 import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
-
-import javax.cache.Cache;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BinaryOperator;
-import java.util.stream.Stream;
 
 /**
  * Distribution-related misc. support.
@@ -588,6 +599,18 @@ public class CacheUtils {
         return totalRes.stream().reduce(defRes, accumulator);
     }
 
+    /**
+     *  Distributed version of fold operation. This method also applicable to sparse zeroes.
+     *
+     * @param cacheName Cache name.
+     * @param ignite ignite
+     * @param acc Accumulator
+     * @param supp supplier
+     * @param entriesGen entries generator
+     * @param comb combiner
+     * @param zeroValSupp Zero value supplier.
+     * @return
+     */
     public static <K, V, A, W> A reduce(String cacheName, Ignite ignite,
                                         IgniteTriFunction<W, Cache.Entry<K, V>, A, A> acc,
                                         IgniteSupplier<W> supp,
@@ -611,6 +634,17 @@ public class CacheUtils {
         return totalRes.stream().reduce(defRes, comb);
     }
 
+    /**
+     *  Distributed version of fold operation
+     *
+     * @param cacheName Cache name.
+     * @param acc Accumulator
+     * @param supp supplier
+     * @param entriesGen entries generator
+     * @param comb combiner
+     * @param zeroValSupp Zero value supplier
+     * @return
+     */
     public static <K, V, A, W> A reduce(String cacheName, IgniteTriFunction<W, Cache.Entry<K, V>, A, A> acc,
                                         IgniteSupplier<W> supp,
                                         IgniteSupplier<Iterable<Cache.Entry<K, V>>> entriesGen, IgniteBinaryOperator<A> comb,

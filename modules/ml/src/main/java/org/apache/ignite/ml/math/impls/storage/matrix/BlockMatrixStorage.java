@@ -17,6 +17,14 @@
 
 package org.apache.ignite.ml.math.impls.storage.matrix;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -25,7 +33,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
@@ -34,30 +41,29 @@ import org.apache.ignite.ml.math.distributed.keys.impl.MatrixBlockKey;
 import org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 
-
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.*;
-
 import static org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry.MAX_BLOCK_SIZE;
-
 /**
  * Storage for {@link SparseBlockDistributedMatrix}.
  */
 public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants, DistributedStorage<MatrixBlockKey> {
     /** Cache name used for all instances of {@link BlockMatrixStorage}. */
     private static final String CACHE_NAME = "ML_BLOCK_SPARSE_MATRICES_CONTAINER";
+
     /** */
     private int blocksInCol;
+
     /** */
     private int blocksInRow;
+
     /** Amount of rows in the matrix. */
     private int rows;
+
     /** Amount of columns in the matrix. */
     private int cols;
+
     /** Matrix uuid. */
     private UUID uuid;
+
     /** Block size about 8 KB of data. */
     private int maxBlockEdge = MAX_BLOCK_SIZE;
 
@@ -67,9 +73,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
             MatrixBlockEntry /* Block of matrix, local sparse matrix. */
         > cache = null;
 
-    /**
-     *
-     */
+    /** */
     public BlockMatrixStorage() {
         // No-op.
     }
@@ -93,9 +97,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         uuid = UUID.randomUUID();
     }
 
-    /**
-     *
-     */
+    /** */
     public IgniteCache<MatrixBlockKey, MatrixBlockEntry> cache() {
         return cache;
     }

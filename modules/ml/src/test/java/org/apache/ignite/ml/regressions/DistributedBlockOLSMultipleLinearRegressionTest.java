@@ -31,7 +31,6 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Assert;
-import org.junit.Test;
 
 /**
  * Tests for {@link OLSMultipleLinearRegression}.
@@ -45,21 +44,21 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
     /** */
     private double[][] x;
 
+    /** */
     private AbstractMultipleLinearRegression regression;
 
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
 
+    /** */
     private static final double PRECISION = 1E-12;
 
     /** Grid instance. */
     private Ignite ignite;
 
+    /** */
     public DistributedBlockOLSMultipleLinearRegressionTest() {
-
         super(false);
-
-
     }
 
     /** {@inheritDoc} */
@@ -104,7 +103,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
     }
 
     /** */
-    @Test
     public void testPerfectFit() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -144,7 +142,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
      * Certified values (and data) are from NIST:
      * http://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Longley.dat
      */
-    @Test
     public void testLongly() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -258,7 +255,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
      * Test R Swiss fertility dataset against R.
      * Data Source: R datasets package
      */
-    @Test
     public void testSwissFertility() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -417,7 +413,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
     /**
      * Test hat matrix computation
      */
-    @Test
     public void testHat() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -486,7 +481,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
     /**
      * test calculateYVariance
      */
-    @Test
     public void testYVariance() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         // assumes: y = new double[]{11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
@@ -498,7 +492,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
     /**
      * Verifies that setting X and Y separately has the same effect as newSample(X,Y).
      */
-    @Test
     public void testNewSample2() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] y = new double[]{1, 2, 3, 4};
@@ -542,7 +535,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
     }
 
     /** */
-    @Test(expected = NullArgumentException.class)
     public void testNewSampleDataYNull() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -574,7 +566,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
      * This is a test based on the Wampler1 data set
      * http://www.itl.nist.gov/div898/strd/lls/data/Wampler1.shtml
      */
-    @Test
     public void testWampler1() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[]{
@@ -642,7 +633,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
      * This is a test based on the Wampler2 data set
      * http://www.itl.nist.gov/div898/strd/lls/data/Wampler2.shtml
      */
-    @Test
     public void testWampler2() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[]{
@@ -710,7 +700,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
      * This is a test based on the Wampler3 data set
      * http://www.itl.nist.gov/div898/strd/lls/data/Wampler3.shtml
      */
-    @Test
     public void testWampler3() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[]{
@@ -780,7 +769,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
      * This is a test based on the Wampler4 data set
      * http://www.itl.nist.gov/div898/strd/lls/data/Wampler4.shtml
      */
-    @Test
     public void testWampler4() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[]{

@@ -740,9 +740,13 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Vector getCol(int col) {
         checkColumnIndex(col);
+
         Vector res;
-        if (isDistributed()) res = MatrixUtil.likeVector(this, rowSize());
-        else res = new DenseLocalOnHeapVector(rowSize());
+
+        if (isDistributed())
+            res = MatrixUtil.likeVector(this, rowSize());
+        else
+            res = new DenseLocalOnHeapVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
             res.setX(i, getX(i, col));
@@ -978,6 +982,13 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
 
+    /**
+     * Return max amount of columns in 2d array.
+     *
+     * TODO: why this in this class, mb some util class?
+     *
+     * @param data Data.
+     */
     protected int getMaxAmountOfColumns(double[][] data) {
         int maxAmountOfColumns = 0;
 
