@@ -1882,6 +1882,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
+     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
+     *      more then one SQL statement.
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
@@ -1890,6 +1892,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
+
+        if (!ctx.state().publicApiActiveState()) {
+            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                "join the cluster. To activate the cluster call Ignite.active(true).");
+        }
+
+        if (qry.getSchema() == null)
+            qry.setSchema(QueryUtils.DFLT_SCHEMA);
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");

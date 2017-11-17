@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -196,7 +197,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1_ESCAPED));
 
         assertIgniteSqlException(new RunnableX() {
             @Override public void run() throws Exception {
@@ -205,7 +206,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         }, IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1_ESCAPED));
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
@@ -280,7 +281,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED), field(alias(FIELD_NAME_2_ESCAPED)));
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED), field(alias(FIELD_NAME_2_ESCAPED)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE,
+            field(FIELD_NAME_1_ESCAPED), field(alias(FIELD_NAME_2_ESCAPED)));
 
         assertCompositeIndexOperations(SQL_COMPOSITE);
 
@@ -604,11 +606,140 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         QueryIndex idx = index(IDX_NAME_1, field(alias(FIELD_NAME_2_ESCAPED)));
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(alias(FIELD_NAME_2_ESCAPED)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(alias(FIELD_NAME_2_ESCAPED)));
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_2);
 
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_2, SQL_ARG_1);
+    }
+
+    /**
+     * Tests creating index with inline size for PARTITIONED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateIndexWithInlineSizePartitionedAtomic() throws Exception {
+        checkCreateIndexWithInlineSize(PARTITIONED, ATOMIC, false);
+    }
+
+    /**
+     * Tests creating index with inline size for PARTITIONED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateIndexWithInlineSizePartitionedAtomicNear() throws Exception {
+        checkCreateIndexWithInlineSize(PARTITIONED, ATOMIC, true);
+    }
+
+    /**
+     * Tests creating index with inline size for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateIndexWithInlineSizePartitionedTransactional() throws Exception {
+        checkCreateIndexWithInlineSize(PARTITIONED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Tests creating index with inline size for PARTITIONED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateIndexWithInlineSizePartitionedTransactionalNear() throws Exception {
+        checkCreateIndexWithInlineSize(PARTITIONED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Tests creating index with inline size for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateIndexWithInlineSizeReplicatedAtomic() throws Exception {
+        checkCreateIndexWithInlineSize(REPLICATED, ATOMIC, false);
+    }
+
+    /**
+     * Tests creating index with inline size option for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateIndexWithInlineSizeReplicatedTransactional() throws Exception {
+        checkCreateIndexWithInlineSize(REPLICATED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Checks that inline size parameter is correctly handled during index creation.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     * @throws Exception If failed.
+     */
+    private void checkCreateIndexWithInlineSize(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near)
+        throws Exception {
+
+        initialize(mode, atomicityMode, near);
+
+        String prevFallbackPropVal = System.getProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
+
+        try {
+            System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "true");
+
+            checkNoIndexIsCreatedForInlineSize(-2, IgniteQueryErrorCode.PARSING);
+            checkNoIndexIsCreatedForInlineSize(Integer.MIN_VALUE, IgniteQueryErrorCode.PARSING);
+
+            checkIndexCreatedForInlineSize(0);
+            loadInitialData();
+            checkIndexCreatedForInlineSize(1);
+            loadInitialData();
+            checkIndexCreatedForInlineSize(Integer.MAX_VALUE);
+        }
+        finally {
+            if (prevFallbackPropVal != null)
+                System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, prevFallbackPropVal);
+            else
+                System.clearProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
+        }
+    }
+
+    /**
+     * Verifies that index is created with the specified inline size.
+     *
+     * @param inlineSize Inline size to put into CREATE INDEX
+     * @throws Exception If failed.
+     */
+    private void checkIndexCreatedForInlineSize(int inlineSize) throws Exception {
+        QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
+        idx.setInlineSize(inlineSize);
+
+        dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, inlineSize, field(FIELD_NAME_1_ESCAPED));
+        assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+
+        dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false);
+
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+    }
+
+    /**
+     * Verifies that no index is created and an exception is thrown.
+     *
+     * @param inlineSize Inline size value in the CREATE INDEX statement.
+     * @param igniteQryErrorCode Expected error code in the thrown exception.
+     * @throws Exception If failed for any other reason than the expected exception.
+     */
+    private void checkNoIndexIsCreatedForInlineSize(final int inlineSize, int igniteQryErrorCode) throws Exception {
+        assertIgniteSqlException(new RunnableX() {
+            @Override public void run() throws Exception {
+                QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
+                idx.setInlineSize(inlineSize);
+                dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
+            }
+        }, igniteQryErrorCode);
+
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
 
     /**
@@ -680,7 +811,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx1, false);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1_ESCAPED));
 
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
 
@@ -690,7 +821,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         QueryIndex idx2 = index(IDX_NAME_2, field(alias(FIELD_NAME_2_ESCAPED)));
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx2, false);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2_ESCAPED)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, QueryIndex.DFLT_INLINE_SIZE, field(alias(FIELD_NAME_2_ESCAPED)));
 
         // Load some data.
         loadInitialData();
@@ -704,7 +835,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         assertIndexNotUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
 
         // Make sure the second index is still there.
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2_ESCAPED)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, QueryIndex.DFLT_INLINE_SIZE, field(alias(FIELD_NAME_2_ESCAPED)));
     }
 
     /**
@@ -905,7 +1036,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1));
 
         dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true);
-        assertIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
+        assertIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1_ESCAPED));
 
         dynamicIndexDrop(STATIC_CACHE_NAME, IDX_NAME_1, true);
         assertNoIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1);
