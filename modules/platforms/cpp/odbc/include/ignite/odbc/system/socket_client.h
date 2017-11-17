@@ -102,21 +102,16 @@ namespace ignite
                 /**
                  * Wait on the socket for any event for specified time.
                  * @param timeout Timeout.
+                 * @param rd Wait for read if @c true, or for write if @c false.
                  * @return -errno on error, zero on timeout and 1 on success.
                  */
-                int WaitOnSocket(int32_t timeout);
+                int WaitOnSocket(int32_t timeout, bool rd);
 
                 /** Handle. */
                 intptr_t socketHandle;
 
                 /** Blocking flag. */
                 bool blocking;
-
-                /** Read ready flag. */
-                bool readReady;
-
-                /** Write ready flag. */
-                bool writeReady;
 
                 IGNITE_NO_COPY_ASSIGNMENT(SocketClient)
             };

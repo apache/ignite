@@ -98,9 +98,7 @@ namespace ignite
 
             SocketClient::SocketClient() :
                 socketHandle(INVALID_SOCKET),
-                blocking(true),
-                readReady(false),
-                writeReady(false)
+                blocking(true)
             {
                 // No-op.
             }
@@ -184,11 +182,27 @@ namespace ignite
                     res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
                     if (SOCKET_ERROR == res)
                     {
-                        LOG_MSG("Connection failed: " << GetLastSocketErrorMessage());
+                        int lastError = WSAGetLastError();
 
-                        Close();
+                        if (lastError != WSAEWOULDBLOCK)
+                        {
+                            LOG_MSG("Connection failed: " << GetSocketErrorMessage(lastError));
 
-                        continue;
+                            Close();
+
+                            continue;
+                        }
+
+                        res = WaitOnSocket(5, false);
+
+                        if (res <= 0)
+                        {
+                            LOG_MSG("Connection failed: " << GetSocketErrorMessage(-res));
+
+                            Close();
+
+                            continue;
+                        }
                     }
                     break;
                 }
@@ -212,11 +226,7 @@ namespace ignite
             {
                 if (!blocking)
                 {
-                    int res;
-                    do
-                    {
-                        res = WaitOnSocket(timeout);
-                    } while (res == 1 && !writeReady);
+                    int res = WaitOnSocket(timeout, false);
 
                     if (res <= 0)
                         return res;
@@ -229,11 +239,7 @@ namespace ignite
             {
                 if (!blocking)
                 {
-                    int res;
-                    do
-                    {
-                        res = WaitOnSocket(timeout);
-                    } while (res == 1 && !readReady);
+                    int res = WaitOnSocket(timeout, true);
 
                     if (res <= 0)
                         return res;
@@ -381,28 +387,22 @@ namespace ignite
 #endif
             }
 
-            int SocketClient::WaitOnSocket(int32_t timeout)
+            int SocketClient::WaitOnSocket(int32_t timeout, bool rd)
             {
                 int ready = 0;
                 int lastError = 0;
 
-                fd_set readFds;
-                fd_set writeFds;
-
-                readReady = false;
-                writeReady = false;
+                fd_set fds;
 
                 do {
                     struct timeval tv = { 0 };
                     tv.tv_sec = timeout;
 
-                    FD_ZERO(&readFds);
-                    FD_ZERO(&writeFds);
+                    FD_ZERO(&fds);
+                    FD_SET(socketHandle, &fds);
 
-                    FD_SET(socketHandle, &readFds);
-                    FD_SET(socketHandle, &writeFds);
-
-                    ready = select(socketHandle + 1, &readFds, &writeFds, NULL, timeout == 0 ? NULL : &tv);
+                    ready = select(static_cast<int>((socketHandle) + 1),
+                        (rd ? &fds : 0), (rd ? 0 : &fds), NULL, (timeout == 0 ? NULL : &tv));
 
                     if (ready == SOCKET_ERROR)
                         lastError = WSAGetLastError();
@@ -414,9 +414,6 @@ namespace ignite
 
                 if (ready == 0)
                     return 0;
-
-                readReady = FD_ISSET(socketHandle, &readFds);
-                writeReady = FD_ISSET(socketHandle, &readFds);
 
                 return 1;
             }
