@@ -529,7 +529,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         if (c.failed) {
                             ses.send(new RecoveryLastReceivedMessage(-1));
 
-                            closeStaleConnections(connKey);
+                            closeStaleConnections(connKey, true);
                         }
                     }
                 }
@@ -554,7 +554,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                             ses.send(new RecoveryLastReceivedMessage(-1));
 
-                            closeStaleConnections(connKey);
+                            closeStaleConnections(connKey, false);
 
                             return;
                         }
@@ -588,7 +588,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                                 ses.send(new RecoveryLastReceivedMessage(-1));
 
-                                closeStaleConnections(connKey);
+                                closeStaleConnections(connKey, false);
 
                                 fut.onDone(oldClient);
 
@@ -645,12 +645,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             /**
              * @param connKey Connection key.
+             * @param paired Paired connection.
              */
-            private void closeStaleConnections(ConnectionKey connKey) {
+            private void closeStaleConnections(ConnectionKey connKey, boolean paired) {
                 for (GridNioSession ses0 : nioSrvr.sessions()) {
                     ConnectionKey key0 = ses0.meta(CONN_IDX_META);
 
-                    if (ses0.accepted() && key0 != null &&
+                    if ((!paired || ses0.accepted()) && key0 != null &&
                         key0.nodeId().equals(connKey.nodeId()) &&
                         key0.connectionIndex() == connKey.connectionIndex() &&
                         key0.connectCount() < connKey.connectCount())
