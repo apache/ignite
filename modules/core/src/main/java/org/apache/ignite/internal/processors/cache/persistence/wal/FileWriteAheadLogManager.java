@@ -124,7 +124,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     };
 
     /** Latest serializer version to use. */
-    public static final int LATEST_SERIALIZER_VERSION = 2;
+    public static final int LATEST_SERIALIZER_VERSION = 2;//a
 
     /** */
     private final boolean alwaysWriteFullPages;
