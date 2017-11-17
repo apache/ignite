@@ -15,38 +15,22 @@
  * limitations under the License.
  */
 
-'use strict';
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-// Fire me up!
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.transactions.Transaction;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Module with server-side configuration.
+ * Test for distributed queries with node restarts inside transactions.
  */
-module.exports = {
-    implements: 'nconf',
-    inject: ['require(nconf)', 'require(fs)'],
-    factory(nconf, fs) {
-        nconf.env({separator: '_'}).argv();
-
-        const dfltFile = 'config/settings.json';
-        const customFile = nconf.get('settings') || dfltFile;
-
-        try {
-            fs.accessSync(customFile, fs.F_OK);
-
-            nconf.file({file: customFile});
+public class IgniteCacheQueryNodeRestartTxSelfTest extends IgniteCacheQueryNodeRestartSelfTest2 {
+    /** {@inheritDoc} */
+    @Override protected void runQuery(IgniteEx grid, Runnable qryRunnable) {
+        try(Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            qryRunnable.run();
         }
-        catch (ignored) {
-            try {
-                fs.accessSync(dfltFile, fs.F_OK);
-
-                nconf.file({file: dfltFile});
-            }
-            catch (ignored2) {
-                // No-op.
-            }
-        }
-
-        return nconf;
     }
-};
+}
