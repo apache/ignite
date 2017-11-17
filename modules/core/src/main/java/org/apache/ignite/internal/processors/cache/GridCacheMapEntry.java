@@ -3291,9 +3291,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIndex(SchemaIndexCacheFilter filter,
-        SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException,
-        GridCacheEntryRemovedException {
+    @Override public void updateIndex(SchemaIndexCacheFilter filter, SchemaIndexCacheVisitorClosure clo)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         synchronized (this) {
             if (isInternal())
                 return;

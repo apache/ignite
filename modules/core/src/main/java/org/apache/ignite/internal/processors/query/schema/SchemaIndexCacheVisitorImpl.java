@@ -47,6 +47,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Cache context. */
     private final GridCacheContext cctx;
 
+    /** Row filter. */
     private final SchemaIndexCacheFilter rowFilter;
 
     /** Cancellation token. */
@@ -65,7 +66,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      *  @param cctx Cache context.
      * @param cancel Cancellation token.
      */
-    public SchemaIndexCacheVisitorImpl(GridCacheContext cctx, SchemaIndexCacheFilter rowFilter, SchemaIndexOperationCancellationToken cancel) {
+    public SchemaIndexCacheVisitorImpl(GridCacheContext cctx, SchemaIndexCacheFilter rowFilter,
+        SchemaIndexOperationCancellationToken cancel) {
         this.rowFilter = rowFilter;
         this.cancel = cancel;
 

@@ -875,8 +875,8 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public void updateIndex(SchemaIndexCacheFilter filter,
-        SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException, GridCacheEntryRemovedException;
+    public void updateIndex(SchemaIndexCacheFilter filter, SchemaIndexCacheVisitorClosure clo)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @return Expire time, without accounting for transactions or removals.
