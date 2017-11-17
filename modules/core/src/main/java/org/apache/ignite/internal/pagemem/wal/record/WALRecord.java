@@ -267,6 +267,13 @@ public abstract class WALRecord {
     }
 
     /**
+     * @return Need wal rollOver.
+     */
+    public boolean rollOver(){
+        return false;
+    }
+
+    /**
      * @return Entry type.
      */
     public abstract RecordType type();

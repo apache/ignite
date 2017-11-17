@@ -49,6 +49,11 @@ public class SnapshotRecord extends WALRecord {
         return full;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean rollOver() {
+        return true;
+    }
+
     /**
      *
      */

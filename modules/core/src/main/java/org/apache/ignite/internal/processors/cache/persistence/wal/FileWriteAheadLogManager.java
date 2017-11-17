@@ -27,9 +27,11 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.sql.Time;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -504,7 +506,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         // Need to calculate record size first.
         record.size(serializer.size(record));
 
-        for (; ; currWrHandle = rollOver(currWrHandle)) {
+        while (true) {
+            if (record.rollOver()){
+                assert cctx.database().checkpointLockIsHeldByThread();
+
+                currWrHandle = rollOver(currWrHandle);
+            }
+
             WALPointer ptr = currWrHandle.addRecord(record);
 
             if (ptr != null) {
@@ -517,6 +525,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 return ptr;
             }
+            else
+                currWrHandle = rollOver(currWrHandle);
 
             checkEnvironment();
 
@@ -642,14 +652,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(WALPointer ptr) {
-        if (ptr == null)
+    @Override public int truncate(WALPointer low, WALPointer high) {
+        if (high == null)
             return 0;
 
-        assert ptr instanceof FileWALPointer : ptr;
+        assert high instanceof FileWALPointer : high;
 
         // File pointer bound: older entries will be deleted from archive
-        FileWALPointer fPtr = (FileWALPointer)ptr;
+        FileWALPointer lowPtr = (FileWALPointer)low;
+        FileWALPointer highPtr = (FileWALPointer)high;
 
         FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_FILTER));
 
@@ -658,12 +669,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileArchiver archiver0 = archiver;
 
         for (FileDescriptor desc : descs) {
+            if (lowPtr != null && desc.idx < lowPtr.index())
+                continue;
+
             // Do not delete reserved or locked segment and any segment after it.
             if (archiver0 != null && archiver0.reserved(desc.idx))
                 return deleted;
 
             // We need to leave at least one archived segment to correctly determine the archive index.
-            if (desc.idx + 1 < fPtr.index()) {
+            if (desc.idx + 1 < highPtr.index()) {
                 if (!desc.file.delete())
                     U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                         desc.file.getAbsolutePath());

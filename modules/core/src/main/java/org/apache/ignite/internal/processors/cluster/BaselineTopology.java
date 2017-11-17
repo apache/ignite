@@ -136,6 +136,13 @@ public class BaselineTopology implements Serializable {
         return consistentIdMapping;
     }
 
+    /**
+     * @return Short consistent Id.
+     */
+    public Short resolveShortConsistentId(Object constId){
+        return consistentIdMapping.get(constId);
+    }
+
 
     /**
      * @return Activation hash.
