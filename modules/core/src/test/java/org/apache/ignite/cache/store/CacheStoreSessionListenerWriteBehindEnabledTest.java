@@ -158,7 +158,6 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
         cfg.setWriteBehindBatchSize(2);
         cfg.setWriteBehindFlushSize(2);
         cfg.setWriteBehindFlushFrequency(1_000);
-        cfg.setWriteBehindCoalescing(true);
 
         IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(cfg);
 
