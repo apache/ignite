@@ -299,8 +299,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             // Getting meta and do the checks for the first execution.
             qry.setArgs(paramSet[0]);
 
-            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFields(qry, true, true)
-                .get(0);
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
+                .querySqlFields(qry, true, true).get(0);
 
             if (qryCur.isQuery())
                 throw new IgniteException("Batching of parameters only supported for DML statements. [query=" +

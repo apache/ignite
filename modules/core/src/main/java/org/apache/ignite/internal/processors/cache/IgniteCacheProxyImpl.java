@@ -576,10 +576,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             boolean keepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
 
             if (qry instanceof ContinuousQuery)
-                return (QueryCursor<R>) queryContinuous((ContinuousQuery<K, V>) qry, qry.isLocal(), keepBinary);
+                return (QueryCursor<R>)queryContinuous((ContinuousQuery<K, V>)qry, qry.isLocal(), keepBinary);
 
             if (qry instanceof SqlQuery)
-                return (QueryCursor<R>) ctx.kernalContext().query().querySql(ctx, (SqlQuery) qry, keepBinary);
+                return (QueryCursor<R>)ctx.kernalContext().query().querySql(ctx, (SqlQuery)qry, keepBinary);
 
             if (qry instanceof SqlFieldsQuery)
                 return (FieldsQueryCursor<R>)ctx.kernalContext().query().querySqlFields(ctx, (SqlFieldsQuery)qry,
