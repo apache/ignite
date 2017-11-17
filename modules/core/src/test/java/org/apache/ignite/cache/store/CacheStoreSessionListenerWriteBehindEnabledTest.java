@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import javax.cache.Cache;
@@ -34,14 +36,15 @@ import javax.cache.configuration.FactoryBuilder;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.sql.DataSource;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
-import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * This class tests that calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
@@ -64,14 +67,17 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     /** */
     private static final AtomicInteger entryCnt = new AtomicInteger();
 
+    /** */
+    private static final AtomicInteger uninitializedListenerCnt = new AtomicInteger();
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration cacheCfg = super.cacheConfiguration(igniteInstanceName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
 
         cacheCfg.setName(DEFAULT_CACHE_NAME);
 
@@ -98,6 +104,8 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
         operations.clear();
 
         entryCnt.set(0);
+
+        uninitializedListenerCnt.set(0);
     }
 
     /**
@@ -141,6 +149,85 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     }
 
     /**
+     * Tests that cache store session listeners are notified by write-behind store.
+     */
+    public void testFlushSingleValue() throws Exception {
+        CacheConfiguration cfg = cacheConfiguration(getTestGridName());
+
+        cfg.setName("back-pressure-control");
+        cfg.setWriteBehindBatchSize(2);
+        cfg.setWriteBehindFlushSize(2);
+        cfg.setWriteBehindFlushFrequency(1_000);
+        cfg.setWriteBehindCoalescing(true);
+
+        IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(cfg);
+
+        try {
+            int nUploaders = 5;
+
+            final CyclicBarrier barrier = new CyclicBarrier(nUploaders);
+
+            IgniteInternalFuture[] uploaders = new IgniteInternalFuture[nUploaders];
+
+            for (int i = 0; i < nUploaders; ++i) {
+                uploaders[i] = GridTestUtils.runAsync(
+                    new Uploader(cache, barrier, i * CNT),
+                    "uploader-" + i);
+            }
+
+            for (int i = 0; i < nUploaders; ++i)
+                uploaders[i].get();
+
+            assertEquals("Uninitialized cache store session listener.", 0, uninitializedListenerCnt.get());
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /**
+     *
+     */
+    public static class Uploader implements Callable<Void> {
+        /** */
+        private final int start;
+
+        /** */
+        private final CyclicBarrier barrier;
+
+        /** */
+        private final IgniteCache<Object, Object> cache;
+
+        /**
+         * @param cache Ignite cache.
+         * @param barrier Cyclic barrier.
+         * @param start Key index.
+         */
+        public Uploader(IgniteCache<Object, Object> cache, CyclicBarrier barrier, int start) {
+            this.cache = cache;
+
+            this.barrier = barrier;
+
+            this.start = start;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            try {
+                barrier.await();
+
+                for (int i = start; i < start + CNT; ++i)
+                    cache.put(i, i);
+            }
+            catch (Exception e) {
+                fail("Unexpected exception [" + e + "]");
+            }
+
+            return null;
+        }
+    }
+
+    /**
      * @param startedSessions Number of expected sessions.
      */
     private void checkSessionCounters(int startedSessions) {
@@ -149,6 +236,8 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
             Thread.sleep(WRITE_BEHIND_FLUSH_FREQUENCY * 4);
 
             assertEquals(CNT, entryCnt.get());
+
+            assertEquals("Uninitialized cache store session listener.", 0, uninitializedListenerCnt.get());
 
             checkOpCount(operations, OperationType.SESSION_START, startedSessions);
 
@@ -206,18 +295,19 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
      * Test cache store session listener.
      */
     public static class TestCacheStoreSessionListener extends CacheJdbcStoreSessionListener {
-        /** */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
         /** {@inheritDoc} */
         @Override public void onSessionStart(CacheStoreSession ses) {
             operations.add(OperationType.SESSION_START);
+
+            if (ses.attachment() == null)
+                ses.attach(new Object());
         }
 
         /** {@inheritDoc} */
         @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
             operations.add(OperationType.SESSION_END);
+
+            ses.attach(null);
         }
     }
 
@@ -229,31 +319,45 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
      */
     public static class EmptyCacheStore extends CacheStoreAdapter<Object, Object> {
         /** */
-        @IgniteInstanceResource
-        private Ignite ignite;
+        @CacheStoreSessionResource
+        private CacheStoreSession ses;
 
         /** {@inheritDoc} */
         @Override public Object load(Object key) throws CacheLoaderException {
             entryCnt.getAndIncrement();
+
+            if (ses.attachment() == null)
+                uninitializedListenerCnt.incrementAndGet();
+
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
             entryCnt.addAndGet(entries.size());
+
+            if (ses.attachment() == null)
+                uninitializedListenerCnt.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry entry) throws CacheWriterException {
+            if (ses.attachment() == null)
+                uninitializedListenerCnt.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void deleteAll(Collection<?> keys) {
             entryCnt.addAndGet(keys.size());
+
+            if (ses.attachment() == null)
+                uninitializedListenerCnt.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
+            if (ses.attachment() == null)
+                uninitializedListenerCnt.incrementAndGet();
         }
     }
 
