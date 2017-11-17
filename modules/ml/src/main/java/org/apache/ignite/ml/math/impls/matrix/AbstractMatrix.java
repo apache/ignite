@@ -43,7 +43,6 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MatrixVectorView;
-import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
  * This class provides a helper implementation of the {@link Matrix}
@@ -283,7 +282,7 @@ public abstract class AbstractMatrix implements Matrix {
      *
      * @param row Row index.
      */
-    void checkRowIndex(int row) {
+    private void checkRowIndex(int row) {
         if (row < 0 || row >= rowSize())
             throw new RowIndexException(row);
     }
@@ -293,7 +292,7 @@ public abstract class AbstractMatrix implements Matrix {
      *
      * @param col Column index.
      */
-    void checkColumnIndex(int col) {
+    private void checkColumnIndex(int col) {
         if (col < 0 || col >= columnSize())
             throw new ColumnIndexException(col);
     }
@@ -304,7 +303,7 @@ public abstract class AbstractMatrix implements Matrix {
      * @param row Row index.
      * @param col Column index.
      */
-    private void checkIndex(int row, int col) {
+    protected void checkIndex(int row, int col) {
         checkRowIndex(row);
         checkColumnIndex(col);
     }
@@ -740,12 +739,11 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Vector getCol(int col) {
         checkColumnIndex(col);
-        Vector res;
-        if (isDistributed()) res = MatrixUtil.likeVector(this, rowSize());
-        else res = new DenseLocalOnHeapVector(rowSize());
+
+        Vector res = new DenseLocalOnHeapVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
-            res.setX(i, getX(i, col));
+            res.setX(i, getX(i,col));
 
         return res;
     }
@@ -975,15 +973,5 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f) {
         setX(row, col, f.apply(row, col, getX(row, col)));
-    }
-
-
-    protected int getMaxAmountOfColumns(double[][] data) {
-        int maxAmountOfColumns = 0;
-
-        for (int i = 0; i < data.length; i++)
-            maxAmountOfColumns = Math.max(maxAmountOfColumns, data[i].length);
-
-        return maxAmountOfColumns;
     }
 }

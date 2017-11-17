@@ -30,14 +30,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
-import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -215,13 +212,14 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
 
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
-        Matrix copiedMtx = cacheMatrix.copy();
-
-        for (int i = 0; i < cacheMatrix.rowSize(); i++) {
-            for (int j = 0; j < cacheMatrix.columnSize(); j++) {
-                assert copiedMtx.get(i,j) == cacheMatrix.get(i,j);
-            }
+        try {
+            cacheMatrix.copy();
+            fail("UnsupportedOperationException expected.");
         }
+        catch (UnsupportedOperationException e) {
+            return;
+        }
+        fail("UnsupportedOperationException expected.");
     }
 
     /** */
@@ -276,9 +274,14 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
 
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
-        Vector v = cacheMatrix.likeVector(1);
-        assert v.size() == 1;
-        assert v instanceof SparseDistributedVector;
+        try {
+            cacheMatrix.likeVector(1);
+            fail("UnsupportedOperationException expected.");
+        }
+        catch (UnsupportedOperationException e) {
+            return;
+        }
+        fail("UnsupportedOperationException expected.");
     }
 
     /** */

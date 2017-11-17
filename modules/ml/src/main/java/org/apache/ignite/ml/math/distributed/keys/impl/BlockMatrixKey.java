@@ -17,113 +17,128 @@
 
 package org.apache.ignite.ml.math.distributed.keys.impl;
 
-import org.apache.ignite.binary.*;
-import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
-import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Key implementation for {@link VectorBlockEntry} using for {@link SparseBlockDistributedVector}.
+ * Key implementation for {@link BlockEntry} using for {@link SparseBlockDistributedMatrix}.
  */
-public class VectorBlockKey implements org.apache.ignite.ml.math.distributed.keys.VectorBlockKey, Externalizable, Binarylizable {
+public class BlockMatrixKey implements org.apache.ignite.ml.math.distributed.keys.BlockMatrixKey, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
     /** Block row ID */
-    private long blockId;
-    /** Vector ID */
-    private UUID vectorUuid;
+    private long blockIdRow;
+    /** Block col ID */
+    private long blockIdCol;
+    /** Matrix ID */
+    private UUID matrixUuid;
     /** Block affinity key. */
-    private UUID affinityKey;
+    private IgniteUuid affinityKey;
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public VectorBlockKey() {
+    public BlockMatrixKey() {
         // No-op.
     }
 
     /**
-     * Construct vector block key.
+     * Construct matrix block key.
      *
-     * @param vectorUuid Vector uuid.
+     * @param matrixUuid Matrix uuid.
      * @param affinityKey Affinity key.
      */
-    public VectorBlockKey(long blockId, UUID vectorUuid, @Nullable UUID affinityKey) {
-        assert blockId >= 0;
-        assert vectorUuid != null;
+    public BlockMatrixKey(long rowId, long colId,  UUID matrixUuid, @Nullable IgniteUuid affinityKey) {
+        assert rowId >= 0;
+        assert colId >= 0;
+        assert matrixUuid != null;
 
-        this.blockId = blockId;
-        this.vectorUuid = vectorUuid;
+        this.blockIdRow = rowId;
+        this.blockIdCol = colId;
+        this.matrixUuid = matrixUuid;
         this.affinityKey = affinityKey;
     }
 
     /** {@inheritDoc} */
-    @Override public long blockId() {
-        return blockId;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public UUID dataStructureId() {
-        return vectorUuid;
+    @Override public long blockRowId() {
+        return blockIdRow;
     }
 
     /** {@inheritDoc} */
-    @Override public UUID affinityKey() {
+    @Override public long blockColId() {
+        return blockIdCol;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID matrixId() {
+        return matrixUuid;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid affinityKey() {
         return affinityKey;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(vectorUuid);
-        out.writeObject(affinityKey);
-        out.writeLong(blockId);
-
+        out.writeObject(matrixUuid);
+        U.writeGridUuid(out, affinityKey);
+        out.writeLong(blockIdRow);
+        out.writeLong(blockIdCol);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        vectorUuid = (UUID)in.readObject();
-        affinityKey = (UUID)in.readObject();
-        blockId = in.readLong();
-
+        matrixUuid = (UUID)in.readObject();
+        affinityKey = U.readGridUuid(in);
+        blockIdRow = in.readLong();
+        blockIdCol = in.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter out = writer.rawWriter();
 
-        out.writeUuid(vectorUuid);
-        out.writeUuid(affinityKey);
-        out.writeLong(blockId);
+        out.writeUuid(matrixUuid);
+        BinaryUtils.writeIgniteUuid(out, affinityKey);
+        out.writeLong(blockIdRow);
+        out.writeLong(blockIdCol);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReader in = reader.rawReader();
 
-        vectorUuid = in.readUuid();
-        affinityKey = in.readUuid();
-        blockId = in.readLong();
+        matrixUuid = in.readUuid();
+        affinityKey = BinaryUtils.readIgniteUuid(in);
+        blockIdRow = in.readLong();
+        blockIdCol = in.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = 37;
 
-        res += res * 37 + blockId;
-        res += res * 37 + vectorUuid.hashCode();
+        res += res * 37 + blockIdCol;
+        res += res * 37 + blockIdRow;
+        res += res * 37 + matrixUuid.hashCode();
 
         return res;
     }
@@ -136,16 +151,14 @@ public class VectorBlockKey implements org.apache.ignite.ml.math.distributed.key
         if (obj == null || obj.getClass() != getClass())
             return false;
 
-        VectorBlockKey that = (VectorBlockKey)obj;
+        BlockMatrixKey that = (BlockMatrixKey)obj;
 
-        return blockId == that.blockId  && vectorUuid.equals(that.vectorUuid)
+        return blockIdRow == that.blockIdRow && blockIdCol == that.blockIdCol && matrixUuid.equals(that.matrixUuid)
             && F.eq(affinityKey, that.affinityKey);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VectorBlockKey.class, this);
+        return S.toString(BlockMatrixKey.class, this);
     }
-
-
 }

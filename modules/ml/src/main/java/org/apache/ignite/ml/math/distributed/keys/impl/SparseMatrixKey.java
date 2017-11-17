@@ -17,17 +17,16 @@
 
 package org.apache.ignite.ml.math.distributed.keys.impl;
 
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
 /**
  * Key implementation for {@link SparseDistributedMatrix}.
@@ -66,7 +65,7 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID dataStructureId() {
+    @Override public UUID matrixId() {
         return matrixId;
     }
 
@@ -77,6 +76,7 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+//        U.writeGridUuid(out, matrixId);
         out.writeObject(matrixId);
         out.writeObject(affinityKey);
         out.writeInt(idx);

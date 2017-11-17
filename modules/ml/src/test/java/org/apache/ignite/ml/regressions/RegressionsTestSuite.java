@@ -25,7 +25,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    OLSMultipleLinearRegressionTest.class, DistributedOLSMultipleLinearRegressionTest.class, DistributedBlockOLSMultipleLinearRegressionTest.class
+    OLSMultipleLinearRegressionTest.class
 })
 public class RegressionsTestSuite {
     // No-op.

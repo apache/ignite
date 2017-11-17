@@ -22,7 +22,7 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 /**
  * Cache key for {@link SparseDistributedMatrix}.
  */
-public interface RowColMatrixKey extends DataStructureCacheKey {
+public interface RowColMatrixKey extends MatrixCacheKey {
     /**
      *  Return index value(blockId, Row/Col index, etc.)
      */
