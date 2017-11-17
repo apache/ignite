@@ -22,13 +22,14 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.jetbrains.annotations.Nullable;
 
-/** */
-public final class ReleaseFairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>, LockOwner>,
+/** {@link CacheEntryProcessor} for a release operation in fair mode. */
+public final class ReleaseFairProcessor
+    implements CacheEntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>, LockOwner>,
     Externalizable {
 
     /** */
@@ -80,7 +81,7 @@ public final class ReleaseFairProcessor implements EntryProcessor<GridCacheInter
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         UUID nodeId = new UUID(in.readLong(), in.readLong());
         owner = new LockOwner(nodeId, in.readLong());
     }

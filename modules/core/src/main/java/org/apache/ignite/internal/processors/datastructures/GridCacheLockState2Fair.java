@@ -24,7 +24,7 @@ import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.UUID;
 
-/** */
+/** The fair implementation for shared lock state. */
 public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockOwner> {
     /** */
     private static final long serialVersionUID = 6727594514711280291L;
@@ -50,7 +50,7 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
         if (owners == null || owners.isEmpty())
             return null;
 
-        final boolean lockReleased = owners.getFirst().nodeId.equals(id);
+        boolean lockReleased = owners.getFirst().nodeId.equals(id);
 
         Iterator<LockOwner> iter = owners.iterator();
 

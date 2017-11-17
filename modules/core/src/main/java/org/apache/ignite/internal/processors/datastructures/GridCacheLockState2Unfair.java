@@ -23,7 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 
-/** Unfair implementation of shared lock state. */
+/** The unfair implementation for shared lock state. */
 public final class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUID> {
     /** */
     private static final long serialVersionUID = 6727594514511280291L;
@@ -47,7 +47,7 @@ public final class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUI
     /** {@inheritDoc} */
     @Override public UUID onNodeRemoved(UUID id) {
         if (ownerSet.remove(id)) {
-            final boolean lockReleased = owners.getFirst().equals(id);
+            boolean lockReleased = owners.getFirst().equals(id);
 
             owners.remove(id);
 

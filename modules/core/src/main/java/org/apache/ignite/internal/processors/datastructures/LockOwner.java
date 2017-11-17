@@ -23,16 +23,16 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 
-/** Simple tuple for lock owner. */
+/** Simple tuple for a lock owner. */
 public final class LockOwner implements Externalizable {
     /** */
     private static final long serialVersionUID = -5203487119206054926L;
 
     /** */
-    public UUID nodeId;
+    UUID nodeId;
 
     /** */
-    public long threadId;
+    long threadId;
 
     /**
      * Required by {@link Externalizable}.
@@ -78,7 +78,7 @@ public final class LockOwner implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         nodeId = new UUID(in.readLong(), in.readLong());
         threadId = in.readLong();
     }

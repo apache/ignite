@@ -26,7 +26,11 @@ import java.util.HashSet;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 
-/** The base class for shared lock state. */
+/**
+ * The base class for shared lock state.
+ *
+ * @param <T> Lock owner.
+ */
 public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureValue {
     /** */
     private long gridStartTime;
@@ -76,10 +80,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
 
         GridCacheLockState2Base state = (GridCacheLockState2Base)o;
 
-        if (owners != null ? !owners.equals(state.owners) : state.owners != null)
-            return false;
-
-        return true;
+        return owners != null ? owners.equals(state.owners) : state.owners == null;
     }
 
     /** {@inheritDoc} */
@@ -205,8 +206,8 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     /**
      * Remove all lock-owners from one node.
      *
-     * @param id failed node.
-     * @return a lock-owner which can take lock cause other node has failed.
+     * @param id Failed node.
+     * @return A lock-owner which can take lock cause other node has failed.
      */
     public abstract T onNodeRemoved(UUID id);
 

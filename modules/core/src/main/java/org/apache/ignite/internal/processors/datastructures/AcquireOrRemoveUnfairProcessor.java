@@ -23,7 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 
-/** EntryProcessor for release lock by timeout, but acquire it if lock has released. */
+/** {@link org.apache.ignite.cache.CacheEntryProcessor} for a final try acquire and remove if failed for unfair mode. */
 public final class AcquireOrRemoveUnfairProcessor extends ReentrantProcessor<UUID> {
     /** */
     private static final long serialVersionUID = 2968825754944751240L;
@@ -47,6 +47,8 @@ public final class AcquireOrRemoveUnfairProcessor extends ReentrantProcessor<UUI
 
     /** {@inheritDoc} */
     @Override protected LockedModified lock(GridCacheLockState2Base<UUID> state) {
+        assert state != null;
+
         return state.lockOrRemove(nodeId);
     }
 
@@ -57,7 +59,7 @@ public final class AcquireOrRemoveUnfairProcessor extends ReentrantProcessor<UUI
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         nodeId = new UUID(in.readLong(), in.readLong());
     }
 }

@@ -18,13 +18,16 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.io.Externalizable;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.cache.CacheEntryProcessor;
 
-/** Base class for all acquiring processors. */
+/**
+ * Base {@link CacheEntryProcessor} class for all acquiring processors.
+ *
+ * @param <T> Lock owner.
+ */
 public abstract class ReentrantProcessor<T>
-    implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, Boolean>, Externalizable {
+    implements CacheEntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, Boolean>, Externalizable {
 
     /** {@inheritDoc} */
     @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<T>> entry,
@@ -48,6 +51,6 @@ public abstract class ReentrantProcessor<T>
         return false;
     }
 
-    /** Specific operation around a locking with the state. */
+    /** Specific operation around a locking. */
     protected abstract LockedModified lock(GridCacheLockState2Base<T> state);
 }

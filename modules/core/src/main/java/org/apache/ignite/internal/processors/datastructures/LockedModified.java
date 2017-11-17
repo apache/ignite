@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-/** Simple tuple for result. IgnitePair with Boolean too heavy. */
+/** Simple tuple for a result. {@link org.apache.ignite.internal.util.lang.IgnitePair} with {@code Boolean} too heavy. */
 class LockedModified implements Externalizable {
     /** */
     private static final long serialVersionUID = -5203497119206054926L;
@@ -53,7 +53,7 @@ class LockedModified implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         locked = in.readBoolean();
         modified = in.readBoolean();
     }

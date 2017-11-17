@@ -22,13 +22,13 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.jetbrains.annotations.Nullable;
 
-/** EntryProcessor for lock release operation. */
-public final class ReleaseUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<UUID>, UUID>,
+/** {@link CacheEntryProcessor} for a release operation in unfair mode. */
+public final class ReleaseUnfairProcessor implements CacheEntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<UUID>, UUID>,
     Externalizable {
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
@@ -77,7 +77,7 @@ public final class ReleaseUnfairProcessor implements EntryProcessor<GridCacheInt
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         nodeId = new UUID(in.readLong(), in.readLong());
     }
 }

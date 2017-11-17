@@ -23,7 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 
-/** */
+/** {@link org.apache.ignite.cache.CacheEntryProcessor} for a try acquire operation for fair mode. */
 public final class AcquireIfFreeFairProcessor extends ReentrantProcessor<LockOwner> {
     /** */
     private static final long serialVersionUID = -5203497119206044926L;
@@ -47,6 +47,8 @@ public final class AcquireIfFreeFairProcessor extends ReentrantProcessor<LockOwn
 
     /** {@inheritDoc} */
     @Override protected LockedModified lock(GridCacheLockState2Base<LockOwner> state) {
+        assert state != null;
+
         return state.lockIfFree(owner);
     }
 
@@ -58,7 +60,7 @@ public final class AcquireIfFreeFairProcessor extends ReentrantProcessor<LockOwn
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         UUID nodeId = new UUID(in.readLong(), in.readLong());
         owner = new LockOwner(nodeId, in.readLong());
     }
