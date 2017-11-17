@@ -325,8 +325,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log archive directory"
             );
 
-            log.warning("Archive Files:" + Arrays.toString(walWorkDir.listFiles()));
-
+            log.warning("Archive Files:" + Arrays.toString(walArchiveDir.listFiles()));
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVersion);
 
@@ -1278,8 +1277,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long toArchive;
 
                     synchronized (this) {
-                        assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
-                            ", current=" + curAbsWalIdx;
+                        if (lastAbsArchivedIdx > curAbsWalIdx) {
+                            String msg = "lastArchived=" + lastAbsArchivedIdx + ", current=" + curAbsWalIdx;
+                            msg += " archive: " + Arrays.toString(walArchiveDir.listFiles());
+                            msg += " work: " + Arrays.toString(walWorkDir.listFiles());
+
+                            assert lastAbsArchivedIdx <= curAbsWalIdx : msg;
+                        }
 
                         while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped)
                             wait();
