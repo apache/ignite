@@ -2034,13 +2034,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             catch (GridCacheEntryRemovedException ignore) {
                                 // Retry.
                             }
-                            catch (GridDhtInvalidPartitionException ignore) {
-                                break;
-                            }
                             finally {
-                                entry.context().evicts().touch(entry, AffinityTopologyVersion.NONE);
+                                if (entry != null)
+                                    entry.context().evicts().touch(entry, AffinityTopologyVersion.NONE);
                             }
                         }
+                    } catch (GridDhtInvalidPartitionException ignore) {
+                        break;
                     }
                     finally {
                         cctx.shared().database().checkpointReadUnlock();
