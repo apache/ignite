@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheQueryH2IndexingLea
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryIndexSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCheckClusterStateBeforeExecuteQueryTest;
 import org.apache.ignite.internal.processors.cache.IgniteCrossCachesJoinsQueryTest;
 import org.apache.ignite.internal.processors.cache.IncorrectQueryEntityTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityCaseMismatchTest;
@@ -336,6 +337,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(LongIndexNameTest.class);
 
         suite.addTestSuite(GridCacheQuerySqlFieldInlineSizeSelfTest.class);
+
+        suite.addTestSuite(IgniteCheckClusterStateBeforeExecuteQueryTest.class);
 
         return suite;
     }

@@ -1914,6 +1914,12 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
         if (qry.isLocal())
             throw new IgniteException("Local query is not supported without specific cache.");
 
+        if (!ctx.state().publicApiActiveState()) {
+            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                "join the cluster. To activate the cluster call Ignite.active(true).");
+        }
+
         if (qry.getSchema() == null)
             qry.setSchema(QueryUtils.DFLT_SCHEMA);
 
