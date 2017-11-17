@@ -97,10 +97,12 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
@@ -1311,7 +1313,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Started local index operation [opId=" + op.id() + ']');
 
-        final String cacheName = op.cacheName();
+        String cacheName = op.cacheName();
 
         GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
@@ -1324,13 +1326,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 QueryIndexDescriptorImpl idxDesc = QueryUtils.createIndexDescriptor(type, op0.index());
 
-                final GridCacheContext cctx = cache.context();
+                GridCacheContext cctx = cache.context();
 
-                SchemaIndexCacheFilter filter = new SchemaIndexCacheFilter() {
-                    @Override public boolean apply(CacheDataRow row) throws IgniteCheckedException {
-                        return belongsToTable(cctx, cacheName, op0.tableName(), row.key(), row.value());
-                    }
-                };
+                SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
 
                 SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok);
 
@@ -2875,6 +2873,45 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             assert this.mgr == null;
 
             this.mgr = mgr;
+        }
+    }
+
+    /** */
+    private static class TableCacheFilter implements SchemaIndexCacheFilter {
+        /** */
+        @GridToStringExclude
+        private final GridCacheContext cctx;
+
+        /** */
+        @GridToStringExclude
+        private final GridQueryProcessor query;
+
+        /** */
+        private final String cacheName;
+
+        /** */
+        private final String tableName;
+
+        /**
+         * @param cctx Cache context.
+         * @param tableName Target table name.
+         */
+        TableCacheFilter(GridCacheContext cctx, String tableName) {
+            this.cctx = cctx;
+            this.tableName = tableName;
+
+            cacheName = cctx.name();
+            query = cctx.kernalContext().query();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(CacheDataRow row) throws IgniteCheckedException {
+            return query.belongsToTable(cctx, cacheName, tableName, row.key(), row.value());
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TableCacheFilter.class, this);
         }
     }
 }

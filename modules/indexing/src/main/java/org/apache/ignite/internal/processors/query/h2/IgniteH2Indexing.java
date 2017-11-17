@@ -2022,11 +2022,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
 
-        visitor.visit(new SchemaIndexCacheVisitorClosure() {
-            @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-                qryMgr.store(row, null, false);
-            }
-        });
+        visitor.visit(new IndexClosure(qryMgr));
 
         for (H2TableDescriptor tblDesc : tables(cacheName))
             tblDesc.table().markRebuildFromHashInProgress(false);
@@ -2620,5 +2616,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
         // No-op.
+    }
+
+    /** */
+    private static class IndexClosure implements SchemaIndexCacheVisitorClosure {
+        /** */
+        private final GridCacheQueryManager qryMgr;
+
+        /**
+         * @param qryMgr Query manager.
+         */
+        IndexClosure(GridCacheQueryManager qryMgr) {
+            this.qryMgr = qryMgr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
+            qryMgr.store(row, null, false);
+        }
     }
 }
