@@ -19,7 +19,9 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -115,6 +117,43 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testConnectionLoss4() throws Exception {
+        startZK(1);
+
+        CallbackFuture cb = new CallbackFuture();
+
+        final ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, cb);
+
+        client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
+
+        final CountDownLatch l = new CountDownLatch(1);
+
+        client.getChildrenAsync("/apacheIgnite1", false, new AsyncCallback.Children2Callback() {
+            @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
+                closeZK();
+
+                try {
+                    client.createIfNeeded("/apacheIgnite2", null, CreateMode.PERSISTENT);
+                }
+                catch (ZookeeperClientFailedException e) {
+                    info("Expected error: " + e);
+
+                    l.countDown();
+                }
+                catch (Exception e) {
+                    fail("Unexpected error: " + e);
+                }
+            }
+        }, null);
+
+        assertTrue(l.await(10, TimeUnit.SECONDS));
+
+        cb.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testReconnect1() throws Exception {
         startZK(1);
 
@@ -141,6 +180,94 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         client.createIfNeeded("/apacheIgnite2", null, CreateMode.PERSISTENT);
 
         fut.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnect1_Callback() throws Exception {
+        startZK(1);
+
+        ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 30_000, null);
+
+        client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
+
+        zkCluster.getServers().get(0).stop();
+
+        final CountDownLatch l = new CountDownLatch(1);
+
+        client.getChildrenAsync("/apacheIgnite1", false, new AsyncCallback.Children2Callback() {
+            @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
+                info("Callback: " + rc);
+
+                if (rc == 0)
+                    l.countDown();
+            }
+        }, null);
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                U.sleep(2000);
+
+                info("Restart zookeeper server");
+
+                zkCluster.getServers().get(0).restart();
+
+                info("Zookeeper server restarted");
+
+                return null;
+            }
+        }, "start-zk");
+
+        assertTrue(l.await(10, TimeUnit.SECONDS));
+
+        fut.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnect1_InCallback() throws Exception {
+        startZK(1);
+
+        final ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 30_000, null);
+
+        client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
+
+        final CountDownLatch l = new CountDownLatch(1);
+
+        client.getChildrenAsync("/apacheIgnite1", false, new AsyncCallback.Children2Callback() {
+            @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
+                try {
+                    zkCluster.getServers().get(0).stop();
+
+                    IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            U.sleep(2000);
+
+                            info("Restart zookeeper server");
+
+                            zkCluster.getServers().get(0).restart();
+
+                            info("Zookeeper server restarted");
+
+                            return null;
+                        }
+                    }, "start-zk");
+
+                    client.createIfNeeded("/apacheIgnite2", null, CreateMode.PERSISTENT);
+
+                    l.countDown();
+
+                    fut.get();
+                }
+                catch (Exception e) {
+                    fail("Unexpected error: " + e);
+                }
+            }
+        }, null);
+
+        assertTrue(l.await(10, TimeUnit.SECONDS));
     }
 
     /**

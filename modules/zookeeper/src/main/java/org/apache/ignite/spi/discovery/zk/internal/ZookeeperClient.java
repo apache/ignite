@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -31,6 +32,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Stat;
 
 /**
  *
@@ -58,7 +60,7 @@ public class ZookeeperClient implements Watcher {
     private long connLossTimeout;
 
     /** */
-    private long connectStartTime;
+    private volatile long connStartTime;
 
     /** */
     private final Object stateMux = new Object();
@@ -68,6 +70,9 @@ public class ZookeeperClient implements Watcher {
 
     /** */
     private final Timer connTimer;
+
+    /** */
+    private final ArrayDeque<ZkAsyncOperation> retryQ = new ArrayDeque<>();
 
     ZookeeperClient(IgniteLogger log, String connectString, int sesTimeout, IgniteRunnable connLostC) throws Exception {
         this(null, log, connectString, sesTimeout, connLostC);
@@ -86,7 +91,7 @@ public class ZookeeperClient implements Watcher {
 
         connLossTimeout = sesTimeout;
 
-        connectStartTime = System.currentTimeMillis();
+        connStartTime = System.currentTimeMillis();
 
         String threadName = Thread.currentThread().getName();
 
@@ -108,7 +113,7 @@ public class ZookeeperClient implements Watcher {
     /** {@inheritDoc} */
     @Override public void process(WatchedEvent evt) {
         if (evt.getType() == Event.EventType.None) {
-            boolean connLost = false;
+            ConnectionState newState;
 
             synchronized (stateMux) {
                 if (state == ConnectionState.Lost) {
@@ -116,8 +121,6 @@ public class ZookeeperClient implements Watcher {
 
                     return;
                 }
-
-                ConnectionState newState;
 
                 Event.KeeperState zkState = evt.getState();
 
@@ -149,24 +152,28 @@ public class ZookeeperClient implements Watcher {
                     state = newState;
 
                     if (newState == ConnectionState.Disconnected) {
-                        connectStartTime = System.currentTimeMillis();
+                        connStartTime = System.currentTimeMillis();
 
                         scheduleConnectionCheck();
                     }
                     else if (newState == ConnectionState.Connected)
                         stateMux.notifyAll();
                     else {
-                        assert state == ConnectionState.Lost;
+                        assert state == ConnectionState.Lost : state;
 
                         closeClient();
-
-                        connLost = true;
                     }
                 }
+                else
+                    return;
             }
 
-            if (connLost)
+            if (newState == ConnectionState.Lost)
                 notifyConnectionLost();
+            else if (newState == ConnectionState.Connected) {
+                for (ZkAsyncOperation op : retryQ)
+                    op.execute();
+            }
         }
     }
 
@@ -178,12 +185,33 @@ public class ZookeeperClient implements Watcher {
             connLostC.run();
     }
 
+    /**
+     * @param path
+     * @return
+     * @throws ZookeeperClientFailedException
+     * @throws InterruptedException
+     */
+    public boolean exists(String path) throws ZookeeperClientFailedException, InterruptedException {
+        for (;;) {
+            long connStartTime = this.connStartTime;
+
+            try {
+                return zk.exists(path, false) != null;
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+        }
+    }
+
     public void createIfNeeded(String path, byte[] data, CreateMode createMode)
         throws ZookeeperClientFailedException, InterruptedException {
         if (data == null)
             data = EMPTY_BYTES;
 
         for (;;) {
+            long connStartTime = this.connStartTime;
+
             try {
                 zk.create(path, data, ZK_ACL, createMode);
 
@@ -195,13 +223,15 @@ public class ZookeeperClient implements Watcher {
                 break;
             }
             catch (Exception e) {
-                onZookeeperError(e);
+                onZookeeperError(connStartTime, e);
             }
         }
     }
 
     public void getChildrenAsync(String path, boolean watch, AsyncCallback.Children2Callback cb, Object ctx) {
-        zk.getChildren(path, watch, cb, ctx);
+        GetChildrenOperation op = new GetChildrenOperation(path, watch, cb, ctx);
+
+        zk.getChildren(path, watch, new ChildreCallbackWrapper(op), ctx);
     }
 
     /**
@@ -214,7 +244,7 @@ public class ZookeeperClient implements Watcher {
     /**
      * @param e Error.
      */
-    private void onZookeeperError(Exception e) throws ZookeeperClientFailedException, InterruptedException {
+    private void onZookeeperError(long prevConnStartTime, Exception e) throws ZookeeperClientFailedException, InterruptedException {
         ZookeeperClientFailedException err = null;
 
         synchronized (stateMux) {
@@ -229,22 +259,24 @@ public class ZookeeperClient implements Watcher {
                 throw new ZookeeperClientFailedException(e);
             }
 
-            if (e instanceof KeeperException.ConnectionLossException) {
+            boolean retry = (e instanceof KeeperException) && needRetry(((KeeperException)e).code().intValue());
+
+            if (retry) {
                 long remainingTime;
 
-                if (state == ConnectionState.Connected) {
+                if (state == ConnectionState.Connected && connStartTime == prevConnStartTime) {
                     state = ConnectionState.Disconnected;
 
-                    connectStartTime = System.currentTimeMillis();
+                    connStartTime = System.currentTimeMillis();
 
                     remainingTime = connLossTimeout;
                 }
                 else {
-                    assert connectStartTime != 0;
+                    assert connStartTime != 0;
 
                     assert state == ConnectionState.Disconnected;
 
-                    remainingTime = connLossTimeout - (System.currentTimeMillis() - connectStartTime);
+                    remainingTime = connLossTimeout - (System.currentTimeMillis() - connStartTime);
 
                     if (remainingTime <= 0) {
                         state = ConnectionState.Lost;
@@ -286,6 +318,51 @@ public class ZookeeperClient implements Watcher {
     }
 
     /**
+     * @param code Zookeeper error code.
+     * @return {@code True} if can retry operation.
+     */
+    private boolean needRetry(int code) {
+        // TODO ZL: other codes.
+        return code == KeeperException.Code.CONNECTIONLOSS.intValue();
+    }
+
+    /**
+     *
+     */
+    interface ZkAsyncOperation {
+        void execute();
+    }
+
+    /**
+     *
+     */
+    class GetChildrenOperation implements ZkAsyncOperation {
+        /** */
+        private final String path;
+
+        /** */
+        private final boolean watch;
+
+        /** */
+        private final AsyncCallback.Children2Callback cb;
+
+        /** */
+        private final Object ctx;
+
+        public GetChildrenOperation(String path, boolean watch, AsyncCallback.Children2Callback cb, Object ctx) {
+            this.path = path;
+            this.watch = watch;
+            this.cb = cb;
+            this.ctx = ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute() {
+            getChildrenAsync(path, watch, cb, ctx);
+        }
+    }
+
+    /**
      *
      */
     private void closeClient() {
@@ -305,7 +382,35 @@ public class ZookeeperClient implements Watcher {
     private void scheduleConnectionCheck() {
         assert state == ConnectionState.Disconnected : state;
 
-        connTimer.schedule(new ConnectionTimeoutTask(connectStartTime), connLossTimeout);
+        connTimer.schedule(new ConnectionTimeoutTask(connStartTime), connLossTimeout);
+    }
+
+    /**
+     *
+     */
+    class ChildreCallbackWrapper implements AsyncCallback.Children2Callback {
+        /** */
+        private final GetChildrenOperation op;
+
+        /**
+         * @param op Operation.
+         */
+        private ChildreCallbackWrapper(GetChildrenOperation op) {
+            this.op = op;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
+            if (needRetry(rc)) {
+                U.warn(log, "Failed to execute async operation, connection lost. Will retry after connection restore [path=" + path + ']');
+
+                retryQ.add(op);
+            }
+            else if (rc == KeeperException.Code.SESSIONEXPIRED.intValue())
+                U.warn(log, "Failed to execute async operation, connection lost [path=" + path + ']');
+            else
+                op.cb.processResult(rc, path, ctx, children, stat);
+        }
     }
 
     /**
@@ -328,7 +433,7 @@ public class ZookeeperClient implements Watcher {
 
             synchronized (stateMux) {
                 if (state == ConnectionState.Disconnected &&
-                    ZookeeperClient.this.connectStartTime == connectStartTime) {
+                    ZookeeperClient.this.connStartTime == connectStartTime) {
 
                     state = ConnectionState.Lost;
 

@@ -17,11 +17,17 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.util.UUID;
+import java.io.Serializable;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
  * TODO ZK
  */
-public interface JoiningNodesAware {
-    public boolean knownNode(UUID nodeId);
+public interface ConsistentIdNode extends ClusterNode {
+    /**
+     * Sets consistent globally unique node ID which survives node restarts.
+     *
+     * @param consistentId Consistent globally unique node ID.
+     */
+    public void setConsistentId(Serializable consistentId);
 }

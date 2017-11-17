@@ -20,22 +20,17 @@ package org.apache.ignite.spi.discovery.zk;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.JoiningNodesAware;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -49,11 +44,8 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.spi.discovery.zk.internal.ZkDiscoveryImpl;
-import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClient;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClusterNode;
-import org.apache.zookeeper.AsyncCallback;
-import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -64,7 +56,16 @@ import org.jetbrains.annotations.Nullable;
 @DiscoverySpiHistorySupport(true)
 public class ZookeeperDiscoverySpi2 extends IgniteSpiAdapter implements DiscoverySpi, JoiningNodesAware {
     /** */
-    private String connectString;
+    private String zkConnectionString;
+
+    /** */
+    private int sesTimeout = 5000;
+
+    /** */
+    private String basePath = "/apacheIgnite";
+
+    /** */
+    private String clusterName = "default";
 
     /** */
     private DiscoverySpiListener lsnr;
@@ -76,10 +77,7 @@ public class ZookeeperDiscoverySpi2 extends IgniteSpiAdapter implements Discover
     private DiscoveryMetricsProvider metricsProvider;
 
     /** */
-    private int sesTimeout = 5000;
-
-    /** */
-    private ZkDiscoveryImpl impl;
+    private ZookeeperDiscoveryImpl impl;
 
     /** */
     private ZookeeperClusterNode locNode;
@@ -97,6 +95,22 @@ public class ZookeeperDiscoverySpi2 extends IgniteSpiAdapter implements Discover
     @LoggerResource
     private IgniteLogger log;
 
+    public String getBasePath() {
+        return basePath;
+    }
+
+    public void setBasePath(String basePath) {
+        this.basePath = basePath;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
     public int getSessionTimeout() {
         return sesTimeout;
     }
@@ -105,12 +119,12 @@ public class ZookeeperDiscoverySpi2 extends IgniteSpiAdapter implements Discover
         this.sesTimeout = sesTimeout;
     }
 
-    public String getConnectString() {
-        return connectString;
+    public String getZkConnectionString() {
+        return zkConnectionString;
     }
 
-    public void setConnectString(String connectString) {
-        this.connectString = connectString;
+    public void setZkConnectionString(String zkConnectionString) {
+        this.zkConnectionString = zkConnectionString;
     }
 
     /** */
@@ -318,14 +332,24 @@ public class ZookeeperDiscoverySpi2 extends IgniteSpiAdapter implements Discover
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         initLocalNode();
 
+        log.info("Start Zookeeper discovery [zkConnectionString=" + zkConnectionString +
+            ", sesTimeout=" + sesTimeout +
+            ", basePath=" + basePath +
+            ", clusterName=" + clusterName + ']');
+
         DiscoveryDataBag discoDataBag = new DiscoveryDataBag(locNode.id());
 
         exchange.collect(discoDataBag);
 
-        impl = new ZkDiscoveryImpl(log, lsnr);
+        impl = new ZookeeperDiscoveryImpl(log,
+            basePath,
+            clusterName,
+            locNode,
+            lsnr,
+            exchange);
 
         try {
-            impl.joinTopology(igniteInstanceName, connectString, sesTimeout);
+            impl.joinTopology(igniteInstanceName, zkConnectionString, sesTimeout);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();

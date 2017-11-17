@@ -41,6 +41,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTE
  */
 public class ZookeeperClusterNode implements ClusterNode, Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private UUID id;
 
     /** */

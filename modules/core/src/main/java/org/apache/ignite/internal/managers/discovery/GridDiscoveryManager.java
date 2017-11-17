@@ -554,8 +554,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 for (IgniteInClosure<ClusterNode> lsnr : locNodeInitLsnrs)
                     lsnr.apply(locNode);
 
-                if (locNode instanceof TcpDiscoveryNode) {
-                    final TcpDiscoveryNode node = (TcpDiscoveryNode)locNode;
+                if (locNode instanceof ConsistentIdNode) {
+                    final ConsistentIdNode node = (ConsistentIdNode)locNode;
 
                     if (consistentId != null)
                         node.setConsistentId(consistentId);
