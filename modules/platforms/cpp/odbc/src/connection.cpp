@@ -27,7 +27,6 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/config/configuration.h"
-#include "ignite/odbc/odbc_error.h"
 
 namespace
 {
@@ -46,6 +45,7 @@ namespace ignite
         Connection::Connection() :
             socket(),
             connected(false),
+            timeout(0),
             parser(),
             config(),
             info(config)
@@ -194,7 +194,7 @@ namespace ignite
             return SqlResult::AI_SUCCESS;
         }
 
-        void Connection::Send(const int8_t* data, size_t len)
+        bool Connection::Send(const int8_t* data, size_t len, int32_t timeout)
         {
             if (!connected)
                 throw OdbcError(SqlState::S08003_NOT_CONNECTED, "Connection is not established");
@@ -209,21 +209,26 @@ namespace ignite
 
             memcpy(msg.GetData() + sizeof(OdbcProtocolHeader), data, len);
 
-            size_t sent = SendAll(msg.GetData(), msg.GetSize());
+            OperationResult::T res = SendAll(msg.GetData(), msg.GetSize(), timeout);
 
-            if (sent != len + sizeof(OdbcProtocolHeader))
+            if (res == OperationResult::TIMEOUT)
+                return false;
+
+            if (res == OperationResult::FAIL)
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not send message due to connection failure");
 
             LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump(msg.GetData(), msg.GetSize()));
+
+            return true;
         }
 
-        size_t Connection::SendAll(const int8_t* data, size_t len)
+        Connection::OperationResult::T Connection::SendAll(const int8_t* data, size_t len, int32_t timeout)
         {
             int sent = 0;
 
             while (sent != static_cast<int64_t>(len))
             {
-                int res = socket.Send(data + sent, len - sent);
+                int res = socket.Send(data + sent, len - sent, timeout);
 
                 LOG_MSG("Sent: " << res);
 
@@ -231,16 +236,18 @@ namespace ignite
                 {
                     Close();
 
-                    return sent;
+                    return res < 0 ? OperationResult::FAIL : OperationResult::TIMEOUT;
                 }
 
                 sent += res;
             }
 
-            return sent;
+            assert(sent == len);
+
+            return OperationResult::SUCCESS;
         }
 
-        void Connection::Receive(std::vector<int8_t>& msg)
+        bool Connection::Receive(std::vector<int8_t>& msg, int32_t timeout)
         {
             if (!connected)
                 throw OdbcError(SqlState::S08003_NOT_CONNECTED, "Connection is not established");
@@ -249,36 +256,40 @@ namespace ignite
 
             OdbcProtocolHeader hdr;
 
-            size_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
+            OperationResult::T res = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr), timeout);
 
-            if (received != sizeof(hdr))
+            if (res == OperationResult::TIMEOUT)
+                return false;
+
+            if (res == OperationResult::FAIL)
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message header");
 
             if (hdr.len < 0)
             {
                 Close();
 
-                throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Protocol error: Message length is negative");
+                throw OdbcError(SqlState::SHY000_GENERAL_ERROR, "Protocol error: Message length is negative");
             }
 
             if (hdr.len == 0)
-                return;
+                return false;
 
             msg.resize(hdr.len);
 
-            received = ReceiveAll(&msg[0], hdr.len);
+            res = ReceiveAll(&msg[0], hdr.len, timeout);
 
-            if (received != hdr.len)
-            {
-                msg.resize(received);
+            if (res == OperationResult::TIMEOUT)
+                return false;
 
+            if (res == OperationResult::FAIL)
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message body");
-            }
 
             LOG_MSG("Message received: " << utility::HexDump(&msg[0], msg.size()));
+
+            return true;
         }
 
-        size_t Connection::ReceiveAll(void* dst, size_t len)
+        Connection::OperationResult::T Connection::ReceiveAll(void* dst, size_t len, int32_t timeout)
         {
             size_t remain = len;
             int8_t* buffer = reinterpret_cast<int8_t*>(dst);
@@ -287,20 +298,20 @@ namespace ignite
             {
                 size_t received = len - remain;
 
-                int res = socket.Receive(buffer + received, remain);
+                int res = socket.Receive(buffer + received, remain, timeout);
                 LOG_MSG("Receive res: " << res << " remain: " << remain);
 
                 if (res <= 0)
                 {
                     Close();
 
-                    return received;
+                    return res < 0 ? OperationResult::FAIL : OperationResult::TIMEOUT;
                 }
 
                 remain -= static_cast<size_t>(res);
             }
 
-            return len;
+            return OperationResult::SUCCESS;
         }
 
         const std::string& Connection::GetSchema() const
@@ -334,6 +345,14 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalTransactionRollback());
         }
 
+        SqlResult::Type Connection::InternalTransactionRollback()
+        {
+            AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                "Rollback operation is not supported.");
+
+            return SqlResult::AI_ERROR;
+        }
+
         void Connection::GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
         {
             IGNITE_ODBC_API_CALL(InternalGetAttribute(attr, buf, bufLen, valueLen));
@@ -343,7 +362,7 @@ namespace ignite
         {
             if (!buf)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Data buffer is NULL.");
+                AddStatusRecord(SqlState::SHY009_INVALID_USE_OF_NULL_POINTER, "Data buffer is null.");
 
                 return SqlResult::AI_ERROR;
             }
@@ -355,6 +374,18 @@ namespace ignite
                     SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
 
                     *val = connected ? SQL_CD_FALSE : SQL_CD_TRUE;
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_INTEGER;
+
+                    break;
+                }
+
+                case SQL_ATTR_CONNECTION_TIMEOUT:
+                {
+                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
+
+                    *val = static_cast<SQLUINTEGER>(timeout);
 
                     if (valueLen)
                         *valueLen = SQL_IS_INTEGER;
@@ -381,6 +412,13 @@ namespace ignite
 
         SqlResult::Type Connection::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
         {
+            if (!value)
+            {
+                AddStatusRecord(SqlState::SHY009_INVALID_USE_OF_NULL_POINTER, "Value pointer is null.");
+
+                return SqlResult::AI_ERROR;
+            }
+
             switch (attr)
             {
                 case SQL_ATTR_CONNECTION_DEAD:
@@ -388,6 +426,29 @@ namespace ignite
                     AddStatusRecord(SqlState::SHY092_OPTION_TYPE_OUT_OF_RANGE, "Attribute is read only.");
 
                     return SqlResult::AI_ERROR;
+                }
+
+                case SQL_ATTR_CONNECTION_TIMEOUT:
+                {
+                    SQLUINTEGER uTimeout = reinterpret_cast<SQLUINTEGER>(value);
+
+                    if (uTimeout > INT32_MAX)
+                    {
+                        timeout = INT32_MAX;
+
+                        std::stringstream ss;
+
+                        ss << "Value is too big: " << uTimeout << ", changing to " << timeout << ".";
+                        std::string msg = ss.str();
+
+                        AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, msg);
+
+                        return SqlResult::AI_SUCCESS_WITH_INFO;
+                    }
+
+                    timeout = static_cast<int32_t>(uTimeout);
+
+                    break;
                 }
 
                 default:
@@ -400,14 +461,6 @@ namespace ignite
             }
 
             return SqlResult::AI_SUCCESS;
-        }
-
-        SqlResult::Type Connection::InternalTransactionRollback()
-        {
-            AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
-                "Rollback operation is not supported.");
-
-            return SqlResult::AI_ERROR;
         }
 
         SqlResult::Type Connection::MakeRequestHandshake()

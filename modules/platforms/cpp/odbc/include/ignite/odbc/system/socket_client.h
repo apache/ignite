@@ -76,20 +76,22 @@ namespace ignite
                  *
                  * @param data Pointer to data to be sent.
                  * @param size Size of the data in bytes.
+                 * @param timeout Timeout.
                  * @return Number of bytes that have been sent on success and negative
-                 *         value on failure.
+                 *         value or zero on failure.
                  */
-                int Send(const int8_t* data, size_t size);
+                int Send(const int8_t* data, size_t size, int32_t timeout);
 
                 /**
                  * Receive data from established connection.
                  *
                  * @param buffer Pointer to data buffer.
                  * @param size Size of the buffer in bytes.
+                 * @param timeout Timeout.
                  * @return Number of bytes that have been received on success and negative
-                 *         value on failure.
+                 *         value or zero on failure.
                  */
-                int Receive(int8_t* buffer, size_t size);
+                int Receive(int8_t* buffer, size_t size, int32_t timeout);
 
             private:
                 /**
@@ -97,7 +99,24 @@ namespace ignite
                  */
                 void TrySetOptions(diagnostic::Diagnosable& diag);
 
+                /**
+                 * Wait on the socket for any event for specified time.
+                 * @param timeout Timeout.
+                 * @return -errno on error, zero on timeout and 1 on success.
+                 */
+                int WaitOnSocket(int32_t timeout);
+
+                /** Handle. */
                 intptr_t socketHandle;
+
+                /** Blocking flag. */
+                bool blocking;
+
+                /** Read ready flag. */
+                bool readReady;
+
+                /** Write ready flag. */
+                bool writeReady;
 
                 IGNITE_NO_COPY_ASSIGNMENT(SocketClient)
             };
