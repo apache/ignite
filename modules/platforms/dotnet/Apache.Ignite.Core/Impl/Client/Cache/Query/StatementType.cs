@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,36 +15,28 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cache.Query
+namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 {
-    using System;
-    using Apache.Ignite.Core.Binary;
-
     /// <summary>
-    /// Cursor for entry-based queries.
+    /// Query request type.
+    /// <para />
+    /// When the client knows expected kind of query, we can fail earlier on server.
     /// </summary>
-    internal class FieldsQueryCursor<T> : PlatformQueryQursorBase<T>
+    internal enum StatementType : byte
     {
         /// <summary>
-        /// Constructor.
+        /// Any query, SQL or DML.
         /// </summary>
-        /// <param name="target">Target.</param>
-        /// <param name="keepBinary">Keep poratble flag.</param>
-        /// <param name="readerFunc">The reader function.</param>
-        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
-            Func<IBinaryRawReader, int, T> readerFunc)
-            : base(target, keepBinary, r =>
-            {
-                // Reading and skipping row size in bytes.
-                r.ReadInt();
+        Any = 0,
 
-                int cnt = r.ReadInt();
+        /// <summary>
+        /// Select query, "SELECT .. FROM".
+        /// </summary>
+        Select = 1,
 
-                return readerFunc(r, cnt);
-
-            })
-        {
-            // No-op.
-        }
+        /// <summary>
+        /// Update (DML) query, "UPDATE .. ", "INSERT INTO ..".
+        /// </summary>
+        Update = 2
     }
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,36 +15,20 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cache.Query
+namespace Apache.Ignite.Core.Cache.Query
 {
-    using System;
-    using Apache.Ignite.Core.Binary;
+    using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Cursor for entry-based queries.
+    /// Fields query cursor.
     /// </summary>
-    internal class FieldsQueryCursor<T> : PlatformQueryQursorBase<T>
+    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
+    public interface IFieldsQueryCursor : IQueryCursor<IList<object>>
     {
         /// <summary>
-        /// Constructor.
+        /// Gets the field names.
         /// </summary>
-        /// <param name="target">Target.</param>
-        /// <param name="keepBinary">Keep poratble flag.</param>
-        /// <param name="readerFunc">The reader function.</param>
-        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
-            Func<IBinaryRawReader, int, T> readerFunc)
-            : base(target, keepBinary, r =>
-            {
-                // Reading and skipping row size in bytes.
-                r.ReadInt();
-
-                int cnt = r.ReadInt();
-
-                return readerFunc(r, cnt);
-
-            })
-        {
-            // No-op.
-        }
+        IList<string> FieldNames { get; }
     }
 }

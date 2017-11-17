@@ -15,31 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
+package org.apache.ignite.internal.processors.platform.client.cache;
+
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * JDBC statement type.
+ * Scan query response.
  */
-public enum JdbcStatementType {
-    /** Any statement type. */
-    ANY_STATEMENT_TYPE,
-
-    /** Select statement type. */
-    SELECT_STATEMENT_TYPE,
-
-    /** DML / DDL statement type. */
-    UPDATE_STMT_TYPE;
-
-    /** Enumerated values. */
-    private static final JdbcStatementType[] VALS = values();
+class ClientCacheQueryResponse extends ClientResponse {
+    /** Cursor. */
+    private final ClientCacheQueryCursor cursor;
 
     /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Ctor.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
+     * @param requestId Request id.
+     * @param cursor Cursor.
      */
-    public static JdbcStatementType fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    ClientCacheQueryResponse(long requestId, ClientCacheQueryCursor cursor) {
+        super(requestId);
+
+        assert cursor != null;
+
+        this.cursor = cursor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void encode(BinaryRawWriterEx writer) {
+        super.encode(writer);
+
+        writer.writeLong(cursor.id());
+
+        cursor.writePage(writer);
     }
 }
