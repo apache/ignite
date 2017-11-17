@@ -30,6 +30,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -67,7 +68,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
      */
-    GridCacheLockImpl2Unfair(String name, GridCacheInternalKey key,
+    GridCacheLockImpl2Unfair(String name, final GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<UUID>> lockView) {
         assert name != null;
         assert key != null;
@@ -123,6 +124,8 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         }
 
         /**
+         * Constructor.
+         *
          * @param id Cache id.
          * @param name Lock name.
          */
@@ -354,7 +357,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         private final GridCacheInternalKey key;
 
         /**
-         * The latch for a waiting a {@code ReleasedMessage}, failed or return {@code true} by the acquire processor.
+         * The latch for a waiting a {@code ReleasedMessage}, failed or return {@code true} by a acquire processor.
          */
         private final Latch latch;
 
@@ -370,11 +373,21 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         /** */
         private final IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<UUID>>> releaseListener;
 
-        /** Local node. */
+        /** Local node id. */
         private final UUID nodeId;
 
-        /** */
-        private GlobalSync(UUID nodeId, GridCacheInternalKey key,
+        /**
+         * Constructor.
+         *
+         * @param nodeId Local node id.
+         * @param key Key for shared lock state.
+         * @param lockView Reentrant lock projection.
+         * @param latch The latch for a waiting a {@code ReleasedMessage}, failed or return {@code true} by a acquire
+         * processor
+         * @param ctx Cache context.
+         * @param log Logger.
+         */
+        private GlobalSync(final UUID nodeId, final GridCacheInternalKey key,
             IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<UUID>> lockView,
             final Latch latch,
             final GridCacheContext<GridCacheInternalKey, ? extends GridCacheLockState2Base<UUID>> ctx,
@@ -443,8 +456,8 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             };
         }
 
-        /** */
-        private void tryAcquireOrAdd() {
+        /** Acquire the lock or add the local node to a waiting queue. */
+        private void acquireOrAdd() {
             lockView.invokeAsync(key, acquireProcessor).listen(acquireListener);
         }
 
@@ -466,7 +479,13 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             }
         }
 
-        /** */
+        /**
+         * Acquires the lock only if it is not held by another node at the time of invocation. And will remove the local
+         * node from a waiting queue if it's not.
+         *
+         * @return {@code true} if the lock was free and was acquired by the current node, or the lock was already held
+         * by the current node; and {@code false} otherwise.
+         */
         private boolean acquireOrRemove() {
             try {
                 return lockView.invoke(key, lockOrRemoveProcessor).get();
@@ -480,37 +499,43 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         }
 
         /**
+         * Waiting for releasing the latch.
+         *
          * @throws InterruptedException If interrupted.
          */
-        private void waitForRelease() throws InterruptedException {
+        private void await() throws InterruptedException {
             latch.await();
         }
 
-        /** */
-        private void waitForReleaseUninterruptibly() {
+        /** Waiting for releasing the latch. */
+        private void awaitUninterruptibly() {
             latch.awaitUninterruptibly();
         }
 
         /**
+         * Waiting for releasing the latch.
+         *
          * @param timeout The maximum time to wait.
          * @param unit The time unit of the {@code timeout} argument.
          * @return {@code true} if await finished well, {@code false} if timeout.
          * @throws InterruptedException If interrupted.
          */
-        private boolean waitForRelease(long timeout, TimeUnit unit) throws InterruptedException {
+        private boolean await(long timeout, TimeUnit unit) throws InterruptedException {
             assert unit != null;
 
             return latch.await(timeout, unit);
         }
 
-        /** */
+        /** Acquire the global lock. */
         private void acquire() {
-            tryAcquireOrAdd();
+            acquireOrAdd();
 
-            waitForReleaseUninterruptibly();
+            awaitUninterruptibly();
         }
 
         /**
+         * Acquire the global lock.
+         *
          * @param timeout The maximum time to wait.
          * @param unit The time unit of the {@code timeout} argument.
          * @return {@code true} if locked, or {@code false} if timeout.
@@ -519,10 +544,10 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         private boolean acquire(long timeout, TimeUnit unit) throws InterruptedException {
             assert unit != null;
 
-            tryAcquireOrAdd();
+            acquireOrAdd();
 
             try {
-                if (!waitForRelease(timeout, unit)) {
+                if (!await(timeout, unit)) {
                     if (!acquireOrRemove())
                         return false;
                 }
@@ -536,13 +561,15 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         }
 
         /**
+         * Acquire the global lock.
+         *
          * @throws InterruptedException If interrupted.
          */
         private void acquireInterruptibly() throws InterruptedException {
-            tryAcquireOrAdd();
+            acquireOrAdd();
 
             try {
-                waitForRelease();
+                await();
             }
             catch (InterruptedException e) {
                 if (!acquireOrRemove())
@@ -560,16 +587,16 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             return lockView.get(key);
         }
 
-        /** Async release lock. */
+        /** Async release the global lock. */
         private void release() {
             lockView.invokeAsync(key, releaseProcessor).listen(releaseListener);
         }
 
-        /** Remove node. */
+        /** Async remove node from state. */
         private void remove(UUID id) {
             assert id != null;
 
-            lockView.invokeAsync(key, new RemoveProcessor<>(id)).listen(releaseListener);
+            lockView.invokeAsync(key, new RemoveProcessor<UUID>(id)).listen(releaseListener);
         }
     }
 
@@ -578,7 +605,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
      */
     private static final class LocalSync implements Lock {
         /** */
-        private final ReentrantLock lock = new ReentrantLock();
+        private final ReentrantLock lock = new ReentrantLock(true);
 
         /** A number of threads in a local waiting queue. */
         private final AtomicLong threadCount = new AtomicLong();
@@ -605,7 +632,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             this.globalSync = globalSync;
         }
 
-        /** */
+        /** {@link IgniteLock#hasQueuedThreads()} */
         private boolean hasQueuedThreads() {
             if (reentrantCount.get() > 0)
                 return true;
@@ -614,14 +641,14 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
 
         }
 
-        /** */
+        /** {@link IgniteLock#hasQueuedThread(Thread)} */
         private boolean hasQueuedThread(Thread thread) {
             assert thread != null;
 
             return lock.hasQueuedThread(thread);
         }
 
-        /** */
+        /** {@link IgniteLock#isLocked()} */
         private boolean isLocked() throws IgniteCheckedException {
             if (reentrantCount.get() > 0)
                 return true;
@@ -643,22 +670,21 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             );
         }
 
-        /** */
-        private void holdGlobalLockInterruptibly() throws InterruptedException {
-            if (!isGloballyLocked) {
-                globalSync.acquireInterruptibly();
-
-                isGloballyLocked = true;
-
-                nextFinish = MAX_TIME + System.nanoTime();
-            }
-        }
-
-        /** */
+        /**
+         * Release the global lock in the rare case when the local lock acquiring get a timeout or interrupted, at the
+         * same time the previous lock owner releases the lock but still doesn't see a threadCount decrement in that
+         * thread, then it possible to forget to release the global lock.
+         */
         private void releaseGlobalLockIfNeed() {
-            if (lock.tryLock()) {
+            if (threadCount.decrementAndGet() <= 0) {
+                // ReentrantLock#lock will not wait a lot of time because
+                // if we see zero and the lock is not already free,
+                // it means there is exist one thread which executes LocalSync#unlock right now.
+                // And we need a fair mode to acquire the lock immediately after that LocalSync#unlock.
+                lock.lock();
+
                 try {
-                    if (threadCount.decrementAndGet() <= 0 || System.nanoTime() >= nextFinish) {
+                    if (threadCount.get() <= 0 || System.nanoTime() >= nextFinish) {
                         if (isGloballyLocked) {
                             globalSync.release();
 
@@ -672,7 +698,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             }
         }
 
-        /** */
+        /** Release the global lock if the current thread is the last in local queue or time is up. */
         private void releaseGlobalLock() {
             if (threadCount.decrementAndGet() <= 0 || System.nanoTime() >= nextFinish) {
                 globalSync.release();
@@ -744,7 +770,13 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             }
 
             try {
-                holdGlobalLockInterruptibly();
+                if (!isGloballyLocked) {
+                    globalSync.acquireInterruptibly();
+
+                    isGloballyLocked = true;
+
+                    nextFinish = MAX_TIME + System.nanoTime();
+                }
             }
             catch (InterruptedException e) {
                 threadCount.decrementAndGet();
