@@ -50,7 +50,6 @@
     "angular-translate": "2.16.0",
     "angular-tree-control": "0.2.28",
     "angular-ui-grid": "4.0.7",
-    "angular1-async-filter": "^1.1.0",
     "babel-core": "6.25.0",
     "babel-eslint": "7.2.3",
     "babel-loader": "7.1.1",
