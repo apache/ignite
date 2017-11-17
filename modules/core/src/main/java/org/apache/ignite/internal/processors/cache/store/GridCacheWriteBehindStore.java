@@ -798,8 +798,14 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         Flusher flusher
     ) {
         try {
-            if (initSes && storeMgr != null)
-                storeMgr.writeBehindSessionInit();
+            if (storeMgr != null) {
+                if (initSes)
+                    storeMgr.writeBehindSessionInit();
+                else
+                    // Back-pressure mechanism is running.
+                    // Cache store session must be initialized by storeMgr.
+                    storeMgr.writeBehindCacheStoreSessionListenerStart();
+            }
 
             boolean threwEx = true;
 
