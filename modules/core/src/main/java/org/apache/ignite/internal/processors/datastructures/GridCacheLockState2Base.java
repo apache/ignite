@@ -41,7 +41,7 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
     @GridToStringInclude
     ArrayDeque<T> owners;
 
-    /** For fast contains. */
+    /** For fast {@link HashSet#contains}. */
     HashSet<T> ownerSet;
 
     /**

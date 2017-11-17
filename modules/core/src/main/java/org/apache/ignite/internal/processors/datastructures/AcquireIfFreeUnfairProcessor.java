@@ -28,7 +28,7 @@ public final class AcquireIfFreeUnfairProcessor extends ReentrantProcessor<UUID>
     /** */
     private static final long serialVersionUID = -5203497119206044926L;
 
-    /** */
+    /** Lock owner. */
     private UUID nodeId;
 
     /**
@@ -38,7 +38,11 @@ public final class AcquireIfFreeUnfairProcessor extends ReentrantProcessor<UUID>
         // No-op.
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param nodeId Lock owner.
+     */
     public AcquireIfFreeUnfairProcessor(UUID nodeId) {
         assert nodeId != null;
 

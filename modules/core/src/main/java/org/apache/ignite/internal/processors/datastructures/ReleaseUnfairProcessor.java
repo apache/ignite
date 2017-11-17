@@ -33,7 +33,7 @@ public final class ReleaseUnfairProcessor implements CacheEntryProcessor<GridCac
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
 
-    /** */
+    /** Lock owner. */
     private UUID nodeId;
 
     /**
@@ -43,7 +43,11 @@ public final class ReleaseUnfairProcessor implements CacheEntryProcessor<GridCac
         // No-op.
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param nodeId Lock owner.
+     */
     ReleaseUnfairProcessor(UUID nodeId) {
         assert nodeId != null;
 

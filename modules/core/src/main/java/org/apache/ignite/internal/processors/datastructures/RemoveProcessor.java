@@ -34,11 +34,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class RemoveProcessor<T>
     implements CacheEntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, T>, Externalizable {
-
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
 
-    /** */
+    /** Removed node ID. */
     private UUID nodeId;
 
     /**
@@ -48,7 +47,11 @@ public final class RemoveProcessor<T>
         // No-op.
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param nodeId Removed node ID.
+     */
     RemoveProcessor(UUID nodeId) {
         assert nodeId != null;
 

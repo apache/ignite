@@ -28,7 +28,7 @@ public final class AcquireOrRemoveFairProcessor extends ReentrantProcessor<LockO
     /** */
     private static final long serialVersionUID = 2968825754944751240L;
 
-    /** */
+    /** Lock owner. */
     private LockOwner owner;
 
     /**
@@ -38,7 +38,11 @@ public final class AcquireOrRemoveFairProcessor extends ReentrantProcessor<LockO
         // No-op.
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param owner Lock owner.
+     */
     AcquireOrRemoveFairProcessor(LockOwner owner) {
         assert owner != null;
 

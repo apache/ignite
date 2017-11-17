@@ -28,10 +28,10 @@ public final class LockOwner implements Externalizable {
     /** */
     private static final long serialVersionUID = -5203487119206054926L;
 
-    /** */
+    /** Node ID. */
     UUID nodeId;
 
-    /** */
+    /** Thread ID. */
     long threadId;
 
     /**
@@ -41,7 +41,12 @@ public final class LockOwner implements Externalizable {
         // No-op.
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param nodeId Node ID.
+     * @param threadId Thread ID.
+     */
     LockOwner(UUID nodeId, long threadId) {
         assert nodeId != null;
 

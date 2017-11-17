@@ -11,7 +11,7 @@ public final class AcquireFairProcessor extends ReentrantProcessor<LockOwner> {
     /** */
     private static final long serialVersionUID = 8526685073215814916L;
 
-    /** */
+    /** Lock owner. */
     private LockOwner owner;
 
     /**
@@ -21,7 +21,11 @@ public final class AcquireFairProcessor extends ReentrantProcessor<LockOwner> {
         // No-op.
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param owner Lock owner.
+     */
     AcquireFairProcessor(LockOwner owner) {
         assert owner != null;
 

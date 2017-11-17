@@ -28,7 +28,7 @@ public final class AcquireOrRemoveUnfairProcessor extends ReentrantProcessor<UUI
     /** */
     private static final long serialVersionUID = 2968825754944751240L;
 
-    /** */
+    /** Lock owner. */
     private UUID nodeId;
 
     /**
@@ -38,7 +38,11 @@ public final class AcquireOrRemoveUnfairProcessor extends ReentrantProcessor<UUI
         // No-op.
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param nodeId Lock owner.
+     */
     AcquireOrRemoveUnfairProcessor(UUID nodeId) {
         assert nodeId != null;
 

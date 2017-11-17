@@ -35,7 +35,7 @@ public final class ReleaseFairProcessor
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
 
-    /** */
+    /** Lock owner. */
     private LockOwner owner;
 
     /**
@@ -45,7 +45,11 @@ public final class ReleaseFairProcessor
         // No-op.
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param owner Lock owner.
+     */
     ReleaseFairProcessor(LockOwner owner) {
         assert owner != null;
 

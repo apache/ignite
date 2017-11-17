@@ -27,10 +27,10 @@ public class LockedModified implements Externalizable {
     /** */
     private static final long serialVersionUID = -5203497119206054926L;
 
-    /** */
+    /** Lock was acquired. */
     boolean locked;
 
-    /** */
+    /** State was modified. */
     boolean modified;
 
     /**
@@ -40,7 +40,12 @@ public class LockedModified implements Externalizable {
         // No-op.
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param locked Lock was acquired.
+     * @param modified State was modified.
+     */
     LockedModified(boolean locked, boolean modified) {
         this.locked = locked;
         this.modified = modified;
