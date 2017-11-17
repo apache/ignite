@@ -736,7 +736,7 @@ namespace Apache.Ignite.Core
 
             // Local data (not from reader)
             JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
-                .Single(x => string.Equals(x.ModuleName, IgniteUtils.FileJvmDllWindows, StringComparison.OrdinalIgnoreCase))
+                .Single(x => string.Equals(x.ModuleName, IgniteUtils.FileJvmDll, StringComparison.OrdinalIgnoreCase))
                 .FileName;
         }
 
