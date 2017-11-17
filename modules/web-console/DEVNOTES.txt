@@ -30,3 +30,11 @@ How to migrate model:
 1. Model will be upgraded on first start.
 2. To downgrade model execute in terminal following command: "./node_modules/.bin/migrate down <migration-name> -d <dbConnectionUri>".
    Example: "./node_modules/.bin/migrate down add_index -d mongodb://localhost/console".
+
+
+Ignite Web Console Direct-Install Maven Build Instructions
+==========================================================
+To build direct-install archive from sources run following command in Ignite project root folder:
+"mvn clean package -pl :ignite-web-console -am -P web-console -DskipTests=true"
+
+Assembled archive can be found here: `$IGNITE_HOME/modules/web-console/target/ignite-web-console-direct-install-*.zip`.
