@@ -68,7 +68,7 @@ export default class {
     stopEditView(data, idx, form) {
         delete this._cache[idx];
 
-        if (form.$pristine)
+        if (!form || form.$pristine)
             return;
 
         if (form.$valid)
