@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Apache.Ignite.Core.Tests.DotNetCore
 {
     /// <summary>
     /// Test runner.
     /// </summary>
-    class TestRunner
+    internal class TestRunner
     {
-        static void Main(string[] args)
+        /// <summary>
+        /// Console entry point.
+        /// </summary>
+        private static void Main(string[] args)
         {
             new IgnitionStartTest().TestIgniteStartsWithDefaultConfig();
         }

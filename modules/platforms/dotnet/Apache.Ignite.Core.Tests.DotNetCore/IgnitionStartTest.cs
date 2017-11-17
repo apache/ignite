@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 namespace Apache.Ignite.Core.Tests.DotNetCore
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
     /// <summary>
     /// Tests Ignite startup.
     /// </summary>
@@ -53,7 +53,6 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
         [TestMethod]
         public void TestIgniteStartsFromAppConfig()
         {
-            
         }
 
         /// <summary>

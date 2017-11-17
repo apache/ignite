@@ -15,12 +15,26 @@
  * limitations under the License.
  */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 namespace Apache.Ignite.Core.Tests.DotNetCore.Cache
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    /// <summary>
+    /// Cache tests.
+    /// </summary>
     [TestClass]
     public class CacheTest
     {
+        [TestMethod]
+        public void TestPutGet()
+        {
+            
+        }
+
+        [TestMethod]
+        public void TestPutGetAsync()
+        {
+            
+        }
     }
 }
