@@ -15,18 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions;
+package org.apache.ignite.ml.math.impls.vector;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+
+import org.apache.ignite.ml.math.Vector;
+
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.regressions.* package.
+ * Block for {@link SparseBlockDistributedVector}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    OLSMultipleLinearRegressionTest.class, DistributedOLSMultipleLinearRegressionTest.class, DistributedBlockOLSMultipleLinearRegressionTest.class
-})
-public class RegressionsTestSuite {
-    // No-op.
+public final class VectorBlockEntry extends SparseLocalVector {
+    /** Max block size. */
+    public static final int MAX_BLOCK_SIZE = 32;
+
+    /** */
+    public VectorBlockEntry() {
+        // No-op.
+    }
+
+    /** */
+    public VectorBlockEntry(int size) {
+        super(size, RANDOM_ACCESS_MODE);
+        assert size <= MAX_BLOCK_SIZE;
+    }
+
+    /** */
+    public VectorBlockEntry(Vector v) {
+        assert v.size() <= MAX_BLOCK_SIZE;
+
+        setStorage(v.getStorage());
+    }
+
 }
