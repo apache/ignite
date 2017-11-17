@@ -36,12 +36,11 @@ namespace Apache.Ignite.Examples.ThinClient
     /// 2) Start example.
     /// <para />
     /// This example can also work via pure Java node started with ignite.bat/ignite.sh.
-    /// The only requirement is that the nodes have to create the cache named "default-cache" in advance.
     /// </summary>
     public static class ThinClientPutGetExample
     {
         /// <summary> Cache name. </summary>
-        private const string CacheName = "default-cache";
+        private const string CacheName = "thinClientCache";
 
         [STAThread]
         public static void Main()
@@ -56,7 +55,7 @@ namespace Apache.Ignite.Examples.ThinClient
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache put-get client example started.");
 
-                ICacheClient<int, Organization> cache = igniteClient.GetCache<int, Organization>(CacheName);
+                ICacheClient<int, Organization> cache = igniteClient.GetOrCreateCache<int, Organization>(CacheName);
 
                 PutGet(cache);
             }

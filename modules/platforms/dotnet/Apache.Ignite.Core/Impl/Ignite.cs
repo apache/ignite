@@ -378,7 +378,7 @@ namespace Apache.Ignite.Core.Impl
         /// Internal stop routine.
         /// </summary>
         /// <param name="cancel">Cancel flag.</param>
-        internal unsafe void Stop(bool cancel)
+        internal void Stop(bool cancel)
         {
             var jniTarget = _proc as PlatformJniTarget;
 
@@ -387,7 +387,7 @@ namespace Apache.Ignite.Core.Impl
                 throw new IgniteException("Ignition.Stop is not supported in thin client.");
             }
 
-            UU.IgnitionStop(jniTarget.Target.Context, Name, cancel);
+            UU.IgnitionStop(Name, cancel);
 
             _cbs.Cleanup();
         }

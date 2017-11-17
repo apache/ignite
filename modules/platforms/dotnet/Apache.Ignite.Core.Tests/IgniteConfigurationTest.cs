@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -99,6 +100,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new QueryIndex());
             CheckDefaultValueAttributes(new DataStorageConfiguration());
             CheckDefaultValueAttributes(new DataRegionConfiguration());
+            CheckDefaultValueAttributes(new CacheClientConfiguration());
         }
 
         /// <summary>
@@ -249,6 +251,7 @@ namespace Apache.Ignite.Core.Tests
             // When Spring XML is used, .NET overrides Spring.
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
+                DataStorageConfiguration = null,
                 SpringConfigUrl = @"config\spring-test.xml",
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
                 MetricsHistorySize = 57
