@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 
 /**
@@ -27,15 +26,6 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** Cache. */
     private GridCacheAdapter<?, ?> cache;
-
-    /** Cached value of cluster cache metrics snapshot. */
-    private volatile CacheMetrics clusterMetricsSnapshot;
-
-    /** Cluster cache metrics snapshot expire time. */
-    private volatile long clusterMetricsExpireTime;
-
-    /** Cluster cache metrics update mutex. */
-    private final Object clusterMetricsMux = new Object();
 
     /**
      * Creates MBean;
@@ -48,229 +38,209 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
         this.cache = cache;
     }
 
-    /**
-     * Gets a cluster cache metrics snapshot.
-     *
-     * @return Metrics snapshot.
-     */
-    private CacheMetrics metrics() {
-        if (clusterMetricsExpireTime < System.currentTimeMillis()) {
-            synchronized (clusterMetricsMux) {
-                if (clusterMetricsExpireTime < System.currentTimeMillis()) {
-                    clusterMetricsSnapshot = cache.clusterMetrics();
-
-                    clusterMetricsExpireTime = System.currentTimeMillis() + cache.ctx.grid().configuration()
-                        .getMetricsUpdateFrequency();
-                }
-            }
-        }
-
-        return clusterMetricsSnapshot;
-    }
-
     /** {@inheritDoc} */
     @Override public String name() {
-        return metrics().name();
+        return cache.clusterMetrics().name();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapGets() {
-        return metrics().getOffHeapGets();
+        return cache.clusterMetrics().getOffHeapGets();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPuts() {
-        return metrics().getOffHeapPuts();
+        return cache.clusterMetrics().getOffHeapPuts();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapRemovals() {
-        return metrics().getOffHeapRemovals();
+        return cache.clusterMetrics().getOffHeapRemovals();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEvictions() {
-        return metrics().getOffHeapEvictions();
+        return cache.clusterMetrics().getOffHeapEvictions();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapHits() {
-        return metrics().getOffHeapHits();
+        return cache.clusterMetrics().getOffHeapHits();
     }
 
     /** {@inheritDoc} */
     @Override public float getOffHeapHitPercentage() {
-        return metrics().getOffHeapHitPercentage();
+        return cache.clusterMetrics().getOffHeapHitPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapMisses() {
-        return metrics().getOffHeapMisses();
+        return cache.clusterMetrics().getOffHeapMisses();
     }
 
     /** {@inheritDoc} */
     @Override public float getOffHeapMissPercentage() {
-        return metrics().getOffHeapMissPercentage();
+        return cache.clusterMetrics().getOffHeapMissPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
-        return metrics().getOffHeapEntriesCount();
+        return cache.clusterMetrics().getOffHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapEntriesCount() {
-        return metrics().getHeapEntriesCount();
+        return cache.clusterMetrics().getHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
-        return metrics().getOffHeapPrimaryEntriesCount();
+        return cache.clusterMetrics().getOffHeapPrimaryEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
-        return metrics().getOffHeapBackupEntriesCount();
+        return cache.clusterMetrics().getOffHeapBackupEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapAllocatedSize() {
-        return metrics().getOffHeapAllocatedSize();
+        return cache.clusterMetrics().getOffHeapAllocatedSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getSize() {
-        return metrics().getSize();
+        return cache.clusterMetrics().getSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
-        return metrics().getKeySize();
+        return cache.clusterMetrics().getKeySize();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return metrics().isEmpty();
+        return cache.clusterMetrics().isEmpty();
     }
 
     /** {@inheritDoc} */
     @Override public int getDhtEvictQueueCurrentSize() {
-        return metrics().getDhtEvictQueueCurrentSize();
+        return cache.clusterMetrics().getDhtEvictQueueCurrentSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxCommitQueueSize() {
-        return metrics().getTxCommitQueueSize();
+        return cache.clusterMetrics().getTxCommitQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxThreadMapSize() {
-        return metrics().getTxThreadMapSize();
+        return cache.clusterMetrics().getTxThreadMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxXidMapSize() {
-        return metrics().getTxXidMapSize();
+        return cache.clusterMetrics().getTxXidMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxPrepareQueueSize() {
-        return metrics().getTxPrepareQueueSize();
+        return cache.clusterMetrics().getTxPrepareQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxStartVersionCountsSize() {
-        return metrics().getTxStartVersionCountsSize();
+        return cache.clusterMetrics().getTxStartVersionCountsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxCommittedVersionsSize() {
-        return metrics().getTxCommittedVersionsSize();
+        return cache.clusterMetrics().getTxCommittedVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxRolledbackVersionsSize() {
-        return metrics().getTxRolledbackVersionsSize();
+        return cache.clusterMetrics().getTxRolledbackVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtThreadMapSize() {
-        return metrics().getTxDhtThreadMapSize();
+        return cache.clusterMetrics().getTxDhtThreadMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtXidMapSize() {
-        return metrics().getTxDhtXidMapSize();
+        return cache.clusterMetrics().getTxDhtXidMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtCommitQueueSize() {
-        return metrics().getTxDhtCommitQueueSize();
+        return cache.clusterMetrics().getTxDhtCommitQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtPrepareQueueSize() {
-        return metrics().getTxDhtPrepareQueueSize();
+        return cache.clusterMetrics().getTxDhtPrepareQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtStartVersionCountsSize() {
-        return metrics().getTxDhtStartVersionCountsSize();
+        return cache.clusterMetrics().getTxDhtStartVersionCountsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtCommittedVersionsSize() {
-        return metrics().getTxDhtCommittedVersionsSize();
+        return cache.clusterMetrics().getTxDhtCommittedVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtRolledbackVersionsSize() {
-        return metrics().getTxDhtRolledbackVersionsSize();
+        return cache.clusterMetrics().getTxDhtRolledbackVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isWriteBehindEnabled() {
-        return metrics().isWriteBehindEnabled();
+        return cache.clusterMetrics().isWriteBehindEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindFlushSize() {
-        return metrics().getWriteBehindFlushSize();
+        return cache.clusterMetrics().getWriteBehindFlushSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindFlushThreadCount() {
-        return metrics().getWriteBehindFlushThreadCount();
+        return cache.clusterMetrics().getWriteBehindFlushThreadCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getWriteBehindFlushFrequency() {
-        return metrics().getWriteBehindFlushFrequency();
+        return cache.clusterMetrics().getWriteBehindFlushFrequency();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindStoreBatchSize() {
-        return metrics().getWriteBehindStoreBatchSize();
+        return cache.clusterMetrics().getWriteBehindStoreBatchSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindTotalCriticalOverflowCount() {
-        return metrics().getWriteBehindTotalCriticalOverflowCount();
+        return cache.clusterMetrics().getWriteBehindTotalCriticalOverflowCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindCriticalOverflowCount() {
-        return metrics().getWriteBehindCriticalOverflowCount();
+        return cache.clusterMetrics().getWriteBehindCriticalOverflowCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindErrorRetryCount() {
-        return metrics().getWriteBehindErrorRetryCount();
+        return cache.clusterMetrics().getWriteBehindErrorRetryCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindBufferSize() {
-        return metrics().getWriteBehindBufferSize();
+        return cache.clusterMetrics().getWriteBehindBufferSize();
     }
 
     /** {@inheritDoc} */
@@ -280,166 +250,166 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getCacheHits() {
-        return metrics().getCacheHits();
+        return cache.clusterMetrics().getCacheHits();
     }
 
     /** {@inheritDoc} */
     @Override public float getCacheHitPercentage() {
-        return metrics().getCacheHitPercentage();
+        return cache.clusterMetrics().getCacheHitPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheMisses() {
-        return metrics().getCacheMisses();
+        return cache.clusterMetrics().getCacheMisses();
     }
 
     /** {@inheritDoc} */
     @Override public float getCacheMissPercentage() {
-        return metrics().getCacheMissPercentage();
+        return cache.clusterMetrics().getCacheMissPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheGets() {
-        return metrics().getCacheGets();
+        return cache.clusterMetrics().getCacheGets();
     }
 
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
-        return metrics().getCachePuts();
+        return cache.clusterMetrics().getCachePuts();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheRemovals() {
-        return metrics().getCacheRemovals();
+        return cache.clusterMetrics().getCacheRemovals();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheEvictions() {
-        return metrics().getCacheEvictions();
+        return cache.clusterMetrics().getCacheEvictions();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageGetTime() {
-        return metrics().getAverageGetTime();
+        return cache.clusterMetrics().getAverageGetTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAveragePutTime() {
-        return metrics().getAveragePutTime();
+        return cache.clusterMetrics().getAveragePutTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageRemoveTime() {
-        return metrics().getAverageRemoveTime();
+        return cache.clusterMetrics().getAverageRemoveTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageTxCommitTime() {
-        return metrics().getAverageTxCommitTime();
+        return cache.clusterMetrics().getAverageTxCommitTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageTxRollbackTime() {
-        return metrics().getAverageTxRollbackTime();
+        return cache.clusterMetrics().getAverageTxRollbackTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheTxCommits() {
-        return metrics().getCacheTxCommits();
+        return cache.clusterMetrics().getCacheTxCommits();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheTxRollbacks() {
-        return metrics().getCacheTxRollbacks();
+        return cache.clusterMetrics().getCacheTxRollbacks();
     }
 
     /** {@inheritDoc} */
     @Override public String getKeyType() {
-        return metrics().getKeyType();
+        return cache.clusterMetrics().getKeyType();
     }
 
     /** {@inheritDoc} */
     @Override public String getValueType() {
-        return metrics().getValueType();
+        return cache.clusterMetrics().getValueType();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isStoreByValue() {
-        return metrics().isStoreByValue();
+        return cache.clusterMetrics().isStoreByValue();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isStatisticsEnabled() {
-        return metrics().isStatisticsEnabled();
+        return cache.clusterMetrics().isStatisticsEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isManagementEnabled() {
-        return metrics().isManagementEnabled();
+        return cache.clusterMetrics().isManagementEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isReadThrough() {
-        return metrics().isReadThrough();
+        return cache.clusterMetrics().isReadThrough();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isWriteThrough() {
-        return metrics().isWriteThrough();
+        return cache.clusterMetrics().isWriteThrough();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalPartitionsCount() {
-        return metrics().getTotalPartitionsCount();
+        return cache.clusterMetrics().getTotalPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
-        return metrics().getRebalancingPartitionsCount();
+        return cache.clusterMetrics().getRebalancingPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getKeysToRebalanceLeft() {
-        return metrics().getKeysToRebalanceLeft();
+        return cache.clusterMetrics().getKeysToRebalanceLeft();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancingKeysRate() {
-        return metrics().getRebalancingKeysRate();
+        return cache.clusterMetrics().getRebalancingKeysRate();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancingBytesRate() {
-        return metrics().getRebalancingBytesRate();
+        return cache.clusterMetrics().getRebalancingBytesRate();
     }
 
     /** {@inheritDoc} */
     @Override public long estimateRebalancingFinishTime() {
-        return metrics().estimateRebalancingFinishTime();
+        return cache.clusterMetrics().estimateRebalancingFinishTime();
     }
 
     /** {@inheritDoc} */
     @Override public long rebalancingStartTime() {
-        return metrics().rebalancingStartTime();
+        return cache.clusterMetrics().rebalancingStartTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getEstimatedRebalancingFinishTime() {
-        return metrics().getEstimatedRebalancingFinishTime();
+        return cache.clusterMetrics().getEstimatedRebalancingFinishTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancingStartTime() {
-        return metrics().getRebalancingStartTime();
+        return cache.clusterMetrics().getRebalancingStartTime();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isValidForReading() {
-        return metrics().isValidForReading();
+        return cache.clusterMetrics().isValidForReading();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isValidForWriting() {
-        return metrics().isValidForWriting();
+        return cache.clusterMetrics().isValidForWriting();
     }
 }
