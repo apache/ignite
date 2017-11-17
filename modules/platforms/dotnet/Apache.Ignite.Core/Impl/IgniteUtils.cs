@@ -364,7 +364,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Gets the JVM DLL paths from symlink.
+        /// Gets the Jvm dll paths from symlink.
         /// </summary>
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromSymlink()
         {
@@ -373,7 +373,38 @@ namespace Apache.Ignite.Core.Impl
                 yield break;
             }
 
-            yield return new KeyValuePair<string, string>("'whereis java'", ""); // TODO
+            const string javaExec = "/usr/bin/java";
+            if (!File.Exists(javaExec))
+            {
+                yield break;
+            }
+
+            var file = Shell.BashExecute("readlink -f /usr/bin/java");
+            // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+
+            var dir = Path.GetDirectoryName(file);
+            // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin
+
+            if (dir == null)
+            {
+                yield break;
+            }
+
+            var libFolder = Path.GetFullPath(Path.Combine(dir, "../lib/"));
+            if (!Directory.Exists(libFolder))
+            {
+                yield break;
+            }
+
+            // Predefined path: /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so
+            yield return new KeyValuePair<string, string>(javaExec,
+                Path.Combine(libFolder, "amd64", "server", FileJvmDll));
+
+            // Last resort - custom paths:
+            foreach (var f in Directory.GetFiles(libFolder, FileJvmDll, SearchOption.AllDirectories))
+            {
+                yield return new KeyValuePair<string, string>(javaExec, f);
+            }
         }
 
         /// <summary>
