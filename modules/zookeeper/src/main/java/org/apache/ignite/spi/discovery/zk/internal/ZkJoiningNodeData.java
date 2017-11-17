@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  *
  */
-class ZKJoiningNodeData implements Serializable {
+class ZkJoiningNodeData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,18 +31,18 @@ class ZKJoiningNodeData implements Serializable {
     private final ZookeeperClusterNode node;
 
     /** */
-    private final Map<Integer, Serializable> joiningNodeData;
+    private final Map<Integer, Serializable> discoData;
 
     /**
      * @param node Node.
-     * @param joiningNodeData Discovery data.
+     * @param discoData Discovery data.
      */
-    ZKJoiningNodeData(ZookeeperClusterNode node, Map<Integer, Serializable> joiningNodeData) {
+    ZkJoiningNodeData(ZookeeperClusterNode node, Map<Integer, Serializable> discoData) {
         assert node != null && node.id() != null : node;
-        assert joiningNodeData != null;
+        assert discoData != null;
 
         this.node = node;
-        this.joiningNodeData = joiningNodeData;
+        this.discoData = discoData;
     }
 
     /**
@@ -55,7 +55,7 @@ class ZKJoiningNodeData implements Serializable {
     /**
      * @return Discovery data.
      */
-    Map<Integer, Serializable> joiningNodeData() {
-        return joiningNodeData;
+    Map<Integer, Serializable> discoveryData() {
+        return discoData;
     }
 }

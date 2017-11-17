@@ -74,18 +74,32 @@ public class ZookeeperClient implements Watcher {
     /** */
     private final ArrayDeque<ZkAsyncOperation> retryQ = new ArrayDeque<>();
 
+    /**
+     * @param log Logger.
+     * @param connectString ZK connection string.
+     * @param sesTimeout ZK session timeout.
+     * @param connLostC Lost connection callback.
+     * @throws Exception If failed.
+     */
     ZookeeperClient(IgniteLogger log, String connectString, int sesTimeout, IgniteRunnable connLostC) throws Exception {
         this(null, log, connectString, sesTimeout, connLostC);
     }
 
     /**
+     * @param igniteInstanceName Ignite instance name.
      * @param log Logger.
      * @param connectString ZK connection string.
      * @param sesTimeout ZK session timeout.
+     * @param connLostC Lost connection callback.
      * @throws Exception If failed.
      */
-    ZookeeperClient(String igniteInstanceName, IgniteLogger log, String connectString, int sesTimeout, IgniteRunnable connLostC)
-        throws Exception {
+    ZookeeperClient(String igniteInstanceName,
+        IgniteLogger log,
+        String connectString,
+        int sesTimeout,
+        IgniteRunnable connLostC)
+        throws Exception
+    {
         this.log = log.getLogger(getClass());
         this.connLostC = connLostC;
 
@@ -185,13 +199,7 @@ public class ZookeeperClient implements Watcher {
             connLostC.run();
     }
 
-    /**
-     * @param path
-     * @return
-     * @throws ZookeeperClientFailedException
-     * @throws InterruptedException
-     */
-    public boolean exists(String path) throws ZookeeperClientFailedException, InterruptedException {
+    boolean exists(String path) throws ZookeeperClientFailedException, InterruptedException {
         for (;;) {
             long connStartTime = this.connStartTime;
 
@@ -204,7 +212,7 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
-    public void createIfNeeded(String path, byte[] data, CreateMode createMode)
+    String createIfNeeded(String path, byte[] data, CreateMode createMode)
         throws ZookeeperClientFailedException, InterruptedException {
         if (data == null)
             data = EMPTY_BYTES;
@@ -213,14 +221,12 @@ public class ZookeeperClient implements Watcher {
             long connStartTime = this.connStartTime;
 
             try {
-                zk.create(path, data, ZK_ACL, createMode);
-
-                break;
+                return zk.create(path, data, ZK_ACL, createMode);
             }
             catch (KeeperException.NodeExistsException e) {
                 log.info("Node already exists: " + path);
 
-                break;
+                return path;
             }
             catch (Exception e) {
                 onZookeeperError(connStartTime, e);
@@ -228,10 +234,66 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
-    public void getChildrenAsync(String path, boolean watch, AsyncCallback.Children2Callback cb, Object ctx) {
-        GetChildrenOperation op = new GetChildrenOperation(path, watch, cb, ctx);
+    List<String> getChildren(String path)
+        throws ZookeeperClientFailedException, InterruptedException
+    {
+        for (;;) {
+            long connStartTime = this.connStartTime;
 
-        zk.getChildren(path, watch, new ChildreCallbackWrapper(op), ctx);
+            try {
+                return zk.getChildren(path, false);
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+        }
+    }
+
+    void setData(String path, byte[] data, int ver)
+        throws ZookeeperClientFailedException, InterruptedException
+    {
+        for (;;) {
+            long connStartTime = this.connStartTime;
+
+            try {
+                zk.setData(path, data, ver);
+
+                return;
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+        }
+    }
+
+    byte[] getData(String path)
+        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
+    {
+        for (;;) {
+            long connStartTime = this.connStartTime;
+
+            try {
+                return zk.getData(path, false, null);
+            }
+            catch (KeeperException.NoNodeException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+        }
+    }
+
+    void getChildrenAsync(String path, Watcher watcher, AsyncCallback.Children2Callback cb) {
+        GetChildrenOperation op = new GetChildrenOperation(path, watcher, cb);
+
+        zk.getChildren(path, watcher, new ChildreCallbackWrapper(op), null);
+    }
+
+    void getDataAsync(String path, Watcher watcher, AsyncCallback.DataCallback cb) {
+        GetDataOperation op = new GetDataOperation(path, watcher, cb);
+
+        zk.getData(path, watcher, new DataCallbackWrapper(op), null);
     }
 
     /**
@@ -244,7 +306,9 @@ public class ZookeeperClient implements Watcher {
     /**
      * @param e Error.
      */
-    private void onZookeeperError(long prevConnStartTime, Exception e) throws ZookeeperClientFailedException, InterruptedException {
+    private void onZookeeperError(long prevConnStartTime, Exception e)
+        throws ZookeeperClientFailedException, InterruptedException
+    {
         ZookeeperClientFailedException err = null;
 
         synchronized (stateMux) {
@@ -330,6 +394,9 @@ public class ZookeeperClient implements Watcher {
      *
      */
     interface ZkAsyncOperation {
+        /**
+         *
+         */
         void execute();
     }
 
@@ -341,24 +408,45 @@ public class ZookeeperClient implements Watcher {
         private final String path;
 
         /** */
-        private final boolean watch;
+        private final Watcher watcher;
 
         /** */
         private final AsyncCallback.Children2Callback cb;
 
-        /** */
-        private final Object ctx;
-
-        public GetChildrenOperation(String path, boolean watch, AsyncCallback.Children2Callback cb, Object ctx) {
+        GetChildrenOperation(String path, Watcher watcher, AsyncCallback.Children2Callback cb) {
             this.path = path;
-            this.watch = watch;
+            this.watcher = watcher;
             this.cb = cb;
-            this.ctx = ctx;
         }
 
         /** {@inheritDoc} */
         @Override public void execute() {
-            getChildrenAsync(path, watch, cb, ctx);
+            getChildrenAsync(path, watcher, cb);
+        }
+    }
+
+    /**
+     *
+     */
+    class GetDataOperation implements ZkAsyncOperation {
+        /** */
+        private final String path;
+
+        /** */
+        private final Watcher watcher;
+
+        /** */
+        private final AsyncCallback.DataCallback cb;
+
+        GetDataOperation(String path, Watcher watcher, AsyncCallback.DataCallback cb) {
+            this.path = path;
+            this.watcher = watcher;
+            this.cb = cb;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute() {
+            getDataAsync(path, watcher, cb);
         }
     }
 
@@ -410,6 +498,34 @@ public class ZookeeperClient implements Watcher {
                 U.warn(log, "Failed to execute async operation, connection lost [path=" + path + ']');
             else
                 op.cb.processResult(rc, path, ctx, children, stat);
+        }
+    }
+
+    /**
+     *
+     */
+    class DataCallbackWrapper implements AsyncCallback.DataCallback {
+        /** */
+        private final GetDataOperation op;
+
+        /**
+         * @param op Operation.
+         */
+        private DataCallbackWrapper(GetDataOperation op) {
+            this.op = op;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
+            if (needRetry(rc)) {
+                U.warn(log, "Failed to execute async operation, connection lost. Will retry after connection restore [path=" + path + ']');
+
+                retryQ.add(op);
+            }
+            else if (rc == KeeperException.Code.SESSIONEXPIRED.intValue())
+                U.warn(log, "Failed to execute async operation, connection lost [path=" + path + ']');
+            else
+                op.cb.processResult(rc, path, ctx, data, stat);
         }
     }
 

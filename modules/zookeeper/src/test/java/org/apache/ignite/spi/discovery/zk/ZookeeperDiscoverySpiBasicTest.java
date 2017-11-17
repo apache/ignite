@@ -51,6 +51,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
+import org.apache.zookeeper.ZooKeeper;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -103,10 +104,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         if (USE_TEST_CLUSTER) {
             assert zkCluster != null;
 
-            zkSpi.setConnectString(zkCluster.getConnectString());
+            zkSpi.setZkConnectionString(zkCluster.getConnectString());
         }
         else
-            zkSpi.setConnectString("localhost:2181");
+            zkSpi.setZkConnectionString("localhost:2181");
 
         cfg.setDiscoverySpi(zkSpi);
 
@@ -369,7 +370,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         if (failWhenDisconnected) {
             ZookeeperDiscoverySpi spi = spis.get(getTestIgniteInstanceName(2));
 
-            spi.closeClient();
+            closeZkClient(spi);
 
             checkEvents(node0, failEvent(4));
         }
@@ -387,6 +388,20 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         fut.get();
 
         waitForTopology(failWhenDisconnected ? 2 : 3);
+    }
+
+    /**
+     * @param spi Spi instance.
+     */
+    private void closeZkClient(ZookeeperDiscoverySpi spi) {
+        ZooKeeper zk = GridTestUtils.getFieldValue(spi, "impl.zkClient.zk");
+
+        try {
+            zk.close();
+        }
+        catch (Exception e) {
+            fail("Unexpected error: " + e);
+        }
     }
 
     /**
@@ -455,7 +470,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             spi.waitConnectStart();
 
             if (cnt < failCnt)
-                spi.closeClient();
+                closeZkClient(spi);
         }
 
         c0.allowConnect();

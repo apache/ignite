@@ -50,7 +50,7 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
     private Serializable consistentId;
 
     /** */
-    private long internalOrder;
+    private int internalId;
 
     /** */
     private long order;
@@ -160,20 +160,21 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
         return order;
     }
 
-    public long internalOrder() {
-        return internalOrder;
+    /**
+     * @return Internal ID corresponds to Zookeeper sequential node.
+     */
+    public int internalId() {
+        return internalId;
     }
 
     /**
-     * @param internalOrder Order of the node.
+     * @param internalId Internal ID corresponds to Zookeeper sequential node.
      */
-    public void internalOrder(long internalOrder) {
-        assert internalOrder > 0 : internalOrder;
-
-        this.internalOrder = internalOrder;
+    void internalId(int internalId) {
+        this.internalId = internalId;
     }
 
-    public void order(long order) {
+    void order(long order) {
         assert order > 0 : order;
 
         this.order = order;
