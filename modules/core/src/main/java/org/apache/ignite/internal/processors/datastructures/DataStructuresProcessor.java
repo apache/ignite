@@ -1264,6 +1264,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }, name, grpName, SEMAPHORE, null);
     }
 
+    /**
+     * Gets or creates reentrant lock. If reentrant lock is not found in cache, it is created using provided name,
+     * failover mode, and fairness mode parameters.
+     *
+     * @param name Name of the reentrant lock.
+     * @param fair Flag indicating fairness policy of this lock.
+     * @param create If {@code true} reentrant lock will be created in case it is not in cache.
+     * @return ReentrantLock for the given name or {@code null} if it is not found and {@code create} is false.
+     * @throws IgniteCheckedException If operation failed.
+     */
     public IgniteLock reentrantLock(final String name, final boolean fair,
         final boolean create) throws IgniteCheckedException {
         return getAtomic(
@@ -1656,6 +1666,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         protected abstract T2<T, AtomicDataStructureValue> get(GridCacheInternalKey key,
             @Nullable AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException;
 
+        /**
+         * Wrap around {@link this#get(GridCacheInternalKey, AtomicDataStructureValue, IgniteInternalCache)} with a
+         * double-check-locking.
+         */
         T2<T, AtomicDataStructureValue> getSafe(GridCacheInternalKey key,
             @Nullable AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
             if (value == null) {
