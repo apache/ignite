@@ -17,14 +17,21 @@
 
 'use strict';
 
-const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
+
+require('app-module-path').addPath(path.join(__dirname, 'node_modules'));
+
+const _ = require('lodash');
+const getos = require('getos');
 const http = require('http');
 const https = require('https');
 const MigrateMongoose = require('migrate-mongoose');
 
-const igniteModules = process.env.IGNITE_MODULES ?
+
+const packaged = __dirname.startsWith('/snapshot/') || __dirname.startsWith('C:\\snapshot\\');
+
+const igniteModules = !packaged && process.env.IGNITE_MODULES ?
     path.join(path.normalize(process.env.IGNITE_MODULES), 'backend') : path.join(__dirname, 'ignite_modules');
 
 let injector;
@@ -33,6 +40,8 @@ try {
     const igniteModulesInjector = path.resolve(path.join(igniteModules, 'injector.js'));
 
     fs.accessSync(igniteModulesInjector, fs.F_OK);
+
+    process.env.NODE_PATH = path.join(__dirname, 'node_modules');
 
     injector = require(igniteModulesInjector);
 }
@@ -93,7 +102,7 @@ const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
 
 /**
  * Run mongo model migration.
- * 
+ *
  * @param dbConnectionUri Mongo connection url.
  * @param group Migrations group.
  * @param migrationsPath Migrations path.
@@ -121,6 +130,16 @@ const migrate = (dbConnectionUri, group, migrationsPath) => {
             throw err;
         });
 };
+
+getos(function(e, os) {
+    if (e)
+        return console.log(e);
+
+    console.log('Your OS is: ' + JSON.stringify(os));
+});
+
+injector.log.info = () => {};
+injector.log.debug = () => {};
 
 Promise.all([injector('settings'), injector('mongo')])
     .then(([{mongoUrl}]) => {

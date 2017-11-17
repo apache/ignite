@@ -75,7 +75,11 @@ namespace Apache.Ignite.Core.Impl
 
                 // 2. Create unmanaged pointer.
                 var jvm = CreateJvm(cfg);
-                jvm.EnableJavaConsoleWriter();
+
+                if (cfg.RedirectJavaConsoleOutput)
+                {
+                    jvm.EnableJavaConsoleWriter();
+                }
 
                 var cbs = new UnmanagedCallbacks(log, jvm);
                 jvm.RegisterCallbacks(cbs);
