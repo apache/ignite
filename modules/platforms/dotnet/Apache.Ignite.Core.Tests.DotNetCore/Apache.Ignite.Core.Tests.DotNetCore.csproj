@@ -19,4 +19,9 @@
     <PackageReference Include="MSTest.TestFramework" Version="1.1.18" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Compute\" />
+    <Folder Include="ThinClient\" />
+  </ItemGroup>
+
 </Project>

@@ -48,6 +48,15 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
         }
 
         /// <summary>
+        /// Tests the ignite starts from application configuration.
+        /// </summary>
+        [TestMethod]
+        public void TestIgniteStartsFromAppConfig()
+        {
+            
+        }
+
+        /// <summary>
         /// Fixture cleanup.
         /// </summary>
         [ClassCleanup]
