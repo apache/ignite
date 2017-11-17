@@ -33,14 +33,20 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
+import org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.UUID;
+
 /**
- * Key implementation for {@link BlockEntry} using for {@link SparseBlockDistributedMatrix}.
+ * Key implementation for {@link MatrixBlockEntry} using for {@link SparseBlockDistributedMatrix}.
  */
-public class BlockMatrixKey implements org.apache.ignite.ml.math.distributed.keys.BlockMatrixKey, Externalizable, Binarylizable {
+public class MatrixBlockKey implements org.apache.ignite.ml.math.distributed.keys.MatrixBlockKey, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
     /** Block row ID */
@@ -50,12 +56,12 @@ public class BlockMatrixKey implements org.apache.ignite.ml.math.distributed.key
     /** Matrix ID */
     private UUID matrixUuid;
     /** Block affinity key. */
-    private IgniteUuid affinityKey;
+    private UUID affinityKey;
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public BlockMatrixKey() {
+    public MatrixBlockKey() {
         // No-op.
     }
 
@@ -65,7 +71,7 @@ public class BlockMatrixKey implements org.apache.ignite.ml.math.distributed.key
      * @param matrixUuid Matrix uuid.
      * @param affinityKey Affinity key.
      */
-    public BlockMatrixKey(long rowId, long colId,  UUID matrixUuid, @Nullable IgniteUuid affinityKey) {
+    public MatrixBlockKey(long rowId, long colId, UUID matrixUuid, @Nullable UUID affinityKey) {
         assert rowId >= 0;
         assert colId >= 0;
         assert matrixUuid != null;
@@ -87,19 +93,19 @@ public class BlockMatrixKey implements org.apache.ignite.ml.math.distributed.key
     }
 
     /** {@inheritDoc} */
-    @Override public UUID matrixId() {
+    @Override public UUID dataStructureId() {
         return matrixUuid;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid affinityKey() {
+    @Override public UUID affinityKey() {
         return affinityKey;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(matrixUuid);
-        U.writeGridUuid(out, affinityKey);
+        out.writeObject(affinityKey);
         out.writeLong(blockIdRow);
         out.writeLong(blockIdCol);
     }
@@ -107,7 +113,7 @@ public class BlockMatrixKey implements org.apache.ignite.ml.math.distributed.key
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         matrixUuid = (UUID)in.readObject();
-        affinityKey = U.readGridUuid(in);
+        affinityKey = (UUID)in.readObject();
         blockIdRow = in.readLong();
         blockIdCol = in.readLong();
     }
@@ -117,7 +123,7 @@ public class BlockMatrixKey implements org.apache.ignite.ml.math.distributed.key
         BinaryRawWriter out = writer.rawWriter();
 
         out.writeUuid(matrixUuid);
-        BinaryUtils.writeIgniteUuid(out, affinityKey);
+        out.writeUuid(affinityKey);
         out.writeLong(blockIdRow);
         out.writeLong(blockIdCol);
     }
@@ -127,7 +133,7 @@ public class BlockMatrixKey implements org.apache.ignite.ml.math.distributed.key
         BinaryRawReader in = reader.rawReader();
 
         matrixUuid = in.readUuid();
-        affinityKey = BinaryUtils.readIgniteUuid(in);
+        affinityKey = in.readUuid();
         blockIdRow = in.readLong();
         blockIdCol = in.readLong();
     }
@@ -151,14 +157,14 @@ public class BlockMatrixKey implements org.apache.ignite.ml.math.distributed.key
         if (obj == null || obj.getClass() != getClass())
             return false;
 
-        BlockMatrixKey that = (BlockMatrixKey)obj;
+        MatrixBlockKey that = (MatrixBlockKey)obj;
 
         return blockIdRow == that.blockIdRow && blockIdCol == that.blockIdCol && matrixUuid.equals(that.matrixUuid)
-            && F.eq(affinityKey, that.affinityKey);
+                && F.eq(affinityKey, that.affinityKey);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(BlockMatrixKey.class, this);
+        return S.toString(MatrixBlockKey.class, this);
     }
 }
