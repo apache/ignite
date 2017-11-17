@@ -76,7 +76,6 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         this.name = name;
         this.ctx = lockView.context();
 
-        // final for passing into anonymous classes.
         final Latch listener = new Latch();
 
         sync = new LocalSync(new GlobalSync(ctx.localNodeId(), key, lockView, listener, ctx,
