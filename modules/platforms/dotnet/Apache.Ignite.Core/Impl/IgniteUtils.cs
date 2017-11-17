@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl
         private const string EnvJavaHome = "JAVA_HOME";
 
         /** Lookup paths. */
-        private static readonly string[] JvmDllLookupPaths =
+        private static readonly string[] JvmDllLookupPathsWindows =
         {
             // JRE paths
             @"bin\server",
@@ -59,6 +59,18 @@ namespace Apache.Ignite.Core.Impl
             @"jre\bin\default"
         };
 
+        /** Lookup paths. */
+        private static readonly string[] JvmDllLookupPathsLinux =
+        {
+            // JRE paths
+            "lib/amd64/server",
+            "lib/amd64/client",
+
+            // JDK paths
+            "jre/lib/amd64/server",
+            "jre/lib/amd64/client"
+        };
+
         /** Registry lookup paths. */
         private static readonly string[] JreRegistryKeys =
         {
@@ -67,7 +79,10 @@ namespace Apache.Ignite.Core.Impl
         };
 
         /** File: jvm.dll. */
-        internal const string FileJvmDll = "jvm.dll";
+        internal const string FileJvmDllWindows = "jvm.dll";
+
+        /** File: libjvm.so. */
+        internal const string FileJvmDllLinux = "libjvm.so";
 
         /** Prefix for temp directory names. */
         private const string DirIgniteTmp = "Ignite_";
@@ -196,7 +211,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 log.Debug("Trying to load JVM dll from [option={0}, path={1}]...", dllPath.Key, dllPath.Value);
 
-                var errCode = LoadDll(dllPath.Value, FileJvmDll);
+                var errCode = LoadDll(dllPath.Value, FileJvmDllWindows);
                 if (errCode == 0)
                 {
                     log.Debug("jvm.dll successfully loaded from [option={0}, path={1}]", dllPath.Key, dllPath.Value);
@@ -219,13 +234,13 @@ namespace Apache.Ignite.Core.Impl
 
             if (messages.Count == 1)
                 throw new IgniteException(string.Format(CultureInfo.InvariantCulture, "Failed to load {0} ({1})", 
-                    FileJvmDll, messages[0]));
+                    FileJvmDllWindows, messages[0]));
 
             var combinedMessage =
                 messages.Aggregate((x, y) => string.Format(CultureInfo.InvariantCulture, "{0}\n{1}", x, y));
 
             throw new IgniteException(string.Format(CultureInfo.InvariantCulture, "Failed to load {0}:\n{1}", 
-                FileJvmDll, combinedMessage));
+                FileJvmDllWindows, combinedMessage));
         }
 
         /// <summary>
@@ -299,13 +314,17 @@ namespace Apache.Ignite.Core.Impl
 
             var javaHomeDir = Environment.GetEnvironmentVariable(EnvJavaHome);
 
-            if (!string.IsNullOrEmpty(javaHomeDir))
-                foreach (var path in JvmDllLookupPaths)
-                    yield return
-                        new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
-
             if (Os.IsWindows)
             {
+                if (!string.IsNullOrEmpty(javaHomeDir))
+                {
+                    foreach (var path in JvmDllLookupPathsWindows)
+                    {
+                        yield return
+                            new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDllWindows));
+                    }
+                }
+
                 // Get paths from the Windows Registry
                 foreach (var regPath in JreRegistryKeys)
                 {
