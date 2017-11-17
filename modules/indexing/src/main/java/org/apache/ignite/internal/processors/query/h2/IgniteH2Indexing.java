@@ -1505,15 +1505,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 remainingSql != qry.getSql() ? cloneFieldsQuery(qry).setSql(remainingSql) : qry, firstArg);
 
             // Let's avoid second reflection getter call by returning Prepared object too
-            Prepared prepared = parseRes.prepared;
+            Prepared prepared = parseRes.prepared();
 
-            GridCacheTwoStepQuery twoStepQry = parseRes.twoStepQry;
+            GridCacheTwoStepQuery twoStepQry = parseRes.twoStepQuery();
 
-            List<GridQueryFieldMetadata> meta = parseRes.meta;
+            List<GridQueryFieldMetadata> meta = parseRes.meta();
 
-            SqlFieldsQuery newQry = parseRes.newQry;
+            SqlFieldsQuery newQry = parseRes.newQuery();
 
-            remainingSql = parseRes.remainingSql;
+            remainingSql = parseRes.remainingSql();
 
             if (remainingSql != null && failOnMultipleStmts)
                 throw new IgniteSQLException("Multiple statements queries are not supported");
@@ -1522,8 +1522,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             res.add(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, cancel));
 
-            if (parseRes.twoStepQry != null && parseRes.twoStepQryKey != null && !parseRes.twoStepQry.explain())
-                twoStepCache.putIfAbsent(parseRes.twoStepQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
+            if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
+                    !parseRes.twoStepQuery().explain())
+                twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
         }
 
         return res;
@@ -1761,30 +1762,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheTwoStepQuery res = GridSqlQuerySplitter.split(connectionForThread(qry.getSchema()),prepared,
             qry.getArgs(), qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), this);
 
-        LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
+        List<Integer> cacheIds = collectCacheIds(null, res);
 
-        assert res != null;
-
-        int tblCnt = res.tablesCount();
-
-        if (tblCnt > 0) {
-            for (QueryTable tblKey : res.tables()) {
-                GridH2Table tbl = dataTable(tblKey);
-
-                int cacheId = CU.cacheId(tbl.cacheName());
-
-                caches0.add(cacheId);
-            }
-        }
-
-        if (caches0.isEmpty())
+        if (F.isEmpty(cacheIds))
             res.local(true);
         else {
-            //Prohibit usage indices with different numbers of segments in same query.
-            List<Integer> cacheIds = new ArrayList<>(caches0);
-
-            checkCacheIndexSegmentation(cacheIds);
-
             res.cacheIds(cacheIds);
             res.local(qry.isLocal());
         }
@@ -1897,7 +1879,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @throws IllegalStateException if segmented indices used with non-segmented indices.
      */
-    private void checkCacheIndexSegmentation(List<Integer> cacheIds) {
+    private void checkCacheIndexSegmentation(Collection<Integer> cacheIds) {
         if (cacheIds.isEmpty())
             return; // Nothing to check
 
@@ -2829,7 +2811,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param twoStepQry Two-step query.
      * @return Result.
      */
-    public List<Integer> collectCacheIds(@Nullable Integer mainCacheId, GridCacheTwoStepQuery twoStepQry) {
+    @Nullable public List<Integer> collectCacheIds(@Nullable Integer mainCacheId, GridCacheTwoStepQuery twoStepQry) {
         LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
 
         int tblCnt = twoStepQry.tablesCount();
@@ -2864,41 +2846,5 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
         // No-op.
-    }
-
-    /**
-     * Result of parsing and splitting SQL from {@link SqlFieldsQuery}.
-     */
-    private final static class ParsingResult {
-        /** H2 command. */
-        final Prepared prepared;
-
-        /** New fields query that may be executed right away. */
-        final SqlFieldsQuery newQry;
-
-        /** Remaining SQL statements. */
-        final String remainingSql;
-
-        /** Two-step query, or {@code} null if this result is for local query. */
-        final GridCacheTwoStepQuery twoStepQry;
-
-        /** Two-step query key to cache {@link #twoStepQry}, or {@code null} if there's no need to worry
-         * about two-step caching. */
-        final H2TwoStepCachedQueryKey twoStepQryKey;
-
-        /** Metadata for two-step query, or {@code} null if this result is for local query. */
-        final List<GridQueryFieldMetadata> meta;
-
-        /** Simple constructor. */
-        private ParsingResult(Prepared prepared, SqlFieldsQuery newQry, String remainingSql,
-            GridCacheTwoStepQuery twoStepQry, H2TwoStepCachedQueryKey twoStepQryKey,
-            List<GridQueryFieldMetadata> meta) {
-            this.prepared = prepared;
-            this.newQry = newQry;
-            this.remainingSql = remainingSql;
-            this.twoStepQry = twoStepQry;
-            this.twoStepQryKey = twoStepQryKey;
-            this.meta = meta;
-        }
     }
 }
