@@ -207,7 +207,11 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
         grid(0).cache(null).clear();
 
+        conn.close();
+
         assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
+
+        assertTrue(conn.isClosed());
     }
 
     /**
