@@ -21,7 +21,6 @@ import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.transactions.Transaction;
 import org.hibernate.cache.CacheException;
@@ -68,7 +67,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
      * @param cache Cache.
      * @param txCtx Thread local instance used to track updates done during one Hibernate transaction.
      */
-    protected HibernateReadWriteAccessStrategy(Ignite ignite, IgniteInternalCache<Object, Object> cache, ThreadLocal txCtx) {
+    protected HibernateReadWriteAccessStrategy(Ignite ignite, HibernateCacheProxy cache, ThreadLocal txCtx) {
         super(ignite, cache);
 
         this.txCtx = (ThreadLocal<TxContext>)txCtx;

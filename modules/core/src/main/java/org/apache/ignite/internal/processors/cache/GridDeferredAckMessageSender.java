@@ -173,7 +173,8 @@ public abstract class GridDeferredAckMessageSender {
          * @return {@code True} if request was handled, {@code false} if this buffer is filled and cannot be used.
          */
         public boolean add(GridCacheVersion ver) {
-            readLock().lock();
+            if(!readLock().tryLock())
+                return false; // Here, writeLock is help by another thread and guard is already true.
 
             boolean snd = false;
 

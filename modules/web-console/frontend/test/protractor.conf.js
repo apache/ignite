@@ -23,10 +23,10 @@
 // };
 
 exports.config = {
-  seleniumAddress: 'http://localhost:4444/wd/hub',
+    seleniumAddress: 'http://localhost:4444/wd/hub',
 
-  capabilities: {
-    'browserName': 'chrome'
+    capabilities: {
+        browserName: 'chrome'
     // 'browserName': 'phantomjs',
 
     // /*
@@ -40,11 +40,11 @@ exports.config = {
     //  * See https://github.com/detro/ghostdriver#faq
     //  */
     // 'phantomjs.ghostdriver.cli.args': ['--loglevel=DEBUG']
-  },
+    },
 
-  specs: ['test/e2e/*.js'],
+    specs: ['test/e2e/*.js'],
 
-  jasmineNodeOpts: {
-    showColors: true
-  }
+    jasmineNodeOpts: {
+        showColors: true
+    }
 };

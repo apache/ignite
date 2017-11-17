@@ -61,7 +61,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
  * DHT atomic cache near update future.
@@ -90,6 +92,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     private Map<UUID, GridNearAtomicFullUpdateRequest> mappings;
 
     /** Keys to remap. */
+    @GridToStringInclude
     private Collection<KeyCacheObject> remapKeys;
 
     /** Not null is operation is mapped to single node. */
@@ -456,14 +459,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
                     cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                         @Override public void run() {
-                            try {
-                                AffinityTopologyVersion topVer = fut.get();
-
-                                map(topVer, remapKeys);
-                            }
-                            catch (IgniteCheckedException e) {
-                                onDone(e);
-                            }
+                            mapOnTopology();
                         }
                     });
                 }
@@ -497,7 +493,9 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     @Override protected void mapOnTopology() {
         cache.topology().readLock();
 
-        AffinityTopologyVersion topVer = null;
+        AffinityTopologyVersion topVer;
+
+        GridCacheVersion futVer;
 
         try {
             if (cache.topology().stopping()) {
@@ -519,6 +517,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 }
 
                 topVer = fut.topologyVersion();
+
+                futVer = addAtomicFuture(topVer);
             }
             else {
                 if (waitTopFut) {
@@ -544,7 +544,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             cache.topology().readUnlock();
         }
 
-        map(topVer, null);
+        if (futVer != null)
+            map(topVer, futVer, remapKeys);
     }
 
     /**
@@ -589,10 +590,33 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (locUpdate != null) {
+            final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+            final long start = (statsEnabled)? System.nanoTime() : 0L;
+
             cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
                 new CI2<GridNearAtomicFullUpdateRequest, GridNearAtomicUpdateResponse>() {
                     @Override public void apply(GridNearAtomicFullUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res, false);
+
+                        if (statsEnabled && res.error() == null) {
+                            boolean retVal = req.returnValue();
+
+                            long duration = System.nanoTime() - start;
+
+                            if (req.operation() == UPDATE) {
+                                if (retVal)
+                                    cache.metrics0().addPutAndGetTimeNanos(duration);
+                                else
+                                    cache.metrics0().addPutTimeNanos(duration);
+                            }
+                            else if (req.operation() == DELETE) {
+                                if (retVal)
+                                    cache.metrics0().addRemoveAndGetTimeNanos(duration);
+                                else
+                                    cache.metrics0().addRemoveTimeNanos(duration);
+                            }
+                        }
                     }
                 });
         }
@@ -602,15 +626,18 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    protected void map(AffinityTopologyVersion topVer) {
-        map(topVer, null);
+    @Override protected void map(AffinityTopologyVersion topVer, GridCacheVersion futVer) {
+        map(topVer, futVer, null);
     }
 
     /**
      * @param topVer Topology version.
+     * @param futVer Future ID.
      * @param remapKeys Keys to remap.
      */
-    void map(AffinityTopologyVersion topVer, @Nullable Collection<KeyCacheObject> remapKeys) {
+    void map(AffinityTopologyVersion topVer,
+        GridCacheVersion futVer,
+        @Nullable Collection<KeyCacheObject> remapKeys) {
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
@@ -619,14 +646,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
             return;
         }
-
-        Exception err = null;
-        GridNearAtomicFullUpdateRequest singleReq0 = null;
-        Map<UUID, GridNearAtomicFullUpdateRequest> mappings0 = null;
-
-        int size = keys.size();
-
-        GridCacheVersion futVer = cctx.versions().next(topVer);
 
         GridCacheVersion updVer;
 
@@ -643,6 +662,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
         else
             updVer = null;
+
+        Exception err = null;
+        GridNearAtomicFullUpdateRequest singleReq0 = null;
+        Map<UUID, GridNearAtomicFullUpdateRequest> mappings0 = null;
+
+        int size = keys.size();
 
         try {
             if (size == 1 && !fastMap) {
@@ -676,12 +701,10 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             }
 
             synchronized (mux) {
-                assert this.futVer == null : this;
-                assert this.topVer == AffinityTopologyVersion.ZERO : this;
+                assert this.futVer == futVer || (this.isDone() && this.error() != null);
+                assert this.topVer == topVer;
 
-                this.topVer = topVer;
                 this.updVer = updVer;
-                this.futVer = futVer;
 
                 resCnt = 0;
 
@@ -701,14 +724,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             return;
         }
 
-        if (storeFuture()) {
-            if (!cctx.mvcc().addAtomicFuture(futVer, this)) {
-                assert isDone() : this;
-
-                return;
-            }
-        }
-
         // Optimize mapping for single key.
         if (singleReq0 != null)
             mapSingle(singleReq0.nodeId(), singleReq0);
@@ -725,7 +740,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     /**
      * @return Future version.
      */
-    GridCacheVersion onFutureDone() {
+    private GridCacheVersion onFutureDone() {
         GridCacheVersion ver0;
 
         GridFutureAdapter<Void> fut0;
@@ -947,7 +962,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         else
             val = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), (EntryProcessor)val);
 
-        ClusterNode primary = cctx.affinity().primary(cacheKey.partition(), topVer);
+        ClusterNode primary = cctx.affinity().primaryByPartition(cacheKey.partition(), topVer);
 
         if (primary == null)
             throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
@@ -998,7 +1013,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         // If we can send updates in parallel - do it.
         return fastMap ? cctx.topology().nodes(affMgr.partition(key), topVer) :
-            Collections.singletonList(affMgr.primary(key, topVer));
+            Collections.singletonList(affMgr.primaryByKey(key, topVer));
     }
 
     /** {@inheritDoc} */

@@ -48,6 +48,15 @@ public interface SecurityContext {
     public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm);
 
     /**
+     * Checks whether service operation is allowed.
+     *
+     * @param srvcName Service name.
+     * @param perm Permission to check.
+     * @return {@code True} if task operation is allowed.
+     */
+    public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm);
+
+    /**
      * Checks whether system-wide permission is allowed (excluding Visor task operations).
      *
      * @param perm Permission to check.
