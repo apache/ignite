@@ -37,6 +37,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -599,7 +600,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
-            sendComputeChangeGlobalState(activate, fut);
+            sendComputeChangeGlobalState(activate, blt, forceChangeBaselineTopology, fut);
 
             return fut;
         }
@@ -731,7 +732,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
      * @param activate New cluster state.
      * @param resFut State change future.
      */
-    private void sendComputeChangeGlobalState(boolean activate, final GridFutureAdapter<Void> resFut) {
+    private void sendComputeChangeGlobalState(boolean activate, BaselineTopology blt, boolean forceBlt, final GridFutureAdapter<Void> resFut) {
         AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
         if (log.isInfoEnabled()) {
@@ -743,7 +744,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
         IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
-        IgniteFuture<Void> fut = comp.runAsync(new ClientChangeGlobalStateComputeRequest(activate));
+        IgniteFuture<Void> fut = comp.runAsync(new ClientChangeGlobalStateComputeRequest(activate, blt, forceBlt));
 
         fut.listen(new CI1<IgniteFuture>() {
             @Override public void apply(IgniteFuture fut) {
@@ -1136,20 +1137,37 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         /** */
         private final boolean activate;
 
+        /** */
+        private final BaselineTopology baselineTopology;
+
+        /** */
+        private final boolean forceChangeBaselineTopology;
+
         /** Ignite. */
         @IgniteInstanceResource
-        private Ignite ig;
+        private IgniteEx ig;
 
         /**
          * @param activate New cluster state.
          */
-        private ClientChangeGlobalStateComputeRequest(boolean activate) {
+        private ClientChangeGlobalStateComputeRequest(boolean activate, BaselineTopology blt, boolean forceBlt) {
             this.activate = activate;
+            this.baselineTopology = blt;
+            this.forceChangeBaselineTopology = forceBlt;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            ig.active(activate);
+            try {
+                ig.context().state().changeGlobalState(
+                    activate,
+                    baselineTopology != null ? baselineTopology.currentBaseline() : null,
+                    forceChangeBaselineTopology
+                ).get();
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
+            }
         }
     }
 

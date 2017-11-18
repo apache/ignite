@@ -54,6 +54,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     private static boolean persistent = false;
 
     /** */
+    private boolean client = false;
+
+    /** */
     private static final int NODE_COUNT = 4;
 
     /** {@inheritDoc} */
@@ -74,6 +77,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
             persistent = false;
         }
+
+        client = false;
     }
 
     /** {@inheritDoc} */
@@ -83,7 +88,15 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         if (persistent)
             cfg.setDataStorageConfiguration(
                 new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setPersistenceEnabled(true)));
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(100 * 1024 * 1024)
+                        .setInitialSize(100 * 1024 * 1024)
+                )
+            );
+
+        if (client)
+            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -226,12 +239,40 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testBaselineTopologyChanges() throws Exception {
+    public void testBaselineTopologyChangesFromServer() throws Exception {
+        testBaselineTopologyChanges(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBaselineTopologyChangesFromClient() throws Exception {
+        testBaselineTopologyChanges(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testBaselineTopologyChanges(boolean fromClient) throws Exception {
+        persistent = true;
+
         startGrids(NODE_COUNT);
 
-        awaitPartitionMapExchange();
+        IgniteEx ignite;
 
-        IgniteEx ignite = grid(0);
+        if (fromClient) {
+            client = true;
+
+            ignite = startGrid(NODE_COUNT + 10);
+
+            client = false;
+        }
+        else
+            ignite = grid(0);
+
+        ignite.active(true);
+
+        awaitPartitionMapExchange();
 
         Map<ClusterNode, Ignite> nodes = new HashMap<>();
 
@@ -296,7 +337,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assert initialMapping2.size() == 2 : initialMapping2;
 
-        Ignite newIgnite = startGrid(4);
+        Ignite newIgnite = startGrid(NODE_COUNT);
 
         awaitPartitionMapExchange();
 
@@ -319,7 +360,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assert ignite.affinity(CACHE_NAME).primaryPartitions(newIgnite.cluster().localNode()).length > 0;
 
-        newIgnite = startGrid(5);
+        newIgnite = startGrid(NODE_COUNT + 1);
 
         awaitPartitionMapExchange();
 
