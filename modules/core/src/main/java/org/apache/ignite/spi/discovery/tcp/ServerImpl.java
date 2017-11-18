@@ -2937,6 +2937,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     notSentNodes.add(newNext);
 
+                    continue;
+                }
+
+                if (newNext == null) {
                     if (next != null) {
                         if (log.isDebugEnabled())
                             log.debug("Closing socket to next (send skipped): " + next);
@@ -2948,10 +2952,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         sock = null;
                     }
 
-                    continue;
-                }
-
-                if (newNext == null) {
                     if (log.isDebugEnabled())
                         log.debug("No next node in topology.");
 
@@ -3270,7 +3270,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been written to socket: " + msg.id());
 
-                                spi.writeToSocket(newNextNode ? newNext : next,
+                                spi.writeToSocket(next,
                                     sock,
                                     out,
                                     msg,
@@ -4676,6 +4676,17 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Node left message.
          */
         private void processNodeLeftMessage(TcpDiscoveryNodeLeftMessage msg) {
+            synchronized (nextMux) {
+                processNodeLeftMessage0(msg);
+            }
+        }
+
+        /**
+         * Processes node left message.
+         *
+         * @param msg Node left message.
+         */
+        private void processNodeLeftMessage0(TcpDiscoveryNodeLeftMessage msg) {
             assert msg != null;
 
             UUID locNodeId = getLocalNodeId();
