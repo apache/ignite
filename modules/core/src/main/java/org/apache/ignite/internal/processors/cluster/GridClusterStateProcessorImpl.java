@@ -380,6 +380,8 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
                 if (msg.forceChangeBaselineTopology())
                     globalState.setTransitionResult(msg.requestId(), true);
+                else if (msg.activate() == state.active())
+                    globalState.setTransitionResult(msg.requestId(), msg.activate());
 
                 AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
 
