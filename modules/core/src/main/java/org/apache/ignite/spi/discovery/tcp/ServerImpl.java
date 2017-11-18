@@ -4865,12 +4865,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 U.closeQuiet(sock);
             }
 
-            synchronized (mux) {
-                recentFailedNodeIds.add(leavingNodeId);
-
-                mux.notifyAll();
-            }
-
             checkPendingCustomMessages();
         }
 
@@ -5049,8 +5043,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             synchronized (mux) {
                 recentFailedNodeIds.add(failedNodeId);
-
-                mux.notifyAll();
             }
 
             checkPendingCustomMessages();
