@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
@@ -25,22 +42,36 @@ import static java.nio.file.StandardOpenOption.WRITE;
 /**
  *
  */
-public class RecoveryDebug {
+public class RecoveryDebug implements AutoCloseable {
+    /** */
+    private static final ThreadLocal<SimpleDateFormat> sdf = new ThreadLocal<SimpleDateFormat>() {
+        /** {@inheritDoc} */
+        @Override protected SimpleDateFormat initialValue() {
+            SimpleDateFormat f = new SimpleDateFormat("dd-MMM-yyyy-HH-mm-ss");
 
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy-HH-mm-ss");
+            f.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-    static {
-        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    }
+            return f;
+        }
+    };
 
+    /** */
     @Nullable private final IgniteLogger log;
 
+    /** */
     @Nullable private FileChannel fc;
 
+    /**
+     * @param constId Consistent ID.
+     */
     public RecoveryDebug(Object constId) {
         this(constId, null);
     }
 
+    /**
+     * @param constId Consistent ID.
+     * @param log Logger.
+     */
     public RecoveryDebug(Object constId, @Nullable IgniteLogger log) {
         this.log = log;
 
@@ -53,7 +84,8 @@ public class RecoveryDebug {
                 if (!tmpDir.mkdir())
                     return;
 
-            File f = new File(tmpDir, "recovery-" + constId + "-" + sdf.format(new Date(U.currentTimeMillis())) + ".log");
+            File f = new File(tmpDir, "recovery-" + constId + "-" +
+                sdf.get().format(new Date(U.currentTimeMillis())) + ".log");
 
             f.createNewFile();
 
@@ -66,14 +98,24 @@ public class RecoveryDebug {
         }
     }
 
+    /**
+     * @param rec TX record to append.
+     * @return {@code this} for convenience.
+     */
     public RecoveryDebug append(TxRecord rec) {
         GridCacheVersion txVer = rec.nearXidVersion();
+
         return fc == null ? this : appendFile(
             "Tx record " + rec.state() + " [ver=" + txVer.topologyVersion() + " order=" + txVer.order() + " nodeOrder=" +
                 txVer.nodeOrder() + "] timestamp " + rec.timestamp()
         );
     }
 
+    /**
+     * @param rec Data record to append.
+     * @param unwrapKeyValue unwrap key and value flag.
+     * @return {@code this} for convenience.
+     */
     public RecoveryDebug append(DataRecord rec, boolean unwrapKeyValue) {
         if (fc == null)
             return this;
@@ -88,10 +130,18 @@ public class RecoveryDebug {
         return this;
     }
 
+    /**
+     * @param st Statement to append.
+     * @return {@code this} for convenience.
+     */
     public RecoveryDebug append(Object st) {
         return fc == null ? this : appendFile(st);
     }
 
+    /**
+     * @param st Statement to append.
+     * @return {@code this} for convenience.
+     */
     private RecoveryDebug appendFile(Object st) {
         try {
             fc.write(ByteBuffer.wrap(st.toString().getBytes()));
@@ -103,8 +153,11 @@ public class RecoveryDebug {
         return this;
     }
 
-    public void close() {
-        if (fc != null)
+    /**
+     * Closes this debug insrance.
+     */
+    @Override public void close() {
+        if (fc != null) {
             try {
                 fc.force(true);
 
@@ -113,5 +166,6 @@ public class RecoveryDebug {
             catch (IOException e) {
                 U.error(null, "Fail close recovery dump file.", e);
             }
+        }
     }
 }
