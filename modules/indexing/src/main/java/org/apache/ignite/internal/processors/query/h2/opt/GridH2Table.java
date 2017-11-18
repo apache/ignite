@@ -457,7 +457,7 @@ public class GridH2Table extends TableBase {
                     replaced = prevRow0 != null;
                 }
 
-                assert (replaced && prevRow0 != null) || (!replaced && prevRow0 == null) : "Replaced: " + replaced;
+//TODO GG-13074                assert (replaced && prevRow0 != null) || (!replaced && prevRow0 == null) : "Replaced: " + replaced;
 
                 if (!replaced)
                     size.increment();
