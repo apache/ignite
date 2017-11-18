@@ -97,6 +97,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import sun.misc.GC;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -316,7 +317,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log work directory"
             );
 
-            log.warning("Work Files:" + Arrays.toString(walWorkDir.listFiles()));
+            final String workMsg = "Work Files:" + Arrays.toString(walWorkDir.listFiles());
+            log.warning(workMsg);
+            GridCacheDatabaseSharedManager.ASSERTION_LOG.append(workMsg);
 
             walArchiveDir = initDirectory(
                 dsCfg.getWalArchivePath(),
@@ -325,7 +328,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log archive directory"
             );
 
-            log.warning("Archive Files:" + Arrays.toString(walArchiveDir.listFiles()));
+            final String arxivMsg = "Archive Files:" + Arrays.toString(walArchiveDir.listFiles());
+            log.warning(arxivMsg);
+            GridCacheDatabaseSharedManager.ASSERTION_LOG.append(arxivMsg);
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVersion);
 

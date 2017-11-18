@@ -362,8 +362,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        ASSERTION_LOG.setLength(0);
-
         super.start0();
 
         threadBuf = new ThreadLocal<ByteBuffer>() {
@@ -1414,7 +1412,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (log.isInfoEnabled())
             log.info("Read checkpoint status [startMarker=" + startFile + ", endMarker=" + endFile + ']');
 
-        return new CheckpointStatus(lastStartTs, startId, startPtr, endId, endPtr);
+        final CheckpointStatus status = new CheckpointStatus(lastStartTs, startId, startPtr, endId, endPtr);
+
+        ASSERTION_LOG.append(" readCheckpointStatus [consistentId=")
+            .append(cctx.discovery().localNode().consistentId()).append(" status=").append(status).append("]\n");
+
+        return status;
     }
 
     /**
