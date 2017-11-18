@@ -518,6 +518,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
+        Thread.sleep(1000); //TODO !! for tests purpose only. not should get into release branch !!
+
         awaitPartitionMapExchange(false, false, null);
     }
 
