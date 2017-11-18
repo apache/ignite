@@ -154,6 +154,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
  */
 @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
 public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
+    public static final StringBuilder ASSERTION_LOG = new StringBuilder();
+
     /** */
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
@@ -360,6 +362,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        ASSERTION_LOG.setLength(0);
+
         super.start0();
 
         threadBuf = new ThreadLocal<ByteBuffer>() {
@@ -562,11 +566,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
+
             CheckpointStatus status = readCheckpointStatus();
 
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
             WALPointer restore = restoreMemory(status);
+
+            ASSERTION_LOG.append(" readCheckpointAndRestoreMemory [consistentId=")
+                .append(cctx.discovery().localNode().consistentId()).append(" status=").append(status)
+                .append(" restoredTo=").append(restore).append("]\n");
 
             cctx.wal().resumeLogging(restore);
 

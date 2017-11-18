@@ -757,6 +757,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Override public void allowCompressionUntil(WALPointer ptr) {
         if (compressor != null)
             compressor.allowCompressionUntil(((FileWALPointer)ptr).index());
+
+        GridCacheDatabaseSharedManager.ASSERTION_LOG.append("compression allowed until: " + ptr + "\n");
     }
 
     /** {@inheritDoc} */
@@ -1278,11 +1280,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     synchronized (this) {
                         if (lastAbsArchivedIdx > curAbsWalIdx) {
-                            String msg = "lastArchived=" + lastAbsArchivedIdx + ", current=" + curAbsWalIdx;
+                            String msg = "DUMP: lastArchived=" + lastAbsArchivedIdx + ", current=" + curAbsWalIdx;
                             msg += " archive: " + Arrays.toString(walArchiveDir.listFiles());
-                            msg += " work: " + Arrays.toString(walWorkDir.listFiles());
+                            msg += " work: " + Arrays.toString(walWorkDir.listFiles()) + "\n";
 
-                            assert lastAbsArchivedIdx <= curAbsWalIdx : msg;
+                            GridCacheDatabaseSharedManager.ASSERTION_LOG.append(msg);
+
+                            assert lastAbsArchivedIdx <= curAbsWalIdx : GridCacheDatabaseSharedManager.ASSERTION_LOG.toString();
                         }
 
                         while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped)
@@ -1573,6 +1577,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (!desc.file.delete())
                         U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                             desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
+                    else
+                        GridCacheDatabaseSharedManager.ASSERTION_LOG.append(" deleted raw file [consistendId=" +
+                            cctx.discovery().localNode().consistentId() + ", file=" + desc.file + "]\n");
                 }
             }
         }
@@ -1618,6 +1625,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Files.move(tmpZip.toPath(), zip.toPath());
 
                     lastCompressedIdx = nextSegment;
+
+                    GridCacheDatabaseSharedManager.ASSERTION_LOG.append(" compressed file [consistendId=" +
+                        cctx.discovery().localNode().consistentId() + ", file=" + zip + ", size=" + zip.length() +
+                        ", uncompressedSize=" +
+                        new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".wal").length() + "]\n");
                 }
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
@@ -2906,7 +2918,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         "[segmentIdx=" + desc.idx + "]");
                 }
 
+                assert false : "You shouldn't decompress files without delta rebalancng, sonovabitch!\n" +
+                    GridCacheDatabaseSharedManager.ASSERTION_LOG.toString();
+
                 decompressor.decompressFile(desc.idx).get();
+
+
             }
 
             return super.initReadHandle(desc, start);
