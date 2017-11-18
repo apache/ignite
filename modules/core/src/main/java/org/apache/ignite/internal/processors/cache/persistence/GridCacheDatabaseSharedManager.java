@@ -1359,6 +1359,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         File dir = cpDir;
 
+        File[] cps = cpDir.listFiles();
+
+        ASSERTION_LOG.append(" cpDir contents: " + (cps != null ? Arrays.asList(cps) : "null") + "\n");
+
         if (!dir.exists()) {
             // TODO: remove excessive logging after GG-12116 fix.
             File[] files = dir.listFiles();
