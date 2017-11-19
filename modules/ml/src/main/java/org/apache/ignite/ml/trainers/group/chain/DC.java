@@ -29,7 +29,7 @@ public class DC {
     public static
     <L extends HasTrainingUUID, K, V, G, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L>, O extends Serializable> DistributedTrainerWorkersChain<L, K, V, I, C, O> create(RemoteStep<L, K, V, G, I, O> step) {
         DistributedTrainerWorkersChain<L, K, V, I, C, I> chain = create();
-        return chain.thenDistributed(step);
+        return chain.thenDistributedForEntries(step);
     }
 
     public static

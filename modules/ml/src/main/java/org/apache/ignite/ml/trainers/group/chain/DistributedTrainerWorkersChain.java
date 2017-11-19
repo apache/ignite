@@ -18,12 +18,12 @@
 package org.apache.ignite.ml.trainers.group.chain;
 
 import java.io.Serializable;
+import java.security.Key;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -31,7 +31,8 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
-import org.apache.ignite.ml.trainers.group.GroupTrainerTask;
+import org.apache.ignite.ml.trainers.group.GroupTrainerEntriesProcessorTask;
+import org.apache.ignite.ml.trainers.group.GroupTrainerKeysProcessorTask;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
 
 public interface DistributedTrainerWorkersChain<L extends HasTrainingUUID, K, V, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L>, O> extends BaseWorkersChain<I, C, O> {
@@ -44,7 +45,7 @@ public interface DistributedTrainerWorkersChain<L extends HasTrainingUUID, K, V,
         return then(nextStep);
     }
 
-    default <O1 extends Serializable, G> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributed(
+    default <O1 extends Serializable, G> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributedForEntries(
         IgniteBiFunction<O, L, G> remoteCtxExtractor,
         IgniteTriFunction<O, L, EntryAndContext<K, V, G>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
@@ -63,30 +64,54 @@ public interface DistributedTrainerWorkersChain<L extends HasTrainingUUID, K, V,
             IgniteSupplier<G> extractor = Functions.outputSupplier(Functions.curry(remoteCtxExtractor).apply(input)).apply(locCtx);
             IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<O1>> dWorker = Functions.curry(distributedWorker).apply(input).apply(locCtx);
 
-            return ignite.compute(grp).execute(new GroupTrainerTask<>(trainingUUID, extractor, dWorker, keysSupplier, identity, reducer, cacheName, input, ignite), null);
+            return ignite.compute(grp).execute(new GroupTrainerEntriesProcessorTask<>(trainingUUID, extractor, dWorker, keysSupplier, identity, reducer, cacheName, input, ignite), null);
         };
         return then(nextStep);
     }
 
-    default <O1 extends Serializable, G> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributed(RemoteStep<L, K, V, G, O, O1> step) {
-        return thenDistributed(step::extractRemoteContext, step::distributedWorker, step::keysSupplier, step.identity(), step::reduce);
+    default <O1 extends Serializable, G> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributedForKeys(
+        IgniteBiFunction<O, L, G> remoteCtxExtractor,
+        IgniteTriFunction<O, L, KeyAndContext<K, G>, ResultAndUpdates<O1>> distributedWorker,
+        IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
+        O1 identity,
+        IgniteBinaryOperator<O1> reducer) {
+        DistributedTrainerWorkersChain<L, K, V, O, C, O1> nextStep = (input, context) -> {
+            L locCtx = context.localContext();
+            IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier = kf.apply(input, locCtx);
+
+            Ignite ignite = context.ignite();
+            UUID trainingUUID = context.localContext().trainingUUID();
+            String cacheName = context.cacheContext().cacheName();
+            ClusterGroup grp = ignite.cluster().forDataNodes(cacheName);
+
+            // Apply first argument locally because it is common for all nodes.
+            IgniteSupplier<G> extractor = Functions.outputSupplier(Functions.curry(remoteCtxExtractor).apply(input)).apply(locCtx);
+            IgniteFunction<KeyAndContext<K, G>, ResultAndUpdates<O1>> dWorker = Functions.curry(distributedWorker).apply(input).apply(locCtx);
+
+            return ignite.compute(grp).execute(new GroupTrainerKeysProcessorTask<>(trainingUUID, extractor, dWorker, keysSupplier, identity, reducer, cacheName, input, ignite), null);
+        };
+        return then(nextStep);
     }
 
-    default <O1 extends Serializable> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributed(
+    default <O1 extends Serializable, G> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributedForEntries(RemoteStep<L, K, V, G, O, O1> step) {
+        return thenDistributedForEntries(step::extractRemoteContext, step::distributedWorker, step::keysSupplier, step.identity(), step::reduce);
+    }
+
+    default <O1 extends Serializable> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributedForKeys(
         IgniteBiFunction<O, GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         O1 identity,
         IgniteBinaryOperator<O1> reducer) {
 
-        return thenDistributed((o, lc) -> null, (o, lc, context) -> distributedWorker.apply(o, context.entry().getKey()), kf, identity, reducer);
+        return thenDistributedForKeys((o, lc) -> null, (o, lc, context) -> distributedWorker.apply(o, context.key()), kf, identity, reducer);
     }
 
-    default <O1 extends Serializable> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributed(
+    default <O1 extends Serializable> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributedForKeys(
         IgniteBiFunction<O, GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         IgniteBinaryOperator<O1> reducer) {
 
-        return thenDistributed((o, lc) -> null, (o, lc, context) -> distributedWorker.apply(o, context.entry().getKey()), kf, null, reducer);
+        return thenDistributedForKeys((o, lc) -> null, (o, lc, context) -> distributedWorker.apply(o, context.key()), kf, null, reducer);
     }
 
     default DistributedTrainerWorkersChain<L, K, V, I, C, O> thenWhile(IgniteBiPredicate<O, L> cond, DistributedTrainerWorkersChain<L, K, V, O, C, O> chain) {

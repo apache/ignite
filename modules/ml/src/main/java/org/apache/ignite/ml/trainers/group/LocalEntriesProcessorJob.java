@@ -35,53 +35,25 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
-public class LocalProcessorJob<K, V, G, O extends Serializable> implements ComputeJob {
+public class LocalEntriesProcessorJob<K, V, G, O extends Serializable> extends BaseLocalProcessorJob<K, V, EntryAndContext<K, V, G>, O> {
     private final IgniteSupplier<G> contextExtractor;
-    private final O identity;
-    private IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<O>> worker;
-    private UUID trainingUUID;
-    private String cacheName;
-    private IgniteCache<GroupTrainerCacheKey<K>, V> cache;
-    private IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keySupplier;
-    private IgniteBinaryOperator<O> reducer;
 
-    public LocalProcessorJob(IgniteSupplier<G> contextExtractor,
+    public LocalEntriesProcessorJob(IgniteSupplier<G> contextExtractor,
         IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<O>> worker,
         IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keySupplier,
         O identity,
         IgniteBinaryOperator<O> reducer,
         UUID trainingUUID, String cacheName) {
+        super(worker, keySupplier, identity, reducer, trainingUUID, cacheName);
         this.contextExtractor = contextExtractor;
-        this.worker = worker;
-        this.keySupplier = keySupplier;
-        this.identity = identity;
-        this.reducer = reducer;
-        this.trainingUUID = trainingUUID;
-        this.cacheName = cacheName;
     }
 
-    @Override public void cancel() {
-
-    }
-
-    @Override public O execute() throws IgniteException {
-        cache = ignite().getOrCreateCache(cacheName);
+    @Override protected Stream<EntryAndContext<K, V, G>> toProcess() {
         G ctx = contextExtractor.get();
+        cache = ignite().getOrCreateCache(cacheName);
 
-        List<ResultAndUpdates<O>> resultsAndUpdates = selectLocalEntries().parallel().
-            map(e -> new EntryAndContext<>(e, ctx)).
-            map(e -> worker.apply(e)).
-            collect(Collectors.toList());
-
-        ResultAndUpdates<O> totalRes = ResultAndUpdates.sum(reducer, identity, resultsAndUpdates);
-
-        totalRes.processUpdates(ignite());
-
-        return totalRes.result();
-    }
-
-    private static Ignite ignite() {
-        return Ignition.localIgnite();
+        return selectLocalEntries().parallel().
+            map(e -> new EntryAndContext<>(e, ctx));
     }
 
     // TODO: do it more optimally.

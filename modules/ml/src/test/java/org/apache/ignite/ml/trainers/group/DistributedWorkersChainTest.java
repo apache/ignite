@@ -156,7 +156,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         IgniteBinaryOperator<Integer> max = Integer::max;
 
         Integer res = chain.
-            thenDistributed((integer, context) -> null, this::readAndIncrement, function, Integer.MIN_VALUE, max).
+            thenDistributedForEntries((integer, context) -> null, this::readAndIncrement, function, Integer.MIN_VALUE, max).
             process(init, new TestGroupTrainingContext<>(locCtx, trainingUUID, cacheCtx, ignite));
 
         int localMax = m.values().stream().max(Comparator.comparingInt(i -> i)).orElse(Integer.MIN_VALUE);

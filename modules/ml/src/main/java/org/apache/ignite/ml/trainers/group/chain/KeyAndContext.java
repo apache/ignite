@@ -15,15 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.functions;
+package org.apache.ignite.ml.trainers.group.chain;
 
-import java.io.Serializable;
-import java.util.Objects;
-import java.util.function.Function;
+import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
-/** Serializable TriFunction (A, B, C) -> R. */
-@FunctionalInterface
-public interface IgniteTriFunction<A,B,C,R> extends Serializable {
-    /** */
-    R apply(A a, B b, C c);
+public class KeyAndContext<K, C> {
+    private GroupTrainerCacheKey<K> key;
+    private C context;
+
+    public KeyAndContext(GroupTrainerCacheKey<K> key, C context) {
+        this.key = key;
+        this.context = context;
+    }
+
+    public GroupTrainerCacheKey<K> key() {
+        return key;
+    }
+
+    public C context() {
+        return context;
+    }
 }

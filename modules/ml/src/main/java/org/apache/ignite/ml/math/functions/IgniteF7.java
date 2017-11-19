@@ -18,12 +18,8 @@
 package org.apache.ignite.ml.math.functions;
 
 import java.io.Serializable;
-import java.util.Objects;
-import java.util.function.Function;
 
-/** Serializable TriFunction (A, B, C) -> R. */
 @FunctionalInterface
-public interface IgniteTriFunction<A,B,C,R> extends Serializable {
-    /** */
-    R apply(A a, B b, C c);
+public interface IgniteF7<A1, A2, A3, A4, A5, A6, A7, B> extends Serializable {
+    B apply(A1 arg1, A2 arg2, A3 arg3, A4 arg4, A5 arg5, A6 arg6, A7 arg7);
 }
