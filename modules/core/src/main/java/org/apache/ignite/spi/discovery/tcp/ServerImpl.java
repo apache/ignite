@@ -56,12 +56,15 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -247,8 +250,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Mutex. */
     private final Object mux = new Object();
 
-    /** Send to next mutex. */
-    private final Object nextMux = new Object();
+    /** Send to next lock. */
+    private final Lock nextMux = new ReentrantLock();
 
     /** Discovery state. */
     protected TcpDiscoverySpiState spiState = DISCONNECTED;
@@ -2885,8 +2888,17 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         @SuppressWarnings({"BreakStatementWithLabel", "LabeledStatement", "ContinueStatementWithLabel"})
         private void sendMessageAcrossRing(TcpDiscoveryAbstractMessage msg) {
-            synchronized (nextMux) {
+            try {
+                nextMux.lockInterruptibly();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+            try {
                 sendMessageAcrossRing0(msg);
+            }
+            finally {
+                nextMux.unlock();
             }
         }
 
@@ -4340,7 +4352,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 boolean topChanged;
 
-                synchronized (nextMux) {
+                try {
+                    nextMux.lockInterruptibly();
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteInterruptedException(e);
+                }
+                try {
                     topChanged = ring.add(node);
 
                     if (topChanged && !node.isClient()) {
@@ -4355,6 +4373,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else if (node.equals(ring.nextNode()))
                             lastNextNodeTime = 0;
                     }
+                }
+                finally {
+                    nextMux.unlock();
                 }
 
                 if (topChanged) {
@@ -4676,8 +4697,17 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Node left message.
          */
         private void processNodeLeftMessage(TcpDiscoveryNodeLeftMessage msg) {
-            synchronized (nextMux) {
+            try {
+                nextMux.lockInterruptibly();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+            try {
                 processNodeLeftMessage0(msg);
+            }
+            finally {
+                nextMux.unlock();
             }
         }
 
@@ -5779,7 +5809,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @return time when the next check should be performed
          */
-        protected abstract long checkConnection();
+        protected abstract long checkConnection() throws InterruptedException;
     }
 
     /** Continuously checks connection from a previous node */
@@ -5862,8 +5892,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @Override protected long checkConnection() {
-            synchronized (nextMux) {
+        @Override protected long checkConnection() throws InterruptedException {
+            nextMux.lockInterruptibly();
+            try {
                 long nextNodeTime = lastNextNodeTime;
 
                 if (nextNodeTime > 0) {
@@ -5901,6 +5932,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 return 0;
+            }
+            finally {
+                nextMux.unlock();
             }
         }
     }
