@@ -763,6 +763,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             compressor.allowCompressionUntil(((FileWALPointer)ptr).index());
 
         GridCacheDatabaseSharedManager.ASSERTION_LOG.append("compression allowed until: " + ptr + "\n");
+
+
+        U.warn(log, "Just allowed compression until idx: " + ((FileWALPointer)ptr).index());
     }
 
     /** {@inheritDoc} */
@@ -1583,9 +1586,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (!desc.file.delete())
                         U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                             desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
-                    else
+                    else {
                         GridCacheDatabaseSharedManager.ASSERTION_LOG.append(" deleted raw file [consistendId=" +
                             cctx.discovery().localNode().consistentId() + ", file=" + desc.file + "]\n");
+
+                        U.warn(log, "Just deleted obsolete raw WAL segment: " + desc.file);
+                    }
                 }
             }
         }
