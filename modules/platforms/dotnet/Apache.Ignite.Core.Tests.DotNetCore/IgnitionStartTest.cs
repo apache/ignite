@@ -61,8 +61,8 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
         [TestMethod]
         public void TestIgniteStartsFromAppConfig()
         {
-            //IgniteConfigurationSection section = ConfigurationManager.GetSection("dd") 
-            //    as IgniteConfigurationSection;
+            IgniteConfigurationSection section = ConfigurationManager.GetSection("dd")
+                as IgniteConfigurationSection;
 
             var ignite = Ignition.StartFromApplicationConfiguration();
             var cache = ignite.GetCache<int, int>(ignite.GetCacheNames().Single());

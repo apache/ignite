@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
         /// </summary>
         private static void Main(string[] args)
         {
-            new IgnitionStartTest().TestIgniteStartsWithDefaultConfig();
+            new IgnitionStartTest().TestIgniteStartsFromAppConfig();
         }
     }
 }
