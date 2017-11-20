@@ -433,6 +433,16 @@ namespace ignite
                 {
                     SQLUINTEGER uTimeout = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
 
+                    if (uTimeout != 0 && connected && socket.IsBlocking())
+                    {
+                        timeout = 0;
+
+                        AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, "Can not set timeout, because can not "
+                            "enable non-blocking mode on TCP connection. Setting to 0.");
+
+                        return SqlResult::AI_SUCCESS_WITH_INFO;
+                    }
+
                     if (uTimeout > INT32_MAX)
                     {
                         timeout = INT32_MAX;

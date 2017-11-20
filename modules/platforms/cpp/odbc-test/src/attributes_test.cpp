@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(StatementAttributeQueryTimeout)
     BOOST_REQUIRE_EQUAL(timeout, 7);
 }
 
-BOOST_AUTO_TEST_CASE(ConnetionAttributeConnectionTimeout)
+BOOST_AUTO_TEST_CASE(ConnectionAttributeConnectionTimeout)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 

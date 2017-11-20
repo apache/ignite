@@ -109,6 +109,15 @@ namespace ignite
                  */
                 int Receive(int8_t* buffer, size_t size, int32_t timeout);
 
+                /**
+                 * Check if the socket is blocking or not.
+                 * @return @c true if the socket is blocking and false otherwise.
+                 */
+                bool IsBlocking() const
+                {
+                    return blocking;
+                }
+
             private:
                 /**
                  * Tries set socket options.

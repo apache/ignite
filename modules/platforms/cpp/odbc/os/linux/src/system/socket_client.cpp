@@ -269,7 +269,7 @@ namespace ignite
                     LOG_MSG("Non-blocking mode setup failed: " << GetLastSocketErrorMessage());
 
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                        "Can not set up non-blocking mode");
+                        "Can not set up non-blocking mode. Timeouts are not available.");
                 }
 
                 res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE,
