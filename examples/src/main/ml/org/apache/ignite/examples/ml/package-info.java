@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for all tests located in org.apache.ignite.ml.regressions.* package.
+ * <!-- Package description. -->
+ * Machine learning examples.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    OLSMultipleLinearRegressionTest.class,
-    DistributedOLSMultipleLinearRegressionTest.class,
-    DistributedBlockOLSMultipleLinearRegressionTest.class,
-    AbstractMultipleLinearRegressionModelTest.class
-})
-public class RegressionsTestSuite {
-    // No-op.
-}
+package org.apache.ignite.examples.ml;

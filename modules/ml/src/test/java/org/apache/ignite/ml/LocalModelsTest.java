@@ -24,7 +24,13 @@ import java.nio.file.Paths;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
 import org.apache.ignite.ml.clustering.KMeansModel;
 import org.apache.ignite.ml.math.EuclideanDistance;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.regressions.AbstractMultipleLinearRegressionModel;
+import org.apache.ignite.ml.regressions.AbstractMultipleLinearRegressionModelFormat;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,17 +42,13 @@ public class LocalModelsTest {
     /** */
     private String mdlFilePath = "model.mlmod";
 
-    /**
-     *
-     */
+    /** */
     @After
     public void cleanUp() throws IOException {
         Files.deleteIfExists(Paths.get(mdlFilePath));
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void importExportKMeansModelTest(){
         Path mdlPath = Paths.get(mdlFilePath);
@@ -64,9 +66,26 @@ public class LocalModelsTest {
         Assert.assertTrue("", mdl.equals(importedMdl));
     }
 
-    /**
-     *
-     */
+    /** */
+    @Test
+    public void importExportAbstractMultipleLinearRegressionModelTest(){
+        Path mdlPath = Paths.get(mdlFilePath);
+
+        AbstractMultipleLinearRegressionModel mdl = getAbstractMultipleLinearRegressionModel();
+
+        Exporter<AbstractMultipleLinearRegressionModelFormat, String> exporter = new FileExporter<>();
+        mdl.saveModel(exporter, mdlFilePath);
+
+        Assert.assertTrue(String.format("File %s not found.", mdlPath.toString()), Files.exists(mdlPath));
+
+        AbstractMultipleLinearRegressionModelFormat load = exporter.load(mdlFilePath);
+
+        AbstractMultipleLinearRegressionModel importedMdl = load.getAbstractMultipleLinearRegressionModel();
+
+        Assert.assertTrue("", mdl.equals(importedMdl));
+    }
+
+    /** */
     private KMeansModel getClusterModel(){
         KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
 
@@ -76,5 +95,26 @@ public class LocalModelsTest {
         DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {v1, v2});
 
         return clusterer.cluster(points, 1);
+    }
+
+    /** */
+    private AbstractMultipleLinearRegressionModel getAbstractMultipleLinearRegressionModel(){
+        Matrix x = new DenseLocalOnHeapMatrix(new double[][] {
+            new double[] {0, 0, 0, 0, 0},
+            new double[] {2.0, 0, 0, 0, 0},
+            new double[] {0, 3.0, 0, 0, 0},
+            new double[] {0, 0, 4.0, 0, 0},
+            new double[] {0, 0, 0, 5.0, 0},
+            new double[] {0, 0, 0, 0, 6.0}});
+
+        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+        regression.newSampleData(getAMLRVector(), x);
+
+        return new AbstractMultipleLinearRegressionModel(regression);
+    }
+
+    /** */
+    private Vector getAMLRVector() {
+        return new DenseLocalOnHeapVector(new double[] {11.0, 12.0, 13.0, 14.0, 15.0, 16.0});
     }
 }
