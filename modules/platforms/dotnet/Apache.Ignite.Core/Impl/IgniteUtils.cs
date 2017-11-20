@@ -133,6 +133,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="log">Log.</param>
         public static void LoadDlls(string configJvmDllPath, ILogger log)
         {
+            Console.WriteLine("|| LoadDlls: " + _loaded);
+
             if (_loaded)
             {
                 log.Debug("JNI dll is already loaded.");
@@ -200,6 +202,8 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         private static void LoadJvmDll(string configJvmDllPath, ILogger log)
         {
+            Console.WriteLine("|| LoadJvmDll");  // TODO
+
             var messages = new List<string>();
             foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
             {
