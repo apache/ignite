@@ -15,41 +15,36 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore.Cache
+namespace Apache.Ignite.Core.Tests.DotNetCore.ThinClient
 {
-    using System.Threading.Tasks;
-    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// Cache tests.
+    /// Thin client connection test.
     /// </summary>
     [TestClass]
-    public class CacheTest : TestBase
+    public class ThinClientTest : TestBase
     {
         /// <summary>
-        /// Tests the put / get functionality.
+        /// Tests the thin client connection.
         /// </summary>
         [TestMethod]
-        public void TestPutGet()
+        public void TestThinClientConnection()
         {
-            async Task PutGetAsync(ICache<int, Person> cache)
+            var clientCfg = new IgniteClientConfiguration
             {
-                await cache.PutAsync(2, new Person("Bar", 2));
-                var res = await cache.GetAsync(2);
-                Assert.AreEqual(2, res.Id);
-            }
+                Host = "127.0.0.1"
+            };
 
             using (var ignite = Start())
+            using (var client = Ignition.StartClient(clientCfg))
             {
-                var cache = ignite.CreateCache<int, Person>("persons");
-
-                // Sync.
-                cache[1] = new Person("Foo", 1);
-                Assert.AreEqual("Foo", cache[1].Name);
-
-                // Async.
-                PutGetAsync(cache).Wait();
+                var clientCache = client.CreateCache<int, Person>("p");
+                clientCache[1] = new Person("Abc", 123);
+                
+                Assert.AreEqual(123, clientCache.Get(1).Id);
+                Assert.AreEqual("Abc", ignite.GetCache<int, Person>(clientCache.Name)[1].Name);
             }
         }
     }

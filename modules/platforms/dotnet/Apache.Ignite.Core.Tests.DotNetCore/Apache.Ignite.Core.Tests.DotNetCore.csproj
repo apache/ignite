@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <Folder Include="Compute\" />
-    <Folder Include="ThinClient\" />
   </ItemGroup>
 
   <ItemGroup>
