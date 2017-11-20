@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl
 {
-    using System;
     using System.Runtime.InteropServices;
 
     /// <summary>
@@ -25,18 +24,6 @@ namespace Apache.Ignite.Core.Impl
     /// </summary>
     internal static class NativeMethods
     {
-        /// <summary>
-        /// ERROR_BAD_EXE_FORMAT constant.
-        /// </summary>
-        // ReSharper disable once InconsistentNaming
-        public const int ERROR_BAD_EXE_FORMAT = 193;
-
-        /// <summary>
-        /// ERROR_MOD_NOT_FOUND constant.
-        /// </summary>
-        // ReSharper disable once InconsistentNaming
-        public const int ERROR_MOD_NOT_FOUND = 126;
-
         /// <summary>
         /// Gets the total physical memory.
         /// </summary>

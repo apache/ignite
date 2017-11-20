@@ -19,8 +19,6 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -207,15 +205,15 @@ namespace Apache.Ignite.Core.Impl
             {
                 log.Debug("Trying to load JVM dll from [option={0}, path={1}]...", dllPath.Key, dllPath.Value);
 
-                var errCode = LoadDll(dllPath.Value, FileJvmDll);
-                if (errCode == 0)
+                var errInfo = LoadDll(dllPath.Value, FileJvmDll);
+                if (errInfo == null)
                 {
                     log.Debug("jvm.dll successfully loaded from [option={0}, path={1}]", dllPath.Key, dllPath.Value);
                     return;
                 }
 
                 var message = string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]",
-                                                  dllPath.Key, dllPath.Value, FormatWin32Error(errCode));
+                                                  dllPath.Key, dllPath.Value, errInfo);
                 messages.Add(message);
 
                 log.Debug("Failed to load jvm.dll: " + message);
@@ -240,38 +238,16 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Formats the Win32 error.
-        /// </summary>
-        [ExcludeFromCodeCoverage]
-        private static string FormatWin32Error(int errorCode)
-        {
-            if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)
-            {
-                var mode = Environment.Is64BitProcess ? "x64" : "x86";
-
-                return string.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
-                                     "This is often caused by x64/x86 mismatch. " +
-                                     "Current process runs in {0} mode, and DLL is not {0}.", mode);
-            }
-
-            if (errorCode == NativeMethods.ERROR_MOD_NOT_FOUND)
-            {
-                return "DLL could not be loaded (126: ERROR_MOD_NOT_FOUND). " +
-                       "This can be caused by missing dependencies. ";
-            }
-
-            return string.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
-        }
-
-        /// <summary>
         /// Try loading DLLs first using file path, then using it's simple name.
         /// </summary>
         /// <param name="filePath"></param>
         /// <param name="simpleName"></param>
-        /// <returns>Zero in case of success, error code in case of failure.</returns>
-        private static int LoadDll(string filePath, string simpleName)
+        /// <returns>Null in case of success, error info in case of failure.</returns>
+        private static string LoadDll(string filePath, string simpleName)
         {
-            int res = 0;
+            Console.WriteLine("LoadDll: " + filePath);  // TODO
+
+            string res = null;
 
             IntPtr ptr;
 
@@ -280,24 +256,24 @@ namespace Apache.Ignite.Core.Impl
                 ptr = DllLoader.Load(filePath);
 
                 if (ptr == IntPtr.Zero)
-                    res = Marshal.GetLastWin32Error();  // TODO
+                {
+                    res = DllLoader.GetLastError();
+                }
                 else
-                    return res;
+                {
+                    return null;  // Success.
+                }
             }
 
             // Failed to load using file path, fallback to simple name.
             ptr = DllLoader.Load(simpleName);
 
-            if (ptr == IntPtr.Zero)
+            if (ptr != IntPtr.Zero)
             {
-                // Preserve the first error code, if any.
-                if (res == 0)
-                    res = Marshal.GetLastWin32Error();  // TODO
+                return null; // Success.
             }
-            else
-                res = 0;
 
-            return res;
+            return res ?? DllLoader.GetLastError();
         }
 
         /// <summary>

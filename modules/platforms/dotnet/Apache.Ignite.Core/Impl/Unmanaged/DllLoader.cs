@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
 
     /// <summary>
@@ -32,11 +34,22 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const int RtldGlobal = 8;
 
         /// <summary>
+        /// ERROR_BAD_EXE_FORMAT constant.
+        /// </summary>
+        // ReSharper disable once InconsistentNaming
+        private const int ERROR_BAD_EXE_FORMAT = 193;
+
+        /// <summary>
+        /// ERROR_MOD_NOT_FOUND constant.
+        /// </summary>
+        // ReSharper disable once InconsistentNaming
+        private const int ERROR_MOD_NOT_FOUND = 126;
+
+        /// <summary>
         /// Loads specified DLL.
         /// </summary>
         public static IntPtr Load(string dllPath)
         {
-            // TODO: Handle errors in a platform-specific way.
             if (Os.IsWindows)
             {
                 return Windows.LoadLibrary(dllPath);
@@ -61,6 +74,58 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         /// <summary>
+        /// Gets the last error.
+        /// </summary>
+        public static string GetLastError()
+        {
+            if (Os.IsWindows)
+            {
+                return FormatWin32Error(Marshal.GetLastWin32Error());
+            }
+
+            if (Os.IsLinux)
+            {
+                if (Os.IsMono)
+                {
+                    return Marshal.PtrToStringAnsi(Mono.dlerror());
+                }
+
+                if (Os.IsNetCore)
+                {
+                    return Marshal.PtrToStringAnsi(Core.dlerror());
+                }
+
+                return Marshal.PtrToStringAnsi(Linux.dlerror());
+            }
+
+            throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
+        }
+
+        /// <summary>
+        /// Formats the Win32 error.
+        /// </summary>
+        [ExcludeFromCodeCoverage]
+        private static string FormatWin32Error(int errorCode)
+        {
+            if (errorCode == ERROR_BAD_EXE_FORMAT)
+            {
+                var mode = Environment.Is64BitProcess ? "x64" : "x86";
+
+                return String.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
+                                     "This is often caused by x64/x86 mismatch. " +
+                                     "Current process runs in {0} mode, and DLL is not {0}.", mode);
+            }
+
+            if (errorCode == ERROR_MOD_NOT_FOUND)
+            {
+                return "DLL could not be loaded (126: ERROR_MOD_NOT_FOUND). " +
+                       "This can be caused by missing dependencies. ";
+            }
+
+            return String.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
+        }
+
+        /// <summary>
         /// Windows.
         /// </summary>
         private static class Windows
@@ -78,6 +143,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             [DllImport("libdl.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlopen(string filename, int flags);
+
+            [DllImport("libdl.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
+            internal static extern IntPtr dlerror();
         }
 
         /// <summary>
@@ -88,6 +157,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             [DllImport("__Internal", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlopen(string filename, int flags);
+
+            [DllImport("__Internal", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
+            internal static extern IntPtr dlerror();
         }
 
         /// <summary>
@@ -98,6 +171,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             [DllImport("libcoreclr.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlopen(string filename, int flags);
+
+            [DllImport("libcoreclr.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
+            internal static extern IntPtr dlerror();
         }
     }
 }
