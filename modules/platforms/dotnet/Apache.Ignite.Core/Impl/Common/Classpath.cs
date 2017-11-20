@@ -69,10 +69,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 log.Debug("Classpath resolved to: " + cpStr);
 
             var res = cpStr.ToString();
-
             res = res.StartsWith(ClasspathPrefix) ? res : ClasspathPrefix + res;
-
-            Console.WriteLine("|| CLASSPATH: " + res);  // TODO
 
             return res;
         }

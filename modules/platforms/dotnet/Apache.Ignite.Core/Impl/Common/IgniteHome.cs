@@ -59,8 +59,6 @@ namespace Apache.Ignite.Core.Impl.Common
             if (log != null)
                 log.Debug("IgniteHome resolved to '{0}'", home);
 
-            Console.WriteLine("|| IGNITE_HOME: " + home);  // TODO
-
             return home;
         }
 

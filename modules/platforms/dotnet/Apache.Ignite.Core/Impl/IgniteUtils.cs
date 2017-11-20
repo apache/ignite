@@ -202,8 +202,6 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         private static void LoadJvmDll(string configJvmDllPath, ILogger log)
         {
-            Console.WriteLine("|| LoadJvmDll");  // TODO
-
             var messages = new List<string>();
             foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
             {
@@ -249,8 +247,6 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Null in case of success, error info in case of failure.</returns>
         private static string LoadDll(string filePath, string simpleName)
         {
-            Console.WriteLine("LoadDll: " + filePath);  // TODO
-
             string res = null;
 
             if (filePath != null)
@@ -261,8 +257,6 @@ namespace Apache.Ignite.Core.Impl
                 {
                     return null;  // Success.
                 }
-
-                Console.WriteLine("LoadDll fail: " + res);  // TODO
             }
 
             // Failed to load using file path, fallback to simple name.
