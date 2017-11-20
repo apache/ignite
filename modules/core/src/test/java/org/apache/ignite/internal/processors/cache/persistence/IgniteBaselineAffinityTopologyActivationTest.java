@@ -123,6 +123,37 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     }
 
     /**
+     * IgniteCluster::setBaselineTopology(long topVer) should throw an exception
+     * when online node from current BaselineTopology is not presented in topology version.
+     */
+    public void testBltChangeTopVerRemoveOnlineNodeFails() throws Exception {
+        Ignite ignite = startGridWithConsistentId("A");
+
+        ignite.active(true);
+
+        long singleNodeTopVer = ignite.cluster().topologyVersion();
+
+        startGridWithConsistentId("OnlineConsID");
+
+        ignite.cluster().setBaselineTopology(baselineNodes(ignite.cluster().forServers().nodes()));
+
+        boolean expectedExceptionThrown = false;
+
+        try {
+            ignite.cluster().setBaselineTopology(singleNodeTopVer);
+        }
+        catch (IgniteException e) {
+            String errMsg = e.getMessage();
+            assertTrue(errMsg.startsWith("Removing online nodes"));
+            assertTrue(errMsg.contains("[OnlineConsID]"));
+
+            expectedExceptionThrown = true;
+        }
+
+        assertTrue(expectedExceptionThrown);
+    }
+
+    /**
      * Verifies that online nodes cannot be removed from BaselineTopology (this may change in future).
      */
     public void testOnlineNodesCannotBeRemovedFromBaselineTopology() throws Exception {

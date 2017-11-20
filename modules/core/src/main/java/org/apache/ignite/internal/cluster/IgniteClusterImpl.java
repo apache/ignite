@@ -344,23 +344,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            if (!ctx.state().clusterState().active())
-                throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
-
-            if (baselineTop != null) {
-                if (baselineTop.isEmpty())
-                    throw new IgniteException("BaselineTopology must contain at least one node.");
-
-                Collection<Object> onlineNodes = onlineBaselineNodesRequestedForRemoval(baselineTop);
-
-                if (onlineNodes != null) {
-                    if (!onlineNodes.isEmpty())
-                        throw new IgniteException("Removing online nodes from BaselineTopology is not supported: " + onlineNodes);
-                }
-                else
-                    //should never happen, actually: if cluster was activated, we expect it to have a BaselineTopology.
-                    throw new IgniteException("Previous BaselineTopology was not found.");
-            }
+            validateBeforeBaselineChange(baselineTop);
 
             ctx.state().changeGlobalState(true, baselineTop, true).get();
         }
@@ -369,6 +353,29 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         }
         finally {
             unguard();
+        }
+    }
+
+    /**
+     * Executes validation checks of cluster state and BaselineTopology before changing BaselineTopology to new one.
+     */
+    private void validateBeforeBaselineChange(Collection<BaselineNode> baselineTop) {
+        if (!ctx.state().clusterState().active())
+            throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
+
+        if (baselineTop != null) {
+            if (baselineTop.isEmpty())
+                throw new IgniteException("BaselineTopology must contain at least one node.");
+
+            Collection<Object> onlineNodes = onlineBaselineNodesRequestedForRemoval(baselineTop);
+
+            if (onlineNodes != null) {
+                if (!onlineNodes.isEmpty())
+                    throw new IgniteException("Removing online nodes from BaselineTopology is not supported: " + onlineNodes);
+            }
+            else
+                //should never happen, actually: if cluster was activated, we expect it to have a BaselineTopology.
+                throw new IgniteException("Previous BaselineTopology was not found.");
         }
     }
 
@@ -413,9 +420,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            if (!ctx.state().clusterState().active())
-                throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
-
             Collection<ClusterNode> top = topology(topVer);
 
             if (top == null)
@@ -427,6 +431,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                 if (!node.isClient())
                     target.add(node);
             }
+
+            validateBeforeBaselineChange(target);
 
             ctx.state().changeGlobalState(true, target, true).get();
         }
