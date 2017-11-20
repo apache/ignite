@@ -1530,14 +1530,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private synchronized long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException {
+        private long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException {
             long segmentToCompress = lastCompressedIdx + 1;
 
-            while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archiver.lastArchivedAbsoluteIndex())) {
-                wait();
+            synchronized (this) {
+                while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archiver.lastArchivedAbsoluteIndex())) {
+                    wait();
 
-                if (stopped)
-                    return -1;
+                    if (stopped)
+                        return -1;
+                }
             }
 
             segmentToCompress = Math.max(segmentToCompress, lastTruncatedArchiveIdx + 1);
