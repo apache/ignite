@@ -90,6 +90,10 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
         parseValidate("schema", "CREATE INDEX idx ON tbl(a)", "schema", "TBL", "IDX", "A", false);
         parseValidate("sChema", "CREATE INDEX idx ON tbl(a)", "sChema", "TBL", "IDX", "A", false);
 
+        // No index name.
+        parseValidate(null, "CREATE INDEX ON tbl(a)", null, "TBL", null, "A", false);
+        parseValidate(null, "CREATE INDEX ON schema.tbl(a)", "SCHEMA", "TBL", null, "A", false);
+
         // NOT EXISTS
         SqlCreateIndexCommand cmd;
 
@@ -119,6 +123,29 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
 
         // PRIMARY KEY
         assertParseError(null, "CREATE PRIMARY KEY INDEX idx ON tbl(a)", "Unsupported keyword: \"PRIMARY\"");
+
+        // INLINE_SIZE option
+        assertParseError(null, "CREATE INDEX ON tbl(a) INLINE_SIZE",
+            "Unexpected end of command (expected: \"[integer]\")");
+
+        assertParseError(null, "CREATE INDEX ON tbl(a) INLINE_SIZE HASH",
+            "Unexpected token: \"HASH\" (expected: \"[integer]\")");
+
+        assertParseError(null, "CREATE INDEX ON tbl(a) INLINE_SIZE elegua",
+            "Unexpected token: \"ELEGUA\" (expected: \"[integer]\")");
+
+        assertParseError(null, "CREATE INDEX ON tbl(a) INLINE_SIZE -9223372036854775808",
+            "Unexpected token: \"9223372036854775808\" (expected: \"[integer]\")");
+
+        assertParseError(null, "CREATE INDEX ON tbl(a) INLINE_SIZE " + Integer.MIN_VALUE,
+            "Inline size should be positive: " + Integer.MIN_VALUE);
+
+        assertParseError(null, "CREATE INDEX ON tbl(a) INLINE_SIZE -1", "Inline size should be positive: -1");
+
+        parseValidate(null, "CREATE INDEX idx ON schema.tbl(a) INLINE_SIZE 0", "SCHEMA", "TBL", "IDX", "A", false);
+        parseValidate(null, "CREATE INDEX idx ON schema.tbl(a) INLINE_SIZE 1", "SCHEMA", "TBL", "IDX", "A", false);
+        parseValidate(null, "CREATE INDEX idx ON schema.tbl(a) INLINE_SIZE " + Integer.MAX_VALUE,
+            "SCHEMA", "TBL", "IDX", "A", false);
     }
 
     /**

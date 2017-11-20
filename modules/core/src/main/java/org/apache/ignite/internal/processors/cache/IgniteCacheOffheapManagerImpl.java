@@ -1340,7 +1340,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
             if (qryMgr.enabled())
-                qryMgr.store(newRow, oldRow);
+                qryMgr.store(newRow, oldRow, true);
 
             if (oldRow != null) {
                 assert oldRow.link() != 0 : oldRow;
@@ -1372,7 +1372,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
-                qryMgr.store(row, null);
+                qryMgr.store(row, null, false);
             }
         }
 
