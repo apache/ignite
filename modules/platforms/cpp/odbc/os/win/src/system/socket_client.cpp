@@ -35,6 +35,7 @@ namespace
 {
     /**
      * Get socket error message for the error code.
+     * @param error Error code.
      * @return Socket error message string.
      */
     std::string GetSocketErrorMessage(HRESULT error)
