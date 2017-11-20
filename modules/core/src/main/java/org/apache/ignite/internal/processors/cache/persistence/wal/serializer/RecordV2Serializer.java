@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
 import java.io.DataInput;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -32,10 +33,11 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.*;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 
@@ -69,6 +71,17 @@ public class RecordV2Serializer implements RecordSerializer {
     /** Skip position check flag. Should be set for reading compacted wal file with skipped physical records. */
     private final boolean skipPositionCheck;
 
+    /** Thread-local heap byte buffer. */
+    private final ThreadLocal<ByteBuffer> heapTlb = new ThreadLocal<ByteBuffer>() {
+        @Override protected ByteBuffer initialValue() {
+            ByteBuffer buf = ByteBuffer.allocateDirect(4096);
+
+            buf.order(GridUnsafe.NATIVE_BYTE_ORDER);
+
+            return buf;
+        }
+    };
+
     /**
      * Record type filter.
      * {@link FilteredRecord} is deserialized instead of original record if type doesn't match filter.
@@ -100,12 +113,18 @@ public class RecordV2Serializer implements RecordSerializer {
 
                 assert toSkip >= 0 : "Too small saved record length: " + ptr;
 
-                in.readFully(new byte[toSkip]);
+                if (in.skipBytes(toSkip) < toSkip)
+                    throw new EOFException("Reached end of file while reading record: " + ptr);
 
                 return new FilteredRecord();
             }
             else if (marshalledMode) {
-                ByteBuffer buf = ByteBuffer.allocate(ptr.length()).order(ByteOrder.nativeOrder());
+                ByteBuffer buf = heapTlb.get();
+
+                if (buf.capacity() < ptr.length())
+                    heapTlb.set(ByteBuffer.allocate(ptr.length() * 3 / 2).order(ByteOrder.nativeOrder()));
+                else
+                    buf.clear();
 
                 buf.put((byte)(recType.ordinal() + 1));
 
@@ -118,7 +137,9 @@ public class RecordV2Serializer implements RecordSerializer {
                 // Unwind reading CRC.
                 in.buffer().position(in.buffer().position() - CRC_SIZE);
 
-                return new MarshalledRecord(recType, ptr, buf.array());
+                buf.flip();
+
+                return new MarshalledRecord(recType, ptr, buf);
             }
             else
                 return dataSerializer.readRecord(recType, in);

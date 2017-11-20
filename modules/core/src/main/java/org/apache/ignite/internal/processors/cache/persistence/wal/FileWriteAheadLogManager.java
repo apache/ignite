@@ -716,12 +716,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         // File pointer bound: older entries will be deleted from archive
         FileWALPointer fPtr = (FileWALPointer)ptr;
 
-        FileDescriptor[] descs;
-
-        if (compressor == null) // If compression is enabled, FileCompressor is responsible for deleting raw segments.
-            descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_FILTER));
-        else
-            descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER));
+        FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
 
         int deleted = 0;
 
@@ -809,6 +804,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         long minIdx = Integer.MAX_VALUE;
         long maxIdx = -1;
 
+        // TODO ignite-5938 In case of holes, consider segment after last "hole" as minimum
+        // TODO ignite-5938 Example: minimum(0, 1, 10, 11, 20, 21, 22) should be 20
         for (File file : walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
             try {
                 long idx = Long.parseLong(file.getName().substring(0, 16));
@@ -1575,9 +1572,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             init();
 
             while (!Thread.currentThread().isInterrupted() && !stopped) {
-                File tmpZip = null;
-                File zip = null;
-
                 try {
                     deleteObsoleteRawSegments();
 
@@ -1585,13 +1579,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (nextSegment == -1)
                         continue;
 
-                    tmpZip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip" + ".tmp");
-                    assert !tmpZip.exists();
+                    File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip" + ".tmp");
 
-                    zip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip");
-                    assert !zip.exists();
+                    File zip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip");
 
-                    assert new File(walArchiveDir, FileDescriptor.fileName(nextSegment)).exists();
+                    File raw = new File(walArchiveDir, FileDescriptor.fileName(nextSegment));
+                    if (!Files.exists(raw.toPath()))
+                        throw new IgniteCheckedException("WAL archive segment is missing: " + raw);
 
                     try (SingleSegmentLogicalRecordsIterator iter = new SingleSegmentLogicalRecordsIterator(
                         log, cctx, ioFactory, tlbSize, nextSegment, walArchiveDir);
@@ -1603,7 +1597,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         for (IgniteBiTuple<WALPointer, WALRecord> tuple : iter) {
                             WALRecord rec = tuple.get2();
 
-                            zos.write(((MarshalledRecord)rec).data());
+                            final MarshalledRecord marshRec = (MarshalledRecord)rec;
+
+                            zos.write(marshRec.buffer().array(), 0, marshRec.buffer().remaining());
                         }
                     }
                     finally {
@@ -1617,11 +1613,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
 
-                    if (tmpZip != null)
-                        tmpZip.delete();
+                    FileWriteHandle handle = currentHandle();
 
-                    if (zip != null)
-                        zip.delete();
+                    if (handle != null)
+                        handle.invalidateEnvironment(e);
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -1662,25 +1657,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** {@inheritDoc} */
         @Override public void run() {
             while (!Thread.currentThread().isInterrupted() && !stopped) {
-                File unzipTmp = null;
-                File unzip = null;
-
-                long segmentToDecompress = -1L;
-
                 try {
-                    segmentToDecompress = segmentsQueue.take();
+                    long segmentToDecompress = segmentsQueue.take();
 
                     if (stopped)
                         break;
 
                     File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
-                    assert zip.exists();
-
-                    unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
-                    assert !unzipTmp.exists();
-
-                    unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
-                    assert !unzip.exists();
+                    File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
+                    File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
 
                     try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
                         FileIO io = ioFactory.create(unzipTmp)) {
@@ -1703,15 +1688,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 catch (IOException e) {
                     U.error(log, "Unexpected error during WAL decompression", e);
 
-                    unzipTmp.delete();
-                    unzip.delete();
+                    FileWriteHandle handle = currentHandle();
 
-                    synchronized (this) {
-                        GridFutureAdapter<Void> failFut = decompressionFutures.remove(segmentToDecompress);
-
-                        if (failFut != null)
-                            failFut.onDone(e);
-                    }
+                    if (handle != null)
+                        handle.invalidateEnvironment(e);
                 }
             }
         }

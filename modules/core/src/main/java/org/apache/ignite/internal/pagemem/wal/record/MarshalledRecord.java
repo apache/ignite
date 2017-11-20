@@ -16,28 +16,34 @@
 */
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 
 /**
  * Special type of WAL record. Shouldn't be stored in file.
- * Contains complete binary representation of record in {@link #data} and record position in {@link #pos}.
+ * Contains complete binary representation of record in {@link #buf} and record position in {@link #pos}.
  */
 public class MarshalledRecord extends WALRecord {
     /** Type of marshalled record. */
     private WALRecord.RecordType type;
 
-    /** Marshalled record bytes. */
-    private byte[] data;
+    /**
+     * Heap buffer with marshalled record bytes.
+     * Due to performance reasons accessible only by thread that performs WAL iteration and until next record is read.
+     */
+    private ByteBuffer buf;
 
     /**
      * @param type Type of marshalled record.
+     * @param pos WAL pointer to record.
+     * @param buf Reusable buffer with record data.
      */
-    public MarshalledRecord(WALRecord.RecordType type, WALPointer pos, byte[] data) {
+    public MarshalledRecord(RecordType type, WALPointer pos, ByteBuffer buf) {
         this.type = type;
-        this.data = data;
+        this.buf = buf;
 
-        assert data.length == ((FileWALPointer)pos).length();
+        assert buf.remaining() == ((FileWALPointer)pos).length();
 
         position(pos);
     }
@@ -48,16 +54,10 @@ public class MarshalledRecord extends WALRecord {
     }
 
     /**
-     * @return Marshalled record bytes.
+     * @return Buffer with marshalled record bytes.  Due to performance reasons accessible only by thread that performs
+     * WAL iteration and until next record is read.
      */
-    public byte[] data() {
-        return data;
-    }
-
-    /**
-     * @param data New marshalled record bytes.
-     */
-    public void data(byte[] data) {
-        this.data = data;
+    public ByteBuffer buffer() {
+        return buf;
     }
 }
