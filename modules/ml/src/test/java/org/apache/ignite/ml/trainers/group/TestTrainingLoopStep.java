@@ -31,7 +31,8 @@ public class TestTrainingLoopStep implements RemoteStep<TestGroupTrainerLocalCon
 
     @Override public ResultAndUpdates<Double> distributedWorker(Double input, TestGroupTrainerLocalContext locCtx,
         EntryAndContext<Double, Integer, Void> entryAndContext) {
-        double v = input * input;
+        Integer oldVal = entryAndContext.entry().getValue();
+        double v = oldVal * oldVal;
         ResultAndUpdates<Double> res = ResultAndUpdates.of(v);
         res.update(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), entryAndContext.entry().getKey(), (int)v);
         return res;

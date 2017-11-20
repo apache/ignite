@@ -52,7 +52,8 @@ public class LocalEntriesProcessorJob<K, V, G, O extends Serializable> extends B
         G ctx = contextExtractor.get();
         cache = ignite().getOrCreateCache(cacheName);
 
-        return selectLocalEntries().parallel().
+        return selectLocalEntries().
+            //parallel().
             map(e -> new EntryAndContext<>(e, ctx));
     }
 
