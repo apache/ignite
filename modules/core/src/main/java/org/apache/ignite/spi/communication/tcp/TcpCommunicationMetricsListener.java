@@ -17,23 +17,23 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jsr166.LongAdder8;
 
 /**
  * Statistics for {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}.
  */
-public class TcpCommunicationStatistics implements GridNioMetricsListener{
+public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     /** Received messages count. */
     private final LongAdder8 rcvdMsgsCnt = new LongAdder8();
 
@@ -53,24 +53,17 @@ public class TcpCommunicationStatistics implements GridNioMetricsListener{
         }
     };
 
-    /** Transformer from LongAdder8 to Long */
-    private static final IgniteClosure<LongAdder8, Long> ADDER2LONG = new IgniteClosure<LongAdder8, Long>() {
-        @Override public Long apply(LongAdder8 adder) {
-            return adder.longValue();
-        }
-    };
-
     /** Received messages count grouped by message type. */
-    private final ConcurrentMap<String, LongAdder8> rcvdMsgsCntByType = GridConcurrentFactory.newMap();
+    private final ConcurrentMap<String, LongAdder8> rcvdMsgsCntByType = new ConcurrentHashMap<>();
 
     /** Received messages count grouped by sender. */
-    private final ConcurrentMap<String, LongAdder8> rcvdMsgsCntByNode = GridConcurrentFactory.newMap();
+    private final ConcurrentMap<String, LongAdder8> rcvdMsgsCntByNode = new ConcurrentHashMap<>();
 
     /** Sent messages count grouped by message type. */
-    private final ConcurrentMap<String, LongAdder8> sentMsgsCntByType = GridConcurrentFactory.newMap();
+    private final ConcurrentMap<String, LongAdder8> sentMsgsCntByType = new ConcurrentHashMap<>();
 
     /** Sent messages count grouped by receiver. */
-    private final ConcurrentMap<String, LongAdder8> sentMsgsCntByNode = GridConcurrentFactory.newMap();
+    private final ConcurrentMap<String, LongAdder8> sentMsgsCntByNode = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void onBytesSent(int bytesCnt) {
@@ -163,12 +156,28 @@ public class TcpCommunicationStatistics implements GridNioMetricsListener{
     }
 
     /**
+     * Converts statistics from internal representation to JMX-readable format.
+     *
+     * @param srcStat Internal statistics representation.
+     * @return Result map.
+     */
+    private Map<String, Long> convertStatistics(Map<String, LongAdder8> srcStat) {
+        Map<String, Long> destStat = U.newHashMap(srcStat.size());
+
+        for (Map.Entry<String, LongAdder8> entry : srcStat.entrySet()) {
+            destStat.put(entry.getKey(), entry.getValue().longValue());
+        }
+
+        return destStat;
+    }
+
+    /**
      * Gets received messages counts (grouped by type).
      *
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> receivedMessagesByType() {
-        return new HashMap<>(F.viewReadOnly(rcvdMsgsCntByType, ADDER2LONG));
+        return convertStatistics(rcvdMsgsCntByType);
     }
 
     /**
@@ -177,7 +186,7 @@ public class TcpCommunicationStatistics implements GridNioMetricsListener{
      * @return Map containing sender nodes and respective counts.
      */
     public Map<String, Long> receivedMessagesByNode() {
-        return new HashMap<>(F.viewReadOnly(rcvdMsgsCntByNode, ADDER2LONG));
+        return convertStatistics(rcvdMsgsCntByNode);
     }
 
     /**
@@ -186,7 +195,7 @@ public class TcpCommunicationStatistics implements GridNioMetricsListener{
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> sentMessagesByType() {
-        return new HashMap<>(F.viewReadOnly(sentMsgsCntByType, ADDER2LONG));
+        return convertStatistics(sentMsgsCntByType);
     }
 
     /**
@@ -195,7 +204,7 @@ public class TcpCommunicationStatistics implements GridNioMetricsListener{
      * @return Map containing receiver nodes and respective counts.
      */
     public Map<String, Long> sentMessagesByNode() {
-        return new HashMap<>(F.viewReadOnly(sentMsgsCntByNode, ADDER2LONG));
+        return convertStatistics(sentMsgsCntByNode);
     }
 
     /**
@@ -214,5 +223,4 @@ public class TcpCommunicationStatistics implements GridNioMetricsListener{
         sentMsgsCntByNode.clear();
         rcvdMsgsCntByNode.clear();
     }
-
 }

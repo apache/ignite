@@ -77,25 +77,9 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
 
         TcpCommunicationSpi spi = new SynchronizedCommunicationSpi();
 
-        spi.setSharedMemoryPort(-1);
-
         cfg.setCommunicationSpi(spi);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrids(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /**
@@ -104,7 +88,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
      * @param nodeIdx Node index.
      * @return MBean instance.
      */
-     private TcpCommunicationSpiMBean mbean(int nodeIdx) throws MalformedObjectNameException {
+    private TcpCommunicationSpiMBean mbean(int nodeIdx) throws MalformedObjectNameException {
         ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "SPIs",
             SynchronizedCommunicationSpi.class.getSimpleName());
 
@@ -122,44 +106,52 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStatistics() throws Exception {
-        ClusterGroup clusterGroupNode1 = grid(0).cluster().forNodeId(grid(1).localNode().id());
+        startGrids(2);
 
-        grid(0).compute(clusterGroupNode1).call(new IgniteCallable<Boolean>() {
-            @Override public Boolean call() throws Exception {
-                return Boolean.TRUE;
+        try {
+            ClusterGroup clusterGroupNode1 = grid(0).cluster().forNodeId(grid(1).localNode().id());
+
+            grid(0).compute(clusterGroupNode1).call(new IgniteCallable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    return Boolean.TRUE;
+                }
+            });
+
+            synchronized (mux) {
+                TcpCommunicationSpiMBean mbean0 = mbean(0);
+                TcpCommunicationSpiMBean mbean1 = mbean(1);
+
+                Map<String, Long> msgsSentByNode0 = mbean0.getSentMessagesByNode();
+                Map<String, Long> msgsSentByNode1 = mbean1.getSentMessagesByNode();
+                Map<String, Long> msgsReceivedByNode0 = mbean0.getReceivedMessagesByNode();
+                Map<String, Long> msgsReceivedByNode1 = mbean1.getReceivedMessagesByNode();
+
+                String nodeId0 = grid(0).localNode().id().toString();
+                String nodeId1 = grid(1).localNode().id().toString();
+
+                assertEquals(msgsReceivedByNode0.get(nodeId1).longValue(), mbean0.getReceivedMessagesCount());
+                assertEquals(msgsReceivedByNode1.get(nodeId0).longValue(), mbean1.getReceivedMessagesCount());
+                assertEquals(msgsSentByNode0.get(nodeId1).longValue(), mbean0.getSentMessagesCount());
+                assertEquals(msgsSentByNode1.get(nodeId0).longValue(), mbean1.getSentMessagesCount());
+
+                assertEquals(mbean0.getSentMessagesCount(), mbean1.getReceivedMessagesCount());
+                assertEquals(mbean1.getSentMessagesCount(), mbean0.getReceivedMessagesCount());
+
+                Map<String, Long> msgsSentByType0 = mbean0.getSentMessagesByType();
+                Map<String, Long> msgsSentByType1 = mbean1.getSentMessagesByType();
+                Map<String, Long> msgsReceivedByType0 = mbean0.getReceivedMessagesByType();
+                Map<String, Long> msgsReceivedByType1 = mbean1.getReceivedMessagesByType();
+
+                assertEquals(1, msgsSentByType0.get(GridJobExecuteRequest.class.getSimpleName()).longValue());
+                assertEquals(1, msgsSentByType1.get(GridJobExecuteResponse.class.getSimpleName()).longValue());
+                assertEquals(1, msgsReceivedByType0.get(GridJobExecuteResponse.class.getSimpleName()).longValue());
+                assertEquals(1, msgsReceivedByType1.get(GridJobExecuteRequest.class.getSimpleName()).longValue());
             }
-        });
-
-        synchronized (mux) {
-            TcpCommunicationSpiMBean mbean0 = mbean(0);
-            TcpCommunicationSpiMBean mbean1 = mbean(1);
-
-            Map<String, Long> msgsSentByNode0 = mbean0.getSentMessagesByNode();
-            Map<String, Long> msgsSentByNode1 = mbean1.getSentMessagesByNode();
-            Map<String, Long> msgsReceivedByNode0 = mbean0.getReceivedMessagesByNode();
-            Map<String, Long> msgsReceivedByNode1 = mbean1.getReceivedMessagesByNode();
-
-            String nodeId0 = grid(0).localNode().id().toString();
-            String nodeId1 = grid(1).localNode().id().toString();
-
-            assertEquals(msgsReceivedByNode0.get(nodeId1).longValue(), mbean0.getReceivedMessagesCount());
-            assertEquals(msgsReceivedByNode1.get(nodeId0).longValue(), mbean1.getReceivedMessagesCount());
-            assertEquals(msgsSentByNode0.get(nodeId1).longValue(), mbean0.getSentMessagesCount());
-            assertEquals(msgsSentByNode1.get(nodeId0).longValue(), mbean1.getSentMessagesCount());
-
-            assertEquals(mbean0.getSentMessagesCount(), mbean1.getReceivedMessagesCount());
-            assertEquals(mbean1.getSentMessagesCount(), mbean0.getReceivedMessagesCount());
-
-            Map<String, Long> msgsSentByType0 = mbean0.getSentMessagesByType();
-            Map<String, Long> msgsSentByType1 = mbean1.getSentMessagesByType();
-            Map<String, Long> msgsReceivedByType0 = mbean0.getReceivedMessagesByType();
-            Map<String, Long> msgsReceivedByType1 = mbean1.getReceivedMessagesByType();
-
-            assertEquals(1, msgsSentByType0.get(GridJobExecuteRequest.class.getSimpleName()).longValue());
-            assertEquals(1, msgsSentByType1.get(GridJobExecuteResponse.class.getSimpleName()).longValue());
-            assertEquals(1, msgsReceivedByType0.get(GridJobExecuteResponse.class.getSimpleName()).longValue());
-            assertEquals(1, msgsReceivedByType1.get(GridJobExecuteRequest.class.getSimpleName()).longValue());
         }
+        finally {
+            stopAllGrids();
+        }
+
     }
 
 }

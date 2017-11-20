@@ -694,7 +694,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 else {
-                    stats.onMessageReceived(msg, connKey.nodeId());
+                    metricsLsnr.onMessageReceived(msg, connKey.nodeId());
 
                     if (msg instanceof RecoveryLastReceivedMessage) {
                         GridNioRecoveryDescriptor recovery = ses.outRecoveryDescriptor();
@@ -1116,7 +1116,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private volatile boolean stopping;
 
     /** Statistics. */
-    private final TcpCommunicationStatistics stats = new TcpCommunicationStatistics();
+    private final TcpCommunicationMetricsListener metricsLsnr = new TcpCommunicationMetricsListener();
 
     /** Client connect futures. */
     private final ConcurrentMap<ConnectionKey, GridFutureAdapter<GridCommunicationClient>> clientFuts =
@@ -1799,22 +1799,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
-        return stats.sentMessagesCount();
+        return metricsLsnr.sentMessagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getSentBytesCount() {
-        return stats.sentBytesCount();
+        return metricsLsnr.sentBytesCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getReceivedMessagesCount() {
-        return stats.receivedMessagesCount();
+        return metricsLsnr.receivedMessagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getReceivedBytesCount() {
-        return stats.receivedBytesCount();
+        return metricsLsnr.receivedBytesCount();
     }
 
     /**
@@ -1823,7 +1823,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> getReceivedMessagesByType() {
-        return stats.receivedMessagesByType();
+        return metricsLsnr.receivedMessagesByType();
     }
 
     /**
@@ -1832,7 +1832,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return Map containing sender nodes and respective counts.
      */
     public Map<String, Long> getReceivedMessagesByNode() {
-        return stats.receivedMessagesByNode();
+        return metricsLsnr.receivedMessagesByNode();
     }
 
     /**
@@ -1841,7 +1841,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> getSentMessagesByType() {
-        return stats.sentMessagesByType();
+        return metricsLsnr.sentMessagesByType();
     }
 
     /**
@@ -1850,7 +1850,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return Map containing receiver nodes and respective counts.
      */
     public Map<String, Long> getSentMessagesByNode() {
-        return stats.receivedMessagesByNode();
+        return metricsLsnr.receivedMessagesByNode();
     }
 
     /** {@inheritDoc} */
@@ -1862,7 +1862,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        stats.resetMetrics();
+        metricsLsnr.resetMetrics();
     }
 
     /**
@@ -2324,7 +2324,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         .socketReceiveBufferSize(sockRcvBuf)
                         .sendQueueLimit(msgQueueLimit)
                         .directMode(true)
-                        .metricsListener(stats)
+                        .metricsListener(metricsLsnr)
                         .writeTimeout(sockWriteTimeout)
                         .selectorSpins(selectorSpins)
                         .filters(filters)
@@ -2616,7 +2616,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     client.release();
 
                     if (!retry)
-                        stats.onMessageSent(msg, node.id());
+                        metricsLsnr.onMessageSent(msg, node.id());
                     else {
                         removeNodeClient(node.id(), client);
 
@@ -2893,7 +2893,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             try {
                 client = new GridShmemCommunicationClient(
                     connIdx,
-                    stats,
+                    metricsLsnr,
                     port,
                     timeoutHelper.nextTimeoutChunk(connTimeout),
                     log,
@@ -4010,7 +4010,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 };
 
                 IpcToNioAdapter<Message> adapter = new IpcToNioAdapter<>(
-                    stats,
+                    metricsLsnr,
                     log,
                     endpoint,
                     srvLsnr,
@@ -5156,22 +5156,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /** {@inheritDoc} */
         @Override public Map<String, Long> getReceivedMessagesByType() {
-            return TcpCommunicationSpi.this.stats.receivedMessagesByType();
+            return TcpCommunicationSpi.this.metricsLsnr.receivedMessagesByType();
         }
 
         /** {@inheritDoc} */
         @Override public Map<String, Long> getReceivedMessagesByNode() {
-            return TcpCommunicationSpi.this.stats.receivedMessagesByNode();
+            return TcpCommunicationSpi.this.metricsLsnr.receivedMessagesByNode();
         }
 
         /** {@inheritDoc} */
         @Override public Map<String, Long> getSentMessagesByType() {
-            return TcpCommunicationSpi.this.stats.sentMessagesByType();
+            return TcpCommunicationSpi.this.metricsLsnr.sentMessagesByType();
         }
 
         /** {@inheritDoc} */
         @Override public Map<String, Long> getSentMessagesByNode() {
-            return TcpCommunicationSpi.this.stats.sentMessagesByNode();
+            return TcpCommunicationSpi.this.metricsLsnr.sentMessagesByNode();
         }
 
         /** {@inheritDoc} */
