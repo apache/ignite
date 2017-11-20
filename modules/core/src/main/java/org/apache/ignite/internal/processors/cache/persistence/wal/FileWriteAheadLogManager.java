@@ -97,7 +97,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.GC;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -2922,9 +2921,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     throw new FileNotFoundException("Both compressed and raw segment files are missing in archive " +
                         "[segmentIdx=" + desc.idx + "]");
                 }
-
-                assert false : "You shouldn't decompress files without delta rebalancng, sonovabitch!\n" +
-                    GridCacheDatabaseSharedManager.ASSERTION_LOG.toString();
 
                 decompressor.decompressFile(desc.idx).get();
 
