@@ -24,25 +24,29 @@
  */
 module.exports = {
     implements: 'nconf',
-    inject: ['require(nconf)', 'require(fs)']
-};
+    inject: ['require(nconf)', 'require(fs)'],
+    factory(nconf, fs) {
+        nconf.env({separator: '_'}).argv();
 
-module.exports.factory = function(nconf, fs) {
-    const default_config = './config/settings.json';
-    const file = process.env.SETTINGS || default_config;
+        const dfltFile = 'config/settings.json';
+        const customFile = nconf.get('settings') || dfltFile;
 
-    nconf.env({separator: '_'});
+        try {
+            fs.accessSync(customFile, fs.F_OK);
 
-    try {
-        fs.accessSync(file, fs.F_OK);
+            nconf.file({file: customFile});
+        }
+        catch (ignored) {
+            try {
+                fs.accessSync(dfltFile, fs.F_OK);
 
-        nconf.file({file});
-    } catch (ignore) {
-        nconf.file({file: default_config});
+                nconf.file({file: dfltFile});
+            }
+            catch (ignored2) {
+                // No-op.
+            }
+        }
+
+        return nconf;
     }
-
-    if (process.env.CONFIG_PATH && fs.existsSync(process.env.CONFIG_PATH))
-        nconf.file({file: process.env.CONFIG_PATH});
-
-    return nconf;
 };

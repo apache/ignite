@@ -457,10 +457,16 @@ public class GridSqlQueryParser {
     private static final String PARAM_ATOMICITY = "ATOMICITY";
 
     /** */
-    private static final String PARAM_CACHE_GROUP = "CACHEGROUP";
+    private static final String PARAM_CACHE_GROUP_OLD = "CACHEGROUP";
 
     /** */
-    private static final String PARAM_AFFINITY_KEY = "AFFINITYKEY";
+    private static final String PARAM_AFFINITY_KEY_OLD = "AFFINITYKEY";
+
+    /** */
+    private static final String PARAM_CACHE_GROUP = "CACHE_GROUP";
+
+    /** */
+    private static final String PARAM_AFFINITY_KEY = "AFFINITY_KEY";
 
     /** */
     private static final String PARAM_WRITE_SYNC = "WRITE_SYNCHRONIZATION_MODE";
@@ -1317,6 +1323,7 @@ public class GridSqlQueryParser {
 
                 break;
 
+            case PARAM_CACHE_GROUP_OLD:
             case PARAM_CACHE_GROUP:
                 ensureNotEmpty(name, val);
 
@@ -1324,6 +1331,7 @@ public class GridSqlQueryParser {
 
                 break;
 
+            case PARAM_AFFINITY_KEY_OLD:
             case PARAM_AFFINITY_KEY:
                 ensureNotEmpty(name, val);
 

@@ -365,18 +365,18 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap);
 
-        if (mapping.primary().isLocal()) {
-            if (write.context().isNear())
-                tx.nearLocallyMapped(true);
-            else if (write.context().isColocated())
-                tx.colocatedLocallyMapped(true);
-        }
-
         if (isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Abandoning (re)map because future is done: " + this);
 
             return;
+        }
+
+        if (mapping.primary().isLocal()) {
+            if (write.context().isNear())
+                tx.nearLocallyMapped(true);
+            else if (write.context().isColocated())
+                tx.colocatedLocallyMapped(true);
         }
 
         if (write.context().mvccEnabled()) {

@@ -152,11 +152,12 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @param tblName Table name.
      * @param idxName Index name.
+     * @param inlineSize Inline size.
      * @param fields Fields.
      */
     protected static void assertIndex(String cacheName, String tblName, String idxName,
-        IgniteBiTuple<String, Boolean>... fields) {
-        assertIndex(cacheName, false, tblName, idxName, fields);
+        int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
+        assertIndex(cacheName, false, tblName, idxName, inlineSize, fields);
     }
 
     /**
@@ -167,12 +168,13 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      *     affinity nodes as well.
      * @param tblName Table name.
      * @param idxName Index name.
+     * @param inlineSize Inline size.
      * @param fields Fields.
      */
     protected static void assertIndex(String cacheName, boolean checkNonAffinityNodes, String tblName, String idxName,
-        IgniteBiTuple<String, Boolean>... fields) {
+        int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         for (Ignite node : Ignition.allGrids())
-            assertIndex(node, checkNonAffinityNodes, cacheName, tblName, idxName, fields);
+            assertIndex(node, checkNonAffinityNodes, cacheName, tblName, idxName, inlineSize, fields);
     }
 
     /**
@@ -184,10 +186,11 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @param tblName Table name.
      * @param idxName Index name.
+     * @param inlineSize Inline size.
      * @param fields Fields.
      */
     protected static void assertIndex(Ignite node, boolean checkNonAffinityNode, String cacheName, String tblName,
-        String idxName, IgniteBiTuple<String, Boolean>... fields) {
+        String idxName, int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         IgniteEx node0 = (IgniteEx)node;
 
         assertIndexDescriptor(node0, cacheName, tblName, idxName, fields);
@@ -195,7 +198,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         if (checkNonAffinityNode || affinityNode(node0, cacheName)) {
             QueryTypeDescriptorImpl typeDesc = typeExisting(node0, cacheName, tblName);
 
-            assertIndex(typeDesc, idxName, fields);
+            assertIndex(typeDesc, idxName, inlineSize, fields);
         }
     }
 
@@ -248,10 +251,11 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @param typeDesc Type descriptor.
      * @param idxName Index name.
+     * @param inlineSize Inline size.
      * @param fields Fields (order is important).
      */
     protected static void assertIndex(QueryTypeDescriptorImpl typeDesc, String idxName,
-        IgniteBiTuple<String, Boolean>... fields) {
+        int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         QueryIndexDescriptorImpl idxDesc = typeDesc.index(idxName);
 
         assertNotNull(idxDesc);
@@ -259,6 +263,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         assertEquals(idxName, idxDesc.name());
         assertEquals(typeDesc, idxDesc.typeDescriptor());
         assertEquals(QueryIndexType.SORTED, idxDesc.type());
+        assertEquals(inlineSize, idxDesc.inlineSize());
 
         List<String> fieldNames = new ArrayList<>(idxDesc.fields());
 
@@ -488,6 +493,9 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         }
 
         sql.a(')');
+
+        if (idx.getInlineSize() != QueryIndex.DFLT_INLINE_SIZE)
+            sql.a(" INLINE_SIZE ").a(idx.getInlineSize());
 
         executeSql(node, cacheName, sql.toString());
     }
