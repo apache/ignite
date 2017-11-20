@@ -1899,9 +1899,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 "join the cluster. To activate the cluster call Ignite.active(true).");
         }
 
-        if (qry.getSchema() == null)
-            qry.setSchema(QueryUtils.DFLT_SCHEMA);
-
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
