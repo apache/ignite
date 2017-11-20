@@ -94,7 +94,6 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
@@ -200,10 +199,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Checkpoint file name pattern. */
     private static final Pattern CP_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-(.*)-(START|END)\\.bin");
 
+    /** Node started file patter. */
+    private static final Pattern NODE_STARTED_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-node-started\\.bin");
+
+    /** Node started file suffix. */
+    private static final String NODE_STARTED_FILE_NAME_SUFFIX = "-node-started.bin";
+
     /** */
     private static final FileFilter CP_FILE_FILTER = new FileFilter() {
         @Override public boolean accept(File f) {
             return CP_FILE_NAME_PATTERN.matcher(f.getName()).matches();
+        }
+    };
+
+    /** */
+    private static final FileFilter NODE_STARTED_FILE_FILTER = new FileFilter() {
+        @Override public boolean accept(File f) {
+            return f.getName().endsWith(NODE_STARTED_FILE_NAME_SUFFIX);
         }
     };
 
@@ -683,7 +695,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.wal().resumeLogging(restore);
 
-            cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+            WALPointer ptr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+
+            cctx.wal().fsync(ptr);
+
+            nodeStart(ptr);
 
             metaStorage.init(this);
 
@@ -698,10 +714,96 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @param ptr Memory recovery wal pointer.
+     */
+    private void nodeStart(WALPointer ptr) throws IgniteCheckedException {
+        FileWALPointer p = (FileWALPointer)ptr;
+
+        String fileName = U.currentTimeMillis() + "-node-started.bin";
+
+        ByteBuffer buf = ByteBuffer.allocate(20);
+        buf.order(ByteOrder.nativeOrder());
+
+        try (FileChannel ch = FileChannel.open(
+            Paths.get(cpDir.getAbsolutePath(), fileName),
+            StandardOpenOption.CREATE_NEW, StandardOpenOption.APPEND)
+        ) {
+            buf.putLong(p.index());
+
+            buf.putInt(p.fileOffset());
+
+            buf.putInt(p.length());
+
+            buf.flip();
+
+            ch.write(buf);
+
+            buf.clear();
+
+            ch.force(true);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     *
+     */
+    public List<T2<Long, WALPointer>> nodeStartedPointers() throws IgniteCheckedException {
+        List<T2<Long, WALPointer>> res = new ArrayList<>();
+
+        File[] files = cpDir.listFiles(NODE_STARTED_FILE_FILTER);
+
+        Arrays.sort(files, new Comparator<File>() {
+            @Override public int compare(File o1, File o2) {
+                String n1 = o1.getName();
+                String n2 = o2.getName();
+
+                Long ts1 = Long.valueOf(n1.substring(0, n1.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
+                Long ts2 = Long.valueOf(n2.substring(0, n2.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
+
+                if (ts1 == ts2)
+                    return 0;
+                else if (ts1 < ts2)
+                    return -1;
+                else
+                    return 1;
+            }
+        });
+
+        ByteBuffer buf = ByteBuffer.allocate(20);
+        buf.order(ByteOrder.nativeOrder());
+
+        for (File f : files){
+            String name = f.getName();
+
+            Long ts = Long.valueOf(name.substring(0, name.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
+
+            try (FileChannel ch = FileChannel.open(f.toPath(), READ)) {
+                ch.read(buf);
+
+                buf.flip();
+
+                FileWALPointer ptr = new FileWALPointer(
+                    buf.getLong(), buf.getInt(), buf.getInt());
+
+                res.add(new T2<Long, WALPointer>(ts, ptr));
+
+                buf.clear();
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to read node started marker file: " + f.getAbsolutePath(), e);
+            }
+        }
+
+        return res;
+    }
+
+    /**
      * @throws IgniteCheckedException
      */
     private void getMetastoreData() throws IgniteCheckedException {
-
         try {
             DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
@@ -1248,6 +1350,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
 
             new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer).start();
+
+            CheckpointProgressSnapshot chp = checkpointer.wakeupForCheckpoint(0, "node started");
+
+            if (chp != null)
+                chp.cpBeginFut.get();
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
@@ -1803,13 +1910,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         WALPointer pnt,
         IgnitePredicate<IgniteBiTuple<WALPointer, WALRecord>> recPredicate,
         IgnitePredicate<DataEntry> entryPredicate,
-        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates,
-        RecoveryDebug rd
+        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
         cctx.kernalContext().query().skipFieldLookup(true);
-
-        if (rd != null)
-            rd.append("-------Apply updates------\n");
 
         try (WALIterator it = cctx.wal().replay(pnt)) {
             while (it.hasNextX()) {
@@ -1835,15 +1938,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 assert cacheCtx != null;
 
                                 applyUpdate(cacheCtx, dataEntry);
-
-                                if (rd != null)
-                                    rd.append(dataRec, true);
                             }
                         }
-
-                        break;
-                    case TX_RECORD:
-                        TxRecord txRec = (TxRecord)rec;
 
                         break;
 
@@ -2613,8 +2709,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     CacheState state = new CacheState(locParts.size());
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
-                        state.addPartitionState(part.id(), part.dataStore().fullSize(), part.updateCounter());
+                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                        state.addPartitionState(
+                            part.id(),
+                            part.dataStore().fullSize(),
+                            part.updateCounter(),
+                            (byte)part.state().ordinal()
+                        );
+                    }
 
                     cpRec.addCacheGroupState(grp.groupId(), state);
                 }

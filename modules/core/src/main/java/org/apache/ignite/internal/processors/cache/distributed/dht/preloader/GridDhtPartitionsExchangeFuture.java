@@ -1516,8 +1516,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        logExchange();
-
         cctx.database().releaseHistoryForExchange();
 
         if (err == null) {
@@ -1552,6 +1550,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (err == null)
                 cctx.exchange().lastFinishedFuture(this);
+
+            logExchange();
 
             return true;
         }
