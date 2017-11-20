@@ -47,7 +47,7 @@ public class RecoveryDebug implements AutoCloseable {
     private static final ThreadLocal<SimpleDateFormat> sdf = new ThreadLocal<SimpleDateFormat>() {
         /** {@inheritDoc} */
         @Override protected SimpleDateFormat initialValue() {
-            SimpleDateFormat f = new SimpleDateFormat("dd-MMM-yyyy-HH-mm-ss");
+            SimpleDateFormat f = new SimpleDateFormat("dd-MM-yyyy-HH-mm-ss-SSS");
 
             f.setTimeZone(TimeZone.getTimeZone("UTC"));
 
@@ -64,15 +64,15 @@ public class RecoveryDebug implements AutoCloseable {
     /**
      * @param constId Consistent ID.
      */
-    public RecoveryDebug(Object constId) {
-        this(constId, null);
+    public RecoveryDebug(Object constId, long time) {
+        this(constId, time, null);
     }
 
     /**
      * @param constId Consistent ID.
      * @param log Logger.
      */
-    public RecoveryDebug(Object constId, @Nullable IgniteLogger log) {
+    public RecoveryDebug(Object constId,long time, @Nullable IgniteLogger log) {
         this.log = log;
 
         try {
@@ -85,7 +85,7 @@ public class RecoveryDebug implements AutoCloseable {
                     return;
 
             File f = new File(tmpDir, "recovery-" + constId + "-" +
-                sdf.get().format(new Date(U.currentTimeMillis())) + ".log");
+                sdf.get().format(new Date(time)) + ".log");
 
             f.createNewFile();
 
@@ -106,8 +106,7 @@ public class RecoveryDebug implements AutoCloseable {
         GridCacheVersion txVer = rec.nearXidVersion();
 
         return fc == null ? this : appendFile(
-            "Tx record " + rec.state() + " [ver=" + txVer.topologyVersion() + " order=" + txVer.order() + " nodeOrder=" +
-                txVer.nodeOrder() + "] timestamp " + rec.timestamp()
+            "Tx record " + rec.state() + " " + rec.nearXidVersion() + " timestamp " + rec.timestamp()
         );
     }
 
