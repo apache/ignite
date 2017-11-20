@@ -249,31 +249,25 @@ namespace Apache.Ignite.Core.Impl
 
             string res = null;
 
-            IntPtr ptr;
-
             if (filePath != null)
             {
-                ptr = DllLoader.Load(filePath);
+                res = DllLoader.Load(filePath);
 
-                if (ptr == IntPtr.Zero)
-                {
-                    res = DllLoader.GetLastError();
-                }
-                else
+                if (res == null)
                 {
                     return null;  // Success.
                 }
             }
 
             // Failed to load using file path, fallback to simple name.
-            ptr = DllLoader.Load(simpleName);
+            var res2 = DllLoader.Load(simpleName);
 
-            if (ptr != IntPtr.Zero)
+            if (res2 == null)
             {
-                return null; // Success.
+                return null;  // Success.
             }
 
-            return res ?? DllLoader.GetLastError();
+            return res;
         }
 
         /// <summary>

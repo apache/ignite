@@ -48,57 +48,46 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Loads specified DLL.
         /// </summary>
-        public static IntPtr Load(string dllPath)
+        /// <returns>Null when successful; error message otherwise.</returns>
+        public static string Load(string dllPath)
         {
             if (Os.IsWindows)
             {
-                return Windows.LoadLibrary(dllPath);
+                return Windows.LoadLibrary(dllPath) == IntPtr.Zero 
+                    ? FormatWin32Error(Marshal.GetLastWin32Error()) ?? "Unknown error"
+                    : null;
             }
 
             if (Os.IsLinux)
             {
                 if (Os.IsMono)
                 {
-                    return Mono.dlopen(dllPath, RtldGlobal | RtldLazy);
+                    return Mono.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
+                        ? GetErrorText(Mono.dlerror())
+                        : null;
                 }
 
                 if (Os.IsNetCore)
                 {
-                    return Core.dlopen(dllPath, RtldGlobal | RtldLazy);
+                    return Core.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
+                        ? GetErrorText(Core.dlerror())
+                        : null;
                 }
 
-                return Linux.dlopen(dllPath, RtldGlobal | RtldLazy);
+                return Linux.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
+                    ? GetErrorText(Linux.dlerror())
+                    : null;
             }
 
             throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
         }
 
         /// <summary>
-        /// Gets the last error.
+        /// Gets the error text.
         /// </summary>
-        public static string GetLastError()
+        private static string GetErrorText(IntPtr charPtr)
         {
-            if (Os.IsWindows)
-            {
-                return FormatWin32Error(Marshal.GetLastWin32Error());
-            }
-
-            if (Os.IsLinux)
-            {
-                if (Os.IsMono)
-                {
-                    return Marshal.PtrToStringAnsi(Mono.dlerror());
-                }
-
-                if (Os.IsNetCore)
-                {
-                    return Marshal.PtrToStringAnsi(Core.dlerror());
-                }
-
-                return Marshal.PtrToStringAnsi(Linux.dlerror());
-            }
-
-            throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
+            return Marshal.PtrToStringAnsi(charPtr) ?? "Unknown error";
         }
 
         /// <summary>
@@ -111,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var mode = Environment.Is64BitProcess ? "x64" : "x86";
 
-                return String.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
+                return string.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
                                      "This is often caused by x64/x86 mismatch. " +
                                      "Current process runs in {0} mode, and DLL is not {0}.", mode);
             }
@@ -122,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                        "This can be caused by missing dependencies. ";
             }
 
-            return String.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
+            return string.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
         }
 
         /// <summary>
