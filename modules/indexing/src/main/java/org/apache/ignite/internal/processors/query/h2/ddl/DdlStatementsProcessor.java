@@ -135,6 +135,7 @@ public class DdlStatementsProcessor {
                 }
 
                 newIdx.setFields(flds);
+                newIdx.setInlineSize(cmd0.inlineSize());
 
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd0.schemaName(), typeDesc.tableName(),
                     newIdx, cmd0.ifNotExists());

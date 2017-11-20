@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Net;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -81,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Sets up the test.
         /// </summary>
         [SetUp]
-        public void TestSetUp()
+        public virtual void TestSetUp()
         {
             GetCache<int>().RemoveAll();
         }
@@ -97,6 +98,14 @@ namespace Apache.Ignite.Core.Tests.Client
         protected static ICache<int, T> GetCache<T>()
         {
             return Ignition.GetIgnite().GetOrCreateCache<int, T>(CacheName);
+        }
+
+        /// <summary>
+        /// Gets the client cache.
+        /// </summary>
+        protected ICacheClient<int, T> GetClientCache<T>()
+        {
+            return Client.GetCache<int, T>(CacheName);
         }
 
         /// <summary>
