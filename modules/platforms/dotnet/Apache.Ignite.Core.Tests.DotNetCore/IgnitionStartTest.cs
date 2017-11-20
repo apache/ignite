@@ -17,10 +17,16 @@
 
 namespace Apache.Ignite.Core.Tests.DotNetCore
 {
+    using System.Linq;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Configuration;
+
 
     /// <summary>
     /// Tests Ignite startup.
+    /// 
+    /// MsTest is currently the most viable option on .NET Core (especially because of console output handling).
     /// </summary>
     [TestClass]
     public class IgnitionStartTest
@@ -55,6 +61,14 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
         [TestMethod]
         public void TestIgniteStartsFromAppConfig()
         {
+            //IgniteConfigurationSection section = ConfigurationManager.GetSection("dd") 
+            //    as IgniteConfigurationSection;
+
+            var ignite = Ignition.StartFromApplicationConfiguration();
+            var cache = ignite.GetCache<int, int>(ignite.GetCacheNames().Single());
+
+            Assert.AreEqual("cacheFromConfig", cache.Name);
+            Assert.AreEqual(CacheMode.Replicated, cache.GetConfiguration().CacheMode);
         }
 
         /// <summary>
