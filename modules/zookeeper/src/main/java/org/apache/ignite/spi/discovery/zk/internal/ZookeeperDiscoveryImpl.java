@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import org.apache.curator.utils.PathUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -96,6 +97,12 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     private long gridStartTime;
+
+    /** */
+    private long lastProcEvt = -1;
+
+    /** */
+    private boolean joined;
 
     /**
      * @param log
@@ -284,13 +291,27 @@ public class ZookeeperDiscoveryImpl {
 
             zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new AsyncCallback.Children2Callback() {
                 @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
-                    nodeConnected(rc, children);
+                    onConnected(rc, children);
                 }
             });
+
+            connStartLatch.countDown();
         }
         catch (ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
         }
+    }
+
+    /** TODO ZK */
+    private final CountDownLatch connStartLatch = new CountDownLatch(1);
+
+    /**
+     * For testing only.
+     *
+     * @throws Exception If failed.
+     */
+    public void waitConnectStart() throws Exception {
+        connStartLatch.await();
     }
 
     /** */
@@ -303,10 +324,15 @@ public class ZookeeperDiscoveryImpl {
      * @param rc Async callback result.
      * @param aliveNodes Alive nodes.
      */
-    private void nodeConnected(int rc, List<String> aliveNodes) {
+    private void onConnected(int rc, List<String> aliveNodes) {
+        assert !joined;
+
+        checkIsCoordinator(rc, aliveNodes);
+    }
+
+    private void checkIsCoordinator(int rc, List<String> aliveNodes) {
         try {
             assert rc == 0 : rc;
-            assert !joined;
 
             TreeMap<Integer, String> alives = new TreeMap<>();
 
@@ -339,13 +365,18 @@ public class ZookeeperDiscoveryImpl {
 
                 assert prevE != null;
 
+                final int crdInternalId = crdE.getKey();
                 final int locInternalId0 = locInternalId;
+
+                log.info("Discovery coordinator already exists, watch for previous node [" +
+                    "locId=" + locNode.id() +
+                    ", prevPath=" + prevE.getValue() + ']');
 
                 zkClient.existsAsync(zkPaths.aliveNodesDir + "/" + prevE.getValue(), new Watcher() {
                     @Override public void process(WatchedEvent evt) {
                         if (evt.getType() == Event.EventType.NodeDeleted) {
                             try {
-                                onPreviousCoordinatorFail(locInternalId0);
+                                onPreviousNodeFail(crdInternalId, locInternalId0);
                             }
                             catch (Throwable e) {
                                 onFatalError(e);
@@ -358,7 +389,7 @@ public class ZookeeperDiscoveryImpl {
 
                         if (stat == null) {
                             try {
-                                onPreviousCoordinatorFail(locInternalId0);
+                                onPreviousNodeFail(crdInternalId, locInternalId0);
                             }
                             catch (Throwable e) {
                                 onFatalError(e);
@@ -373,11 +404,23 @@ public class ZookeeperDiscoveryImpl {
         }
     }
 
-    private void onPreviousCoordinatorFail(int locInternalId) throws Exception {
-        if (log.isInfoEnabled())
-            log.info("Previous discovery coordinator failed [locId=" + locNode.id() + ']');
+    private void onPreviousNodeFail(int crdInternalId, int locInternalId) throws Exception {
+        if (locInternalId == crdInternalId + 1) {
+            if (log.isInfoEnabled())
+                log.info("Previous discovery coordinator failed [locId=" + locNode.id() + ']');
 
-        onBecomeCoordinator(locInternalId);
+            onBecomeCoordinator(locInternalId);
+        }
+        else {
+            if (log.isInfoEnabled())
+                log.info("Previous node failed, check is node new coordinator [locId=" + locNode.id() + ']');
+
+            zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new AsyncCallback.Children2Callback() {
+                @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
+                    checkIsCoordinator(rc, children);
+                }
+            });
+        }
     }
 
     private void onBecomeCoordinator(int locInternalId) throws Exception {
@@ -407,6 +450,9 @@ public class ZookeeperDiscoveryImpl {
 
     private void generateTopologyEvents(List<String> aliveNodes) throws Exception {
         assert crd;
+
+        if (log.isInfoEnabled())
+            log.info("Process alive nodes change: " + aliveNodes);
 
         TreeMap<Integer, String> alives = new TreeMap<>();
 
@@ -599,12 +645,6 @@ public class ZookeeperDiscoveryImpl {
         generateTopologyEvents(children);
     }
 
-    /** */
-    private long lastProcEvt = -1;
-
-    /** */
-    private boolean joined;
-
     private void onEventsUpdate(byte[] data, Stat stat) throws Exception {
         if (data.length == 0)
             return;
@@ -627,10 +667,6 @@ public class ZookeeperDiscoveryImpl {
         for (Map.Entry<Long, ZkDiscoveryEventData> e : evts.tailMap(lastProcEvt, false).entrySet()) {
             ZkDiscoveryEventData evtData = e.getValue();
 
-            if (log.isInfoEnabled()) {
-                log.info("New discovery event data: " + evtData + ']');
-            }
-
             if (!joined) {
                 if (evtData.eventType() != EventType.EVT_NODE_JOINED)
                     continue;
@@ -643,6 +679,9 @@ public class ZookeeperDiscoveryImpl {
                     locNode.id().equals(joinedId);
 
                 if (locJoin) {
+                    if (log.isInfoEnabled())
+                        log.info("Local join event data: " + evtData + ']');
+
                     String path = zkPaths.evtsPath + "/" + evtData.topologyVersion() + "/joined";
 
                     ZkJoinEventDataForJoined dataForJoined = unmarshal(zkClient.getData(path));
@@ -680,6 +719,9 @@ public class ZookeeperDiscoveryImpl {
                 }
             }
             else {
+                if (log.isInfoEnabled())
+                    log.info("New discovery event data: " + evtData + ']');
+
                 switch (evtData.eventType()) {
                     case EventType.EVT_NODE_JOINED: {
                         ZkDiscoveryNodeJoinEventData evtData0 = (ZkDiscoveryNodeJoinEventData)evtData;
@@ -728,6 +770,7 @@ public class ZookeeperDiscoveryImpl {
      * @param evtData Event data.
      * @param joiningData Joining node data.
      */
+    @SuppressWarnings("unchecked")
     private void notifyNodeJoin(ZkDiscoveryNodeJoinEventData evtData, ZkJoiningNodeData joiningData) {
         ZookeeperClusterNode joinedNode = joiningData.node();
 
@@ -770,6 +813,8 @@ public class ZookeeperDiscoveryImpl {
     public void stop() {
         if (zkClient != null)
             zkClient.close();
+
+        joinFut.onDone(new IgniteSpiException("Node stopped"));
     }
 
     /**
@@ -813,8 +858,21 @@ public class ZookeeperDiscoveryImpl {
     private class ConnectionLossListener implements IgniteRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
-            // TODO ZK
+            // TODO ZK, can be called from any thread.
             U.warn(log, "Zookeeper connection loss, local node is SEGMENTED");
+
+            if (joined) {
+                assert evts != null;
+
+                lsnr.onDiscovery(EventType.EVT_NODE_SEGMENTED,
+                    evts.topVer,
+                    locNode,
+                    Collections.<ClusterNode>emptyList(),
+                    Collections.<Long, Collection<ClusterNode>>emptyMap(),
+                    null);
+            }
+            else
+                joinFut.onDone(new IgniteSpiException("Local node SEGMENTED"));
         }
     }
 

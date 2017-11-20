@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.JoiningNodesAware;
@@ -255,15 +256,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     @Override public void spiStop() throws IgniteSpiException {
         if (impl != null)
             impl.stop();
-    }
-
-    /**
-     * For testing only.
-     *
-     * @throws Exception If failed.
-     */
-    public void waitConnectStart() throws Exception {
-        //connectStart.await();
     }
 
     /**

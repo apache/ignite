@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
@@ -209,57 +211,20 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    private void reset() {
-        System.clearProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET);
-
-        ZkTestClientCnxnSocketNIO.reset();
-
-        System.clearProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET);
-
-        err = false;
-
-        evts.clear();
-    }
-
-    /**
      * @throws Exception If failed.
      */
-    private void checkEventsConsistency() throws Exception {
-        for (Map.Entry<UUID, Map<Long, DiscoveryEvent>> nodeEvtEntry : evts.entrySet()) {
-            UUID nodeId = nodeEvtEntry.getKey();
-            Map<Long, DiscoveryEvent> nodeEvts = nodeEvtEntry.getValue();
+    public void testStopNode_1() throws Exception {
+        startGrids(5);
 
-            for (Map.Entry<UUID, Map<Long, DiscoveryEvent>> nodeEvtEntry0 : evts.entrySet()) {
-                if (!nodeId.equals(nodeEvtEntry0.getKey())) {
-                    Map<Long, DiscoveryEvent> nodeEvts0 = nodeEvtEntry0.getValue();
+        waitForTopology(5);
 
-                    synchronized (nodeEvts) {
-                        synchronized (nodeEvts0) {
-                            checkEventsConsistency(nodeEvts, nodeEvts0);
-                        }
-                    }
-                }
-            }
-        }
-    }
+        stopGrid(3);
 
-    /**
-     * @param evts1 Received events.
-     * @param evts2 Received events.
-     */
-    private void checkEventsConsistency(Map<Long, DiscoveryEvent> evts1, Map<Long, DiscoveryEvent> evts2) {
-        for (Map.Entry<Long, DiscoveryEvent> e1 : evts1.entrySet()) {
-            DiscoveryEvent evt1 = e1.getValue();
-            DiscoveryEvent evt2 = evts2.get(e1.getKey());
+        waitForTopology(4);
 
-            if (evt2 != null) {
-                assertEquals(evt1.topologyVersion(), evt2.topologyVersion());
-                assertEquals(evt1.eventNode(), evt2.eventNode());
-                assertEquals(evt1.topologyNodes(), evt2.topologyNodes());
-            }
-        }
+        startGrid(3);
+
+        waitForTopology(5);
     }
 
     /**
@@ -391,20 +356,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param spi Spi instance.
-     */
-    private void closeZkClient(ZookeeperDiscoverySpi spi) {
-        ZooKeeper zk = GridTestUtils.getFieldValue(spi, "impl.zkClient.zk");
-
-        try {
-            zk.close();
-        }
-        catch (Exception e) {
-            fail("Unexpected error: " + e);
-        }
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testConnectionRestore_Coordinator1() throws Exception {
@@ -433,8 +384,16 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionRestore_Coordinator4() throws Exception {
+        connectionRestore_Coordinator(3, 3, 1);
+    }
+
+    /**
      * @param initNodes Number of initially started nodes.
      * @param startNodes Number of nodes to start after coordinator loose connection.
+     * @param failCnt Number of nodes to stop after coordinator loose connection.
      * @throws Exception If failed.
      */
     private void connectionRestore_Coordinator(int initNodes, int startNodes, int failCnt) throws Exception {
@@ -464,107 +423,50 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         int cnt = 0;
 
+        DiscoveryEvent[] expEvts = new DiscoveryEvent[startNodes - failCnt];
+
+        int expEvtCnt = 0;
+
+        sesTimeout = 1000;
+
+        List<ZkTestClientCnxnSocketNIO> blockedC = new ArrayList<>();
+
         for (int i = initNodes; i < initNodes + startNodes; i++) {
             ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(i));
 
-            spi.waitConnectStart();
+            ZookeeperDiscoveryImpl impl = GridTestUtils.getFieldValue(spi, "impl");
 
-            if (cnt < failCnt)
-                closeZkClient(spi);
+            impl.waitConnectStart();
+
+            if (cnt++ < failCnt) {
+                ZkTestClientCnxnSocketNIO c = ZkTestClientCnxnSocketNIO.forNode(getTestIgniteInstanceName(i));
+
+                c.closeSocket(true);
+
+                blockedC.add(c);
+            }
+            else {
+                expEvts[expEvtCnt] = joinEvent(initNodes + expEvtCnt + 1);
+
+                expEvtCnt++;
+            }
         }
+
+        Thread.sleep(5000);
 
         c0.allowConnect();
 
-        DiscoveryEvent[] expEvts = new DiscoveryEvent[startNodes];
+        for (ZkTestClientCnxnSocketNIO c : blockedC)
+            c.allowConnect();
 
-        for (int i = 0; i < startNodes; i++)
-            expEvts[i] = joinEvent(initNodes + i + 1);
-
-        for (int i = 0; i < initNodes; i++)
-            checkEvents(ignite(i), expEvts);
+        if (expEvts.length > 0) {
+            for (int i = 0; i < initNodes; i++)
+                checkEvents(ignite(i), expEvts);
+        }
 
         fut.get();
 
         waitForTopology(initNodes + startNodes - failCnt);
-    }
-
-    /**
-     * @param nodeName Node name.
-     * @return Node's discovery SPI.
-     * @throws Exception If failed.
-     */
-    private ZookeeperDiscoverySpi waitSpi(final String nodeName) throws Exception {
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return spis.contains(nodeName);
-            }
-        }, 5000);
-
-        ZookeeperDiscoverySpi spi = spis.get(nodeName);
-
-        assertNotNull("Failed to get SPI for node: " + nodeName, spi);
-
-        return spi;
-    }
-
-    private static DiscoveryEvent joinEvent(long topVer) {
-        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, EventType.EVT_NODE_JOINED, null);
-
-        expEvt.topologySnapshot(topVer, null);
-
-        return expEvt;
-    }
-
-    private static DiscoveryEvent failEvent(long topVer) {
-        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, EventType.EVT_NODE_FAILED, null);
-
-        expEvt.topologySnapshot(topVer, null);
-
-        return expEvt;
-    }
-
-    /**
-     * @param node Node.
-     * @param expEvts Expected events.
-     * @throws Exception If fialed.
-     */
-    private void checkEvents(final Ignite node, final DiscoveryEvent...expEvts) throws Exception {
-        checkEvents(node.cluster().localNode().id(), expEvts);
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param expEvts Expected events.
-     * @throws Exception If failed.
-     */
-    private void checkEvents(final UUID nodeId, final DiscoveryEvent...expEvts) throws Exception {
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                Map<Long, DiscoveryEvent> nodeEvts = evts.get(nodeId);
-
-                if (nodeEvts == null) {
-                    info("No events for node: " + nodeId);
-
-                    return false;
-                }
-
-                synchronized (nodeEvts) {
-                    for (DiscoveryEvent expEvt : expEvts) {
-                        DiscoveryEvent evt0 = nodeEvts.get(expEvt.topologyVersion());
-
-                        if (evt0 == null) {
-                            info("No event for version: " + expEvt.topologyVersion());
-
-                            return false;
-                        }
-
-                        assertEquals(expEvt.type(), evt0.type());
-                    }
-                }
-
-                return true;
-            }
-        }, 10000));
     }
 
     /**
@@ -729,6 +631,153 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             waitForTopology(SRVS);
 
             checkEventsConsistency();
+        }
+    }
+
+    /**
+     *
+     */
+    private void reset() {
+        System.clearProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET);
+
+        ZkTestClientCnxnSocketNIO.reset();
+
+        System.clearProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET);
+
+        err = false;
+
+        evts.clear();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkEventsConsistency() throws Exception {
+        for (Map.Entry<UUID, Map<Long, DiscoveryEvent>> nodeEvtEntry : evts.entrySet()) {
+            UUID nodeId = nodeEvtEntry.getKey();
+            Map<Long, DiscoveryEvent> nodeEvts = nodeEvtEntry.getValue();
+
+            for (Map.Entry<UUID, Map<Long, DiscoveryEvent>> nodeEvtEntry0 : evts.entrySet()) {
+                if (!nodeId.equals(nodeEvtEntry0.getKey())) {
+                    Map<Long, DiscoveryEvent> nodeEvts0 = nodeEvtEntry0.getValue();
+
+                    synchronized (nodeEvts) {
+                        synchronized (nodeEvts0) {
+                            checkEventsConsistency(nodeEvts, nodeEvts0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param evts1 Received events.
+     * @param evts2 Received events.
+     */
+    private void checkEventsConsistency(Map<Long, DiscoveryEvent> evts1, Map<Long, DiscoveryEvent> evts2) {
+        for (Map.Entry<Long, DiscoveryEvent> e1 : evts1.entrySet()) {
+            DiscoveryEvent evt1 = e1.getValue();
+            DiscoveryEvent evt2 = evts2.get(e1.getKey());
+
+            if (evt2 != null) {
+                assertEquals(evt1.topologyVersion(), evt2.topologyVersion());
+                assertEquals(evt1.eventNode(), evt2.eventNode());
+                assertEquals(evt1.topologyNodes(), evt2.topologyNodes());
+            }
+        }
+    }
+
+    /**
+     * @param nodeName Node name.
+     * @return Node's discovery SPI.
+     * @throws Exception If failed.
+     */
+    private ZookeeperDiscoverySpi waitSpi(final String nodeName) throws Exception {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return spis.contains(nodeName);
+            }
+        }, 5000);
+
+        ZookeeperDiscoverySpi spi = spis.get(nodeName);
+
+        assertNotNull("Failed to get SPI for node: " + nodeName, spi);
+
+        return spi;
+    }
+
+    private static DiscoveryEvent joinEvent(long topVer) {
+        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, EventType.EVT_NODE_JOINED, null);
+
+        expEvt.topologySnapshot(topVer, null);
+
+        return expEvt;
+    }
+
+    private static DiscoveryEvent failEvent(long topVer) {
+        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, EventType.EVT_NODE_FAILED, null);
+
+        expEvt.topologySnapshot(topVer, null);
+
+        return expEvt;
+    }
+
+    /**
+     * @param node Node.
+     * @param expEvts Expected events.
+     * @throws Exception If fialed.
+     */
+    private void checkEvents(final Ignite node, final DiscoveryEvent...expEvts) throws Exception {
+        checkEvents(node.cluster().localNode().id(), expEvts);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param expEvts Expected events.
+     * @throws Exception If failed.
+     */
+    private void checkEvents(final UUID nodeId, final DiscoveryEvent...expEvts) throws Exception {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Map<Long, DiscoveryEvent> nodeEvts = evts.get(nodeId);
+
+                if (nodeEvts == null) {
+                    info("No events for node: " + nodeId);
+
+                    return false;
+                }
+
+                synchronized (nodeEvts) {
+                    for (DiscoveryEvent expEvt : expEvts) {
+                        DiscoveryEvent evt0 = nodeEvts.get(expEvt.topologyVersion());
+
+                        if (evt0 == null) {
+                            info("No event for version: " + expEvt.topologyVersion());
+
+                            return false;
+                        }
+
+                        assertEquals(expEvt.type(), evt0.type());
+                    }
+                }
+
+                return true;
+            }
+        }, 10000));
+    }
+
+    /**
+     * @param spi Spi instance.
+     */
+    private void closeZkClient(ZookeeperDiscoverySpi spi) {
+        ZooKeeper zk = GridTestUtils.getFieldValue(spi, "impl", "zkClient", "zk");
+
+        try {
+            zk.close();
+        }
+        catch (Exception e) {
+            fail("Unexpected error: " + e);
         }
     }
 

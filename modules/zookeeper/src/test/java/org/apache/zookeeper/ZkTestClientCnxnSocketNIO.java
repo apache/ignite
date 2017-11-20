@@ -59,6 +59,14 @@ public class ZkTestClientCnxnSocketNIO extends ClientCnxnSocketNIO {
     }
 
     /**
+     * @param instanceName Ignite instance name.
+     * @return ZK client.
+     */
+    public static ZkTestClientCnxnSocketNIO forNode(String instanceName) {
+        return clients.get(instanceName);
+    }
+
+    /**
      * @throws IOException If failed.
      */
     public ZkTestClientCnxnSocketNIO() throws IOException {
@@ -69,8 +77,6 @@ public class ZkTestClientCnxnSocketNIO extends ClientCnxnSocketNIO {
         nodeName = threadName.substring(threadName.indexOf('-') + 1);
 
         log.info("ZkTestClientCnxnSocketNIO created for node: " + nodeName);
-
-        clients.put(nodeName, this);
     }
 
     /** {@inheritDoc} */
@@ -93,6 +99,8 @@ public class ZkTestClientCnxnSocketNIO extends ClientCnxnSocketNIO {
         }
 
         super.connect(addr);
+
+        clients.put(nodeName, this);
     }
 
     /**
