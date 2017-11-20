@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.DotNetCore.Cache
 {
+    using Apache.Ignite.Core.Configuration;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -25,13 +26,47 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Cache
     [TestClass]
     public class PersistentCacheTest : TestBase
     {
+        /** */
+        private const string CacheName = "persistentCache";
+
         /// <summary>
         /// Tests that cache data survives node restart.
         /// </summary>
         [TestMethod]
         public void TestCacheDataSurvivesNodeRestart()
         {
-            // TODO: Predefined folder.
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                DataStorageConfiguration = new DataStorageConfiguration
+                {
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        Name = "def",
+                        PersistenceEnabled = true
+                    }
+                }
+            };
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                ignite.SetActive(true);
+
+                var cache = ignite.GetOrCreateCache<int, Person>(CacheName);
+                cache.RemoveAll();
+                
+                Assert.AreEqual(0, cache.GetSize());
+                cache[1] = new Person("Petya", 25);
+            }
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                ignite.SetActive(true);
+
+                var cache = ignite.GetCache<int, Person>(CacheName);
+                
+                Assert.AreEqual(1, cache.GetSize());
+                Assert.AreEqual("Petya", cache[1].Name);
+            }
         }
     }
 }
