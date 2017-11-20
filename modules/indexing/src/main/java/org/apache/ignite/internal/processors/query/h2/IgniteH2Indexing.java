@@ -2022,7 +2022,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
 
-        visitor.visit(new IndexClosure(qryMgr));
+        visitor.visit(new RebuldIndexFromHashClosure(qryMgr));
 
         for (H2TableDescriptor tblDesc : tables(cacheName))
             tblDesc.table().markRebuildFromHashInProgress(false);
@@ -2619,14 +2619,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** */
-    private static class IndexClosure implements SchemaIndexCacheVisitorClosure {
+    private static class RebuldIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
         /** */
         private final GridCacheQueryManager qryMgr;
 
         /**
          * @param qryMgr Query manager.
          */
-        IndexClosure(GridCacheQueryManager qryMgr) {
+        RebuldIndexFromHashClosure(GridCacheQueryManager qryMgr) {
             this.qryMgr = qryMgr;
         }
 
