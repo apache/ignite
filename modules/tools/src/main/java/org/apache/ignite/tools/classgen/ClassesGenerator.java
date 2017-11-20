@@ -18,7 +18,7 @@
 package org.apache.ignite.tools.classgen;
 
 
-import org.apache.ignite.util.Java9Bridge;
+
 
 import java.io.BufferedInputStream;
 import java.io.Externalizable;
@@ -37,7 +37,7 @@ import java.util.Comparator;
 import java.util.TreeSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
-
+import org.apache.ignite.util.Java9Bridge;
 /**
  * Serialized classes generator.
  */
@@ -69,9 +69,6 @@ public class ClassesGenerator {
 
         gen.generate();
     }
-
-    /** */
-
 
     /** */
     private final Collection<Class> classes = new TreeSet<>(new Comparator<Class>() {
