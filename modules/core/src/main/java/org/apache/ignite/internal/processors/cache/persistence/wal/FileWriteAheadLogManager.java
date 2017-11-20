@@ -316,20 +316,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log work directory"
             );
 
-            final String workMsg = "Work Files:" + Arrays.toString(walWorkDir.listFiles());
-            log.warning(workMsg);
-            GridCacheDatabaseSharedManager.ASSERTION_LOG.append(workMsg);
-
             walArchiveDir = initDirectory(
                 dsCfg.getWalArchivePath(),
                 DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
                 resolveFolders.folderName(),
                 "write ahead log archive directory"
             );
-
-            final String arxivMsg = "Archive Files:" + Arrays.toString(walArchiveDir.listFiles());
-            log.warning(arxivMsg);
-            GridCacheDatabaseSharedManager.ASSERTION_LOG.append(arxivMsg);
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVersion);
 
@@ -761,11 +753,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Override public void allowCompressionUntil(WALPointer ptr) {
         if (compressor != null)
             compressor.allowCompressionUntil(((FileWALPointer)ptr).index());
-
-        GridCacheDatabaseSharedManager.ASSERTION_LOG.append("compression allowed until: " + ptr + "\n");
-
-
-        U.warn(log, "Just allowed compression until idx: " + ((FileWALPointer)ptr).index());
     }
 
     /** {@inheritDoc} */
@@ -1286,15 +1273,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long toArchive;
 
                     synchronized (this) {
-                        if (lastAbsArchivedIdx > curAbsWalIdx) {
-                            String msg = "DUMP: lastArchived=" + lastAbsArchivedIdx + ", current=" + curAbsWalIdx;
-                            msg += " archive: " + Arrays.toString(walArchiveDir.listFiles());
-                            msg += " work: " + Arrays.toString(walWorkDir.listFiles()) + "\n";
-
-                            GridCacheDatabaseSharedManager.ASSERTION_LOG.append(msg);
-
-                            assert lastAbsArchivedIdx <= curAbsWalIdx : GridCacheDatabaseSharedManager.ASSERTION_LOG.toString();
-                        }
+                        assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
+                            ", current=" + curAbsWalIdx;
 
                         while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped)
                             wait();
@@ -1461,8 +1441,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                U.warn(log, "Just archived WAL segment: " + dstFile.toPath());
-
                 if (mode == WALMode.DEFAULT) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
@@ -1586,12 +1564,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (!desc.file.delete())
                         U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                             desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
-                    else {
-                        GridCacheDatabaseSharedManager.ASSERTION_LOG.append(" deleted raw file [consistendId=" +
-                            cctx.discovery().localNode().consistentId() + ", file=" + desc.file + "]\n");
-
-                        U.warn(log, "Just deleted obsolete raw WAL segment: " + desc.file);
-                    }
                 }
             }
         }
@@ -1639,13 +1611,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Files.move(tmpZip.toPath(), zip.toPath());
 
                     lastCompressedIdx = nextSegment;
-
-                    U.warn(log, "Just compressed WAL segment: " + zip);
-
-                    GridCacheDatabaseSharedManager.ASSERTION_LOG.append(" compressed file [consistendId=" +
-                        cctx.discovery().localNode().consistentId() + ", file=" + zip + ", size=" + zip.length() +
-                        ", uncompressedSize=" +
-                        new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".wal").length() + "]\n");
                 }
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
@@ -1725,8 +1690,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
 
                     Files.move(unzipTmp.toPath(), unzip.toPath());
-
-                    U.warn(log, "Just decompressed WAL segment: " + unzip);
 
                     synchronized (this) {
                         decompressionFutures.remove(segmentToDecompress).onDone();
@@ -2937,8 +2900,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
 
                 decompressor.decompressFile(desc.idx).get();
-
-
             }
 
             return super.initReadHandle(desc, start);

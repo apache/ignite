@@ -154,8 +154,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
  */
 @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
 public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
-    public static final StringBuilder ASSERTION_LOG = new StringBuilder();//ra
-
     /** */
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
@@ -564,16 +562,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-
             CheckpointStatus status = readCheckpointStatus();
 
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
             WALPointer restore = restoreMemory(status);
-
-            ASSERTION_LOG.append(" readCheckpointAndRestoreMemory [consistentId=")
-                .append(cctx.discovery().localNode().consistentId()).append(" status=").append(status)
-                .append(" restoredTo=").append(restore).append("]\n");
 
             cctx.wal().resumeLogging(restore);
 
@@ -1359,10 +1352,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         File dir = cpDir;
 
-        File[] cps = cpDir.listFiles();
-
-        ASSERTION_LOG.append(" cpDir contents: " + (cps != null ? Arrays.asList(cps) : "null") + "\n");
-
         if (!dir.exists()) {
             // TODO: remove excessive logging after GG-12116 fix.
             File[] files = dir.listFiles();
@@ -1416,12 +1405,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (log.isInfoEnabled())
             log.info("Read checkpoint status [startMarker=" + startFile + ", endMarker=" + endFile + ']');
 
-        final CheckpointStatus status = new CheckpointStatus(lastStartTs, startId, startPtr, endId, endPtr);
-
-        ASSERTION_LOG.append(" readCheckpointStatus [consistentId=")
-            .append(cctx.discovery().localNode().consistentId()).append(" status=").append(status).append("]\n");
-
-        return status;
+        return new CheckpointStatus(lastStartTs, startId, startPtr, endId, endPtr);
     }
 
     /**
