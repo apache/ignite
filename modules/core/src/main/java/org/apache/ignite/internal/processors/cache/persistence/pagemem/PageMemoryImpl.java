@@ -804,9 +804,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public boolean safeToUpdate() {
-        for (Segment segment : segments)
-            if (!segment.safeToUpdate())
-                return false;
+        if (segments != null) {
+            for (Segment segment : segments)
+                if (!segment.safeToUpdate())
+                    return false;
+        }
 
         return true;
     }

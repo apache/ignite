@@ -880,7 +880,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
         }
-        else {
+        else if (req.activate()) {
+            // TODO: BLT changes on inactive cluster can't be handled easily because persistent storage hasn't been initialized yet.
             try {
                 cctx.affinity().onBaselineTopologyChanged(this, crd);
 
