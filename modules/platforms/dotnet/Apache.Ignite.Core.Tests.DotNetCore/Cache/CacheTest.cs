@@ -17,24 +17,52 @@
 
 namespace Apache.Ignite.Core.Tests.DotNetCore.Cache
 {
+    using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
     /// Cache tests.
     /// </summary>
     [TestClass]
-    public class CacheTest
+    public class CacheTest : TestBase
     {
+        /// <summary>
+        /// Tests the put / get functionality.
+        /// </summary>
         [TestMethod]
         public void TestPutGet()
         {
-            
+            async Task PutGetAsync(ICache<int, Person> cache)
+            {
+                await cache.PutAsync(2, new Person("Bar", 2));
+                var res = await cache.GetAsync(2);
+                Assert.AreEqual(2, res.Id);
+            }
+
+            using (var ignite = Start())
+            {
+                var cache = ignite.CreateCache<int, Person>("persons");
+
+                // Sync.
+                cache[1] = new Person("Foo", 1);
+                Assert.AreEqual("Foo", cache[1].Name);
+
+                // Async.
+                PutGetAsync(cache).Wait();
+            }
+        }
+    }
+
+    public class Person
+    {
+        public Person(string name, int id)
+        {
+            Name = name;
+            Id = id;
         }
 
-        [TestMethod]
-        public void TestPutGetAsync()
-        {
-            
-        }
+        public string Name { get; set; }
+        public int Id { get; set; }
     }
 }
