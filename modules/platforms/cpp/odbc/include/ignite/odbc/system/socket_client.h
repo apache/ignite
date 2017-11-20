@@ -44,6 +44,9 @@ namespace ignite
                 /** The time in seconds between individual keepalive probes. */
                 enum { KEEP_ALIVE_PROBES_PERIOD = 1 };
 
+                /** Connection establishment timeout in seconds. */
+                enum { CONNECT_TIMEOUT = 5 };
+
                 /**
                  * Constructor.
                  */

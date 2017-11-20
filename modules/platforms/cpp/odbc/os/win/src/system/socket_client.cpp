@@ -193,7 +193,7 @@ namespace ignite
                             continue;
                         }
 
-                        res = WaitOnSocket(5, false);
+                        res = WaitOnSocket(CONNECT_TIMEOUT, false);
 
                         if (res <= 0)
                         {
