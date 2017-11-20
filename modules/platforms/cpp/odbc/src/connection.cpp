@@ -233,7 +233,7 @@ namespace ignite
 
                 LOG_MSG("Sent: " << res);
 
-                if (res <= 0)
+                if (res < 0 || res == tcp::SocketClient::WaitResult::TIMEOUT)
                 {
                     Close();
 
@@ -302,7 +302,7 @@ namespace ignite
                 int res = socket.Receive(buffer + received, remain, timeout);
                 LOG_MSG("Receive res: " << res << " remain: " << remain);
 
-                if (res <= 0)
+                if (res < 0 || res == tcp::SocketClient::WaitResult::TIMEOUT)
                 {
                     Close();
 

@@ -48,6 +48,19 @@ namespace ignite
                 enum { CONNECT_TIMEOUT = 5 };
 
                 /**
+                 * Non-negative timeout operation result.
+                 */
+                struct WaitResult
+                {
+                    enum T
+                    {
+                        TIMEOUT = 0,
+
+                        SUCCESS = 1
+                    };
+                };
+
+                /**
                  * Constructor.
                  */
                 SocketClient();
@@ -80,8 +93,8 @@ namespace ignite
                  * @param data Pointer to data to be sent.
                  * @param size Size of the data in bytes.
                  * @param timeout Timeout.
-                 * @return Number of bytes that have been sent on success and negative
-                 *         value or zero on failure.
+                 * @return Number of bytes that have been sent on success, 
+                 *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
                 int Send(const int8_t* data, size_t size, int32_t timeout);
 
@@ -91,8 +104,8 @@ namespace ignite
                  * @param buffer Pointer to data buffer.
                  * @param size Size of the buffer in bytes.
                  * @param timeout Timeout.
-                 * @return Number of bytes that have been received on success and negative
-                 *         value or zero on failure.
+                 * @return Number of bytes that have been sent on success,
+                 *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
                 int Receive(int8_t* buffer, size_t size, int32_t timeout);
 
@@ -104,9 +117,13 @@ namespace ignite
 
                 /**
                  * Wait on the socket for any event for specified time.
+                 * This function uses poll to achive timeout functionality
+                 * for every separate socket operation.
+                 *
                  * @param timeout Timeout.
                  * @param rd Wait for read if @c true, or for write if @c false.
-                 * @return -errno on error, zero on timeout and 1 on success.
+                 * @return -errno on error, WaitResult::TIMEOUT on timeout and
+                 *     WaitResult::SUCCESS on success.
                  */
                 int WaitOnSocket(int32_t timeout, bool rd);
 

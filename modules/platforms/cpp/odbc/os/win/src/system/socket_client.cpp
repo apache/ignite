@@ -196,9 +196,9 @@ namespace ignite
 
                         res = WaitOnSocket(CONNECT_TIMEOUT, false);
 
-                        if (res <= 0)
+                        if (res < 0 || res == WaitResult::TIMEOUT)
                         {
-                            LOG_MSG("Connection failed: " << GetSocketErrorMessage(-res));
+                            LOG_MSG("Connection timeout expired: " << GetSocketErrorMessage(-res));
 
                             Close();
 
@@ -229,7 +229,7 @@ namespace ignite
                 {
                     int res = WaitOnSocket(timeout, false);
 
-                    if (res <= 0)
+                    if (res < 0 || res == WaitResult::TIMEOUT)
                         return res;
                 }
 
@@ -242,7 +242,7 @@ namespace ignite
                 {
                     int res = WaitOnSocket(timeout, true);
 
-                    if (res <= 0)
+                    if (res < 0 || res == WaitResult::TIMEOUT)
                         return res;
                 }
 
@@ -402,8 +402,16 @@ namespace ignite
                     FD_ZERO(&fds);
                     FD_SET(socketHandle, &fds);
 
+                    fd_set* readFds = 0;
+                    fd_set* writeFds = 0;
+
+                    if (rd)
+                        readFds = &fds;
+                    else
+                        writeFds = &fds;
+
                     ready = select(static_cast<int>((socketHandle) + 1),
-                        (rd ? &fds : 0), (rd ? 0 : &fds), NULL, (timeout == 0 ? NULL : &tv));
+                        readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
 
                     if (ready == SOCKET_ERROR)
                         lastError = WSAGetLastError();
@@ -414,9 +422,9 @@ namespace ignite
                     return -lastError;
 
                 if (ready == 0)
-                    return 0;
+                    return WaitResult::TIMEOUT;
 
-                return 1;
+                return WaitResult::SUCCESS;
             }
         }
     }
