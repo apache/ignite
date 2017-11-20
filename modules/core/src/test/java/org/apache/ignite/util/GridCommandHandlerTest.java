@@ -30,8 +30,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 
 /**
  * Command line handler test.
@@ -156,6 +156,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CommandHandler cmd = new CommandHandler();
 
         cmd.execute("--baseline");
+
+        assertEquals(1, ignite.cluster().currentBaselineTopology().size());
     }
 
     /**
@@ -165,7 +167,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     private String consistentIds(Ignite... ignites) {
         String res = "";
 
-        for(Ignite ignite : ignites) {
+        for (Ignite ignite : ignites) {
             String consistentId = ignite.cluster().localNode().consistentId().toString();
 
             if (!F.isEmpty(res))
@@ -195,6 +197,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, cmd.execute("--baseline", "add", consistentIds(other)));
         assertEquals(EXIT_CODE_OK, cmd.execute("--baseline", "add", consistentIds(other)));
+
+        assertEquals(2, ignite.cluster().currentBaselineTopology().size());
     }
 
     /**
@@ -218,6 +222,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, cmd.execute("--baseline"));
         assertEquals(EXIT_CODE_OK, cmd.execute("--baseline", "remove", offlineNodeConsId));
+
+        assertEquals(1, ignite.cluster().currentBaselineTopology().size());
     }
 
     /**
@@ -237,6 +243,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CommandHandler cmd = new CommandHandler();
 
         assertEquals(EXIT_CODE_OK, cmd.execute("--baseline", "set", consistentIds(ignite, other)));
+
+        assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, cmd.execute("--baseline", "set", "invalidConsistentId"));
     }
 
     /**
@@ -258,5 +268,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, cmd.execute("--baseline"));
 
         assertEquals(EXIT_CODE_OK, cmd.execute("--baseline", "version", String.valueOf(ignite.cluster().topologyVersion())));
+
+        assertEquals(2, ignite.cluster().currentBaselineTopology().size());
     }
 }
