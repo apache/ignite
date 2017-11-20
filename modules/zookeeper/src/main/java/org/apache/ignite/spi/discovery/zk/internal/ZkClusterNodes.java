@@ -72,4 +72,21 @@ public class ZkClusterNodes {
 
         assert old == null : old;
     }
+
+    ZookeeperClusterNode removeNode(int internalId) {
+        ZookeeperClusterNode node = nodesByInternalId.remove(internalId);
+
+        assert node != null : internalId;
+        assert node.order() > 0 : node;
+
+        Object rvmd = nodesByOrder.remove(node.order());
+
+        assert rvmd != null;
+
+        rvmd = nodesById.remove(node.id());
+
+        assert rvmd != null;
+
+        return node;
+    }
 }

@@ -42,4 +42,12 @@ class ZkJoinEventDataForJoined implements Serializable {
         this.top = top;
         this.discoData = discoData;
     }
+
+    List<ZookeeperClusterNode> topology() {
+        return top;
+    }
+
+    Map<Integer, Serializable> discoveryData() {
+        return discoData;
+    }
 }

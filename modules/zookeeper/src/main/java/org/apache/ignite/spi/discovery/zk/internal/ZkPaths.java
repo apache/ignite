@@ -24,13 +24,10 @@ import java.util.UUID;
  */
 class ZkPaths {
     /** */
-    static final int ID_LEN = 36;
+    private static final int UUID_LEN = 36;
 
     /** */
     private static final String JOIN_DATA_DIR = "joinData";
-
-    /** */
-    private static final String JOIN_EVENTS_DATA_PATH = "joinEvents";
 
     /** */
     private static final String ALIVE_NODES_DIR = "alive";
@@ -45,10 +42,10 @@ class ZkPaths {
     private final String clusterName;
 
     /** */
-    final String aliveNodesDir;
+    final String clusterDir;
 
     /** */
-    final String joinEvtsDataDir;
+    final String aliveNodesDir;
 
     /** */
     final String joinDataDir;
@@ -64,9 +61,9 @@ class ZkPaths {
         this.basePath = basePath;
         this.clusterName = clusterName;
 
+        clusterDir = basePath + "/" + clusterName;
         aliveNodesDir = zkPath(ALIVE_NODES_DIR);
         joinDataDir = zkPath(JOIN_DATA_DIR);
-        joinEvtsDataDir = zkPath(JOIN_EVENTS_DATA_PATH);
         evtsPath = zkPath(DISCO_EVENTS_PATH);
     }
 
@@ -85,7 +82,7 @@ class ZkPaths {
     }
 
     static UUID aliveNodeId(String path) {
-        String idStr = path.substring(0, ZkPaths.ID_LEN);
+        String idStr = path.substring(0, ZkPaths.UUID_LEN);
 
         return UUID.fromString(idStr);
     }

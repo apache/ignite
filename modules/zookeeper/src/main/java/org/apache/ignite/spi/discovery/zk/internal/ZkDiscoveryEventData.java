@@ -58,9 +58,4 @@ abstract class ZkDiscoveryEventData implements Serializable {
     long topologyVersion() {
         return topVer;
     }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ZkDiscoveryEventData.class, this);
-    }
 }

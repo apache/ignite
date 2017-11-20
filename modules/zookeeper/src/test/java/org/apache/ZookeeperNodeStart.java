@@ -31,7 +31,7 @@ public class ZookeeperNodeStart {
 
             ZookeeperDiscoverySpi spi = new ZookeeperDiscoverySpi();
 
-            spi.setConnectString("localhost:2181");
+            spi.setZkConnectionString("localhost:2181");
 
             cfg.setDiscoverySpi(spi);
 

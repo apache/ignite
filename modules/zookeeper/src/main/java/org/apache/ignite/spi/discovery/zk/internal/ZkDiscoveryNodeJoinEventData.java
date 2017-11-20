@@ -23,13 +23,30 @@ import org.apache.ignite.events.EventType;
 /**
  *
  */
-class ZkDiscoveryNodeJoinedEventData extends ZkDiscoveryEventData {
+class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
+    /** */
+    final int joinedInternalId;
+
     /** */
     final UUID nodeId;
 
-    ZkDiscoveryNodeJoinedEventData(long topVer, UUID nodeId) {
+    /** */
+    transient ZkJoiningNodeData joiningNodeData;
+
+    /**
+     * @param topVer Topology version.
+     * @param nodeId Joined node ID.
+     * @param joinedInternalId Joined node internal ID.
+     */
+    ZkDiscoveryNodeJoinEventData(long topVer, UUID nodeId, int joinedInternalId) {
         super(EventType.EVT_NODE_JOINED, topVer);
 
         this.nodeId = nodeId;
+        this.joinedInternalId = joinedInternalId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "NodeJoinEventData [topVer=" + topologyVersion() + ", node=" + nodeId + ']';
     }
 }

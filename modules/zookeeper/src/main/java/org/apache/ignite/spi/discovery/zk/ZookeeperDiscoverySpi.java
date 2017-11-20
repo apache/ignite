@@ -146,7 +146,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public ClusterNode getLocalNode() {
-        return impl.localNode();
+        return impl != null ? impl.localNode() : null;
     }
 
     /** {@inheritDoc} */

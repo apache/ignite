@@ -722,7 +722,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
             GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
                 @Override public void apply(Integer idx) {
-                    stopGrid(idx + 3);
+                    stopGrid(idx + SRVS);
                 }
             }, THREADS, "stop-node");
 

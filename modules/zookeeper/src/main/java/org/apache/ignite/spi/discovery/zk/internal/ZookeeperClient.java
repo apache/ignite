@@ -136,6 +136,9 @@ public class ZookeeperClient implements Watcher {
                     return;
                 }
 
+                if (!zk.getState().isAlive())
+                    return;
+
                 Event.KeeperState zkState = evt.getState();
 
                 switch (zkState) {
@@ -249,9 +252,32 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    void delete(String path, int ver)
+        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
+    {
+        for (;;) {
+            long connStartTime = this.connStartTime;
+
+            try {
+                zk.delete(path, ver);
+
+                return;
+            }
+            catch (KeeperException.NoNodeException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+        }
+    }
+
     void setData(String path, byte[] data, int ver)
         throws ZookeeperClientFailedException, InterruptedException
     {
+        if (data == null)
+            data = EMPTY_BYTES;
+
         for (;;) {
             long connStartTime = this.connStartTime;
 
@@ -282,6 +308,12 @@ public class ZookeeperClient implements Watcher {
                 onZookeeperError(connStartTime, e);
             }
         }
+    }
+
+    void existsAsync(String path, Watcher watcher, AsyncCallback.StatCallback cb) {
+        ExistsOperation op = new ExistsOperation(path, watcher, cb);
+
+        zk.exists(path, watcher, new StatCallbackWrapper(op), null);
     }
 
     void getChildrenAsync(String path, Watcher watcher, AsyncCallback.Children2Callback cb) {
@@ -438,6 +470,11 @@ public class ZookeeperClient implements Watcher {
         /** */
         private final AsyncCallback.DataCallback cb;
 
+        /**
+         * @param path Path.
+         * @param watcher Watcher.
+         * @param cb Callback.
+         */
         GetDataOperation(String path, Watcher watcher, AsyncCallback.DataCallback cb) {
             this.path = path;
             this.watcher = watcher;
@@ -447,6 +484,36 @@ public class ZookeeperClient implements Watcher {
         /** {@inheritDoc} */
         @Override public void execute() {
             getDataAsync(path, watcher, cb);
+        }
+    }
+
+    /**
+     *
+     */
+    class ExistsOperation implements ZkAsyncOperation {
+        /** */
+        private final String path;
+
+        /** */
+        private final Watcher watcher;
+
+        /** */
+        private final AsyncCallback.StatCallback cb;
+
+        /**
+         * @param path Path.
+         * @param watcher Watcher.
+         * @param cb Callback.
+         */
+        ExistsOperation(String path, Watcher watcher, AsyncCallback.StatCallback cb) {
+            this.path = path;
+            this.watcher = watcher;
+            this.cb = cb;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute() {
+            existsAsync(path, watcher, cb);
         }
     }
 
@@ -526,6 +593,34 @@ public class ZookeeperClient implements Watcher {
                 U.warn(log, "Failed to execute async operation, connection lost [path=" + path + ']');
             else
                 op.cb.processResult(rc, path, ctx, data, stat);
+        }
+    }
+
+    /**
+     *
+     */
+    class StatCallbackWrapper implements AsyncCallback.StatCallback {
+        /** */
+        private final ExistsOperation op;
+
+        /**
+         * @param op Operation.
+         */
+        private StatCallbackWrapper(ExistsOperation op) {
+            this.op = op;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void processResult(int rc, String path, Object ctx, Stat stat) {
+            if (needRetry(rc)) {
+                U.warn(log, "Failed to execute async operation, connection lost. Will retry after connection restore [path=" + path + ']');
+
+                retryQ.add(op);
+            }
+            else if (rc == KeeperException.Code.SESSIONEXPIRED.intValue())
+                U.warn(log, "Failed to execute async operation, connection lost [path=" + path + ']');
+            else
+                op.cb.processResult(rc, path, ctx, stat);
         }
     }
 

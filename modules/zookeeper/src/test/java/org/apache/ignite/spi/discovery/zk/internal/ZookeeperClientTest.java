@@ -102,12 +102,12 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
 
         final AtomicBoolean res = new AtomicBoolean();
 
-        client.getChildrenAsync("/apacheIgnite1", false, new AsyncCallback.Children2Callback() {
+        client.getChildrenAsync("/apacheIgnite1", null, new AsyncCallback.Children2Callback() {
             @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
                 if (rc == 0)
                     res.set(true);
             }
-        }, null);
+        });
 
         cb.get(10_000);
 
@@ -128,7 +128,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
 
         final CountDownLatch l = new CountDownLatch(1);
 
-        client.getChildrenAsync("/apacheIgnite1", false, new AsyncCallback.Children2Callback() {
+        client.getChildrenAsync("/apacheIgnite1", null, new AsyncCallback.Children2Callback() {
             @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
                 closeZK();
 
@@ -144,7 +144,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
                     fail("Unexpected error: " + e);
                 }
             }
-        }, null);
+        });
 
         assertTrue(l.await(10, TimeUnit.SECONDS));
 
@@ -196,14 +196,14 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
 
         final CountDownLatch l = new CountDownLatch(1);
 
-        client.getChildrenAsync("/apacheIgnite1", false, new AsyncCallback.Children2Callback() {
+        client.getChildrenAsync("/apacheIgnite1", null, new AsyncCallback.Children2Callback() {
             @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
                 info("Callback: " + rc);
 
                 if (rc == 0)
                     l.countDown();
             }
-        }, null);
+        });
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -236,7 +236,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
 
         final CountDownLatch l = new CountDownLatch(1);
 
-        client.getChildrenAsync("/apacheIgnite1", false, new AsyncCallback.Children2Callback() {
+        client.getChildrenAsync("/apacheIgnite1", null, new AsyncCallback.Children2Callback() {
             @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
                 try {
                     zkCluster.getServers().get(0).stop();
@@ -265,7 +265,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
                     fail("Unexpected error: " + e);
                 }
             }
-        }, null);
+        });
 
         assertTrue(l.await(10, TimeUnit.SECONDS));
     }

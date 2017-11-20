@@ -22,13 +22,22 @@ import org.apache.ignite.events.EventType;
 /**
  *
  */
-class ZkDiscoveryNodeFailedEventData extends ZkDiscoveryEventData {
+class ZkDiscoveryNodeFailEventData extends ZkDiscoveryEventData {
     /** */
     private int failedNodeInternalId;
 
-    public ZkDiscoveryNodeFailedEventData(long topVer, int failedNodeInternalId) {
+    ZkDiscoveryNodeFailEventData(long topVer, int failedNodeInternalId) {
         super(EventType.EVT_NODE_FAILED, topVer);
 
         this.failedNodeInternalId = failedNodeInternalId;
+    }
+
+    int failedNodeInternalId() {
+        return failedNodeInternalId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "NodeFailEventData [topVer=" + topologyVersion() + ", nodeId=" + failedNodeInternalId + ']';
     }
 }

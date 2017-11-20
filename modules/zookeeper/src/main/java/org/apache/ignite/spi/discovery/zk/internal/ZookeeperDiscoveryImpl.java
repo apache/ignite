@@ -51,7 +51,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.zookeeper.CreateMode.EPHEMERAL;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
@@ -98,13 +97,21 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private long gridStartTime;
 
+    /**
+     * @param log
+     * @param basePath
+     * @param clusterName
+     * @param locNode
+     * @param lsnr
+     * @param exchange
+     */
     public ZookeeperDiscoveryImpl(IgniteLogger log,
         String basePath,
         String clusterName,
         ZookeeperClusterNode locNode,
         DiscoverySpiListener lsnr,
         DiscoverySpiDataExchange exchange) {
-        assert locNode.id() != null : locNode;
+        assert locNode.id() != null && locNode.isLocal() : locNode;
 
         if (F.isEmpty(clusterName))
             throw new IllegalArgumentException("Cluster name is empty.");
@@ -245,6 +252,8 @@ public class ZookeeperDiscoveryImpl {
 
             zkClient.createIfNeeded(zkPaths.basePath, null, PERSISTENT);
 
+            zkClient.createIfNeeded(zkPaths.clusterDir, null, PERSISTENT);
+
             zkClient.createIfNeeded(zkPaths.evtsPath, null, PERSISTENT);
 
             zkClient.createIfNeeded(zkPaths.joinDataDir, null, PERSISTENT);
@@ -269,9 +278,9 @@ public class ZookeeperDiscoveryImpl {
             // TODO ZK: handle max size.
             String path = zkClient.createIfNeeded(zkPaths.joinDataDir + "/" + locNode.id() + "|", joinDataBytes, EPHEMERAL_SEQUENTIAL);
 
-            int seqNum = Integer.parseInt(path.substring(ZkPaths.ID_LEN + 2));
+            int seqNum = Integer.parseInt(path.substring(path.lastIndexOf('|') + 1));
 
-            zkClient.createIfNeeded(zkPaths.aliveNodesDir + "/" + locNode.id() + "|" + seqNum + "|", null, EPHEMERAL);
+            zkClient.createIfNeeded(zkPaths.aliveNodesDir + "/" + locNode.id() + "|" + seqNum + "|", null, EPHEMERAL_SEQUENTIAL);
 
             zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new AsyncCallback.Children2Callback() {
                 @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
@@ -301,45 +310,99 @@ public class ZookeeperDiscoveryImpl {
 
             TreeMap<Integer, String> alives = new TreeMap<>();
 
-            for (String child : aliveNodes)
-                alives.put(ZkPaths.aliveInternalId(child), child);
+            Integer locInternalId = null;
+
+            for (String aliveNodePath : aliveNodes) {
+                Integer internalId = ZkPaths.aliveInternalId(aliveNodePath);
+
+                alives.put(internalId, aliveNodePath);
+
+                if (locInternalId == null) {
+                    UUID nodeId = ZkPaths.aliveNodeId(aliveNodePath);
+
+                    if (locNode.id().equals(nodeId))
+                        locInternalId = internalId;
+                }
+            }
 
             assert !alives.isEmpty();
+            assert locInternalId != null;
 
             Map.Entry<Integer, String> crdE = alives.firstEntry();
 
-            UUID crdId = ZkPaths.aliveNodeId(crdE.getValue());
-
-            if (crdId.equals(locNode.id())) {
-                byte[] evtsData = zkClient.getData(zkPaths.evtsPath);
-
-                if (evtsData.length > 0)
-                    onEventsUpdate(evtsData, null);
-
-                crd = true;
-
-                if (joined) {
-                    log.info("Node connected to zookeeper, node is new discovery coordinator " +
-                        "[locId=" + locNode.id() + ']');
-
-                    assert locNode.order() > 0 : locNode;
-                    assert evts != null;
-                }
-                else {
-                    log.info("Node connected to zookeeper, node is first cluster node [locId=" + locNode.id() + ']');
-
-                    newClusterStarted(crdE.getKey());
-                }
-
-                zkClient.getChildrenAsync(zkPaths.aliveNodesDir, watcher, childrenCallback);
-            }
+            if (locInternalId.equals(crdE.getKey()))
+                onBecomeCoordinator(locInternalId);
             else {
+                assert alives.size() > 1;
 
+                Map.Entry<Integer, String> prevE = alives.floorEntry(locInternalId - 1);
+
+                assert prevE != null;
+
+                final int locInternalId0 = locInternalId;
+
+                zkClient.existsAsync(zkPaths.aliveNodesDir + "/" + prevE.getValue(), new Watcher() {
+                    @Override public void process(WatchedEvent evt) {
+                        if (evt.getType() == Event.EventType.NodeDeleted) {
+                            try {
+                                onPreviousCoordinatorFail(locInternalId0);
+                            }
+                            catch (Throwable e) {
+                                onFatalError(e);
+                            }
+                        }
+                    }
+                }, new AsyncCallback.StatCallback() {
+                    @Override public void processResult(int rc, String path, Object ctx, Stat stat) {
+                        assert rc == 0 : rc;
+
+                        if (stat == null) {
+                            try {
+                                onPreviousCoordinatorFail(locInternalId0);
+                            }
+                            catch (Throwable e) {
+                                onFatalError(e);
+                            }
+                        }
+                    }
+                });
             }
         }
         catch (Throwable e) {
             onFatalError(e);
         }
+    }
+
+    private void onPreviousCoordinatorFail(int locInternalId) throws Exception {
+        if (log.isInfoEnabled())
+            log.info("Previous discovery coordinator failed [locId=" + locNode.id() + ']');
+
+        onBecomeCoordinator(locInternalId);
+    }
+
+    private void onBecomeCoordinator(int locInternalId) throws Exception {
+        byte[] evtsData = zkClient.getData(zkPaths.evtsPath);
+
+        if (evtsData.length > 0)
+            onEventsUpdate(evtsData, null);
+
+        crd = true;
+
+        if (joined) {
+            if (log.isInfoEnabled())
+                log.info("Node is new discovery coordinator [locId=" + locNode.id() + ']');
+
+            assert locNode.order() > 0 : locNode;
+            assert evts != null;
+        }
+        else {
+            if (log.isInfoEnabled())
+                log.info("Node is first cluster node [locId=" + locNode.id() + ']');
+
+            newClusterStarted(locInternalId);
+        }
+
+        zkClient.getChildrenAsync(zkPaths.aliveNodesDir, watcher, childrenCallback);
     }
 
     private void generateTopologyEvents(List<String> aliveNodes) throws Exception {
@@ -359,12 +422,12 @@ public class ZookeeperDiscoveryImpl {
             assert old == null;
 
             if (!top.nodesByInternalId.containsKey(inernalId))
-                processNodeJoin(curTop, inernalId, child);
+                generateNodeJoin(curTop, inernalId, child);
         }
 
         for (Map.Entry<Integer, ZookeeperClusterNode> e : top.nodesByInternalId.entrySet()) {
             if (!alives.containsKey(e.getKey()))
-                processNodeFail(curTop, e.getValue());
+                generateNodeFail(curTop, e.getValue());
         }
 
         if (evts.evts.size() > evtCnt) {
@@ -378,17 +441,23 @@ public class ZookeeperDiscoveryImpl {
 
             if (log.isInfoEnabled())
                 log.info("Discovery coordinator saved new events [topVer=" + evts.topVer + ", saveTime=" + time + ']');
+
+            onEventsUpdate(evts);
         }
     }
 
-    private void processNodeFail(TreeMap<Long, ZookeeperClusterNode> curTop, ZookeeperClusterNode failedNode) {
+    /**
+     * @param curTop Current topology.
+     * @param failedNode Failed node.
+     */
+    private void generateNodeFail(TreeMap<Long, ZookeeperClusterNode> curTop, ZookeeperClusterNode failedNode) {
         Object rmvd = curTop.remove(failedNode.order());
 
         assert rmvd != null;
 
         evts.topVer++;
 
-        ZkDiscoveryEventData evtData = new ZkDiscoveryNodeFailedEventData(evts.topVer, failedNode.internalId());
+        ZkDiscoveryEventData evtData = new ZkDiscoveryNodeFailEventData(evts.topVer, failedNode.internalId());
 
         evts.addEvent(evtData);
 
@@ -398,7 +467,7 @@ public class ZookeeperDiscoveryImpl {
         }
     }
 
-    private void processNodeJoin(TreeMap<Long, ZookeeperClusterNode> curTop,
+    private void generateNodeJoin(TreeMap<Long, ZookeeperClusterNode> curTop,
         int internalId,
         String aliveNodePath)
         throws Exception
@@ -406,7 +475,7 @@ public class ZookeeperDiscoveryImpl {
         UUID nodeId = ZkPaths.aliveNodeId(aliveNodePath);
         int joinSeq = ZkPaths.aliveJoinSequence(aliveNodePath);
 
-        String joinDataPath = zkPaths.zkPath(zkPaths.joinDataDir + '/' + nodeId.toString() + "|" + joinSeq);
+        String joinDataPath = zkPaths.joinDataDir + '/' + nodeId.toString() + "|" + String.format("%010d", joinSeq);
 
         byte[] joinData;
 
@@ -414,7 +483,7 @@ public class ZookeeperDiscoveryImpl {
             joinData = zkClient.getData(joinDataPath);
         }
         catch (KeeperException.NoNodeException e) {
-            U.warn(log, "Failed to read joinin node data, node left before join process finished: " + nodeId);
+            U.warn(log, "Failed to read joining node data, node left before join process finished: " + nodeId);
 
             return;
         }
@@ -431,10 +500,6 @@ public class ZookeeperDiscoveryImpl {
         joinedNode.order(evts.topVer);
         joinedNode.internalId(internalId);
 
-        Object old = curTop.put(joinedNode.order(), joinedNode);
-
-        assert old == null;
-
         DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(nodeId);
 
         joiningNodeBag.joiningNodeData(joiningNodeData.discoveryData());
@@ -447,10 +512,19 @@ public class ZookeeperDiscoveryImpl {
 
         Map<Integer, Serializable> commonData = collectBag.commonData();
 
-        ZkJoinEventDataForJoined dataForJoined = new ZkJoinEventDataForJoined(new ArrayList<>(curTop.values()),
+        ZkJoinEventDataForJoined dataForJoined = new ZkJoinEventDataForJoined(
+            new ArrayList<>(curTop.values()),
             commonData);
 
-        ZkDiscoveryEventData evtData = new ZkDiscoveryNodeJoinedEventData(evts.topVer, joinedNode.id());
+        Object old = curTop.put(joinedNode.order(), joinedNode);
+
+        assert old == null;
+
+        ZkDiscoveryNodeJoinEventData evtData = new ZkDiscoveryNodeJoinEventData(evts.topVer,
+            joinedNode.id(),
+            joinedNode.internalId());
+
+        evtData.joiningNodeData = joiningNodeData;
 
         evts.addEvent(evtData);
 
@@ -476,13 +550,13 @@ public class ZookeeperDiscoveryImpl {
      */
     @SuppressWarnings("unchecked")
     private void newClusterStarted(int locInternalId) throws Exception {
+        cleanupPreviousClusterData();
+
         joined = true;
 
         gridStartTime = U.currentTimeMillis();
 
         evts = new ZkDiscoveryEventsData(gridStartTime, 1L, new TreeMap<Long, ZkDiscoveryEventData>());
-
-        // TODO ZK: old data cleanup.
 
         locNode.internalId(locInternalId);
         locNode.order(1);
@@ -499,6 +573,24 @@ public class ZookeeperDiscoveryImpl {
         joinFut.onDone();
     }
 
+    private void cleanupPreviousClusterData() throws Exception {
+        // TODO ZK: use multi.
+        zkClient.setData(zkPaths.evtsPath, null, -1);
+
+        for (String evtPath : zkClient.getChildren(zkPaths.evtsPath)) {
+            String evtDir = zkPaths.evtsPath + "/" + evtPath;
+
+            removeChildren(evtDir);
+
+            zkClient.delete(evtDir, -1);
+        }
+    }
+
+    private void removeChildren(String path) throws Exception {
+        for (String childPath : zkClient.getChildren(path))
+            zkClient.delete(path + "/" + childPath, -1);
+    }
+
     /**
      * @param children
      * @param stat
@@ -513,34 +605,163 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private boolean joined;
 
-    /**
-     * @param data
-     * @param stat
-     */
-    private void onEventsUpdate(byte[] data, Stat stat) throws IgniteCheckedException {
+    private void onEventsUpdate(byte[] data, Stat stat) throws Exception {
+        if (data.length == 0)
+            return;
+
+        assert !crd;
+
         ZkDiscoveryEventsData evtsData = unmarshal(data);
 
+        onEventsUpdate(evtsData);
+
+        evts = evtsData;
+    }
+
+    /**
+     * @param evtsData Events.
+     */
+    private void onEventsUpdate(ZkDiscoveryEventsData evtsData) throws Exception {
         TreeMap<Long, ZkDiscoveryEventData> evts = evtsData.evts;
 
-        for (Map.Entry<Long, ZkDiscoveryEventData> e : evts.tailMap(lastProcEvt).entrySet()) {
+        for (Map.Entry<Long, ZkDiscoveryEventData> e : evts.tailMap(lastProcEvt, false).entrySet()) {
             ZkDiscoveryEventData evtData = e.getValue();
+
+            if (log.isInfoEnabled()) {
+                log.info("New discovery event data: " + evtData + ']');
+            }
 
             if (!joined) {
                 if (evtData.eventType() != EventType.EVT_NODE_JOINED)
                     continue;
 
-                UUID joinedId = ((ZkDiscoveryNodeJoinedEventData)evtData).nodeId;
+                ZkDiscoveryNodeJoinEventData evtData0 = (ZkDiscoveryNodeJoinEventData)evtData;
+
+                UUID joinedId = ((ZkDiscoveryNodeJoinEventData)evtData).nodeId;
 
                 boolean locJoin = evtData.eventType() == EventType.EVT_NODE_JOINED &&
                     locNode.id().equals(joinedId);
 
                 if (locJoin) {
+                    String path = zkPaths.evtsPath + "/" + evtData.topologyVersion() + "/joined";
 
+                    ZkJoinEventDataForJoined dataForJoined = unmarshal(zkClient.getData(path));
+
+                    gridStartTime = evtsData.gridStartTime;
+
+                    locNode.internalId(evtData0.joinedInternalId);
+                    locNode.order(evtData.topologyVersion());
+
+                    DiscoveryDataBag dataBag = new DiscoveryDataBag(locNode.id());
+
+                    dataBag.commonData(dataForJoined.discoveryData());
+
+                    exchange.onExchange(dataBag);
+
+                    List<ZookeeperClusterNode> allNodes = dataForJoined.topology();
+
+                    for (ZookeeperClusterNode node : allNodes)
+                        top.addNode(node);
+
+                    top.addNode(locNode);
+
+                    List<ClusterNode> topSnapshot = new ArrayList<>((Collection)top.nodesByOrder.values());
+
+                    lsnr.onDiscovery(evtData.eventType(),
+                        evtData.topologyVersion(),
+                        locNode,
+                        topSnapshot,
+                        Collections.<Long, Collection<ClusterNode>>emptyMap(),
+                        null);
+
+                    joinFut.onDone();
+
+                    joined = true;
+                }
+            }
+            else {
+                switch (evtData.eventType()) {
+                    case EventType.EVT_NODE_JOINED: {
+                        ZkDiscoveryNodeJoinEventData evtData0 = (ZkDiscoveryNodeJoinEventData)evtData;
+
+                        ZkJoiningNodeData joiningData;
+
+                        if (!crd) {
+                            String path = zkPaths.evtsPath + "/" + evtData.topologyVersion();
+
+                            joiningData = unmarshal(zkClient.getData(path));
+
+                            DiscoveryDataBag dataBag = new DiscoveryDataBag(evtData0.nodeId);
+
+                            dataBag.joiningNodeData(joiningData.discoveryData());
+
+                            exchange.onExchange(dataBag);
+                        }
+                        else {
+                            assert evtData0.joiningNodeData != null;
+
+                            joiningData = evtData0.joiningNodeData;
+                        }
+
+                        notifyNodeJoin(evtData0, joiningData);
+
+                        break;
+                    }
+
+                    case EventType.EVT_NODE_FAILED: {
+                        notifyNodeFail((ZkDiscoveryNodeFailEventData)e.getValue());
+
+                        break;
+                    }
+
+                    default:
+                        assert false : "Invalid event: " + evtData;
                 }
             }
 
-            lastProcEvt = e.getKey();
+            if (joined)
+                lastProcEvt = e.getKey();
         }
+    }
+
+    /**
+     * @param evtData Event data.
+     * @param joiningData Joining node data.
+     */
+    private void notifyNodeJoin(ZkDiscoveryNodeJoinEventData evtData, ZkJoiningNodeData joiningData) {
+        ZookeeperClusterNode joinedNode = joiningData.node();
+
+        joinedNode.order(evtData.topologyVersion());
+        joinedNode.internalId(evtData.joinedInternalId);
+
+        top.addNode(joinedNode);
+
+        List<ClusterNode> topSnapshot = new ArrayList<>((Collection)top.nodesByOrder.values());
+
+        lsnr.onDiscovery(evtData.eventType(),
+            evtData.topologyVersion(),
+            joinedNode,
+            topSnapshot,
+            Collections.<Long, Collection<ClusterNode>>emptyMap(),
+            null);
+    }
+
+    /**
+     * @param evtData Event data.
+     */
+    private void notifyNodeFail(ZkDiscoveryNodeFailEventData evtData) {
+        ZookeeperClusterNode failedNode = top.removeNode(evtData.failedNodeInternalId());
+
+        assert failedNode != null;
+
+        List<ClusterNode> topSnapshot = new ArrayList<>((Collection)top.nodesByOrder.values());
+
+        lsnr.onDiscovery(evtData.eventType(),
+            evtData.topologyVersion(),
+            failedNode,
+            topSnapshot,
+            Collections.<Long, Collection<ClusterNode>>emptyMap(),
+            null);
     }
 
     /**
@@ -592,6 +813,7 @@ public class ZookeeperDiscoveryImpl {
     private class ConnectionLossListener implements IgniteRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
+            // TODO ZK
             U.warn(log, "Zookeeper connection loss, local node is SEGMENTED");
         }
     }
@@ -602,10 +824,20 @@ public class ZookeeperDiscoveryImpl {
     private class ZkWatcher implements Watcher {
         /** {@inheritDoc} */
         @Override public void process(WatchedEvent evt) {
-            if (evt.getType() == Event.EventType.NodeDataChanged)
-                zkClient.getDataAsync(evt.getPath(), this, dataCallback);
-            else if (evt.getType() == Event.EventType.NodeChildrenChanged)
-                zkClient.getChildrenAsync(evt.getPath(), this, childrenCallback);
+            if (evt.getType() == Event.EventType.NodeDataChanged) {
+                if (evt.getPath().equals(zkPaths.evtsPath)) {
+                    if (!crd)
+                        zkClient.getDataAsync(evt.getPath(), this, dataCallback);
+                }
+                else
+                    U.warn(log, "Received NodeDataChanged for unexpected path: " + evt.getPath());
+            }
+            else if (evt.getType() == Event.EventType.NodeChildrenChanged) {
+                if (evt.getPath().equals(zkPaths.aliveNodesDir))
+                    zkClient.getChildrenAsync(evt.getPath(), this, childrenCallback);
+                else
+                    U.warn(log, "Received NodeChildrenChanged for unexpected path: " + evt.getPath());
+            }
         }
     }
 
@@ -621,7 +853,7 @@ public class ZookeeperDiscoveryImpl {
                 if (path.equals(zkPaths.aliveNodesDir))
                     onAliveNodesUpdate(children, stat);
                 else
-                    U.warn(log, "Children callback for unknown path: " + path);
+                    U.warn(log, "Children callback for unexpected path: " + path);
             }
             catch (Throwable e) {
                 onFatalError(e);
@@ -638,8 +870,10 @@ public class ZookeeperDiscoveryImpl {
             try {
                 assert rc == 0 : rc;
 
-                if (path.equals(zkPaths.evtsPath))
-                    onEventsUpdate(data, stat);
+                if (path.equals(zkPaths.evtsPath)) {
+                    if (!crd)
+                        onEventsUpdate(data, stat);
+                }
                 else
                     U.warn(log, "Data callback for unknown path: " + path);
             }
