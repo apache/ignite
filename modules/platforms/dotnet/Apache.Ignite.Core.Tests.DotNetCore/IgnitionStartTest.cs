@@ -22,14 +22,13 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.IO;
 
-
     /// <summary>
     /// Tests Ignite startup.
     /// 
     /// MsTest is currently the most viable option on .NET Core (especially because of console output handling).
     /// </summary>
     [TestClass]
-    public class IgnitionStartTest
+    public class IgnitionStartTest : TestBase
     {
         /// <summary>
         /// Tests that Ignite starts with default configuration.
@@ -41,18 +40,19 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
 
             var ignite = Ignition.Start(cfg);
             Assert.IsNotNull(ignite);
-
-            var cache = ignite.CreateCache<int, int>("foo");
-            cache[1] = 1;
-            Assert.AreEqual(1, cache[1]);
+            Assert.AreEqual(ignite, Ignition.GetIgnite());
 
             // Second node.
             var ignite2 = Ignition.Start(cfg);
-            Assert.AreEqual(2, ignite2.GetCluster().GetNodes().Count);
+            Assert.AreEqual(2, Ignition.GetAll().Count);
 
             // Stop node.
             Ignition.Stop(ignite.Name, true);
-            Assert.AreEqual(1, ignite2.GetCluster().GetNodes().Count);
+            Assert.AreEqual(ignite2, Ignition.GetIgnite());
+
+            // Stop all.
+            Ignition.StopAll(true);
+            Assert.AreEqual(0, Ignition.GetAll().Count);
         }
 
         /// <summary>
@@ -65,20 +65,13 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
             // 2) Note that System.Configuration.ConfigurationManager NuGet package has to be installed.
             var configPath = Path.Combine(Path.GetDirectoryName(GetType().Assembly.Location), "app.config");
 
-            var ignite = Ignition.StartFromApplicationConfiguration("igniteConfiguration", configPath);
-            var cache = ignite.GetCache<int, int>(ignite.GetCacheNames().Single());
+            using (var ignite = Ignition.StartFromApplicationConfiguration("igniteConfiguration", configPath))
+            {
+                var cache = ignite.GetCache<int, int>(ignite.GetCacheNames().Single());
 
-            Assert.AreEqual("cacheFromConfig", cache.Name);
-            Assert.AreEqual(CacheMode.Replicated, cache.GetConfiguration().CacheMode);
-        }
-
-        /// <summary>
-        /// Fixture cleanup.
-        /// </summary>
-        [ClassCleanup]
-        public static void ClassCleanup()
-        {
-            Ignition.StopAll(true);
+                Assert.AreEqual("cacheFromConfig", cache.Name);
+                Assert.AreEqual(CacheMode.Replicated, cache.GetConfiguration().CacheMode);
+            }
         }
     }
 }
