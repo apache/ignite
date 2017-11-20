@@ -143,6 +143,7 @@ angular.module('ignite-console', [
     // Optional AngularJS modules.
     'ngAnimate',
     'ngSanitize',
+    'ngMessages',
     // Third party libs.
     'ngRetina',
     'btford.socket-io',

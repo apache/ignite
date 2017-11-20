@@ -25,6 +25,7 @@ import 'angular-strap/dist/angular-strap.tpl';
 import 'angular-socket-io';
 import 'angular-retina';
 
+import 'angular-messages';
 import '@uirouter/angularjs';
 import '@uirouter/angularjs/lib/legacy/stateEvents';
 
