@@ -29,6 +29,9 @@ public enum GridNioSessionMetaKey {
     /** SSL Meta. */
     SSL_META,
 
+    /** Compress Meta. */
+    COMPRESS_META,
+
     /** NIO operation (request type). */
     NIO_OPERATION,
 

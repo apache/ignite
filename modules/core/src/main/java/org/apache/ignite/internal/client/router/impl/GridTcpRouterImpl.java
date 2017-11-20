@@ -271,7 +271,9 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
                 filters = new GridNioFilter[] { codec, sslFilter };
             }
             else if (true) {
-                filters = new GridNioFilter[] { codec,  new GridNioCompressFilter(log, false) };
+                GridNioCompressFilter sslFilter = new GridNioCompressFilter(false, ByteOrder.nativeOrder(), log);
+
+                filters = new GridNioFilter[] { codec, sslFilter };
             } else
                 filters = new GridNioFilter[] { codec };
 

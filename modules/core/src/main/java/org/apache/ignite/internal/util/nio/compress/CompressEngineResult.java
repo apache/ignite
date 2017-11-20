@@ -15,8 +15,18 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Implementation of compress filter for NIO server.
- */
 package org.apache.ignite.internal.util.nio.compress;
+
+/**
+ *
+ */
+enum CompressEngineResult {
+    /** */
+    BUFFER_UNDERFLOW,
+
+    /** */
+    BUFFER_OVERFLOW,
+
+    /** */
+    OK;
+}

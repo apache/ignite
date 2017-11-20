@@ -28,51 +28,156 @@ import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.lang.IgniteInClosure;
 
-/**
- *
- */
-public class GridNioCompressFilter extends GridNioFilterAdapter {
-    /** */
-    private static final int COMPRESS_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESS_META;
 
-    /** */
+/** */
+public class GridNioCompressFilter extends GridNioFilterAdapter {
+    /** Logger to use. */
     private IgniteLogger log;
+
+    /** Order. */
+    private ByteOrder order;
+
+    /** Allocate direct buffer or heap buffer. */
+    private boolean directBuf;
 
     /** Whether direct mode is used. */
     private boolean directMode;
 
-    /** */
-    public GridNioCompressFilter(IgniteLogger log, boolean directMode) {
+    /**
+     * Creates compress filter.
+     *
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
+     * @param log Logger to use.
+     */
+    public GridNioCompressFilter(boolean directBuf, ByteOrder order, IgniteLogger log) {
         super("Compress filter");
 
         this.log = log;
+        this.directBuf = directBuf;
+        this.order = order;
+    }
+
+    /**
+     *
+     * @param directMode Flag indicating whether direct mode is used.
+     */
+    public void directMode(boolean directMode) {
         this.directMode = directMode;
+    }
+
+    /**
+     * @return Flag indicating whether direct mode is used.
+     */
+    public boolean directMode() {
+        return directMode;
     }
 
     /** {@inheritDoc} */
     @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Remote client connected, creating compress handler: " + ses);
+
+        CompressEngine engine;
+
+        GridCompressMeta compressMeta = ses.meta(COMPRESS_META.ordinal());
+
+        if (compressMeta == null) {
+            engine = new CompressEngine();
+
+            compressMeta = new GridCompressMeta();
+
+            ses.addMeta(COMPRESS_META.ordinal(), compressMeta);
+        }
+        else {
+            engine = compressMeta.compressEngine();
+
+            assert engine != null;
+        }
+
+        GridNioCompressHandler hnd = new GridNioCompressHandler(this,
+            ses,
+            engine,
+            directBuf,
+            order,
+            log,
+            compressMeta.encodedBuffer());
+
+        compressMeta.handler(hnd);
+
+        ByteBuffer alreadyDecoded = compressMeta.decodedBuffer();
+
         proceedSessionOpened(ses);
+
+        if (alreadyDecoded != null)
+            proceedMessageReceived(ses, alreadyDecoded);
+
     }
 
     /** {@inheritDoc} */
     @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
-        proceedSessionClosed(ses);
+        GridNioCompressHandler hnd = compressHandler(ses);
+
+        try {
+            hnd.shutdown();
+        }
+        finally {
+            proceedSessionClosed(ses);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
+    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex)
+        throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 
+    /**
+     * @param ses Session.
+     */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    public void lock(GridNioSession ses) {
+        GridNioCompressHandler hnd = compressHandler(ses);
+
+        hnd.lock();
+    }
+
+    /**
+     * @param ses NIO session.
+     */
+    public void unlock(GridNioSession ses) {
+        compressHandler(ses).unlock();
+    }
+
+    /**
+     * @param ses Session.
+     * @param input Data to encrypt.
+     * @return Output buffer with encrypted data.
+     * @throws IOException If failed to encrypt.
+     */
+    public ByteBuffer encrypt(GridNioSession ses, ByteBuffer input) throws IOException {
+        GridNioCompressHandler hnd = compressHandler(ses);
+
+        hnd.lock();
+
+        try {
+            return hnd.encrypt(input);
+        }
+        finally {
+            hnd.unlock();
+        }
+    }
+
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut,
-        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
-        if (msg instanceof ByteBuffer)
-            System.out.println("MY !!!! ="+((ByteBuffer)msg).limit());
+    @Override public GridNioFuture<?> onSessionWrite(
+        GridNioSession ses,
+        Object msg,
+        boolean fut,
+        IgniteInClosure<IgniteException> ackC
+    ) throws IgniteCheckedException {
         if (directMode)
             return proceedSessionWrite(ses, msg, fut, ackC);
 
@@ -81,53 +186,84 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
         if (!input.hasRemaining())
             return new GridNioFinishedFuture<Object>(null);
 
+        GridNioCompressHandler hnd = compressHandler(ses);
+
+        hnd.lock();
+
         try {
-            return proceedSessionWrite(ses, new GridNioCompressor().compress(input), fut, ackC);
+            hnd.encrypt(input);
+
+            return hnd.writeNetBuffer(ackC);
         }
         catch (IOException e) {
-            throw new GridNioException("Failed to compress data: " + ses, e);
+            throw new GridNioException("Failed to encode compress data: " + ses, e);
+        }
+        finally {
+            hnd.unlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
         ByteBuffer input = checkMessage(ses, msg);
+
+        GridNioCompressHandler hnd = compressHandler(ses);
+
+        hnd.lock();
+
         try {
-            Object meta = ses.meta(COMPRESS_META_KEY);
-            if (meta != null) {
-                System.out.println("\t\thave meta");
-                ByteOrder order = input.order();
-                ByteBuffer buf2;
-                if (input.isDirect()) {
-                    buf2 = ByteBuffer.allocateDirect(((ByteBuffer)meta).limit()+input.limit());
-                } else {
-                    buf2 = ByteBuffer.allocateDirect(((ByteBuffer)meta).limit()+input.limit());
-                }
-                buf2.order(order);
-                buf2.put(((ByteBuffer)meta));
-                buf2.put(input);
-                ses.removeMeta(COMPRESS_META_KEY);
-                buf2.flip();
-                buf2 = new GridNioCompressor().decompress(buf2);
+            hnd.messageReceived(input);
 
-                proceedMessageReceived(ses, buf2);
-                return;
+            ByteBuffer appBuf = hnd.getApplicationBuffer();
+
+            appBuf.flip();
+
+            if (appBuf.hasRemaining())
+                proceedMessageReceived(ses, appBuf);
+
+            appBuf.compact();
+
+            if (hnd.isInboundDone()) {
+                if (log.isDebugEnabled())
+                    log.debug("Remote peer closed secure session (will close connection): " + ses);
+
+                shutdownSession(ses, hnd);
             }
-            input = new GridNioCompressor().decompress(input);
-
-            proceedMessageReceived(ses, input);
         }
         catch (IOException e) {
-            //throw new GridNioException("Failed to decompress data: " + ses, e);
-            input.rewind();
-            ses.addMeta(COMPRESS_META_KEY, input);
-            System.out.println("\t\tFailed to decompress data: " + input.limit());
-            //e.printStackTrace();
+            throw new GridNioException("Failed to decode compress data: " + ses, e);
+        }
+        finally {
+            hnd.unlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
+        GridNioCompressHandler hnd = compressHandler(ses);
+
+        hnd.lock();
+
+        try {
+            return shutdownSession(ses, hnd);
+        }
+        finally {
+            hnd.unlock();
+        }
+    }
+
+    /**
+     * Sends compress <tt>close</tt> message and closes underlying TCP connection.
+     *
+     * @param ses Session to shutdown.
+     * @param hnd Compress handler.
+     * @throws GridNioException If failed to forward requests to filter chain.
+     * @return Close future.
+     */
+    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioCompressHandler hnd)
+        throws IgniteCheckedException {
+        hnd.writeNetBuffer(null);
+
         return proceedSessionClose(ses);
     }
 
@@ -142,10 +278,23 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
     }
 
     /**
-     * @return Flag indicating whether direct mode is used.
+     * Gets compress handler from the session.
+     *
+     * @param ses Session instance.
+     * @return compress handler.
      */
-    public boolean directMode() {
-        return directMode;
+    private GridNioCompressHandler compressHandler(GridNioSession ses) {
+        GridCompressMeta compressMeta = ses.meta(COMPRESS_META.ordinal());
+
+        assert compressMeta != null;
+
+        GridNioCompressHandler hnd = compressMeta.handler();
+
+        if (hnd == null)
+            throw new IgniteException("Failed to process incoming message (received message before compress handler " +
+                "was created): " + ses);
+
+        return hnd;
     }
 
     /**

@@ -188,7 +188,11 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                     filters = new GridNioFilter[]{codecFilter, sslFilter};
                 }
                 else if (true) {
-                    filters = new GridNioFilter[]{codecFilter, new GridNioCompressFilter(gridLog, false)};
+                    GridNioCompressFilter compressFilter = new GridNioCompressFilter(true, ByteOrder.nativeOrder(), gridLog);
+
+                    compressFilter.directMode(false);
+
+                    filters = new GridNioFilter[]{codecFilter, compressFilter};
                 } else
                     filters = new GridNioFilter[]{codecFilter};
 

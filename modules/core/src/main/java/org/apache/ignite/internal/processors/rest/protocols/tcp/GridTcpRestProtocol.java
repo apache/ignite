@@ -249,7 +249,15 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 };
             }
             else if (ctx.config().isNetworkCompressingEnabled()){
-                filters = new GridNioFilter[] { codec, new GridNioCompressFilter(log, false) };
+                GridNioCompressFilter compressFilter = new GridNioCompressFilter(
+                    cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log);
+
+                compressFilter.directMode(false);
+
+                filters = new GridNioFilter[] {
+                    codec,
+                    compressFilter
+                };
             } else
                 filters = new GridNioFilter[] { codec };
 
