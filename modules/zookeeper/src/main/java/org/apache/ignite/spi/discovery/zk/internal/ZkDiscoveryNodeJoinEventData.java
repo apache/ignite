@@ -34,12 +34,13 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
     transient ZkJoiningNodeData joiningNodeData;
 
     /**
+     * @param evtId Event ID.
      * @param topVer Topology version.
      * @param nodeId Joined node ID.
      * @param joinedInternalId Joined node internal ID.
      */
-    ZkDiscoveryNodeJoinEventData(long topVer, UUID nodeId, int joinedInternalId) {
-        super(EventType.EVT_NODE_JOINED, topVer);
+    ZkDiscoveryNodeJoinEventData(long evtId, long topVer, UUID nodeId, int joinedInternalId) {
+        super(evtId, EventType.EVT_NODE_JOINED, topVer);
 
         this.nodeId = nodeId;
         this.joinedInternalId = joinedInternalId;

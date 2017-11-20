@@ -30,6 +30,9 @@ class ZkPaths {
     private static final String JOIN_DATA_DIR = "joinData";
 
     /** */
+    private static final String CUSTOM_EVTS_DIR = "customEvts";
+
+    /** */
     private static final String ALIVE_NODES_DIR = "alive";
 
     /** */
@@ -53,6 +56,9 @@ class ZkPaths {
     /** */
     final String evtsPath;
 
+    /** */
+    final String customEvtsDir;
+
     /**
      * @param basePath Base directory.
      * @param clusterName Cluster name.
@@ -62,9 +68,11 @@ class ZkPaths {
         this.clusterName = clusterName;
 
         clusterDir = basePath + "/" + clusterName;
+
         aliveNodesDir = zkPath(ALIVE_NODES_DIR);
         joinDataDir = zkPath(JOIN_DATA_DIR);
         evtsPath = zkPath(DISCO_EVENTS_PATH);
+        customEvtsDir = zkPath(CUSTOM_EVTS_DIR);
     }
 
     /**
@@ -92,5 +100,17 @@ class ZkPaths {
         int idx2 = path.lastIndexOf('|');
 
         return Integer.parseInt(path.substring(idx1 + 1, idx2));
+    }
+
+    static int customEventSequence(String path) {
+        int idx = path.lastIndexOf('|');
+
+        return Integer.parseInt(path.substring(idx + 1));
+    }
+
+    static UUID customEventSendNodeId(String path) {
+        String idStr = path.substring(0, ZkPaths.UUID_LEN);
+
+        return UUID.fromString(idStr);
     }
 }

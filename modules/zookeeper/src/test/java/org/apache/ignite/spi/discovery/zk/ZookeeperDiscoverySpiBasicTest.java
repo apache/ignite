@@ -230,6 +230,24 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testCustomEventsSimple1_SingleNode() throws Exception {
+        Ignite srv0 = startGrid(0);
+
+        srv0.createCache(new CacheConfiguration<>("c1"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCustomEventsSimple1_5_Nodes() throws Exception {
+        Ignite srv0 = startGrids(2);
+
+        srv0.createCache(new CacheConfiguration<>("c1"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testSegmentation1() throws Exception {
         sesTimeout = 2000;
         testSockNio = true;

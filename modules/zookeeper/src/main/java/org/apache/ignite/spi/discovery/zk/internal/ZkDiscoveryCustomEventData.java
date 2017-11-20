@@ -17,35 +17,37 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.events.EventType;
+import java.util.UUID;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 /**
  *
  */
-class ZkDiscoveryNodeFailEventData extends ZkDiscoveryEventData {
+class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /** */
-    private int failedNodeInternalId;
+    final UUID sndNodeId;
+
+    /** */
+    final String evtPath;
+
+    /** */
+    transient DiscoverySpiCustomMessage msg;
 
     /**
      * @param evtId Event ID.
      * @param topVer Topology version.
-     * @param failedNodeInternalId Failed node ID.
+     * @param evtPath Event path.
      */
-    ZkDiscoveryNodeFailEventData(long evtId, long topVer, int failedNodeInternalId) {
-        super(evtId, EventType.EVT_NODE_FAILED, topVer);
+    ZkDiscoveryCustomEventData(long evtId, long topVer, UUID sndNodeId, String evtPath) {
+        super(evtId, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT, topVer);
 
-        this.failedNodeInternalId = failedNodeInternalId;
-    }
-
-    /**
-     * @return Failed node ID.
-     */
-    int failedNodeInternalId() {
-        return failedNodeInternalId;
+        this.sndNodeId = sndNodeId;
+        this.evtPath = evtPath;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "NodeFailEventData [topVer=" + topologyVersion() + ", nodeId=" + failedNodeInternalId + ']';
+        return "CustomEventData [topVer=" + topologyVersion() + ']';
     }
 }

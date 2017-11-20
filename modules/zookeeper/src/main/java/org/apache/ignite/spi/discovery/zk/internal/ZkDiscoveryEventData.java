@@ -18,8 +18,6 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -33,22 +31,28 @@ abstract class ZkDiscoveryEventData implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridToStringInclude
+    private final long evtId;
+
+    /** */
     private final int evtType;
 
     /** */
-    @GridToStringInclude
     private final long topVer;
 
     /**
      * @param evtType Event type.
      * @param topVer Topology version.
      */
-    ZkDiscoveryEventData(int evtType, long topVer) {
+    ZkDiscoveryEventData(long evtId, int evtType, long topVer) {
         assert evtType == EVT_NODE_JOINED || evtType == EVT_NODE_FAILED || evtType == EVT_DISCOVERY_CUSTOM_EVT : evtType;
 
+        this.evtId = evtId;
         this.evtType = evtType;
         this.topVer = topVer;
+    }
+
+    long eventId() {
+        return evtId;
     }
 
     int eventType() {

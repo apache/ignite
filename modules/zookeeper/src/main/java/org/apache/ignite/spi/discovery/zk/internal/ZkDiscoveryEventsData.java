@@ -28,6 +28,12 @@ class ZkDiscoveryEventsData implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    int procCustEvt = -1;
+
+    /** */
+    long evtIdGen;
+
+    /** */
     long topVer;
 
     /** */
@@ -51,7 +57,7 @@ class ZkDiscoveryEventsData implements Serializable {
      * @param evt Event.
      */
     void addEvent(ZkDiscoveryEventData evt) {
-        Object old = evts.put(evt.topologyVersion(), evt);
+        Object old = evts.put(evt.eventId(), evt);
 
         assert old == null : old;
     }
