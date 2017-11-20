@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -27,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -1485,28 +1487,22 @@ public class GridSqlQueryParser {
 
     /**
      * Check if query may be run locally on all caches mentioned in the query.
-     * @param qry Query.
+     * @param tbls Query tables.
      * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
      * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
      *     to run distributed query.
      * @see SqlFieldsQuery#isReplicatedOnly()
      */
-    public static boolean isLocalQuery(Query qry, boolean replicatedOnlyQry) {
+    public static boolean isLocalQuery(Collection<GridH2Table> tbls, boolean replicatedOnlyQry) {
         boolean hasCaches = false;
 
-        for (Table tbl : qry.getTables()) {
-            if (tbl instanceof GridH2Table) {
-                hasCaches = true;
+        for (GridH2Table tbl : tbls) {
+            hasCaches = true;
 
-                GridCacheContext cctx = ((GridH2Table) tbl).cache();
+            GridCacheContext cctx = tbl.cache();
 
-                if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
-                    return false;
-            }
-            else if (tbl instanceof TableView) {
-                if (!isLocalQuery(TABLE_VIEW_QUERY.get((TableView) tbl), replicatedOnlyQry))
-                    return false;
-            }
+            if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
+                return false;
         }
 
         // For consistency with old logic, let's not force locality in absence of caches -
@@ -1583,6 +1579,24 @@ public class GridSqlQueryParser {
             return parseAlterColumn((AlterTableAlterColumn)stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
+    }
+
+    /**
+     * @return Set of all tables encountered by this parser.
+     */
+    public Set<GridH2Table> allTables() {
+        Set<GridH2Table> res = Collections.newSetFromMap(new IdentityHashMap<GridH2Table, Boolean>());
+
+        // check all involved caches
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable)
+                res.add(((GridSqlTable)o).dataTable());
+        }
+
+        return Collections.unmodifiableSet(res);
     }
 
     /**

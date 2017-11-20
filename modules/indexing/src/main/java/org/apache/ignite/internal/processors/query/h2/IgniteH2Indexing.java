@@ -108,8 +108,10 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
@@ -1662,7 +1664,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             args = Arrays.copyOfRange(argsOrig, firstArg, firstArg + paramsCnt);
         }
 
-        if (prepared.isQuery()) {
+       if (prepared.isQuery()) {
             try {
                 bindParameters(stmt, F.asList(args));
             }
@@ -1673,7 +1675,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     Arrays.deepToString(args) + "]", IgniteQueryErrorCode.PARSING, e);
             }
 
-            loc |= GridSqlQueryParser.isLocalQuery(GridSqlQueryParser.query(prepared), qry.isReplicatedOnly());
+            GridSqlQueryParser parser = new GridSqlQueryParser(false);
+
+            GridSqlStatement parsedStmt = parser.parse(prepared);
+
+            // Legit assertion - we have H2 query flag above.
+            assert parsedStmt instanceof GridSqlQuery;
+
+            loc |= GridSqlQueryParser.isLocalQuery(parser.allTables(), qry.isReplicatedOnly());
 
             if (loc) {
                 GridCacheContext cctx = GridSqlQueryParser.getFirstPartitionedCache(prepared);
@@ -1759,7 +1768,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private GridCacheTwoStepQuery split(Prepared prepared, SqlFieldsQuery qry) throws IgniteCheckedException,
         SQLException {
-        GridCacheTwoStepQuery res = GridSqlQuerySplitter.split(connectionForThread(qry.getSchema()),prepared,
+        GridCacheTwoStepQuery res = GridSqlQuerySplitter.split(connectionForThread(qry.getSchema()), prepared,
             qry.getArgs(), qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), this);
 
         List<Integer> cacheIds = collectCacheIds(null, res);
