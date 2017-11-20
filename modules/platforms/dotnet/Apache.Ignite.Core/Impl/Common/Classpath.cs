@@ -70,7 +70,11 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var res = cpStr.ToString();
 
-            return res.StartsWith(ClasspathPrefix) ? res : ClasspathPrefix + res;
+            res = res.StartsWith(ClasspathPrefix) ? res : ClasspathPrefix + res;
+
+            Console.WriteLine("|| CLASSPATH: " + res);  // TODO
+
+            return res;
         }
 
         /// <summary>
