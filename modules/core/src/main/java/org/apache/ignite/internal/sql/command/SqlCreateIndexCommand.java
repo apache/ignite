@@ -244,6 +244,8 @@ public class SqlCreateIndexCommand implements SqlCommand {
      * @param lex Lexer.
      */
     private void parseIndexProperties(SqlLexer lex) {
+        Set<String> foundProps = new HashSet<>();
+
         while (true) {
             SqlLexerToken token = lex.lookAhead();
 
@@ -253,19 +255,15 @@ public class SqlCreateIndexCommand implements SqlCommand {
             if (token.tokenType() == SqlLexerTokenType.DEFAULT) {
                 switch (token.token()) {
                     case PARALLEL:
-                        lex.shift();
-
-                        parallel = parseInt(lex);
+                        parallel = getIntProperty(lex, PARALLEL, foundProps);
 
                         if (parallel < 0)
-                            throw error(lex, "Illegal " + PARALLEL + " value: " + parallel);
+                            throw error(lex, "Illegal " + PARALLEL + " value. Should be positive: " + parallel);
 
                         break;
 
                     case INLINE_SIZE:
-                        lex.shift();
-
-                        inlineSize = SqlParserUtils.parseInt(lex);
+                        inlineSize = getIntProperty(lex, INLINE_SIZE, foundProps);
 
                         if (inlineSize < 0)
                             throw error(lex, "Illegal " + INLINE_SIZE +
@@ -279,6 +277,24 @@ public class SqlCreateIndexCommand implements SqlCommand {
             }
         }
 
+    }
+
+    /**
+     * Parses <code>Integer</code> property by its keyword.
+     * @param lex Lexer.
+     * @param keyword Keyword.
+     * @param foundProps Set of properties to check if one has already been found in SQL clause.
+     * @return parsed value;
+     */
+    private Integer getIntProperty(SqlLexer lex, String keyword, Set<String> foundProps) {
+        if (foundProps.contains(keyword))
+            throw error(lex, "Only one " + keyword + " clause may be specified.");
+
+        foundProps.add(keyword);
+
+        lex.shift();
+
+        return parseInt(lex);
     }
 
     /** {@inheritDoc} */
