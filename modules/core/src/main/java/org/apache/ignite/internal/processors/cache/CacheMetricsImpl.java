@@ -65,6 +65,12 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Number of transaction rollbacks. */
     private AtomicLong txRollbacks = new AtomicLong();
 
+    /** Number of transaction rollbacks due to deadlock. */
+    private AtomicLong txRollbacksOnDeadlock = new AtomicLong();
+
+    /** Number of transaction rollbacks due to timeout. */
+    private AtomicLong txRollbacksOnTimeout = new AtomicLong();
+
     /** Number of evictions. */
     private AtomicLong evictCnt = new AtomicLong();
 
@@ -439,6 +445,16 @@ public class CacheMetricsImpl implements CacheMetrics {
         return txRollbacks.get();
     }
 
+    /** {@inheritDoc} */
+    @Override public long getCacheTxRollbacksOnDeadlock() {
+        return txRollbacksOnDeadlock.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheTxRollbacksOnTimeout() {
+        return txRollbacksOnTimeout.get();
+    }
+
     /**
      * Clear metrics.
      */
@@ -451,6 +467,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         evictCnt.set(0);
         txCommits.set(0);
         txRollbacks.set(0);
+        txRollbacksOnDeadlock.set(0);
+        txRollbacksOnTimeout.set(0);
         putTimeNanos.set(0);
         rmvTimeNanos.set(0);
         getTimeNanos.set(0);
@@ -617,14 +635,21 @@ public class CacheMetricsImpl implements CacheMetrics {
     /**
      * Transaction rollback callback.
      *
-     * @param duration the time taken in nanoseconds.
+     * @param duration The time taken in nanoseconds.
+     * @param timedOut {@code True} if this transaction was timed out.
+     * @param deadlock {@code True} if this transaction participated in the deadlock.
      */
-    public void onTxRollback(long duration) {
+    public void onTxRollback(long duration, boolean timedOut, boolean deadlock) {
         txRollbacks.incrementAndGet();
         rollbackTimeNanos.addAndGet(duration);
 
+        if (deadlock)
+            txRollbacksOnDeadlock.incrementAndGet();
+        else if (timedOut)
+            txRollbacksOnTimeout.incrementAndGet();
+
         if (delegate != null)
-            delegate.onTxRollback(duration);
+            delegate.onTxRollback(duration, timedOut, deadlock);
     }
 
     /**

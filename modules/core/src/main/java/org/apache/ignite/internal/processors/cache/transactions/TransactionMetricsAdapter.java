@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionMetrics;
@@ -33,10 +34,17 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     private static final long serialVersionUID = 0L;
 
     /** Number of transaction commits. */
-    private volatile int txCommits;
+    private AtomicInteger txCommits = new AtomicInteger();
 
     /** Number of transaction rollbacks. */
-    private volatile int txRollbacks;
+    private AtomicInteger txRollbacks = new AtomicInteger();
+
+    /** Number of transaction rollbacks due to timeout. */
+    private AtomicInteger txRollbacksOnTimeout = new AtomicInteger();
+
+    /** Number of transaction rollbacks due to deadlock. */
+    private AtomicInteger txRollbacksOnDeadlock = new AtomicInteger();
+
 
     /** Last commit time. */
     private volatile long commitTime;
@@ -57,8 +65,10 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     public TransactionMetricsAdapter(TransactionMetrics m) {
         commitTime = m.commitTime();
         rollbackTime = m.rollbackTime();
-        txCommits = m.txCommits();
-        txRollbacks = m.txRollbacks();
+        txCommits.set(m.txCommits());
+        txRollbacks.set(m.txRollbacks());
+        txRollbacksOnTimeout.set(m.txRollbacksOnTimeout());
+        txRollbacksOnDeadlock.set(m.txRollbackOnDeadlock());
     }
 
     /** {@inheritDoc} */
@@ -73,12 +83,22 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
 
     /** {@inheritDoc} */
     @Override public int txCommits() {
-        return txCommits;
+        return txCommits.intValue();
     }
 
     /** {@inheritDoc} */
     @Override public int txRollbacks() {
-        return txRollbacks;
+        return txRollbacks.intValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int txRollbacksOnTimeout() {
+        return txRollbacksOnTimeout.intValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int txRollbackOnDeadlock() {
+        return txRollbacksOnDeadlock.intValue();
     }
 
     /**
@@ -87,32 +107,44 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     public void onTxCommit() {
         commitTime = U.currentTimeMillis();
 
-        txCommits++;
+        txCommits.incrementAndGet();
     }
 
     /**
      * Transaction rollback callback.
+     *
+     * @param timedOut If transaction was timed out.
+     * @param deadlocked If transaction participated in the deadlock.
      */
-    public void onTxRollback() {
+    public void onTxRollback(boolean timedOut, boolean deadlocked) {
         rollbackTime = U.currentTimeMillis();
 
-        txRollbacks++;
+        txRollbacks.incrementAndGet();
+
+        if (deadlocked)
+            txRollbacksOnDeadlock.incrementAndGet();
+        else if (timedOut)
+            txRollbacksOnTimeout.incrementAndGet();
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(commitTime);
         out.writeLong(rollbackTime);
-        out.writeInt(txCommits);
-        out.writeInt(txRollbacks);
+        out.writeInt(txCommits.intValue());
+        out.writeInt(txRollbacks.intValue());
+        out.writeInt(txRollbacksOnTimeout.intValue());
+        out.writeInt(txRollbacksOnDeadlock.intValue());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         commitTime = in.readLong();
         rollbackTime = in.readLong();
-        txCommits = in.readInt();
-        txRollbacks = in.readInt();
+        txCommits.set(in.readInt());
+        txRollbacks.set(in.readInt());
+        txRollbacksOnTimeout.set(in.readInt());
+        txRollbacksOnDeadlock.set(in.readInt());
     }
 
     /** {@inheritDoc} */

@@ -138,6 +138,20 @@ public interface CacheMetrics {
     public long getCacheTxRollbacks();
 
     /**
+     * Gets total number of rollbacks due to deadlock.
+     *
+     * @return Number of transaction rollbacks due to deadlock.
+     */
+    public long getCacheTxRollbacksOnDeadlock();
+
+    /**
+     * Gets total number of rollbacks due to timeout.
+     *
+     * @return Number of transaction rollbacks due to timeout.
+     */
+    public long getCacheTxRollbacksOnTimeout();
+
+    /**
      * Gets name of this cache.
      *
      * @return Cache name.

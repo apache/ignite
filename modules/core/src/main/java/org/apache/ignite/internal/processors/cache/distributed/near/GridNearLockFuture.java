@@ -128,6 +128,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /** Timed out flag. */
     private volatile boolean timedOut;
 
+    /** Deadlock detection flag. */
+    private volatile boolean deadlocked;
+
     /** Timeout object. */
     @GridToStringExclude
     private LockTimeoutObject timeoutObj;
@@ -387,7 +390,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             cctx.nearTx().removeLocks(lockVer, keys);
         else {
             if (rollback && tx != null) {
-                if (tx.setRollbackOnly()) {
+                if (tx.setRollbackOnly(timedOut, deadlocked)) {
                     if (log.isDebugEnabled())
                         log.debug("Marked transaction as rollback only because locks could not be acquired: " + tx);
                 }
@@ -1497,10 +1500,13 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                         try {
                             TxDeadlock deadlock = fut.get();
 
-                            if (deadlock != null)
+                            if (deadlock != null) {
                                 err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                                        "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
-                                        new TransactionDeadlockException(deadlock.toString(cctx.shared())));
+                                    "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                                    new TransactionDeadlockException(deadlock.toString(cctx.shared())));
+
+                                deadlocked = true;
+                            }
                         }
                         catch (IgniteCheckedException e) {
                             err = e;

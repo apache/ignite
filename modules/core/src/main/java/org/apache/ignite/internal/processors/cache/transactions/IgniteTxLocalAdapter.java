@@ -1242,7 +1242,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     protected void checkValid() throws IgniteCheckedException {
         if (local() && !dht() && remainingTime() == -1)
-            state(MARKED_ROLLBACK, true);
+            state(MARKED_ROLLBACK, true, false);
 
         if (isRollbackOnly()) {
             if (remainingTime() == -1)

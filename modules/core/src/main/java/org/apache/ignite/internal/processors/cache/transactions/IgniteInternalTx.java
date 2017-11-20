@@ -170,6 +170,19 @@ public interface IgniteInternalTx {
     public boolean setRollbackOnly();
 
     /**
+     * Modify the transaction associated with the current thread such that the
+     * only possible outcome of the transaction is to roll back the
+     * transaction.
+     *
+     * @param timedOut {@code True} if transaction is marked for rollback due to timeout.
+     * @param deadlocked {@code True} if transaction participated in the deadlock.
+     * @return {@code True} if rollback-only flag was set as a result of this operation,
+     *      {@code false} if it was already set prior to this call or could not be set
+     *      because transaction is already finishing up committing or rolling back.
+     */
+    public boolean setRollbackOnly(boolean timedOut, boolean deadlocked);
+
+    /**
      * If transaction was marked as rollback-only.
      *
      * @return {@code True} if transaction can only be rolled back.
@@ -562,6 +575,11 @@ public interface IgniteInternalTx {
      * @return {@code True} if transaction timed out.
      */
     public boolean timedOut();
+
+    /**
+     * @return {@code True} if transaction participated in the deadlock.
+     */
+    public boolean deadlocked();
 
     /**
      * @return {@code True} if transaction had completed successfully or unsuccessfully.

@@ -1315,7 +1315,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // 10. Update metrics.
             if (!tx.dht() && tx.local()) {
                 if (!tx.system())
-                    cctx.txMetrics().onTxRollback();
+                    cctx.txMetrics().onTxRollback(tx.timedOut(), tx.deadlocked());
 
                 tx.txState().onTxEnd(cctx, tx, false);
             }
@@ -1365,7 +1365,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (commit)
                         cctx.txMetrics().onTxCommit();
                     else
-                        cctx.txMetrics().onTxRollback();
+                        cctx.txMetrics().onTxRollback(tx.timedOut(), tx.deadlocked());
                 }
 
                 tx.txState().onTxEnd(cctx, tx, commit);

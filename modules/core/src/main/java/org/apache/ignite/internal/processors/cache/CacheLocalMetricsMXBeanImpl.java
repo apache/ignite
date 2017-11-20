@@ -324,6 +324,16 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getCacheTxRollbacksOnDeadlock() {
+        return cache.metrics0().getCacheTxRollbacksOnDeadlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheTxRollbacksOnTimeout() {
+        return cache.metrics0().getCacheTxRollbacksOnTimeout();
+    }
+
+    /** {@inheritDoc} */
     @Override public String getKeyType() {
         return cache.metrics0().getKeyType();
     }

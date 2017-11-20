@@ -324,6 +324,16 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getCacheTxRollbacksOnDeadlock() {
+        return cache.clusterMetrics().getCacheTxRollbacksOnDeadlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheTxRollbacksOnTimeout() {
+        return cache.clusterMetrics().getCacheTxRollbacksOnTimeout();
+    }
+
+    /** {@inheritDoc} */
     @Override public String getKeyType() {
         return cache.clusterMetrics().getKeyType();
     }

@@ -50,4 +50,18 @@ public interface TransactionMetrics extends Serializable {
      * @return Number of transaction rollbacks.
      */
     public int txRollbacks();
+
+    /**
+     * Gets total number of transaction rollbacks due to timeout.
+     *
+     * @return Number of transaction rollbacks due to timeout.
+     */
+    public int txRollbacksOnTimeout();
+
+    /**
+     * Gets total number of transaction rollbacks due to deadlock.
+     *
+     * @return Number of transaction rollbacks due to deadlock.
+     */
+    public int txRollbackOnDeadlock();
 }

@@ -463,5 +463,15 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public long getRebalancingStartTime() {
             return 63;
         }
+
+        /** {@inheritDoc} */
+        @Override public long getCacheTxRollbacksOnDeadlock() {
+            return 64;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCacheTxRollbacksOnTimeout() {
+            return 65;
+        }
     }
 }

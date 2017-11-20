@@ -79,6 +79,12 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Total number of transaction rollbacks. */
     private long txRollbacks;
 
+    /** Number of transaction rollbacks due to timeout. */
+    private long txRollbacksOnTimeout;
+
+    /** Number of transaction rollbacks due to deadlock. */
+    private long txRollbacksOnDeadlock;
+
     /** The mean time to execute tx rollbacks. */
     private float avgTxRollbackTime;
 
@@ -231,6 +237,8 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
 
         txCommits = m.getCacheTxCommits();
         txRollbacks = m.getCacheTxRollbacks();
+        txRollbacksOnTimeout = m.getCacheTxRollbacksOnTimeout();
+        txRollbacksOnDeadlock = m.getCacheTxRollbacksOnDeadlock();
 
         avgTxCommitTime = m.getAverageTxCommitTime();
         avgTxRollbackTime = m.getAverageTxRollbackTime();
@@ -405,6 +413,24 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
      */
     public long getTxRollbacks() {
         return txRollbacks;
+    }
+
+    /**
+     * Gets total number of rollbacks due to timeout.
+     *
+     * @return Number of transaction rollbacks due to timeout.
+     */
+    public long getTxRollbacksOnTimeout() {
+        return txRollbacksOnTimeout;
+    }
+
+    /**
+     * Gets total number of rollbacks due to deadlock.
+     *
+     * @return Number of transaction rollbacks due to deadlock.
+     */
+    public long getTxRollbacksOnDeadlock() {
+        return txRollbacksOnDeadlock;
     }
 
     /**
@@ -654,6 +680,8 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeLong(txCommits);
         out.writeFloat(avgTxCommitTime);
         out.writeLong(txRollbacks);
+        out.writeLong(txRollbacksOnTimeout);
+        out.writeLong(txRollbacksOnDeadlock);
         out.writeFloat(avgTxRollbackTime);
         out.writeLong(puts);
         out.writeFloat(avgPutTime);
@@ -711,6 +739,8 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         txCommits = in.readLong();
         avgTxCommitTime = in.readFloat();
         txRollbacks = in.readLong();
+        txRollbacksOnTimeout = in.readLong();
+        txRollbacksOnDeadlock = in.readLong();
         avgTxRollbackTime = in.readFloat();
         puts = in.readLong();
         avgPutTime = in.readFloat();

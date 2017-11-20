@@ -132,6 +132,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** Error. */
     private volatile Throwable err;
 
+    /** Timed out flag. */
+    private volatile boolean timedOut;
+
+    /** If deadlock was detected. */
+    private volatile boolean deadlocked;
+
     /** Timeout object. */
     @GridToStringExclude
     private LockTimeoutObject timeoutObj;
@@ -389,7 +395,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             cctx.colocated().removeLocks(threadId, lockVer, keys);
         else {
             if (rollback && tx != null) {
-                if (tx.setRollbackOnly()) {
+                if (tx.setRollbackOnly(timedOut, deadlocked)) {
                     if (log.isDebugEnabled())
                         log.debug("Marked transaction as rollback only because locks could not be acquired: " + tx);
                 }
@@ -1430,6 +1436,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
+            timedOut = true;
+
             if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
                 synchronized (GridDhtColocatedLockFuture.this) {
                     requestedKeys = requestedKeys0();
@@ -1451,10 +1459,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         try {
                             TxDeadlock deadlock = fut.get();
 
-                            if (deadlock != null)
+                            if (deadlock != null) {
                                 err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                                        "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
-                                        new TransactionDeadlockException(deadlock.toString(cctx.shared())));
+                                    "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                                    new TransactionDeadlockException(deadlock.toString(cctx.shared())));
+
+                                deadlocked = true;
+                            }
                         }
                         catch (IgniteCheckedException e) {
                             err = e;

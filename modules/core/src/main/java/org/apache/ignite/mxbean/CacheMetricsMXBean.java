@@ -92,6 +92,14 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public long getCacheTxRollbacks();
 
     /** {@inheritDoc} */
+    @MXBeanDescription("Number of transaction rollbacks due to deadlock.")
+    public long getCacheTxRollbacksOnDeadlock();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of transaction rollbacks due to timeout.")
+    public long getCacheTxRollbacksOnTimeout();
+
+    /** {@inheritDoc} */
     @MXBeanDescription("Cache name.")
     public String name();
 
