@@ -1555,7 +1555,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private synchronized long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException {
             long segmentToCompress = lastCompressedIdx + 1;
 
-            while (segmentToCompress > Math.max(lastAllowedToCompressIdx, archiver.lastArchivedAbsoluteIndex())) {
+            while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archiver.lastArchivedAbsoluteIndex())) {
                 wait();
 
                 if (stopped)
