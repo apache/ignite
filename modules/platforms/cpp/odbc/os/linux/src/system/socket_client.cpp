@@ -20,6 +20,7 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <cstring>
 
@@ -35,25 +36,35 @@ namespace
 {
     /**
      * Get last socket error message.
+     * @param error Error code.
+     * @return Last socket error message string.
+     */
+    std::string GetSocketErrorMessage(int error)
+    {
+        std::stringstream res;
+
+        res << "error_code=" << error;
+
+        if (error == 0)
+            return res.str();
+
+        char buffer[1024] = "";
+
+        if (!strerror_r(error, buffer, sizeof(buffer)))
+            res << ", msg=" << buffer;
+
+        return res.str();
+    }
+
+    /**
+     * Get last socket error message.
      * @return Last socket error message string.
      */
     std::string GetLastSocketErrorMessage()
     {
         int lastError = errno;
-        std::stringstream res;
 
-        res << "error_code=" << lastError;
-
-        if (lastError == 0)
-            return res.str();
-
-        char buffer[1024] = "";
-
-        strerror_r(lastError, buffer, sizeof(buffer));
-
-        res << ", msg=" << buffer;
-
-        return res.str();
+        return GetSocketErrorMessage(lastError);
     }
 }
 
@@ -133,7 +144,7 @@ namespace ignite
                     {
                         int lastError = errno;
 
-                        if (lastError != WSAEWOULDBLOCK)
+                        if (lastError != EWOULDBLOCK)
                         {
                             LOG_MSG("Connection failed: " << GetSocketErrorMessage(lastError));
 
@@ -317,9 +328,9 @@ namespace ignite
                         (rd ? &fds : 0), (rd ? 0 : &fds), NULL, (timeout == 0 ? NULL : &tv));
 
                     if (ready == SOCKET_ERROR)
-                        lastError = WSAGetLastError();
+                        lastError = errno;
 
-                } while (ready == SOCKET_ERROR && lastError == WSAEINTR);
+                } while (ready == SOCKET_ERROR && lastError == EINTR);
 
                 if (ready == SOCKET_ERROR)
                     return -lastError;

@@ -16,6 +16,7 @@
  */
 
 #include <cstring>
+#include <cstddef>
 
 #include <sstream>
 
@@ -242,7 +243,7 @@ namespace ignite
                 sent += res;
             }
 
-            assert(sent == len);
+            assert(static_cast<size_t>(sent) == len);
 
             return OperationResult::SUCCESS;
         }
@@ -430,7 +431,7 @@ namespace ignite
 
                 case SQL_ATTR_CONNECTION_TIMEOUT:
                 {
-                    SQLUINTEGER uTimeout = reinterpret_cast<SQLUINTEGER>(value);
+                    SQLUINTEGER uTimeout = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
 
                     if (uTimeout > INT32_MAX)
                     {
