@@ -22,17 +22,17 @@ import org.apache.ignite.ml.math.Matrix;
 /**
  * Block for {@link SparseBlockDistributedMatrix}.
  */
-public final class BlockEntry extends SparseLocalOnHeapMatrix {
+public final class MatrixBlockEntry extends SparseLocalOnHeapMatrix {
     /** Max block size. */
     public static final int MAX_BLOCK_SIZE = 32;
 
     /** */
-    public BlockEntry() {
+    public MatrixBlockEntry() {
         // No-op.
     }
 
     /** */
-    public BlockEntry(int row, int col) {
+    public MatrixBlockEntry(int row, int col) {
         super(row, col);
 
         assert col <= MAX_BLOCK_SIZE;
@@ -40,7 +40,7 @@ public final class BlockEntry extends SparseLocalOnHeapMatrix {
     }
 
     /** */
-    public BlockEntry(Matrix mtx) {
+    public MatrixBlockEntry(Matrix mtx) {
         assert mtx.columnSize() <= MAX_BLOCK_SIZE;
         assert mtx.rowSize() <= MAX_BLOCK_SIZE;
 

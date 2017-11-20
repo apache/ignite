@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlLexerToken;
+import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,6 +36,7 @@ import java.util.Set;
 import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
+import static org.apache.ignite.internal.sql.SqlKeyword.INLINE_SIZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ON;
 import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
@@ -79,6 +82,9 @@ public class SqlCreateIndexCommand implements SqlCommand {
     @GridToStringExclude
     private Set<String> colNames;
 
+    /** Inline size. Zero effectively disables inlining. */
+    private int inlineSize = QueryIndex.DFLT_INLINE_SIZE;
+
     /** {@inheritDoc} */
     @Override public String schemaName() {
         return schemaName;
@@ -122,6 +128,13 @@ public class SqlCreateIndexCommand implements SqlCommand {
      */
     public boolean spatial() {
         return spatial;
+    }
+
+    /**
+     * @return Inline size.
+     */
+    public int inlineSize() {
+        return inlineSize;
     }
 
     /**
@@ -174,7 +187,8 @@ public class SqlCreateIndexCommand implements SqlCommand {
         return parseIdentifier(lex, IF);
     }
 
-    /*
+
+    /**
      * @param lex Lexer.
      */
     private void parseColumnList(SqlLexer lex) {
@@ -230,23 +244,41 @@ public class SqlCreateIndexCommand implements SqlCommand {
      * @param lex Lexer.
      */
     private void parseIndexProperties(SqlLexer lex) {
-        SqlLexerToken token = lex.lookAhead();
+        while (true) {
+            SqlLexerToken token = lex.lookAhead();
 
-        if (token.tokenType() == SqlLexerTokenType.DEFAULT) {
-            switch (token.token()) {
-                case PARALLEL:
-                    lex.shift();
+            if (token.tokenType() == SqlLexerTokenType.EOF)
+                return;
 
-                    parallel = parseInt(lex);
+            if (token.tokenType() == SqlLexerTokenType.DEFAULT) {
+                switch (token.token()) {
+                    case PARALLEL:
+                        lex.shift();
 
-                    if (parallel < 0)
-                        throw error(lex, "Illegal " + PARALLEL + " value: " + parallel);
+                        parallel = parseInt(lex);
 
-                    lex.shift();
+                        if (parallel < 0)
+                            throw error(lex, "Illegal " + PARALLEL + " value: " + parallel);
 
-                    break;
+                        break;
+
+                    case INLINE_SIZE:
+                        lex.shift();
+
+                        inlineSize = SqlParserUtils.parseInt(lex);
+
+                        if (inlineSize < 0)
+                            throw error(lex, "Illegal " + INLINE_SIZE +
+                                " value. Should be positive: " + inlineSize);
+
+                        break;
+
+                    default:
+                        return;
+                }
             }
         }
+
     }
 
     /** {@inheritDoc} */
