@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.trainers.group;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -57,9 +59,27 @@ public class GroupTrainerTest extends GridCommonAbstractTest {
     public void testGroupTrainer() {
         TestGroupTrainer trainer = new TestGroupTrainer(ignite);
 
-        ConstModel<Integer> mdl = trainer.train(new SimpleDistributive(5, 3, 2));
+        int limit = 5;
+        int eachNumberCount = 3;
+        int iterCnt = 2;
 
-        System.out.println(mdl.predict(10));
+        ConstModel<Integer> mdl = trainer.train(new SimpleDistributive(limit, eachNumberCount, iterCnt));
+        int localRes = computeLocally(limit, eachNumberCount, iterCnt);
+        assertEquals(localRes, (int)mdl.predict(10));
+    }
 
+    public int computeLocally(int limit, int eacheNumerCount, int iterCnt) {
+        Map<GroupTrainerCacheKey<Double>, Integer> m = new HashMap<>();
+
+        for (int i = 0; i < limit; i++) {
+            for (int j = 0; j < eacheNumerCount; j++)
+                m.put(new GroupTrainerCacheKey<>(i, (double)j, null), i);
+        }
+
+        for (int i = 0; i < iterCnt; i++)
+            for (GroupTrainerCacheKey<Double> key : m.keySet())
+                m.compute(key, (key1, integer) -> integer * integer);
+
+        return m.values().stream().filter(x -> x % 2 == 0).mapToInt(i -> i).sum();
     }
 }

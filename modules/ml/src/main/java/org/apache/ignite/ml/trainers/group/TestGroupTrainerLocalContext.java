@@ -29,12 +29,12 @@ public class TestGroupTrainerLocalContext implements HasTrainingUUID {
 
     private UUID trainingUUID;
 
-    public TestGroupTrainerLocalContext(int cnt, int eachNumberCnt, int limit, UUID trainingUUID) {
-        this.cnt = cnt;
+    public TestGroupTrainerLocalContext(int maxCnt, int eachNumberCnt, int limit, UUID trainingUUID) {
+        this.maxCnt = maxCnt;
         this.eachNumberCnt = eachNumberCnt;
         this.limit = limit;
         this.trainingUUID = trainingUUID;
-        maxCnt = 0;
+        this.cnt = 0;
     }
 
     public int cnt() {

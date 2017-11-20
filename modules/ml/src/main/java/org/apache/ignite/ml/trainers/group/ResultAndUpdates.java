@@ -68,7 +68,7 @@ public class ResultAndUpdates<R> {
             }
         }
 
-        R res = resultsAndUpdates.stream().map(ResultAndUpdates::result).reduce(identity, op);
+        R res = resultsAndUpdates.stream().map(ResultAndUpdates::result).reduce(op).orElse(identity);
 
         return new ResultAndUpdates<>(res, allUpdates);
     }

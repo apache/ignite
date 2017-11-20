@@ -94,7 +94,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
 
     @Override protected Integer defaultFinalResult() {
         // Default result is null;
-        return null;
+        return 0;
     }
 
     @Override protected Integer reduceFinalResults(Integer res1, Integer res2) {

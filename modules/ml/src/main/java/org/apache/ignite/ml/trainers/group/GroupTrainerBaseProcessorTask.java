@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -93,7 +94,7 @@ public abstract class GroupTrainerBaseProcessorTask<K, S, V, G, T, U extends Ser
 
     @Nullable @Override
     public U reduce(List<ComputeJobResult> results) throws IgniteException {
-        return results.stream().map(res -> (U)res.getData()).reduce(reducer).orElse(identity);
+        return results.stream().map(res -> (U)res.getData()).filter(Objects::nonNull).reduce(reducer).orElse(identity);
     }
 
     protected Affinity<GroupTrainerCacheKey> affinity() {
