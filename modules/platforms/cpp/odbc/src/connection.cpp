@@ -505,7 +505,16 @@ namespace ignite
 
             try
             {
-                SyncMessage(req, rsp);
+                // Workaround for some Linux systems that report connection on non-blocking
+                // sockets as successfull but fail to establish real connection.
+                bool sent = SyncMessage(req, rsp, tcp::SocketClient::CONNECT_TIMEOUT);
+
+                if (!sent)
+                {
+                    AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, "Failed to establish connection with the host.");
+
+                    return SqlResult::AI_ERROR;
+                }
             }
             catch (const OdbcError& err)
             {

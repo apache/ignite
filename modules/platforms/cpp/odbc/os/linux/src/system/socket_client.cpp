@@ -335,6 +335,12 @@ namespace ignite
                 if (ready == SOCKET_ERROR)
                     return -lastError;
 
+                socklen_t size = sizeof(lastError);
+                int res = getsockopt(socketHandle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
+
+                if (res != SOCKET_ERROR && lastError != 0)
+                    return -lastError;
+
                 if (ready == 0)
                     return 0;
 
