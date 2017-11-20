@@ -93,6 +93,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
             SynchronizedCommunicationSpi.class.getSimpleName());
 
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+
         if (mbeanServer.isRegistered(mbeanName))
             return MBeanServerInvocationHandler.newProxyInstance(mbeanServer, mbeanName, TcpCommunicationSpiMBean.class,
                 true);
