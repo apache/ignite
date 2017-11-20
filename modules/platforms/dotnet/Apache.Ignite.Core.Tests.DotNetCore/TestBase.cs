@@ -32,5 +32,13 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
         {
             Ignition.StopAll(true);
         }
+
+        /// <summary>
+        /// Starts Ignite.
+        /// </summary>
+        public IIgnite Start()
+        {
+            return Ignition.Start(TestUtils.GetTestConfiguration());
+        }
     }
 }

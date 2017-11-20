@@ -36,14 +36,12 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
         [TestMethod]
         public void TestIgniteStartsWithDefaultConfig()
         {
-            var cfg = TestUtils.GetTestConfiguration();
-
-            var ignite = Ignition.Start(cfg);
+            var ignite = Start();
             Assert.IsNotNull(ignite);
             Assert.AreEqual(ignite, Ignition.GetIgnite());
 
             // Second node.
-            var ignite2 = Ignition.Start(cfg);
+            var ignite2 = Start();
             Assert.AreEqual(2, Ignition.GetAll().Count);
 
             // Stop node.
