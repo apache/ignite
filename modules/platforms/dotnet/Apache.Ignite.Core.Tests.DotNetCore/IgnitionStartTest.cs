@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Configuration;
+    using System.IO;
 
 
     /// <summary>
@@ -61,10 +61,11 @@ namespace Apache.Ignite.Core.Tests.DotNetCore
         [TestMethod]
         public void TestIgniteStartsFromAppConfig()
         {
-            IgniteConfigurationSection section = ConfigurationManager.GetSection("dd")
-                as IgniteConfigurationSection;
+            // 1) MsTest does not pick up the config file, so we have to provide it manually.
+            // 2) Note that System.Configuration.ConfigurationManager NuGet package has to be installed.
+            var configPath = Path.Combine(Path.GetDirectoryName(GetType().Assembly.Location), "app.config");
 
-            var ignite = Ignition.StartFromApplicationConfiguration();
+            var ignite = Ignition.StartFromApplicationConfiguration("igniteConfiguration", configPath);
             var cache = ignite.GetCache<int, int>(ignite.GetCacheNames().Single());
 
             Assert.AreEqual("cacheFromConfig", cache.Name);

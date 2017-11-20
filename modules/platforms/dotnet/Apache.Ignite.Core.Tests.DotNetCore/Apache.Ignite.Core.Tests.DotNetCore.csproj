@@ -26,4 +26,10 @@
     <Folder Include="ThinClient\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="app.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
