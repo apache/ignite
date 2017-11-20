@@ -257,6 +257,8 @@ namespace Apache.Ignite.Core.Impl
                 {
                     return null;  // Success.
                 }
+
+                Console.WriteLine("LoadDll fail: " + res);  // TODO
             }
 
             // Failed to load using file path, fallback to simple name.
