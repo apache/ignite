@@ -1617,6 +1617,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     zip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip");
                     assert !zip.exists();
 
+                    assert new File(walArchiveDir, FileDescriptor.fileName(nextSegment)).exists();
+
                     try (SingleSegmentLogicalRecordsIterator iter = new SingleSegmentLogicalRecordsIterator(
                         log, cctx, ioFactory, tlbSize, nextSegment, walArchiveDir);
                          ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(tmpZip)))) {
