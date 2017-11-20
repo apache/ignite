@@ -21,7 +21,7 @@
 pushd .\
 
 cd ..
-powershell -executionpolicy remotesigned -file build.ps1 -skipJava -version 0.0.1
+powershell -executionpolicy remotesigned -file build.ps1 -skipJava -version 0.0.1-test
 
 popd
 
