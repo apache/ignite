@@ -144,7 +144,7 @@ namespace ignite
                     {
                         int lastError = errno;
 
-                        if (lastError != EWOULDBLOCK)
+                        if (lastError != EWOULDBLOCK && lastError != EINPROGRESS)
                         {
                             LOG_MSG("Connection failed: " << GetSocketErrorMessage(lastError));
 
@@ -157,7 +157,7 @@ namespace ignite
 
                         if (res <= 0)
                         {
-                            LOG_MSG("Connection failed: " << GetSocketErrorMessage(-res));
+                            LOG_MSG("Connection timeout expired: " << GetSocketErrorMessage(-res));
 
                             Close();
 
