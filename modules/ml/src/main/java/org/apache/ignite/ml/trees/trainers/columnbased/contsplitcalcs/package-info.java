@@ -15,24 +15,8 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
-{
-    using System.Runtime.InteropServices;
-
-    /// <summary>
-    /// Unmanaged callback handler function pointers.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    internal unsafe struct UnmanagedCallbackHandlers
-    {
-        internal void* target;
-
-        internal void* error;
-
-        internal void* loggerLog;
-        internal void* loggerIsLevelEnabled;
-
-        internal void* inLongOutLong;
-        internal void* inLongLongObjectOutLong;
-    }
-}
+/**
+ * <!-- Package description. -->
+ * Calculators of splits by continuous features.
+ */
+package org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs;

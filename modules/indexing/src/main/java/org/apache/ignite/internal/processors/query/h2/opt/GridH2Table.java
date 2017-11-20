@@ -426,9 +426,10 @@ public class GridH2Table extends TableBase {
      *
      * @param row Row to be updated.
      * @param prevRow Previous row.
+     * @param prevRowAvailable Whether previous row is available.
      * @throws IgniteCheckedException If failed.
      */
-    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow)
+    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable)
         throws IgniteCheckedException {
         assert desc != null;
 
@@ -446,9 +447,17 @@ public class GridH2Table extends TableBase {
             try {
                 ensureNotDestroyed();
 
-                boolean replaced = pk().putx(row0);
+                boolean replaced;
 
-                assert (replaced && prevRow != null) || (!replaced && prevRow == null) : "Replaced: " + replaced;
+                if (prevRowAvailable)
+                    replaced = pk().putx(row0);
+                else {
+                    prevRow0 = (GridH2KeyValueRowOnheap)pk().put(row0);
+
+                    replaced = prevRow0 != null;
+                }
+
+                assert (replaced && prevRow0 != null) || (!replaced && prevRow0 == null) : "Replaced: " + replaced;
 
                 if (!replaced)
                     size.increment();
