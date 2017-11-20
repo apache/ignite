@@ -290,8 +290,12 @@ public abstract class AbstractWalRecordsIterator
                 FileInput in = new FileInput(fileIO, buf);
 
                 if (start != null && desc.idx == start.index()) {
-                    if (isCompacted)
-                        serializerFactory.recordDeserializeFilter(new StartSeekingFilter(start)).skipPositionCheck(true);
+                    if (isCompacted) {
+                        serializerFactory.skipPositionCheck(true);
+
+                        if (start.fileOffset() == 0)
+                            serializerFactory.recordDeserializeFilter(new StartSeekingFilter(start));
+                    }
                     else {
                         // Make sure we skip header with serializer version.
                         long startOff = Math.max(start.fileOffset(), fileIO.position());
