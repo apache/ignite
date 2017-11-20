@@ -1458,6 +1458,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
+                U.warn(log, "Just archived WAL segment: " + dstFile.toPath());
+
                 if (mode == WALMode.DEFAULT) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
@@ -1630,6 +1632,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     lastCompressedIdx = nextSegment;
 
+                    U.warn(log, "Just compressed WAL segment: " + zip);
+
                     GridCacheDatabaseSharedManager.ASSERTION_LOG.append(" compressed file [consistendId=" +
                         cctx.discovery().localNode().consistentId() + ", file=" + zip + ", size=" + zip.length() +
                         ", uncompressedSize=" +
@@ -1713,6 +1717,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
 
                     Files.move(unzipTmp.toPath(), unzip.toPath());
+
+                    U.warn(log, "Just decompressed WAL segment: " + unzip);
 
                     synchronized (this) {
                         decompressionFutures.remove(segmentToDecompress).onDone();
