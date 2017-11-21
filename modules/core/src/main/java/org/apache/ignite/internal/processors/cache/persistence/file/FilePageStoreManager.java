@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCa
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -212,7 +213,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
-        File cacheWorkDir = cacheWorkDirectory(cacheData.config());
+        File cacheWorkDir = cacheWorkDir(cacheData.config());
+
         File file;
 
         checkAndInitCacheWorkDir(cacheWorkDir);
@@ -337,38 +339,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      *
      */
-    public Path getPath(boolean isGroup, String cacheOrGroupName, int partId) {
-        return new File(
-            cacheWorkDirectory(isGroup, cacheOrGroupName),
-            String.format(PART_FILE_TEMPLATE, partId)
-        ).toPath();
+    public Path getPath(boolean isSharedGroup, String cacheOrGroupName, int partId) {
+        return getPartitionFile(cacheWorkDirectory(isSharedGroup, cacheOrGroupName), partId).toPath();
     }
 
     /**
      *
      */
-    private File cacheWorkDirectory(boolean isGroup, String cacheOrGroupName) {
+    private File cacheWorkDirectory(boolean isSharedGroup, String cacheOrGroupName) {
         String dirName;
 
-        if (isGroup)
+        if (isSharedGroup)
             dirName = CACHE_GRP_DIR_PREFIX + cacheOrGroupName;
         else
             dirName = CACHE_DIR_PREFIX + cacheOrGroupName;
-
-        return new File(storeWorkDir, dirName);
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @return Cache work directory.
-     */
-    private File cacheWorkDirectory(CacheConfiguration ccfg) {
-        String dirName;
-
-        if (ccfg.getGroupName() != null)
-            dirName = CACHE_GRP_DIR_PREFIX + ccfg.getGroupName();
-        else
-            dirName = CACHE_DIR_PREFIX + ccfg.getName();
 
         return new File(storeWorkDir, dirName);
     }
@@ -382,7 +366,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder initForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
         assert !grpDesc.sharedGroup() || ccfg.getGroupName() != null : ccfg.getName();
 
-        File cacheWorkDir = cacheWorkDirectory(ccfg);
+        File cacheWorkDir = cacheWorkDir(ccfg);
 
         return initDir(cacheWorkDir, grpDesc.groupId(), grpDesc.config().getAffinity().partitions());
     }
@@ -411,12 +395,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         for (int partId = 0; partId < partStores.length; partId++) {
             FilePageStore partStore = pageStoreFactory.createPageStore(
-                PageMemory.FLAG_DATA, new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)));
+                PageMemory.FLAG_DATA, getPartitionFile(cacheWorkDir, partId));
 
             partStores[partId] = partStore;
         }
 
         return new CacheStoreHolder(idxStore, partStores);
+    }
+
+    /**
+     * @param cacheWorkDir Cache work directory.
+     * @param partId Partition id.
+     */
+    @NotNull private File getPartitionFile(File cacheWorkDir, int partId) {
+        return new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId));
     }
 
     /**
@@ -607,10 +599,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Store dir for given cache.
      */
     public File cacheWorkDir(CacheConfiguration ccfg) {
-        String dirName = ccfg.getGroupName() == null ?
-            CACHE_DIR_PREFIX + ccfg.getName() : CACHE_GRP_DIR_PREFIX + ccfg.getGroupName();
+        boolean isSharedGrp = ccfg.getGroupName() != null;
 
-        return new File(storeWorkDir, dirName);
+        return cacheWorkDirectory(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
     }
 
     /**
