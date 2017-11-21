@@ -1652,7 +1652,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 csvContent += cols.join(';') + '\n';
             });
 
-            LegacyUtils.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
+            LegacyUtils.download('text/csv', fileName, csvContent);
         };
 
         /**
@@ -1767,7 +1767,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         };
 
         $scope.scanAvailable = function(paragraph) {
-            return $scope.caches.length && !paragraph.loading;
+            return $scope.caches.length && !(paragraph.loading || paragraph.csvIsPreparing);
         };
 
         $scope.scanTooltip = function(paragraph) {
