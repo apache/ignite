@@ -88,6 +88,9 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
     /** */
+    private boolean inMemoryMode;
+
+    /** */
     private volatile DiscoveryDataClusterState globalState;
 
     /** */
@@ -96,6 +99,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     /** Local action future. */
     private final AtomicReference<GridChangeGlobalStateFuture> stateChangeFut = new AtomicReference<>();
 
+    /** */
     private final ConcurrentMap<UUID, GridFutureAdapter<Void>> transitionFuts = new ConcurrentHashMap<>();
 
     /** Future initialized if node joins when cluster state change is in progress. */
@@ -217,8 +221,10 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        inMemoryMode = !CU.isPersistenceEnabled(ctx.config());
+
         // Start first node as inactive if persistence is enabled.
-        boolean activeOnStart = !CU.isPersistenceEnabled(ctx.config()) && ctx.config().isActiveOnStart();
+        boolean activeOnStart = inMemoryMode && ctx.config().isActiveOnStart();
 
         globalState = DiscoveryDataClusterState.createState(activeOnStart, null);
 
@@ -572,6 +578,9 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     @Override public IgniteInternalFuture<?> changeGlobalState(final boolean activate,
         Collection<BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology) {
+        if (inMemoryMode)
+            return changeGlobalState0(activate, null, false);
+
         BaselineTopology newBlt;
 
         BaselineTopology currentBlt = globalState.baselineTopology();
