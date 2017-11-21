@@ -218,6 +218,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assert metrics.getTotalExecutedJobs() == 1;
         assert metrics.getTotalRejectedJobs() == 0;
         assert metrics.getTotalExecutedTasks() == 1;
+        assert metrics.getTotalJobsExecutionTime() > 0;
 
         assertTrue("MaximumJobExecuteTime=" + metrics.getMaximumJobExecuteTime() +
             " is less than AverageJobExecuteTime=" + metrics.getAverageJobExecuteTime(),
@@ -274,6 +275,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assert metrics.getTotalExecutedJobs() == 0;
         assert metrics.getTotalRejectedJobs() == 0;
         assert metrics.getTotalExecutedTasks() == 0;
+        assert metrics.getTotalJobsExecutionTime() == 0;
 
         assertTrue("MaximumJobExecuteTime=" + metrics.getMaximumJobExecuteTime() +
             " is less than AverageJobExecuteTime=" + metrics.getAverageJobExecuteTime(),
