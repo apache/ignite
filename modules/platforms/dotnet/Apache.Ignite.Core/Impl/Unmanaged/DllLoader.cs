@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// <summary>
     /// Dynamically loads unmanaged DLLs with respect to current platform.
     /// </summary>
-    internal class DllLoader
+    internal static class DllLoader
     {
         /** Lazy symbol binding. */
         private const int RtldLazy = 1;
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             if (Os.IsWindows)
             {
-                return Windows.LoadLibrary(dllPath) == IntPtr.Zero 
+                return NativeMethodsWindows.LoadLibrary(dllPath) == IntPtr.Zero 
                     ? FormatWin32Error(Marshal.GetLastWin32Error()) ?? "Unknown error"
                     : null;
             }
@@ -62,20 +62,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 if (Os.IsMono)
                 {
-                    return Mono.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
-                        ? GetErrorText(Mono.dlerror())
+                    return NativeMethodsMono.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
+                        ? GetErrorText(NativeMethodsMono.dlerror())
                         : null;
                 }
 
                 if (Os.IsNetCore)
                 {
-                    return Core.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
-                        ? GetErrorText(Core.dlerror())
+                    return NativeMethodsCore.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
+                        ? GetErrorText(NativeMethodsCore.dlerror())
                         : null;
                 }
 
-                return Linux.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
-                    ? GetErrorText(Linux.dlerror())
+                return NativeMethodsLinux.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
+                    ? GetErrorText(NativeMethodsLinux.dlerror())
                     : null;
             }
 
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Windows.
         /// </summary>
-        private static class Windows
+        private static class NativeMethodsWindows
         {
             [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Linux.
         /// </summary>
-        private static class Linux
+        private static class NativeMethodsLinux
         {
             [DllImport("libdl.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// libdl.so depends on libc6-dev on Linux, use Mono instead.
         /// </summary>
-        private static class Mono
+        private static class NativeMethodsMono
         {
             [DllImport("__Internal", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// libdl.so depends on libc6-dev on Linux, use libcoreclr instead.
         /// </summary>
-        private static class Core
+        private static class NativeMethodsCore
         {
             [DllImport("libcoreclr.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
