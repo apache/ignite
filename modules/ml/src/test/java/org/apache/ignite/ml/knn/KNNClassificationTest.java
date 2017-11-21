@@ -27,8 +27,7 @@ import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 
-
-/** Tests behaviour of ColumnDecisionTreeTrainer. */
+/** Tests behaviour of KNNClassificationTest. */
 public class KNNClassificationTest extends BaseKNNTest {
 
     public static final String SEPARATOR = "\t";
@@ -37,21 +36,21 @@ public class KNNClassificationTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         SparseBlockDistributedMatrix mtx = new SparseBlockDistributedMatrix(
-                new double[][]{
-                        {1.0, 1.0},
-                        {1.0, 2.0},
-                        {2.0, 1.0},
-                        {-1.0, -1.0},
-                        {-1.0, -2.0},
-                        {-2.0, -1.0}
-                });
-        SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[]{1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
+            new double[][] {
+                {1.0, 1.0},
+                {1.0, 2.0},
+                {2.0, 1.0},
+                {-1.0, -1.0},
+                {-1.0, -2.0},
+                {-2.0, -1.0}
+            });
+        SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
         LabeledDataset<Matrix, Vector> training = new LabeledDataset<>(mtx, lbs);
 
-        KNNModel knnModel = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE,  training);
-        Vector firstVector = new SparseBlockDistributedVector(new double[]{2.0, 2.0});
+        KNNModel knnModel = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+        Vector firstVector = new SparseBlockDistributedVector(new double[] {2.0, 2.0});
         assertEquals(knnModel.predict(firstVector), 1.0);
-        Vector secondVector = new SparseBlockDistributedVector(new double[]{-2.0, -2.0});
+        Vector secondVector = new SparseBlockDistributedVector(new double[] {-2.0, -2.0});
         assertEquals(knnModel.predict(secondVector), 2.0);
 
     }
@@ -60,24 +59,22 @@ public class KNNClassificationTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         SparseBlockDistributedMatrix mtx = new SparseBlockDistributedMatrix(
-                new double[][]{
-                        {1.0, 1.0},
-                        {1.0, 2.0},
-                        {2.0, 1.0},
-                        {-1.0, -1.0},
-                        {-1.0, -2.0},
-                        {-2.0, -1.0}
-                });
-        SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[]{1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
+            new double[][] {
+                {1.0, 1.0},
+                {1.0, 2.0},
+                {2.0, 1.0},
+                {-1.0, -1.0},
+                {-1.0, -2.0},
+                {-2.0, -1.0}
+            });
+        SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
         LabeledDataset<Matrix, Vector> training = new LabeledDataset<>(mtx, lbs);
 
         KNNModel knnModel = new KNNModel(1, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
-        Vector firstVector = new SparseBlockDistributedVector(new double[]{1.1, 1.1});
+        Vector firstVector = new SparseBlockDistributedVector(new double[] {1.1, 1.1});
         assertEquals(knnModel.predict(firstVector), 1.0);
-        Vector secondVector = new SparseBlockDistributedVector(new double[]{-2.1, -1.1});
+        Vector secondVector = new SparseBlockDistributedVector(new double[] {-2.1, -1.1});
         assertEquals(knnModel.predict(secondVector), 2.0);
-
-
 
     }
 
@@ -87,19 +84,19 @@ public class KNNClassificationTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         SparseBlockDistributedMatrix mtx = new SparseBlockDistributedMatrix(
-                new double[][]{
-                        {10.0, 10.0},
-                        {10.0, 20.0},
-                        {-1, -1},
-                        {-2, -2},
-                        {-1.0, -2.0},
-                        {-2.0, -1.0}
-                });
-        SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[]{1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
+            new double[][] {
+                {10.0, 10.0},
+                {10.0, 20.0},
+                {-1, -1},
+                {-2, -2},
+                {-1.0, -2.0},
+                {-2.0, -1.0}
+            });
+        SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
         LabeledDataset<Matrix, Vector> training = new LabeledDataset<>(mtx, lbs);
 
         KNNModel knnModel = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
-        Vector vector = new SparseBlockDistributedVector(new double[]{-1.01, -1.01});
+        Vector vector = new SparseBlockDistributedVector(new double[] {-1.01, -1.01});
         assertEquals(knnModel.predict(vector), 2.0);
 
     }
@@ -108,40 +105,39 @@ public class KNNClassificationTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         SparseBlockDistributedMatrix mtx = new SparseBlockDistributedMatrix(
-                new double[][]{
-                        {10.0, 10.0},
-                        {10.0, 20.0},
-                        {-1, -1},
-                        {-2, -2},
-                        {-1.0, -2.0},
-                        {-2.0, -1.0}
-                });
-        SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[]{1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
+            new double[][] {
+                {10.0, 10.0},
+                {10.0, 20.0},
+                {-1, -1},
+                {-2, -2},
+                {-1.0, -2.0},
+                {-2.0, -1.0}
+            });
+        SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
         LabeledDataset<Matrix, Vector> training = new LabeledDataset<>(mtx, lbs);
 
         KNNModel knnModel = new KNNModel(3, new EuclideanDistance(), KNNStrategy.WEIGHTED, training);
-        Vector vector = new SparseBlockDistributedVector(new double[]{-1.01, -1.01});
+        Vector vector = new SparseBlockDistributedVector(new double[] {-1.01, -1.01});
         assertEquals(knnModel.predict(vector), 1.0);
 
     }
 
-
-    public void testLoadingIrisDatasetWithSimpleStrategy(){
+    public void testLoadingIrisDatasetWithSimpleStrategy() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         LabeledDataset<Matrix, Vector> training = loadIrisDataset();
 
         KNNModel knnModel = new KNNModel(7, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
-        Vector vector = new SparseBlockDistributedVector(new double[]{5.15,3.55,1.45,0.25});
+        Vector vector = new SparseBlockDistributedVector(new double[] {5.15, 3.55, 1.45, 0.25});
         assertEquals(knnModel.predict(vector), 1.0);
 
     }
 
-    public void testLoadingIrisDatasetWithWeightedStrategy(){
+    public void testLoadingIrisDatasetWithWeightedStrategy() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         LabeledDataset<Matrix, Vector> training = loadIrisDataset();
 
         KNNModel knnModel = new KNNModel(11, new EuclideanDistance(), KNNStrategy.WEIGHTED, training);
-        Vector vector = new SparseBlockDistributedVector(new double[]{5.15,3.55,1.45,0.25});
+        Vector vector = new SparseBlockDistributedVector(new double[] {5.15, 3.55, 1.45, 0.25});
         assertEquals(knnModel.predict(vector), 1.0);
 
     }
@@ -150,48 +146,45 @@ public class KNNClassificationTest extends BaseKNNTest {
         // should fail with exception
     }
 
-    public void testLoadingNonExistingFile(){
+    public void testLoadingNonExistingFile() {
 
     }
-    public void testLoadingFileWithIncorrectData(){
+
+    public void testLoadingFileWithIncorrectData() {
 
     }
-    public void testLoadingFileWithMissedData(){
+
+    public void testLoadingFileWithMissedData() {
 
     }
 
     // TODO: to labeled dataset
-    public void testDifferentSizesMatrixAndVector(){
+    public void testDifferentSizesMatrixAndVector() {
 
     }
 
     // TODO: good idea for example http://www.rpubs.com/Drmadhu/IRISclassification
     // with splitting on test and train data
-   public void testCalculateAverageErrorOnIrisDatasetWithSimpleStrategy(){
+    public void testCalculateAverageErrorOnIrisDatasetWithSimpleStrategy() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         LabeledDataset<Matrix, Vector> training = loadIrisDataset();
 
-
-        for (int amountOfNeighbours = 1; amountOfNeighbours < 20; amountOfNeighbours+=2) {
+        for (int amountOfNeighbours = 1; amountOfNeighbours < 20; amountOfNeighbours += 2) {
             System.out.println("Model initialized with k = " + amountOfNeighbours);
 
             KNNModel knnModel = new KNNModel(amountOfNeighbours, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
 
             int amountOfErrors = 0;
-            for (int i = 0; i < training.rowSize(); i++){
-                if(knnModel.predict(training.getRow(i).vector()) != training.label(i)) amountOfErrors++;
+            for (int i = 0; i < training.rowSize(); i++) {
+                if (knnModel.predict(training.getRow(i).vector()) != training.label(i))
+                    amountOfErrors++;
             }
 
-
             System.out.println("Absolute amount of errors " + amountOfErrors);
-            System.out.println("Percentage of errors " + amountOfErrors/(double)training.rowSize());
+            System.out.println("Percentage of errors " + amountOfErrors / (double)training.rowSize());
         }
 
-
     }
-
-
-
 
     private LabeledDataset<Matrix, Vector> loadIrisDataset() {
         String path = this.getClass().getClassLoader().getResource("knn/iris.txt").getPath();
