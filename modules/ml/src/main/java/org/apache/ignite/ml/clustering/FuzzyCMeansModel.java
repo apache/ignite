@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.clustering;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.FuzzyCMeansModelFormat;
 import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
-
-import java.util.Arrays;
 
 /** This class incapsulates result of clusterization. */
 public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<FuzzyCMeansModelFormat> {
@@ -66,24 +65,24 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, E
      * @return Index of the closest center or -1 if it can't be found.
      */
     @Override public Integer predict(Vector val) {
-        int index = -1;
+        int idx = -1;
         double minDistance = Double.POSITIVE_INFINITY;
 
         for (int i = 0; i < centers.length; i++) {
-            double currentDistance = measure.compute(val, centers[i]);
-            if (currentDistance < minDistance) {
-                minDistance = currentDistance;
-                index = i;
+            double currDistance = measure.compute(val, centers[i]);
+            if (currDistance < minDistance) {
+                minDistance = currDistance;
+                idx = i;
             }
         }
 
-        return index;
+        return idx;
     }
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<FuzzyCMeansModelFormat, P> exporter, P path) {
-        FuzzyCMeansModelFormat modelData = new FuzzyCMeansModelFormat(centers, measure);
+        FuzzyCMeansModelFormat mdlData = new FuzzyCMeansModelFormat(centers, measure);
 
-        exporter.save(modelData, path);
+        exporter.save(mdlData, path);
     }
 }

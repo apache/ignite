@@ -17,22 +17,24 @@
 
 package org.apache.ignite.ml.clustering;
 
-import org.apache.ignite.ml.math.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import org.apache.ignite.ml.math.DistanceMeasure;
+import org.apache.ignite.ml.math.EuclideanDistance;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** Tests that checks local Fuzzy C-Means clusterer. */
 public class FuzzyCMeansLocalClustererTest {
-
     /** Test FCM on points that forms three clusters on the line. */
     @Test
     public void equalWeightsOneDimension() {
@@ -44,11 +46,11 @@ public class FuzzyCMeansLocalClustererTest {
                                            {7},   {8},  {9},  {10},
                                            {-1},  {0},  {1}};
 
-        Matrix pointMatrix = new DenseLocalOnHeapMatrix(points);
+        Matrix pntMatrix = new DenseLocalOnHeapMatrix(points);
 
-        FuzzyCMeansModel model = clusterer.cluster(pointMatrix, 3);
+        FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, 3);
 
-        Vector[] centers = model.centers();
+        Vector[] centers = mdl.centers();
         Arrays.sort(centers, Comparator.comparing(vector -> vector.getX(0)));
         assertEquals(-8.5, centers[0].getX(0), 2);
         assertEquals(0, centers[1].getX(0), 2);
@@ -67,13 +69,13 @@ public class FuzzyCMeansLocalClustererTest {
                                            {-10, 10},  {-9, 11},  {-10, 9},  {-11, 9},
                                            {10, -10},  {9, -11},  {10, -9},  {11, -9}};
 
-        Matrix pointMatrix = new DenseLocalOnHeapMatrix(points);
+        Matrix pntMatrix = new DenseLocalOnHeapMatrix(points);
 
-        FuzzyCMeansModel model = clusterer.cluster(pointMatrix, 4);
-        Vector[] centers = model.centers();
+        FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, 4);
+        Vector[] centers = mdl.centers();
         Arrays.sort(centers, Comparator.comparing(vector -> Math.atan2(vector.get(1), vector.get(0))));
 
-        DistanceMeasure measure = model.distanceMeasure();
+        DistanceMeasure measure = mdl.distanceMeasure();
 
         assertEquals(0, measure.compute(centers[0], new DenseLocalOnHeapVector(new double[]{-10, -10})), 1);
         assertEquals(0, measure.compute(centers[1], new DenseLocalOnHeapVector(new double[]{10, -10})), 1);
@@ -89,16 +91,16 @@ public class FuzzyCMeansLocalClustererTest {
 
         double[][] points = new double[][] {{3.3, 10}, {3.3, 10}, {3.3, 10}, {3.3, 10}, {3.3, 10}};
 
-        Matrix pointMatrix = new DenseLocalOnHeapMatrix(points);
+        Matrix pntMatrix = new DenseLocalOnHeapMatrix(points);
 
         int k = 2;
-        FuzzyCMeansModel model = clusterer.cluster(pointMatrix, k);
-        Vector expected = new DenseLocalOnHeapVector(new double[] {3.3, 10});
+        FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, k);
+        Vector exp = new DenseLocalOnHeapVector(new double[] {3.3, 10});
         for (int i = 0; i < k; i++) {
-            Vector center = model.centers()[i];
+            Vector center = mdl.centers()[i];
 
             for (int j = 0; j < 2; j++)
-                assertEquals(expected.getX(j), center.getX(j), 1);
+                assertEquals(exp.getX(j), center.getX(j), 1);
         }
     }
 
@@ -108,22 +110,23 @@ public class FuzzyCMeansLocalClustererTest {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
                 2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 100, null);
 
-        int numberOfPoints = 650;
+        int numOfPoints = 650;
         double radius = 100.0;
-        double[][] points = new double [numberOfPoints][2];
-        for (int i = 0; i < numberOfPoints; i++) {
-            points[i][0] = Math.cos(Math.PI * 2 * i / numberOfPoints) * radius;
-            points[i][1] = Math.sin(Math.PI * 2 * i / numberOfPoints) * radius;
+        double[][] points = new double [numOfPoints][2];
+
+        for (int i = 0; i < numOfPoints; i++) {
+            points[i][0] = Math.cos(Math.PI * 2 * i / numOfPoints) * radius;
+            points[i][1] = Math.sin(Math.PI * 2 * i / numOfPoints) * radius;
         }
 
-        Matrix pointMatrix = new DenseLocalOnHeapMatrix(points);
+        Matrix pntMatrix = new DenseLocalOnHeapMatrix(points);
 
         int k = 10;
-        FuzzyCMeansModel model = clusterer.cluster(pointMatrix, k);
+        FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, k);
 
-        Vector sum = model.centers()[0];
+        Vector sum = mdl.centers()[0];
         for (int i = 1; i < k; i++)
-            sum = sum.plus(model.centers()[i]);
+            sum = sum.plus(mdl.centers()[i]);
 
         assertEquals(0, sum.kNorm(1), 1);
     }
@@ -136,21 +139,21 @@ public class FuzzyCMeansLocalClustererTest {
 
         double[][] points = new double[][]{{1, 2}, {3, 6}, {5, 10}};
 
-        Matrix pointMatrix = new DenseLocalOnHeapMatrix(points);
+        Matrix pntMatrix = new DenseLocalOnHeapMatrix(points);
 
         int k = 2;
-        FuzzyCMeansModel model = clusterer.cluster(pointMatrix, k);
-        Vector[] centers = model.centers();
+        FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, k);
+        Vector[] centers = mdl.centers();
         Arrays.sort(centers, Comparator.comparing(vector -> vector.getX(0)));
 
-        Vector[] expected = {new DenseLocalOnHeapVector(new double[]{1.5, 3}),
-                             new DenseLocalOnHeapVector(new double[]{4.5, 9})};
+        Vector[] exp = {new DenseLocalOnHeapVector(new double[]{1.5, 3}),
+                        new DenseLocalOnHeapVector(new double[]{4.5, 9})};
 
         for (int i = 0; i < k; i++) {
             Vector center = centers[i];
 
             for (int j = 0; j < 2; j++)
-                assertEquals(expected[i].getX(j), center.getX(j), 0.5);
+                assertEquals(exp[i].getX(j), center.getX(j), 0.5);
         }
     }
 
@@ -163,12 +166,12 @@ public class FuzzyCMeansLocalClustererTest {
 
         double[][] points = new double[][]{{1}, {2}, {3}, {4}, {5}, {6}};
 
-        DenseLocalOnHeapMatrix pointMatrix = new DenseLocalOnHeapMatrix(points);
+        DenseLocalOnHeapMatrix pntMatrix = new DenseLocalOnHeapMatrix(points);
         ArrayList<Double> weights = new ArrayList<>();
-        Collections.addAll(weights, new Double[]{3.0, 2.0, 1.0, 1.0, 1.0, 1.0});
+        Collections.addAll(weights, 3.0, 2.0, 1.0, 1.0, 1.0, 1.0);
 
-        Vector[] centers1 = clusterer.cluster(pointMatrix, 2).centers();
-        Vector[] centers2 = clusterer.cluster(pointMatrix, 2, weights).centers();
+        Vector[] centers1 = clusterer.cluster(pntMatrix, 2).centers();
+        Vector[] centers2 = clusterer.cluster(pntMatrix, 2, weights).centers();
         Arrays.sort(centers1, Comparator.comparing(vector -> vector.getX(0)));
         Arrays.sort(centers2, Comparator.comparing(vector -> vector.getX(0)));
 
@@ -191,8 +194,10 @@ public class FuzzyCMeansLocalClustererTest {
         FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
                 2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 10, null);
         double[][] points = new double[][]{{1}, {2}, {3}, {4}};
+
         ArrayList<Double> weights = new ArrayList<>();
-        Collections.addAll(weights, new Double[]{1.0, 34.0, 2.5, 5.0, 0.5});
+        Collections.addAll(weights, 1.0, 34.0, 2.5, 5.0, 0.5);
+
         FuzzyCMeansModel cluster = clusterer.cluster(new DenseLocalOnHeapMatrix(points), 2, weights);
     }
 }

@@ -25,7 +25,6 @@ import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 
 /** The abstract class that defines the basic interface of Fuzzy C-Means clusterers */
 public abstract class BaseFuzzyCMeansClusterer<T extends Matrix> implements Clusterer<T, FuzzyCMeansModel> {
-
     /** Distance measure. */
     protected DistanceMeasure measure;
 
@@ -37,22 +36,22 @@ public abstract class BaseFuzzyCMeansClusterer<T extends Matrix> implements Clus
     protected double maxDelta;
 
     /** The flag that tells when algorithm should stop. */
-    protected StopCondition stopCondition;
+    protected StopCondition stopCond;
 
     /**
      * Constructor that stores some required parameters.
      *
      * @param measure Distance measure.
      * @param exponentialWeight Specific constant which is used in calculating of membership matrix.
-     * @param stopCondition Flag that tells when algorithm should stop.
+     * @param stopCond Flag that tells when algorithm should stop.
      * @param maxDelta The maximum distance between old and new centers or maximum difference between new and old
      *                 membership matrix elements for which algorithm must stop.
      */
-    protected BaseFuzzyCMeansClusterer(DistanceMeasure measure, double exponentialWeight, StopCondition stopCondition,
+    protected BaseFuzzyCMeansClusterer(DistanceMeasure measure, double exponentialWeight, StopCondition stopCond,
                                        double maxDelta) {
         this.measure = measure;
         this.exponentialWeight = exponentialWeight;
-        this.stopCondition = stopCondition;
+        this.stopCond = stopCond;
         this.maxDelta = maxDelta;
     }
 

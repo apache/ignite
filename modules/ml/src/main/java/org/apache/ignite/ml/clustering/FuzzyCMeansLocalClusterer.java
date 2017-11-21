@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.clustering;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Matrix;
@@ -26,15 +30,9 @@ import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-
 /** Implements the local version of Fuzzy C-Means algorithm for weighted points. */
 public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLocalOnHeapMatrix> implements
         WeightedClusterer<DenseLocalOnHeapMatrix, FuzzyCMeansModel> {
-
     /** The maximum number of iterations. */
     private int maxIterations;
 
@@ -46,14 +44,14 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
      *
      * @param measure Distance measure.
      * @param exponentialWeight Specific constant which is used in calculating of membership matrix.
-     * @param stopCondition Flag that tells when algorithm should stop.
+     * @param stopCond Flag that tells when algorithm should stop.
      * @param maxDelta The maximum distance between old and new centers or maximum difference between new and old
      *                 membership matrix elements for which algorithm must stop.
      * @param maxIterations The maximum number of FCM iterations.
      */
-    public FuzzyCMeansLocalClusterer(DistanceMeasure measure, double exponentialWeight, StopCondition stopCondition,
+    public FuzzyCMeansLocalClusterer(DistanceMeasure measure, double exponentialWeight, StopCondition stopCond,
                                      double maxDelta, int maxIterations, Long seed) {
-        super(measure, exponentialWeight, stopCondition, maxDelta);
+        super(measure, exponentialWeight, stopCond, maxDelta);
         this.maxIterations = maxIterations;
         rand = seed != null ? new Random(seed) : new Random();
     }
@@ -92,7 +90,7 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
             Matrix newMembership = calculateMembership(distances, weightsVector);
             Matrix newCenters = calculateNewCenters(points, newMembership);
 
-            if (this.stopCondition == StopCondition.STABLE_CENTERS)
+            if (this.stopCond == StopCondition.STABLE_CENTERS)
                 finished = areCentersStable(centers, newCenters);
             else
                 finished = areMembershipStable(membership, newMembership);
@@ -106,11 +104,11 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
             throw new ConvergenceException("Fuzzy C-Means algorithm has not converged after " +
                     Integer.toString(iteration) + " iterations");
 
-        Vector[] centersArray = new Vector[k];
+        Vector[] centersArr = new Vector[k];
         for (int i = 0; i < k; i++)
-            centersArray[i] = centers.getRow(i);
+            centersArr[i] = centers.getRow(i);
 
-        return new FuzzyCMeansModel(centersArray, measure);
+        return new FuzzyCMeansModel(centersArr, measure);
     }
 
     /**
@@ -135,12 +133,12 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
 
         for (int i = 1; i < k; i++) {
             double probe = rand.nextDouble() * sum;
-            double counter = 0;
+            double cntr = 0;
             int id = 0;
 
             for (int j = 0; j < numPoints; j++) {
-                counter += costs.getX(j);
-                if (counter >= probe) {
+                cntr += costs.getX(j);
+                if (cntr >= probe) {
                     id = j;
                     break;
                 }
@@ -186,12 +184,12 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
                 double invertedFuzzyWeight = 0.0;
 
                 for (int k = 0; k < numCenters; k++) {
-                    double value = Math.pow(distances.get(i, j) / distances.get(k, j),
+                    double val = Math.pow(distances.get(i, j) / distances.get(k, j),
                             fuzzyMembershipCoefficient);
-                    if (Double.isNaN(value))
-                        value = 1.0;
+                    if (Double.isNaN(val))
+                        val = 1.0;
 
-                    invertedFuzzyWeight += value;
+                    invertedFuzzyWeight += val;
                 }
 
                 double weight = 1.0 / invertedFuzzyWeight * weights.getX(j);
@@ -209,7 +207,7 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
      * @return Matrix that contains new centers.
      */
     private Matrix calculateNewCenters(Matrix points, Matrix membership) {
-        Vector membershipSums = membership.foldRows(row -> row.sum());
+        Vector membershipSums = membership.foldRows(Vector::sum);
         Matrix newCenters = membership.times(points);
 
         int numCenters = newCenters.rowSize();

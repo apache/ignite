@@ -59,7 +59,7 @@ public final class FuzzyCMeansExample {
 
                 // Condition that indicated when algorithm must stop.
                 // In this example algorithm stops if memberships have changed insignificantly.
-                BaseFuzzyCMeansClusterer.StopCondition stopCondition =
+                BaseFuzzyCMeansClusterer.StopCondition stopCond =
                         BaseFuzzyCMeansClusterer.StopCondition.STABLE_MEMBERSHIPS;
 
                 // Maximum difference between new and old membership values with which algorithm will continue to work.
@@ -80,7 +80,7 @@ public final class FuzzyCMeansExample {
                 // Create new distributed clusterer with parameters described above.
                 System.out.println(">>> Create new Distributed Fuzzy C-Means clusterer.");
                 FuzzyCMeansDistributedClusterer clusterer = new FuzzyCMeansDistributedClusterer(
-                        distanceMeasure, exponentialWeight, stopCondition, maxDelta, maxIterations,
+                        distanceMeasure, exponentialWeight, stopCond, maxDelta, maxIterations,
                         seed, initializationSteps, kMeansMaxIterations);
 
                 // Create sample data.
@@ -91,23 +91,23 @@ public final class FuzzyCMeansExample {
 
                 // Initialize matrix of data points. Each row contains one point.
                 int rows = points.length;
-                int columns = points[0].length;
+                int cols = points[0].length;
 
                 System.out.println(">>> Create the matrix that contains sample points.");
-                SparseDistributedMatrix pointMatrix = new SparseDistributedMatrix(rows, columns,
+                SparseDistributedMatrix pntMatrix = new SparseDistributedMatrix(rows, cols,
                         StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
                 // Store points into matrix.
-                pointMatrix.assign(points);
+                pntMatrix.assign(points);
 
                 // Call clusterization method with some number of centers.
                 // It returns model that can predict results for new points.
                 System.out.println(">>> Perform clusterization.");
                 int numCenters = 4;
-                FuzzyCMeansModel model = clusterer.cluster(pointMatrix, numCenters);
+                FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, numCenters);
 
                 // You can also get centers of clusters that is computed by Fuzzy C-Means algorithm.
-                Vector[] centers = model.centers();
+                Vector[] centers = mdl.centers();
 
                 StringBuilder results = new StringBuilder(">>> Results:\n");
                 results.append(">>> 1st center: " + centers[0].get(0) + " " + centers[0].get(1) + "\n");
