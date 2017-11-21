@@ -71,7 +71,7 @@ export default class Notebook {
                 if (nextNotebook)
                     this.$state.go('base.sql.notebook', {noteId: nextNotebook._id});
                 else
-                    this.$state.go('base.configuration.tabs.advanced.clusters');
+                    this.$state.go('default-state');
             });
     }
 

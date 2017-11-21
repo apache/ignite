@@ -59,7 +59,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
 
             AdminData.becomeUser(user._id)
                 .then(() => User.load())
-                .then(() => $state.go('base.configuration.tabs.advanced.clusters'))
+                .then(() => $state.go('default-state'))
                 .then(() => NotebookData.load());
         };
 

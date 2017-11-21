@@ -899,7 +899,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .catch((err) => Messages.showError(err));
 
         const _startWatch = () =>
-            agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.tabs.advanced.clusters')
+            agentMgr.startClusterWatch('Leave SQL', 'default-state')
                 .then(() => Loading.start('sqlLoading'))
                 .then(_refreshFn)
                 .then(() => {
