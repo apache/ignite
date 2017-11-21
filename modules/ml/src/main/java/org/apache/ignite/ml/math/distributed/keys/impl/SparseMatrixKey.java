@@ -32,7 +32,6 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
  * Key implementation for {@link SparseDistributedMatrix}.
  */
 public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
-
     /** */
     private int idx;
 
