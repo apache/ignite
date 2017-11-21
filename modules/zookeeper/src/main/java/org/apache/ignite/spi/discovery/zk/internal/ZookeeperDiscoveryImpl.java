@@ -518,12 +518,10 @@ public class ZookeeperDiscoveryImpl {
 
             zkClient.setData(zkPaths.evtsPath, marsh.marshal(evts), -1);
 
-            // TODO ZK: on crd do not need listen for events path.
-
             long time = System.currentTimeMillis() - start;
 
             if (log.isInfoEnabled())
-                log.info("Discovery coordinator saved new events [topVer=" + evts.topVer + ", saveTime=" + time + ']');
+                log.info("Discovery coordinator saved new topology events [topVer=" + evts.topVer + ", saveTime=" + time + ']');
 
             onEventsUpdate(evts);
         }
@@ -709,34 +707,54 @@ public class ZookeeperDiscoveryImpl {
             for (Map.Entry<Integer, String> evtE : newEvts.entrySet()) {
                 UUID sndNodeId = ZkPaths.customEventSendNodeId(evtE.getValue());
 
-                byte[] evtBytes = zkClient.getData(zkPaths.customEvtsDir + "/" + evtE.getValue());
+                ZookeeperClusterNode sndNode = top.nodesById.get(sndNodeId);
 
-                DiscoverySpiCustomMessage msg;
+                String evtDataPath = zkPaths.customEvtsDir + "/" + evtE.getValue();
 
-                try {
-                    msg = unmarshal(evtBytes);
+                if (sndNode != null) {
+                    byte[] evtBytes = zkClient.getData(zkPaths.customEvtsDir + "/" + evtE.getValue());
 
-                    evts.evtIdGen++;
+                    DiscoverySpiCustomMessage msg;
 
-                    ZkDiscoveryCustomEventData evtData = new ZkDiscoveryCustomEventData(
-                        evts.evtIdGen,
-                        evts.topVer,
-                        sndNodeId,
-                        evtE.getValue());
+                    try {
+                        msg = unmarshal(evtBytes);
 
-                    evtData.msg = msg;
+                        evts.evtIdGen++;
 
-                    evts.addEvent(evtData);
+                        ZkDiscoveryCustomEventData evtData = new ZkDiscoveryCustomEventData(
+                            evts.evtIdGen,
+                            evts.topVer,
+                            sndNodeId,
+                            evtE.getValue());
 
-                    if (log.isInfoEnabled())
-                        log.info("Generated CUSTOM event [topVer=" + evtData.topologyVersion() + ", evt=" + msg + ']');
+                        evtData.msg = msg;
+
+                        evts.addEvent(evtData);
+
+                        if (log.isInfoEnabled())
+                            log.info("Generated CUSTOM event [topVer=" + evtData.topologyVersion() + ", evt=" + msg + ']');
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to unmarshal custom discovery message: " + e, e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal custom discovery message: " + e, e);
+                else {
+                    U.warn(log, "Ignore custom event from unknown node: " + sndNodeId);
+
+                    zkClient.deleteIfExists(evtDataPath, -1);
                 }
 
                 evts.procCustEvt = evtE.getKey();
             }
+
+            long start = System.currentTimeMillis();
+
+            zkClient.setData(zkPaths.evtsPath, marsh.marshal(evts), -1);
+
+            long time = System.currentTimeMillis() - start;
+
+            if (log.isInfoEnabled())
+                log.info("Discovery coordinator saved new topology events [topVer=" + evts.topVer + ", saveTime=" + time + ']');
 
             onEventsUpdate(evts);
         }
@@ -895,6 +913,9 @@ public class ZookeeperDiscoveryImpl {
      */
     @SuppressWarnings("unchecked")
     private void notifyCustomEvent(ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
+        if (log.isInfoEnabled())
+            log.info(" [topVer=" + evtData.topologyVersion() + ", msg=" + msg.getClass().getSimpleName() + ']');
+
         ZookeeperClusterNode sndNode = top.nodesById.get(evtData.sndNodeId);
 
         assert sndNode != null : evtData;

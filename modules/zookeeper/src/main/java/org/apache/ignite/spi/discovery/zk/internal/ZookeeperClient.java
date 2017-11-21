@@ -252,6 +252,18 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    void deleteIfExists(String path, int ver)
+        throws ZookeeperClientFailedException, InterruptedException
+    {
+        try {
+            delete(path, ver);
+        }
+        catch (KeeperException.NoNodeException e) {
+            // No-op if node does not exist.
+        }
+    }
+
+
     void delete(String path, int ver)
         throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
     {

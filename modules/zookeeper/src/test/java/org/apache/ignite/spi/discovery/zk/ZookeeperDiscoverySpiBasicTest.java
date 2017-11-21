@@ -240,9 +240,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomEventsSimple1_5_Nodes() throws Exception {
-        Ignite srv0 = startGrids(2);
+        Ignite srv0 = startGrids(5);
 
         srv0.createCache(new CacheConfiguration<>("c1"));
+
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -562,6 +564,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 assertEquals(node.name(), cache.get(i));
             }
         }
+
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -579,7 +583,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids())
             node.compute().broadcast(new DummyCallable(null));
 
-        //awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.UUID;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 /**
@@ -37,10 +38,14 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /**
      * @param evtId Event ID.
      * @param topVer Topology version.
+     * @param sndNodeId Sender node ID.
      * @param evtPath Event path.
      */
     ZkDiscoveryCustomEventData(long evtId, long topVer, UUID sndNodeId, String evtPath) {
         super(evtId, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT, topVer);
+
+        assert sndNodeId != null;
+        assert !F.isEmpty(evtPath);
 
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
@@ -48,6 +53,6 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "CustomEventData [topVer=" + topologyVersion() + ']';
+        return "CustomEventData [topVer=" + topologyVersion() + ", sndNode=" + sndNodeId + ']';
     }
 }
