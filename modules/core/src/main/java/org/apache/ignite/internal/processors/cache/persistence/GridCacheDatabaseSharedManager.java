@@ -697,9 +697,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             WALPointer ptr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
-            cctx.wal().fsync(ptr);
+            if (ptr != null) {
+                cctx.wal().fsync(ptr);
 
-            nodeStart(ptr);
+                nodeStart(ptr);
+            }
 
             metaStorage.init(this);
 
