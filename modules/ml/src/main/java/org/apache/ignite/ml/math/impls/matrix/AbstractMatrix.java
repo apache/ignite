@@ -990,11 +990,11 @@ public abstract class AbstractMatrix implements Matrix {
      * @param data Data.
      */
     protected int getMaxAmountOfColumns(double[][] data) {
-        int maxAmountOfColumns = 0;
+        int maxAmountOfCols = 0;
 
         for (int i = 0; i < data.length; i++)
-            maxAmountOfColumns = Math.max(maxAmountOfColumns, data[i].length);
+            maxAmountOfCols = Math.max(maxAmountOfCols, data[i].length);
 
-        return maxAmountOfColumns;
+        return maxAmountOfCols;
     }
 }

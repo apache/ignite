@@ -106,7 +106,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         double[] betaHat = regression.estimateRegressionParameters();
-        System.out.println("Beta hat is " + betaHat);
         TestUtils.assertEquals(new double[] {11.0, 1.0 / 2.0, 2.0 / 3.0, 3.0 / 4.0, 4.0 / 5.0, 5.0 / 6.0},
             betaHat,
             1e-13);
