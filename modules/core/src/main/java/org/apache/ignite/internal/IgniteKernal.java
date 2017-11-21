@@ -279,8 +279,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private static final Object STOP_RECONNECT = new Object();
 
     static {
-        // Just load and initialize LongJVMPauseDetector class here
-        LongJVMPauseDetector.class.getName();
+        LongJVMPauseDetector.start();
     }
 
     /** */
@@ -3511,7 +3510,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         Ignition.stop(igniteInstanceName, true);
     }
 
-    /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         CU.validateCacheName(cacheName);
         checkClusterState();

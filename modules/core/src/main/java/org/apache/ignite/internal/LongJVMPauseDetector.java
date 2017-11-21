@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.logger.java.JavaLogger;
 
@@ -31,8 +32,8 @@ class LongJVMPauseDetector {
     /** Logger. */
     private static final IgniteLogger LOG = new JavaLogger();
 
-    /** Worker. */
-    private static final Thread WORKER;
+    /** Started. */
+    private static final AtomicBoolean started = new AtomicBoolean();
 
     /** Long pause count. */
     private static volatile long longPausesCount;
@@ -40,55 +41,84 @@ class LongJVMPauseDetector {
     /** Long pause total duration. */
     private static volatile long longPausesTotalDuration;
 
-    static {
-        WORKER = new Thread() {
-            private long millis = System.currentTimeMillis();
+    /**
+     * Starts worker if not started yet.
+     */
+    public static void start() {
+        if (!started.compareAndSet(false, true)) {
+            LOG.warning(LongJVMPauseDetector.class.getSimpleName() + " already started!");
+
+            return;
+        }
+
+        final Thread worker = new Thread("jvm-pause-detector-worker") {
+            private long prev = System.currentTimeMillis();
+
+            private long longPausesCount;
+
+            private long longPausesTotalDuration;
 
             @Override public void run() {
+                final int timeout = getInteger(IGNITE_STW_DETECTOR_SLEEP_TIMEOUT, 10);
+                final int threshold = getInteger(IGNITE_STW_ALLOWED_DURATION_LIMIT, 100);
+
                 while (true) {
                     try {
-                        final int timeout = getInteger(IGNITE_STW_DETECTOR_SLEEP_TIMEOUT, 10);
-
                         Thread.sleep(timeout);
 
                         final long now = System.currentTimeMillis();
+                        final long pause = now - timeout - prev;
 
-                        final long pause = now - timeout - millis;
+                        prev = now;
 
-                        millis = now;
-
-                        if (pause >= getInteger(IGNITE_STW_ALLOWED_DURATION_LIMIT, 100)) {
+                        if (pause >= threshold) {
                             LOG.warning("Possible too long JVM pause: " + pause + " milliseconds.");
 
-                            longPausesCount++;
+                            longPausesCount(++longPausesCount);
 
-                            longPausesTotalDuration += pause;
+                            longPausesTotalDuration(longPausesTotalDuration += pause);
                         }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
+                    }
+                    catch (InterruptedException e) {
+                        LOG.error(getName() + " has been interrupted", e);
+
                         break;
                     }
                 }
             }
         };
 
-        WORKER.setDaemon(true);
-        WORKER.start();
+        worker.setDaemon(true);
+        worker.start();
 
-        LOG.info("LongJVMPauseDetector has been initialized.");
+        LOG.info(worker.getName() + " has been started.");
     }
 
     /**
-     *
+     * @return Long JVM pauses count
      */
     static long longPausesCount() {
         return longPausesCount;
     }
 
     /**
-     *
+     * @param val Value.
+     */
+    private static void longPausesCount(long val) {
+        longPausesCount = val;
+    }
+
+    /**
+     * @return Long JVM pauses total duration
      */
     static long longPausesTotalDuration() {
         return longPausesTotalDuration;
+    }
+
+    /**
+     * @param val Value.
+     */
+    private static void longPausesTotalDuration(long val) {
+        longPausesTotalDuration = val;
     }
 }
