@@ -28,14 +28,14 @@ import org.apache.ignite.ml.math.Vector;
 public class OLSMultipleLinearRegressionModel implements Model<Vector, Vector>,
     Exportable<OLSMultipleLinearRegressionModelFormat> {
     /** */
-    private final AbstractMultipleLinearRegression regression;
+    private final OLSMultipleLinearRegression regression;
 
     /**
      * Construct linear regression model.
      *
      * @param regression Linear regression object.
      */
-    public OLSMultipleLinearRegressionModel(AbstractMultipleLinearRegression regression) {
+    public OLSMultipleLinearRegressionModel(OLSMultipleLinearRegression regression) {
         this.regression = regression;
     }
 
