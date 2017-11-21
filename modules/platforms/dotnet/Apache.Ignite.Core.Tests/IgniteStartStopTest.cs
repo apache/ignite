@@ -229,7 +229,7 @@ namespace Apache.Ignite.Core.Tests
                 JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
-            for (var i = 0; i < 20; i++)
+            for (var i = 0; i < 50; i++)
             {
                 Console.WriteLine("Iteration: " + i);
 
@@ -239,16 +239,12 @@ namespace Apache.Ignite.Core.Tests
 
                 if (i % 2 == 0) // Try to stop ignite from another thread.
                 {
-                    var t = new Thread(() => {
-                        grid.Dispose();
-                    });
-
-                    t.Start();
-
-                    t.Join();
+                    Task.Factory.StartNew(() => grid.Dispose()).Wait();
                 }
                 else
+                {
                     grid.Dispose();
+                }
 
                 GC.Collect(); // At the time of writing java references are cleaned from finalizer, so GC is needed.
             }

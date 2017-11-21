@@ -295,7 +295,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var persons = GetPersonCache().AsCacheQueryable();
 
             var res = persons
-                .Select(x => new {Foo = x.Key % 2 == 0 ? even : odd, x.Value})
+                .Select(x => new { x.Key, Foo = x.Key % 2 == 0 ? even : odd, x.Value })
+                .OrderBy(x => x.Key)
                 .ToArray();
 
             if (comparer != null)
