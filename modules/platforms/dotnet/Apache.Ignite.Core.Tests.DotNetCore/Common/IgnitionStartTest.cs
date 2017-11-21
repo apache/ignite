@@ -100,9 +100,14 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
                 Assert.AreEqual(TimeSpan.FromMilliseconds(300), disco.SocketTimeout);
 
                 // DataStorage defaults.
-                AssertExtensions.ReflectionEqual(new DataStorageConfiguration(), resCfg.DataStorageConfiguration);
-                AssertExtensions.ReflectionEqual(new DataRegionConfiguration(), 
-                    resCfg.DataStorageConfiguration.DefaultDataRegionConfiguration);  // ???
+                var dsCfg = new DataStorageConfiguration
+                {
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        Name = "default"
+                    }
+                };
+                AssertExtensions.ReflectionEqual(dsCfg, resCfg.DataStorageConfiguration);
             }
         }
     }
