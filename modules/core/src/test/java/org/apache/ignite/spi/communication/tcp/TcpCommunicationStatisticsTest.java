@@ -19,6 +19,9 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.lang.management.ManagementFactory;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
@@ -27,13 +30,15 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridJobExecuteRequest;
-import org.apache.ignite.internal.GridJobExecuteResponse;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -49,8 +54,19 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     /** Mutex. */
     final private Object mux = new Object();
 
+    /** */
+    final private CountDownLatch latch = new CountDownLatch(1);
+
+    static {
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
+            @Override public Message apply() {
+                return new GridTestMessage();
+            }
+        });
+    }
+
     /**
-     * CommunicationSPI synchronized by {@code mux}
+     * CommunicationSPI synchronized by {@code mux}.
      */
     private class SynchronizedCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
@@ -66,6 +82,14 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
             synchronized (mux) {
                 super.sendMessage(node, msg, ackC);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
+            super.notifyListener(sndId, msg, msgC);
+
+            if (msg instanceof GridTestMessage)
+                latch.countDown();
         }
     }
 
@@ -104,14 +128,31 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Compares two maps for equality.
+     */
+    private static <K, V> boolean mapsEquals(Map<K, V> map1, Map<K, V> map2) {
+        assert map1 != null;
+        assert map2 != null;
+
+        return map1.size() == map2.size() && map1.entrySet().containsAll(map2.entrySet());
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testStatistics() throws Exception {
         startGrids(2);
 
         try {
+            // Send custom message from node0 to node1.
+            grid(0).configuration().getCommunicationSpi().sendMessage(grid(1).cluster().localNode(),
+                new GridTestMessage());
+
+            latch.await(10, TimeUnit.SECONDS);
+
             ClusterGroup clusterGroupNode1 = grid(0).cluster().forNodeId(grid(1).localNode().id());
 
+            // Send job from node0 to node1.
             grid(0).compute(clusterGroupNode1).call(new IgniteCallable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     return Boolean.TRUE;
@@ -143,16 +184,18 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
                 Map<String, Long> msgsReceivedByType0 = mbean0.getReceivedMessagesByType();
                 Map<String, Long> msgsReceivedByType1 = mbean1.getReceivedMessagesByType();
 
-                assertEquals(1, msgsSentByType0.get(GridJobExecuteRequest.class.getSimpleName()).longValue());
-                assertEquals(1, msgsSentByType1.get(GridJobExecuteResponse.class.getSimpleName()).longValue());
-                assertEquals(1, msgsReceivedByType0.get(GridJobExecuteResponse.class.getSimpleName()).longValue());
-                assertEquals(1, msgsReceivedByType1.get(GridJobExecuteRequest.class.getSimpleName()).longValue());
+                // Node0 sent exactly the same types and count of messages as node1 received.
+                assertTrue(mapsEquals(msgsSentByType0, msgsReceivedByType1));
+
+                // Node1 sent exactly the same types and count of messages as node0 received.
+                assertTrue(mapsEquals(msgsSentByType1, msgsReceivedByType0));
+
+                assertEquals(1, msgsSentByType0.get(GridTestMessage.class.getSimpleName()).longValue());
+                assertEquals(1, msgsReceivedByType1.get(GridTestMessage.class.getSimpleName()).longValue());
             }
         }
         finally {
             stopAllGrids();
         }
-
     }
-
 }
