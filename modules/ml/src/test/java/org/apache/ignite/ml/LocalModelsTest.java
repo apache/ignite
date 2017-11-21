@@ -29,7 +29,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModel;
-import org.apache.ignite.ml.regressions.AbstractMultipleLinearRegressionModelFormat;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModelFormat;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
 import org.junit.After;
 import org.junit.Assert;
@@ -73,12 +73,12 @@ public class LocalModelsTest {
 
         OLSMultipleLinearRegressionModel mdl = getAbstractMultipleLinearRegressionModel();
 
-        Exporter<AbstractMultipleLinearRegressionModelFormat, String> exporter = new FileExporter<>();
+        Exporter<OLSMultipleLinearRegressionModelFormat, String> exporter = new FileExporter<>();
         mdl.saveModel(exporter, mdlFilePath);
 
         Assert.assertTrue(String.format("File %s not found.", mdlPath.toString()), Files.exists(mdlPath));
 
-        AbstractMultipleLinearRegressionModelFormat load = exporter.load(mdlFilePath);
+        OLSMultipleLinearRegressionModelFormat load = exporter.load(mdlFilePath);
 
         OLSMultipleLinearRegressionModel importedMdl = load.getAbstractMultipleLinearRegressionModel();
 

@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.Matrix;
  *
  * @see OLSMultipleLinearRegressionModel
  */
-public class AbstractMultipleLinearRegressionModelFormat implements Serializable {
+public class OLSMultipleLinearRegressionModelFormat implements Serializable {
     /** X sample data. */
     private final Matrix xMatrix;
 
@@ -33,7 +33,7 @@ public class AbstractMultipleLinearRegressionModelFormat implements Serializable
     private final boolean noIntercept;
 
     /** */
-    public AbstractMultipleLinearRegressionModelFormat(Matrix xMatrix, boolean noIntercept) {
+    public OLSMultipleLinearRegressionModelFormat(Matrix xMatrix, boolean noIntercept) {
         this.xMatrix = xMatrix;
         this.noIntercept = noIntercept;
     }
@@ -55,7 +55,7 @@ public class AbstractMultipleLinearRegressionModelFormat implements Serializable
         if (o == null || getClass() != o.getClass())
             return false;
 
-        AbstractMultipleLinearRegressionModelFormat format = (AbstractMultipleLinearRegressionModelFormat)o;
+        OLSMultipleLinearRegressionModelFormat format = (OLSMultipleLinearRegressionModelFormat)o;
 
         return noIntercept == format.noIntercept && xMatrix.equals(format.xMatrix);
     }

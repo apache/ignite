@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.Vector;
  * Model for linear regression.
  */
 public class OLSMultipleLinearRegressionModel implements Model<Vector, Vector>,
-    Exportable<AbstractMultipleLinearRegressionModelFormat> {
+    Exportable<OLSMultipleLinearRegressionModelFormat> {
     /** */
     private final AbstractMultipleLinearRegression regression;
 
@@ -47,8 +47,8 @@ public class OLSMultipleLinearRegressionModel implements Model<Vector, Vector>,
     }
 
     /** {@inheritDoc} */
-    @Override public <P> void saveModel(Exporter<AbstractMultipleLinearRegressionModelFormat, P> exporter, P path) {
-        exporter.save(new AbstractMultipleLinearRegressionModelFormat(regression.getX(), regression.isNoIntercept()),
+    @Override public <P> void saveModel(Exporter<OLSMultipleLinearRegressionModelFormat, P> exporter, P path) {
+        exporter.save(new OLSMultipleLinearRegressionModelFormat(regression.getX(), regression.isNoIntercept()),
             path);
     }
 
