@@ -65,7 +65,9 @@ import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
@@ -2126,7 +2128,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
 
-        visitor.visit(new RebuldIndexFromHashClosure(qryMgr));
+        visitor.visit(new RebuildIndexFromHashClosure(qryMgr, cctx.mvccEnabled()));
 
         for (H2TableDescriptor tblDesc : tables(cacheName))
             tblDesc.table().markRebuildFromHashInProgress(false);
@@ -2723,21 +2725,46 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** */
-    private static class RebuldIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
+    private static class RebuildIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
         /** */
         private final GridCacheQueryManager qryMgr;
 
+        /** MVCC status flag. */
+        private final boolean mvccEnabled;
+
+        /** Last encountered key. */
+        private KeyCacheObject prevKey = null;
+
+        /** MVCC version of previously encountered row with the same key. */
+        private GridCacheMvccEntryInfo mvccVer = null;
+
         /**
          * @param qryMgr Query manager.
+         * @param mvccEnabled MVCC status flag.
          */
-        RebuldIndexFromHashClosure(GridCacheQueryManager qryMgr) {
+        RebuildIndexFromHashClosure(GridCacheQueryManager qryMgr, boolean mvccEnabled) {
             this.qryMgr = qryMgr;
+            this.mvccEnabled = mvccEnabled;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-            // TODO IGNITE-6929
-            qryMgr.store(row, null, null, false);
+            if (mvccEnabled && !F.eq(prevKey, row.key())) {
+                prevKey = row.key();
+
+                mvccVer = null;
+            }
+
+            // prevRowAvailable is always true with MVCC on, and always false *on index rebuild* with MVCC off.
+            qryMgr.store(row, mvccVer, null, mvccEnabled);
+
+            if (mvccEnabled) {
+                mvccVer = new GridCacheMvccEntryInfo();
+
+                mvccVer.mvccCoordinatorVersion(row.mvccCoordinatorVersion());
+
+                mvccVer.mvccCounter(row.mvccCounter());
+            }
         }
     }
 }
