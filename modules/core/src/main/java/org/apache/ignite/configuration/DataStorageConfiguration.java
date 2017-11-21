@@ -872,7 +872,9 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param walCompactionEnabled Wal compaction enabled flag.
      */
-    public void setWalCompactionEnabled(boolean walCompactionEnabled) {
+    public DataStorageConfiguration setWalCompactionEnabled(boolean walCompactionEnabled) {
         this.walCompactionEnabled = walCompactionEnabled;
+
+        return this;
     }
 }

@@ -1493,6 +1493,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** All segments prior to this (inclusive) can be compressed. */
         private volatile long lastAllowedToCompressIdx = -1L;
 
+        /**
+         *
+         */
+        FileCompressor() {
+            super("wal-file-compressor%" + cctx.igniteInstanceName());
+        }
+
         private void init() {
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
@@ -1610,6 +1617,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
+                    if (mode == WALMode.DEFAULT) {
+                        try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
+                            f0.force();
+                        }
+                    }
+
                     lastCompressedIdx = nextSegment;
                 }
                 catch (IgniteCheckedException | IOException e) {
@@ -1655,6 +1668,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** Byte array for draining data. */
         private byte[] arr = new byte[tlbSize];
+
+        /**
+         *
+         */
+        FileDecompressor() {
+            super("wal-file-decompressor%" + cctx.igniteInstanceName());
+        }
 
         /** {@inheritDoc} */
         @Override public void run() {
