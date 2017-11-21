@@ -337,9 +337,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             archiver = new FileArchiver(tup == null ? -1 : tup.get2());
 
-            compressor = new FileCompressor();
+            if (dsCfg.isWalCompactionEnabled()) {
+                compressor = new FileCompressor();
 
-            decompressor = new FileDecompressor();
+                decompressor = new FileDecompressor();
+            }
 
             if (mode != WALMode.NONE) {
                 if (log.isInfoEnabled())
@@ -413,11 +415,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             assert archiver != null;
             archiver.start();
 
-            assert compressor != null;
-            compressor.start();
+            if (compressor != null)
+                compressor.start();
 
-            assert decompressor != null;
-            decompressor.start();
+            if (decompressor != null)
+                decompressor.start();
         }
     }
 
