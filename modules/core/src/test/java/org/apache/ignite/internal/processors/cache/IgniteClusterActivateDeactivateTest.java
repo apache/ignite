@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -822,8 +823,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             }
         });
 
-        checkCache(client, CACHE_NAME_PREFIX + 0, false);
-
         if (transition) {
             assertFalse(stateFut.get().isDone());
 
@@ -889,7 +888,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         startWithCaches1(SRVS, CLIENTS);
 
         final Ignite srv = ignite(0);
-        Ignite client = ignite(SRVS);
+        IgniteEx client = grid(SRVS);
 
         checkNoCaches(SRVS + CLIENTS);
 
@@ -922,12 +921,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             }
         });
 
-        checkCache(client, CACHE_NAME_PREFIX + 0, !transition);
-
         if (transition) {
             assertFalse(stateFut.get().isDone());
 
-            assertFalse(client.active());
+            assertTrue(client.context().state().clusterState().transition());
 
             spi1.waitForBlocked();
 
@@ -1275,6 +1272,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param exp {@code True} if expect that cache is started on node.
      */
     void checkCache(Ignite node, String cacheName, boolean exp) {
+        ((IgniteEx)node).context().state().publicApiActiveState(true); // call public API to wait for state transition
+
         GridCacheAdapter cache = ((IgniteKernal)node).context().cache().internalCache(cacheName);
 
         if (exp)
@@ -1288,6 +1287,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     final void checkNoCaches(int nodes) {
         for (int i = 0; i < nodes; i++) {
+            grid(i).context().state().publicApiActiveState(true);
+
             GridCacheProcessor cache = ((IgniteKernal)ignite(i)).context().cache();
 
             assertTrue(cache.caches().isEmpty());

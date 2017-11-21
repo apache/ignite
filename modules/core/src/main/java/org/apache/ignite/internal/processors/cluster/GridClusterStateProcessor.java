@@ -38,7 +38,7 @@ public interface GridClusterStateProcessor extends GridProcessor {
     /**
      * @return Cluster state to be used on public API.
      */
-    boolean publicApiActiveState();
+    boolean publicApiActiveState(boolean waitForTransition);
 
     /**
      * @param discoCache Discovery data cache.
