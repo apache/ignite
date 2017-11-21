@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore.Common
+// ReSharper disable once CheckNamespace - use same TestUtils namespace to reuse tests from main project.
+namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
