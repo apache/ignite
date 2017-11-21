@@ -71,5 +71,14 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
                 Assert.AreEqual(CacheMode.Replicated, cache.GetConfiguration().CacheMode);
             }
         }
+
+        /// <summary>
+        /// Tests that Ignite starts from Spring XML.
+        /// </summary>
+        [TestMethod]
+        public void TestIgniteStartsFromSpringXml()
+        {
+            // TODO: Check DataRegionConfiguration.DefaultMaxSize from Java side
+        }
     }
 }
