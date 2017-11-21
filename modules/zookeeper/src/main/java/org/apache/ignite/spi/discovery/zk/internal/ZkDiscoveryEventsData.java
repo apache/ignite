@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.TreeMap;
 
 /**
@@ -56,9 +57,11 @@ class ZkDiscoveryEventsData implements Serializable {
     /**
      * @param evt Event.
      */
-    void addEvent(ZkDiscoveryEventData evt) {
+    void addEvent(Collection<ZookeeperClusterNode> nodes, ZkDiscoveryEventData evt) {
         Object old = evts.put(evt.eventId(), evt);
 
         assert old == null : old;
+
+        evt.remainingAcks(nodes);
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,12 +28,15 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Op;
+import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -215,8 +219,33 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    void createAllIfNeeded(List<String> paths, CreateMode createMode)
+        throws ZookeeperClientFailedException, InterruptedException
+    {
+        // TODO ZK: need check for max size?
+        List<Op> ops = new ArrayList<>(paths.size());
+
+        for (String path : paths)
+            ops.add(Op.create(path, EMPTY_BYTES, ZK_ACL, createMode));
+
+        for (;;) {
+            long connStartTime = this.connStartTime;
+
+            try {
+                zk.multi(ops);
+
+                return;
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+        }
+
+    }
+
     String createIfNeeded(String path, byte[] data, CreateMode createMode)
-        throws ZookeeperClientFailedException, InterruptedException {
+        throws ZookeeperClientFailedException, InterruptedException
+    {
         if (data == null)
             data = EMPTY_BYTES;
 
@@ -263,6 +292,35 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+
+    void deleteAll(@Nullable String parent, List<String> paths, int ver)
+        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
+    {
+        if (paths.isEmpty())
+            return;
+
+        // TODO ZK: need check for max size?
+        List<Op> ops = new ArrayList<>(paths.size());
+
+        for (String path : paths) {
+            String path0 = parent != null ? parent + "/" + path : path;
+
+            ops.add(Op.delete(path0, ver));
+        }
+
+        for (;;) {
+            long connStartTime = this.connStartTime;
+
+            try {
+                zk.multi(ops);
+
+                return;
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+        }
+    }
 
     void delete(String path, int ver)
         throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
@@ -331,13 +389,22 @@ public class ZookeeperClient implements Watcher {
     void getChildrenAsync(String path, Watcher watcher, AsyncCallback.Children2Callback cb) {
         GetChildrenOperation op = new GetChildrenOperation(path, watcher, cb);
 
-        zk.getChildren(path, watcher, new ChildreCallbackWrapper(op), null);
+        zk.getChildren(path, watcher, new ChildrenCallbackWrapper(op), null);
     }
 
     void getDataAsync(String path, Watcher watcher, AsyncCallback.DataCallback cb) {
         GetDataOperation op = new GetDataOperation(path, watcher, cb);
 
         zk.getData(path, watcher, new DataCallbackWrapper(op), null);
+    }
+
+    void createAsync(String path, byte[] data, CreateMode createMode, AsyncCallback.StringCallback cb) {
+        if (data == null)
+            data = EMPTY_BYTES;
+
+        CreateOperation op = new CreateOperation(path, data, createMode, cb);
+
+        zk.create(path, data, ZK_ACL, createMode, new CreateCallbackWrapper(op), null);
     }
 
     /**
@@ -432,6 +499,29 @@ public class ZookeeperClient implements Watcher {
     private boolean needRetry(int code) {
         // TODO ZL: other codes.
         return code == KeeperException.Code.CONNECTIONLOSS.intValue();
+    }
+
+    /**
+     *
+     */
+    private void closeClient() {
+        try {
+            zk.close();
+        }
+        catch (Exception closeErr) {
+            U.warn(log, "Failed to close zookeeper client: " + closeErr, closeErr);
+        }
+
+        connTimer.cancel();
+    }
+
+    /**
+     *
+     */
+    private void scheduleConnectionCheck() {
+        assert state == ConnectionState.Disconnected : state;
+
+        connTimer.schedule(new ConnectionTimeoutTask(connStartTime), connLossTimeout);
     }
 
     /**
@@ -532,37 +622,75 @@ public class ZookeeperClient implements Watcher {
     /**
      *
      */
-    private void closeClient() {
-        try {
-            zk.close();
-        }
-        catch (Exception closeErr) {
-            U.warn(log, "Failed to close zookeeper client: " + closeErr, closeErr);
+    class CreateOperation implements ZkAsyncOperation {
+        /** */
+        private final String path;
+
+        /** */
+        private final byte[] data;
+
+        /** */
+        private final CreateMode createMode;
+
+        /** */
+        private final AsyncCallback.StringCallback cb;
+
+        CreateOperation(String path, byte[] data, CreateMode createMode, AsyncCallback.StringCallback cb) {
+            this.path = path;
+            this.data = data;
+            this.createMode = createMode;
+            this.cb = cb;
         }
 
-        connTimer.cancel();
+        /** {@inheritDoc} */
+        @Override public void execute() {
+            createAsync(path, data, createMode, cb);
+        }
     }
 
     /**
      *
      */
-    private void scheduleConnectionCheck() {
-        assert state == ConnectionState.Disconnected : state;
+    class CreateCallbackWrapper implements AsyncCallback.StringCallback {
+        /** */
+        final CreateOperation op;
 
-        connTimer.schedule(new ConnectionTimeoutTask(connStartTime), connLossTimeout);
+        /**
+         * @param op Operation.
+         */
+        CreateCallbackWrapper(CreateOperation op) {
+            this.op = op;
+        }
+
+        @Override public void processResult(int rc, String path, Object ctx, String name) {
+            if (rc == KeeperException.Code.NODEEXISTS.intValue())
+                return;
+
+            if (needRetry(rc)) {
+                U.warn(log, "Failed to execute async operation, connection lost. Will retry after connection restore [path=" + path + ']');
+
+                retryQ.add(op);
+            }
+            else if (rc == KeeperException.Code.SESSIONEXPIRED.intValue())
+                U.warn(log, "Failed to execute async operation, connection lost [path=" + path + ']');
+            else {
+                if (op.cb != null)
+                    op.cb.processResult(rc, path, ctx, name);
+            }
+        }
     }
 
     /**
      *
      */
-    class ChildreCallbackWrapper implements AsyncCallback.Children2Callback {
+    class ChildrenCallbackWrapper implements AsyncCallback.Children2Callback {
         /** */
         private final GetChildrenOperation op;
 
         /**
          * @param op Operation.
          */
-        private ChildreCallbackWrapper(GetChildrenOperation op) {
+        private ChildrenCallbackWrapper(GetChildrenOperation op) {
             this.op = op;
         }
 

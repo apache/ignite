@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -46,6 +47,28 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         closeZK();
 
         super.afterTest();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeleteAll() throws Exception {
+        startZK(1);
+
+        ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, null);
+
+        client.createIfNeeded("/apacheIgnite", null, CreateMode.PERSISTENT);
+        client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
+        client.createIfNeeded("/apacheIgnite/2", null, CreateMode.PERSISTENT);
+
+        client.deleteAll("/apacheIgnite", Arrays.asList("1", "2"), -1);
+
+        assertTrue(client.getChildren("/apacheIgnite").isEmpty());
+
+        client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
+        client.deleteAll("/apacheIgnite", Arrays.asList("1"), -1);
+
+        assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
 
     /**

@@ -22,18 +22,17 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
-    using System.Runtime.InteropServices;
     using System.Text;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Log;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Native interface manager.
     /// </summary>
-    public static unsafe class IgniteManager
+    internal static class IgniteManager
     {
         /** Java Command line argument: Xms. Case sensitive. */
         private const string CmdJvmMinMemJava = "-Xms";
@@ -43,9 +42,6 @@ namespace Apache.Ignite.Core.Impl
 
         /** Monitor for DLL load synchronization. */
         private static readonly object SyncRoot = new object();
-
-        /** First created context. */
-        private static void* _ctx;
 
         /** Configuration used on JVM start. */
         private static JvmConfiguration _jvmCfg;
@@ -57,10 +53,9 @@ namespace Apache.Ignite.Core.Impl
         /// Create JVM.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
-        /// <param name="cbs">Callbacks.</param>
-        /// <param name="log"></param>
-        /// <returns>Context.</returns>
-        internal static void CreateJvmContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs, ILogger log)
+        /// <param name="log">Logger</param>
+        /// <returns>Callback context.</returns>
+        internal static UnmanagedCallbacks CreateJvmContext(IgniteConfiguration cfg, ILogger log)
         {
             lock (SyncRoot)
             {
@@ -79,16 +74,23 @@ namespace Apache.Ignite.Core.Impl
                 }
 
                 // 2. Create unmanaged pointer.
-                void* ctx = CreateJvm(cfg, cbs);
+                var jvm = CreateJvm(cfg);
 
-                cbs.SetContext(ctx);
-
-                // 3. If this is the first JVM created, preserve it.
-                if (_ctx == null)
+                if (cfg.RedirectJavaConsoleOutput)
                 {
-                    _ctx = ctx;
+                    jvm.EnableJavaConsoleWriter();
+                }
+
+                var cbs = new UnmanagedCallbacks(log, jvm);
+                jvm.RegisterCallbacks(cbs);
+
+                // 3. If this is the first JVM created, preserve configuration.
+                if (_jvmCfg == null)
+                {
                     _jvmCfg = jvmCfg;
                 }
+
+                return cbs;
             }
         }
         
@@ -101,63 +103,18 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Blocks until JVM stops.
-        /// </summary>
-        public static void DestroyJvm()
-        {
-            lock (SyncRoot)
-            {
-                if (_ctx != null)
-                {
-                    UU.DestroyJvm(_ctx);
-
-                    _ctx = null;
-                }
-            }
-        }
-
-        /// <summary>
         /// Create JVM.
         /// </summary>
         /// <returns>JVM.</returns>
-        private static void* CreateJvm(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
+        private static Jvm CreateJvm(IgniteConfiguration cfg)
         {
             var cp = Classpath.CreateClasspath(cfg);
 
             var jvmOpts = GetMergedJvmOptions(cfg);
-            
-            var opts = new sbyte*[1 + jvmOpts.Count];
 
-            int idx = 0;
-                
-            opts[idx++] = IgniteUtils.StringToUtf8Unmanaged(cp);
+            jvmOpts.Add(cp);
 
-            foreach (string cfgOpt in jvmOpts)
-                opts[idx++] = IgniteUtils.StringToUtf8Unmanaged(cfgOpt);
-
-            try
-            {
-                IntPtr mem = Marshal.AllocHGlobal(opts.Length * 8);
-
-                fixed (sbyte** opts0 = opts)
-                {
-                    PlatformMemoryUtils.CopyMemory(opts0, mem.ToPointer(), opts.Length * 8);
-                }
-
-                try
-                {
-                    return UU.CreateContext(mem.ToPointer(), opts.Length, cbs.CallbacksPointer);
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(mem);
-                }
-            }
-            finally
-            {
-                foreach (sbyte* opt in opts)
-                    Marshal.FreeHGlobal((IntPtr)opt);
-            }
+            return Jvm.GetOrCreate(jvmOpts);
         }
 
         /// <summary>

@@ -2347,7 +2347,8 @@ warnif count > 0
 from t in JustMyCode.Types.Where(t =>
    !t.IsStatic && !t.IsInterface &&
    !t.IsEnumeration && !t.IsDelegate &&
-   !t.IsGeneratedByCompiler)
+   !t.IsGeneratedByCompiler &&
+   !t.FullName.Contains(".Jni."))
 
 let methodsThatCanBeMadeStatic = 
    from m in t.InstanceMethods
@@ -2477,7 +2478,7 @@ select new {
       <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[//<Name>Avoid the Singleton pattern</Name>
 warnif count > 0
 from t in Application.Types
-where !t.IsStatic && !t.IsAbstract && (t.IsClass || t.IsStructure)
+where !t.IsStatic && !t.IsAbstract && (t.IsClass || t.IsStructure) && t.Name != "Jvm"
 
 // All ctors of a singleton are private
 where t.Constructors.Where(ctor => !ctor.IsPrivate).Count() == 0
@@ -5641,7 +5642,8 @@ from f in JustMyCode.Fields where
    !f.IsEnumValue &&  // The IL code never explicitly uses enumeration value.
     f.Name != "value__"  && // Field named 'value__' are relative to enumerations and the IL code never explicitly uses them.
    !f.HasAttribute("NDepend.Attributes.IsNotDeadCodeAttribute".AllowNoMatch()) &&
-   !f.IsGeneratedByCompiler
+   !f.IsGeneratedByCompiler &&
+   !f.ParentType.Name.StartsWith("Jvm")
    // If you don't want to link NDepend.API.dll, you can use your own IsNotDeadCodeAttribute
    // and adapt the source code of this rule.
 select new {
