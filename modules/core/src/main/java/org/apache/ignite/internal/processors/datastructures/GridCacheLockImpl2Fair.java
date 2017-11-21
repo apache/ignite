@@ -167,10 +167,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
     /** {@inheritDoc} */
     @Override public boolean isLocked() throws IgniteException {
         try {
-            if (sync.reentrantCount.get() > 0)
-                return true;
-
-            if (sync.isGloballyLocked)
+            if (hasQueuedThreads())
                 return true;
 
             GridCacheLockState2Base<LockOwner> state = sync.forceGet();
@@ -246,7 +243,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         long threadId;
 
         /** Lock name. */
-        String name;
+        private String name;
 
         /**
          * Empty constructor required for {@link Externalizable}.

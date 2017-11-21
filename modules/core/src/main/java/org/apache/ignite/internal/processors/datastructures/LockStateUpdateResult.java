@@ -23,7 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /** Simple tuple for a result. {@link org.apache.ignite.internal.util.lang.IgnitePair} with {@code Boolean} too heavy. */
-public class LockedModified implements Externalizable {
+public class LockStateUpdateResult implements Externalizable {
     /** */
     private static final long serialVersionUID = -5203497119206054926L;
 
@@ -36,7 +36,7 @@ public class LockedModified implements Externalizable {
     /**
      * Required by {@link Externalizable}.
      */
-    public LockedModified() {
+    public LockStateUpdateResult() {
         // No-op.
     }
 
@@ -46,7 +46,7 @@ public class LockedModified implements Externalizable {
      * @param locked Lock was acquired.
      * @param modified State was modified.
      */
-    LockedModified(boolean locked, boolean modified) {
+    LockStateUpdateResult(boolean locked, boolean modified) {
         this.locked = locked;
         this.modified = modified;
     }

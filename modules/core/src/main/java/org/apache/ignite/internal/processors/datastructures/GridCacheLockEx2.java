@@ -238,7 +238,11 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
 
         /** Decrement thread local count. */
         void decrement() {
-            set(get() - 1);
+            int val = get();
+
+            assert val > 0;
+
+            set(val - 1);
         }
     }
 }

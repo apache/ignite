@@ -96,8 +96,8 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
     }
 
     /** Will take lock if it is free. */
-    LockedModified lockIfFree(T owner) {
-        LockedModified result = new LockedModified(true, false);
+    LockStateUpdateResult lockIfFree(T owner) {
+        LockStateUpdateResult result = new LockStateUpdateResult(true, false);
 
         if (owners == null) {
             owners = new ArrayDeque<>();
@@ -124,8 +124,8 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
     }
 
     /** Will take lock if it is free, or remove node from the waiting queue. */
-    LockedModified lockOrRemove(T owner) {
-        LockedModified result = new LockedModified(true, false);
+    LockStateUpdateResult lockOrRemove(T owner) {
+        LockStateUpdateResult result = new LockStateUpdateResult(true, false);
 
         if (owners == null) {
             owners = new ArrayDeque<>();
@@ -157,8 +157,8 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
     }
 
     /** Will take lock if it is free, or will add node to the waiting queue. */
-    LockedModified lockOrAdd(T owner) {
-        LockedModified result = new LockedModified(true, false);
+    LockStateUpdateResult lockOrAdd(T owner) {
+        LockStateUpdateResult result = new LockStateUpdateResult(true, false);
 
         if (owners == null) {
             owners = new ArrayDeque<>();

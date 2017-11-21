@@ -112,7 +112,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         private static final int CACHE_MSG_IDX = nextIndexId();
 
         /** Lock name. */
-        String name;
+        private String name;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -649,10 +649,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
 
         /** {@link GridCacheLockEx2#isLocked()} */
         private boolean isLocked() throws IgniteCheckedException {
-            if (reentrantCount.get() > 0)
-                return true;
-
-            if (isGloballyLocked || lock.isLocked())
+            if (hasQueuedThreads())
                 return true;
 
             GridCacheLockState2Base<UUID> state = globalSync.forceGet();

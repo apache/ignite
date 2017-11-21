@@ -50,7 +50,7 @@ public final class AcquireOrRemoveUnfairProcessor extends ReentrantProcessor<UUI
     }
 
     /** {@inheritDoc} */
-    @Override protected LockedModified lock(GridCacheLockState2Base<UUID> state) {
+    @Override protected LockStateUpdateResult lock(GridCacheLockState2Base<UUID> state) {
         assert state != null;
 
         return state.lockOrRemove(nodeId);

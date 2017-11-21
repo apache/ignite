@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLock;
@@ -85,10 +86,10 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInitialization() throws Exception {
-        try (IgniteLock lock = createReentrantLock(0, "lock1", false)) {
+        try (IgniteLock lock = createReentrantLock(0, "unfair lock", false)) {
         }
 
-        try (IgniteLock lock = createReentrantLock(0, "lock2", true)) {
+        try (IgniteLock lock = createReentrantLock(0, "fair lock", true)) {
         }
     }
 
@@ -109,7 +110,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
      */
     public void testReentrantLock(boolean fair) throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            final IgniteLock lock = createReentrantLock(i, fair ? "lock1" : "lock2", fair);
+            final IgniteLock lock = createReentrantLock(i, fair ? "fair lock" : "unfair lock", fair);
 
             // Other node can still don't see update, but eventually we reach lock.isLocked == false.
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -157,8 +158,8 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
      */
     public void testReentrantLockTimeout(boolean fair) throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            IgniteLock lock1 = createReentrantLock(i, fair ? "lock1" : "lock2", fair);
-            IgniteLock lock2 = createReentrantLock((i+1) % NODES_CNT, fair ? "lock1" : "lock2", fair);
+            IgniteLock lock1 = createReentrantLock(i, fair ? "fair lock" : "unfair lock", fair);
+            IgniteLock lock2 = createReentrantLock((i + 1) % NODES_CNT, fair ? "fair lock" : "unfair lock", fair);
 
             assertTrue(lock1.tryLock(10, TimeUnit.MILLISECONDS));
 
@@ -169,7 +170,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
             assertFalse(lock2.tryLock(500, TimeUnit.MILLISECONDS));
 
-            long delta = (System.nanoTime()-start)/1_000_000L;
+            long delta = (System.nanoTime() - start) / 1_000_000L;
 
             assertTrue(delta >= 500L);
             assertTrue(delta < 600L);
@@ -198,26 +199,23 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     public void testReentrantLockMultinode(final boolean fair) throws Exception {
         final AtomicInteger inx = new AtomicInteger(0);
 
-        GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
+        GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                IgniteLock lock = createReentrantLock(inx.getAndIncrement() % NODES_CNT,
+                    fair ? "fair lock" : "unfair lock", fair);
+
+                lock.lock();
+
                 try {
-                    IgniteLock lock = createReentrantLock(inx.getAndIncrement() % NODES_CNT,
-                        fair ? "lock1" : "lock2", fair);
-
-                    lock.lock();
-
-                    try {
-                        assertTrue(lock.isLocked());
-                    }
-                    finally {
-                        lock.unlock();
-                    }
+                    assertTrue(lock.isLocked());
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
+                finally {
+                    lock.unlock();
                 }
+
+                return null;
             }
-        }, NODES_CNT*THREAD_CNT, "worker").get(30_000L);
+        }, NODES_CNT * THREAD_CNT, "worker").get(30_000L);
     }
 
     /**
@@ -240,26 +238,23 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     public void testReentrantLockMultinodeTimeout(final boolean fair, final boolean time) throws Exception {
         final AtomicInteger inx = new AtomicInteger(0);
 
-        GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    IgniteLock lock = createReentrantLock(inx.getAndIncrement() % NODES_CNT,
-                        fair ? "lock1" : "lock2", fair);
+        GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                IgniteLock lock = createReentrantLock(inx.getAndIncrement() % NODES_CNT,
+                    fair ? "fair lock" : "unfair lock", fair);
 
-                    if (time ? lock.tryLock(10, TimeUnit.NANOSECONDS) : lock.tryLock()) {
-                        try {
-                            assertTrue(lock.isLocked());
-                        }
-                        finally {
-                            lock.unlock();
-                        }
+                if (time ? lock.tryLock(10, TimeUnit.NANOSECONDS) : lock.tryLock()) {
+                    try {
+                        assertTrue(lock.isLocked());
+                    }
+                    finally {
+                        lock.unlock();
                     }
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+
+                return null;
             }
-        }, NODES_CNT*THREAD_CNT, "worker").get(30_000L);
+        }, NODES_CNT * THREAD_CNT, "worker").get(30_000L);
     }
 
     /**
@@ -280,26 +275,23 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     public void testReentrantLockMultinodeTryLock(final boolean fair) throws Exception {
         final AtomicInteger inx = new AtomicInteger(0);
 
-        GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    IgniteLock lock = createReentrantLock(inx.getAndIncrement() % NODES_CNT,
-                        fair ? "lock1" : "lock2", fair);
+        GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                IgniteLock lock = createReentrantLock(inx.getAndIncrement() % NODES_CNT,
+                    fair ? "fair lock1" : "unfair lock", fair);
 
-                    if (lock.tryLock()) {
-                        try {
-                            assertTrue(lock.isLocked());
-                        }
-                        finally {
-                            lock.unlock();
-                        }
+                if (lock.tryLock()) {
+                    try {
+                        assertTrue(lock.isLocked());
+                    }
+                    finally {
+                        lock.unlock();
                     }
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+
+                return null;
             }
-        }, NODES_CNT*THREAD_CNT, "worker").get(30_000L);
+        }, NODES_CNT * THREAD_CNT, "worker").get(30_000L);
     }
 
     /**
@@ -328,42 +320,39 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     public void testReentrantLockMultinodeFailover(final boolean fair) throws Exception {
         final AtomicInteger inx = new AtomicInteger(0);
 
-        GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    int i = inx.getAndIncrement();
+        GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                int i = inx.getAndIncrement();
 
-                    boolean shoudClose;
+                boolean shouldClose;
 
-                    synchronized (RND) {
-                        shoudClose = RND.nextBoolean();
-                    }
+                synchronized (RND) {
+                    shouldClose = RND.nextBoolean();
+                }
 
-                    IgniteLock lock = createReentrantLock(i, fair ? "lock1" : "lock2", fair);
+                IgniteLock lock = createReentrantLock(i, fair ? "fair lock" : "unfair lock", fair);
 
-                    lock.lock();
+                lock.lock();
 
-                    if (shoudClose) {
-                        try {
-                            grid(i).close();
-                        }
-                        catch (Exception ignored) {
-                            lock.unlock();
-                        }
-
-                        return;
-                    }
-
+                if (shouldClose) {
                     try {
-                        assertTrue(lock.isLocked());
+                        grid(i).close();
                     }
-                    finally {
+                    catch (Exception ignored) {
                         lock.unlock();
                     }
+
+                    return null;
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
+
+                try {
+                    assertTrue(lock.isLocked());
                 }
+                finally {
+                    lock.unlock();
+                }
+
+                return null;
             }
         }, NODES_CNT, "worker").get(30_000L);
     }
@@ -394,47 +383,44 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     public void testReentrantLockMultinodeFailoverMultilocks(final boolean fair) throws Exception {
         final AtomicInteger inx = new AtomicInteger(0);
 
-        GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    int i = inx.getAndIncrement();
+        GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                int i = inx.getAndIncrement();
 
-                    boolean shoudClose;
+                boolean shouldClose;
 
-                    synchronized (RND) {
-                        shoudClose = RND.nextBoolean();
-                    }
+                synchronized (RND) {
+                    shouldClose = RND.nextBoolean();
+                }
 
-                    IgniteLock lock1 = createReentrantLock(i, fair ? "lock1f" : "lock1u", fair);
-                    IgniteLock lock2 = createReentrantLock(i, fair ? "lock2f" : "lock2u", fair);
+                IgniteLock lock1 = createReentrantLock(i, fair ? "lock1f" : "lock1u", fair);
+                IgniteLock lock2 = createReentrantLock(i, fair ? "lock2f" : "lock2u", fair);
 
-                    lock1.lock();
-                    lock2.lock();
+                lock1.lock();
+                lock2.lock();
 
-                    if (shoudClose) {
-                        try {
-                            grid(i).close();
-                        }
-                        catch (Exception ignored) {
-                            lock2.unlock();
-                            lock1.unlock();
-                        }
-
-                        return;
-                    }
-
+                if (shouldClose) {
                     try {
-                        assertTrue(lock2.isLocked());
-                        assertTrue(lock1.isLocked());
+                        grid(i).close();
                     }
-                    finally {
+                    catch (Exception ignored) {
                         lock2.unlock();
                         lock1.unlock();
                     }
+
+                    return null;
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
+
+                try {
+                    assertTrue(lock2.isLocked());
+                    assertTrue(lock1.isLocked());
                 }
+                finally {
+                    lock2.unlock();
+                    lock1.unlock();
+                }
+
+                return null;
             }
         }, NODES_CNT, "worker").get(30_000L);
     }

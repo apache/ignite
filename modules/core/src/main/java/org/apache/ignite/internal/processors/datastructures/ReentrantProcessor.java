@@ -18,13 +18,8 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.UUID;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Base {@link CacheEntryProcessor} class for all acquiring processors.
@@ -43,7 +38,7 @@ abstract class ReentrantProcessor<T>
 
         GridCacheLockState2Base<T> state = entry.getValue();
 
-        LockedModified result = lock(state);
+        LockStateUpdateResult result = lock(state);
 
         assert state.ownerSet.size() == state.owners.size();
         assert !state.owners.isEmpty();
@@ -57,5 +52,5 @@ abstract class ReentrantProcessor<T>
     }
 
     /** Specific operation around a locking. */
-    protected abstract LockedModified lock(GridCacheLockState2Base<T> state);
+    protected abstract LockStateUpdateResult lock(GridCacheLockState2Base<T> state);
 }
