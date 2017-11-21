@@ -466,7 +466,7 @@
     <Compile Include="Impl\Memory\PlatformUnpooledMemory.cs" />
     <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
-    <Compile Include="Impl\NativeMethods.cs" />
+    <Compile Include="Impl\MemoryInfo.cs" />
     <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
     <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />

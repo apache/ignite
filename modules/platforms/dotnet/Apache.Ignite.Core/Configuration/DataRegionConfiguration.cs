@@ -59,7 +59,8 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// The default maximum size, equals to 20% of total RAM.
         /// </summary>
-        public static readonly long DefaultMaxSize = (long)((long)NativeMethods.GetTotalPhysicalMemory() * 0.2);
+        public static readonly long DefaultMaxSize =
+            (long)((long)MemoryInfo.GetTotalPhysicalMemory(2048L * 1024 * 1024) * 0.2);
 
         /// <summary>
         /// The default sub intervals.
