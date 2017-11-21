@@ -18,50 +18,20 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.TreeMap;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-class ZkDiscoveryEventsData implements Serializable {
+public class ZkAliveNodeData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    int procCustEvt = -1;
+    long lastProcEvt = -1;
 
-    /** */
-    long evtIdGen;
-
-    /** */
-    long topVer;
-
-    /** */
-    long gridStartTime;
-
-    /** */
-    TreeMap<Long, ZkDiscoveryEventData> evts;
-
-    /**
-     * @param topVer
-     * @param gridStartTime
-     * @param evts
-     */
-    ZkDiscoveryEventsData(long gridStartTime, long topVer, TreeMap<Long, ZkDiscoveryEventData> evts) {
-        this.gridStartTime = gridStartTime;
-        this.topVer = topVer;
-        this.evts = evts;
-    }
-
-    /**
-     * @param evt Event.
-     */
-    void addEvent(Collection<ZookeeperClusterNode> nodes, ZkDiscoveryEventData evt) {
-        Object old = evts.put(evt.eventId(), evt);
-
-        assert old == null : old;
-
-        evt.remainingAcks(nodes);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ZkAliveNodeData.class, this);
     }
 }

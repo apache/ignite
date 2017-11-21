@@ -51,6 +51,11 @@ public class ZkEventAckFuture extends GridFutureAdapter<Void> implements Watcher
     /** */
     private final Set<Integer> remaininAcks;
 
+    /**
+     * @param impl
+     * @param evtPath
+     * @param evtId
+     */
     ZkEventAckFuture(ZookeeperDiscoveryImpl impl, String evtPath, Long evtId) {
         this.impl = impl;
         this.log = impl.log();
@@ -94,8 +99,6 @@ public class ZkEventAckFuture extends GridFutureAdapter<Void> implements Watcher
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
-            impl.removeAckFuture(this);
-
             return true;
         }
 

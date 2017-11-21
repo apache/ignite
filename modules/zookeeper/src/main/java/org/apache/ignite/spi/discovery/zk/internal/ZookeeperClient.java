@@ -29,12 +29,14 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
+import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -217,8 +219,33 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    void createAllIfNeeded(List<String> paths, CreateMode createMode)
+        throws ZookeeperClientFailedException, InterruptedException
+    {
+        // TODO ZK: need check for max size?
+        List<Op> ops = new ArrayList<>(paths.size());
+
+        for (String path : paths)
+            ops.add(Op.create(path, EMPTY_BYTES, ZK_ACL, createMode));
+
+        for (;;) {
+            long connStartTime = this.connStartTime;
+
+            try {
+                zk.multi(ops);
+
+                return;
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+        }
+
+    }
+
     String createIfNeeded(String path, byte[] data, CreateMode createMode)
-        throws ZookeeperClientFailedException, InterruptedException {
+        throws ZookeeperClientFailedException, InterruptedException
+    {
         if (data == null)
             data = EMPTY_BYTES;
 
@@ -266,14 +293,20 @@ public class ZookeeperClient implements Watcher {
     }
 
 
-    void deleteAllIfExists(String parent, List<String> paths, int ver)
-        throws ZookeeperClientFailedException, InterruptedException
+    void deleteAll(@Nullable String parent, List<String> paths, int ver)
+        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
     {
+        if (paths.isEmpty())
+            return;
+
         // TODO ZK: need check for max size?
         List<Op> ops = new ArrayList<>(paths.size());
 
-        for (String path : paths)
-            ops.add(Op.delete(parent + "/" + path, ver));
+        for (String path : paths) {
+            String path0 = parent != null ? parent + "/" + path : path;
+
+            ops.add(Op.delete(path0, ver));
+        }
 
         for (;;) {
             long connStartTime = this.connStartTime;

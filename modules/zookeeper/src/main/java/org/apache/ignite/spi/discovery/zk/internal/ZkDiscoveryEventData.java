@@ -18,6 +18,9 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.Set;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -39,6 +42,9 @@ abstract class ZkDiscoveryEventData implements Serializable {
     /** */
     private final long topVer;
 
+    /** */
+    private transient Set<Integer> remainingAcks;
+
     /**
      * @param evtType Event type.
      * @param topVer Topology version.
@@ -49,6 +55,38 @@ abstract class ZkDiscoveryEventData implements Serializable {
         this.evtId = evtId;
         this.evtType = evtType;
         this.topVer = topVer;
+    }
+
+    void remainingAcks(Collection<ZookeeperClusterNode> nodes) {
+        assert remainingAcks == null : this;
+
+        remainingAcks = U.newHashSet(nodes.size());
+
+        for (ZookeeperClusterNode node : nodes) {
+            if (!node.isLocal() && node.order() <= topVer)
+                remainingAcks.add(node.internalId());
+        }
+    }
+
+    boolean allAcksReceived() {
+        return remainingAcks.isEmpty();
+    }
+
+    boolean onAckReceived(Integer nodeInternalId, long ackEvtId) {
+        assert remainingAcks != null;
+
+        if (ackEvtId >= evtId)
+            remainingAcks.remove(nodeInternalId);
+
+        return remainingAcks.isEmpty();
+    }
+
+    boolean onNodeFail(ZookeeperClusterNode node) {
+        assert remainingAcks != null : this;
+
+        remainingAcks.remove(node.internalId());
+
+        return remainingAcks.isEmpty();
     }
 
     long eventId() {

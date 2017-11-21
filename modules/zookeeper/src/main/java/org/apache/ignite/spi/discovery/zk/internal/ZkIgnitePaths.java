@@ -22,7 +22,7 @@ import java.util.UUID;
 /**
  *
  */
-class ZkPaths {
+class ZkIgnitePaths {
     /** */
     private static final int UUID_LEN = 36;
 
@@ -63,7 +63,7 @@ class ZkPaths {
      * @param basePath Base directory.
      * @param clusterName Cluster name.
      */
-    ZkPaths(String basePath, String clusterName) {
+    ZkIgnitePaths(String basePath, String clusterName) {
         this.basePath = basePath;
         this.clusterName = clusterName;
 
@@ -90,7 +90,7 @@ class ZkPaths {
     }
 
     static UUID aliveNodeId(String path) {
-        String idStr = path.substring(0, ZkPaths.UUID_LEN);
+        String idStr = path.substring(0, ZkIgnitePaths.UUID_LEN);
 
         return UUID.fromString(idStr);
     }
@@ -109,8 +109,20 @@ class ZkPaths {
     }
 
     static UUID customEventSendNodeId(String path) {
-        String idStr = path.substring(0, ZkPaths.UUID_LEN);
+        String idStr = path.substring(0, ZkIgnitePaths.UUID_LEN);
 
         return UUID.fromString(idStr);
+    }
+
+    String joinEventDataPath(long evtId) {
+        return evtsPath + "/" + evtId;
+    }
+
+    String joinEventDataPathForJoined(long evtId) {
+        return evtsPath + "/joined-" + evtId;
+    }
+
+    String customEventDataPath(String child) {
+        return customEvtsDir + "/" + child;
     }
 }
