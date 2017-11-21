@@ -1564,7 +1564,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      */
     private void logExchange(){
-        if (cctx.kernalContext().state().publicApiActiveState() && cctx.wal() != null) {
+        if (cctx.kernalContext().state().publicApiActiveState(false) && cctx.wal() != null) {
             if (((FileWriteAheadLogManager)cctx.wal()).serializerVersion() > 1)
                 try {
                     ExchangeRecord.Type type = null;

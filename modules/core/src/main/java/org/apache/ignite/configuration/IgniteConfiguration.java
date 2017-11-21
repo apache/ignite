@@ -520,6 +520,7 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
+        autoActivation = cfg.isAutoActivationEnabled();
         binaryCfg = cfg.getBinaryConfiguration();
         dsCfg = cfg.getDataStorageConfiguration();
         memCfg = cfg.getMemoryConfiguration();

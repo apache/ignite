@@ -144,7 +144,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public boolean publicApiActiveState() {
+    @Override public boolean publicApiActiveState(boolean waitForTransition) {
         if (ctx.isDaemon())
             return sendComputeCheckGlobalState();
 
@@ -157,8 +157,28 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
             if (transitionRes != null)
                 return transitionRes;
-            else
-                return false;
+            else {
+                if (waitForTransition) {
+                    GridFutureAdapter<Void> fut = transitionFuts.get(globalState.transitionRequestId());
+
+                    if (fut != null) {
+                        try {
+                            fut.get();
+                        }
+                        catch (IgniteCheckedException ex) {
+                            throw new IgniteException(ex);
+                        }
+                    }
+
+                    transitionRes = globalState.transitionResult();
+
+                    assert transitionRes != null;
+
+                    return transitionRes;
+                }
+                else
+                    return false;
+            }
         }
         else
             return globalState.active();
@@ -312,8 +332,11 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
             GridFutureAdapter<Void> transitionFut = transitionFuts.remove(state.transitionRequestId());
 
-            if (transitionFut != null)
+            if (transitionFut != null) {
+                state.setTransitionResult(msg.requestId(), msg.clusterActive());
+
                 transitionFut.onDone();
+            }
         }
         else
             U.warn(log, "Received state finish message with unexpected ID: " + msg);
@@ -554,7 +577,12 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         BaselineStateAndHistoryData stateDiscoData = (BaselineStateAndHistoryData)data.commonData();
 
         if (stateDiscoData != null) {
-            globalState = stateDiscoData.globalState;
+            DiscoveryDataClusterState state = stateDiscoData.globalState;
+
+            if (state.transition())
+                transitionFuts.put(state.transitionRequestId(), new GridFutureAdapter<Void>());
+
+            globalState = state;
 
             if (stateDiscoData.recentHistory != null) {
                 for (BaselineTopologyHistoryItem item : stateDiscoData.recentHistory.history())

@@ -3504,7 +3504,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            return context().state().publicApiActiveState();
+            return context().state().publicApiActiveState(true);
         }
         finally {
             unguard();
@@ -3830,7 +3830,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @throws IgniteException if cluster in inActive state
      */
     private void checkClusterState() throws IgniteException {
-        if (!ctx.state().publicApiActiveState()) {
+        if (!ctx.state().publicApiActiveState(true)) {
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
                 "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
                 "join the cluster. To activate the cluster call Ignite.active(true).");

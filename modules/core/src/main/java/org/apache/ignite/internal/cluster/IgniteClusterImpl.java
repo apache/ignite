@@ -291,7 +291,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return ctx.state().publicApiActiveState();
+            return ctx.state().publicApiActiveState(true);
         }
         finally {
             unguard();
