@@ -437,6 +437,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
                             UUID nextNode = result.get();
 
                             if (nextNode != null) {
+
                                 if (nodeId.equals(nextNode))
                                     latch.release();
                                 else {
@@ -668,36 +669,10 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             );
         }
 
-        /**
-         * Release the global lock in the rare case when the local lock acquiring get a timeout or interrupted, at the
-         * same time the previous lock owner releases the lock but still doesn't see a threadCount decrement in that
-         * thread, then it possible to forget to release the global lock.
-         */
-        private void releaseGlobalLockIfNeed() {
-            if (threadCount.decrementAndGet() <= 0) {
-                // ReentrantLock#lock will not wait a lot of time because
-                // if we see zero and the lock is not already free,
-                // it means there is exist one thread which executes LocalSync#unlock right now.
-                // And we need a fair mode to acquire the lock immediately after that LocalSync#unlock.
-                lock.lock();
-
-                try {
-                    if (threadCount.get() <= 0 || System.nanoTime() >= nextFinish) {
-                        if (isGloballyLocked) {
-                            globalSync.release();
-
-                            isGloballyLocked = false;
-                        }
-                    }
-                }
-                finally {
-                    lock.unlock();
-                }
-            }
-        }
-
         /** Release the global lock if the current thread is the last in local queue or time is up. */
         private void releaseGlobalLock() {
+            assert lock.isHeldByCurrentThread();
+
             if (threadCount.decrementAndGet() <= 0 || System.nanoTime() >= nextFinish) {
                 globalSync.release();
 
@@ -762,7 +737,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
                 lock.lockInterruptibly();
             }
             catch (InterruptedException e) {
-                releaseGlobalLockIfNeed();
+                threadCount.decrementAndGet();
 
                 throw e;
             }
@@ -860,9 +835,9 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
                         throw e;
                     }
                 }
-            }
 
-            releaseGlobalLockIfNeed();
+                threadCount.decrementAndGet();
+            }
 
             return false;
         }

@@ -43,6 +43,9 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     private static final int NODES_CNT = 4;
 
     /** */
+    private static final int THREAD_CNT = 5;
+
+    /** */
     private static final Random RND = new Random();
 
     /** {@inheritDoc} */
@@ -100,7 +103,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
-     * {@link this#testReentrantLock()}
+     * Test a sequential lock acquiring and releasing.
      *
      * @throws Exception If failed.
      */
@@ -108,7 +111,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_CNT; i++) {
             final IgniteLock lock = createReentrantLock(i, fair ? "lock1" : "lock2", fair);
 
-            // Other node can still don't see update.
+            // Other node can still don't see update, but eventually we reach lock.isLocked == false.
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     return !lock.isLocked();
@@ -138,6 +141,46 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test a sequential lock acquiring and releasing with timeout.
+     *
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockTimeout() throws Exception {
+        testReentrantLockTimeout(false);
+        testReentrantLockTimeout(true);
+    }
+
+    /**
+     * Test a sequential lock acquiring and releasing with timeout.
+     *
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockTimeout(boolean fair) throws Exception {
+        for (int i = 0; i < NODES_CNT; i++) {
+            IgniteLock lock1 = createReentrantLock(i, fair ? "lock1" : "lock2", fair);
+            IgniteLock lock2 = createReentrantLock((i+1) % NODES_CNT, fair ? "lock1" : "lock2", fair);
+
+            assertTrue(lock1.tryLock(10, TimeUnit.MILLISECONDS));
+
+            assertTrue(lock1.isLocked());
+            assertTrue(lock1.isHeldByCurrentThread());
+
+            long start = System.nanoTime();
+
+            assertFalse(lock2.tryLock(500, TimeUnit.MILLISECONDS));
+
+            long delta = (System.nanoTime()-start)/1_000_000L;
+
+            assertTrue(delta >= 500L);
+            assertTrue(delta < 600L);
+
+            lock1.unlock();
+
+            assertFalse(lock1.isHeldByCurrentThread());
+        }
+    }
+
+    /**
      * Test an async lock acquiring and releasing with many nodes.
      *
      * @throws Exception If failed.
@@ -148,7 +191,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
-     * {@link this#testReentrantLockMultinode()}
+     * Test an async lock acquiring and releasing with many nodes.
      *
      * @throws Exception If failed.
      */
@@ -158,15 +201,13 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    IgniteLock lock = createReentrantLock(inx.getAndIncrement(), fair ? "lock1" : "lock2", fair);
+                    IgniteLock lock = createReentrantLock(inx.getAndIncrement() % NODES_CNT,
+                        fair ? "lock1" : "lock2", fair);
+
                     lock.lock();
 
                     try {
                         assertTrue(lock.isLocked());
-                        Thread.sleep(1_000L);
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
                     finally {
                         lock.unlock();
@@ -176,39 +217,38 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
                     e.printStackTrace();
                 }
             }
-        }, NODES_CNT, "worker").get(30_000L);
+        }, NODES_CNT*THREAD_CNT, "worker").get(30_000L);
     }
 
     /**
-     * {@link this#testReentrantLockMultinodeTimeout(boolean)}
+     * Test an async lock acquiring and releasing with many nodes and timeout.
      *
      * @throws Exception If failed.
      */
     public void testReentrantLockMultinodeTimeout() throws Exception {
-        testReentrantLockMultinodeTimeout(false);
-        testReentrantLockMultinodeTimeout(true);
+        testReentrantLockMultinodeTimeout(false, false);
+        testReentrantLockMultinodeTimeout(false, true);
+        testReentrantLockMultinodeTimeout(true, false);
+        testReentrantLockMultinodeTimeout(true, true);
     }
 
     /**
-     * {@link this#testReentrantLockMultinode()} with timeout.
+     * Test an async lock acquiring and releasing with many nodes and timeout.
      *
      * @throws Exception If failed.
      */
-    public void testReentrantLockMultinodeTimeout(final boolean fair) throws Exception {
+    public void testReentrantLockMultinodeTimeout(final boolean fair, final boolean time) throws Exception {
         final AtomicInteger inx = new AtomicInteger(0);
 
         GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    IgniteLock lock = createReentrantLock(inx.getAndIncrement(), fair ? "lock1" : "lock2", fair);
+                    IgniteLock lock = createReentrantLock(inx.getAndIncrement() % NODES_CNT,
+                        fair ? "lock1" : "lock2", fair);
 
-                    if (lock.tryLock(10, TimeUnit.NANOSECONDS)) {
+                    if (time ? lock.tryLock(10, TimeUnit.NANOSECONDS) : lock.tryLock()) {
                         try {
                             assertTrue(lock.isLocked());
-                            Thread.sleep(1_000L);
-                        }
-                        catch (InterruptedException e) {
-                            e.printStackTrace();
                         }
                         finally {
                             lock.unlock();
@@ -219,11 +259,11 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
                     e.printStackTrace();
                 }
             }
-        }, NODES_CNT, "worker").get(30_000L);
+        }, NODES_CNT*THREAD_CNT, "worker").get(30_000L);
     }
 
     /**
-     * {@link this#testReentrantLockMultinodeTryLock(boolean)}
+     * Test an async lock acquiring and releasing with many nodes with {@link IgniteLock#tryLock()}.
      *
      * @throws Exception If failed.
      */
@@ -233,7 +273,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
-     * {@link this#testReentrantLockMultinode()} with {@link IgniteLock#tryLock()}.
+     * Test an async lock acquiring and releasing with many nodes with {@link IgniteLock#tryLock()}.
      *
      * @throws Exception If failed.
      */
@@ -243,7 +283,8 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    IgniteLock lock = createReentrantLock(inx.getAndIncrement(), fair ? "lock1" : "lock2", fair);
+                    IgniteLock lock = createReentrantLock(inx.getAndIncrement() % NODES_CNT,
+                        fair ? "lock1" : "lock2", fair);
 
                     if (lock.tryLock()) {
                         try {
@@ -258,11 +299,11 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
                     e.printStackTrace();
                 }
             }
-        }, NODES_CNT, "worker").get(30_000L);
+        }, NODES_CNT*THREAD_CNT, "worker").get(30_000L);
     }
 
     /**
-     * {@link this#testReentrantLockMultinodeFailover(boolean)} in unfair mode.
+     * Test an async lock acquiring and releasing with many nodes with nodes failing in unfair mode.
      *
      * @throws Exception If failed.
      */
@@ -271,7 +312,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
-     * {@link this#testReentrantLockMultinodeFailover(boolean)} in fair mode.
+     * Test an async lock acquiring and releasing with many nodes with nodes failing in fair mode.
      *
      * @throws Exception If failed.
      */
@@ -315,8 +356,6 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
                     try {
                         assertTrue(lock.isLocked());
-
-                        Thread.sleep(1_000L);
                     }
                     finally {
                         lock.unlock();
@@ -330,7 +369,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
-     * {@link this#testReentrantLockMultinodeFailoverMultilocks(boolean)} with unfair mode.
+     * Test an async lock acquiring and releasing with many nodes with nodes failing with two locks with fair mode.
      *
      * @throws Exception If failed.
      */
@@ -339,7 +378,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
-     * {@link this#testReentrantLockMultinodeFailoverMultilocks(boolean)} with fair mode.
+     * Test an async lock acquiring and releasing with many nodes with nodes failing with two locks with fair mode.
      *
      * @throws Exception If failed.
      */
@@ -348,7 +387,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
-     * {@link this#testReentrantLockMultinodeFailover(boolean)} with two locks.
+     * Test an async lock acquiring and releasing with many nodes with nodes failing with two locks.
      *
      * @throws Exception If failed.
      */
@@ -387,8 +426,6 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
                     try {
                         assertTrue(lock2.isLocked());
                         assertTrue(lock1.isLocked());
-
-                        Thread.sleep(1_000L);
                     }
                     finally {
                         lock2.unlock();

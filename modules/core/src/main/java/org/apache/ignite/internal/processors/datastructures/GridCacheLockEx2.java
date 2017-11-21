@@ -107,7 +107,7 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
         void release() {
             lock.lock();
             try {
-                count++;
+                count--;
 
                 condition.signal();
             }
@@ -131,7 +131,8 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
         void fail(@Nullable IgniteException exception) {
             lock.lock();
             try {
-                count++;
+                count--;
+
                 this.exception = exception;
 
                 condition.signal();
@@ -149,12 +150,13 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
         void awaitUninterruptibly() {
             lock.lock();
             try {
-                if (count-- <= 0) {
+                count++;
+
+                if (count > 0)
                     condition.awaitUninterruptibly();
-                }
-                if (exception != null) {
+
+                if (exception != null)
                     throw exception;
-                }
             }
             finally {
                 exception = null;
@@ -171,12 +173,12 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
         void await() throws InterruptedException {
             lock.lock();
             try {
-                if (count-- <= 0) {
+                count++;
+                if (count > 0)
                     condition.await();
-                }
-                if (exception != null) {
+
+                if (exception != null)
                     throw exception;
-                }
             }
             finally {
                 exception = null;
@@ -200,9 +202,11 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
             lock.lock();
             try {
                 boolean flag = true;
-                if (count-- <= 0) {
+
+                count++;
+
+                if (count > 0)
                     flag = condition.await(timeout, unit);
-                }
 
                 if (flag && exception != null)
                     throw exception;

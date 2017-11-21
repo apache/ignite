@@ -240,9 +240,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             if (ds instanceof GridCacheLockEx)
                 ((GridCacheLockEx)ds).onStop();
-
-            /*if (ds instanceof GridCacheLockEx2)
-                ((GridCacheLockEx2)ds).close();*/
         }
 
         if (initLatch.getCount() > 0) {
@@ -567,84 +564,87 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         // Check type of structure received by key from local cache.
         T dataStructure = cast(dsMap.get(key), cls);
 
-        if (dataStructure != null)
-            return dataStructure;
+        synchronized (dsMap) {
+            if (dataStructure != null) {
+                return dataStructure;
+            }
 
-        return retryTopologySafe(new IgniteOutClosureX<T>() {
-            @Override public T applyx() throws IgniteCheckedException {
-                cache.context().gate().enter();
-
-                try {
-                    AtomicDataStructureValue val = cache.get(key);
-
-                    if (isObsolete(val))
-                        val = null;
-
-                    if (val == null && !create)
-                        return null;
-
-                    if (val != null) {
-                        if (val.type() != type)
-                            throw new IgniteCheckedException("Another data structure with the same name already created " +
-                                "[name=" + name +
-                                ", newType=" + type +
-                                ", existingType=" + val.type() + ']');
-                    }
-
-                    T2<T, ? extends AtomicDataStructureValue> ret;
-
-                    T old;
+            return retryTopologySafe(new IgniteOutClosureX<T>() {
+                @Override public T applyx() throws IgniteCheckedException {
+                    cache.context().gate().enter();
 
                     try {
-                        ret = c.getSafe(key, val, cache);
+                        AtomicDataStructureValue val = cache.get(key);
 
-                        old = cast(dsMap.putIfAbsent(key, ret.get1()), cls);
+                        if (isObsolete(val))
+                            val = null;
 
-                        if (old == null) {
-                            if (ret.get2() != null) {
-                                cache.putIfAbsent(key, ret.get2());
+                        if (val == null && !create)
+                            return null;
+
+                        if (val != null) {
+                            if (val.type() != type)
+                                throw new IgniteCheckedException("Another data structure with the same name already created " +
+                                    "[name=" + name +
+                                    ", newType=" + type +
+                                    ", existingType=" + val.type() + ']');
+                        }
+
+                        T2<T, ? extends AtomicDataStructureValue> ret;
+
+                        T old;
+
+                        try {
+                            ret = c.get(key, val, cache);
+
+                            old = cast(dsMap.putIfAbsent(key, ret.get1()), cls);
+
+                            if (old == null) {
+                                if (ret.get2() != null)
+                                    cache.putIfAbsent(key, ret.get2());
+
+                                old = ret.get1();
+                            }
+                        }
+                        catch (Error | Exception e) {
+                            dsMap.remove(key);
+
+                            U.error(log, "Failed to make datastructure: " + name, e);
+
+                            throw e;
+                        }
+
+                        if (REENTRANT_LOCK2.equals(type)) {
+                            if (isHandlersAdded.compareAndSet(false, true)) {
+                                cache.context().io().addCacheHandler(cache.context().cacheId(), GridCacheLockImpl2Fair.ReleasedThreadMessage.class,
+                                    new IgniteBiInClosure<UUID, GridCacheLockImpl2Fair.ReleasedThreadMessage>() {
+                                        @Override
+                                        public void apply(UUID uuid,
+                                            GridCacheLockImpl2Fair.ReleasedThreadMessage message) {
+                                            releasers.get(message.name).apply(message);
+                                        }
+                                    });
+
+                                cache.context().io().addCacheHandler(cache.context().cacheId(), GridCacheLockImpl2Unfair.ReleasedMessage.class,
+                                    new IgniteBiInClosure<UUID, GridCacheLockImpl2Unfair.ReleasedMessage>() {
+                                        @Override
+                                        public void apply(UUID uuid, GridCacheLockImpl2Unfair.ReleasedMessage message) {
+                                            releasers.get(message.name).apply(message);
+                                        }
+                                    });
                             }
 
-                            old = ret.get1();
-                        }
-                    }
-                    catch (Error | Exception e) {
-                        dsMap.remove(key);
-
-                        U.error(log, "Failed to make datastructure: " + name, e);
-
-                        throw e;
-                    }
-
-                    if (REENTRANT_LOCK2.equals(type)) {
-                        if (isHandlersAdded.compareAndSet(false, true)) {
-                            cache.context().io().addCacheHandler(cache.context().cacheId(), GridCacheLockImpl2Fair.ReleasedThreadMessage.class,
-                                new IgniteBiInClosure<UUID, GridCacheLockImpl2Fair.ReleasedThreadMessage>() {
-                                    @Override
-                                    public void apply(UUID uuid, GridCacheLockImpl2Fair.ReleasedThreadMessage message) {
-                                        releasers.get(message.name).apply(message);
-                                    }
-                                });
-
-                            cache.context().io().addCacheHandler(cache.context().cacheId(), GridCacheLockImpl2Unfair.ReleasedMessage.class,
-                                new IgniteBiInClosure<UUID, GridCacheLockImpl2Unfair.ReleasedMessage>() {
-                                    @Override
-                                    public void apply(UUID uuid, GridCacheLockImpl2Unfair.ReleasedMessage message) {
-                                        releasers.get(message.name).apply(message);
-                                    }
-                                });
+                            releasers.putIfAbsent(key.name(), ((GridCacheLockEx2)dsMap.get(key)).getReleaser());
                         }
 
-                        releasers.putIfAbsent(key.name(), ((GridCacheLockEx2)dsMap.get(key)).getReleaser());
+                        return old;
                     }
-
-                    return old;
+                    finally {
+                        cache.context().gate().leave();
+                    }
                 }
-                finally {
-                    cache.context().gate().leave();
-                }
-            }
-        });
+            });
+        }
     }
 
     /**
@@ -1623,7 +1623,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If failed.
      * @return Closure return value.
      */
-    private static <T> T retryTopologySafe(IgniteOutClosureX<T> c) throws IgniteCheckedException {
+    private synchronized static <T> T retryTopologySafe(IgniteOutClosureX<T> c) throws IgniteCheckedException {
         for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
             try {
                 return c.applyx();
@@ -1652,10 +1652,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      *
      */
-    private abstract class AtomicAccessor<T> {
-        /** */
-        volatile T2<T, AtomicDataStructureValue> value = null;
-
+    private interface AtomicAccessor<T> {
         /**
          * @param key Key.
          * @param val Existing value.
@@ -1663,23 +1660,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
          * @return Data structure instance and value to store in cache.
          * @throws IgniteCheckedException If failed.
          */
-        protected abstract T2<T, AtomicDataStructureValue> get(GridCacheInternalKey key,
+        T2<T, AtomicDataStructureValue> get(GridCacheInternalKey key,
             @Nullable AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException;
-
-        /**
-         * Wrap around {@link this#get(GridCacheInternalKey, AtomicDataStructureValue, IgniteInternalCache)} with a
-         * double-check-locking.
-         */
-        T2<T, AtomicDataStructureValue> getSafe(GridCacheInternalKey key,
-            @Nullable AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
-            if (value == null) {
-                synchronized (this) {
-                    if (value == null)
-                        value = get(key, val, cache);
-                }
-            }
-
-            return value;
-        }
     }
 }
