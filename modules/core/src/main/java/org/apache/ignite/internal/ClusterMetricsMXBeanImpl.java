@@ -38,7 +38,6 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** Cluster metrics update mutex. */
     private final Object clusterMetricsMux = new Object();
 
-
     /**
      * @param cluster Cluster group to manage.
      */
@@ -59,8 +58,8 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
                 if (clusterMetricsExpireTime < System.currentTimeMillis()) {
                     clusterMetricsSnapshot = cluster.metrics();
 
-                    clusterMetricsExpireTime = System.currentTimeMillis() + cluster.ignite().configuration()
-                        .getMetricsUpdateFrequency();
+                    clusterMetricsExpireTime = System.currentTimeMillis()
+                        + cluster.ignite().configuration().getMetricsUpdateFrequency();
                 }
             }
         }
