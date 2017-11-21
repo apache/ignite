@@ -39,7 +39,7 @@ public class OLSMultipleLinearRegressionModelFormat implements Serializable {
     }
 
     /** */
-    public OLSMultipleLinearRegressionModel getAbstractMultipleLinearRegressionModel() {
+    public OLSMultipleLinearRegressionModel getOLSMultipleLinearRegressionModel() {
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.setNoIntercept(true);
         regression.newXSampleData(xMatrix);

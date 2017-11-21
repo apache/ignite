@@ -80,7 +80,7 @@ public class LocalModelsTest {
 
         OLSMultipleLinearRegressionModelFormat load = exporter.load(mdlFilePath);
 
-        OLSMultipleLinearRegressionModel importedMdl = load.getAbstractMultipleLinearRegressionModel();
+        OLSMultipleLinearRegressionModel importedMdl = load.getOLSMultipleLinearRegressionModel();
 
         Assert.assertTrue("", mdl.equals(importedMdl));
     }
