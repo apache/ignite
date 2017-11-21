@@ -1421,13 +1421,12 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
             const lazy = !!paragraph.lazy;
 
-            paragraph.localQueryMode = local;
-
             $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
 
+                    paragraph.localQueryMode = local;
                     paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
 
                     _showLoading(paragraph, true);
@@ -1840,6 +1839,10 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                     scope.title = 'SQL query';
                     scope.content = paragraph.queryArgs.query.split(/\r?\n/);
                 }
+
+                // Attach duration and selected node info
+                scope.meta = `Duration: ${$filter('duration')(paragraph.duration)}.`;
+                scope.meta += paragraph.localQueryMode ? ` Node ID8: ${_.id8(paragraph.resNodeId)}` : '';
 
                 // Show a basic modal from a controller
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});
