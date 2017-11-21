@@ -1,9 +1,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
@@ -18,16 +15,20 @@ public class FileUploader {
 
     private final Path path;
 
-    private final InetSocketAddress address;
-
     private final Executor exec;
+
+    private final SocketChannel writeChannel;
 
     private final GridFutureAdapter<Long> fut = new GridFutureAdapter<>();
 
-    public FileUploader(Path path, InetSocketAddress address, Executor exec) {
+    public FileUploader(
+        Path path,
+        Executor exec,
+        SocketChannel writeChannel
+    ) {
         this.path = path;
-        this.address = address;
         this.exec = exec;
+        this.writeChannel = writeChannel;
     }
 
     public IgniteInternalFuture<Long> upload() {
@@ -39,12 +40,10 @@ public class FileUploader {
     private class Worker implements Runnable {
         @Override public void run() {
             FileChannel readChannel = null;
-            SocketChannel writeChannel = null;
+            SocketChannel writeChannel = FileUploader.this.writeChannel;
 
             try {
                 readChannel = FileChannel.open(path, StandardOpenOption.READ);
-
-                writeChannel = SocketChannel.open(address);
 
                 long written = 0;
 
@@ -64,7 +63,7 @@ public class FileUploader {
                         writeChannel.close();
                 }
                 catch (IOException ex) {
-                    throw new IgniteException("Could not close socket: " + address);
+                    throw new IgniteException("Could not close socket.");
                 }
 
                 try {
