@@ -62,7 +62,7 @@ namespace ignite
 
         const ProtocolVersion& ProtocolVersion::GetCurrent()
         {
-            return VERSION_2_1_5;
+            return VERSION_2_1_8;
         }
 
         void ThrowParseError()
