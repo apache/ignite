@@ -470,7 +470,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             if (err == IntPtr.Zero)
             {
-                throw new Exception("Inconsistent JNI ExceptionCheck status.");
+                throw new IgniteException("Inconsistent JNI ExceptionCheck status.");
             }
 
             _exceptionClear(_envPtr);
