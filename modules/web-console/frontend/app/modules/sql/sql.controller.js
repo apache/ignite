@@ -214,8 +214,8 @@ class Paragraph {
 }
 
 // Controller for SQL notebook screen.
-export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes',
-    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes) {
+export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard',
+    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard) {
         const $ctrl = this;
 
         // Define template urls.
@@ -1613,7 +1613,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .then(() => paragraph.ace && paragraph.ace.focus());
         };
 
-        const _export = (fileName, columnDefs, meta, rows) => {
+        const _export = (fileName, columnDefs, meta, rows, toClipBoard = false) => {
             let csvContent = '';
 
             const cols = [];
@@ -1652,7 +1652,10 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 csvContent += cols.join(';') + '\n';
             });
 
-            LegacyUtils.download('text/csv', fileName, csvContent);
+            if (toClipBoard)
+                IgniteCopyToClipboard.copy(csvContent);
+            else
+                LegacyUtils.download('text/csv', fileName, csvContent);
         };
 
         /**
@@ -1669,6 +1672,10 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 return `export-scan-${args.cacheName}-${paragraph.name}${all ? '-all' : ''}.csv`;
 
             return `export-query-${paragraph.name}${all ? '-all' : ''}.csv`;
+        };
+
+        $scope.exportCsvToClipBoard = (paragraph) => {
+            _export(exportFileName(paragraph, false), paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows, true);
         };
 
         $scope.exportCsv = function(paragraph) {
