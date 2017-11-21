@@ -79,8 +79,7 @@ class GridNioCompressHandler extends ReentrantLock {
 
         compressEngine = engine;
 
-        // Allocate a little bit more so compress engine would not return buffer overflow status.
-        int netBufSize = 100000 + 50;
+        int netBufSize = 32768;
 
         outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
 
@@ -100,7 +99,7 @@ class GridNioCompressHandler extends ReentrantLock {
         outNetBuf.position(0);
         outNetBuf.limit(0);
 
-        int appBufSize = Math.max(100000 + 50, netBufSize * 2);
+        int appBufSize = netBufSize * 2;
 
         appBuf = directBuf ? ByteBuffer.allocateDirect(appBufSize) : ByteBuffer.allocate(appBufSize);
 

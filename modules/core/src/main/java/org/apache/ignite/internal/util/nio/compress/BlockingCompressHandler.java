@@ -47,11 +47,7 @@ public class BlockingCompressHandler {
         this.compressEngine = compressEngine;
         this.order = order;
 
-        // Allocate a little bit more so compress engine would not return buffer overflow status.
-        //
-        // System property override is for test purposes only.
-        int netBufSize = Integer.getInteger("BlockingCompressHandler.netBufSize",
-            100000 + 50);
+        int netBufSize = 32768;
 
         outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
         outNetBuf.order(order);
@@ -226,9 +222,9 @@ public class BlockingCompressHandler {
      * Allocate application buffer.
      */
     private ByteBuffer allocateAppBuff() {
-        int netBufSize = 100000 + 50;
+        int netBufSize = 32768;
 
-        int appBufSize = Math.max(100000 + 50, netBufSize * 2);
+        int appBufSize = netBufSize * 2;
 
         ByteBuffer buf = ByteBuffer.allocate(appBufSize);
 
