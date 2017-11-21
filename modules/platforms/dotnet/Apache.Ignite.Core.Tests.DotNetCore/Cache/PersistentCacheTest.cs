@@ -19,12 +19,11 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Cache
 {
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Tests.DotNetCore.Common;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using NUnit.Framework;
 
     /// <summary>
     /// Tests persistent cache.
     /// </summary>
-    [TestClass]
     public class PersistentCacheTest : TestBase
     {
         /** */
@@ -33,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Cache
         /// <summary>
         /// Tests that cache data survives node restart.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void TestCacheDataSurvivesNodeRestart()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())

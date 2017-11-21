@@ -19,18 +19,17 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.ThinClient
 {
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Tests.DotNetCore.Common;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using NUnit.Framework;
 
     /// <summary>
     /// Thin client connection test.
     /// </summary>
-    [TestClass]
     public class ThinClientTest : TestBase
     {
         /// <summary>
         /// Tests the thin client connection.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void TestThinClientConnection()
         {
             var clientCfg = new IgniteClientConfiguration

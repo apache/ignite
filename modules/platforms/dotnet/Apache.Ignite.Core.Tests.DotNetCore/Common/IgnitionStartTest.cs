@@ -20,20 +20,17 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using NUnit.Framework;
 
     /// <summary>
     /// Tests Ignite startup.
-    /// 
-    /// MsTest is currently the most viable option on .NET Core (especially because of console output handling).
     /// </summary>
-    [TestClass]
     public class IgnitionStartTest : TestBase
     {
         /// <summary>
         /// Tests that Ignite starts with default configuration.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void TestIgniteStartsWithDefaultConfig()
         {
             var ignite = Start();
@@ -56,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         /// <summary>
         /// Tests the ignite starts from application configuration.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void TestIgniteStartsFromAppConfig()
         {
             // 1) MsTest does not pick up the config file, so we have to provide it manually.
@@ -75,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         /// <summary>
         /// Tests that Ignite starts from Spring XML.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void TestIgniteStartsFromSpringXml()
         {
             // TODO: Check DataRegionConfiguration.DefaultMaxSize from Java side

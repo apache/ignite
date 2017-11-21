@@ -17,7 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.DotNetCore.Common
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using NUnit.Framework;
 
     /// <summary>
     /// Base test class.
@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         /// <summary>
         /// Fixture cleanup.
         /// </summary>
-        [ClassCleanup]
+        [OneTimeTearDown]
         public static void ClassCleanup()
         {
             Ignition.StopAll(true);

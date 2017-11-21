@@ -20,18 +20,17 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Cache
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Tests.DotNetCore.Common;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using NUnit.Framework;
 
     /// <summary>
     /// Cache tests.
     /// </summary>
-    [TestClass]
     public class CacheTest : TestBase
     {
         /// <summary>
         /// Tests the put / get functionality.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void TestPutGet()
         {
             async Task PutGetAsync(ICache<int, Person> cache)
