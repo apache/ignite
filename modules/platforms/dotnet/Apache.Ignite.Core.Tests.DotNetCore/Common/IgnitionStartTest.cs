@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Tests.DotNetCore.Common
 {
+    using System;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Discovery.Tcp;
     using NUnit.Framework;
 
     /// <summary>
@@ -75,7 +78,32 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         [Test]
         public void TestIgniteStartsFromSpringXml()
         {
-            // TODO: Check DataRegionConfiguration.DefaultMaxSize from Java side
+            // When Spring XML is used, .NET overrides Spring.
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                DataStorageConfiguration = null,
+                SpringConfigUrl = @"Config\spring-test.xml",
+                NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
+                MetricsHistorySize = 57
+            };
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                var resCfg = ignite.GetConfiguration();
+
+                Assert.AreEqual(45, resCfg.NetworkSendRetryDelay.TotalSeconds);  // .NET overrides XML
+                Assert.AreEqual(2999, resCfg.NetworkTimeout.TotalMilliseconds);  // Not set in .NET -> comes from XML
+                Assert.AreEqual(57, resCfg.MetricsHistorySize);  // Only set in .NET
+
+                var disco = resCfg.DiscoverySpi as TcpDiscoverySpi;
+                Assert.IsNotNull(disco);
+                Assert.AreEqual(TimeSpan.FromMilliseconds(300), disco.SocketTimeout);
+
+                // DataStorage defaults.
+                AssertExtensions.ReflectionEqual(new DataStorageConfiguration(), resCfg.DataStorageConfiguration);
+                AssertExtensions.ReflectionEqual(new DataRegionConfiguration(), 
+                    resCfg.DataStorageConfiguration.DefaultDataRegionConfiguration);  // ???
+            }
         }
     }
 }

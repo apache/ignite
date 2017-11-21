@@ -13,6 +13,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Apache.Ignite.Core.Tests\AssertExtensions.cs" Link="Common\AssertExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\spring-test.xml" Link="Config\spring-test.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Apache.Ignite" Version="0.0.1-test" />
     <PackageReference Include="Apache.Ignite.Schema" Version="0.0.1-test" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
@@ -23,11 +33,12 @@
 
   <ItemGroup>
     <Folder Include="Compute\" />
+    <Folder Include="Config\" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="app.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
