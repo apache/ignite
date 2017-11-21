@@ -27,28 +27,29 @@ import org.apache.ignite.ml.math.Vector;
  */
 public class AbstractMultipleLinearRegressionModel implements Model<Vector, Vector>,
     Exportable<AbstractMultipleLinearRegressionModelFormat> {
-    /** Root node of the decision tree. */
-    private final AbstractMultipleLinearRegression root;
+    /** */
+    private final AbstractMultipleLinearRegression regression;
 
     /**
      * Construct linear regression model.
      *
-     * @param root Linear regression object.
+     * @param regression Linear regression object.
      */
-    public AbstractMultipleLinearRegressionModel(AbstractMultipleLinearRegression root) {
-        this.root = root;
+    public AbstractMultipleLinearRegressionModel(AbstractMultipleLinearRegression regression) {
+        this.regression = regression;
     }
 
     /** {@inheritDoc} */
     @Override public Vector predict(Vector val) {
-        root.newYSampleData(val);
+        regression.newYSampleData(val);
 
-        return root.getX().times(root.calculateBeta());
+        return regression.getX().times(regression.calculateBeta());
     }
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<AbstractMultipleLinearRegressionModelFormat, P> exporter, P path) {
-        exporter.save(new AbstractMultipleLinearRegressionModelFormat(root.getX(), root.isNoIntercept()), path);
+        exporter.save(new AbstractMultipleLinearRegressionModelFormat(regression.getX(), regression.isNoIntercept()),
+            path);
     }
 
     /** {@inheritDoc} */
@@ -60,11 +61,11 @@ public class AbstractMultipleLinearRegressionModel implements Model<Vector, Vect
 
         AbstractMultipleLinearRegressionModel mdl = (AbstractMultipleLinearRegressionModel)o;
 
-        return root.equals(mdl.root);
+        return regression.equals(mdl.regression);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return root.hashCode();
+        return regression.hashCode();
     }
 }
