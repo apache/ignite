@@ -23,7 +23,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
  * MBean for local node metrics.
  */
 @MXBeanDescription("MBean that provides access to all local node metrics.")
-public interface ClusterLocalNodeMetricsMXBean extends ClusterMetrics {
+public interface ClusterMetricsMXBean extends ClusterMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Last update time of this node metrics.")
     public long getLastUpdateTime();
@@ -88,6 +88,10 @@ public interface ClusterLocalNodeMetricsMXBean extends ClusterMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Total number of jobs handled by the node.")
     public int getTotalExecutedJobs();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Total time all finished jobs takes to execute on the node.")
+    public long getTotalJobsExecutionTime();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Maximum time a job ever spent waiting in a queue to be executed.")
