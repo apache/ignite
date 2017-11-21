@@ -27,13 +27,13 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
-import org.apache.ignite.ml.regressions.AbstractMultipleLinearRegressionModel;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModel;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run linear regression model over distributed matrix.
  *
- * @see AbstractMultipleLinearRegressionModel
+ * @see OLSMultipleLinearRegressionModel
  */
 public class DistributedRegressionModelExample {
     /** Run example. */
@@ -125,7 +125,7 @@ public class DistributedRegressionModelExample {
                 System.out.println(Arrays.toString(regression.estimateRegressionParameters()));
 
                 System.out.println(">>> Model prediction results:");
-                Tracer.showAscii(new AbstractMultipleLinearRegressionModel(regression).predict(val));
+                Tracer.showAscii(new OLSMultipleLinearRegressionModel(regression).predict(val));
             });
 
             igniteThread.start();

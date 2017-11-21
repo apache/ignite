@@ -25,9 +25,9 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Test;
 
 /**
- * Tests for {@link AbstractMultipleLinearRegressionModel}.
+ * Tests for {@link OLSMultipleLinearRegressionModel}.
  */
-public class AbstractMultipleLinearRegressionModelTest {
+public class OLSMultipleLinearRegressionModelTest {
     /** */
     @Test
     public void testPerfectFit() {
@@ -44,7 +44,7 @@ public class AbstractMultipleLinearRegressionModelTest {
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.newSampleData(val, x);
 
-        AbstractMultipleLinearRegressionModel mdl = new AbstractMultipleLinearRegressionModel(regression);
+        OLSMultipleLinearRegressionModel mdl = new OLSMultipleLinearRegressionModel(regression);
 
         TestUtils.assertEquals(new double[] {0d, 0d, 0d, 0d, 0d, 0d},
             val.minus(mdl.predict(val)).getStorage().data(), 1e-13);

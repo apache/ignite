@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.Vector;
 /**
  * Model for linear regression.
  */
-public class AbstractMultipleLinearRegressionModel implements Model<Vector, Vector>,
+public class OLSMultipleLinearRegressionModel implements Model<Vector, Vector>,
     Exportable<AbstractMultipleLinearRegressionModelFormat> {
     /** */
     private final AbstractMultipleLinearRegression regression;
@@ -35,7 +35,7 @@ public class AbstractMultipleLinearRegressionModel implements Model<Vector, Vect
      *
      * @param regression Linear regression object.
      */
-    public AbstractMultipleLinearRegressionModel(AbstractMultipleLinearRegression regression) {
+    public OLSMultipleLinearRegressionModel(AbstractMultipleLinearRegression regression) {
         this.regression = regression;
     }
 
@@ -59,7 +59,7 @@ public class AbstractMultipleLinearRegressionModel implements Model<Vector, Vect
         if (o == null || getClass() != o.getClass())
             return false;
 
-        AbstractMultipleLinearRegressionModel mdl = (AbstractMultipleLinearRegressionModel)o;
+        OLSMultipleLinearRegressionModel mdl = (OLSMultipleLinearRegressionModel)o;
 
         return regression.equals(mdl.regression);
     }

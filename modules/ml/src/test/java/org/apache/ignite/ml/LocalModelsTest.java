@@ -28,7 +28,7 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.regressions.AbstractMultipleLinearRegressionModel;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModel;
 import org.apache.ignite.ml.regressions.AbstractMultipleLinearRegressionModelFormat;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
 import org.junit.After;
@@ -71,7 +71,7 @@ public class LocalModelsTest {
     public void importExportAbstractMultipleLinearRegressionModelTest(){
         Path mdlPath = Paths.get(mdlFilePath);
 
-        AbstractMultipleLinearRegressionModel mdl = getAbstractMultipleLinearRegressionModel();
+        OLSMultipleLinearRegressionModel mdl = getAbstractMultipleLinearRegressionModel();
 
         Exporter<AbstractMultipleLinearRegressionModelFormat, String> exporter = new FileExporter<>();
         mdl.saveModel(exporter, mdlFilePath);
@@ -80,7 +80,7 @@ public class LocalModelsTest {
 
         AbstractMultipleLinearRegressionModelFormat load = exporter.load(mdlFilePath);
 
-        AbstractMultipleLinearRegressionModel importedMdl = load.getAbstractMultipleLinearRegressionModel();
+        OLSMultipleLinearRegressionModel importedMdl = load.getAbstractMultipleLinearRegressionModel();
 
         Assert.assertTrue("", mdl.equals(importedMdl));
     }
@@ -98,7 +98,7 @@ public class LocalModelsTest {
     }
 
     /** */
-    private AbstractMultipleLinearRegressionModel getAbstractMultipleLinearRegressionModel(){
+    private OLSMultipleLinearRegressionModel getAbstractMultipleLinearRegressionModel(){
         Matrix x = new DenseLocalOnHeapMatrix(new double[][] {
             new double[] {0, 0, 0, 0, 0},
             new double[] {2.0, 0, 0, 0, 0},
@@ -110,7 +110,7 @@ public class LocalModelsTest {
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.newSampleData(getAMLRVector(), x);
 
-        return new AbstractMultipleLinearRegressionModel(regression);
+        return new OLSMultipleLinearRegressionModel(regression);
     }
 
     /** */
