@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -798,29 +799,42 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Lists files in archive directory and returns the index of last archived file.
+     * Lists files in archive directory and returns the indices of least and last archived files.
+     * In case of holes, first segment after last "hole" is considered as minimum.
+     * Example: minimum(0, 1, 10, 11, 20, 21, 22) should be 20
      *
-     * @return The absolute index of last archived file.
+     * @return The absolute indices of min and max archived files.
      */
     private IgniteBiTuple<Long, Long> scanMinMaxArchiveIndices() {
-        long minIdx = Integer.MAX_VALUE;
-        long maxIdx = -1;
+        TreeSet<Long> archiveIndices = new TreeSet<>();
 
-        // TODO ignite-5938 In case of holes, consider segment after last "hole" as minimum
-        // TODO ignite-5938 Example: minimum(0, 1, 10, 11, 20, 21, 22) should be 20
         for (File file : walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
             try {
                 long idx = Long.parseLong(file.getName().substring(0, 16));
 
-                minIdx = Math.min(minIdx, idx);
-                maxIdx = Math.max(maxIdx, idx);
+                archiveIndices.add(idx);
             }
             catch (NumberFormatException | IndexOutOfBoundsException ignore) {
-
+                // No-op.
             }
         }
 
-        return maxIdx == -1 ? null : F.t(minIdx, maxIdx);
+        if (archiveIndices.isEmpty())
+            return null;
+        else {
+            Long min = archiveIndices.first();
+            Long max = archiveIndices.last();
+
+            if (max - min == archiveIndices.size() - 1)
+                return F.t(min, max); // Short path.
+
+            for (Long idx : archiveIndices.descendingSet()) {
+                if (!archiveIndices.contains(idx - 1))
+                    return F.t(idx, max);
+            }
+
+            throw new IllegalStateException("Should never happen if TreeSet is valid.");
+        }
     }
 
     /**
