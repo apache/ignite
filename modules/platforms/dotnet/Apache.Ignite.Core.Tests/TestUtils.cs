@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -424,65 +423,6 @@ namespace Apache.Ignite.Core.Tests
         public static int GetPrimaryKey(IIgnite ignite, string cacheName, IClusterNode node = null)
         {
             return GetPrimaryKeys(ignite, cacheName, node).First();
-        }
-
-        /// <summary>
-        /// Asserts equality with reflection.
-        /// </summary>
-        public static void AssertReflectionEqual(object x, object y, string propertyPath = null,
-            HashSet<string> ignoredProperties = null)
-        {
-            if (x == null && y == null)
-            {
-                return;
-            }
-
-            Assert.IsNotNull(x, propertyPath);
-            Assert.IsNotNull(y, propertyPath);
-
-            var type = x.GetType();
-
-            if (type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type))
-            {
-                var xCol = ((IEnumerable)x).OfType<object>().ToList();
-                var yCol = ((IEnumerable)y).OfType<object>().ToList();
-
-                Assert.AreEqual(xCol.Count, yCol.Count, propertyPath);
-
-                for (var i = 0; i < xCol.Count; i++)
-                {
-                    AssertReflectionEqual(xCol[i], yCol[i], propertyPath, ignoredProperties);
-                }
-
-                return;
-            }
-
-            Assert.AreEqual(type, y.GetType());
-
-            propertyPath = propertyPath ?? type.Name;
-
-            if (type.IsValueType || type == typeof(string) || type.IsSubclassOf(typeof(Type)))
-            {
-                Assert.AreEqual(x, y, propertyPath);
-                return;
-            }
-
-            var props = type.GetProperties().Where(p => p.GetIndexParameters().Length == 0);
-
-            foreach (var propInfo in props)
-            {
-                if (ignoredProperties != null && ignoredProperties.Contains(propInfo.Name))
-                {
-                    continue;
-                }
-
-                var propName = propertyPath + "." + propInfo.Name;
-
-                var xVal = propInfo.GetValue(x, null);
-                var yVal = propInfo.GetValue(y, null);
-
-                AssertReflectionEqual(xVal, yVal, propName, ignoredProperties);
-            }
         }
     }
 }

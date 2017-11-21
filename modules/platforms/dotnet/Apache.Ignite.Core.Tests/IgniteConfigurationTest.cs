@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(sql.TcpNoDelay, resSql.TcpNoDelay);
                 Assert.AreEqual(sql.ThreadPoolSize, resSql.ThreadPoolSize);
 
-                TestUtils.AssertReflectionEqual(cfg.DataStorageConfiguration, resCfg.DataStorageConfiguration);
+                AssertExtensions.ReflectionEqual(cfg.DataStorageConfiguration, resCfg.DataStorageConfiguration);
             }
         }
 
