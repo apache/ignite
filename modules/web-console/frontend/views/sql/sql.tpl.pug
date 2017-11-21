@@ -171,7 +171,7 @@ mixin table-result-heading-query
                         i.fa.fa-fw.fa-refresh.fa-spin(ng-if='paragraph.csvIsPreparing')
                         span Export
 
-                    -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
+                    -var options = [{ text: 'Export', click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }, { divider: true }, { text: '<span title="Copy current result page to clipboard">Copy to clipboard</span>', click: 'exportCsvToClipBoard(paragraph)' }]
                     button.btn.dropdown-toggle.btn-primary(
                         ng-disabled='paragraph.loading'
 
@@ -180,6 +180,7 @@ mixin table-result-heading-query
                         data-toggle='dropdown'
                         data-container='body'
                         data-placement='bottom-right'
+                        data-html='true'
                     )
                         span.caret
 
@@ -216,7 +217,7 @@ mixin table-result-heading-scan
                         i.fa.fa-fw.fa-refresh.fa-spin(ng-if='paragraph.csvIsPreparing')
                         span Export
 
-                    -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
+                    -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }, { divider: true }, { text: '<span title="Copy current result page to clipboard">Copy to clipboard</span>', click: 'exportCsvToClipBoard(paragraph)' }]
                     button.btn.dropdown-toggle.btn-primary(
                         ng-disabled='paragraph.loading || paragraph.csvIsPreparing'
 
@@ -225,6 +226,7 @@ mixin table-result-heading-scan
                         data-toggle='dropdown'
                         data-container='body'
                         data-placement='bottom-right'
+                        data-html='true'
                     )
                         span.caret
 
