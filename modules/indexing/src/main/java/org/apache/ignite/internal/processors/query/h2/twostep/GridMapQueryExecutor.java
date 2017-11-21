@@ -703,13 +703,15 @@ public class GridMapQueryExecutor {
                     sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
 
                     qryIdx++;
+
+                    if (!lazy) // All request results are in memory in result set now, so it's ok to release partitions.
+                        releaseReservations();
                 }
             }
-            finally {
-                GridH2QueryContext.clearThreadLocal();
+            catch (Throwable e){
+                releaseReservations();
 
-                if (distributedJoinMode == OFF)
-                    qctx.clearContext(false);
+                throw e;
             }
         }
         catch (Throwable e) {
@@ -740,6 +742,20 @@ public class GridMapQueryExecutor {
                 for (int i = 0; i < reserved.size(); i++)
                     reserved.get(i).release();
             }
+        }
+    }
+
+    /**
+     * Releases reserved partitions.
+     */
+    private void releaseReservations() {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if (qctx != null) { // No-op if already released
+            GridH2QueryContext.clearThreadLocal();
+
+            if (qctx.distributedJoinMode() == OFF)
+                qctx.clearContext(false);
         }
     }
 
@@ -956,6 +972,8 @@ public class GridMapQueryExecutor {
         boolean last = res.fetchNextPage(rows, pageSize);
 
         if (last) {
+            releaseReservations();
+
             res.close();
 
             if (qr.isAllClosed())
