@@ -11,11 +11,15 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 public class FileDownloader {
+    private final IgniteLogger log;
+
     private static final int CHUNK_SIZE = 1024 * 1024;
 
     private final Path path;
@@ -26,7 +30,8 @@ public class FileDownloader {
 
     private ServerSocketChannel serverChannel;
 
-    public FileDownloader(Path path, GridFutureAdapter<?> fut) {
+    public FileDownloader(IgniteLogger log, Path path, GridFutureAdapter<?> fut) {
+        this.log = log;
         this.path = path;
         this.fut = fut;
     }
@@ -38,9 +43,15 @@ public class FileDownloader {
             fut.listen(new IgniteInClosureX<IgniteInternalFuture<?>>() {
                 @Override public void applyx(IgniteInternalFuture<?> future) throws IgniteCheckedException {
                     try {
+
+                        if (log != null && log.isInfoEnabled())
+                            log.info("Server socket closed " + ch.getLocalAddress());
+
                         ch.close();
                     }
                     catch (Exception ex) {
+                        U.error(log, "Fail close socket.", ex);
+
                         throw new IgniteCheckedException(ex);
                     }
                 }
@@ -81,8 +92,6 @@ public class FileDownloader {
                 if (size == -1)
                     size = this.size.get();
             }
-
-            fut.onDone();
         }
         catch (IOException ex) {
             fut.onDone(ex);
