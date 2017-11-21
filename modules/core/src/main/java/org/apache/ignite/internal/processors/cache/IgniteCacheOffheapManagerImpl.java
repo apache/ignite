@@ -444,12 +444,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIndexes(GridCacheContext cctx, KeyCacheObject key, GridDhtLocalPartition part)
-        throws IgniteCheckedException {
-        dataStore(part).updateIndexes(cctx, key);
-    }
-
-    /** {@inheritDoc} */
     @Override public void remove(
         GridCacheContext cctx,
         KeyCacheObject key,
@@ -1864,21 +1858,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 pendingEntries.putx(new PendingRow(cacheId, expireTime, newRow.link()));
 
                 hasPendingEntries = true;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
-
-            CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
-
-            if (row != null) {
-                row.key(key);
-
-                GridCacheQueryManager qryMgr = cctx.queries();
-
-                qryMgr.store(row, null, null, false); // TODO IGNITE-3478.
             }
         }
 
