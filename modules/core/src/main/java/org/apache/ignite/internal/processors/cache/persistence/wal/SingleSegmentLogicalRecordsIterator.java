@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.RecordTypes;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
+import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -49,6 +50,10 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
 
     /** Archive directory. */
     private File archiveDir;
+
+    /** Closure which is executed right after advance. */
+    private CIX1<WALRecord> advanceC;
+
     /**
      * @param log Logger.
      * @param sharedCtx Shared context.
@@ -56,19 +61,22 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
      * @param bufSize Buffer size.
      * @param archivedSegIdx Archived seg index.
      * @param archiveDir Directory with segment.
+     * @param advanceC Closure which is executed right after advance.
      */
-    public SingleSegmentLogicalRecordsIterator(
+    SingleSegmentLogicalRecordsIterator(
         @NotNull IgniteLogger log,
         @NotNull GridCacheSharedContext sharedCtx,
         @NotNull FileIOFactory ioFactory,
         int bufSize,
         long archivedSegIdx,
-        File archiveDir
+        File archiveDir,
+        CIX1<WALRecord> advanceC
     ) throws IgniteCheckedException {
         super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize);
 
         this.archivedSegIdx = archivedSegIdx;
         this.archiveDir = archiveDir;
+        this.advanceC = advanceC;
 
         advance();
     }
@@ -105,6 +113,14 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
                 throw new IgniteCheckedException("Missing WAL segment in the archive", e);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void advance() throws IgniteCheckedException {
+        super.advance();
+
+        if (curRec != null && advanceC != null)
+            advanceC.apply(curRec.get2());
     }
 
     /**

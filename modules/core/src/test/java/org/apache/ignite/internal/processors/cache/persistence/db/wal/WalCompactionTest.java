@@ -27,12 +27,16 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
 /**
  *
@@ -43,6 +47,12 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
     /** Wal segment size. */
     private static final int WAL_SEGMENT_SIZE = 4 * 1024 * 1024;
+
+    /** Cache name. */
+    public static final String CACHE_NAME = "cache";
+
+    /** Entries count. */
+    public static final int ENTRIES = 1000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -64,8 +74,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         ccfg.setName("cache");
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-        ccfg.setBackups(1);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
+        ccfg.setBackups(0);
 
         cfg.setCacheConfiguration(ccfg);
         cfg.setConsistentId(name);
@@ -92,13 +102,17 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, byte[]> cache = ig.cache("cache");
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < ENTRIES; i++) { // At least 20MB of raw data in total.
             final byte[] val = new byte[20000];
 
             val[i] = 1;
 
-            cache.put(i, val); // At least 20MB of raw data.
+            cache.put(i, val);
         }
+
+        // Spam WAL to move all data records to compressible WAL zone.
+        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)
+            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE]));
 
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
@@ -127,22 +141,42 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertNotNull(cpMarkers);
         assertTrue(cpMarkers.length > 0);
 
+        File cacheDir = new File(nodeLfsDir, "cache-" + CACHE_NAME);
+        File[] partFiles = cacheDir.listFiles();
+
+        assertNotNull(partFiles);
+        assertTrue(partFiles.length > 0);
+
         // Enforce reading WAL from the very beginning at the next start.
         for (File f : cpMarkers)
+            f.delete();
+
+        for (File f : partFiles)
             f.delete();
 
         ig = (IgniteEx)startGrids(3);
         ig.active(true);
 
-        cache = ig.cache("cache");
+        cache = ig.cache(CACHE_NAME);
+
+        boolean fail = false;
 
         // Check that all data is recovered from compacted WAL.
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < ENTRIES; i++) {
             byte[] arr = cache.get(i);
 
-            assertNotNull(arr);
+            if (arr == null) {
+                System.out.println(">>> Missing: " + i);
 
-            assertEquals(1, arr[i]);
+                fail = true;
+            }
+            else if (arr[i] != 1) {
+                System.out.println(">>> Corrupted: " + i);
+
+                fail = true;
+            }
         }
+
+        assertFalse(fail);
     }
 }

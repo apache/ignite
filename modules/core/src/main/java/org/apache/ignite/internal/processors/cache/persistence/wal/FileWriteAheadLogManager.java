@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1514,6 +1515,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             super("wal-file-compressor%" + cctx.igniteInstanceName());
         }
 
+        /**
+         *
+         */
         private void init() {
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
@@ -1610,24 +1614,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (!Files.exists(raw.toPath()))
                         throw new IgniteCheckedException("WAL archive segment is missing: " + raw);
 
-                    try (SingleSegmentLogicalRecordsIterator iter = new SingleSegmentLogicalRecordsIterator(
-                        log, cctx, ioFactory, tlbSize, nextSegment, walArchiveDir);
-                         ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(tmpZip)))) {
-                        zos.putNextEntry(new ZipEntry(""));
-
-                        zos.write(prepareSerializerVersionBuffer(nextSegment, serializerVersion, true).array()); // WAL segment header.
-
-                        for (IgniteBiTuple<WALPointer, WALRecord> tuple : iter) {
-                            WALRecord rec = tuple.get2();
-
-                            final MarshalledRecord marshRec = (MarshalledRecord)rec;
-
-                            zos.write(marshRec.buffer().array(), 0, marshRec.buffer().remaining());
-                        }
-                    }
-                    finally {
-                        release(new FileWALPointer(nextSegment, 0, 0));
-                    }
+                    compressSegmentToFile(nextSegment, tmpZip);
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
@@ -1650,6 +1637,41 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
+            }
+        }
+
+        /**
+         * @param nextSegment Next segment absolute idx.
+         * @param zip Zip file.
+         */
+        private void compressSegmentToFile(long nextSegment, File zip) throws IOException, IgniteCheckedException {
+            try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
+                zos.putNextEntry(new ZipEntry(""));
+
+                zos.write(prepareSerializerVersionBuffer(nextSegment, serializerVersion, true).array());
+
+                final CIX1<WALRecord> appendToZipC = new CIX1<WALRecord>() {
+                    @Override public void applyx(WALRecord record) throws IgniteCheckedException {
+                        final MarshalledRecord marshRec = (MarshalledRecord)record;
+
+                        try {
+                            zos.write(marshRec.buffer().array(), 0, marshRec.buffer().remaining());
+                        }
+                        catch (IOException e) {
+                            throw new IgniteCheckedException(e);
+                        }
+                    }
+                };
+
+                try (SingleSegmentLogicalRecordsIterator iter = new SingleSegmentLogicalRecordsIterator(
+                    log, cctx, ioFactory, tlbSize, nextSegment, walArchiveDir, appendToZipC)) {
+
+                    while (iter.hasNextX())
+                        iter.nextX();
+                }
+            }
+            finally {
+                release(new FileWALPointer(nextSegment, 0, 0));
             }
         }
 

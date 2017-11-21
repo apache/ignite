@@ -113,10 +113,8 @@ public class RecordV2Serializer implements RecordSerializer {
 
                 assert toSkip >= 0 : "Too small saved record length: " + ptr;
 
-//                if (in.skipBytes(toSkip) < toSkip)
-//                    throw new EOFException("Reached end of file while reading record: " + ptr);
-
-                in.readFully(new byte[toSkip]);
+                if (in.skipBytes(toSkip) < toSkip)
+                    throw new EOFException("Reached end of file while reading record: " + ptr);
 
                 return new FilteredRecord();
             }
