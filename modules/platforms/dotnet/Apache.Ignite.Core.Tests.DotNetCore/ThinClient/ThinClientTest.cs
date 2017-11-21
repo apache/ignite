@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.DotNetCore.ThinClient
 {
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Tests.DotNetCore.Common;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>

@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore
+namespace Apache.Ignite.Core.Tests.DotNetCore.Common
 {
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.IO;
 
     /// <summary>
     /// Tests Ignite startup.

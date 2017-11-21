@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore
+namespace Apache.Ignite.Core.Tests.DotNetCore.Common
 {
     /// <summary>
     /// Test runner.

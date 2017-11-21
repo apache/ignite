@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.DotNetCore.Cache
 {
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Tests.DotNetCore.Common;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>

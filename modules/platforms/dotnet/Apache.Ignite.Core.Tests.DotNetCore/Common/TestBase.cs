@@ -15,30 +15,30 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore
+namespace Apache.Ignite.Core.Tests.DotNetCore.Common
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
     /// <summary>
-    /// Test person.
+    /// Base test class.
     /// </summary>
-    public class Person
+    public class TestBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Person"/> class.
+        /// Fixture cleanup.
         /// </summary>
-        public Person(string name, int id)
+        [ClassCleanup]
+        public static void ClassCleanup()
         {
-            Name = name;
-            Id = id;
+            Ignition.StopAll(true);
         }
 
         /// <summary>
-        /// Gets or sets the name.
+        /// Starts Ignite.
         /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Gets or sets the identifier.
-        /// </summary>
-        public int Id { get; set; }
+        public IIgnite Start()
+        {
+            return Ignition.Start(TestUtils.GetTestConfiguration());
+        }
     }
 }
