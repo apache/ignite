@@ -17,21 +17,20 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
-import javax.cache.Cache;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Query cursor holder.
+ * Base query cursor holder.
   */
-class ClientCacheScanQueryCursor implements ClientCloseableResource {
+abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
     /** Cursor. */
-    private final QueryCursorEx<Cache.Entry> cursor;
+    private final QueryCursor<T> cursor;
 
     /** Page size. */
     private final int pageSize;
@@ -43,7 +42,7 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
     private long id;
 
     /** Iterator. */
-    private Iterator<Cache.Entry> iterator;
+    private Iterator<T> iterator;
 
     /** Close guard. */
     private final AtomicBoolean closeGuard = new AtomicBoolean();
@@ -54,7 +53,7 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
      * @param pageSize Page size.
      * @param ctx Context.
      */
-    ClientCacheScanQueryCursor(QueryCursorEx<Cache.Entry> cursor, int pageSize, ClientConnectionContext ctx) {
+    ClientCacheQueryCursor(QueryCursor<T> cursor, int pageSize, ClientConnectionContext ctx) {
         assert cursor != null;
         assert pageSize > 0;
         assert ctx != null;
@@ -70,16 +69,15 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
      * @param writer Writer.
      */
     void writePage(BinaryRawWriterEx writer) {
-        Iterator<Cache.Entry> iter = iterator();
+        Iterator<T> iter = iterator();
 
         int cntPos = writer.reserveInt();
         int cnt = 0;
 
         while (cnt < pageSize && iter.hasNext()) {
-            Cache.Entry e = iter.next();
+            T e = iter.next();
 
-            writer.writeObjectDetached(e.getKey());
-            writer.writeObjectDetached(e.getValue());
+            writeEntry(writer, e);
 
             cnt++;
         }
@@ -91,6 +89,14 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
         if (!iter.hasNext())
             ctx.resources().release(id);
     }
+
+    /**
+     * Writes cursor entry.
+     *
+     * @param writer Writer.
+     * @param e Entry.
+     */
+    abstract void writeEntry(BinaryRawWriterEx writer, T e);
 
     /**
      * Closes the cursor.
@@ -126,7 +132,7 @@ class ClientCacheScanQueryCursor implements ClientCloseableResource {
      *
      * @return Iterator.
      */
-    private Iterator<Cache.Entry> iterator() {
+    private Iterator<T> iterator() {
         if (iterator == null)
             iterator = cursor.iterator();
 
