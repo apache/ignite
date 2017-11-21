@@ -717,7 +717,6 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ccfg != null && ccfg.isWriteThrough();
     }
 
-
     /**
      * Checks whether cache topology is valid for operations.
      *
