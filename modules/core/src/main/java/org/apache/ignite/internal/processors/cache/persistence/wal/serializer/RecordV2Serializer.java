@@ -74,7 +74,7 @@ public class RecordV2Serializer implements RecordSerializer {
     /** Thread-local heap byte buffer. */
     private final ThreadLocal<ByteBuffer> heapTlb = new ThreadLocal<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
-            ByteBuffer buf = ByteBuffer.allocateDirect(4096);
+            ByteBuffer buf = ByteBuffer.allocate(4096);
 
             buf.order(GridUnsafe.NATIVE_BYTE_ORDER);
 
@@ -113,8 +113,10 @@ public class RecordV2Serializer implements RecordSerializer {
 
                 assert toSkip >= 0 : "Too small saved record length: " + ptr;
 
-                if (in.skipBytes(toSkip) < toSkip)
-                    throw new EOFException("Reached end of file while reading record: " + ptr);
+//                if (in.skipBytes(toSkip) < toSkip)
+//                    throw new EOFException("Reached end of file while reading record: " + ptr);
+
+                in.readFully(new byte[toSkip]);
 
                 return new FilteredRecord();
             }
@@ -122,7 +124,7 @@ public class RecordV2Serializer implements RecordSerializer {
                 ByteBuffer buf = heapTlb.get();
 
                 if (buf.capacity() < ptr.length())
-                    heapTlb.set(ByteBuffer.allocate(ptr.length() * 3 / 2).order(ByteOrder.nativeOrder()));
+                    heapTlb.set(buf = ByteBuffer.allocate(ptr.length() * 3 / 2).order(ByteOrder.nativeOrder()));
                 else
                     buf.clear();
 
@@ -132,7 +134,8 @@ public class RecordV2Serializer implements RecordSerializer {
                 buf.putInt(ptr.fileOffset());
                 buf.putInt(ptr.length());
 
-                in.readFully(buf.array(), buf.position(), buf.remaining());
+                in.readFully(buf.array(), buf.position(), ptr.length() - buf.position());
+                buf.position(ptr.length());
 
                 // Unwind reading CRC.
                 in.buffer().position(in.buffer().position() - CRC_SIZE);

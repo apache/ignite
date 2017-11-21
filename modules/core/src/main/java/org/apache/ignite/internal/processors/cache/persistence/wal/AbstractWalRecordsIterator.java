@@ -293,7 +293,7 @@ public abstract class AbstractWalRecordsIterator
                     if (isCompacted) {
                         serializerFactory.skipPositionCheck(true);
 
-                        if (start.fileOffset() == 0)
+                        if (start.fileOffset() != 0)
                             serializerFactory.recordDeserializeFilter(new StartSeekingFilter(start));
                     }
                     else {
