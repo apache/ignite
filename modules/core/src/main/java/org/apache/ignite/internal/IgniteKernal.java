@@ -278,6 +278,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Force complete reconnect future. */
     private static final Object STOP_RECONNECT = new Object();
 
+    static {
+        // Just load and initialize LongJVMPauseDetector class here
+        LongJVMPauseDetector.class.getName();
+    }
+
     /** */
     @GridToStringExclude
     private GridKernalContextImpl ctx;
@@ -487,6 +492,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public long getUpTime() {
         return U.currentTimeMillis() - startTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLongJVMPausesCount() {
+        return LongJVMPauseDetector.longPausesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLongJVMPausesTotalDuration() {
+        return LongJVMPauseDetector.longPausesTotalDuration();
     }
 
     /** {@inheritDoc} */
@@ -3496,6 +3511,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         Ignition.stop(igniteInstanceName, true);
     }
 
+    /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         CU.validateCacheName(cacheName);
         checkClusterState();

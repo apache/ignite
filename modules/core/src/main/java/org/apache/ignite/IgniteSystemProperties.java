@@ -752,6 +752,12 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
+    /** Ignite stw detector sleep timeout. */
+    public static final String IGNITE_STW_DETECTOR_SLEEP_TIMEOUT = "IGNITE_STW_DETECTOR_SLEEP_TIMEOUT";
+
+    /** Ignite stw allowed duration limit. */
+    public static final String IGNITE_STW_ALLOWED_DURATION_LIMIT = "IGNITE_STW_ALLOWED_DURATION_LIMIT";
+
     /**
      * Enforces singleton.
      */

@@ -96,6 +96,22 @@ public interface IgniteMXBean {
     public long getUpTime();
 
     /**
+     * Gets long JVM pauses count.
+     *
+     * @return Long JVM pauses count.
+     */
+    @MXBeanDescription("Long JVM pauses count.")
+    public long getLongJVMPausesCount();
+
+    /**
+     * Gets long JVM pauses total duration.
+     *
+     * @return Long JVM pauses total duration.
+     */
+    @MXBeanDescription("Long JVM pauses total duration.")
+    public long getLongJVMPausesTotalDuration();
+
+    /**
      * Gets a list of formatted user-defined attributes added to this node.
      * <p>
      * Note that grid will add all System properties and environment properties
