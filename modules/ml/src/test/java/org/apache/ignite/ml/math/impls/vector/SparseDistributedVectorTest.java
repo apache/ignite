@@ -148,7 +148,6 @@ public class SparseDistributedVectorTest extends GridCommonAbstractTest {
         // assertEquals(UNEXPECTED_VAL, sparseDistributedVector.rowSize() * sparseDistributedVector.columnSize(), sparseDistributedVector.sum(), PRECISION);
     }
 
-
     /** */
     public void testMap() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -175,7 +174,6 @@ public class SparseDistributedVectorTest extends GridCommonAbstractTest {
             assertEquals(UNEXPECTED_VAL, cp.get(i), sparseDistributedVector.get(i), PRECISION);
     }
 
-
     /** */
     public void testLike() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -184,7 +182,6 @@ public class SparseDistributedVectorTest extends GridCommonAbstractTest {
 
         assertNotNull(sparseDistributedVector.like(1));
     }
-
 
     /** */
     private void initVector(Vector v) {

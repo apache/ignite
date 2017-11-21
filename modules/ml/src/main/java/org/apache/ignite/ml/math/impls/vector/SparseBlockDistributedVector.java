@@ -27,14 +27,9 @@ import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockVectorStorage;
 
 /**
- * Sparse distributed vector implementation based on data grid.
- * <p>
- * Unlike {@link CacheVector} that is based on existing cache, this implementation creates distributed
- * cache internally and doesn't rely on pre-existing cache.</p>
- * <p>
- * You also need to call {@link #destroy()} to remove the underlying cache when you no longer need this
- * vector.</p>
- * <p>
+ * Sparse distributed vector implementation based on data grid. <p> Unlike {@link CacheVector} that is based on existing
+ * cache, this implementation creates distributed cache internally and doesn't rely on pre-existing cache.</p> <p> You
+ * also need to call {@link #destroy()} to remove the underlying cache when you no longer need this vector.</p> <p>
  * <b>Currently fold supports only commutative operations.<b/></p>
  */
 public class SparseBlockDistributedVector extends AbstractVector implements StorageConstants {
@@ -61,13 +56,14 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
         setStorage(new BlockVectorStorage(data.length));
         for (int i = 0; i < data.length; i++) {
             double val = data[i];
-            if (val != 0.0) storage().set(i, val);
+            if (val != 0.0)
+                storage().set(i, val);
         }
     }
 
     /** */
     public BlockVectorStorage storage() {
-        return (BlockVectorStorage) getStorage();
+        return (BlockVectorStorage)getStorage();
     }
 
     /**
@@ -107,7 +103,6 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
         return mapOverValues(v -> v * x);
     }
 
-
     /** {@inheritDoc} */
     @Override public Vector assign(double val) {
         return mapOverValues(v -> val);
@@ -130,6 +125,6 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
 
     /** */
     public UUID getUUID() {
-        return ((BlockVectorStorage) getStorage()).getUUID();
+        return ((BlockVectorStorage)getStorage()).getUUID();
     }
 }

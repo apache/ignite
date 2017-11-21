@@ -93,11 +93,11 @@ public class SparseDistributedVectorStorageTest extends GridCommonAbstractTest {
         SparseDistributedVectorStorage storage = new SparseDistributedVectorStorage(size, StorageConstants.RANDOM_ACCESS_MODE);
 
         for (int i = 0; i < size; i++) {
-                double v = Math.random();
-                storage.set(i, v);
+            double v = Math.random();
+            storage.set(i, v);
 
-                assert Double.compare(v, storage.get(i)) == 0;
-                assert Double.compare(v, storage.get(i)) == 0;
+            assert Double.compare(v, storage.get(i)) == 0;
+            assert Double.compare(v, storage.get(i)) == 0;
         }
     }
 

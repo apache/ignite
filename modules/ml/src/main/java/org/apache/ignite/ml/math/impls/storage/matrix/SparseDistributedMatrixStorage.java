@@ -66,9 +66,9 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /** Actual distributed storage. */
     private IgniteCache<
-            RowColMatrixKey /* Row or column index with matrix uuid. */,
-            Map<Integer, Double> /* Map-based row or column. */
-            > cache = null;
+        RowColMatrixKey /* Row or column index with matrix uuid. */,
+        Map<Integer, Double> /* Map-based row or column. */
+        > cache = null;
 
     /**
      *
@@ -308,7 +308,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         SparseDistributedMatrixStorage that = (SparseDistributedMatrixStorage)obj;
 
         return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
-                && uuid.equals(that.uuid) && (cache != null ? cache.equals(that.cache) : that.cache == null);
+            && uuid.equals(that.uuid) && (cache != null ? cache.equals(that.cache) : that.cache == null);
     }
 
     /** */

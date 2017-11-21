@@ -42,8 +42,6 @@ import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
 
-
-
 /**
  * Sparse block distributed matrix. This matrix represented by blocks 32x32 {@link MatrixBlockEntry}.
  *
@@ -120,7 +118,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
             throw new CardinalityException(columnSize(), mtx.rowSize());
 
         SparseBlockDistributedMatrix matrixA = this;
-        SparseBlockDistributedMatrix matrixB = (SparseBlockDistributedMatrix) mtx;
+        SparseBlockDistributedMatrix matrixB = (SparseBlockDistributedMatrix)mtx;
 
         String cacheName = this.storage().cacheName();
         SparseBlockDistributedMatrix matrixC = new SparseBlockDistributedMatrix(matrixA.rowSize(), matrixB.columnSize());
@@ -169,7 +167,6 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         return matrixC;
     }
 
-
     /**
      * {@inheritDoc}
      */
@@ -182,8 +179,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
             throw new CardinalityException(columnSize(), vec.size());
 
         SparseBlockDistributedMatrix matrixA = this;
-        SparseBlockDistributedVector vectorB = (SparseBlockDistributedVector) vec;
-
+        SparseBlockDistributedVector vectorB = (SparseBlockDistributedVector)vec;
 
         String cacheName = this.storage().cacheName();
         SparseBlockDistributedVector vectorC = new SparseBlockDistributedVector(matrixA.rowSize());
@@ -207,7 +203,6 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
             // TODO: IGNITE:5114, exec in parallel
             locKeys.forEach(key -> {
                 long newBlockId = key.blockId();
-
 
                 IgnitePair<Long> newBlockIdForMtx = new IgnitePair<>(newBlockId, 0L);
 
@@ -299,7 +294,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
 
     /** */
     private UUID getUUID() {
-        return ((BlockMatrixStorage) getStorage()).getUUID();
+        return ((BlockMatrixStorage)getStorage()).getUUID();
     }
 
     /**
@@ -316,6 +311,6 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
      *
      */
     private BlockMatrixStorage storage() {
-        return (BlockMatrixStorage) getStorage();
+        return (BlockMatrixStorage)getStorage();
     }
 }

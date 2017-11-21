@@ -27,14 +27,9 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorage;
 
 /**
- * Sparse distributed vector implementation based on data grid.
- * <p>
- * Unlike {@link CacheVector} that is based on existing cache, this implementation creates distributed
- * cache internally and doesn't rely on pre-existing cache.</p>
- * <p>
- * You also need to call {@link #destroy()} to remove the underlying cache when you no longer need this
- * vector.</p>
- * <p>
+ * Sparse distributed vector implementation based on data grid. <p> Unlike {@link CacheVector} that is based on existing
+ * cache, this implementation creates distributed cache internally and doesn't rely on pre-existing cache.</p> <p> You
+ * also need to call {@link #destroy()} to remove the underlying cache when you no longer need this vector.</p> <p>
  * <b>Currently fold supports only commutative operations.<b/></p>
  */
 public class SparseDistributedVector extends AbstractVector implements StorageConstants {
@@ -46,14 +41,13 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
     }
 
     /**
-     * @param size    Vector size.
+     * @param size Vector size.
      * @param acsMode Vector elements access mode..
      */
     public SparseDistributedVector(int size, int acsMode) {
 
         assert size > 0;
         assertAccessMode(acsMode);
-
 
         setStorage(new SparseDistributedVectorStorage(size, acsMode));
     }
@@ -81,7 +75,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
 
     /** */
     public SparseDistributedVectorStorage storage() {
-        return (SparseDistributedVectorStorage) getStorage();
+        return (SparseDistributedVectorStorage)getStorage();
     }
 
     /**
@@ -121,7 +115,6 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
         return mapOverValues(v -> v * x);
     }
 
-
     /** {@inheritDoc} */
     @Override public Vector assign(double val) {
         return mapOverValues(v -> val);
@@ -144,6 +137,6 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
 
     /** */
     public UUID getUUID() {
-        return ((SparseDistributedVectorStorage) getStorage()).getUUID();
+        return ((SparseDistributedVectorStorage)getStorage()).getUUID();
     }
 }

@@ -77,7 +77,6 @@ public class VectorBlockKey implements org.apache.ignite.ml.math.distributed.key
         return blockId;
     }
 
-
     /** {@inheritDoc} */
     @Override public UUID dataStructureId() {
         return vectorUuid;
@@ -142,8 +141,8 @@ public class VectorBlockKey implements org.apache.ignite.ml.math.distributed.key
 
         VectorBlockKey that = (VectorBlockKey)obj;
 
-        return blockId == that.blockId  && vectorUuid.equals(that.vectorUuid)
-                && F.eq(affinityKey, that.affinityKey);
+        return blockId == that.blockId && vectorUuid.equals(that.vectorUuid)
+            && F.eq(affinityKey, that.affinityKey);
     }
 
     /** {@inheritDoc} */

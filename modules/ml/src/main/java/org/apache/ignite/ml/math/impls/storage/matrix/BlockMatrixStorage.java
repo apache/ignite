@@ -42,6 +42,7 @@ import org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 
 import static org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry.MAX_BLOCK_SIZE;
+
 /**
  * Storage for {@link SparseBlockDistributedMatrix}.
  */
@@ -69,8 +70,8 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
     /** Actual distributed storage. */
     private IgniteCache<
-            MatrixBlockKey /* Matrix block number with uuid. */,
-            MatrixBlockEntry /* Block of matrix, local sparse matrix. */
+        MatrixBlockKey /* Matrix block number with uuid. */,
+        MatrixBlockEntry /* Block of matrix, local sparse matrix. */
         > cache = null;
 
     /** */
@@ -217,9 +218,9 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
         Set<MatrixBlockKey> keyset = new HashSet<>();
 
-        for(int i = 0; i <= maxBlockId.get1(); i++)
-            for(int j = 0; j <= maxBlockId.get2(); j++)
-                keyset.add(getCacheKey(i,j));
+        for (int i = 0; i <= maxBlockId.get1(); i++)
+            for (int j = 0; j <= maxBlockId.get2(); j++)
+                keyset.add(getCacheKey(i, j));
 
         return keyset;
     }
@@ -239,8 +240,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         List<MatrixBlockEntry> res = new LinkedList<>();
 
         for (int i = 0; i < blocksInCol; i++)
-            res.add(getEntryById(new IgnitePair<>(blockId.get1(), (long) i)));
-
+            res.add(getEntryById(new IgnitePair<>(blockId.get1(), (long)i)));
 
         return res;
     }
@@ -255,7 +255,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         List<MatrixBlockEntry> res = new LinkedList<>();
 
         for (int i = 0; i < blocksInRow; i++)
-            res.add(getEntryById(new IgnitePair<>((long) i, blockId.get2())));
+            res.add(getEntryById(new IgnitePair<>((long)i, blockId.get2())));
 
         return res;
     }
@@ -291,6 +291,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
     /**
      * Returns cached or new BlockEntry by given blockId
+     *
      * @param blockId blockId
      * @return BlockEntry
      */
@@ -308,6 +309,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
     /**
      * Builds empty BlockEntry with sizes based on blockId and BlockMatrixStorage fields' values
+     *
      * @param blockId blockId
      * @return Empty BlockEntry
      */
@@ -318,15 +320,14 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
         int rowSize;
 
-        if(rowMod == 0)
+        if (rowMod == 0)
             rowSize = maxBlockEdge;
         else
             rowSize = blockId.get1() != (blocksInRow - 1) ? maxBlockEdge : rowMod;
 
-
         int colSize;
 
-        if(colMod == 0)
+        if (colMod == 0)
             colSize = maxBlockEdge;
         else
             colSize = blockId.get2() != (blocksInCol - 1) ? maxBlockEdge : colMod;
@@ -371,6 +372,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
     /**
      * Calculates blockId for given cell's coordinates
+     *
      * @param x x1 attribute in (x1,x2) coordinates
      * @param y x2 attribute in (x1, x2) coordinates
      * @return blockId as an IgnitePair

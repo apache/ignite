@@ -145,7 +145,6 @@ public class SparseBlockDistributedVectorTest extends GridCommonAbstractTest {
             assertEquals(UNEXPECTED_VAL, 1.0, sparseBlockDistributedVector.get(i), PRECISION);
     }
 
-
     /** */
     public void testMap() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());

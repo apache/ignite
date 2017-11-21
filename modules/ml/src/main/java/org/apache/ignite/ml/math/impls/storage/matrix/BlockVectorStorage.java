@@ -64,9 +64,9 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
 
     /** Actual distributed storage. */
     private IgniteCache<
-            VectorBlockKey /* Matrix block number with uuid. */,
-            VectorBlockEntry /* Block of matrix, local sparse matrix. */
-            > cache = null;
+        VectorBlockKey /* Matrix block number with uuid. */,
+        VectorBlockEntry /* Block of matrix, local sparse matrix. */
+        > cache = null;
 
     /**
      *
@@ -121,7 +121,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         blocks = in.readInt();
-        uuid = (UUID) in.readObject();
+        uuid = (UUID)in.readObject();
 
         cache = ignite().getOrCreateCache(in.readUTF());
     }
@@ -174,7 +174,6 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         return new VectorBlockKey(blockId, uuid, getAffinityKey(blockId));
     }
 
-
     /** {@inheritDoc} */
     @Override public Set<VectorBlockKey> getAllKeys() {
         int maxIdx = size - 1;
@@ -192,7 +191,6 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     @Override public String cacheName() {
         return CACHE_NAME;
     }
-
 
     /**
      * Get column for current block.
@@ -228,10 +226,10 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        BlockVectorStorage that = (BlockVectorStorage) obj;
+        BlockVectorStorage that = (BlockVectorStorage)obj;
 
         return size == that.size && uuid.equals(that.uuid)
-                && (cache != null ? cache.equals(that.cache) : that.cache == null);
+            && (cache != null ? cache.equals(that.cache) : that.cache == null);
     }
 
     /**
@@ -281,7 +279,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
      * Distributed matrix set.
      *
      * @param idx Row or column index.
-     * @param v   New value to set.
+     * @param v New value to set.
      */
     private void matrixSet(int idx, double v) {
         long blockId = getBlockId(idx);
@@ -303,7 +301,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
 
     /** */
     private long getBlockId(int x) {
-        return (long) x / maxBlockEdge;
+        return (long)x / maxBlockEdge;
     }
 
     /**
@@ -363,7 +361,8 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
      */
     @Override public double[] data() {
         double[] res = new double[this.size];
-        for (int i = 0; i < this.size; i++) res[i] = this.get(i);
+        for (int i = 0; i < this.size; i++)
+            res[i] = this.get(i);
         return res;
     }
 }

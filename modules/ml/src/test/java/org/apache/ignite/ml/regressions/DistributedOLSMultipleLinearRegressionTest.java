@@ -55,10 +55,9 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     /** Grid instance. */
     private Ignite ignite;
 
-    public DistributedOLSMultipleLinearRegressionTest(){
+    public DistributedOLSMultipleLinearRegressionTest() {
 
         super(false);
-
 
     }
 
@@ -82,7 +81,6 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         ignite.configuration().setPeerClassLoadingEnabled(true);
 
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
 
         y = new double[] {11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
         x = new double[6][];
@@ -135,14 +133,11 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /**
-     * Test Longley dataset against certified values provided by NIST.
-     * Data Source: J. Longley (1967) "An Appraisal of Least Squares
-     * Programs for the Electronic Computer from the Point of View of the User"
-     * Journal of the American Statistical Association, vol. 62. September,
-     * pp. 819-841.
+     * Test Longley dataset against certified values provided by NIST. Data Source: J. Longley (1967) "An Appraisal of
+     * Least Squares Programs for the Electronic Computer from the Point of View of the User" Journal of the American
+     * Statistical Association, vol. 62. September, pp. 819-841.
      *
-     * Certified values (and data) are from NIST:
-     * http://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Longley.dat
+     * Certified values (and data) are from NIST: http://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Longley.dat
      */
     @Test
     public void testLongly() {
@@ -255,8 +250,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /**
-     * Test R Swiss fertility dataset against R.
-     * Data Source: R datasets package
+     * Test R Swiss fertility dataset against R. Data Source: R datasets package
      */
     @Test
     public void testSwissFertility() {
@@ -516,13 +510,11 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         regression.newYSampleData(new SparseDistributedVector(y));
         for (int i = 0; i < combinedX.rowSize(); i++) {
             for (int j = 0; j < combinedX.columnSize(); j++)
-                Assert.assertEquals(combinedX.get(i,j), regression.getX().get(i,j), PRECISION);
+                Assert.assertEquals(combinedX.get(i, j), regression.getX().get(i, j), PRECISION);
 
         }
         for (int i = 0; i < combinedY.size(); i++)
             Assert.assertEquals(combinedY.get(i), regression.getY().get(i), PRECISION);
-
-
 
         // No intercept
         regression.setNoIntercept(true);
@@ -534,7 +526,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
 
         for (int i = 0; i < combinedX.rowSize(); i++) {
             for (int j = 0; j < combinedX.columnSize(); j++)
-                Assert.assertEquals(combinedX.get(i,j), regression.getX().get(i,j), PRECISION);
+                Assert.assertEquals(combinedX.get(i, j), regression.getX().get(i, j), PRECISION);
 
         }
         for (int i = 0; i < combinedY.size(); i++)
@@ -570,12 +562,10 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         }
         fail("NullArgumentException");
 
-
     }
 
     /**
-     * This is a test based on the Wampler1 data set
-     * http://www.itl.nist.gov/div898/strd/lls/data/Wampler1.shtml
+     * This is a test based on the Wampler1 data set http://www.itl.nist.gov/div898/strd/lls/data/Wampler1.shtml
      */
     @Test
     public void testWampler1() {
@@ -642,8 +632,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /**
-     * This is a test based on the Wampler2 data set
-     * http://www.itl.nist.gov/div898/strd/lls/data/Wampler2.shtml
+     * This is a test based on the Wampler2 data set http://www.itl.nist.gov/div898/strd/lls/data/Wampler2.shtml
      */
     @Test
     public void testWampler2() {
@@ -710,8 +699,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /**
-     * This is a test based on the Wampler3 data set
-     * http://www.itl.nist.gov/div898/strd/lls/data/Wampler3.shtml
+     * This is a test based on the Wampler3 data set http://www.itl.nist.gov/div898/strd/lls/data/Wampler3.shtml
      */
     @Test
     public void testWampler3() {
@@ -780,8 +768,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /**
-     * This is a test based on the Wampler4 data set
-     * http://www.itl.nist.gov/div898/strd/lls/data/Wampler4.shtml
+     * This is a test based on the Wampler4 data set http://www.itl.nist.gov/div898/strd/lls/data/Wampler4.shtml
      */
     @Test
     public void testWampler4() {
@@ -899,7 +886,6 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         fail("java.lang.NullPointerException");
     }
 
-
     public void testNoDataNPESSTO() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
@@ -913,14 +899,12 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         }
         fail("java.lang.NullPointerException");
 
-
     }
 
     /** */
     public void testMathIllegalArgumentException() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
-
 
         try {
             mdl.validateSampleData(new SparseDistributedMatrix(1, 2), new SparseDistributedVector(1));

@@ -246,21 +246,21 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         Set<RowColMatrixKey> keySet2 = ((SparseDistributedMatrixStorage)cacheMatrix2.getStorage()).getAllKeys();
 
         assert cache.containsKeys(keySet1) ||
-                keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
+            keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
         assert cache.containsKeys(keySet2) ||
-                keySet2.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
+            keySet2.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
 
         cacheMatrix2.destroy();
 
         assert cache.containsKeys(keySet1) ||
-                keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
+            keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
         assert !cache.containsKeys(keySet2) &&
-                keySet2.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue() == null));
+            keySet2.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue() == null));
 
         cacheMatrix1.destroy();
 
         assert !cache.containsKeys(keySet1) &&
-                keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue() == null));
+            keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue() == null));
     }
 
     /** */
@@ -284,7 +284,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testMatrixTimes(){
+    public void testMatrixTimes() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         int size = MATRIX_SIZE;
@@ -299,8 +299,8 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
 
         Matrix res = cacheMatrix1.times(cacheMatrix2);
 
-        for(int i = 0; i < size; i++)
-            for(int j = 0; j < size; j++)
+        for (int i = 0; i < size; i++)
+            for (int j = 0; j < size; j++)
                 if (i == j)
                     assertEquals(UNEXPECTED_VAL, i * i, res.get(i, j), PRECISION);
                 else

@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * Key implementation for {@link MatrixBlockEntry} using for {@link SparseBlockDistributedMatrix}.
  */
 public class MatrixBlockKey implements org.apache.ignite.ml.math.distributed.keys.MatrixBlockKey,
-        Externalizable, Binarylizable {
+    Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -65,7 +65,7 @@ public class MatrixBlockKey implements org.apache.ignite.ml.math.distributed.key
     /**
      * Construct matrix block key.
      *
-     * @param matrixUuid  Matrix uuid.
+     * @param matrixUuid Matrix uuid.
      * @param affinityKey Affinity key.
      */
     public MatrixBlockKey(long rowId, long colId, UUID matrixUuid, @Nullable UUID affinityKey) {
@@ -109,8 +109,8 @@ public class MatrixBlockKey implements org.apache.ignite.ml.math.distributed.key
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        matrixUuid = (UUID) in.readObject();
-        affinityKey = (UUID) in.readObject();
+        matrixUuid = (UUID)in.readObject();
+        affinityKey = (UUID)in.readObject();
         blockIdRow = in.readLong();
         blockIdCol = in.readLong();
     }
@@ -154,10 +154,10 @@ public class MatrixBlockKey implements org.apache.ignite.ml.math.distributed.key
         if (obj == null || obj.getClass() != getClass())
             return false;
 
-        MatrixBlockKey that = (MatrixBlockKey) obj;
+        MatrixBlockKey that = (MatrixBlockKey)obj;
 
         return blockIdRow == that.blockIdRow && blockIdCol == that.blockIdCol && matrixUuid.equals(that.matrixUuid)
-                && F.eq(affinityKey, that.affinityKey);
+            && F.eq(affinityKey, that.affinityKey);
     }
 
     /** {@inheritDoc} */

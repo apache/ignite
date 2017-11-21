@@ -45,7 +45,7 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     /**
      * Default constructor (required by Externalizable).
      */
-    public SparseMatrixKey(){
+    public SparseMatrixKey() {
 
     }
 
