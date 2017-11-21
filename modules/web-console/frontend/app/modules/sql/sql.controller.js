@@ -59,6 +59,9 @@ class Paragraph {
         self.maxPages = 0;
         self.filter = '';
         self.useAsDefaultSchema = false;
+        self.localQueryMode = false;
+        self.csvIsPreparing = false;
+        self.scanningInProgress = false;
 
         _.assign(this, paragraph);
 
@@ -200,6 +203,14 @@ class Paragraph {
     chartTimeLineEnabled() {
         return _.nonEmpty(this.chartKeyCols) && _.eq(this.chartKeyCols[0], TIME_LINE);
     }
+
+    executionInProgress(showLocal = false) {
+        return this.loading && (this.localQueryMode === showLocal);
+    }
+
+    checkScanInProgress(showLocal = false) {
+        return this.scanningInProgress && (this.localQueryMode === showLocal);
+    }
 }
 
 // Controller for SQL notebook screen.
@@ -211,6 +222,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
         $ctrl.cacheMetadataTemplateUrl = cacheMetadataTemplateUrl;
         $ctrl.chartSettingsTemplateUrl = chartSettingsTemplateUrl;
+
+        $ctrl.demoStarted = false;
 
         let stopTopology = null;
 
@@ -836,7 +849,6 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
         /**
          * Update caches list.
-         * @private
          */
         const _refreshFn = () =>
             agentMgr.topology(true)
@@ -859,7 +871,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                                 ip: _.head(node.attributes['org.apache.ignite.ips'].split(', ')),
                                 version: node.attributes['org.apache.ignite.build.ver'],
                                 gridName: node.attributes['org.apache.ignite.ignite.name'],
-                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`
+                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`,
+                                client: node.attributes['org.apache.ignite.cache.client']
                             });
                         });
 
@@ -873,6 +886,15 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                         if (!_.includes(cacheNames, paragraph.cacheName))
                             paragraph.cacheName = _.head(cacheNames);
                     });
+
+                    // Await for demo caches.
+                    if (!$ctrl.demoStarted && $root.IgniteDemoMode && _.nonEmpty(cacheNames)) {
+                        $ctrl.demoStarted = true;
+
+                        Loading.finish('sqlLoading');
+
+                        _.forEach($scope.notebook.paragraphs, (paragraph) => $scope.execute(paragraph));
+                    }
                 })
                 .catch((err) => Messages.showError(err));
 
@@ -880,10 +902,11 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.tabs.advanced.clusters')
                 .then(() => Loading.start('sqlLoading'))
                 .then(_refreshFn)
-                .then(() => Loading.finish('sqlLoading'))
                 .then(() => {
-                    $root.IgniteDemoMode && _.forEach($scope.notebook.paragraphs, (paragraph) => $scope.execute(paragraph));
-
+                    if (!$root.IgniteDemoMode)
+                        Loading.finish('sqlLoading');
+                })
+                .then(() => {
                     stopTopology = $interval(_refreshFn, 5000, 0, false);
                 });
 
@@ -1316,7 +1339,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             if (_.isEmpty(name))
                 return Promise.resolve(null);
 
-            const nodes = cacheNodes(name);
+            const nodes = _.filter(cacheNodes(name), (node) => !node.client);
 
             if (local) {
                 return Nodes.selectNode(nodes, name)
@@ -1397,6 +1420,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
             const lazy = !!paragraph.lazy;
+
+            paragraph.localQueryMode = local;
 
             $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
@@ -1495,8 +1520,12 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
+            paragraph.localQueryMode = local;
+
             $scope.scanAvailable(paragraph) && _chooseNode(cacheName, local)
                 .then((nid) => {
+                    paragraph.scanningInProgress = true;
+
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
 
@@ -1526,7 +1555,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                             paragraph.setError(err);
 
                             _showLoading(paragraph, false);
-                        });
+                        })
+                        .then(() => paragraph.scanningInProgress = false);
                 });
         };
 
@@ -1626,8 +1656,24 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             LegacyUtils.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
         };
 
+        /**
+         * Generate file name with query results.
+         *
+         * @param paragraph {Object} Query paragraph .
+         * @param all {Boolean} All result export flag.
+         * @returns {string}
+         */
+        const exportFileName = (paragraph, all) => {
+            const args = paragraph.queryArgs;
+
+            if (args.type === 'SCAN')
+                return `export-scan-${args.cacheName}-${paragraph.name}${all ? '-all' : ''}.csv`;
+
+            return `export-query-${paragraph.name}${all ? '-all' : ''}.csv`;
+        };
+
         $scope.exportCsv = function(paragraph) {
-            _export(paragraph.name + '.csv', paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows);
+            _export(exportFileName(paragraph, false), paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows);
 
             // paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
@@ -1637,15 +1683,21 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         };
 
         $scope.exportCsvAll = (paragraph) => {
+            paragraph.csvIsPreparing = true;
+
             const args = paragraph.queryArgs;
 
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
                     ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
                     : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy))
-                .then((res) => _export(paragraph.name + '-all.csv', paragraph.gridOptions.columnDefs, res.columns, res.rows))
+                .then((res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
-                .then(() => paragraph.ace && paragraph.ace.focus());
+                .then(() => {
+                    paragraph.csvIsPreparing = false;
+
+                    return paragraph.ace && paragraph.ace.focus();
+                });
         };
 
         // $scope.exportPdfAll = function(paragraph) {

@@ -508,28 +508,34 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      */
     public void testParseCreateIndex() throws Exception {
         assertCreateIndexEquals(
-            buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE,"name", true),
             "create index on Person (name)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index idx on Person (name ASC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.GEOSPATIAL, "name", true),
+            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.GEOSPATIAL,
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create spatial index sch1.idx on sch1.Person (name ASC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index if not exists sch1.idx on sch1.Person (name)");
 
         // When we specify schema for the table and don't specify it for the index, resulting schema is table's
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED, "name", false),
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE,"name", false),
             "create index if not exists idx on sch1.Person (name dEsC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.GEOSPATIAL, "old", true, "name", false),
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.GEOSPATIAL,
+            QueryIndex.DFLT_INLINE_SIZE, "old", true, "name", false),
             "create spatial index if not exists idx on Person (old, name desc)");
 
         // Schemas for index and table must match
@@ -955,7 +961,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     private static GridSqlCreateIndex buildCreateIndex(String name, String tblName, String schemaName,
-        boolean ifNotExists, QueryIndexType type, Object... flds) {
+        boolean ifNotExists, QueryIndexType type, int inlineSize, Object... flds) {
         QueryIndex idx = new QueryIndex();
 
         idx.setName(name);
@@ -969,6 +975,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         idx.setFields(trueFlds);
         idx.setIndexType(type);
+        idx.setInlineSize(inlineSize);
 
         GridSqlCreateIndex res = new GridSqlCreateIndex();
 

@@ -28,8 +28,8 @@ namespace ignite
     {
         namespace query
         {
-            DataQuery::DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
-                const std::string& sql, const app::ParameterSet& params) :
+            DataQuery::DataQuery(diagnostic::Diagnosable& diag, Connection& connection, const std::string& sql,
+                const app::ParameterSet& params, int32_t& timeout) :
                 Query(diag, QueryType::DATA),
                 connection(connection),
                 sql(sql),
@@ -38,7 +38,8 @@ namespace ignite
                 cursor(),
                 rowsAffected(),
                 rowsAffectedIdx(0),
-                cachedNextPage()
+                cachedNextPage(),
+                timeout(timeout)
             {
                 // No-op.
             }
@@ -216,12 +217,22 @@ namespace ignite
             {
                 const std::string& schema = connection.GetSchema();
 
-                QueryExecuteRequest req(schema, sql, params);
+                QueryExecuteRequest req(schema, sql, params, timeout);
                 QueryExecuteResponse rsp;
 
                 try
                 {
-                    connection.SyncMessage(req, rsp);
+                    // Setting connection timeout to 1 second more than query timeout itself.
+                    int32_t connectionTimeout = timeout ? timeout + 1 : 0;
+
+                    bool success = connection.SyncMessage(req, rsp, connectionTimeout);
+
+                    if (!success)
+                    {
+                        diag.AddStatusRecord(SqlState::SHYT00_TIMEOUT_EXPIRED, "Query timeout expired");
+
+                        return SqlResult::AI_ERROR;
+                    }
                 }
                 catch (const OdbcError& err)
                 {
