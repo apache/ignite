@@ -56,6 +56,10 @@ namespace Apache.Ignite.Core.Impl.Client
         CacheGetNames = 32,
         CacheGetConfiguration = 33,
         CacheCreateWithConfiguration = 34,
-        CacheGetOrCreateWithConfiguration = 35
+        CacheGetOrCreateWithConfiguration = 35,
+        QuerySql = 36,
+        QuerySqlCursorGetPage = 37,
+        QuerySqlFields = 38,
+        QuerySqlFieldsCursorGetPage = 39
     }
 }

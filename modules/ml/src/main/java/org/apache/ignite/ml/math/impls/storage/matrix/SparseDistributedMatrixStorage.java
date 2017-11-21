@@ -19,14 +19,6 @@ package org.apache.ignite.ml.math.impls.storage.matrix;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -41,6 +33,15 @@ import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.SparseMatrixKey;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * {@link MatrixStorage} implementation for {@link SparseDistributedMatrix}.
@@ -161,7 +162,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
      */
     private double matrixGet(int a, int b) {
         // Remote get from the primary node (where given row or column is stored locally).
-        return ignite().compute(groupForKey(CACHE_NAME, a)).call(() -> {
+        return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, a)).call(() -> {
             IgniteCache<RowColMatrixKey, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             // Local get.
@@ -183,7 +184,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
      */
     private void matrixSet(int a, int b, double v) {
         // Remote set on the primary node (where given row or column is stored locally).
-        ignite().compute(groupForKey(CACHE_NAME, a)).run(() -> {
+        ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, a)).run(() -> {
             IgniteCache<RowColMatrixKey, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             // Local get.

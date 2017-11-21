@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     /// <summary>
     /// Client cache implementation.
     /// </summary>
-    internal class CacheClient<TK, TV> : ICacheClient<TK, TV>
+    internal sealed class CacheClient<TK, TV> : ICacheClient<TK, TV>
     {
         /** Scan query filter platform code: .NET filter. */
         private const byte FilterPlatformDotnet = 2;
@@ -159,14 +159,39 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(ScanQuery<TK, TV> scanQuery)
         {
-            IgniteArgumentCheck.NotNull(scanQuery, "query");
+            IgniteArgumentCheck.NotNull(scanQuery, "scanQuery");
 
             // Filter is a binary object for all platforms.
             // For .NET it is a CacheEntryFilterHolder with a predefined id (BinaryTypeId.CacheEntryPredicateHolder).
             return DoOutInOp(ClientOp.QueryScan, w => WriteScanQuery(w, scanQuery),
-                s => new ClientQueryCursor<TK, TV>(_ignite, s.ReadLong(), _keepBinary, s));
+                s => new ClientQueryCursor<TK, TV>(
+                    _ignite, s.ReadLong(), _keepBinary, s, ClientOp.QueryScanCursorGetPage));
         }
-        
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> Query(SqlQuery sqlQuery)
+        {
+            IgniteArgumentCheck.NotNull(sqlQuery, "sqlQuery");
+            IgniteArgumentCheck.NotNull(sqlQuery.Sql, "sqlQuery.Sql");
+            IgniteArgumentCheck.NotNull(sqlQuery.QueryType, "sqlQuery.QueryType");
+
+            return DoOutInOp(ClientOp.QuerySql, w => WriteSqlQuery(w, sqlQuery),
+                s => new ClientQueryCursor<TK, TV>(
+                    _ignite, s.ReadLong(), _keepBinary, s, ClientOp.QuerySqlCursorGetPage));
+        }
+
+        /** <inheritDoc /> */
+        public IFieldsQueryCursor Query(SqlFieldsQuery sqlFieldsQuery)
+        {
+            IgniteArgumentCheck.NotNull(sqlFieldsQuery, "sqlFieldsQuery");
+            IgniteArgumentCheck.NotNull(sqlFieldsQuery.Sql, "sqlFieldsQuery.Sql");
+
+            return DoOutInOp(ClientOp.QuerySqlFields, w => WriteSqlFieldsQuery(w, sqlFieldsQuery),
+                s => new ClientFieldsQueryCursor(
+                    _ignite, s.ReadLong(), _keepBinary, s, ClientOp.QuerySqlFieldsCursorGetPage,
+                    ClientFieldsQueryCursor.ReadColumns(_marsh.StartUnmarshal(s))));
+        }
+
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndPut(TK key, TV val)
         {
@@ -423,6 +448,53 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteInt(qry.Partition ?? -1);
 
             writer.WriteBoolean(qry.Local);
+        }
+
+        /// <summary>
+        /// Writes the SQL query.
+        /// </summary>
+        private static void WriteSqlQuery(IBinaryRawWriter writer, SqlQuery qry)
+        {
+            Debug.Assert(qry != null);
+
+            writer.WriteString(qry.QueryType);
+            writer.WriteString(qry.Sql);
+            QueryBase.WriteQueryArgs(writer, qry.Arguments);
+            writer.WriteBoolean(qry.EnableDistributedJoins);
+            writer.WriteBoolean(qry.Local);
+            writer.WriteBoolean(qry.ReplicatedOnly);
+            writer.WriteInt(qry.PageSize);
+            writer.WriteTimeSpanAsLong(qry.Timeout);
+        }
+
+        /// <summary>
+        /// Writes the SQL fields query.
+        /// </summary>
+        private static void WriteSqlFieldsQuery(IBinaryRawWriter writer, SqlFieldsQuery qry)
+        {
+            Debug.Assert(qry != null);
+
+            writer.WriteString(qry.Schema);
+            writer.WriteInt(qry.PageSize);
+            writer.WriteInt(-1);  // maxRows: unlimited
+            writer.WriteString(qry.Sql);
+            QueryBase.WriteQueryArgs(writer, qry.Arguments);
+
+            // .NET client does not discern between different statements for now.
+            // We cound have ExecuteNonQuery method, which uses StatementType.Update, for example.
+            writer.WriteByte((byte)StatementType.Any);
+
+            writer.WriteBoolean(qry.EnableDistributedJoins);
+            writer.WriteBoolean(qry.Local);
+            writer.WriteBoolean(qry.ReplicatedOnly);
+            writer.WriteBoolean(qry.EnforceJoinOrder);
+            writer.WriteBoolean(qry.Colocated);
+            writer.WriteBoolean(qry.Lazy);
+            writer.WriteTimeSpanAsLong(qry.Timeout);
+
+            // Always include field names.
+            writer.WriteBoolean(true);
+
         }
 
         /// <summary>
