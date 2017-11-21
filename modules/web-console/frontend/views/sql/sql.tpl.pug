@@ -204,7 +204,7 @@ mixin table-result-heading-scan
                     button.btn.btn-primary.btn--with-icon(
                         ng-click='exportCsv(paragraph)'
 
-                        ng-disabled='paragraph.loading'
+                        ng-disabled='paragraph.loading || paragraph.csvIsPreparing'
 
                         bs-tooltip=''
                         ng-attr-title='{{ scanTooltip(paragraph) }}'
@@ -218,7 +218,7 @@ mixin table-result-heading-scan
 
                     -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
                     button.btn.dropdown-toggle.btn-primary(
-                        ng-disabled='paragraph.loading'
+                        ng-disabled='paragraph.loading || paragraph.csvIsPreparing'
 
                         bs-dropdown=`${JSON.stringify(options)}`
 
