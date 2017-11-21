@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -69,11 +67,11 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      *
      * @return {@code true} if next operation must be snapshot, {@code false} if checkpoint must be executed.
      */
-    public IgniteFuture<?> onMarkCheckPointBegin(
+    public boolean onMarkCheckPointBegin(
         T snapshotOperation,
         PartitionAllocationMap map
     ) throws IgniteCheckedException {
-        return null;
+        return false;
     }
 
     /**

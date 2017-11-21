@@ -1458,8 +1458,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             grpValidRes = m;
         }
 
-        if (!cctx.localNode().isClient())
-            tryToPerformLocalSnapshotOperation();
+        tryToPerformLocalSnapshotOperation();
 
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
