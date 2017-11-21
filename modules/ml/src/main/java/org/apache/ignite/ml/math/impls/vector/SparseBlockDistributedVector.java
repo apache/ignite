@@ -27,9 +27,14 @@ import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockVectorStorage;
 
 /**
- * Sparse distributed vector implementation based on data grid. <p> Unlike {@link CacheVector} that is based on existing
- * cache, this implementation creates distributed cache internally and doesn't rely on pre-existing cache.</p> <p> You
- * also need to call {@link #destroy()} to remove the underlying cache when you no longer need this vector.</p> <p>
+ * Sparse distributed vector implementation based on data grid.
+ * <p>
+ * Unlike {@link CacheVector} that is based on existing cache, this implementation creates distributed
+ * cache internally and doesn't rely on pre-existing cache.</p>
+ * <p>
+ * You also need to call {@link #destroy()} to remove the underlying cache when you no longer need this
+ * vector.</p>
+ * <p>
  * <b>Currently fold supports only commutative operations.<b/></p>
  */
 public class SparseBlockDistributedVector extends AbstractVector implements StorageConstants {
