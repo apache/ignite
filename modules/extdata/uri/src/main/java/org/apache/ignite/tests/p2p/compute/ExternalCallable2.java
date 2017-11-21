@@ -52,8 +52,8 @@ public class ExternalCallable2 implements IgniteCallable {
 
     /** {@inheritDoc} */
     @Override public Object call() {
-        log.info("!!!!! I am job_2 " + param + " on " + ignite.name());
+        log.info("!!!!! I am modified job_2 " + param + " on " + ignite.name());
 
-        return 42;
+        return 43;
     }
 }
