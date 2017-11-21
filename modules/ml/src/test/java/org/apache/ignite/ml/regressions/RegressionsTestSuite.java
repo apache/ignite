@@ -28,7 +28,7 @@ import org.junit.runners.Suite;
     OLSMultipleLinearRegressionTest.class,
     DistributedOLSMultipleLinearRegressionTest.class,
     DistributedBlockOLSMultipleLinearRegressionTest.class,
-    AbstractMultipleLinearRegressionModelTest.class
+    OLSMultipleLinearRegressionModelTest.class
 })
 public class RegressionsTestSuite {
     // No-op.

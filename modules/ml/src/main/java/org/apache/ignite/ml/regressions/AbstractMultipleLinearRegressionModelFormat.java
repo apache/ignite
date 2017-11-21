@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.Matrix;
 /**
  * Linear regression model representation.
  *
- * @see AbstractMultipleLinearRegressionModel
+ * @see OLSMultipleLinearRegressionModel
  */
 public class AbstractMultipleLinearRegressionModelFormat implements Serializable {
     /** X sample data. */
@@ -39,13 +39,13 @@ public class AbstractMultipleLinearRegressionModelFormat implements Serializable
     }
 
     /** */
-    public AbstractMultipleLinearRegressionModel getAbstractMultipleLinearRegressionModel() {
+    public OLSMultipleLinearRegressionModel getAbstractMultipleLinearRegressionModel() {
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.setNoIntercept(true);
         regression.newXSampleData(xMatrix);
         regression.setNoIntercept(noIntercept);
 
-        return new AbstractMultipleLinearRegressionModel(regression);
+        return new OLSMultipleLinearRegressionModel(regression);
     }
 
     /** {@inheritDoc} */
