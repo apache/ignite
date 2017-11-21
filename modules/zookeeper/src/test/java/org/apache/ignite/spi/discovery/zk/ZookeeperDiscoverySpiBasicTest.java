@@ -251,7 +251,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSegmentation1() throws Exception {
-        sesTimeout = 2000;
+        sesTimeout = 1000;
         testSockNio = true;
 
         Ignite node0 = startGrid(0);
@@ -270,7 +270,12 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         c0.closeSocket(true);
 
-        Thread.sleep(4_000);
+        for (int i = 0; i < 10; i++) {
+            Thread.sleep(1_000);
+
+            if (l.getCount() == 0)
+                break;
+        }
 
         info("Allow connect");
 
