@@ -61,6 +61,16 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasQueuedThread(Thread thread) throws IgniteException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasQueuedThreads() throws IgniteException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isFailoverSafe() {
         return true;
     }
@@ -114,13 +124,6 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
             finally {
                 lock.unlock();
             }
-        }
-
-        /**
-         * @return {@code true} if some thread waiting for release, {@code false} if not.
-         */
-        boolean isLocked() {
-            return lock.isLocked();
         }
 
         /**

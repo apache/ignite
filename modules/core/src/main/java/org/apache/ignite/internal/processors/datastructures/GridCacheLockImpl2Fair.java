@@ -166,8 +166,10 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
 
     /** {@inheritDoc} */
     @Override public boolean isLocked() throws IgniteException {
+        ctx.kernalContext().gateway().readLock();
+
         try {
-            if (hasQueuedThreads())
+            if (sync.reentrantCount.get() > 0 || sync.isGloballyLocked)
                 return true;
 
             GridCacheLockState2Base<LockOwner> state = sync.forceGet();
@@ -186,27 +188,9 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasQueuedThreads() throws IgniteException {
-        if (sync.reentrantCount.get() > 0)
-            return true;
-
-        return sync.isGloballyLocked;
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasQueuedThread(Thread thread) throws IgniteException {
-        assert thread != null;
-
-        Latch latch = sync.latches.get(thread.getId());
-
-        if (latch == null)
-            return false;
-
-        return latch.isLocked();
+        finally {
+            ctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -243,7 +227,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         long threadId;
 
         /** Lock name. */
-        private String name;
+        String name;
 
         /**
          * Empty constructor required for {@link Externalizable}.

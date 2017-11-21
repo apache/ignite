@@ -21,6 +21,7 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -112,6 +113,8 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_CNT; i++) {
             final IgniteLock lock = createReentrantLock(i, fair ? "fair lock" : "unfair lock", fair);
 
+            assertEquals(0, lock.getHoldCount());
+
             // Other node can still don't see update, but eventually we reach lock.isLocked == false.
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
@@ -121,20 +124,28 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
             lock.lock();
 
+            assertEquals(1, lock.getHoldCount());
+
             assertTrue(lock.isLocked());
             assertTrue(lock.isHeldByCurrentThread());
 
             lock.lock();
 
-            assertTrue(lock.isLocked());
-            assertTrue(lock.isHeldByCurrentThread());
-
-            lock.unlock();
+            assertEquals(2, lock.getHoldCount());
 
             assertTrue(lock.isLocked());
             assertTrue(lock.isHeldByCurrentThread());
 
             lock.unlock();
+
+            assertEquals(1, lock.getHoldCount());
+
+            assertTrue(lock.isLocked());
+            assertTrue(lock.isHeldByCurrentThread());
+
+            lock.unlock();
+
+            assertEquals(0, lock.getHoldCount());
 
             assertFalse(lock.isLocked());
             assertFalse(lock.isHeldByCurrentThread());
@@ -174,6 +185,56 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
             assertTrue(delta >= 500L);
             assertTrue(delta < 600L);
+
+            lock1.unlock();
+
+            assertFalse(lock1.isHeldByCurrentThread());
+        }
+    }
+
+    /**
+     * Test a sequential lock acquiring and releasing with interrupt.
+     *
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockInterruptibly() throws Exception {
+        testReentrantLockInterruptibly(false);
+        testReentrantLockInterruptibly(true);
+    }
+
+    /**
+     * Test a sequential lock acquiring and releasing with interrupt.
+     *
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockInterruptibly(boolean fair) throws Exception {
+        for (int i = 0; i < NODES_CNT; i++) {
+            IgniteLock lock1 = createReentrantLock(i, fair ? "fair lock" : "unfair lock", fair);
+            final IgniteLock lock2 = createReentrantLock((i + 1) % NODES_CNT, fair ? "fair lock" : "unfair lock", fair);
+
+            lock1.lockInterruptibly();
+
+            assertTrue(lock1.isLocked());
+            assertTrue(lock1.isHeldByCurrentThread());
+
+            Thread thread = new Thread(new Runnable() {
+                @Override public void run() {
+                    boolean flag = false;
+
+                    try {
+                        lock2.lockInterruptibly();
+
+                        fail();
+                    } catch (IgniteInterruptedException ignored) {
+                        flag = true;
+                    }
+                    assertTrue(flag);
+                }
+            });
+
+            thread.start();
+
+            thread.interrupt();
 
             lock1.unlock();
 

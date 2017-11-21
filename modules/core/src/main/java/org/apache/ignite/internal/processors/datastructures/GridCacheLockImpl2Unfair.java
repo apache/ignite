@@ -112,7 +112,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         private static final int CACHE_MSG_IDX = nextIndexId();
 
         /** Lock name. */
-        private String name;
+        String name;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -310,18 +310,6 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         finally {
             ctx.kernalContext().gateway().readUnlock();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasQueuedThreads() throws IgniteException {
-        return sync.hasQueuedThreads();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasQueuedThread(Thread thread) throws IgniteException {
-        assert thread != null;
-
-        return sync.hasQueuedThread(thread);
     }
 
     /** {@inheritDoc} */
@@ -631,25 +619,12 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             this.globalSync = globalSync;
         }
 
-        /** {@link GridCacheLockEx2#hasQueuedThreads()} */
-        private boolean hasQueuedThreads() {
+        /** {@link GridCacheLockEx2#isLocked()} */
+        private boolean isLocked() throws IgniteCheckedException {
             if (reentrantCount.get() > 0)
                 return true;
 
-            return isGloballyLocked || lock.isLocked();
-
-        }
-
-        /** {@link GridCacheLockEx2#hasQueuedThread(Thread)} */
-        private boolean hasQueuedThread(Thread thread) {
-            assert thread != null;
-
-            return lock.hasQueuedThread(thread);
-        }
-
-        /** {@link GridCacheLockEx2#isLocked()} */
-        private boolean isLocked() throws IgniteCheckedException {
-            if (hasQueuedThreads())
+            if (isGloballyLocked || lock.isLocked())
                 return true;
 
             GridCacheLockState2Base<UUID> state = globalSync.forceGet();
