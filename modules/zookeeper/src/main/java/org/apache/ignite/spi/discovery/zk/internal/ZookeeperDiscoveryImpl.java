@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import org.apache.curator.utils.PathUtils;
 import org.apache.ignite.IgniteCheckedException;
@@ -112,6 +113,9 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private boolean crd;
 
+    /** */
+    private Map<Long, ZkEventAckFuture> ackFuts = new ConcurrentHashMap<>();
+
     /**
      * @param log
      * @param basePath
@@ -143,6 +147,10 @@ public class ZookeeperDiscoveryImpl {
         watcher = new ZkWatcher();
         childrenCallback = new ZKChildrenCallback();
         dataCallback = new ZkDataCallback();
+    }
+
+    IgniteLogger log() {
+        return log;
     }
 
     public ClusterNode localNode() {
@@ -664,21 +672,38 @@ public class ZookeeperDiscoveryImpl {
         // TODO ZK: use multi.
         zkClient.setData(zkPaths.evtsPath, null, -1);
 
-        for (String evtPath : zkClient.getChildren(zkPaths.evtsPath)) {
+        List<String> evtChildren = zkClient.getChildren(zkPaths.evtsPath);
+
+        for (String evtPath : evtChildren) {
             String evtDir = zkPaths.evtsPath + "/" + evtPath;
 
             removeChildren(evtDir);
-
-            zkClient.delete(evtDir, -1);
         }
+
+        zkClient.deleteAllIfExists(zkPaths.evtsPath, evtChildren, -1);
 
         for (String evtPath : zkClient.getChildren(zkPaths.customEvtsDir))
             zkClient.delete(zkPaths.customEvtsDir + "/" + evtPath, -1);
     }
 
+    /**
+     * @param path Path.
+     * @throws Exception If failed.
+     */
     private void removeChildren(String path) throws Exception {
-        for (String childPath : zkClient.getChildren(path))
-            zkClient.delete(path + "/" + childPath, -1);
+        zkClient.deleteAllIfExists(path, zkClient.getChildren(path), -1);
+    }
+
+    void removeAckFuture(ZkEventAckFuture fut) {
+        ackFuts.remove(fut.eventId());
+    }
+
+    ZkClusterNodes nodes() {
+        return top;
+    }
+
+    ZookeeperClient zkClient() {
+        return zkClient;
     }
 
     /**
@@ -914,7 +939,7 @@ public class ZookeeperDiscoveryImpl {
     @SuppressWarnings("unchecked")
     private void notifyCustomEvent(ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
         if (log.isInfoEnabled())
-            log.info(" [topVer=" + evtData.topologyVersion() + ", msg=" + msg.getClass().getSimpleName() + ']');
+            log.info(" [topVer=" + evtData.topologyVersion() + ", msg=" + msg + ']');
 
         ZookeeperClusterNode sndNode = top.nodesById.get(evtData.sndNodeId);
 
@@ -928,6 +953,19 @@ public class ZookeeperDiscoveryImpl {
             topSnapshot,
             Collections.<Long, Collection<ClusterNode>>emptyMap(),
             msg);
+
+        if (crd) {
+            ZkEventAckFuture fut = new ZkEventAckFuture(this,
+                zkPaths.customEvtsDir + "/" + evtData.evtPath,
+                evtData.eventId());
+
+            ackFuts.put(evtData.eventId(), fut);
+        }
+        else {
+            String ackPath = zkPaths.customEvtsDir + "/" + evtData.evtPath + "/" + locNode.internalId();
+
+            zkClient.createAsync(ackPath, null, CreateMode.PERSISTENT, null);
+        }
     }
 
     /**
@@ -970,6 +1008,11 @@ public class ZookeeperDiscoveryImpl {
             topSnapshot,
             Collections.<Long, Collection<ClusterNode>>emptyMap(),
             null);
+
+        if (crd) {
+            for (ZkEventAckFuture ackFut : ackFuts.values())
+                ackFut.onNodeFail(failedNode);
+        }
     }
 
     /**
