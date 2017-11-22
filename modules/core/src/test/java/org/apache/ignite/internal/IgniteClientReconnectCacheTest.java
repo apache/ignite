@@ -71,7 +71,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionState;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -314,7 +313,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testReconnectTransactions() throws Exception {
+    public void testReconnectTransactionsStateNotChanged() throws Exception {
         clientMode = true;
 
         IgniteEx client = startGrid(SRV_CNT);
@@ -362,8 +361,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         });
 
         assertNull(txs.tx());
-
-        assertEquals(TransactionState.ROLLED_BACK, tx.state());
 
         try (Transaction tx0 = txs.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, 1);
