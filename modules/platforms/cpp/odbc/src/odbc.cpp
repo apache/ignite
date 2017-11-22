@@ -593,7 +593,7 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        statement->NextResults();
+        statement->MoreResults();
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
@@ -984,16 +984,22 @@ namespace ignite
             {
                 Diagnosable *diag = reinterpret_cast<Diagnosable*>(handle);
 
+                if (!diag)
+                    return SQL_INVALID_HANDLE;
+
                 records = &diag->GetDiagnosticRecords();
 
                 break;
             }
 
             default:
-                break;
+                return SQL_INVALID_HANDLE;
         }
 
-        if (!records || recNum < 1 || recNum > records->GetStatusRecordsNumber())
+        if (recNum < 1 || msgBufferLen < 0)
+            return SQL_ERROR;
+
+        if (!records || recNum > records->GetStatusRecordsNumber())
             return SQL_NO_DATA;
 
         const DiagnosticRecord& record = records->GetStatusRecord(recNum);
@@ -1004,13 +1010,24 @@ namespace ignite
         if (nativeError)
             *nativeError = 0;
 
-        SqlLen outResLen;
-        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_CHAR, msgBuffer, msgBufferLen, &outResLen);
+        const std::string& errMsg = record.GetMessageText();
 
-        outBuffer.PutString(record.GetMessageText());
+        if (!msgBuffer || msgBufferLen < static_cast<SQLSMALLINT>(errMsg.size() + 1))
+        {
+            if (!msgLen)
+                return SQL_ERROR;
+
+            CopyStringToBuffer(errMsg, reinterpret_cast<char*>(msgBuffer), static_cast<size_t>(msgBufferLen));
+
+            *msgLen = static_cast<SQLSMALLINT>(errMsg.size());
+
+            return SQL_SUCCESS_WITH_INFO;
+        }
+
+        CopyStringToBuffer(errMsg, reinterpret_cast<char*>(msgBuffer), static_cast<size_t>(msgBufferLen));
 
         if (msgLen)
-            *msgLen = static_cast<SQLSMALLINT>(outResLen);
+            *msgLen = static_cast<SQLSMALLINT>(errMsg.size());
 
         return SQL_SUCCESS;
     }

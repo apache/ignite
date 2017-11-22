@@ -94,12 +94,12 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
     public void testOperations() {
         executeSql("CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() +
-            ",affinitykey=city\"");
+            ",affinity_key=city\"");
 
         executeSql("CREATE INDEX idx on person (city asc, name asc)");
 
         executeSql("CREATE TABLE city (name varchar, population int, primary key (name)) WITH " +
-            "\"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinitykey=name\"");
+            "\"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinity_key=name\"");
 
         executeSql("INSERT INTO city (name, population) values(?, ?), (?, ?), (?, ?)",
             "St. Petersburg", 6000000,

@@ -290,9 +290,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         if (relPtr == INVALID_REL_PTR)
             throw new IgniteOutOfMemoryException("Not enough memory allocated " +
-                "(consider increasing data region size or enabling evictions) " +
                 "[policyName=" + dataRegionCfg.getName() +
-                ", size=" + U.readableSize(dataRegionCfg.getMaxSize(), true) + "]"
+                ", size=" + U.readableSize(dataRegionCfg.getMaxSize(), true) + "]" + U.nl() +
+                "Consider increasing memory policy size, enabling evictions, adding more nodes to the cluster, " +
+                "reducing number of backups or reducing model size."
+
             );
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
