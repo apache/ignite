@@ -38,44 +38,37 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Part of direct node to node file downloading
  */
 public class FileDownloader {
+    /** */
     private final IgniteLogger log;
 
+    /** */
     private static final int CHUNK_SIZE = 1024 * 1024;
 
+    /** */
     private final Path path;
 
-    private final GridFutureAdapter<?> fut;
-
+    /** */
     private final AtomicLong size = new AtomicLong(-1);
 
+    /** */
     private ServerSocketChannel serverChannel;
 
-    public FileDownloader(IgniteLogger log, Path path, GridFutureAdapter<?> fut) {
+    private volatile GridFutureAdapter<?> fut;
+
+    /**
+     *
+     */
+    public FileDownloader(IgniteLogger log, Path path) {
         this.log = log;
         this.path = path;
-        this.fut = fut;
     }
 
+    /**
+     *
+     */
     public InetSocketAddress start() throws IgniteCheckedException {
         try {
-            final ServerSocketChannel ch = ServerSocketChannel.open();
-
-            fut.listen(new IgniteInClosureX<IgniteInternalFuture<?>>() {
-                @Override public void applyx(IgniteInternalFuture<?> future) throws IgniteCheckedException {
-                    try {
-
-                        if (log != null && log.isInfoEnabled())
-                            log.info("Server socket closed " + ch.getLocalAddress());
-
-                        ch.close();
-                    }
-                    catch (Exception ex) {
-                        U.error(log, "Fail close socket.", ex);
-
-                        throw new IgniteCheckedException(ex);
-                    }
-                }
-            });
+            ServerSocketChannel ch = ServerSocketChannel.open();
 
             ch.bind(null);
 
@@ -88,7 +81,31 @@ public class FileDownloader {
         }
     }
 
-    public void await(){
+    /**
+     *
+     */
+    public void download(GridFutureAdapter<?> fut){
+        this.fut = fut;
+
+        final ServerSocketChannel ch = serverChannel;
+
+        fut.listen(new IgniteInClosureX<IgniteInternalFuture<?>>() {
+            @Override public void applyx(IgniteInternalFuture<?> future) throws IgniteCheckedException {
+                try {
+
+                    if (log != null && log.isInfoEnabled())
+                        log.info("Server socket closed " + ch.getLocalAddress());
+
+                    ch.close();
+                }
+                catch (Exception ex) {
+                    U.error(log, "Fail close socket.", ex);
+
+                    throw new IgniteCheckedException(ex);
+                }
+            }
+        });
+
         FileChannel writeChannel = null;
         SocketChannel readChannel = null;
 

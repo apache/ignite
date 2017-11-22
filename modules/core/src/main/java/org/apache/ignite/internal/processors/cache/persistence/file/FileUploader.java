@@ -22,77 +22,62 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Part of direct node to node file downloading
  */
 public class FileUploader {
+    /** */
     private static final int CHUNK_SIZE = 1024 * 1024;
 
+    /** */
     private final Path path;
 
-    private final Executor exec;
-
-    private final SocketChannel writeChannel;
-
-    private final GridFutureAdapter<Long> fut = new GridFutureAdapter<>();
-
-    public FileUploader(
-        Path path,
-        Executor exec,
-        SocketChannel writeChannel
-    ) {
+    /**
+     *
+     */
+    public FileUploader(Path path) {
         this.path = path;
-        this.exec = exec;
-        this.writeChannel = writeChannel;
     }
 
-    public IgniteInternalFuture<Long> upload() {
-        exec.execute(new Worker());
+    /**
+     *
+     */
+    public void upload(SocketChannel writeChannel, GridFutureAdapter<Long> finishFut) {
+        FileChannel readChannel = null;
 
-        return fut;
-    }
+        try {
+            readChannel = FileChannel.open(path, StandardOpenOption.READ);
 
-    private class Worker implements Runnable {
-        @Override public void run() {
-            FileChannel readChannel = null;
-            SocketChannel writeChannel = FileUploader.this.writeChannel;
+            long written = 0;
 
+            long size = readChannel.size();
+
+            while (written < size)
+                written += readChannel.transferTo(written, CHUNK_SIZE, writeChannel);
+
+            finishFut.onDone(written);
+        }
+        catch (IOException ex) {
+            finishFut.onDone(ex);
+        }
+        finally {
             try {
-                readChannel = FileChannel.open(path, StandardOpenOption.READ);
-
-                long written = 0;
-
-                long size = readChannel.size();
-
-                while (written < size)
-                    written += readChannel.transferTo(written, CHUNK_SIZE, writeChannel);
-
-                fut.onDone(written);
+                if (writeChannel != null)
+                    writeChannel.close();
             }
             catch (IOException ex) {
-                fut.onDone(ex);
+                throw new IgniteException("Could not close socket.");
             }
-            finally {
-                try {
-                    if (writeChannel != null)
-                        writeChannel.close();
-                }
-                catch (IOException ex) {
-                    throw new IgniteException("Could not close socket.");
-                }
 
-                try {
-                    if (readChannel != null)
-                        readChannel.close();
-                }
-                catch (IOException ex) {
-                    throw new IgniteException("Could not close file: " + path);
-                }
+            try {
+                if (readChannel != null)
+                    readChannel.close();
+            }
+            catch (IOException ex) {
+                throw new IgniteException("Could not close file: " + path);
             }
         }
     }
