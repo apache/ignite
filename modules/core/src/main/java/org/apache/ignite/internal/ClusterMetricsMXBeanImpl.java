@@ -376,7 +376,16 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     @Override public int countNodes(String name, String val, boolean srv, boolean client) {
         ClusterGroup grp = clusterGroup(srv, client);
 
-        return F.size(grp.nodes(), new NodeAttributeFilter(name, val));
+        int cnt = 0;
+
+        for (ClusterNode node : grp.nodes()) {
+            Object nodeVal = node.attribute(name);
+
+            if (nodeVal != null && nodeVal.toString().equals(val))
+                ++cnt;
+        }
+
+        return cnt;
     }
 
     /** {@inheritDoc} */
@@ -402,10 +411,7 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
             if (attrVal != null) {
                 Integer cnt = attrGroups.get(attrVal);
 
-                if (cnt == null)
-                    attrGroups.put(attrVal, 1);
-                else
-                    attrGroups.put(attrVal, ++cnt);
+                attrGroups.put(attrVal, cnt == null ? 1 : ++cnt);
             }
         }
 
@@ -428,34 +434,6 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
             return cluster.forClients();
         else
             return cluster.forDaemons();
-    }
-
-    /** */
-    private static class NodeAttributeFilter implements PlatformClusterNodeFilter {
-        /** */
-        private static final long serialVersionUID = 1L;
-
-        /** */
-        private final String name;
-
-        /** */
-        private final String val;
-
-        /**
-         * @param name Attribute name.
-         * @param val Attribute value.
-         */
-        private NodeAttributeFilter(String name, String val) {
-            this.name = name;
-            this.val = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode node) {
-            Object nodeVal = node.attribute(name);
-
-            return nodeVal != null && nodeVal.toString().equals(val);
-        }
     }
 
     /** {@inheritDoc} */

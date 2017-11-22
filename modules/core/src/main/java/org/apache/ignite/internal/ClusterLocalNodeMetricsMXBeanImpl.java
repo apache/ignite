@@ -17,33 +17,24 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collections;
-import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.mxbean.ClusterMetricsMXBean;
+import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 
 /**
  * Local node metrics MBean.
  */
-public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
+public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetricsMXBean {
     /** Grid node. */
     private final ClusterNode node;
 
-    /** Grid discovery manager. */
-    private final GridDiscoveryManager discoMgr;
-
     /**
-     * @param discoMgr Grid discovery manager.
+     * @param node Node to manage.
      */
-    public ClusterLocalNodeMetricsMXBeanImpl(GridDiscoveryManager discoMgr) {
-        assert discoMgr != null;
+    public ClusterLocalNodeMetricsMXBeanImpl(ClusterNode node) {
+        assert node != null;
 
-        this.discoMgr = discoMgr;
-
-        this.node = discoMgr.localNode();
+        this.node = node;
     }
 
     /** {@inheritDoc} */
@@ -329,47 +320,6 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return node.metrics().getTotalNodes();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getTotalServerNodes() {
-        return !node.isClient() && !node.isDaemon() ? 1 : 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getTotalClientNodes() {
-        return node.isClient() ? 1 : 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getTopologyVersion() {
-        return discoMgr.topologyVersion();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int countNodes(String name, String val, boolean srv, boolean client) {
-        if (srv && !client && (node.isClient() || node.isDaemon()))
-            return 0;
-
-        if (client && !srv && !node.isClient())
-            return 0;
-
-        Object nodeVal = node.attribute(name);
-
-        return nodeVal != null && nodeVal.toString().equals(val) ? 1 : 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<Object, Integer> groupNodes(String name, boolean srv, boolean client) {
-        if (srv && !client && (node.isClient() || node.isDaemon()))
-            return Collections.emptyMap();
-
-        if (client && !srv && !node.isClient())
-            return Collections.emptyMap();
-
-        Object val = node.attribute(name);
-
-        return val == null ? Collections.<Object, Integer>emptyMap() : F.asMap(val, 1);
     }
 
     /** {@inheritDoc} */

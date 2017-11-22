@@ -389,17 +389,6 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         waitForDiscovery(node2, node1, node);
 
-        ClusterMetricsMXBean locMBean = new ClusterLocalNodeMetricsMXBeanImpl(node.context().discovery());
-
-        assertEquals(node.cluster().topologyVersion(), locMBean.getTopologyVersion());
-
-        assertEquals(1, locMBean.getTotalServerNodes());
-        assertEquals(0, locMBean.getTotalClientNodes());
-
-        assertEquals(1, locMBean.countNodes(ATTR_BUILD_VER, VER_STR, true, true));
-        assertEquals(1, locMBean.countNodes(ATTR_CLIENT_MODE, "false", true, true));
-        assertEquals(F.asMap(false, 1), locMBean.groupNodes(ATTR_CLIENT_MODE, true, true));
-
         ClusterMetricsMXBean clusterMBean = new ClusterMetricsMXBeanImpl(node.cluster());
 
         assertEquals(node.cluster().topologyVersion(), clusterMBean.getTopologyVersion());

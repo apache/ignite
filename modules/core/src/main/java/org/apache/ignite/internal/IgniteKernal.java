@@ -182,6 +182,7 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
@@ -1704,27 +1705,29 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Register instance of ClusterMetricsMBean.
      *
      * @param mbean MBean instance to register.
+     * @param mbeanItf MBean interface to register.
+     * @param <T> MBean type.
      * @throws IgniteCheckedException If registration failed.
      */
-    private ObjectName registerClusterMetricsMBean(ClusterMetricsMXBean mbean) throws IgniteCheckedException {
+    private <T> ObjectName registerClusterMetricsMBean(T mbean, Class<T> mbeanItf) throws IgniteCheckedException {
         if(U.IGNITE_MBEANS_DISABLED)
             return null;
 
-        ObjectName objectName;
+        ObjectName objName;
 
         try {
-            objectName = U.registerMBean(
+            objName = U.registerMBean(
                 cfg.getMBeanServer(),
                 cfg.getIgniteInstanceName(),
                 "Kernal",
                 mbean.getClass().getSimpleName(),
                 mbean,
-                ClusterMetricsMXBean.class);
+                mbeanItf);
 
             if (log.isDebugEnabled())
-                log.debug("Registered MBean: " + objectName);
+                log.debug("Registered MBean: " + objName);
 
-            return objectName;
+            return objName;
         }
         catch (JMException e) {
             throw new IgniteCheckedException("Failed to register MBean: " + mbean.getClass().getSimpleName(), e);
@@ -1733,8 +1736,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** @throws IgniteCheckedException If registration failed. */
     private void registerClusterMetricsMBeans() throws IgniteCheckedException {
-        locNodeMBean = registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery()));
-        allNodesMBean = registerClusterMetricsMBean(new ClusterMetricsMXBeanImpl(cluster()));
+        ClusterLocalNodeMetricsMXBean locNodeImpl = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery().localNode());
+        ClusterMetricsMXBean allNodesImpl = new ClusterMetricsMXBeanImpl(cluster());
+
+        locNodeMBean = registerClusterMetricsMBean(locNodeImpl, ClusterLocalNodeMetricsMXBean.class);
+        allNodesMBean = registerClusterMetricsMBean(allNodesImpl, ClusterMetricsMXBean.class);
     }
 
     /**
