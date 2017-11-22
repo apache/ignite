@@ -45,6 +45,9 @@ abstract class ZkDiscoveryEventData implements Serializable {
     /** */
     private transient Set<Integer> remainingAcks;
 
+    /** */
+    int flags;
+
     /**
      * @param evtType Event type.
      * @param topVer Topology version.
@@ -87,6 +90,10 @@ abstract class ZkDiscoveryEventData implements Serializable {
         remainingAcks.remove(node.internalId());
 
         return remainingAcks.isEmpty();
+    }
+
+    boolean flagSet(int flag) {
+        return (flags & flag) == flag;
     }
 
     long eventId() {

@@ -121,7 +121,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setMarshaller(new JdkMarshaller());
+        // cfg.setMarshaller(new JdkMarshaller());
 
         cfg.setClientMode(client);
 
@@ -609,6 +609,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             node.compute().broadcast(new DummyCallable(null));
 
         awaitPartitionMapExchange();
+
+        waitForEventsAcks(ignite(0));
     }
 
     /**

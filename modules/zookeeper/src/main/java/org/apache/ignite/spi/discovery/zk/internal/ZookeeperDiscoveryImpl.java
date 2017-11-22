@@ -232,6 +232,7 @@ public class ZookeeperDiscoveryImpl {
         }
 
         try {
+            // TODO ZK: handle retries.
             zkClient.createIfNeeded(zkPaths.customEvtsDir + "/" + locNode.id() + '|', msgBytes, CreateMode.PERSISTENT_SEQUENTIAL);
         }
         catch (ZookeeperClientFailedException e) {
@@ -347,6 +348,7 @@ public class ZookeeperDiscoveryImpl {
     private void startJoin(byte[] joinDataBytes) throws InterruptedException {
         try {
             // TODO ZK: handle max size.
+            // TODO ZK: handle retries.
             String path = zkClient.createIfNeeded(zkPaths.joinDataDir + "/" + locNode.id() + "|",
                 joinDataBytes,
                 EPHEMERAL_SEQUENTIAL);
@@ -494,7 +496,7 @@ public class ZookeeperDiscoveryImpl {
         byte[] evtsData = zkClient.getData(zkPaths.evtsPath);
 
         if (evtsData.length > 0)
-            onEventsUpdate(evtsData);
+            processNewEvents(evtsData);
 
         crd = true;
 
@@ -511,13 +513,9 @@ public class ZookeeperDiscoveryImpl {
                 ZkDiscoveryEventData evtData = it.next();
 
                 evtData.remainingAcks(top.nodesByOrder.values());
-
-                if (evtData.allAcksReceived()) {
-                    processNodesAckEvent(evtData);
-
-                    it.remove();
-                }
             }
+
+            handleProcessedEvents();
         }
         else {
             if (log.isInfoEnabled())
@@ -586,15 +584,17 @@ public class ZookeeperDiscoveryImpl {
 
                     Iterator<ZkDiscoveryEventData> it = evtsData.evts.values().iterator();
 
+                    boolean processed = false;
+
                     while (it.hasNext()) {
                         ZkDiscoveryEventData evtData = it.next();
 
-                        if (evtData.onAckReceived(nodeInternalId, nodeData.lastProcEvt)) {
-                            processNodesAckEvent(evtData);
-
-                            it.remove();
-                        }
+                        if (evtData.onAckReceived(nodeInternalId, nodeData.lastProcEvt))
+                            processed = true;
                     }
+
+                    if (processed)
+                        handleProcessedEvents();
                 }
             }
             catch (Throwable e) {
@@ -647,18 +647,24 @@ public class ZookeeperDiscoveryImpl {
             }
         }
 
-        if (newEvts) {
-            long start = System.currentTimeMillis();
+        if (newEvts)
+            saveAndProcessNewEvents();
+    }
 
-            zkClient.setData(zkPaths.evtsPath, marsh.marshal(evtsData), -1);
+    /**
+     * @throws Exception If failed.
+     */
+    private void saveAndProcessNewEvents() throws Exception {
+        long start = System.currentTimeMillis();
 
-            long time = System.currentTimeMillis() - start;
+        zkClient.setData(zkPaths.evtsPath, marsh.marshal(evtsData), -1);
 
-            if (log.isInfoEnabled())
-                log.info("Discovery coordinator saved new topology events [topVer=" + evtsData.topVer + ", saveTime=" + time + ']');
+        long time = System.currentTimeMillis() - start;
 
-            onEventsUpdate(evtsData);
-        }
+        if (log.isInfoEnabled())
+            log.info("Discovery coordinator saved new topology events [topVer=" + evtsData.topVer + ", saveTime=" + time + ']');
+
+        processNewEvents(evtsData);
     }
 
     /**
@@ -877,7 +883,8 @@ public class ZookeeperDiscoveryImpl {
                             evtsData.evtIdGen,
                             evtsData.topVer,
                             sndNodeId,
-                            evtE.getValue());
+                            evtE.getValue(),
+                            false);
 
                         evtData.msg = msg;
 
@@ -899,16 +906,7 @@ public class ZookeeperDiscoveryImpl {
                 evtsData.procCustEvt = evtE.getKey();
             }
 
-            long start = System.currentTimeMillis();
-
-            zkClient.setData(zkPaths.evtsPath, marsh.marshal(evtsData), -1);
-
-            long time = System.currentTimeMillis() - start;
-
-            if (log.isInfoEnabled())
-                log.info("Discovery coordinator saved new topology events [topVer=" + evtsData.topVer + ", saveTime=" + time + ']');
-
-            onEventsUpdate(evtsData);
+            saveAndProcessNewEvents();
         }
     }
 
@@ -916,7 +914,7 @@ public class ZookeeperDiscoveryImpl {
      * @param data Marshalled events.
      * @throws Exception If failed.
      */
-    private void onEventsUpdate(byte[] data) throws Exception {
+    private void processNewEvents(byte[] data) throws Exception {
         if (data.length == 0)
             return;
 
@@ -924,7 +922,7 @@ public class ZookeeperDiscoveryImpl {
 
         ZkDiscoveryEventsData evtsData = unmarshal(data);
 
-        onEventsUpdate(evtsData);
+        processNewEvents(evtsData);
 
         this.evtsData = evtsData;
     }
@@ -937,7 +935,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onEventsUpdate(ZkDiscoveryEventsData evtsData) throws Exception {
+    private void processNewEvents(ZkDiscoveryEventsData evtsData) throws Exception {
         TreeMap<Long, ZkDiscoveryEventData> evts = evtsData.evts;
 
         boolean updateNodeInfo = false;
@@ -1002,6 +1000,9 @@ public class ZookeeperDiscoveryImpl {
                     case DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT: {
                         ZkDiscoveryCustomEventData evtData0 = (ZkDiscoveryCustomEventData)evtData;
 
+                        if (evtData0.ackEvent() && evtData0.topologyVersion() < locNode.order())
+                            break;
+
                         DiscoverySpiCustomMessage msg;
 
                         if (crd) {
@@ -1010,26 +1011,24 @@ public class ZookeeperDiscoveryImpl {
                             msg = evtData0.msg;
                         }
                         else {
-                            String path = zkPaths.customEventDataPath(evtData0.evtPath);
+                            String path = zkPaths.customEventDataPath(evtData0.ackEvent(),
+                                evtData0.evtPath);
 
                             msg = unmarshal(zkClient.getData(path));
+
+                            evtData0.msg = msg;
                         }
 
                         notifyCustomEvent(evtData0, msg);
+
+                        if (!evtData0.ackEvent())
+                            updateNodeInfo = true;
 
                         break;
                     }
 
                     default:
                         assert false : "Invalid event: " + evtData;
-                }
-
-                if (crd) {
-                    if (evtData.allAcksReceived()) {
-                        processNodesAckEvent(evtData);
-
-                        it.remove();
-                    }
                 }
             }
 
@@ -1043,10 +1042,90 @@ public class ZookeeperDiscoveryImpl {
             }
         }
 
-        if (!crd && updateNodeInfo) {
+        if (crd) {
+            handleProcessedEvents();
+        }
+        else if (updateNodeInfo) {
             assert locNodeZkPath != null;
 
             zkClient.setData(locNodeZkPath, marshal(locNodeInfo), -1);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void handleProcessedEvents() throws Exception {
+        Iterator<ZkDiscoveryEventData> it = this.evtsData.evts.values().iterator();
+
+        List<ZkDiscoveryCustomEventData> newEvts = null;
+
+        while (it.hasNext()) {
+            ZkDiscoveryEventData evtData = it.next();
+
+            if (evtData.allAcksReceived()) {
+                switch (evtData.eventType()) {
+                    case EventType.EVT_NODE_JOINED: {
+                        processNodesAckJoinEvent((ZkDiscoveryNodeJoinEventData)evtData);
+
+                        break;
+                    }
+
+                    case DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT: {
+                        DiscoverySpiCustomMessage ack = handleProcessedCustomEvent((ZkDiscoveryCustomEventData)evtData);
+
+                        if (ack != null) {
+                            evtsData.evtIdGen++;
+
+                            long evtId = evtsData.evtIdGen;
+
+                            byte[] ackBytes = marshal(ack);
+
+                            String evtChildPath = String.valueOf(evtId);
+
+                            zkClient.createIfNeeded(
+                                zkPaths.customEventDataPath(true, evtChildPath),
+                                ackBytes,
+                                CreateMode.PERSISTENT);
+
+                            ZkDiscoveryCustomEventData ackEvtData = new ZkDiscoveryCustomEventData(
+                                evtId,
+                                evtData.topologyVersion(), // Use topology version from original event.
+                                locNode.id(),
+                                evtChildPath,
+                                true);
+
+                            ackEvtData.msg = ack;
+
+                            if (newEvts == null)
+                                newEvts = new ArrayList<>();
+
+                            newEvts.add(ackEvtData);
+
+                            if (log.isInfoEnabled())
+                                log.info("Generated CUSTOM event [topVer=" + evtData.topologyVersion() + ", evt=" + ack + ']');
+                        }
+
+                        break;
+                    }
+
+                    case EventType.EVT_NODE_FAILED: {
+                        log.info("All nodes processed node fail [evtId=" + evtData.eventId() + ']');
+
+                        // Do not need cleanup.
+                        break;
+                    }
+                }
+
+                it.remove();
+            }
+        }
+
+        if (newEvts != null) {
+            for (int i = 0; i < newEvts.size(); i++)
+                evtsData.addEvent(top.nodesByOrder.values(), newEvts.get(i));
+
+            saveAndProcessNewEvents();
         }
     }
 
@@ -1161,47 +1240,22 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * @param evtData
-     * @throws Exception
-     */
-    private void processNodesAckEvent(ZkDiscoveryEventData evtData) throws Exception {
-        switch (evtData.eventType()) {
-            case EventType.EVT_NODE_JOINED: {
-                processNodesAckJoinEvent((ZkDiscoveryNodeJoinEventData)evtData);
-
-                break;
-            }
-
-            case DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT: {
-                processNodesAckCustomEvent((ZkDiscoveryCustomEventData)evtData);
-
-                break;
-            }
-
-            case EventType.EVT_NODE_FAILED: {
-                log.info("All nodes processed node fail [evtId=" + evtData.eventId() + ']');
-
-                // Do not need cleanup.
-                break;
-            }
-        }
-    }
-
-    /**
      * @param failedNode Failed node.
      */
     private void processEventAcksOnNodeFail(ZookeeperClusterNode failedNode) throws Exception {
+        boolean processed = false;
+
         for (Iterator<Map.Entry<Long, ZkDiscoveryEventData>> it = evtsData.evts.entrySet().iterator(); it.hasNext();) {
             Map.Entry<Long, ZkDiscoveryEventData> e = it.next();
 
             ZkDiscoveryEventData evtData = e.getValue();
 
-            if (evtData.onNodeFail(failedNode)) {
-                processNodesAckEvent(evtData);
-
-                it.remove();
-            }
+            if (evtData.onNodeFail(failedNode))
+                processed = true;
         }
+
+        if (processed)
+            handleProcessedEvents();
     }
 
     /**
@@ -1218,11 +1272,25 @@ public class ZookeeperDiscoveryImpl {
     /**
      * @param evtData Event data.
      * @throws Exception If failed.
+     * @return Ack message.
      */
-    private void processNodesAckCustomEvent(ZkDiscoveryCustomEventData evtData) throws Exception {
+    @Nullable private DiscoverySpiCustomMessage handleProcessedCustomEvent(ZkDiscoveryCustomEventData evtData)
+        throws Exception
+    {
         log.info("All nodes processed custom event [evtId=" + evtData.eventId() + ']');
 
-        zkClient.deleteIfExists(zkPaths.customEventDataPath(evtData.evtPath), -1);
+        if (!evtData.ackEvent()) {
+            zkClient.deleteIfExists(zkPaths.customEventDataPath(false, evtData.evtPath), -1);
+
+            assert evtData.msg != null || locNode.order() > evtData.topologyVersion() : evtData;
+
+            if (evtData.msg != null)
+                return evtData.msg.ackMessage();
+        }
+        else
+            zkClient.deleteIfExists(zkPaths.customEventDataPath(true, evtData.evtPath), -1);
+
+        return null;
     }
 
     /**
@@ -1352,7 +1420,7 @@ public class ZookeeperDiscoveryImpl {
 
                 if (path.equals(zkPaths.evtsPath)) {
                     if (!crd)
-                        onEventsUpdate(data);
+                        processNewEvents(data);
                 }
                 else
                     U.warn(log, "Data callback for unknown path: " + path);

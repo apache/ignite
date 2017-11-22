@@ -27,6 +27,9 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
  */
 class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /** */
+    private static final int CUSTOM_MSG_ACK_FLAG = 1;
+
+    /** */
     final UUID sndNodeId;
 
     /** */
@@ -41,7 +44,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
      * @param sndNodeId Sender node ID.
      * @param evtPath Event path.
      */
-    ZkDiscoveryCustomEventData(long evtId, long topVer, UUID sndNodeId, String evtPath) {
+    ZkDiscoveryCustomEventData(long evtId, long topVer, UUID sndNodeId, String evtPath, boolean ack) {
         super(evtId, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT, topVer);
 
         assert sndNodeId != null;
@@ -49,6 +52,13 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
 
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
+
+        if (ack)
+            flags |= CUSTOM_MSG_ACK_FLAG;
+    }
+
+    boolean ackEvent() {
+        return flagSet(CUSTOM_MSG_ACK_FLAG);
     }
 
     /** {@inheritDoc} */

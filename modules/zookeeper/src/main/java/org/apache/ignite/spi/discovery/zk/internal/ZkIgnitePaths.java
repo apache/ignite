@@ -33,6 +33,9 @@ class ZkIgnitePaths {
     private static final String CUSTOM_EVTS_DIR = "customEvts";
 
     /** */
+    private static final String CUSTOM_EVTS_ACKS_DIR = "customEvtsAcks";
+
+    /** */
     private static final String ALIVE_NODES_DIR = "alive";
 
     /** */
@@ -59,6 +62,9 @@ class ZkIgnitePaths {
     /** */
     final String customEvtsDir;
 
+    /** */
+    final String customEvtsAcksDir;
+
     /**
      * @param basePath Base directory.
      * @param clusterName Cluster name.
@@ -73,6 +79,7 @@ class ZkIgnitePaths {
         joinDataDir = zkPath(JOIN_DATA_DIR);
         evtsPath = zkPath(DISCO_EVENTS_PATH);
         customEvtsDir = zkPath(CUSTOM_EVTS_DIR);
+        customEvtsAcksDir = zkPath(CUSTOM_EVTS_ACKS_DIR);
     }
 
     /**
@@ -122,7 +129,7 @@ class ZkIgnitePaths {
         return evtsPath + "/joined-" + evtId;
     }
 
-    String customEventDataPath(String child) {
-        return customEvtsDir + "/" + child;
+    String customEventDataPath(boolean ack, String child) {
+        return ack ? customEvtsAcksDir : customEvtsDir + "/" + child;
     }
 }
