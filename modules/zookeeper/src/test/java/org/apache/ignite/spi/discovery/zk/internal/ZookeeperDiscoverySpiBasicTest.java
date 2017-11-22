@@ -231,6 +231,54 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testClientNodesStatus() throws Exception {
+        startGrid(0);
+
+        for (Ignite node : G.allGrids()) {
+            assertEquals(0, node.cluster().forClients().nodes().size());
+            assertEquals(1, node.cluster().forServers().nodes().size());
+        }
+
+        client = true;
+
+        startGrid(1);
+
+        for (Ignite node : G.allGrids()) {
+            assertEquals(1, node.cluster().forClients().nodes().size());
+            assertEquals(1, node.cluster().forServers().nodes().size());
+        }
+
+        client = false;
+
+        startGrid(2);
+
+        client = true;
+
+        startGrid(3);
+
+        for (Ignite node : G.allGrids()) {
+            assertEquals(2, node.cluster().forClients().nodes().size());
+            assertEquals(2, node.cluster().forServers().nodes().size());
+        }
+
+        stopGrid(1);
+
+        for (Ignite node : G.allGrids()) {
+            assertEquals(1, node.cluster().forClients().nodes().size());
+            assertEquals(2, node.cluster().forServers().nodes().size());
+        }
+
+        stopGrid(2);
+
+        for (Ignite node : G.allGrids()) {
+            assertEquals(1, node.cluster().forClients().nodes().size());
+            assertEquals(1, node.cluster().forServers().nodes().size());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testStopNode_1() throws Exception {
         startGrids(5);
 

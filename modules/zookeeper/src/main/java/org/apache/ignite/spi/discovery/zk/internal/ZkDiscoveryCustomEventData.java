@@ -63,6 +63,6 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "CustomEventData [topVer=" + topologyVersion() + ", sndNode=" + sndNodeId + ']';
+        return "ZkDiscoveryCustomEventData [topVer=" + topologyVersion() + ", evtId=" + eventId() + ", sndNode=" + sndNodeId + ']';
     }
 }

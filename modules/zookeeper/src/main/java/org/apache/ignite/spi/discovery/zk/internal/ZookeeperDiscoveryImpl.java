@@ -483,10 +483,10 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void onBecomeCoordinator(List<String> aliveNodes, int locInternalId) throws Exception {
-        byte[] evtsData = zkClient.getData(zkPaths.evtsPath);
+        byte[] evtsDataBytes = zkClient.getData(zkPaths.evtsPath);
 
-        if (evtsData.length > 0)
-            processNewEvents(evtsData);
+        if (evtsDataBytes.length > 0)
+            processNewEvents(evtsDataBytes);
 
         crd = true;
 
@@ -497,7 +497,7 @@ public class ZookeeperDiscoveryImpl {
             assert locNode.order() > 0 : locNode;
             assert this.evtsData != null;
 
-            Iterator<ZkDiscoveryEventData> it = this.evtsData.evts.values().iterator();
+            Iterator<ZkDiscoveryEventData> it = evtsData.evts.values().iterator();
 
             while (it.hasNext()) {
                 ZkDiscoveryEventData evtData = it.next();
@@ -914,11 +914,15 @@ public class ZookeeperDiscoveryImpl {
 
         assert !crd;
 
-        ZkDiscoveryEventsData evtsData = unmarshal(data);
+        ZkDiscoveryEventsData newEvtsData = unmarshal(data);
 
-        processNewEvents(evtsData);
+        // Need keep processed custom events since they contains message object.
+        if (evtsData != null)
+            newEvtsData.evts.putAll(evtsData.evts);
 
-        this.evtsData = evtsData;
+        processNewEvents(newEvtsData);
+
+        this.evtsData = newEvtsData;
     }
 
     /** */
