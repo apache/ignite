@@ -50,9 +50,6 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(CacheExchangeMergeTest.class);
 
-//        TODO enable this test after IGNITE-6753, now it takes too long
-//        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
-
         suite.addTestSuite(TxRollbackOnTimeoutTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
