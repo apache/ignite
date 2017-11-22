@@ -85,7 +85,6 @@
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-test</artifactId>
             <version>${curator.version}</version>
-            <scope>test</scope>
         </dependency>
         <!-- TODO ZK -->
 

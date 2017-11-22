@@ -101,6 +101,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
@@ -2220,6 +2221,12 @@ public class IgnitionEx {
             }
 
             initializeDataStorageConfiguration(myCfg);
+
+            ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+
+            zkSpi.setZkConnectionString(IgniteKernal.zkCluster.getConnectString());
+
+            myCfg.setDiscoverySpi(zkSpi);
 
             return myCfg;
         }

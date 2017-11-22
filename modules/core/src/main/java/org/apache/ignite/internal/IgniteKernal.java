@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import javax.management.JMException;
 import javax.management.ObjectName;
+import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.DataStorageMetrics;
@@ -263,6 +264,20 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
  * misspelling.
  */
 public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
+    /** */
+    public static TestingCluster zkCluster;
+
+    static {
+        zkCluster = new TestingCluster(1);
+
+        try {
+            zkCluster.start();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -833,7 +833,7 @@ public class ZookeeperDiscoveryImpl {
             -1);
 
         zkClient.deleteAll(zkPaths.customEvtsAcksDir,
-            zkClient.getChildren(zkPaths.customEvtsDir),
+            zkClient.getChildren(zkPaths.customEvtsAcksDir),
             -1);
     }
 

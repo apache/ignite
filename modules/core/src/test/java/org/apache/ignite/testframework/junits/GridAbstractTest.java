@@ -834,20 +834,6 @@ public abstract class GridAbstractTest extends TestCase {
         return startGrid(igniteInstanceName, optimize(getConfiguration(igniteInstanceName)), ctx);
     }
 
-    /** */
-    private static TestingCluster zkCluster;
-
-    static {
-        zkCluster = new TestingCluster(1);
-
-        try {
-            zkCluster.start();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     /**
      * Starts new grid with given name.
      *
@@ -862,12 +848,6 @@ public abstract class GridAbstractTest extends TestCase {
             startingIgniteInstanceName.set(igniteInstanceName);
 
             try {
-                ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
-
-                zkSpi.setZkConnectionString(zkCluster.getConnectString());
-
-                cfg.setDiscoverySpi(zkSpi);
-
                 Ignite node = IgnitionEx.start(cfg, ctx);
 
                 IgniteConfiguration nodeCfg = node.configuration();
