@@ -728,16 +728,13 @@ public class CacheMetricsImpl implements CacheMetrics {
             return true;
 
         try {
-            GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+            GridDhtTopologyFuture fut = cctx.shared().exchange().lastFinishedFuture();
 
-            if (fut.isDone())
-                return (fut.validateCache(cctx, false, read, null, null) == null);
+            return (fut != null && fut.validateCache(cctx, false, read, null, null) == null);
         }
         catch (Exception ignored) {
-            // No-op
+            return false;
         }
-
-        return true;
     }
 
     /** {@inheritDoc} */
