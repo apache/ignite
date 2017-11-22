@@ -17,6 +17,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\BinaryConfigurationTest.cs" Link="Binary\BinaryConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\BinaryDateTimeTest.cs" Link="Binary\BinaryDateTimeTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\JavaBinaryInteropTest.cs" Link="Binary\JavaBinaryInteropTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\AdvancedSerializationTest.cs" Link="Binary\Serializable\AdvancedSerializationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Aggregates.cs" Link="Cache\Linq\CacheLinqTest.Aggregates.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\Linq\CacheLinqTest.Base.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" Link="Cache\Linq\CacheLinqTest.CompiledQuery.cs" />
@@ -55,7 +56,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Binary\" />
+    <Folder Include="Binary\Serializable\" />
     <Folder Include="Cache\Linq\" />
     <Folder Include="Compute\" />
     <Folder Include="Config\" />
