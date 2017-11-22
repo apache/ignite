@@ -75,6 +75,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
+
 /**
  * Used when persistence enabled.
  */
@@ -168,8 +172,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @param store Store to save metadata.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean saveStoreMetadata(CacheDataStore store, Context ctx, boolean saveMeta,
-        boolean beforeDestroy) throws IgniteCheckedException {
+    private boolean saveStoreMetadata(
+        CacheDataStore store,
+        Context ctx,
+        boolean saveMeta,
+        boolean beforeDestroy
+    ) throws IgniteCheckedException {
         RowStore rowStore0 = store.rowStore();
 
         boolean needSnapshot = ctx != null && ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
@@ -332,9 +340,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                             wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId,
                                                 nextSnapshotTag + 1));
 
-                                        if (state == GridDhtPartitionState.OWNING)
-                                            addPartition(ctx.partitionStatMap(), metaPageAddr, metaIo, grpId, PageIdAllocator.INDEX_PARTITION,
-                                                    this.ctx.kernalContext().cache().context().pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION));
+                                        if (state == OWNING) {
+                                            addPartition(
+                                                ctx.partitionStatMap(),
+                                                metaPageAddr,
+                                                metaIo,
+                                                grpId,
+                                                PageIdAllocator.INDEX_PARTITION,
+                                                this.ctx.pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION));
+                                        }
                                     }
                                     finally {
                                         pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
@@ -347,12 +361,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 wasSaveToMeta = true;
                             }
 
-                            GridDhtPartitionMap partMap = grp.topology().localPartitionMap();
-
-                            if (partMap.containsKey(store.partId()) &&
-                                partMap.get(store.partId()) == GridDhtPartitionState.OWNING)
-                                addPartition(ctx.partitionStatMap(), partMetaPageAddr, io, grpId, store.partId(),
+                            if (state == OWNING) {
+                                addPartition(
+                                    ctx.partitionStatMap(),
+                                    partMetaPageAddr,
+                                    io,
+                                    grpId,
+                                    store.partId(),
                                     this.ctx.pageStore().pages(grpId, store.partId()));
+                            }
+                            else if (state == MOVING || state == RENTING) {
+                                if (ctx.partitionStatMap().forceSkipIndexPartition(grpId)) {
+                                    if (log.isInfoEnabled())
+                                        log.info("Will not include SQL indexes to snapshot because there is " +
+                                            "a partition not in " + OWNING + " state [grp=" + grp.cacheOrGroupName() +
+                                            ", partId=" + store.partId() + ", state=" + state + ']');
+                                }
+                            }
 
                             changed = true;
                         }
@@ -423,6 +448,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         assert PageIO.getPageId(metaPageAddr) != 0;
 
         int lastAllocatedPageCnt = io.getLastAllocatedPageCount(metaPageAddr);
+
         map.put(
             new GroupPartitionId(cacheId, partId),
             new PagesAllocationRange(lastAllocatedPageCnt, currAllocatedPageCnt));
