@@ -127,7 +127,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
          * @param id Cache id.
          * @param name Lock name.
          */
-        ReleasedMessage(int id, String name) {
+        private ReleasedMessage(int id, String name) {
             assert name != null;
 
             this.name = name;
@@ -592,7 +592,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
      */
     private static final class LocalSync implements Lock {
         /** */
-        private final ReentrantLock lock = new ReentrantLock(true);
+        private final ReentrantLock lock = new ReentrantLock();
 
         /** A number of threads in a local waiting queue. */
         private final AtomicLong threadCount = new AtomicLong();

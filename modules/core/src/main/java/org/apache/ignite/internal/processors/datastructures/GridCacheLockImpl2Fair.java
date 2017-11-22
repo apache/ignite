@@ -243,7 +243,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
          * @param threadId Thread id.
          * @param name Lock name.
          */
-        ReleasedThreadMessage(int id, long threadId, String name) {
+        private ReleasedThreadMessage(int id, long threadId, String name) {
             assert name != null;
 
             this.threadId = threadId;
