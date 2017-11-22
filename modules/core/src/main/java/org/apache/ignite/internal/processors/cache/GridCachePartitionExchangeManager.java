@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -2348,13 +2349,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (!cctx.kernalContext().clientNode()) {
                             assignsMap = new HashMap<>();
 
-                            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                            IgniteCacheSnapshotManager snp = cctx.snapshot();
+
+                            for (final CacheGroupContext grp : cctx.cache().cacheGroups()) {
                                 long delay = grp.config().getRebalanceDelay();
+
+                                boolean allowRebalance = snp.allowRebalance(grp);
 
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if (delay == 0 || forcePreload)
+                                if ((delay == 0 || forcePreload) && allowRebalance)
                                     assigns = grp.preloader().assign(exchId, exchFut);
 
                                 assignsMap.put(grp.groupId(), assigns);

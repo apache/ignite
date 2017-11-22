@@ -82,6 +82,13 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     /**
      *
      */
+    public boolean allowRebalance(CacheGroupContext grp) {
+        return true;
+    }
+
+    /**
+     *
+     */
     public void restoreState() throws IgniteCheckedException {
         // No-op.
     }
