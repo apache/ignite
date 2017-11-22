@@ -130,6 +130,8 @@ class ZkIgnitePaths {
     }
 
     String customEventDataPath(boolean ack, String child) {
-        return ack ? customEvtsAcksDir : customEvtsDir + "/" + child;
+        String baseDir = ack ? customEvtsAcksDir : customEvtsDir;
+
+        return baseDir + "/" + child;
     }
 }
