@@ -1272,7 +1272,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param exp {@code True} if expect that cache is started on node.
      */
     void checkCache(Ignite node, String cacheName, boolean exp) {
-        ((IgniteEx)node).context().state().publicApiActiveState(true); // call public API to wait for state transition
+        ((IgniteEx)node).context().state().publicApiActiveState(true);
 
         GridCacheAdapter cache = ((IgniteKernal)node).context().cache().internalCache(cacheName);
 
