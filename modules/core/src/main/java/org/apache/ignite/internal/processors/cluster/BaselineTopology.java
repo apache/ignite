@@ -48,6 +48,9 @@ public class BaselineTopology implements Serializable {
     /** Consistent ID comparator. */
     private static final Comparator<Object> CONSISTENT_ID_COMPARATOR = new Comparator<Object>() {
         @Override public int compare(Object o1, Object o2) {
+            if (o1 instanceof Comparable && o2 instanceof Comparable && o1.getClass().equals(o2.getClass()))
+                return ((Comparable)o1).compareTo(o2);
+
             return o1.toString().compareTo(o2.toString());
         }
     };
@@ -64,8 +67,8 @@ public class BaselineTopology implements Serializable {
     /** Consistent ID to compact ID mapping. */
     private final Map<Object, Short> consistentIdMapping;
 
-    /** */
-    private long branchingPointHash;
+    /** Branching point hash. */
+    private long branchingPntHash;
 
     /** */
     private final List<Long> branchingHist;
@@ -83,7 +86,7 @@ public class BaselineTopology implements Serializable {
         Set<Object> consistentIds = new TreeSet<>(CONSISTENT_ID_COMPARATOR);
 
         for (Object o : nodeMap.keySet()){
-            branchingPointHash += (long) o.hashCode();
+            branchingPntHash += (long)o.hashCode();
 
             consistentIds.add(o);
         }
@@ -98,7 +101,7 @@ public class BaselineTopology implements Serializable {
 
         branchingHist = new ArrayList<>();
 
-        branchingHist.add(branchingPointHash);
+        branchingHist.add(branchingPntHash);
     }
 
     /**
@@ -155,7 +158,7 @@ public class BaselineTopology implements Serializable {
      * @return Activation hash.
      */
     public long branchingPointHash() {
-        return branchingPointHash;
+        return branchingPntHash;
     }
 
     /**
@@ -249,9 +252,9 @@ public class BaselineTopology implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        BaselineTopology topology = (BaselineTopology)o;
+        BaselineTopology top = (BaselineTopology)o;
 
-        return nodeMap != null ? nodeMap.keySet().equals(topology.nodeMap.keySet()) : topology.nodeMap == null;
+        return nodeMap != null ? nodeMap.keySet().equals(top.nodeMap.keySet()) : top.nodeMap == null;
     }
 
     /** {@inheritDoc} */
@@ -296,7 +299,7 @@ public class BaselineTopology implements Serializable {
      * @return {@code True} if current BaselineTopology is compatible (the same or a newer one) with passed in Blt.
      */
     boolean isCompatibleWith(BaselineTopology blt) {
-        return blt == null || (branchingPointHash == blt.branchingPointHash) || branchingHist.contains(blt.branchingPointHash);
+        return blt == null || (branchingPntHash == blt.branchingPntHash) || branchingHist.contains(blt.branchingPntHash);
     }
 
     /**
@@ -305,8 +308,8 @@ public class BaselineTopology implements Serializable {
     boolean updateHistory(Collection<BaselineNode> nodes) {
         long newTopHash = calculateTopologyHash(nodes);
 
-        if (branchingPointHash != newTopHash) {
-            branchingPointHash = newTopHash;
+        if (branchingPntHash != newTopHash) {
+            branchingPntHash = newTopHash;
 
             branchingHist.add(newTopHash);
 
@@ -323,13 +326,14 @@ public class BaselineTopology implements Serializable {
         long res = 0;
 
         for (BaselineNode node : nodes)
-            res += (long) node.consistentId().hashCode();
+            res += (long)node.consistentId().hashCode();
 
         return res;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "BaselineTopology[id=" + id + ", branchingHash=" + branchingPointHash + ", baselineNodes=" + nodeMap.keySet() + "]";
+        return "BaselineTopology [id=" + id + ", branchingHash=" + branchingPntHash +
+            ", baselineNodes=" + nodeMap.keySet() + ']';
     }
 }
