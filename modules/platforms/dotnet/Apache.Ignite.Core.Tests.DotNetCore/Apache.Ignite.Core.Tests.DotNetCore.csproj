@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <Compile Include="..\Apache.Ignite.Core.Tests\AssertExtensions.cs" Link="Common\AssertExtensions.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\BinaryDateTimeTest.cs" Link="Binary\BinaryDateTimeTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\JavaBinaryInteropTest.cs" Link="Binary\JavaBinaryInteropTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Aggregates.cs" Link="Cache\Linq\CacheLinqTest.Aggregates.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\Linq\CacheLinqTest.Base.cs" />
