@@ -69,7 +69,7 @@ import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
  */
 public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
-    private TestingCluster zkCluster;
+    private static TestingCluster zkCluster;
 
     /** */
     private static final boolean USE_TEST_CLUSTER = true;
@@ -179,6 +179,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        if (USE_TEST_CLUSTER) {
+            zkCluster = new TestingCluster(3);
+            zkCluster.start();
+        }
+
         System.setProperty(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD, "1");
     }
 
@@ -186,23 +191,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD);
 
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        if (USE_TEST_CLUSTER) {
-            zkCluster = new TestingCluster(1);
-            zkCluster.start();
-        }
-
-        reset();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
         if (zkCluster != null) {
             try {
                 zkCluster.close();
@@ -214,6 +202,18 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             zkCluster = null;
         }
 
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        reset();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         try {

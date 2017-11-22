@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
+import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -96,6 +97,7 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -831,6 +833,21 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String igniteInstanceName, GridSpringResourceContext ctx) throws Exception {
         return startGrid(igniteInstanceName, optimize(getConfiguration(igniteInstanceName)), ctx);
     }
+
+    /** */
+    private static TestingCluster zkCluster;
+
+    static {
+        zkCluster = new TestingCluster(1);
+
+        try {
+            zkCluster.start();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Starts new grid with given name.
      *
@@ -845,12 +862,19 @@ public abstract class GridAbstractTest extends TestCase {
             startingIgniteInstanceName.set(igniteInstanceName);
 
             try {
+                ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+
+                zkSpi.setZkConnectionString(zkCluster.getConnectString());
+
+                cfg.setDiscoverySpi(zkSpi);
+
                 Ignite node = IgnitionEx.start(cfg, ctx);
 
                 IgniteConfiguration nodeCfg = node.configuration();
 
                 log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
                     + ", marshaller=" + nodeCfg.getMarshaller()
+                    + ", discovery=" + nodeCfg.getDiscoverySpi()
                     + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
                     + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
 

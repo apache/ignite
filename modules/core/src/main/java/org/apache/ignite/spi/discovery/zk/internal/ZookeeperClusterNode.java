@@ -34,6 +34,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 
 /**
@@ -70,6 +71,14 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
 
     /** */
     private boolean client;
+
+    /** Daemon node flag. */
+    @GridToStringExclude
+    private transient boolean daemon;
+
+    /** Daemon node initialization flag. */
+    @GridToStringExclude
+    private transient volatile boolean daemonInit;
 
     /**
      * @param id Node ID.
@@ -199,7 +208,13 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
-        return false;
+        if (!daemonInit) {
+            daemon = "true".equalsIgnoreCase((String)attribute(ATTR_DAEMON));
+
+            daemonInit = true;
+        }
+
+        return daemon;
     }
 
     /** {@inheritDoc} */

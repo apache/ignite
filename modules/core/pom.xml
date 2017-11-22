@@ -74,6 +74,21 @@
             <version>${jetbrains.annotations.version}</version>
         </dependency>
 
+        <!-- TODO ZK -->
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>${zookeeper.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-test</artifactId>
+            <version>${curator.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- TODO ZK -->
+
         <dependency>
             <groupId>mx4j</groupId>
             <artifactId>mx4j-tools</artifactId>

@@ -21,10 +21,12 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.JoiningNodesAware;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -51,43 +53,56 @@ import org.jetbrains.annotations.Nullable;
 @DiscoverySpiHistorySupport(true)
 public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, JoiningNodesAware {
     /** */
+    @GridToStringInclude
     private String zkConnectionString;
 
     /** */
+    @GridToStringInclude
     private int sesTimeout = 5000;
 
     /** */
+    @GridToStringInclude
     private String basePath = "/apacheIgnite";
 
     /** */
+    @GridToStringInclude
     private String clusterName = "default";
 
     /** */
+    @GridToStringExclude
     private DiscoverySpiListener lsnr;
 
     /** */
+    @GridToStringExclude
     private DiscoverySpiDataExchange exchange;
 
     /** */
+    @GridToStringExclude
     private DiscoverySpiNodeAuthenticator auth;
 
     /** */
+    @GridToStringExclude
     private DiscoveryMetricsProvider metricsProvider;
 
     /** */
+    @GridToStringExclude
     private ZookeeperDiscoveryImpl impl;
 
     /** */
+    @GridToStringExclude
     private Map<String, Object> locNodeAttrs;
 
     /** */
+    @GridToStringExclude
     private IgniteProductVersion locNodeVer;
 
     /** */
+    @GridToStringExclude
     private Serializable consistentId;
 
     /** */
     @LoggerResource
+    @GridToStringExclude
     private IgniteLogger log;
 
     public String getBasePath() {
@@ -289,5 +304,10 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             log.debug("Local node initialized: " + locNode);
 
         return locNode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ZookeeperDiscoverySpi.class, this);
     }
 }

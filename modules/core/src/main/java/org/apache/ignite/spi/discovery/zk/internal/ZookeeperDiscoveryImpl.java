@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import org.apache.curator.utils.PathUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -142,7 +141,7 @@ public class ZookeeperDiscoveryImpl {
         if (F.isEmpty(clusterName))
             throw new IllegalArgumentException("Cluster name is empty.");
 
-        PathUtils.validatePath(basePath);
+        ZkIgnitePaths.validatePath(basePath);
 
         zkPaths = new ZkIgnitePaths(basePath, clusterName);
 
