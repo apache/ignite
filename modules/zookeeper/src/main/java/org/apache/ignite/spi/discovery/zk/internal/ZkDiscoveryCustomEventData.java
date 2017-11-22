@@ -43,6 +43,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
      * @param topVer Topology version.
      * @param sndNodeId Sender node ID.
      * @param evtPath Event path.
+     * @param ack Acknowledge event flag.
      */
     ZkDiscoveryCustomEventData(long evtId, long topVer, UUID sndNodeId, String evtPath, boolean ack) {
         super(evtId, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT, topVer);
@@ -57,6 +58,9 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
             flags |= CUSTOM_MSG_ACK_FLAG;
     }
 
+    /**
+     * @return {@code True} for custom event ack message.
+     */
     boolean ackEvent() {
         return flagSet(CUSTOM_MSG_ACK_FLAG);
     }
