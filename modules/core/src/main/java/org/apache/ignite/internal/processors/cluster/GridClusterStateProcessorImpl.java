@@ -475,6 +475,12 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         return globalState;
     }
 
+    /** {@inheritDoc} */
+    @Override public DiscoveryDataClusterState pendingState(ChangeGlobalStateMessage stateMsg) {
+        return DiscoveryDataClusterState.createState(stateMsg.activate() || stateMsg.forceChangeBaselineTopology(),
+            stateMsg.baselineTopology());
+    }
+
     /**
      * @param msg State change message.
      * @return Local future for state change process.

@@ -73,6 +73,11 @@ public interface GridClusterStateProcessor extends GridProcessor {
     DiscoveryDataClusterState clusterState();
 
     /**
+     * @return Pending cluster state which will be used when state transition is finished.
+     */
+    DiscoveryDataClusterState pendingState(ChangeGlobalStateMessage stateMsg);
+
+    /**
      *
      */
     void cacheProcessorStarted();
@@ -103,7 +108,7 @@ public interface GridClusterStateProcessor extends GridProcessor {
 
     /**
      * @param blt New baseline topology.
-     * @param prevBltHistItem
+     * @param prevBltHistItem Previous baseline history item.
      */
     void onBaselineTopologyChanged(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException;
 }
