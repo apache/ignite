@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Text;
     using System.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -35,6 +36,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private const string ClasspathPrefix = "-Djava.class.path=";
 
         /** Classpath separator. */
+        [SuppressMessage("Microsoft.Performance", "CA1802:UseLiteralsWhereAppropriate")]
         private static readonly string ClasspathSeparator = Os.IsWindows ? ";" : ":";
 
         /// <summary>

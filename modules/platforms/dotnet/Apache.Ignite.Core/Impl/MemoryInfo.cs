@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl
 {
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
@@ -78,6 +79,7 @@ namespace Apache.Ignite.Core.Impl
             /// </summary>
             [return: MarshalAs(UnmanagedType.Bool)]
             [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             private static extern bool GlobalMemoryStatusEx([In, Out] ref MEMORYSTATUSEX lpBuffer);
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
