@@ -803,7 +803,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      *
      */
     public void startRebalance(long delay){
-        rebalanceStartTime.addAndGet(delay + U.currentTimeMillis());
+        rebalanceStartTime.set(delay + U.currentTimeMillis());
     }
 
     /** {@inheritDoc} */
