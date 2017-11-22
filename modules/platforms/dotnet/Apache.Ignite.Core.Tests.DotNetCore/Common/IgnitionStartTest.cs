@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
             Assert.AreEqual(ignite, Ignition.GetIgnite());
 
             // Second node.
-            var ignite2 = Start();
+            var ignite2 = Start("ignite-2");
             Assert.AreEqual(2, Ignition.GetAll().Count);
 
             // Stop node.

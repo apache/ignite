@@ -55,13 +55,14 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
-        public static IgniteConfiguration GetTestConfiguration()
+        public static IgniteConfiguration GetTestConfiguration(string name = null)
         {
             return new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
-                JvmOptions = JvmDebugOpts
+                JvmOptions = JvmDebugOpts,
+                IgniteInstanceName = name
             };
         }
     }

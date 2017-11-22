@@ -36,9 +36,9 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         /// <summary>
         /// Starts Ignite.
         /// </summary>
-        public IIgnite Start()
+        public IIgnite Start(string name = null)
         {
-            return Ignition.Start(TestUtils.GetTestConfiguration());
+            return Ignition.Start(TestUtils.GetTestConfiguration(name));
         }
     }
 }
