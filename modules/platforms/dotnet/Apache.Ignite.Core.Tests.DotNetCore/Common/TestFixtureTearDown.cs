@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.DotNetCore.Common
+// ReSharper disable once CheckNamespace
+namespace Apache.Ignite.Core.Tests
 {
     using NUnit.Framework;
 

@@ -55,6 +55,9 @@ More info: https://apacheignite-net.readme.io/
         </dependencies>    
     </metadata>
     <files>
+	    <file src="bin\$configuration$\Apache.Ignite.Linq.dll" target="lib\net40" />
+		<file src="bin\$configuration$\Apache.Ignite.Linq.xml" target="lib\net40" />
+
         <!-- LINQPad samples -->
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />
     </files>

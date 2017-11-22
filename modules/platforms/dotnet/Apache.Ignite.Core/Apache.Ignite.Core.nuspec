@@ -54,6 +54,10 @@ More info: https://apacheignite-net.readme.io/
         <file src="NuGet\Uninstall.ps1" target="tools" />
         <file src="NuGet\PostBuild.ps1" target="tools" />
 
+		<!-- Binaries -->
+        <file src="bin\$configuration$\Apache.Ignite.Core.dll" target="lib\net40" />
+		<file src="bin\$configuration$\Apache.Ignite.Core.xml" target="lib\net40" />
+		
         <!-- Include Apache.Ignite.exe -->
         <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe" target="lib\net40" />
         <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe.config" target="lib\net40" />

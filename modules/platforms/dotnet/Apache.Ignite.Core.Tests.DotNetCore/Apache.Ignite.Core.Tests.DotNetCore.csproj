@@ -10,17 +10,12 @@
     <ApplicationIcon />
 
     <OutputType>Exe</OutputType>
-
-    <SignAssembly>true</SignAssembly>
-
-    <DelaySign>false</DelaySign>
-
-    <AssemblyOriginatorKeyFile>Apache.Ignite.Core.Tests.DotNetCore.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\Apache.Ignite.Core.Tests\AssertExtensions.cs" Link="Common\AssertExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\JavaBinaryInteropTest.cs" Link="Binary\JavaBinaryInteropTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\CacheLinqTest.Base.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +26,7 @@
 
   <ItemGroup>
     <PackageReference Include="Apache.Ignite" Version="0.0.1-test" />
+    <PackageReference Include="Apache.Ignite.Linq" Version="0.0.1-test" />
     <PackageReference Include="Apache.Ignite.Schema" Version="0.0.1-test" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
     <PackageReference Include="NUnit" Version="3.8.1" />
