@@ -71,6 +71,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionState;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -313,7 +314,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testReconnectTransactionsStateNotChanged() throws Exception {
+    public void testReconnectTransactions() throws Exception {
         clientMode = true;
 
         IgniteEx client = startGrid(SRV_CNT);
@@ -377,6 +378,38 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
             tx0.commit();
         }
+    }
+
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+
+        return ccfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectTransactionsIncorrectState() throws Exception {
+        clientMode = true;
+
+        IgniteEx client = startGrid(SRV_CNT);
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(cacheConfiguration());
+
+        final IgniteTransactions txs = client.transactions();
+
+        final Transaction tx = txs.txStart(OPTIMISTIC, REPEATABLE_READ);
+
+        cache.put(1, 1);
+
+        reconnectClientNode(client, clientRouter(client), null);
+
+        //Assert fails here, tx state is ACTIVE
+        assertEquals(TransactionState.ROLLED_BACK, tx.state());
     }
 
     /**
