@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -86,6 +87,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -211,7 +213,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private IgniteThread segChkThread;
 
     /** Last logged topology. */
-    private final AtomicLong lastLoggedTop = new AtomicLong();
+    private final GridAtomicLong lastLoggedTop = new GridAtomicLong();
 
     /** Local node. */
     private ClusterNode locNode;
@@ -285,11 +287,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
-    /** */
-    private Object consistentId;
-
     /** Discovery spi registered flag. */
     private boolean registeredDiscoSpi;
+
+    /** Local node compatibility consistent ID. */
+    private Serializable consistentId;
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
@@ -1463,11 +1465,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Collection<ClusterNode> allNodes = discoCache.allNodes();
 
-        long hash = topologyHash(allNodes);
-
         // Prevent ack-ing topology for the same topology.
         // Can happen only during node startup.
-        if (throttle && lastLoggedTop.getAndSet(hash) == hash)
+        if (throttle && !lastLoggedTop.setIfGreater(topVer))
             return;
 
         int totalCpus = cpus(allNodes);
@@ -1488,8 +1488,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 (ctx.igniteInstanceName() == null ? "default" : ctx.igniteInstanceName()) + U.nl() +
                 ">>> Number of server nodes: " + srvNodes.size() + U.nl() +
                 ">>> Number of client nodes: " + clientNodes.size() + U.nl() +
-                (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "") +
-                ">>> Topology hash: 0x" + Long.toHexString(hash).toUpperCase() + U.nl();
+                (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "");
 
             dbg += ">>> Local: " +
                 locNode.id().toString().toUpperCase() + ", " +
@@ -1592,8 +1591,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         if (!locJoin.isDone())
-            locJoin.onDone(
-                new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
+            locJoin.onDone(new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
     }
 
     /** {@inheritDoc} */
@@ -1737,35 +1735,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             F.view(
                 F.viewReadOnly(ids, U.id2Node(ctx), p),
                 F.notNull());
-    }
-
-    /**
-     * Gets topology hash for given set of nodes.
-     *
-     * @param nodes Subset of grid nodes for hashing.
-     * @return Hash for given topology.
-     */
-    public long topologyHash(Iterable<? extends ClusterNode> nodes) {
-        assert nodes != null;
-
-        Iterator<? extends ClusterNode> iter = nodes.iterator();
-
-        if (!iter.hasNext())
-            return 0; // Special case.
-
-        List<String> uids = new ArrayList<>();
-
-        for (ClusterNode node : nodes)
-            uids.add(node.id().toString());
-
-        Collections.sort(uids);
-
-        CRC32 hash = new CRC32();
-
-        for (String uuid : uids)
-            hash.update(uuid.getBytes());
-
-        return hash.getValue();
     }
 
     /**
@@ -2052,20 +2021,39 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * @return Consistent ID.
+     * @deprecated Use PdsConsistentIdProcessor to get actual consistent ID
      */
-    public Object consistentId() {
-        if (consistentId == null) {
-            try {
-                inject();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to init consistent ID.", e);
-            }
-
-            consistentId = getSpi().consistentId();
-        }
+    @Deprecated
+    public Serializable consistentId() {
+        if (consistentId == null)
+            consistentId = getInjectedDiscoverySpi().consistentId();
 
         return consistentId;
+    }
+
+    /**
+     * Performs injection of discovery SPI if needed, then provides DiscoverySpi SPI.
+     * Manual injection is required because normal startup of SPI is done after processor started.
+     *
+     * @return Wrapped DiscoverySpi SPI.
+     */
+    private DiscoverySpi getInjectedDiscoverySpi() {
+        try {
+            inject();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to init consistent ID.", e);
+        }
+        return getSpi();
+    }
+
+    /**
+     * Sets TCP local node consistent ID. This setter is to be called before node init in SPI
+     *
+     * @param consistentId New value of consistent ID to be used in local node initialization
+     */
+    public void consistentId(final Serializable consistentId) {
+        this.consistentId = consistentId;
     }
 
     /** @return Topology version. */
