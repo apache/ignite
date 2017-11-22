@@ -23,7 +23,7 @@ import java.util.function.Function;
 
 /** Serializable TriFunction (A, B, C) -> R. */
 @FunctionalInterface
-public interface IgniteTriFunction<A,B,C,R> extends Serializable {
+public interface IgniteTriFunction<A, B, C, R> extends Serializable {
     /** */
     R apply(A a, B b, C c);
 

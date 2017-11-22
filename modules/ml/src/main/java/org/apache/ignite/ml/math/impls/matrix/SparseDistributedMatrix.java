@@ -20,7 +20,6 @@ package org.apache.ignite.ml.math.impls.matrix;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;

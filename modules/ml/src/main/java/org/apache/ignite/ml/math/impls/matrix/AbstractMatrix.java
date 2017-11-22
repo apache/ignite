@@ -332,7 +332,7 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Matrix assign(double val) {
         if (sto.isArrayBased())
-                Arrays.fill(sto.data(), val);
+            Arrays.fill(sto.data(), val);
         else {
             int rows = rowSize();
             int cols = columnSize();
@@ -717,7 +717,7 @@ public abstract class AbstractMatrix implements Matrix {
         Vector res = new DenseLocalOnHeapVector(columnSize());
 
         for (int i = 0; i < columnSize(); i++)
-            res.setX(i, getX(row,i));
+            res.setX(i, getX(row, i));
 
         return res;
     }
@@ -801,7 +801,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         Vector res = likeVector(rows);
 
-        Blas.gemv(1,this,vec,0,res);
+        Blas.gemv(1, this, vec, 0, res);
 
         return res;
     }
@@ -980,7 +980,6 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f) {
         setX(row, col, f.apply(row, col, getX(row, col)));
     }
-
 
     /**
      * Return max amount of columns in 2d array.

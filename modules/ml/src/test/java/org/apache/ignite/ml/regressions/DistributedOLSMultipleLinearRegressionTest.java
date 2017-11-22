@@ -31,7 +31,6 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Assert;
-import org.junit.Test;
 
 /**
  * Tests for {@link OLSMultipleLinearRegression}.

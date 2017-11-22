@@ -204,7 +204,8 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     }
 
     /** */
-    private ConcurrentHashMap<Integer, Double> getNewCosts(SparseDistributedMatrix points, List<Vector> newCenters, String cacheName) {
+    private ConcurrentHashMap<Integer, Double> getNewCosts(SparseDistributedMatrix points, List<Vector> newCenters,
+        String cacheName) {
         return distributedFold(cacheName,
             (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
                 ConcurrentHashMap<Integer, Double>,
@@ -222,7 +223,8 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     }
 
     /** */
-    private ConcurrentHashMap<Integer, Integer> weightCenters(UUID uid, List<Vector> distinctCenters, String cacheName) {
+    private ConcurrentHashMap<Integer, Integer> weightCenters(UUID uid, List<Vector> distinctCenters,
+        String cacheName) {
         return distributedFold(cacheName,
             (IgniteBiFunction<Cache.Entry<SparseMatrixKey, Map<Integer, Double>>,
                 ConcurrentHashMap<Integer, Integer>,
@@ -248,7 +250,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
             key -> key.dataStructureId().equals(uid),
             (map1, map2) -> MapUtil.mergeMaps(map1, map2, (integer, integer2) -> integer2 + integer,
                 ConcurrentHashMap::new),
-                ConcurrentHashMap::new);
+            ConcurrentHashMap::new);
     }
 
     /** */
