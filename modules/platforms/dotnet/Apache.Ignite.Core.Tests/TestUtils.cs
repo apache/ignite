@@ -67,7 +67,8 @@ namespace Apache.Ignite.Core.Tests
                 "-Xmx99m",
                 "-ea",
                 "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
-                "-DIGNITE_QUIET=true"
+                "-DIGNITE_QUIET=true",
+                "-Duser.timezone=UTC"
             };
 
         /** */

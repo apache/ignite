@@ -28,13 +28,17 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     internal static class TestUtils
     {
-        private static readonly IList<string> JvmDebugOpts =
+        /** */
+        private static readonly IList<string> JvmOpts =
             new List<string>
             {
-                "-Xdebug",
-                "-Xnoagent",
-                "-Djava.compiler=NONE",
-                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+                "-Duser.timezone=UTC"
+
+                // Uncomment to debug Java
+                //"-Xdebug",
+                //"-Xnoagent",
+                //"-Djava.compiler=NONE",
+                //"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
             };
 
         /// <summary>
@@ -61,7 +65,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
-                JvmOptions = JvmDebugOpts,
+                JvmOptions = JvmOpts,
                 IgniteInstanceName = name
             };
         }
