@@ -120,17 +120,20 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /**
      * @param cctx Context.
+     * @param discoCache Discovery data cache.
      * @param grpId Group ID.
      * @param parts Number of partitions in the group.
      * @param similarAffKey Key to find caches with similar affinity.
      */
     public GridClientPartitionTopology(
         GridCacheSharedContext<?, ?> cctx,
+        DiscoCache discoCache,
         int grpId,
         int parts,
         Object similarAffKey
     ) {
         this.cctx = cctx;
+        this.discoCache = discoCache;
         this.grpId = grpId;
         this.similarAffKey = similarAffKey;
         this.parts = parts;
