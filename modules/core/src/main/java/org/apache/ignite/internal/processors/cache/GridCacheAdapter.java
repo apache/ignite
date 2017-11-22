@@ -1943,6 +1943,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             }
 
                             if (!skipEntry) {
+                                // TODO There is a race between reading an entry and adding the one
                                 boolean isNewLocalEntry = this.map.getEntry(ctx, key) == null;
 
                                 entry = entryEx(key);
@@ -2155,6 +2156,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         ctx.evicts().touch(peekEx(key0), topVer);
                 }
 
+                // TODO Possible removing of an entry added by another thread
                 if (newLocalEntries != null) {
                     for (GridCacheEntryEx entry : newLocalEntries)
                         removeEntry(entry);
