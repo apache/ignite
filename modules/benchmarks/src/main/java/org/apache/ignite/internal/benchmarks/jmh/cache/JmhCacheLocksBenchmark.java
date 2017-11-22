@@ -59,6 +59,9 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     /** Number of nodes. */
     static final int MAX_NODES = 10;
 
+    /** Number threads per node. */
+    static final int THREADS_PER_NODE = 2;
+
     /** */
     static final Ignite[] nodes = new Ignite[MAX_NODES];
 
@@ -161,7 +164,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
      */
     public static void main(String[] args) throws Exception {
         final String simpleClsName = JmhCacheLocksBenchmark.class.getSimpleName();
-        final int threads = MAX_NODES;
+        final int threads = MAX_NODES* THREADS_PER_NODE;
         final boolean client = false;
         final CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
         final CacheWriteSynchronizationMode writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
