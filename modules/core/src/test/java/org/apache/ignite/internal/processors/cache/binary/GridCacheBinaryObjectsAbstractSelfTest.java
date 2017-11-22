@@ -512,14 +512,12 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testCustomArrays() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-3244");
-
         IgniteCache<Integer, TestObject[]> cache = jcache(0);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             TestObject[] arr = new TestObject[] {new TestObject(i)};
 
-            cache.put(0, arr);
+            cache.put(i, arr);
         }
 
 

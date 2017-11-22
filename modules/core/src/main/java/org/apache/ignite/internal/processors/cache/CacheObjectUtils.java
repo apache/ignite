@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -147,13 +148,19 @@ public class CacheObjectUtils {
      */
     private static Object[] unwrapBinariesInArrayIfNeeded(CacheObjectValueContext ctx, Object[] arr, boolean keepBinary,
         boolean cpy) {
-        if (BinaryUtils.knownArray(arr))
+        if (BinaryUtils.knownArray(arr) || arr.length == 0)
             return arr;
 
-        Object[] res = new Object[arr.length];
+        Object[] res = null;
 
-        for (int i = 0; i < arr.length; i++)
-            res[i] = unwrapBinary(ctx, arr[i], keepBinary, cpy);
+        for (int i = 0; i < arr.length; i++) {
+            Object tmp = unwrapBinary(ctx, arr[i], keepBinary, cpy);
+
+            if (res == null)
+                res = (Object[]) Array.newInstance(tmp.getClass(), arr.length);
+
+            res[i] = tmp;
+        }
 
         return res;
     }
