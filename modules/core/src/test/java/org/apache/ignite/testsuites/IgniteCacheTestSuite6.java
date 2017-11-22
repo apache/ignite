@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.IgniteOutOfMemoryPropagationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
@@ -26,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThread
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
-
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
@@ -42,6 +41,9 @@ public class IgniteCacheTestSuite6 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 6");
 
+        suite.addTestSuite(CachePartitionStateTest.class);
+
+        suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
         suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
         suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
         suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
@@ -55,6 +57,11 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
         suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
+
+        suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
+
+//        TODO enable this test after IGNITE-6753, now it takes too long
+//        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
 
         return suite;
     }
