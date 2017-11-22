@@ -23,9 +23,10 @@ import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,7 +41,6 @@ import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -50,8 +50,11 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
-import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.sortAddresses;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.splitAddresses;
 
 /**
  * API to transfer topology from Ignite cluster available by node-uri.
@@ -74,17 +77,6 @@ public class ClusterListener implements AutoCloseable {
 
     /** JSON object mapper. */
     private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
-
-    /** */
-    private static final IgniteClosure<GridClientNodeBean, UUID> NODE2ID = new IgniteClosure<GridClientNodeBean, UUID>() {
-        @Override public UUID apply(GridClientNodeBean n) {
-            return n.getNodeId();
-        }
-
-        @Override public String toString() {
-            return "Node bean to node ID transformer closure.";
-        }
-    };
 
     /** */
     private static final IgniteClosure<UUID, String> ID2ID8 = new IgniteClosure<UUID, String>() {
@@ -201,38 +193,73 @@ public class ClusterListener implements AutoCloseable {
         private Collection<UUID> nids;
 
         /** */
-        private String clusterVer;
+        private Map<UUID, String> addrs;
+
+        /** */
+        private Map<UUID, Boolean> clients;
+
+        /** */
+        private String clusterVerStr;
+
+        /** */
+        private IgniteProductVersion clusterVer;
+
+        /**
+         * Helper method to get attribute.
+         *
+         * @param attrs Map with attributes.
+         * @param name Attribute name.
+         * @return Attribute value.
+         */
+        private static <T> T attribute(Map<String, Object> attrs, String name) {
+            return (T)attrs.get(name);
+        }
 
         /**
          * @param nodes Nodes.
          */
         TopologySnapshot(Collection<GridClientNodeBean> nodes) {
-            nids = F.viewReadOnly(nodes, NODE2ID);
+            int sz = nodes.size();
 
-            Collection<T2<String, IgniteProductVersion>> vers = F.transform(nodes,
-                new IgniteClosure<GridClientNodeBean, T2<String, IgniteProductVersion>>() {
-                    @Override public T2<String, IgniteProductVersion> apply(GridClientNodeBean bean) {
-                        String ver = (String)bean.getAttributes().get(ATTR_BUILD_VER);
+            nids = new ArrayList<>(sz);
+            addrs = new HashMap<>(sz);
+            clients = new HashMap<>(sz);
 
-                        return new T2<>(ver, IgniteProductVersion.fromString(ver));
-                    }
-                });
+            for (GridClientNodeBean node : nodes) {
+                UUID nid = node.getNodeId();
 
-            T2<String, IgniteProductVersion> min = Collections.min(vers, new Comparator<T2<String, IgniteProductVersion>>() {
-                @SuppressWarnings("ConstantConditions")
-                @Override public int compare(T2<String, IgniteProductVersion> o1, T2<String, IgniteProductVersion> o2) {
-                    return o1.get2().compareTo(o2.get2());
+                nids.add(nid);
+
+                Map<String, Object> attrs = node.getAttributes();
+
+                Boolean client = attribute(attrs, ATTR_CLIENT_MODE);
+
+                clients.put(nid, client);
+
+                Collection<String> nodeAddrs = client
+                    ? splitAddresses((String)attribute(attrs, ATTR_IPS))
+                    : node.getTcpAddresses();
+
+                String firstIP = F.first(sortAddresses(nodeAddrs));
+
+                addrs.put(nid, firstIP);
+
+                String nodeVerStr = attribute(attrs, ATTR_BUILD_VER);
+
+                IgniteProductVersion nodeVer = IgniteProductVersion.fromString(nodeVerStr);
+
+                if (clusterVer == null || clusterVer.compareTo(nodeVer) > 0) {
+                    clusterVer = nodeVer;
+                    clusterVerStr = nodeVerStr;
                 }
-            });
-
-            clusterVer = min.get1();
+            }
         }
 
         /**
          * @return Cluster version.
          */
         public String getClusterVersion() {
-            return clusterVer;
+            return clusterVerStr;
         }
 
         /**
@@ -242,14 +269,40 @@ public class ClusterListener implements AutoCloseable {
             return nids;
         }
 
-        /**  */
+        /**
+         * @return Cluster nodes with IPs.
+         */
+        public Map<UUID, String> getAddresses() {
+            return addrs;
+        }
+
+        /**
+         * @return Cluster nodes with client mode flag.
+         */
+        public Map<UUID, Boolean> getClients() {
+            return clients;
+        }
+
+        /**
+         * @return Cluster version.
+         */
+        public IgniteProductVersion clusterVersion() {
+            return clusterVer;
+        }
+
+        /**
+         * @return Collection of short UUIDs.
+         */
         Collection<String> nid8() {
             return F.viewReadOnly(nids, ID2ID8);
         }
 
-        /**  */
-        boolean differentCluster(TopologySnapshot old) {
-            return old == null || F.isEmpty(old.nids) || Collections.disjoint(nids, old.nids);
+        /**
+         * @param prev Previous topology.
+         * @return {@code true} in case if current topology is a new cluster.
+         */
+        boolean differentCluster(TopologySnapshot prev) {
+            return prev == null || F.isEmpty(prev.nids) || Collections.disjoint(nids, prev.nids);
         }
     }
 

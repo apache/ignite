@@ -50,7 +50,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
- * API to translate REST requests to Ignite node.
+ * API to translate REST requests to Ignite cluster.
  */
 public class RestExecutor implements AutoCloseable {
     /** */
