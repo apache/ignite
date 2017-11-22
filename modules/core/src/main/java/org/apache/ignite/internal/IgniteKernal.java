@@ -1733,7 +1733,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** @throws IgniteCheckedException If registration failed. */
     private void registerClusterMetricsMBeans() throws IgniteCheckedException {
-        locNodeMBean = registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery().localNode()));
+        locNodeMBean = registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery()));
         allNodesMBean = registerClusterMetricsMBean(new ClusterMetricsMXBeanImpl(cluster()));
     }
 

@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterNodeFilter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 
@@ -297,7 +302,6 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
         return metrics().getTotalJobsExecutionTime();
     }
 
-
     /** {@inheritDoc} */
     @Override public long getTotalIdleTime() {
         return metrics().getTotalIdleTime();
@@ -351,6 +355,107 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return metrics().getTotalNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalServerNodes() {
+        return cluster.forServers().nodes().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalClientNodes() {
+        return cluster.forClients().nodes().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTopologyVersion() {
+        return cluster.ignite().cluster().topologyVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int countNodes(String name, String val, boolean srv, boolean client) {
+        ClusterGroup grp = clusterGroup(srv, client);
+
+        return F.size(grp.nodes(), new NodeAttributeFilter(name, val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Object, Integer> groupNodes(String name, boolean srv, boolean client) {
+        ClusterGroup grp = clusterGroup(srv, client);
+
+        return countNodesByAttribute(name, grp.nodes());
+    }
+
+    /**
+     * Map nodes by attribute value.
+     *
+     * @param nodes Node list.
+     * @param attr Attribute name.
+     * @return The number of nodes grouped by the node attribute value.
+     */
+    private Map<Object, Integer> countNodesByAttribute(String attr, Iterable<ClusterNode> nodes) {
+        Map<Object, Integer> attrGroups = new HashMap<>();
+
+        for (ClusterNode node : nodes) {
+            Object attrVal = node.attribute(attr);
+
+            if (attrVal != null) {
+                Integer cnt = attrGroups.get(attrVal);
+
+                if (cnt == null)
+                    attrGroups.put(attrVal, 1);
+                else
+                    attrGroups.put(attrVal, ++cnt);
+            }
+        }
+
+        return attrGroups;
+    }
+
+    /**
+     * Get specified cluster group.
+     *
+     * @param srv Include server nodes.
+     * @param client Include client nodes.
+     * @return Cluster group with specified nodes.
+     */
+    private ClusterGroup clusterGroup(boolean srv, boolean client) {
+        if (srv && client)
+            return cluster.forOthers(cluster.forDaemons());
+        else if (srv)
+            return cluster.forServers();
+        else if (client)
+            return cluster.forClients();
+        else
+            return cluster.forDaemons();
+    }
+
+    /** */
+    private static class NodeAttributeFilter implements PlatformClusterNodeFilter {
+        /** */
+        private static final long serialVersionUID = 1L;
+
+        /** */
+        private final String name;
+
+        /** */
+        private final String val;
+
+        /**
+         * @param name Attribute name.
+         * @param val Attribute value.
+         */
+        private NodeAttributeFilter(String name, String val) {
+            this.name = name;
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            Object nodeVal = node.attribute(name);
+
+            return nodeVal != null && nodeVal.toString().equals(val);
+        }
     }
 
     /** {@inheritDoc} */

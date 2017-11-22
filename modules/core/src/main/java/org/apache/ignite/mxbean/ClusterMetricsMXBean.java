@@ -17,6 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
+import java.util.Map;
 import org.apache.ignite.cluster.ClusterMetrics;
 
 /**
@@ -254,4 +255,63 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Total number of nodes.")
     public int getTotalNodes();
+
+    /**
+     * Get count of server nodes.
+     *
+     * @return Count of server nodes.
+     */
+    @MXBeanDescription("Server nodes count.")
+    public int getTotalServerNodes();
+
+    /**
+     * Get count of client nodes.
+     *
+     * @return Count of client nodes.
+     */
+    @MXBeanDescription("Client nodes count.")
+    public int getTotalClientNodes();
+
+    /**
+     * Get current topology version.
+     *
+     * @return Current topology version.
+     */
+    @MXBeanDescription("Current topology version.")
+    public long getTopologyVersion();
+
+    /**
+     * Get the number of nodes that have specified attribute.
+     *
+     * @param name Attribute name.
+     * @param val Attribute value.
+     * @param srv Include server nodes.
+     * @param client Include client nodes.
+     * @return The number of nodes that have specified attribute.
+     */
+    @MXBeanDescription("Get the number of nodes that have specified attribute.")
+    @MXBeanParametersNames(
+        {"name", "value", "server", "client"}
+    )
+    @MXBeanParametersDescriptions(
+        {"Attribute name.", "Attribute value.", "Include server nodes.", "Include client nodes."}
+    )
+    public int countNodes(String name, String val, boolean srv, boolean client);
+
+    /**
+     * Get the number of nodes grouped by the node attribute value.
+     *
+     * @param name Attribute name.
+     * @param srv Include server nodes.
+     * @param client Include client nodes.
+     * @return The number of nodes grouped by the node attribute value.
+     */
+    @MXBeanDescription("Get the number of nodes grouped by the node attribute.")
+    @MXBeanParametersNames(
+        {"name", "server", "client"}
+    )
+    @MXBeanParametersDescriptions(
+        {"Attribute name.", "Include server nodes.", "Include client nodes."}
+    )
+    public Map<Object, Integer> groupNodes(String name, boolean srv, boolean client);
 }

@@ -24,6 +24,7 @@ import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,8 +33,10 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.messaging.MessagingListenActor;
+import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -42,6 +45,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 
 /**
  * Grid node metrics self test.
@@ -359,6 +365,60 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         assert metrics0.getHeapMemoryUsed() > 0;
         assert metrics0.getHeapMemoryTotal() > 0;
+    }
+
+    /**
+     * Test JMX metrics.
+     *
+     * @throws Exception If failed.
+     */
+    public void testJmxClusterMetrics() throws Exception {
+        IgniteEx node = grid();
+
+        Ignition.setDaemon(true);
+
+        startGrid(3);
+
+        Ignition.setDaemon(false);
+
+        Ignite node1 = startGrid(1);
+
+        Ignition.setClientMode(true);
+
+        Ignite node2 = startGrid(2);
+
+        waitForDiscovery(node2, node1, node);
+
+        ClusterMetricsMXBean locMBean = new ClusterLocalNodeMetricsMXBeanImpl(node.context().discovery());
+
+        assertEquals(node.cluster().topologyVersion(), locMBean.getTopologyVersion());
+
+        assertEquals(1, locMBean.getTotalServerNodes());
+        assertEquals(0, locMBean.getTotalClientNodes());
+
+        assertEquals(1, locMBean.countNodes(ATTR_BUILD_VER, VER_STR, true, true));
+        assertEquals(1, locMBean.countNodes(ATTR_CLIENT_MODE, "false", true, true));
+        assertEquals(F.asMap(false, 1), locMBean.groupNodes(ATTR_CLIENT_MODE, true, true));
+
+        ClusterMetricsMXBean clusterMBean = new ClusterMetricsMXBeanImpl(node.cluster());
+
+        assertEquals(node.cluster().topologyVersion(), clusterMBean.getTopologyVersion());
+
+        assertEquals(2, clusterMBean.getTotalServerNodes());
+        assertEquals(1, clusterMBean.getTotalClientNodes());
+
+        assertEquals(3, clusterMBean.countNodes(ATTR_BUILD_VER, VER_STR, true, true));
+        assertEquals(2, clusterMBean.countNodes(ATTR_BUILD_VER, VER_STR, true, false));
+        assertEquals(1, clusterMBean.countNodes(ATTR_BUILD_VER, VER_STR, false, true));
+        assertEquals(1, clusterMBean.countNodes(ATTR_BUILD_VER, VER_STR, false, false));
+        assertEquals(2, clusterMBean.countNodes(ATTR_CLIENT_MODE, "false", true, true));
+        assertEquals(1, clusterMBean.countNodes(ATTR_CLIENT_MODE, "false", false, false));
+        assertEquals(1, clusterMBean.countNodes(ATTR_CLIENT_MODE, "true", true, true));
+
+        assertEquals(F.asMap(false, 2, true, 1), clusterMBean.groupNodes(ATTR_CLIENT_MODE, true, true));
+        assertEquals(F.asMap(false, 2), clusterMBean.groupNodes(ATTR_CLIENT_MODE, true, false));
+        assertEquals(F.asMap(false, 1), clusterMBean.groupNodes(ATTR_CLIENT_MODE, false, false));
+        assertEquals(F.asMap(true, 1), clusterMBean.groupNodes(ATTR_CLIENT_MODE, false, true));
     }
 
     /**
