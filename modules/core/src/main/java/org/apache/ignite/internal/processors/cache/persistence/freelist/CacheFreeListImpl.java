@@ -31,7 +31,16 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
  * FreeList implementation for cache.
  */
 public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
-    /** {@inheritDoc} */
+    /**
+     * @param cacheId Cache id.
+     * @param name Name.
+     * @param regionMetrics Region metrics.
+     * @param dataRegion Data region.
+     * @param reuseList Reuse list.
+     * @param wal Wal.
+     * @param metaPageId Meta page id.
+     * @param initNew Initialize new.
+     */
     public CacheFreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
