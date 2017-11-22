@@ -15,45 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.p2p.compute;
+package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 
 /**
+ * Index row filter accepting current entry.
  */
-public class ExternalCallable implements IgniteCallable {
-    /** */
-    @IgniteInstanceResource
-    Ignite ignite;
-
-    /** Logger. */
-    @LoggerResource
-    private IgniteLogger log;
-
-    /** */
-    private int param;
-
+public interface SchemaIndexCacheFilter {
     /**
+     * @param row Cache data row.
+     * @return {@code True} if row passes the filter.
+     * @throws IgniteCheckedException If failed.
      */
-    public ExternalCallable() {
-        // No-op.
-    }
-
-    /**
-     * @param param Param.
-     */
-    public ExternalCallable(int param) {
-        this.param = param;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object call() {
-        log.info("!!!!! I am job " + param + " on " + ignite.name());
-
-        return  42;
-    }
+    boolean apply(CacheDataRow row) throws IgniteCheckedException;
 }

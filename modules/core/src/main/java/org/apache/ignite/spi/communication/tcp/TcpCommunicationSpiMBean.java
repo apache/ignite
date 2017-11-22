@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.util.Map;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
@@ -145,6 +146,38 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Received bytes count.")
     public long getReceivedBytesCount();
+
+    /**
+     * Gets received messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    @MXBeanDescription("Received messages count grouped by message type.")
+    public Map<String, Long> getReceivedMessagesByType();
+
+    /**
+     * Gets received messages counts (grouped by node).
+     *
+     * @return Map containing sender nodes and respective counts.
+     */
+    @MXBeanDescription("Received messages count grouped by sender node.")
+    public Map<String, Long> getReceivedMessagesByNode();
+
+    /**
+     * Gets sent messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    @MXBeanDescription("Sent messages count grouped by message type.")
+    public Map<String, Long> getSentMessagesByType();
+
+    /**
+     * Gets sent messages counts (grouped by node).
+     *
+     * @return Map containing receiver nodes and respective counts.
+     */
+    @MXBeanDescription("Sent messages count grouped by receiver node.")
+    public Map<String, Long> getSentMessagesByNode();
 
     /**
      * Gets outbound messages queue size.

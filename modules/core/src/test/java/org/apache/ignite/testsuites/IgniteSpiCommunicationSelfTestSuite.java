@@ -39,6 +39,7 @@ import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAck
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationStatisticsTest;
 
 /**
  * Test suite for all communication SPIs.
@@ -80,6 +81,8 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpCommunicationSpiFaultyClientTest.class));
         suite.addTest(new TestSuite(TcpCommunicationSpiDropNodesTest.class));
         suite.addTest(new TestSuite(TcpCommunicationSpiHalfOpenedConnectionTest.class));
+
+        suite.addTest(new TestSuite(TcpCommunicationStatisticsTest.class));
 
         return suite;
     }

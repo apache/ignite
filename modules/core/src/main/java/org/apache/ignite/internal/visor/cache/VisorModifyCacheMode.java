@@ -15,45 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.p2p.compute;
+package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
+ * Enumeration of all supported cache modify modes.
  */
-public class ExternalCallable2 implements IgniteCallable {
-    /** */
-    @IgniteInstanceResource
-    Ignite ignite;
+public enum VisorModifyCacheMode {
+    /** Put new value into cache. */
+    PUT,
 
-    /** Logger. */
-    @LoggerResource
-    private IgniteLogger log;
+    /** Get value from cache. */
+    GET,
 
-    /** */
-    private int param;
+    /** Remove value from cache. */
+    REMOVE;
 
-    /**
-     */
-    public ExternalCallable2() {
-        // No-op.
-    }
+    /** Enumerated values. */
+    private static final VisorModifyCacheMode[] VALS = values();
 
     /**
-     * @param param Param.
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    public ExternalCallable2(int param) {
-        this.param = param;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object call() {
-        log.info("!!!!! I am job_2 " + param + " on " + ignite.name());
-
-        return 42;
+    @Nullable public static VisorModifyCacheMode fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }
