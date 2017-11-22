@@ -33,7 +33,10 @@ public class NodeOrderComparator implements Comparator<ClusterNode>, Serializabl
     /** */
     private static final Comparator<ClusterNode> INSTANCE = new NodeOrderComparator();
 
-    public static final Comparator<ClusterNode> getInstance() {
+    /**
+     * @return Node comparator.
+     */
+    public static Comparator<ClusterNode> getInstance() {
         return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_LEGACY_NODE_COMPARATOR) ?
             NodeOrderLegacyComparator.INSTANCE : INSTANCE;
     }
@@ -42,18 +45,17 @@ public class NodeOrderComparator implements Comparator<ClusterNode>, Serializabl
      * Private constructor. Don't create this class, use {@link #getInstance()}.
      */
     private NodeOrderComparator() {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public int compare(ClusterNode n1, ClusterNode n2) {
-        Object consId1 = n1.consistentId();
-        Object consId2 = n2.consistentId();
+        Object id1 = n1.consistentId();
+        Object id2 = n2.consistentId();
 
-        if (consId1 instanceof Comparable && consId2 instanceof Comparable) {
-            return ((Comparable)consId1).compareTo(consId2);
-        }
+        if (id1 instanceof Comparable && id2 instanceof Comparable && id1.getClass().equals(id2.getClass()))
+            return ((Comparable)id1).compareTo(id2);
 
-        return consId1.toString().compareTo(consId2.toString());
+        return id1.toString().compareTo(id2.toString());
     }
 }
