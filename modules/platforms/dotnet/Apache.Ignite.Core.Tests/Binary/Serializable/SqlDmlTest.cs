@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(SimpleSerializable))
                 {
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                    NameMapper = new BinaryBasicNameMapper { IsSimpleName = true }
                 }
             };
 

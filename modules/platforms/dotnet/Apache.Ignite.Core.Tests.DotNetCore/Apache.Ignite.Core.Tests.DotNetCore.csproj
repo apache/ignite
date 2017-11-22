@@ -18,6 +18,11 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\BinaryDateTimeTest.cs" Link="Binary\BinaryDateTimeTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\JavaBinaryInteropTest.cs" Link="Binary\JavaBinaryInteropTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\AdvancedSerializationTest.cs" Link="Binary\Serializable\AdvancedSerializationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\BasicSerializableObjectsTest.cs" Link="Binary\Serializable\BasicSerializableObjectsTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\CallbacksTest.cs" Link="Binary\Serializable\CallbacksTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\GenericCollectionsTest.cs" Link="Binary\Serializable\GenericCollectionsTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\ObjectReferenceTests.cs" Link="Binary\Serializable\ObjectReferenceTests.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\SqlDmlTest.cs" Link="Binary\Serializable\SqlDmlTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Aggregates.cs" Link="Cache\Linq\CacheLinqTest.Aggregates.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\Linq\CacheLinqTest.Base.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" Link="Cache\Linq\CacheLinqTest.CompiledQuery.cs" />
