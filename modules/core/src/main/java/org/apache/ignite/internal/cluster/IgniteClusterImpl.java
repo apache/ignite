@@ -344,6 +344,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            if (isInMemoryMode())
+                return;
+
             validateBeforeBaselineChange(baselineTop);
 
             ctx.state().changeGlobalState(true, baselineTop, true).get();
@@ -354,6 +357,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         finally {
             unguard();
         }
+    }
+
+    /** */
+    private boolean isInMemoryMode() {
+        return !CU.isPersistenceEnabled(cfg);
     }
 
     /**
@@ -420,6 +428,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            if (isInMemoryMode())
+                return;
+
             Collection<ClusterNode> top = topology(topVer);
 
             if (top == null)
