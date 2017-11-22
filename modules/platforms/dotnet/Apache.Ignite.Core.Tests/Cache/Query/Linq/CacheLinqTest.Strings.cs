@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             CheckFunc(x => x.Trim(), strings);
 
-#if !NETCOREAPP2_0
+#if !NETCOREAPP2_0  // Trim is not supported on .NET Core
             CheckFunc(x => x.Trim('P'), strings);
             var toTrim = new[] { 'P' };
             CheckFunc(x => x.Trim(toTrim), strings);
