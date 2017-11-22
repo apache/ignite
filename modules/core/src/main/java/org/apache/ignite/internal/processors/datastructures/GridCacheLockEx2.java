@@ -116,6 +116,7 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
         /** Release latch. */
         void release() {
             lock.lock();
+
             try {
                 count--;
 
@@ -133,6 +134,7 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
          */
         void fail(@Nullable IgniteException exception) {
             lock.lock();
+
             try {
                 count--;
 
@@ -146,12 +148,13 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
         }
 
         /**
-         * Waiting for release or faild.
+         * Waiting for release or failed.
          *
          * @throws IgniteException If release is impossible.
          */
         void awaitUninterruptibly() {
             lock.lock();
+
             try {
                 count++;
 
@@ -163,20 +166,23 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
             }
             finally {
                 exception = null;
+
                 lock.unlock();
             }
         }
 
         /**
-         * Waiting for release or faild.
+         * Waiting for release or failed.
          *
          * @throws IgniteException If release is impossible.
          * @throws InterruptedException If interrupted.
          */
         void await() throws InterruptedException {
             lock.lock();
+
             try {
                 count++;
+
                 if (count > 0)
                     condition.await();
 
@@ -185,12 +191,13 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
             }
             finally {
                 exception = null;
+
                 lock.unlock();
             }
         }
 
         /**
-         * Waiting for release or faild.
+         * Waiting for release or failed.
          *
          * @param timeout The maximum time to wait.
          * @param unit The time unit of the {@code timeout} argument.
@@ -203,6 +210,7 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
             assert unit != null;
 
             lock.lock();
+
             try {
                 boolean flag = true;
 
@@ -218,6 +226,7 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
             }
             finally {
                 exception = null;
+
                 lock.unlock();
             }
         }

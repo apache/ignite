@@ -62,6 +62,7 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
 
             if (tuple.nodeId.equals(id)) {
                 ownerSet.remove(tuple);
+
                 iter.remove();
             }
             else if (lockReleased && nextOwner == null)
