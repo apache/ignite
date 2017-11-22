@@ -22,7 +22,7 @@ import java.lang.reflect.Modifier
 import org.apache.ignite.cache.query.ScanQuery
 import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.spark.impl.IgniteSqlRDD
-import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.{Row, SQLContext, ignite}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{Metadata, StructField, StructType}
 import javax.cache.Cache
@@ -32,9 +32,10 @@ import org.apache.ignite.binary.BinaryObject
 import org.apache.ignite.lang.IgniteBiPredicate
 import org.apache.ignite.utils._
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
-import org.apache.spark.sql.ignite.IgniteExternalCatalog
 
 import scala.annotation.tailrec
+
+import org.apache.spark.sql.ignite._
 
 /**
   * Relation to provide data from regular key-value cache.
@@ -46,7 +47,7 @@ class IgniteCacheRelation[K, V](ic: IgniteContext, cache: String, keyClass: Clas
       * @return Schema of data stored in cache.
       */
     override def schema: StructType =
-        if (IgniteExternalCatalog.cacheExists(ic.ignite(), cache))
+        if (cacheExists(ic.ignite(), cache))
             IgniteCacheRelation.schema(keyClass, valueClass)
         else
             throw new IgniteException(s"Unknown cache '$cache'")
@@ -57,7 +58,7 @@ class IgniteCacheRelation[K, V](ic: IgniteContext, cache: String, keyClass: Clas
       * @return Apache Ignite RDD implementation.
       */
     override def buildScan(columns: Array[String], filters: Array[Filter]): IgniteSqlRDD[Row, Cache.Entry[K, V], K, V] =
-        if (IgniteExternalCatalog.cacheExists(ic.ignite(), cache)) {
+        if (cacheExists(ic.ignite(), cache)) {
             val qry = enclose(keepBinary) { keepBinary ⇒
                 val qry = new ScanQuery[K, V]()
 

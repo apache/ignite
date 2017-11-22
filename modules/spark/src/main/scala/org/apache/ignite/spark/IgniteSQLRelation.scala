@@ -26,14 +26,14 @@ import org.apache.ignite.spark.IgniteSQLRelation.sqlCacheName
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, SortOrder}
-import org.apache.spark.sql.ignite.IgniteExternalCatalog
-import org.apache.spark.sql.ignite.IgniteExternalCatalog.isKeyColumn
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SQLContext}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
+
+import org.apache.spark.sql.ignite._
 
 /**
   * Apache Ignite implementation of Spark BaseRelation with PrunedFilteredScan for Ignite SQL Tables
@@ -46,7 +46,7 @@ class IgniteSQLRelation[K, V](
       * @return Schema of Ignite SQL table.
       */
     override def schema: StructType =
-        IgniteExternalCatalog.igniteSQLTable(ic.ignite(), tableName)
+        igniteSQLTable(ic.ignite(), tableName)
             .map(IgniteSQLRelation.schema)
             .getOrElse(throw new IgniteException(s"Unknown table $tableName"))
 

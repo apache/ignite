@@ -26,10 +26,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 import org.apache.ignite.{IgniteException, Ignition}
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.ignite.IgniteExternalCatalog
 import org.apache.spark.sql.sources._
 
 import scala.collection.JavaConversions._
+
+import org.apache.spark.sql.ignite._
 
 /**
   * Apache Ignite relation provider.
@@ -97,7 +98,7 @@ class IgniteRelationProvider extends RelationProvider with DataSourceRegister {
                 () ⇒ {
                     IgniteContext.setIgniteHome(igniteHome)
 
-                    val cfg = IgniteExternalCatalog.ignite(params(GRID)).configuration()
+                    val cfg = ignite(params(GRID)).configuration()
 
                     cfg.setClientMode(true)
 

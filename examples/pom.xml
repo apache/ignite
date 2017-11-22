@@ -100,6 +100,7 @@
         <lgpl.folder>src/main/java</lgpl.folder>
         <java8.folder>src/main/java</java8.folder>
         <spark.folder>src/main/java</spark.folder>
+        <spark_2.11.folder>src/main/java</spark_2.11.folder>
         <spark.test.folder>src/test/java</spark.test.folder>
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <java8.test.folder>src/test/java</java8.test.folder>
@@ -113,6 +114,7 @@
             <properties>
                 <spark.folder>src/main/spark</spark.folder>
                 <spark.test.folder>src/test/spark</spark.test.folder>
+                <spark_2.11.folder>src/main/spark_2.11</spark_2.11.folder>
             </properties>
 
             <dependencies>

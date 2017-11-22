@@ -21,15 +21,4 @@ package org.apache.ignite
   */
 package object utils {
     def enclose[E, R](enclosed: E)(func: E => R): R = func(enclosed)
-
-    object closeAfter {
-        def apply[R <: AutoCloseable, T](r: R)(c: (R) ⇒ T) = {
-            try {
-                c(r)
-            }
-            finally {
-                r.close
-            }
-        }
-    }
 }

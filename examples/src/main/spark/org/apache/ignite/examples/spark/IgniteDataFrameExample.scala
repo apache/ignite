@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.scalar.examples.spark
+package org.apache.ignite.examples.spark
 
 import java.lang.{Long ⇒ JLong, String ⇒ JString}
 import java.util.Calendar
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.IgniteRelationProvider._
-import org.apache.ignite.spark.IgniteRelationProvider
-import org.apache.ignite.utils.closeAfter
 import org.apache.ignite.{Ignite, Ignition}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
+import org.apache.ignite.spark.IgniteRelationProvider._
 
 /**
   * Example application showing use-cases for Ignite implementation of Spark DataFrame API.
@@ -80,7 +78,7 @@ object IgniteDataFrameExample extends App {
         val igniteDF = spark.read
             .format(IGNITE) //Data source type.
             .option(TABLE, "person") //Table to read.
-            .option(IgniteRelationProvider.CONFIG_FILE, CONFIG) //Ignite config.
+            .option(CONFIG_FILE, CONFIG) //Ignite config.
             .load()
             .filter(col("id") >= 2) //Filter clause.
             .filter(col("name") like "%M%") //Another filter clause.
@@ -100,7 +98,7 @@ object IgniteDataFrameExample extends App {
         val df = spark.read
             .format(IGNITE) //Data source type.
             .option(TABLE, "person") //Table to read.
-            .option(IgniteRelationProvider.CONFIG_FILE, CONFIG) //Ignite config.
+            .option(CONFIG_FILE, CONFIG) //Ignite config.
             .load()
 
         //Registering DataFrame as Spark view.
@@ -123,7 +121,7 @@ object IgniteDataFrameExample extends App {
     def nativeSparkSqlFromCacheExample(implicit spark: SparkSession): Unit = {
         val df = spark.read
             .format(IGNITE) //Data source type.
-            .option(IgniteRelationProvider.CONFIG_FILE, CONFIG) //Ignite config.
+            .option(CONFIG_FILE, CONFIG) //Ignite config.
             .option(CACHE, CACHE_NAME) //Cache name.
             .option(KEY_CLASS, "java.lang.Long") //Class of keys in cache.
             .option(VALUE_CLASS, "java.lang.String") //Class of value in cache.
@@ -152,7 +150,7 @@ object IgniteDataFrameExample extends App {
     def nativeSparkSqlFromCacheExample2(implicit spark: SparkSession): Unit = {
         val df = spark.read
             .format(IGNITE) //Data source type.
-            .option(IgniteRelationProvider.CONFIG_FILE, CONFIG) //Ignite config.
+            .option(CONFIG_FILE, CONFIG) //Ignite config.
             .option(CACHE, "testCache2") //Cache name.
             .option(KEY_CLASS, "java.lang.Long") //Class of keys in cache.
             .option(VALUE_CLASS, classOf[Person].getName) //Class of value in cache.

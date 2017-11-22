@@ -26,6 +26,5 @@ class IgniteDataFrameSuite extends Suites (
     new IgniteDataFrameSchemaSpec,
     new IgniteSQLDataFrameSpec,
     new IgniteCacheDataFrameSpec,
-    new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec
+    new IgniteDataFrameWrongConfigSpec
 )
