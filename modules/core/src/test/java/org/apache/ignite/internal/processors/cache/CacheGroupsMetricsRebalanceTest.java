@@ -283,7 +283,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     public void testRebalanceDelay() throws Exception {
         Ignite ig1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ig1.cache(CACHE3);
+        final IgniteCache<Object, Object> cache = ig1.cache(CACHE3);
 
         for (int i = 0; i < 10000; i++)
             cache.put(i, CACHE3 + "-" + i);
