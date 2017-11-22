@@ -703,9 +703,11 @@ public class GridMapQueryExecutor {
                     sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
 
                     qryIdx++;
+                }
 
-                    if (!lazy) // All request results are in memory in result set now, so it's ok to release partitions.
-                        releaseReservations();
+                // All request results are in the memory in result set already, so it's ok to release partitions.
+                if (!lazy) {
+                    releaseReservations();
                 }
             }
             catch (Throwable e){
@@ -972,12 +974,15 @@ public class GridMapQueryExecutor {
         boolean last = res.fetchNextPage(rows, pageSize);
 
         if (last) {
-            releaseReservations();
-
             res.close();
 
-            if (qr.isAllClosed())
+            if (qr.isAllClosed()) {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
+
+                // Release reservations only if the last page fetched, all requests are closed and this is a lazy worker
+                if (MapQueryLazyWorker.currentWorker() != null)
+                    releaseReservations();
+            }
         }
 
         try {
