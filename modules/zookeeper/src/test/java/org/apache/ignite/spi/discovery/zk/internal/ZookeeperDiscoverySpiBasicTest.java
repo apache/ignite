@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.zk;
+package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,6 +50,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClient;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -476,6 +478,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         List<ZkTestClientCnxnSocketNIO> blockedC = new ArrayList<>();
 
+        final List<String> failedZkNodes = new ArrayList<>(failCnt);
+
         for (int i = initNodes; i < initNodes + startNodes; i++) {
             ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(i));
 
@@ -489,6 +493,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 c.closeSocket(true);
 
                 blockedC.add(c);
+
+                failedZkNodes.add((String)GridTestUtils.getFieldValue(impl, "locNodeZkPath"));
             }
             else {
                 expEvts[expEvtCnt] = joinEvent(initNodes + expEvtCnt + 1);
@@ -497,7 +503,32 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
         }
 
-        Thread.sleep(5000);
+        final ZookeeperClient zkClient = new ZookeeperClient(log, zkCluster.getConnectString(), 10_000, null);
+
+        try {
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        List<String> c = zkClient.getChildren("/apacheIgnite/default/alive");
+
+                        for (String failedZkNode : failedZkNodes) {
+                            if (c.contains(failedZkNode))
+                                return false;
+                        }
+
+                        return true;
+                    }
+                    catch (Exception e) {
+                        fail();
+
+                        return true;
+                    }
+                }
+            }, 10_000));
+        }
+        finally {
+            zkClient.close();
+        }
 
         c0.allowConnect();
 

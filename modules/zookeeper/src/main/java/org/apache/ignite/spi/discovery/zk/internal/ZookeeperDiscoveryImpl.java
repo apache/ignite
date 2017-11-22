@@ -322,20 +322,10 @@ public class ZookeeperDiscoveryImpl {
             dirs.add(zkPaths.evtsPath);
             dirs.add(zkPaths.joinDataDir);
             dirs.add(zkPaths.customEvtsDir);
+            dirs.add(zkPaths.customEvtsAcksDir);
             dirs.add(zkPaths.aliveNodesDir);
 
             zkClient.createAllIfNeeded(dirs, PERSISTENT);
-//            zkClient.createIfNeeded(zkPaths.basePath, null, PERSISTENT);
-//
-//            zkClient.createIfNeeded(zkPaths.clusterDir, null, PERSISTENT);
-//
-//            zkClient.createIfNeeded(zkPaths.evtsPath, null, PERSISTENT);
-//
-//            zkClient.createIfNeeded(zkPaths.joinDataDir, null, PERSISTENT);
-//
-//            zkClient.createIfNeeded(zkPaths.customEvtsDir, null, PERSISTENT);
-//
-//            zkClient.createIfNeeded(zkPaths.aliveNodesDir, null, PERSISTENT);
         }
         catch (ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
@@ -819,6 +809,10 @@ public class ZookeeperDiscoveryImpl {
         zkClient.deleteAll(zkPaths.evtsPath, evtChildren, -1);
 
         zkClient.deleteAll(zkPaths.customEvtsDir,
+            zkClient.getChildren(zkPaths.customEvtsDir),
+            -1);
+
+        zkClient.deleteAll(zkPaths.customEvtsAcksDir,
             zkClient.getChildren(zkPaths.customEvtsDir),
             -1);
     }
