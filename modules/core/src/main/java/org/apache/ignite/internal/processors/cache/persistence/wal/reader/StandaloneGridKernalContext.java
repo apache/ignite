@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.File;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
@@ -393,7 +394,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public GridDiscoveryManager discovery() {
         return new GridDiscoveryManager(StandaloneGridKernalContext.this) {
-            @Override public Object consistentId() {
+            @Override public Serializable consistentId() {
                 return ""; // some non null value is required
             }
         };
