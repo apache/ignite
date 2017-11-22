@@ -163,6 +163,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual("Value was either too large or too small for a UInt32.", ex.Message);
         }
 
+#if !NETCOREAPP2_0  // Console redirect issues on .NET Core
         /// <summary>
         /// Tests the log warning.
         /// </summary>
@@ -180,6 +181,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             Assert.IsTrue(_outSb.ToString().Contains(expected));
         }
+#endif
 
         /// <summary>
         /// Serializable with Java-compatible fields.
