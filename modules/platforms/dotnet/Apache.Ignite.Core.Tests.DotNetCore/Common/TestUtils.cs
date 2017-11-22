@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
 
@@ -68,6 +69,25 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = JvmOpts,
                 IgniteInstanceName = name
             };
+        }
+
+        /// <summary>
+        /// Serializes and deserializes back an object.
+        /// </summary>
+        public static T SerializeDeserialize<T>(T obj)
+        {
+            var marshType = typeof(IIgnite).Assembly.GetType("Apache.Ignite.Core.Impl.Binary.Marshaller");
+            var marsh = Activator.CreateInstance(marshType, new object[] { null, null });
+            marshType.GetProperty("CompactFooter").SetValue(marsh, false);
+            
+            var bytes = marshType.GetMethod("Marshal").MakeGenericMethod(typeof(object))
+                .Invoke(marsh, new object[] { obj });
+
+            var res = marshType.GetMethods().Single(mi =>
+                    mi.Name == "Unmarshal" && mi.GetParameters().First().ParameterType == typeof(byte[]))
+                .MakeGenericMethod(typeof(object)).Invoke(marsh, new[] {bytes, 0});
+
+            return (T) res;
         }
     }
 }
