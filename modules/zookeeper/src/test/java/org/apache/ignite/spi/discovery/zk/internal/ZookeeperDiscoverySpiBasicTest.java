@@ -263,12 +263,16 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
+        waitForTopology(3);
+
         for (Ignite node : G.allGrids()) {
             assertEquals(1, node.cluster().forClients().nodes().size());
             assertEquals(2, node.cluster().forServers().nodes().size());
         }
 
         stopGrid(2);
+
+        waitForTopology(2);
 
         for (Ignite node : G.allGrids()) {
             assertEquals(1, node.cluster().forClients().nodes().size());
