@@ -33,6 +33,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.common.CassandraHelper;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
+import org.apache.ignite.cache.store.cassandra.common.TypeHandler;
+import org.apache.ignite.cache.store.cassandra.common.TypeHandlerHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 import org.w3c.dom.Element;
@@ -55,11 +57,18 @@ public abstract class PersistenceSettings implements Serializable {
     /** Xml attribute specifying java class of the object to be persisted. */
     private static final String CLASS_ATTR = "class";
 
+    /** Xml attribute specifying handler java class to use. */
+    private static final String HANDLER_CLASS_ATTR = "handlerClass";
+
     /** Persistence strategy to use. */
     private PersistenceStrategy stgy;
 
     /** Java class of the object to be persisted. */
     private Class javaCls;
+    /**
+     * Type handler for own data type.
+     */
+    private TypeHandler typeHandler;
 
     /** Cassandra table column name where object should be persisted in
      *  case of using BLOB or PRIMITIVE persistence strategy. */
@@ -119,9 +128,16 @@ public abstract class PersistenceSettings implements Serializable {
             throw new IllegalArgumentException("Incorrect persistence strategy specified: " + el.getAttribute(STRATEGY_ATTR));
         }
 
-        if (!el.hasAttribute(CLASS_ATTR) && PersistenceStrategy.BLOB != stgy) {
+        if (el.hasAttribute(HANDLER_CLASS_ATTR) && PersistenceStrategy.PRIMITIVE == stgy) {
+            typeHandler = TypeHandlerHelper.getInstanceFromClassName(el.getAttribute(HANDLER_CLASS_ATTR));
+            if(typeHandler != null) {
+                javaCls = typeHandler.getClazz();
+            }
+        }
+
+        if (!el.hasAttribute(CLASS_ATTR) && PersistenceStrategy.BLOB != stgy && typeHandler == null) {
             throw new IllegalArgumentException("DOM element representing key/value persistence object should have '" +
-                CLASS_ATTR + "' attribute or have BLOB persistence strategy");
+                CLASS_ATTR + "' attribute or have BLOB persistence strategy or handler for PRIMITIVE persistence strategy");
         }
 
         try {
@@ -139,7 +155,8 @@ public abstract class PersistenceSettings implements Serializable {
         }
 
         if (PersistenceStrategy.PRIMITIVE == stgy &&
-            PropertyMappingHelper.getCassandraType(javaCls) == null) {
+            PropertyMappingHelper.getCassandraType(javaCls) == null &&
+            typeHandler == null) {
             throw new IllegalArgumentException("Current implementation doesn't support persisting '" +
                 javaCls.getName() + "' object using PRIMITIVE strategy");
         }
@@ -194,6 +211,15 @@ public abstract class PersistenceSettings implements Serializable {
      */
     public Class getJavaClass() {
         return javaCls;
+    }
+
+    /**
+     * Returns type handler of the object to be persisted.
+     *
+     * @return type handler.
+     */
+    public TypeHandler getTypeHandler() {
+        return typeHandler;
     }
 
     /**

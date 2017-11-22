@@ -34,6 +34,9 @@ public class DDLGeneratorTest {
         "org/apache/ignite/tests/persistence/pojo/persistence-settings-4.xml",
         "org/apache/ignite/tests/persistence/pojo/persistence-settings-5.xml",
         "org/apache/ignite/tests/persistence/pojo/persistence-settings-6.xml",
+        "org/apache/ignite/tests/persistence/pojo/persistence-settings-7-handler.xml",
+        "org/apache/ignite/tests/persistence/pojo/persistence-settings-8-handler.xml",
+        "org/apache/ignite/tests/persistence/pojo/persistence-settings-9-handler.xml",
         "org/apache/ignite/tests/persistence/pojo/product.xml",
         "org/apache/ignite/tests/persistence/pojo/order.xml"
     };

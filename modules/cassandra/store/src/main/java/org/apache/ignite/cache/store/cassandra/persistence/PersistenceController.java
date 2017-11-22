@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
+import org.apache.ignite.cache.store.cassandra.common.TypeHandler;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 
 /**
@@ -179,7 +180,7 @@ public class PersistenceController {
         Object[] values = PersistenceStrategy.POJO != settings.getStrategy() ?
             new Object[1] : new Object[keyUniquePojoFields.size()];
 
-        bindValues(settings.getStrategy(), settings.getSerializer(), keyUniquePojoFields, key, values, 0);
+        bindValues(settings.getStrategy(), settings.getTypeHandler(), settings.getSerializer(), keyUniquePojoFields, key, values, 0);
 
         return statement.bind(values);
     }
@@ -199,8 +200,8 @@ public class PersistenceController {
         PersistenceSettings keySettings = persistenceSettings.getKeyPersistenceSettings();
         PersistenceSettings valSettings = persistenceSettings.getValuePersistenceSettings();
 
-        int offset = bindValues(keySettings.getStrategy(), keySettings.getSerializer(), keyUniquePojoFields, key, values, 0);
-        bindValues(valSettings.getStrategy(), valSettings.getSerializer(), valUniquePojoFields, val, values, offset);
+        int offset = bindValues(keySettings.getStrategy(), keySettings.getTypeHandler(), keySettings.getSerializer(), keyUniquePojoFields, key, values, 0);
+        bindValues(valSettings.getStrategy(), valSettings.getTypeHandler(), valSettings.getSerializer(), valUniquePojoFields, val, values, offset);
 
         return statement.bind(values);
     }
@@ -423,10 +424,12 @@ public class PersistenceController {
      *
      * @return next offset
      */
-    private int bindValues(PersistenceStrategy stgy, Serializer serializer, List<PojoField> fields, Object obj,
-                            Object[] values, int offset) {
+    private int bindValues(PersistenceStrategy stgy, TypeHandler primitiveHandler, Serializer serializer, List<PojoField> fields, Object obj,
+                           Object[] values, int offset) {
         if (PersistenceStrategy.PRIMITIVE == stgy) {
-            if (PropertyMappingHelper.getCassandraType(obj.getClass()) == null ||
+            if(primitiveHandler != null) {
+                obj = primitiveHandler.toCassandraPrimitiveType(obj);
+            } else if (PropertyMappingHelper.getCassandraType(obj.getClass()) == null ||
                 obj.getClass().equals(ByteBuffer.class) || obj instanceof byte[]) {
                 throw new IllegalArgumentException("Couldn't deserialize instance of class '" +
                     obj.getClass().getName() + "' using PRIMITIVE strategy. Please use BLOB strategy for this case.");

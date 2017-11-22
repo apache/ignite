@@ -19,45 +19,73 @@ package org.apache.ignite.cache.store.cassandra.persistence;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Row;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
+import org.apache.ignite.cache.store.cassandra.common.TypeHandler;
+import org.apache.ignite.cache.store.cassandra.common.TypeHandlerHelper;
+import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
+import org.w3c.dom.Element;
+
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.util.List;
-
-import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
-import org.w3c.dom.Element;
 
 /**
  * Descriptor for particular field in a POJO object, specifying how this field
  * should be written to or loaded from Cassandra.
  */
 public abstract class PojoField implements Serializable {
-    /** Name attribute of XML element describing Pojo field. */
+    /**
+     * Name attribute of XML element describing Pojo field.
+     */
     private static final String NAME_ATTR = "name";
 
-    /** Column attribute of XML element describing Pojo field. */
+    /**
+     * Column attribute of XML element describing Pojo field.
+     */
     private static final String COLUMN_ATTR = "column";
 
-    /** Field name. */
+    /**
+     * Handler class attribute of XML element describing Pojo field.
+     */
+    private static final String HANDLER_CLASS_ATTR = "handlerClass";
+
+
+    /**
+     * Field name.
+     */
     private String name;
 
-    /** Field column name in Cassandra table. */
+    /**
+     * Field column name in Cassandra table.
+     */
     private String col;
 
-    /** Field column DDL.  */
+    /**
+     * Type handler for own data type.
+     */
+    private TypeHandler typeHandler;
+
+    /**
+     * Field column DDL.
+     */
     private String colDDL;
 
-    /** Indicator for calculated field. */
+
+    /**
+     * Indicator for calculated field.
+     */
     private Boolean calculated;
 
-    /** Field property accessor. */
+    /**
+     * Field property accessor.
+     */
     private transient PojoFieldAccessor accessor;
 
     /**
-     *  Checks if list contains POJO field with the specified name.
+     * Checks if list contains POJO field with the specified name.
      *
-     * @param fields list of POJO fields.
+     * @param fields    list of POJO fields.
      * @param fieldName field name.
      * @return true if list contains field or false otherwise.
      */
@@ -76,7 +104,7 @@ public abstract class PojoField implements Serializable {
     /**
      * Creates instance of {@link PojoField} based on it's description in XML element.
      *
-     * @param el XML element describing Pojo field
+     * @param el      XML element describing Pojo field
      * @param pojoCls Pojo java class.
      */
     public PojoField(Element el, Class<?> pojoCls) {
@@ -85,11 +113,16 @@ public abstract class PojoField implements Serializable {
 
         if (!el.hasAttribute(NAME_ATTR)) {
             throw new IllegalArgumentException("DOM element representing POJO field object should have '"
-                + NAME_ATTR + "' attribute");
+                    + NAME_ATTR + "' attribute");
         }
 
         this.name = el.getAttribute(NAME_ATTR).trim();
         this.col = el.hasAttribute(COLUMN_ATTR) ? el.getAttribute(COLUMN_ATTR).trim() : name.toLowerCase();
+
+        if (el.hasAttribute(HANDLER_CLASS_ATTR)) {
+            typeHandler = TypeHandlerHelper.getInstanceFromClassName(el.getAttribute(HANDLER_CLASS_ATTR));
+        }
+
 
         init(PropertyMappingHelper.getPojoFieldAccessor(pojoCls, name));
     }
@@ -102,7 +135,7 @@ public abstract class PojoField implements Serializable {
     public PojoField(PojoFieldAccessor accessor) {
         this.name = accessor.getName();
 
-        QuerySqlField sqlField = (QuerySqlField)accessor.getAnnotation(QuerySqlField.class);
+        QuerySqlField sqlField = (QuerySqlField) accessor.getAnnotation(QuerySqlField.class);
 
         col = sqlField != null && sqlField.name() != null && !sqlField.name().isEmpty() ?
                 sqlField.name() : name.toLowerCase();
@@ -159,7 +192,7 @@ public abstract class PojoField implements Serializable {
      * Gets field value as an object having Cassandra compatible type.
      * This it could be stored directly into Cassandra without any conversions.
      *
-     * @param obj Object instance.
+     * @param obj        Object instance.
      * @param serializer {@link org.apache.ignite.cache.store.cassandra.serializer.Serializer} to use.
      * @return Object to store in Cassandra table column.
      */
@@ -169,6 +202,10 @@ public abstract class PojoField implements Serializable {
         if (val == null)
             return null;
 
+        if (typeHandler != null) {
+            return typeHandler.toCassandraPrimitiveType(val);
+        }
+
         DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(val.getClass());
 
         if (cassandraType != null)
@@ -176,7 +213,7 @@ public abstract class PojoField implements Serializable {
 
         if (serializer == null) {
             throw new IllegalStateException("Can't serialize value from object '" +
-                val.getClass().getName() + "' field '" + name + "', cause there is no BLOB serializer specified");
+                    val.getClass().getName() + "' field '" + name + "', cause there is no BLOB serializer specified");
         }
 
         return serializer.serialize(val);
@@ -194,15 +231,20 @@ public abstract class PojoField implements Serializable {
     /**
      * Sets object field value from a {@link com.datastax.driver.core.Row} returned by Cassandra CQL statement.
      *
-     * @param row {@link com.datastax.driver.core.Row}
-     * @param obj object which field should be populated from {@link com.datastax.driver.core.Row}
+     * @param row        {@link com.datastax.driver.core.Row}
+     * @param obj        object which field should be populated from {@link com.datastax.driver.core.Row}
      * @param serializer {@link org.apache.ignite.cache.store.cassandra.serializer.Serializer} to use.
      */
     public void setValueFromRow(Row row, Object obj, Serializer serializer) {
         if (calculatedField())
             return;
 
-        Object val = PropertyMappingHelper.getCassandraColumnValue(row, col, accessor.getFieldType(), serializer);
+        Object val;
+        if (typeHandler != null) {
+            val = typeHandler.toJavaType(row, col);
+        } else {
+            val = PropertyMappingHelper.getCassandraColumnValue(row, col, accessor.getFieldType(), serializer);
+        }
 
         accessor.setValue(obj, val);
     }
