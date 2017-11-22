@@ -32,6 +32,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Strings.cs" Link="Cache\Linq\CacheLinqTest.Strings.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSimpleName.cs" Link="Cache\Linq\CacheLinqTestSimpleName.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" Link="Cache\Linq\CacheLinqTestSqlEscapeAll.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Events\EventsTestLocalListeners.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -58,6 +59,7 @@
     <Folder Include="Cache\Linq\" />
     <Folder Include="Compute\" />
     <Folder Include="Config\" />
+    <Folder Include="Events\" />
   </ItemGroup>
 
   <ItemGroup>
