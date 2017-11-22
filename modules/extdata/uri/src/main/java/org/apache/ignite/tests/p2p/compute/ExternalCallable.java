@@ -25,7 +25,7 @@ import org.apache.ignite.resources.LoggerResource;
 
 /**
  */
-public class ExternalCallable2 implements IgniteCallable {
+public class ExternalCallable implements IgniteCallable {
     /** */
     @IgniteInstanceResource
     Ignite ignite;
@@ -39,21 +39,21 @@ public class ExternalCallable2 implements IgniteCallable {
 
     /**
      */
-    public ExternalCallable2() {
+    public ExternalCallable() {
         // No-op.
     }
 
     /**
      * @param param Param.
      */
-    public ExternalCallable2(int param) {
+    public ExternalCallable(int param) {
         this.param = param;
     }
 
     /** {@inheritDoc} */
     @Override public Object call() {
-        log.info("!!!!! I am job_2 " + param + " on " + ignite.name());
+        log.info("!!!!! I am modified job " + param + " on " + ignite.name());
 
-        return 42;
+        return  43;
     }
 }
