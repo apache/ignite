@@ -223,9 +223,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }
         finally {
             reset();
-        }
 
-        stopAllGrids();
+            stopAllGrids();
+        }
     }
 
     /**
