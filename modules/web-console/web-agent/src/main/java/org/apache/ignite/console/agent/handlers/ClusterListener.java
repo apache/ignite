@@ -48,6 +48,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
@@ -190,6 +191,9 @@ public class ClusterListener implements AutoCloseable {
     /** */
     private static class TopologySnapshot {
         /** */
+        private String clusterName;
+
+        /** */
         private Collection<UUID> nids;
 
         /** */
@@ -232,6 +236,9 @@ public class ClusterListener implements AutoCloseable {
 
                 Map<String, Object> attrs = node.getAttributes();
 
+                if (F.isEmpty(clusterName))
+                    clusterName = attribute(attrs, IGNITE_CLUSTER_NAME);
+
                 Boolean client = attribute(attrs, ATTR_CLIENT_MODE);
 
                 clients.put(nid, client);
@@ -253,6 +260,13 @@ public class ClusterListener implements AutoCloseable {
                     clusterVerStr = nodeVerStr;
                 }
             }
+        }
+
+        /**
+         * @return Cluster name.
+         */
+        public String getClusterName() {
+            return clusterName;
         }
 
         /**

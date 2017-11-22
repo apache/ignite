@@ -17,6 +17,8 @@
 
 'use strict';
 
+const uuid = require('uuid/v4');
+
 // Fire me up!
 
 /**
@@ -82,18 +84,12 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
 
     class Cluster {
         constructor(top) {
-            let d = new Date().getTime();
+            const clusterName = top.clusterName;
 
-            this.id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-                const r = (d + Math.random() * 16) % 16 | 0;
-
-                d = Math.floor(d / 16);
-
-                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-            });
-
+            this.id = _.isEmpty(clusterName) ? uuid().substring(0, 8).toUpperCase() : clusterName;
             this.nids = top.nids;
-
+            this.addresses = top.addresses;
+            this.clients = top.clients;
             this.clusterVersion = top.clusterVersion;
         }
 
@@ -103,8 +99,9 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
 
         update(top) {
             this.clusterVersion = top.clusterVersion;
-
             this.nids = top.nids;
+            this.addresses = top.addresses;
+            this.clients = top.clients;
         }
     }
 
@@ -192,10 +189,13 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
         }
 
         getOrCreateCluster(top) {
-            const cluster = _.find(this.clusters, (c) => c.isSameCluster(top));
+            let cluster = _.find(this.clusters, (c) => c.isSameCluster(top));
 
-            if (_.isNil(cluster))
-                this.clusters.push(new Cluster(top));
+            if (_.isNil(cluster)) {
+                cluster = new Cluster(top);
+
+                this.clusters.push(cluster);
+            }
 
             return cluster;
         }
@@ -301,14 +301,14 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 });
         }
 
-        agent(token, demo, clusterId) {
+        agent(account, demo, clusterId) {
             if (!this.io)
                 return Promise.reject(new Error('Agent server not started yet!'));
 
-            const socks = this._agentSockets.get(token);
+            const socks = this._agentSockets.get(account);
 
             if (_.isEmpty(socks))
-                return Promise.reject(new Error('Failed to find connected agent for this token'));
+                return Promise.reject(new Error('Failed to find connected agent for this account'));
 
             if (demo || _.isNil(clusterId))
                 return Promise.resolve(_.head(socks));

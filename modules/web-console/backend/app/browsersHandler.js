@@ -140,10 +140,10 @@ module.exports = {
                 }
             }
 
-            executeOnAgent(token, demo, event, ...args) {
+            executeOnAgent(account, demo, event, ...args) {
                 const cb = _.last(args);
 
-                return this._agentHnd.agent(token, demo)
+                return this._agentHnd.agent(account, demo)
                     .then((agentSock) => agentSock.emitEvent(event, ..._.dropRight(args)))
                     .then((res) => cb(null, res))
                     .catch((err) => cb(this.errorTransformer(err)));
@@ -151,21 +151,21 @@ module.exports = {
 
             agentListeners(sock) {
                 const demo = sock.request._query.IgniteDemoMode === 'true';
-                const token = () => sock.request.user.token;
+                const account = () => sock.request.user;
 
                 // Return available drivers to browser.
                 sock.on('schemaImport:drivers', (...args) => {
-                    this.executeOnAgent(token(), demo, 'schemaImport:drivers', ...args);
+                    this.executeOnAgent(account(), demo, 'schemaImport:drivers', ...args);
                 });
 
                 // Return schemas from database to browser.
                 sock.on('schemaImport:schemas', (...args) => {
-                    this.executeOnAgent(token(), demo, 'schemaImport:schemas', ...args);
+                    this.executeOnAgent(account(), demo, 'schemaImport:schemas', ...args);
                 });
 
                 // Return tables from database to browser.
                 sock.on('schemaImport:metadata', (...args) => {
-                    this.executeOnAgent(token(), demo, 'schemaImport:metadata', ...args);
+                    this.executeOnAgent(account(), demo, 'schemaImport:metadata', ...args);
                 });
             }
 
@@ -200,9 +200,9 @@ module.exports = {
                 // Return command result from grid to browser.
                 sock.on('node:rest', (clusterId, params, cb) => {
                     const demo = sock.request._query.IgniteDemoMode === 'true';
-                    const token = sock.request.user.token;
+                    const account = sock.request.user;
 
-                    const agent = this._agentHnd.agent(token, demo, clusterId);
+                    const agent = this._agentHnd.agent(account, demo, clusterId);
 
                     this.executeOnNode(agent, demo, params)
                         .then((data) => cb(null, data))
@@ -228,7 +228,7 @@ module.exports = {
                 // Return command result from grid to browser.
                 sock.on('node:visor', (clusterId, taskId, nids, ...args) => {
                     const demo = sock.request._query.IgniteDemoMode === 'true';
-                    const token = sock.request.user.token;
+                    const account = sock.request.user;
 
                     const cb = _.last(args);
                     args = _.dropRight(args);
@@ -247,7 +247,7 @@ module.exports = {
 
                     _.forEach(_.concat(desc.argCls, args), (param, idx) => { params[`p${idx + 3}`] = param; });
 
-                    const agent = this._agentHnd.agent(token, demo, clusterId);
+                    const agent = this._agentHnd.agent(account, demo, clusterId);
 
                     this.executeOnNode(agent, demo, params)
                         .then((data) => {
