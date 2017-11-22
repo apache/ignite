@@ -585,7 +585,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         @Nullable CacheDataRow prevRow,
-        @Nullable MvccCoordinatorVersion newVer, boolean prevRowAvailable) throws IgniteCheckedException
+        @Nullable MvccCoordinatorVersion newVer,
+        boolean prevRowAvailable,
+        boolean idxRebuild) throws IgniteCheckedException
     {
         String cacheName = cctx.name();
 
@@ -594,7 +596,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        tbl.table().update(row, prevRow, newVer, prevRowAvailable);
+        tbl.table().update(row, prevRow, newVer, prevRowAvailable, idxRebuild);
 
         if (tbl.luceneIndex() != null) {
             long expireTime = row.expireTime();
@@ -2756,7 +2758,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             // prevRowAvailable is always true with MVCC on, and always false *on index rebuild* with MVCC off.
-            qryMgr.store(row, mvccVer, null, mvccEnabled);
+            qryMgr.store(row, mvccVer, null, mvccEnabled, true);
 
             if (mvccEnabled) {
                 mvccVer = new GridCacheMvccEntryInfo();

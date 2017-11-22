@@ -1470,7 +1470,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     incrementSize(cctx.cacheId());
 
                     if (cctx.queries().enabled())
-                        cctx.queries().store(updateRow, mvccVer, null, true);
+                        cctx.queries().store(updateRow, mvccVer, null, true, false);
                 }
             }
             finally {
@@ -1554,7 +1554,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
                 if (qryMgr.enabled())
-                    qryMgr.store(updateRow, mvccVer, oldRow, true);
+                    qryMgr.store(updateRow, mvccVer, oldRow, true, false);
 
                 updatePendingEntries(cctx, updateRow, oldRow);
 
@@ -1820,7 +1820,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCacheQueryManager qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
-                qryMgr.store(newRow, null, oldRow, true);
+                qryMgr.store(newRow, null, oldRow, true, false);
 
             updatePendingEntries(cctx, newRow, oldRow);
 

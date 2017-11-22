@@ -28,7 +28,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -429,14 +428,16 @@ public class GridH2Table extends TableBase {
      * @param row Row to be updated.
      * @param prevRow Previous row.
      * @param prevRowAvailable Whether previous row is available.
+     * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException If failed.
      */
-    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, @Nullable MvccCoordinatorVersion newVer, boolean prevRowAvailable)
-        throws IgniteCheckedException {
+    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, @Nullable MvccCoordinatorVersion newVer,
+        boolean prevRowAvailable, boolean idxRebuild) throws IgniteCheckedException {
         assert desc != null;
 
         GridH2KeyValueRowOnheap row0 = (GridH2KeyValueRowOnheap)desc.createRow(row, newVer);
-        GridH2KeyValueRowOnheap prevRow0 = prevRow != null ? (GridH2KeyValueRowOnheap)desc.createRow(prevRow, null) : null;
+        GridH2KeyValueRowOnheap prevRow0 = prevRow != null ? (GridH2KeyValueRowOnheap)desc.createRow(prevRow, null) :
+            null;
 
         assert !cctx.mvccEnabled() || prevRow0 == null;
 
@@ -461,7 +462,11 @@ public class GridH2Table extends TableBase {
                     replaced = prevRow0 != null;
                 }
 
-                assert (cctx.mvccEnabled() && replaced == (row0.newMvccCoordinatorVersion() != 0)) || (replaced && prevRow0 != null) || (!replaced && prevRow0 == null) : "Replaced: " + replaced;
+                assert (cctx.mvccEnabled() && idxRebuild ||
+                        replaced == (row0.newMvccCoordinatorVersion() != 0)) ||
+                        (replaced && prevRow0 != null) ||
+                        (!replaced && prevRow0 == null) :
+                        "Replaced: " + replaced;
 
                 if (!replaced)
                     size.increment();
@@ -470,12 +475,12 @@ public class GridH2Table extends TableBase {
                     Index idx = idxs.get(i);
 
                     if (idx instanceof GridH2IndexBase)
-                        addToIndex((GridH2IndexBase)idx, row0, prevRow0);
+                        addToIndex((GridH2IndexBase)idx, row0, prevRow0, idxRebuild);
                 }
 
                 if (!tmpIdxs.isEmpty()) {
                     for (GridH2IndexBase idx : tmpIdxs.values())
-                        addToIndex(idx, row0, prevRow0);
+                        addToIndex(idx, row0, prevRow0, idxRebuild);
                 }
             }
             finally {
@@ -536,11 +541,12 @@ public class GridH2Table extends TableBase {
      * @param idx Index to add row to.
      * @param row Row to add to index.
      * @param prevRow Previous row state, if any.
+     * @param idxRebuild If index rebuild is in progress.
      */
-    private void addToIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row prevRow) {
+    private void addToIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row prevRow, boolean idxRebuild) {
         boolean replaced = idx.putx(row);
 
-        assert !idx.ctx.mvccEnabled() || replaced == (row.newMvccCoordinatorVersion() != 0);
+        assert !idx.ctx.mvccEnabled() || idxRebuild || replaced == (row.newMvccCoordinatorVersion() != 0);
 
         // Row was not replaced, need to remove manually.
         if (!replaced && prevRow != null)
