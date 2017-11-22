@@ -301,11 +301,11 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 });
         }
 
-        agent(token, demo, clusterId) {
+        agent(account, demo, clusterId) {
             if (!this.io)
                 return Promise.reject(new Error('Agent server not started yet!'));
 
-            const socks = this._agentSockets.get(token);
+            const socks = this._agentSockets.get(account);
 
             if (_.isEmpty(socks))
                 return Promise.reject(new Error('Failed to find connected agent for this token'));
