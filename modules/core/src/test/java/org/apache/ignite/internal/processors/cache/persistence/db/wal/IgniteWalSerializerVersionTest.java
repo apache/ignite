@@ -304,6 +304,11 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
         deleteWorkFiles();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
+    }
+
     /**
      * @throws IgniteCheckedException If failed.
      */
