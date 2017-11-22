@@ -61,8 +61,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
-                JvmOptions = JvmDebugOpts,
-                AutoGenerateIgniteInstanceName = true
+                JvmOptions = JvmDebugOpts
             };
         }
     }

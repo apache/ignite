@@ -15,7 +15,21 @@
   <ItemGroup>
     <Compile Include="..\Apache.Ignite.Core.Tests\AssertExtensions.cs" Link="Common\AssertExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\JavaBinaryInteropTest.cs" Link="Binary\JavaBinaryInteropTest.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\CacheLinqTest.Base.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Aggregates.cs" Link="Cache\Linq\CacheLinqTest.Aggregates.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\Linq\CacheLinqTest.Base.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" Link="Cache\Linq\CacheLinqTest.CompiledQuery.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Contains.cs" Link="Cache\Linq\CacheLinqTest.Contains.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Custom.cs" Link="Cache\Linq\CacheLinqTest.Custom.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.DateTime.cs" Link="Cache\Linq\CacheLinqTest.DateTime.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Functions.cs" Link="Cache\Linq\CacheLinqTest.Functions.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Introspection.cs" Link="Cache\Linq\CacheLinqTest.Introspection.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Join.cs" Link="Cache\Linq\CacheLinqTest.Join.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" Link="Cache\Linq\CacheLinqTest.Join.LocalCollection.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Misc.cs" Link="Cache\Linq\CacheLinqTest.Misc.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Numerics.cs" Link="Cache\Linq\CacheLinqTest.Numerics.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Strings.cs" Link="Cache\Linq\CacheLinqTest.Strings.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSimpleName.cs" Link="Cache\Linq\CacheLinqTestSimpleName.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" Link="Cache\Linq\CacheLinqTestSqlEscapeAll.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,6 +50,7 @@
 
   <ItemGroup>
     <Folder Include="Binary\" />
+    <Folder Include="Cache\Linq\" />
     <Folder Include="Compute\" />
     <Folder Include="Config\" />
   </ItemGroup>
