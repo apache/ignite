@@ -39,9 +39,9 @@ angular
 
                         const restored = trans.router.stateService.target(name, params);
 
-                        return restored.valid() ? restored : 'base.configuration.tabs';
+                        return restored.valid() ? restored : 'default-state';
                     } catch (ignored) {
-                        return 'base.configuration.tabs';
+                        return 'default-state';
                     }
                 })
                 .catch(() => true);
