@@ -282,7 +282,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
                 assertEquals(3, blt.consistentIds().size());
 
-                long activationHash = U.field(blt, "branchingPointHash");
+                long activationHash = U.field(blt, "branchingPntHash");
 
                 assertEquals(expectedHash1, activationHash);
             }
@@ -296,7 +296,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
                 assertEquals(3, blt.consistentIds().size());
 
-                long activationHash = U.field(blt, "branchingPointHash");
+                long activationHash = U.field(blt, "branchingPntHash");
 
                 assertEquals(expectedHash2, activationHash);
             }
@@ -373,7 +373,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
                 assertEquals(2, blt.consistentIds().size());
 
-                long activationHash = U.field(blt, "branchingPointHash");
+                long activationHash = U.field(blt, "branchingPntHash");
 
                 assertEquals(expectedActivationHash, activationHash);
             }
@@ -427,7 +427,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
                 assertEquals(4, blt.consistentIds().size());
 
-                long activationHash = U.field(blt, "branchingPointHash");
+                long activationHash = U.field(blt, "branchingPntHash");
 
                 assertEquals(expectedActivationHash, activationHash);
             }
