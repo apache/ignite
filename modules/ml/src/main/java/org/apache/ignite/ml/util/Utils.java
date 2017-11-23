@@ -35,6 +35,7 @@ public class Utils {
      * @param <T> Class of original object;
      * @return Deep copy of original object.
      */
+    @SuppressWarnings({"unchecked"})
     public static <T> T copy(T orig) {
         Object obj;
 
@@ -51,7 +52,7 @@ public class Utils {
             obj = in.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
-            throw new IgniteException("Couldn't copy object.");
+            throw new IgniteException("Couldn't copy the object.");
         }
 
         return (T)obj;
