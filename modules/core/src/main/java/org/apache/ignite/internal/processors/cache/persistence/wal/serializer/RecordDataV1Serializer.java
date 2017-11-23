@@ -282,8 +282,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return /*cacheId*/ 4 + /*pageId*/ 8;
 
             case SWITCH_SEGMENT_RECORD:
-                // CRC is not loaded for switch segment.
-                return -CRC_SIZE;
+                return 0;
 
             case TX_RECORD:
                 return txRecordSerializer.sizeOfTxRecord((TxRecord)record);

@@ -43,8 +43,6 @@ public class MarshalledRecord extends WALRecord {
         this.type = type;
         this.buf = buf;
 
-        assert buf.remaining() == ((FileWALPointer)pos).length();
-
         position(pos);
     }
 

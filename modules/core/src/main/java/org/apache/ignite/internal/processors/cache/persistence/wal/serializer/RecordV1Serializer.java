@@ -21,9 +21,12 @@ import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
@@ -35,7 +38,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTai
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 
@@ -71,6 +76,32 @@ public class RecordV1Serializer implements RecordSerializer {
     /** Write pointer. */
     private final boolean writePointer;
 
+    /**
+     * Record type filter.
+     * {@link FilteredRecord} is deserialized instead of original record if type doesn't match filter.
+     */
+    private final IgniteBiPredicate<RecordType, WALPointer> recordFilter;
+
+    /** Skip position check flag. Should be set for reading compacted wal file with skipped physical records. */
+    private final boolean skipPositionCheck;
+
+    /**
+     * Marshalled mode.
+     * Records are not deserialized in this mode, {@link MarshalledRecord} with binary representation are read instead.
+     */
+    private final boolean marshalledMode;
+
+    /** Thread-local heap byte buffer. */
+    private final ThreadLocal<ByteBuffer> heapTlb = new ThreadLocal<ByteBuffer>() {
+        @Override protected ByteBuffer initialValue() {
+            ByteBuffer buf = ByteBuffer.allocate(4096);
+
+            buf.order(GridUnsafe.NATIVE_BYTE_ORDER);
+
+            return buf;
+        }
+    };
+
     /** Record read/write functional interface. */
     private final RecordIO recordIO = new RecordIO() {
 
@@ -88,11 +119,36 @@ public class RecordV1Serializer implements RecordSerializer {
 
             FileWALPointer ptr = readPosition(in);
 
-            if (!F.eq(ptr, expPtr))
+            if (!skipPositionCheck && !F.eq(ptr, expPtr))
                 throw new SegmentEofException("WAL segment rollover detected (will end iteration) [expPtr=" + expPtr +
                         ", readPtr=" + ptr + ']', null);
 
-            return dataSerializer.readRecord(recType, in);
+            final WALRecord rec = dataSerializer.readRecord(recType, in);
+
+            if (recordFilter != null && !recordFilter.apply(rec.type(), ptr))
+                return new FilteredRecord();
+            else if (marshalledMode) {
+                ByteBuffer buf = heapTlb.get();
+
+                int recordSize = size(rec);
+
+                if (buf.capacity() < recordSize)
+                    heapTlb.set(buf = ByteBuffer.allocate(recordSize * 3 / 2).order(ByteOrder.nativeOrder()));
+                else
+                    buf.clear();
+
+                rec.position(ptr);
+
+                writeRecord(rec, buf);
+
+                buf.flip();
+
+                assert buf.remaining() == recordSize;
+
+                return new MarshalledRecord(rec.type(), rec.position(), buf);
+            }
+            else
+                return rec;
         }
 
         /** {@inheritDoc} */
@@ -110,13 +166,19 @@ public class RecordV1Serializer implements RecordSerializer {
 
     /**
      * Create an instance of V1 serializer.
-     *
      * @param dataSerializer V1 data serializer.
      * @param writePointer Write pointer.
+     * @param marshalledMode Marshalled mode.
+     * @param skipPositionCheck Skip position check mode.
+     * @param recordFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record
      */
-    public RecordV1Serializer(RecordDataV1Serializer dataSerializer, boolean writePointer) {
+    public RecordV1Serializer(RecordDataV1Serializer dataSerializer, boolean writePointer,
+        boolean marshalledMode, boolean skipPositionCheck, IgniteBiPredicate<RecordType, WALPointer> recordFilter) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
+        this.recordFilter = recordFilter;
+        this.skipPositionCheck = skipPositionCheck;
+        this.marshalledMode = marshalledMode;
     }
 
     /** {@inheritDoc} */

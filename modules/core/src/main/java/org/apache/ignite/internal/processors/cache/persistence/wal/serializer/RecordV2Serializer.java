@@ -140,6 +140,8 @@ public class RecordV2Serializer implements RecordSerializer {
 
                 buf.flip();
 
+                assert buf.remaining() == ptr.length();
+
                 return new MarshalledRecord(recType, ptr, buf);
             }
             else

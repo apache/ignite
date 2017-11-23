@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -1614,7 +1613,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (!Files.exists(raw.toPath()))
                         throw new IgniteCheckedException("WAL archive segment is missing: " + raw);
 
-                    compressSegmentToFile(nextSegment, tmpZip);
+                    compressSegmentToFile(nextSegment, raw, tmpZip);
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
@@ -1642,13 +1641,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param nextSegment Next segment absolute idx.
+         * @param raw Raw file.
          * @param zip Zip file.
          */
-        private void compressSegmentToFile(long nextSegment, File zip) throws IOException, IgniteCheckedException {
+        private void compressSegmentToFile(long nextSegment, File raw, File zip)
+            throws IOException, IgniteCheckedException {
+            int segmentSerializerVer;
+
+            try (FileIO fileIO = ioFactory.create(raw)) {
+                IgniteBiTuple<Integer, Boolean> tup = FileWriteAheadLogManager.readSerializerVersionAndCompactedFlag(fileIO);
+
+                segmentSerializerVer = tup.get1();
+            }
+
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
                 zos.putNextEntry(new ZipEntry(""));
 
-                zos.write(prepareSerializerVersionBuffer(nextSegment, serializerVersion, true).array());
+                zos.write(prepareSerializerVersionBuffer(nextSegment, segmentSerializerVer, true).array());
 
                 final CIX1<WALRecord> appendToZipC = new CIX1<WALRecord>() {
                     @Override public void applyx(WALRecord record) throws IgniteCheckedException {
@@ -2575,17 +2584,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     assert stopped() : "Segment is not closed after close flush: " + head.get();
 
                     try {
-                        int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE + RecordV1Serializer.CRC_SIZE;
-
-                    if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
-                        RecordV1Serializer backwardSerializer =
-                            new RecordV1Serializer(new RecordDataV1Serializer(cctx), true);
-
-                        final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
+                        RecordSerializer backwardSerializer = new RecordSerializerFactoryImpl(cctx)
+                            .createSerializer(serializerVersion);
 
                         SwitchSegmentRecord segmentRecord = new SwitchSegmentRecord();
-                        segmentRecord.position( new FileWALPointer(idx, (int)written, -1));
-                        backwardSerializer.writeRecord(segmentRecord,buf);
+
+                        int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
+
+                        if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
+                            final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
+
+                            segmentRecord.position(new FileWALPointer(idx, (int)written, switchSegmentRecSize));
+                            backwardSerializer.writeRecord(segmentRecord, buf);
 
                             buf.rewind();
 

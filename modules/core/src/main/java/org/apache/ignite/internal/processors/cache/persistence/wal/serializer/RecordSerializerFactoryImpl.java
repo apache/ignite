@@ -59,15 +59,14 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
 
         switch (ver) {
             case 1:
-                if (recordDeserializeFilter != null)
-                    throw new IgniteCheckedException("Read type filter is allowed only for version 2 or higher.");
-
-                return new RecordV1Serializer(new RecordDataV1Serializer(cctx), writePointer);
+                return new RecordV1Serializer(new RecordDataV1Serializer(cctx),
+                    writePointer, marshalledMode, skipPositionCheck, recordDeserializeFilter);
 
             case 2:
                 RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(new RecordDataV1Serializer(cctx));
 
-                return new RecordV2Serializer(dataV2Serializer, writePointer, marshalledMode, skipPositionCheck, recordDeserializeFilter);
+                return new RecordV2Serializer(dataV2Serializer,
+                    writePointer, marshalledMode, skipPositionCheck, recordDeserializeFilter);
 
             default:
                 throw new IgniteCheckedException("Failed to create a serializer with the given version " +

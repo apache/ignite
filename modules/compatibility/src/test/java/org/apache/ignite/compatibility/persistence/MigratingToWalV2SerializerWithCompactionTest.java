@@ -19,6 +19,7 @@ package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -42,7 +43,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
     private static final String TEST_CACHE_NAME = DummyPersistenceCompatibilityTest.class.getSimpleName();
 
     /** Entries count. */
-    private static final int ENTRIES = 1000;
+    private static final int ENTRIES = 300;
 
     /** Wal segment size. */
     private static final int WAL_SEGMENT_SIZE = 1024 * 1024;
@@ -81,7 +82,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
      *
      * @throws Exception If failed.
      */
-    public void testNodeStartByOldVersionPersistenceData_2_3() throws Exception {
+    public void testCompactingOldWalFiles() throws Exception {
         doTestStartupWithOldVersion("2.3.0");
     }
 
@@ -99,14 +100,14 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
             IgniteEx ignite = startGrid(0);
 
-            assertEquals(1, ignite.context().discovery().topologyVersion());
-
             ignite.active(true);
 
-            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(TEST_CACHE_NAME);
+            IgniteCache<Integer, byte[]> cache = ignite.getOrCreateCache(TEST_CACHE_NAME);
 
             for (int i = ENTRIES; i < ENTRIES * 2; i++) {
                 final byte[] val = new byte[PAYLOAD_SIZE];
+
+                ThreadLocalRandom.current().nextBytes(val);
 
                 val[i] = 1;
 
@@ -117,9 +118,9 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
             ignite.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
             ignite.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
 
-            Thread.sleep(20_000);
+            Thread.sleep(15_000); // Time to compress WAL.
 
-            int expCompressedWalSegments = PAYLOAD_SIZE * ENTRIES * 2 / WAL_SEGMENT_SIZE - 1;
+            int expCompressedWalSegments = PAYLOAD_SIZE * ENTRIES * 4 / WAL_SEGMENT_SIZE - 1;
 
             String nodeFolderName = ignite.context().pdsFolderResolver().resolveFolders().folderName();
 
@@ -138,6 +139,59 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
             assertTrue("expected=" + expCompressedWalSegments + ", actual=" + actualCompressedWalSegments,
                 actualCompressedWalSegments >= expCompressedWalSegments);
+
+            stopAllGrids();
+
+            File nodeLfsDir = new File(dbDir, nodeFolderName);
+            File cpMarkersDir = new File(nodeLfsDir, "cp");
+
+            File[] cpMarkers = cpMarkersDir.listFiles();
+
+            assertNotNull(cpMarkers);
+            assertTrue(cpMarkers.length > 0);
+
+            File cacheDir = new File(nodeLfsDir, "cache-" + TEST_CACHE_NAME);
+            File[] partFiles = cacheDir.listFiles(new FilenameFilter() {
+                @Override public boolean accept(File dir, String name) {
+                    return name.startsWith("part");
+                }
+            });
+
+            assertNotNull(partFiles);
+            assertTrue(partFiles.length > 0);
+
+            // Enforce reading WAL from the very beginning at the next start.
+            for (File f : cpMarkers)
+                f.delete();
+
+            for (File f : partFiles)
+                f.delete();
+
+            ignite = startGrid(0);
+
+            ignite.active(true);
+
+            cache = ignite.cache(TEST_CACHE_NAME);
+
+            boolean fail = false;
+
+            // Check that all data is recovered from compacted WAL.
+            for (int i = 0; i < ENTRIES * 2; i++) {
+                byte[] arr = cache.get(i);
+
+                if (arr == null) {
+                    System.out.println(">>> Missing: " + i);
+
+                    fail = true;
+                }
+                else if (arr[i] != 1) {
+                    System.out.println(">>> Corrupted: " + i);
+
+                    fail = true;
+                }
+            }
+
+            assertFalse(fail);
         }
         finally {
             stopAllGrids();
@@ -153,13 +207,15 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
             CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>();
             cacheCfg.setName(TEST_CACHE_NAME);
             cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-            cacheCfg.setBackups(1);
+            cacheCfg.setBackups(0);
             cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
-            IgniteCache<Object, Object> cache = ignite.createCache(cacheCfg);
+            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheCfg);
 
             for (int i = 0; i < ENTRIES; i++) { // At least 20MB of raw data in total.
                 final byte[] val = new byte[20000];
+
+                ThreadLocalRandom.current().nextBytes(val);
 
                 val[i] = 1;
 
