@@ -35,14 +35,14 @@ module.exports = {
              * @param {Socket} sock
              */
             add(sock) {
-                const token = sock.request.user.token;
+                const token = sock.request.user._id.toString();
 
                 if (this.sockets.has(token))
                     this.sockets.get(token).push(sock);
                 else
                     this.sockets.set(token, [sock]);
 
-                return this.sockets.get(token);
+                return this.sockets.get(sock.request.user);
             }
 
             /**
@@ -58,11 +58,13 @@ module.exports = {
                 return sockets;
             }
 
-            get(token) {
-                if (this.sockets.has(token))
-                    return this.sockets.get(token);
+            get(account) {
+                let sockets = this.sockets.get(account._id.toString());
 
-                return [];
+                if (_.isEmpty(sockets))
+                    this.sockets.set(account._id.toString(), sockets = []);
+
+                return sockets;
             }
 
             demo(token) {
@@ -200,9 +202,8 @@ module.exports = {
                 // Return command result from grid to browser.
                 sock.on('node:rest', (clusterId, params, cb) => {
                     const demo = sock.request._query.IgniteDemoMode === 'true';
-                    const account = sock.request.user;
 
-                    const agent = this._agentHnd.agent(account, demo, clusterId);
+                    const agent = this._agentHnd.agent(sock.request.user, demo, clusterId);
 
                     this.executeOnNode(agent, demo, params)
                         .then((data) => cb(null, data))
@@ -228,7 +229,6 @@ module.exports = {
                 // Return command result from grid to browser.
                 sock.on('node:visor', (clusterId, taskId, nids, ...args) => {
                     const demo = sock.request._query.IgniteDemoMode === 'true';
-                    const account = sock.request.user;
 
                     const cb = _.last(args);
                     args = _.dropRight(args);
@@ -247,7 +247,7 @@ module.exports = {
 
                     _.forEach(_.concat(desc.argCls, args), (param, idx) => { params[`p${idx + 3}`] = param; });
 
-                    const agent = this._agentHnd.agent(account, demo, clusterId);
+                    const agent = this._agentHnd.agent(sock.request.user, demo, clusterId);
 
                     this.executeOnNode(agent, demo, params)
                         .then((data) => {
