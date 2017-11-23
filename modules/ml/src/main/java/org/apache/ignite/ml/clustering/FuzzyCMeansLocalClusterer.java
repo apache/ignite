@@ -37,7 +37,7 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
     private int maxIterations;
 
     /** The random numbers generator that is used to choose primary centers. */
-    private Random rand;
+    private Random rnd;
 
     /**
      * Constructor that retains all required parameters.
@@ -53,7 +53,7 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
                                      double maxDelta, int maxIterations, Long seed) {
         super(measure, exponentialWeight, stopCond, maxDelta);
         this.maxIterations = maxIterations;
-        rand = seed != null ? new Random(seed) : new Random();
+        rnd = seed != null ? new Random(seed) : new Random();
     }
 
     /** {@inheritDoc} */
@@ -123,7 +123,7 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
         //int dimensions = points.columnSize();
         int numPoints = points.rowSize();
 
-        Vector firstCenter = points.viewRow(rand.nextInt(numPoints));
+        Vector firstCenter = points.viewRow(rnd.nextInt(numPoints));
         centers.setRow(0, firstCenter.getStorage().data());
 
         Vector costs = points.foldRows(vector -> distance(vector, firstCenter));
@@ -132,7 +132,7 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
         double sum = costs.sum();
 
         for (int i = 1; i < k; i++) {
-            double probe = rand.nextDouble() * sum;
+            double probe = rnd.nextDouble() * sum;
             double cntr = 0;
             int id = 0;
 

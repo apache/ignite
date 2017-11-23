@@ -45,13 +45,13 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 /** This class implements distributed version of Fuzzy C-Means clusterization of equal-weighted points. */
 public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<SparseDistributedMatrix> {
     /** Random numbers generator which is used in centers selection. */
-    private Random random;
+    private Random rnd;
 
     /** The value that is used to initialize random numbers generator. */
     private long seed;
 
     /** The number of initialization steps each of which adds some number of candidates for being a center. */
-    private int initializationSteps;
+    private int initSteps;
 
     /** The maximum number of iterations of K-Means algorithm which selects the required number of centers. */
     private int kMeansMaxIterations;
@@ -69,19 +69,19 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      *                 membership matrix elements for which algorithm must stop.
      * @param cMeansMaxIterations The maximum number of FCM iterations.
      * @param seed Seed for random numbers generator.
-     * @param initializationSteps Number of steps of primary centers selection (the more steps, the more candidates).
+     * @param initSteps Number of steps of primary centers selection (the more steps, the more candidates).
      * @param kMeansMaxIterations The maximum number of K-Means iteration in primary centers selection.
      */
     public FuzzyCMeansDistributedClusterer(DistanceMeasure measure, double exponentialWeight,
                                            StopCondition stopCond, double maxDelta, int cMeansMaxIterations,
-                                           Long seed, int initializationSteps, int kMeansMaxIterations) {
+                                           Long seed, int initSteps, int kMeansMaxIterations) {
         super(measure, exponentialWeight, stopCond, maxDelta);
 
         this.seed = seed != null ? seed : new Random().nextLong();
-        this.initializationSteps = initializationSteps;
+        this.initSteps = initSteps;
         this.cMeansMaxIterations = cMeansMaxIterations;
         this.kMeansMaxIterations = kMeansMaxIterations;
-        random = new Random(this.seed);
+        rnd = new Random(this.seed);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +130,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
     private Vector[] initializeCenters(SparseDistributedMatrix points, int k) {
         int pointsNum = points.rowSize();
 
-        Vector firstCenter = points.viewRow(random.nextInt(pointsNum));
+        Vector firstCenter = points.viewRow(rnd.nextInt(pointsNum));
 
         List<Vector> centers = new ArrayList<>();
         List<Vector> newCenters = new ArrayList<>();
@@ -144,7 +144,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
         UUID uuid = points.getUUID();
         String cacheName = ((SparseDistributedMatrixStorage) points.getStorage()).cacheName();
 
-        while(step < initializationSteps) {
+        while(step < initSteps) {
             ConcurrentHashMap<Integer, Double> newCosts = getNewCosts(cacheName, uuid, newCenters);
 
             for (Integer key : newCosts.keySet())
@@ -182,7 +182,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
                     return map;
                 },
-                key -> key.matrixId().equals(uuid),
+                key -> key.dataStructureId().equals(uuid),
                 (map1, map2) -> {
                     map1.putAll(map2);
                     return map1;
@@ -211,12 +211,12 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
                     double probability = (costs.get(idx) * 2.0 * k) / costsSum;
 
-                    if (random.nextDouble() < probability)
+                    if (rnd.nextDouble() < probability)
                         centers.add(vector);
 
                     return centers;
                 },
-                key -> key.matrixId().equals(uuid),
+                key -> key.dataStructureId().equals(uuid),
                 (list1, list2) -> {
                     list1.addAll(list2);
                     return list1;
@@ -282,7 +282,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
                     return counts;
                 },
-                key -> key.matrixId().equals(uuid),
+                key -> key.dataStructureId().equals(uuid),
                 (map1, map2) -> {
                     map1.putAll(map2);
                     return map1;
@@ -336,7 +336,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
                     return membershipsAndSums;
                 },
-                key -> key.matrixId().equals(uuid),
+                key -> key.dataStructureId().equals(uuid),
                 (mem1, mem2) -> {
                     mem1.merge(mem2);
                     return mem1;
@@ -373,7 +373,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
                     return centerSums;
                 },
-                key -> key.matrixId().equals(uuid),
+                key -> key.dataStructureId().equals(uuid),
                 (sums1, sums2) -> {
                     for (int i = 0; i < k; i++)
                         sums1[i] = sums1[i].plus(sums2[i]);

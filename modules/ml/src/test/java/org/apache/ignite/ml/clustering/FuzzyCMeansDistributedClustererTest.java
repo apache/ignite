@@ -130,7 +130,6 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
         double[][] centers = new double[numCenters][2];
 
         for (int i = 0; i < numCenters; i++) {
-            boolean finished = false;
             double radius = maxRadius;
             double angle = Math.PI * 2.0 * i / numCenters;
 
