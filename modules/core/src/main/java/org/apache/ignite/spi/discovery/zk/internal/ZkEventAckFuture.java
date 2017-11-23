@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -119,7 +120,7 @@ public class ZkEventAckFuture extends GridFutureAdapter<Void> implements Watcher
 
     /** {@inheritDoc} */
     @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
-        assert rc == 0 : rc;
+        assert rc == 0 : KeeperException.Code.get(rc);
 
         if (isDone())
             return;

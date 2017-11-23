@@ -426,7 +426,7 @@ public class ZookeeperDiscoveryImpl {
      */
     private void checkIsCoordinator(int rc, final List<String> aliveNodes) {
         try {
-            assert rc == 0 : rc;
+            assert rc == 0 : KeeperException.Code.get(rc);
 
             TreeMap<Integer, String> alives = new TreeMap<>();
 
@@ -498,7 +498,7 @@ public class ZookeeperDiscoveryImpl {
         @Override public void processResult(int rc, String path, Object ctx, Stat stat) {
             log.info("Previous node stat callback [rc=" + rc + ", path=" + path + ", stat=" + stat + ']');
 
-            assert rc == 0 || rc == KeeperException.Code.NONODE.intValue() : rc;
+            assert rc == 0 || rc == KeeperException.Code.NONODE.intValue() : KeeperException.Code.get(rc);
 
             if (rc == KeeperException.Code.NONODE.intValue() || stat == null) {
                 try {
@@ -610,7 +610,7 @@ public class ZookeeperDiscoveryImpl {
                 return;
             }
 
-            assert rc == 0 : rc;
+            assert rc == 0 : KeeperException.Code.get(rc);
 
             try {
                 if (data.length > 0) {
@@ -1448,7 +1448,7 @@ public class ZookeeperDiscoveryImpl {
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
             try {
-                assert rc == 0 : rc;
+                assert rc == 0 : KeeperException.Code.get(rc);
 
                 if (path.equals(zkPaths.aliveNodesDir))
                     generateTopologyEvents(children);
@@ -1470,7 +1470,7 @@ public class ZookeeperDiscoveryImpl {
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
             try {
-                assert rc == 0 : rc;
+                assert rc == 0 : KeeperException.Code.get(rc);
 
                 if (path.equals(zkPaths.evtsPath)) {
                     if (!crd)
