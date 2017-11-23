@@ -870,6 +870,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void topologyChangeWithRestarts(boolean restartZk, boolean closeClientSock) throws Exception {
+        sesTimeout = 30_000;
+
         if (closeClientSock)
             testSockNio = true;
 
@@ -986,6 +988,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void randomTopologyChanges(boolean restartZk, boolean closeClientSock) throws Exception {
+        sesTimeout = 30_000;
+
         if (closeClientSock)
             testSockNio = true;
 

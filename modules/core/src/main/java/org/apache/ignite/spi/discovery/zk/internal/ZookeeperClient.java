@@ -29,7 +29,6 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
@@ -206,6 +205,12 @@ public class ZookeeperClient implements Watcher {
             connLostC.run();
     }
 
+    /**
+     * @param path Path.
+     * @return {@code True} if node exists.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
     boolean exists(String path) throws ZookeeperClientFailedException, InterruptedException {
         for (;;) {
             long connStartTime = this.connStartTime;
@@ -219,8 +224,16 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
-    void createAllIfNeeded(List<String> paths, CreateMode createMode)
-        throws ZookeeperClientFailedException, InterruptedException
+    /**
+     *
+     * @param paths Paths to create.
+     * @param createMode Create mode.
+     * @throws KeeperException.NodeExistsException If at least one of target node already exists.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
+    void createAll(List<String> paths, CreateMode createMode)
+        throws ZookeeperClientFailedException, InterruptedException, KeeperException.NodeExistsException
     {
         // TODO ZK: need check for max size?
         List<Op> ops = new ArrayList<>(paths.size());
@@ -282,7 +295,7 @@ public class ZookeeperClient implements Watcher {
             long connStartTime = this.connStartTime;
 
             try {
-                if (first) {
+                if (!first) {
                     List<String> children = zk.getChildren(dir, false);
 
                     for (int i = 0; i < children.size(); i++) {
@@ -315,6 +328,12 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    /**
+     * @param path Path.
+     * @return Children nodes.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
     List<String> getChildren(String path)
         throws ZookeeperClientFailedException, InterruptedException
     {
@@ -371,6 +390,13 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    /**
+     * @param path Path.
+     * @param ver Version.
+     * @throws KeeperException.NoNodeException If target node does not exist.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
     void delete(String path, int ver)
         throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
     {
@@ -391,6 +417,13 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    /**
+     * @param path Path.
+     * @param data Data.
+     * @param ver Version.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
     void setData(String path, byte[] data, int ver)
         throws ZookeeperClientFailedException, InterruptedException
     {
@@ -411,6 +444,13 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    /**
+     * @param path Path.
+     * @return Data.
+     * @throws KeeperException.NoNodeException If target node does not exist.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
     byte[] getData(String path)
         throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
     {
@@ -429,24 +469,45 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    /**
+     * @param path Path.
+     * @param watcher Watcher.
+     * @param cb Callback.
+     */
     void existsAsync(String path, Watcher watcher, AsyncCallback.StatCallback cb) {
         ExistsOperation op = new ExistsOperation(path, watcher, cb);
 
         zk.exists(path, watcher, new StatCallbackWrapper(op), null);
     }
 
+    /**
+     * @param path Path.
+     * @param watcher Watcher.
+     * @param cb Callback.
+     */
     void getChildrenAsync(String path, Watcher watcher, AsyncCallback.Children2Callback cb) {
         GetChildrenOperation op = new GetChildrenOperation(path, watcher, cb);
 
         zk.getChildren(path, watcher, new ChildrenCallbackWrapper(op), null);
     }
 
+    /**
+     * @param path Path.
+     * @param watcher Watcher.
+     * @param cb Callback.
+     */
     void getDataAsync(String path, Watcher watcher, AsyncCallback.DataCallback cb) {
         GetDataOperation op = new GetDataOperation(path, watcher, cb);
 
         zk.getData(path, watcher, new DataCallbackWrapper(op), null);
     }
 
+    /**
+     * @param path Path.
+     * @param data Data.
+     * @param createMode Create mode.
+     * @param cb Callback.
+     */
     void createAsync(String path, byte[] data, CreateMode createMode, AsyncCallback.StringCallback cb) {
         if (data == null)
             data = EMPTY_BYTES;
@@ -547,8 +608,9 @@ public class ZookeeperClient implements Watcher {
      * @return {@code True} if can retry operation.
      */
     private boolean needRetry(int code) {
-        // TODO ZL: other codes.
-        return code == KeeperException.Code.CONNECTIONLOSS.intValue();
+        return code == KeeperException.Code.CONNECTIONLOSS.intValue() ||
+            code == KeeperException.Code.SESSIONMOVED.intValue() ||
+            code == KeeperException.Code.OPERATIONTIMEOUT.intValue();
     }
 
     /**
@@ -685,6 +747,12 @@ public class ZookeeperClient implements Watcher {
         /** */
         private final AsyncCallback.StringCallback cb;
 
+        /**
+         * @param path path.
+         * @param data Data.
+         * @param createMode Create mode.
+         * @param cb Callback.
+         */
         CreateOperation(String path, byte[] data, CreateMode createMode, AsyncCallback.StringCallback cb) {
             this.path = path;
             this.data = data;

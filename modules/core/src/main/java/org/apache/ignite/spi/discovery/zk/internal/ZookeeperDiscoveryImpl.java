@@ -333,7 +333,6 @@ public class ZookeeperDiscoveryImpl {
      */
     private void initZkNodes() throws InterruptedException {
         try {
-            // TODO ZK: use multi.
             if (zkClient.exists(zkPaths.aliveNodesDir))
                 return; // This path is created last, assume all others dirs are created.
 
@@ -347,7 +346,15 @@ public class ZookeeperDiscoveryImpl {
             dirs.add(zkPaths.customEvtsAcksDir);
             dirs.add(zkPaths.aliveNodesDir);
 
-            zkClient.createAllIfNeeded(dirs, PERSISTENT);
+            try {
+                zkClient.createAll(dirs, PERSISTENT);
+            }
+            catch (KeeperException.NodeExistsException e) {
+                U.warn(log, "Failed to create nodes using bulk operation: " + e);
+
+                for (String dir : dirs)
+                    zkClient.createIfNeeded(dir, null, PERSISTENT);
+            }
         }
         catch (ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
@@ -656,14 +663,14 @@ public class ZookeeperDiscoveryImpl {
         boolean newEvts = false;
 
         for (String child : aliveNodes) {
-            Integer inernalId = ZkIgnitePaths.aliveInternalId(child);
+            Integer internalId = ZkIgnitePaths.aliveInternalId(child);
 
-            Object old = alives.put(inernalId, child);
+            Object old = alives.put(internalId, child);
 
             assert old == null;
 
-            if (!top.nodesByInternalId.containsKey(inernalId)) {
-                generateNodeJoin(curTop, inernalId, child);
+            if (!top.nodesByInternalId.containsKey(internalId)) {
+                generateNodeJoin(curTop, internalId, child);
 
                 watchAliveNodeData(child);
 
