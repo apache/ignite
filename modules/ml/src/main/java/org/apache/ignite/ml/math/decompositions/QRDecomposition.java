@@ -169,31 +169,7 @@ public class QRDecomposition implements Destroyable {
      * @throws IllegalArgumentException if {@code B.rows() != A.rows()}.
      */
     public Matrix solve(Matrix mtx) {
-        if (mtx.rowSize() != rows)
-            throw new IllegalArgumentException("Matrix row dimensions must agree.");
-
-        int cols = mtx.columnSize();
-        Matrix r = getR();
-        Matrix x = like(mType, this.cols, cols);
-
-        Matrix qt = getQ().transpose();
-        Matrix y = qt.times(mtx);
-
-        for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {
-            // X[k,] = Y[k,] / R[k,k], note that X[k,] starts with 0 so += is same as =
-            x.viewRow(k).map(y.viewRow(k), Functions.plusMult(1 / r.get(k, k)));
-
-            if (k == 0)
-                continue;
-
-            // Y[0:(k-1),] -= R[0:(k-1),k] * X[k,]
-            Vector rCol = r.viewColumn(k).viewPart(0, k);
-
-            for (int c = 0; c < cols; c++)
-                y.viewColumn(c).viewPart(0, k).map(rCol, Functions.plusMult(-x.get(k, c)));
-        }
-
-        return x;
+        return new QRDSolver(q, r).solve(mtx);
     }
 
     /**
@@ -204,7 +180,8 @@ public class QRDecomposition implements Destroyable {
      * @throws IllegalArgumentException if {@code B.rows() != A.rows()}.
      */
     public Vector solve(Vector vec) {
-        Matrix res = solve(vec.likeMatrix(vec.size(), 1).assignColumn(0, vec));
+        Matrix res = new QRDSolver(q, r).solve(vec.likeMatrix(vec.size(), 1).assignColumn(0, vec));
+
         return vec.like(res.rowSize()).assign(res.viewColumn(0));
     }
 
