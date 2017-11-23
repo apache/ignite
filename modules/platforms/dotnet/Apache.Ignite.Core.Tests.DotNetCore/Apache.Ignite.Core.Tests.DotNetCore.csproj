@@ -67,9 +67,15 @@
     <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-query.xml" Link="Config\cache-query.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid1.xml" Link="Config\Compute\compute-grid1.xml" />
-    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid2.xml" Link="Config\Compute\compute-grid2.xml" />
-    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid3.xml" Link="Config\Compute\compute-grid3.xml" />
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid1.xml" Link="Config\Compute\compute-grid1.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid2.xml" Link="Config\Compute\compute-grid2.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid3.xml" Link="Config\Compute\compute-grid3.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\native-client-test-cache.xml" Link="Config\native-client-test-cache.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
