@@ -272,7 +272,7 @@
     <Compile Include="Binary\Serializable\AdvancedSerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="Services\ServicesTestFullFooter.cs" />
-    <Compile Include="TestUtils.cs" />
+    <Compile Include="TestUtils.Common.cs" />
     <Compile Include="Memory\InteropMemoryTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTest.cs" />
     <Compile Include="Binary\BinarySelfTest.cs" />
@@ -460,6 +460,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+    <Compile Include="TestUtils.Windows.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' != 'AnyCPU'">

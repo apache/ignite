@@ -28,16 +28,13 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
-    using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
     /// Test utility methods.
     /// </summary>
-    public static class TestUtils
+    public static partial class TestUtils
     {
         /** Indicates long running and/or memory/cpu intensive test. */
         public const string CategoryIntensive = "LONG_TEST";
@@ -116,15 +113,6 @@ namespace Apache.Ignite.Core.Tests
             }
 
             return ops;
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
-        public static string CreateTestClasspath()
-        {
-            return Classpath.CreateClasspath(forceTestClasspath: true);
         }
 
         /// <summary>
@@ -250,51 +238,7 @@ namespace Apache.Ignite.Core.Tests
             return false;
         }
 
-        /// <summary>
-        /// Asserts that the handle registry is empty.
-        /// </summary>
-        /// <param name="timeout">Timeout, in milliseconds.</param>
-        /// <param name="grids">Grids to check.</param>
-        public static void AssertHandleRegistryIsEmpty(int timeout, params IIgnite[] grids)
-        {
-            foreach (var g in grids)
-                AssertHandleRegistryHasItems(g, 0, timeout);
-        }
 
-        /// <summary>
-        /// Asserts that the handle registry has specified number of entries.
-        /// </summary>
-        /// <param name="timeout">Timeout, in milliseconds.</param>
-        /// <param name="expectedCount">Expected item count.</param>
-        /// <param name="grids">Grids to check.</param>
-        public static void AssertHandleRegistryHasItems(int timeout, int expectedCount, params IIgnite[] grids)
-        {
-            foreach (var g in grids)
-                AssertHandleRegistryHasItems(g, expectedCount, timeout);
-        }
-
-        /// <summary>
-        /// Asserts that the handle registry has specified number of entries.
-        /// </summary>
-        /// <param name="grid">The grid to check.</param>
-        /// <param name="expectedCount">Expected item count.</param>
-        /// <param name="timeout">Timeout, in milliseconds.</param>
-        public static void AssertHandleRegistryHasItems(IIgnite grid, int expectedCount, int timeout)
-        {
-            var handleRegistry = ((Ignite)grid).HandleRegistry;
-
-            expectedCount++;  // Skip default lifecycle bean
-
-            if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
-                return;
-
-            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder)).ToList();
-
-            if (items.Any())
-                Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'", 
-                    grid.Name, expectedCount, handleRegistry.Count,
-                    items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
-        }
 
         /// <summary>
         /// Waits for condition, polling in busy wait loop.
@@ -397,16 +341,6 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Serializes and deserializes back an object.
-        /// </summary>
-        public static T SerializeDeserialize<T>(T obj)
-        {
-            var marsh = new Marshaller(null) {CompactFooter = false};
-
-            return marsh.Unmarshal<T>(marsh.Marshal(obj));
-        }
-
-        /// <summary>
         /// Gets the primary keys.
         /// </summary>
         public static IEnumerable<int> GetPrimaryKeys(IIgnite ignite, string cacheName,
@@ -424,14 +358,6 @@ namespace Apache.Ignite.Core.Tests
         public static int GetPrimaryKey(IIgnite ignite, string cacheName, IClusterNode node = null)
         {
             return GetPrimaryKeys(ignite, cacheName, node).First();
-        }
-
-        /// <summary>
-        /// Gets the name of the temporary directory.
-        /// </summary>
-        public static string GetTempDirectoryName()
-        {
-            return IgniteUtils.GetTempDirectoryName();
         }
     }
 }
