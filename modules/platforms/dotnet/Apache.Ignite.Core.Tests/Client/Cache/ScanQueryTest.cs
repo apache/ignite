@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -179,7 +178,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 // MaxCursors = 3
                 var ex = Assert.Throws<IgniteClientException>(() => clientCache.Query(qry));
                 Assert.AreEqual("Too many open cursors", ex.Message.Substring(0, 21));
-                Assert.AreEqual((int) ClientStatus.TooManyCursors, ex.ErrorCode);
+#if !NETCOREAPP2_0
+                Assert.AreEqual((int) Impl.Client.ClientStatus.TooManyCursors, ex.ErrorCode);
+#endif
 
                 var count = 0;
 
