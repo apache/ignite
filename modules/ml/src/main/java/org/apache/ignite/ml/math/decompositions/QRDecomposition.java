@@ -46,8 +46,6 @@ public class QRDecomposition implements Destroyable {
     private final int rows;
     /** */
     private final int cols;
-    /** */
-    private double threshold;
 
     /**
      * @param v Value to be checked for being an ordinary double.
@@ -89,7 +87,6 @@ public class QRDecomposition implements Destroyable {
         boolean fullRank = true;
 
         r = like(mtx, min, cols);
-        this.threshold = threshold;
 
         for (int i = 0; i < min; i++) {
             Vector qi = qTmp.viewColumn(i);
@@ -128,6 +125,8 @@ public class QRDecomposition implements Destroyable {
             q = qTmp.viewPart(0, rows, 0, min).copy();
         else
             q = qTmp;
+
+        verifyNonSingularR(threshold);
 
         this.fullRank = fullRank;
     }
@@ -175,7 +174,6 @@ public class QRDecomposition implements Destroyable {
 
         int cols = mtx.columnSize();
         Matrix r = getR();
-        checkSingular(r, threshold, true);
         Matrix x = like(mType, this.cols, cols);
 
         Matrix qt = getQ().transpose();
@@ -220,27 +218,20 @@ public class QRDecomposition implements Destroyable {
     /**
      * Check singularity.
      *
-     * @param r R matrix.
      * @param min Singularity threshold.
-     * @param raise Whether to raise a {@link SingularMatrixException} if any element of the diagonal fails the check.
-     * @return {@code true} if any element of the diagonal is smaller or equal to {@code min}.
      * @throws SingularMatrixException if the matrix is singular and {@code raise} is {@code true}.
      */
-    private static boolean checkSingular(Matrix r, double min, boolean raise) {
-        // TODO: IGNITE-5828, Not a very fast approach for distributed matrices. would be nice if we could independently check
-        // parts on different nodes for singularity and do fold with 'or'.
+    private void verifyNonSingularR(double min) {
+        // TODO: IGNITE-5828, Not a very fast approach for distributed matrices. would be nice if we could independently
+        // check parts on different nodes for singularity and do fold with 'or'.
 
-        final int len = r.columnSize();
+        final int len = r.columnSize() > r.rowSize() ? r.rowSize() : r.columnSize();
         for (int i = 0; i < len; i++) {
             final double d = r.getX(i, i);
             if (Math.abs(d) <= min)
-                if (raise)
-                    throw new SingularMatrixException("Number is too small (%f, while " +
-                        "threshold is %f). Index of diagonal element is (%d, %d)", d, min, i, i);
-                else
-                    return true;
+                throw new SingularMatrixException("Number is too small (%f, while " +
+                    "threshold is %f). Index of diagonal element is (%d, %d)", d, min, i, i);
 
         }
-        return false;
     }
 }
