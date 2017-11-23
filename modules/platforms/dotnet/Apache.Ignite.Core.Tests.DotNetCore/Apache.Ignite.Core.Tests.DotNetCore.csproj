@@ -64,6 +64,10 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Log\ConcurrentMemoryTarget.cs" Link="Log\ConcurrentMemoryTarget.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Log\CustomLoggerTest.cs" Link="Log\CustomLoggerTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Log\Log4NetLoggerTest.cs" Link="Log\Log4NetLoggerTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Log\NLogLoggerTest.cs" Link="Log\NLogLoggerTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\MessagingTest.cs" Link="Common\MessagingTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Query\BinarizablePerson.cs" Link="Cache\Query\BinarizablePerson.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
@@ -97,6 +101,8 @@
     <PackageReference Include="Apache.Ignite" Version="0.0.1-test" />
     <PackageReference Include="Apache.Ignite.Linq" Version="0.0.1-test" />
     <PackageReference Include="Apache.Ignite.Schema" Version="0.0.1-test" />
+    <PackageReference Include="Apache.Ignite.NLog" Version="0.0.1-test" />
+    <PackageReference Include="Apache.Ignite.log4net" Version="0.0.1-test" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
     <PackageReference Include="NUnit" Version="3.8.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
@@ -109,6 +115,7 @@
     <Folder Include="Cache\Query\" />
     <Folder Include="Compute\" />
     <Folder Include="Config\Compute\" />
+    <Folder Include="Log\" />
     <Folder Include="ThinClient\Cache\" />
   </ItemGroup>
 
