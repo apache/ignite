@@ -196,7 +196,11 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         public void TestIncorrectMethodSignature()
         {
             var ex = Assert.Catch(() => TestUtils.SerializeDeserialize(new InvalidCallbackSignature()));
-            ex = (ex as TargetInvocationException)?.InnerException ?? ex;
+            
+            var tex = ex as TargetInvocationException;
+            ex = tex != null ? tex.InnerException : ex;
+
+            Assert.IsNotNull(ex);
 
             var t = typeof(InvalidCallbackSignature);
 
