@@ -55,6 +55,12 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Gets number of keys in the cache, possibly with {@code null} values. */
     private int keySize;
 
+    /** Number of non-{@code null} values in the cache. */
+    private long sizeLong;
+
+    /** Gets number of keys in the cache, possibly with {@code null} values. */
+    private long keySizeLong;
+
     /** Total number of reads of the owning entity (either cache or entry). */
     private long reads;
 
@@ -223,6 +229,9 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
 
         size = m.getSize();
         keySize = m.getKeySize();
+
+        sizeLong = m.getSizeLong();
+        keySizeLong = m.getKeySizeLong();
 
         reads = m.getCacheGets();
         writes = m.getCachePuts() + m.getCacheRemovals();
@@ -457,6 +466,20 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     }
 
     /**
+     * @return Number of non-{@code null} values in the cache.
+     */
+    public long getSizeLong() {
+        return sizeLong;
+    }
+
+    /**
+     * @return Gets number of keys in the cache, possibly with {@code null} values.
+     */
+    public long getKeySizeLong() {
+        return keySizeLong;
+    }
+
+    /**
      * @return Gets query metrics for cache.
      */
     public VisorQueryMetrics getQueryMetrics() {
@@ -642,10 +665,10 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeEnum(out, mode);
-
         out.writeBoolean(sys);
-        out.writeInt(size);
-        out.writeInt(keySize);
+        // Calculate size and keySize from long versions.
+        out.writeLong(sizeLong);
+        out.writeLong(keySizeLong);
         out.writeLong(reads);
         out.writeFloat(avgReadTime);
         out.writeLong(writes);
@@ -701,8 +724,12 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         name = U.readString(in);
         mode = CacheMode.fromOrdinal(in.readByte());
         sys = in.readBoolean();
-        size = in.readInt();
-        keySize = in.readInt();
+        sizeLong = in.readLong();
+        keySizeLong = in.readLong();
+
+        size = U.convertToInt(sizeLong);
+        keySizeLong = U.convertToInt(keySizeLong);
+
         reads = in.readLong();
         avgReadTime = in.readFloat();
         writes = in.readLong();

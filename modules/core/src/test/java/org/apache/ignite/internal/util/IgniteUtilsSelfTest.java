@@ -848,6 +848,24 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test {@link U#convertToInt}.
+     *
+     * @throws Exception If failed.
+     */
+    public void testConvertToInt() throws Exception {
+        assertEquals(Integer.MIN_VALUE, U.convertToInt(Long.MIN_VALUE));
+        assertEquals(Integer.MIN_VALUE, U.convertToInt(Integer.MIN_VALUE-1L));
+        assertEquals(Integer.MIN_VALUE, U.convertToInt(Integer.MIN_VALUE));
+        assertEquals(Integer.MIN_VALUE+1, U.convertToInt(Integer.MIN_VALUE+1L));
+
+        assertEquals(Integer.MAX_VALUE-1, U.convertToInt(Integer.MAX_VALUE-1L));
+        assertEquals(0, U.convertToInt(0));
+        assertEquals(Integer.MAX_VALUE, U.convertToInt(Integer.MAX_VALUE));
+        assertEquals(Integer.MAX_VALUE, U.convertToInt(Integer.MAX_VALUE+1L));
+        assertEquals(Integer.MAX_VALUE, U.convertToInt(Long.MAX_VALUE));
+    }
+
+    /**
      * Test enum.
      */
     private enum TestEnum {

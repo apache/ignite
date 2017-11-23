@@ -698,12 +698,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public int size() {
-        long size = sizeLong();
-
-        if (size > Integer.MAX_VALUE)
-            return Integer.MAX_VALUE;
-
-        return (int)size;
+        return U.convertToInt(sizeLong());
     }
 
     /** {@inheritDoc} */
@@ -718,12 +713,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public int primarySize() {
-        long size = primarySizeLong();
-
-        if (size > Integer.MAX_VALUE)
-            return Integer.MAX_VALUE;
-
-        return (int)size;
+        return U.convertToInt(primarySizeLong());
     }
 
     /** {@inheritDoc} */
