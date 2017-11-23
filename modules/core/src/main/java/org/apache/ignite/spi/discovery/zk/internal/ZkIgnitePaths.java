@@ -104,7 +104,7 @@ class ZkIgnitePaths {
      * @return The given path if it was valid, for fluent chaining
      * @throws IllegalArgumentException if the path is invalid
      */
-    public static String validatePath(String path) throws IllegalArgumentException {
+    static String validatePath(String path) throws IllegalArgumentException {
         if (path == null) {
             throw new IllegalArgumentException("Path cannot be null");
         }

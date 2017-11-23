@@ -42,7 +42,6 @@ public class ZkClusterNodes {
      * @return Remote nodes.
      */
     public Collection<ClusterNode> remoteNodes() {
-        // TODO ZK
         List<ClusterNode> nodes = new ArrayList<>();
 
         for (ClusterNode node : nodesById.values()) {
@@ -73,6 +72,10 @@ public class ZkClusterNodes {
         assert old == null : old;
     }
 
+    /**
+     * @param internalId Node internal ID.
+     * @return Removed node.
+     */
     ZookeeperClusterNode removeNode(int internalId) {
         ZookeeperClusterNode node = nodesByInternalId.remove(internalId);
 

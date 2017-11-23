@@ -167,7 +167,8 @@ public class ZookeeperClient implements Watcher {
                 }
 
                 if (newState != state) {
-                    log.info("Zookeeper client state changed [prevState=" + state + ", newState=" + newState + ']');
+                    if (log.isInfoEnabled())
+                        log.info("Zookeeper client state changed [prevState=" + state + ", newState=" + newState + ']');
 
                     state = newState;
 
@@ -256,9 +257,19 @@ public class ZookeeperClient implements Watcher {
 
     }
 
+    /**
+     * @param path Path.
+     * @param data Data.
+     * @param createMode Create mode.
+     * @return Created path.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
     String createIfNeeded(String path, byte[] data, CreateMode createMode)
         throws ZookeeperClientFailedException, InterruptedException
     {
+        assert !createMode.isSequential() : createMode;
+
         if (data == null)
             data = EMPTY_BYTES;
 
@@ -279,7 +290,17 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
-    String createSequential(String checkPrefix, String dir, String childPath, byte[] data, CreateMode createMode)
+    /**
+     * @param checkPrefix Unique prefix to check in case of retry.
+     * @param parentPath Parent node path.
+     * @param childPath  Child path.
+     * @param data Node data.
+     * @param createMode Create mode.
+     * @return Create path.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
+    String createSequential(String checkPrefix, String parentPath, String childPath, byte[] data, CreateMode createMode)
         throws ZookeeperClientFailedException, InterruptedException
     {
         assert createMode.isSequential() : createMode;
@@ -289,20 +310,20 @@ public class ZookeeperClient implements Watcher {
 
         boolean first = true;
 
-        String path = dir + "/" + childPath;
+        String path = parentPath + "/" + childPath;
 
         for (;;) {
             long connStartTime = this.connStartTime;
 
             try {
                 if (!first) {
-                    List<String> children = zk.getChildren(dir, false);
+                    List<String> children = zk.getChildren(parentPath, false);
 
                     for (int i = 0; i < children.size(); i++) {
                         String child = children.get(i);
 
                         if (children.get(i).startsWith(checkPrefix)) {
-                            String resPath = dir + "/" + child;
+                            String resPath = parentPath + "/" + child;
 
                             log.info("Check before retry, node already created: " + resPath);
 
@@ -349,6 +370,12 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    /**
+     * @param path Path.
+     * @param ver Version.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
     void deleteIfExists(String path, int ver)
         throws ZookeeperClientFailedException, InterruptedException
     {
@@ -360,7 +387,14 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
-
+    /**
+     * @param parent Parent path.
+     * @param paths Children paths.
+     * @param ver Version.
+     * @throws KeeperException.NoNodeException If at least one of nodes does not exist.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
     void deleteAll(@Nullable String parent, List<String> paths, int ver)
         throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
     {
@@ -397,7 +431,7 @@ public class ZookeeperClient implements Watcher {
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
-    void delete(String path, int ver)
+    private void delete(String path, int ver)
         throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
     {
         for (;;) {
@@ -508,7 +542,7 @@ public class ZookeeperClient implements Watcher {
      * @param createMode Create mode.
      * @param cb Callback.
      */
-    void createAsync(String path, byte[] data, CreateMode createMode, AsyncCallback.StringCallback cb) {
+    private void createAsync(String path, byte[] data, CreateMode createMode, AsyncCallback.StringCallback cb) {
         if (data == null)
             data = EMPTY_BYTES;
 
@@ -525,7 +559,10 @@ public class ZookeeperClient implements Watcher {
     }
 
     /**
+     * @param prevConnStartTime Time when connection was established.
      * @param e Error.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
      */
     private void onZookeeperError(long prevConnStartTime, Exception e)
         throws ZookeeperClientFailedException, InterruptedException
@@ -659,6 +696,11 @@ public class ZookeeperClient implements Watcher {
         /** */
         private final AsyncCallback.Children2Callback cb;
 
+        /**
+         * @param path Path.
+         * @param watcher Watcher.
+         * @param cb Callback.
+         */
         GetChildrenOperation(String path, Watcher watcher, AsyncCallback.Children2Callback cb) {
             this.path = path;
             this.watcher = watcher;

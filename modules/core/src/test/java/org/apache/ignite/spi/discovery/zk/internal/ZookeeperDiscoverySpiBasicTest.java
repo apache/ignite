@@ -44,6 +44,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -980,6 +981,45 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      */
     public void testRandomTopologyChanges_CloseClients() throws Exception {
         randomTopologyChanges(false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployService1() throws Exception {
+        startGridsMultiThreaded(3);
+
+        grid(0).services(grid(0).cluster()).deployNodeSingleton("test", new GridCacheAbstractFullApiSelfTest.DummyServiceImpl());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployService2() throws Exception {
+        client = false;
+
+        startGrid(0);
+
+        client = true;
+
+        startGrid(1);
+
+        grid(0).services(grid(0).cluster()).deployNodeSingleton("test", new GridCacheAbstractFullApiSelfTest.DummyServiceImpl());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployService3() throws Exception {
+        client = true;
+
+        startGrid(0);
+
+        client = false;
+
+        startGrid(1);
+
+        grid(0).services(grid(0).cluster()).deployNodeSingleton("test", new GridCacheAbstractFullApiSelfTest.DummyServiceImpl());
     }
 
     /**
