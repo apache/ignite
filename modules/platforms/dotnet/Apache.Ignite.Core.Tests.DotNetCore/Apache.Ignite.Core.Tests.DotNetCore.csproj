@@ -21,23 +21,29 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\CallbacksTest.cs" Link="Binary\Serializable\CallbacksTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\GenericCollectionsTest.cs" Link="Binary\Serializable\GenericCollectionsTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\SqlDmlTest.cs" Link="Binary\Serializable\SqlDmlTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableAddArgCacheEntryProcessor.cs" Link="Cache\BinarizableAddArgCacheEntryProcessor.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableTestException.cs" Link="Cache\BinarizableTestException.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTest.cs" Link="Cache\CacheAbstractTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestKey.cs" Link="Cache\CacheTestKey.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\PersistenceTest.cs" Link="Cache\PersistenceTest.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Aggregates.cs" Link="Cache\Linq\CacheLinqTest.Aggregates.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\Linq\CacheLinqTest.Base.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" Link="Cache\Linq\CacheLinqTest.CompiledQuery.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Contains.cs" Link="Cache\Linq\CacheLinqTest.Contains.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Custom.cs" Link="Cache\Linq\CacheLinqTest.Custom.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.DateTime.cs" Link="Cache\Linq\CacheLinqTest.DateTime.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Functions.cs" Link="Cache\Linq\CacheLinqTest.Functions.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Introspection.cs" Link="Cache\Linq\CacheLinqTest.Introspection.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Join.cs" Link="Cache\Linq\CacheLinqTest.Join.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" Link="Cache\Linq\CacheLinqTest.Join.LocalCollection.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Misc.cs" Link="Cache\Linq\CacheLinqTest.Misc.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Numerics.cs" Link="Cache\Linq\CacheLinqTest.Numerics.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Strings.cs" Link="Cache\Linq\CacheLinqTest.Strings.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSimpleName.cs" Link="Cache\Linq\CacheLinqTestSimpleName.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" Link="Cache\Linq\CacheLinqTestSqlEscapeAll.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Aggregates.cs" Link="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\Query\Linq\CacheLinqTest.Base.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" Link="Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Contains.cs" Link="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Custom.cs" Link="Cache\Query\Linq\CacheLinqTest.Custom.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.DateTime.cs" Link="Cache\Query\Linq\CacheLinqTest.DateTime.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Functions.cs" Link="Cache\Query\Linq\CacheLinqTest.Functions.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Introspection.cs" Link="Cache\Query\Linq\CacheLinqTest.Introspection.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Join.cs" Link="Cache\Query\Linq\CacheLinqTest.Join.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" Link="Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Misc.cs" Link="Cache\Query\Linq\CacheLinqTest.Misc.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Numerics.cs" Link="Cache\Query\Linq\CacheLinqTest.Numerics.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Strings.cs" Link="Cache\Query\Linq\CacheLinqTest.Strings.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSimpleName.cs" Link="Cache\Query\Linq\CacheLinqTestSimpleName.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" Link="Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\TestReferenceObject.cs" Link="Cache\TestReferenceObject.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Query\BinarizablePerson.cs" Link="Cache\Query\BinarizablePerson.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,7 +67,8 @@
 
   <ItemGroup>
     <Folder Include="Binary\Serializable\" />
-    <Folder Include="Cache\Linq\" />
+    <Folder Include="Cache\Query\Linq\" />
+    <Folder Include="Cache\Query\" />
     <Folder Include="Compute\" />
     <Folder Include="Config\" />
   </ItemGroup>

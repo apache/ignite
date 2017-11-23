@@ -30,8 +30,10 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+#if !NETCOREAPP2_0
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
+#endif
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -2198,6 +2200,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
+#if !NETCOREAPP2_0
         /// <summary>
         /// Test skip-store semantics.
         /// </summary>
@@ -2224,6 +2227,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Ensure other flags are preserved.
             Assert.IsTrue(((CacheImpl<int, int>) cache.WithKeepBinary<int, int>().WithSkipStore()).IsKeepBinary);
         }
+#endif
 
         [Test]
         public void TestRebalance()
