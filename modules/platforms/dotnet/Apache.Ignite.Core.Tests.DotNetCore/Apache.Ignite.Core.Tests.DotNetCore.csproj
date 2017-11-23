@@ -33,6 +33,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\NonSerializableCacheEntryProcessor.cs" Link="Cache\NonSerializableCacheEntryProcessor.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\NonSerializableException.cs" Link="Cache\NonSerializableException.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\PersistenceTest.cs" Link="Cache\PersistenceTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheQueriesCodeConfigurationTest.cs" Link="Cache\Query\CacheQueriesCodeConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheQueriesTest.cs" Link="Cache\Query\CacheQueriesTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Aggregates.cs" Link="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\Query\Linq\CacheLinqTest.Base.cs" />
