@@ -232,7 +232,10 @@ class ZkIgnitePaths {
      * @return Event node ID.
      */
     static UUID customEventSendNodeId(String path) {
-        String idStr = path.substring(0, ZkIgnitePaths.UUID_LEN);
+        // <uuid prefix>:<node id>|<seq>
+        int startIdx = ZkIgnitePaths.UUID_LEN + 1;
+
+        String idStr = path.substring(startIdx, startIdx + ZkIgnitePaths.UUID_LEN);
 
         return UUID.fromString(idStr);
     }

@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
@@ -50,11 +51,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
-import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClient;
-import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
@@ -70,6 +68,9 @@ import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
  *
  */
 public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
+    /** */
+    private static final int ZK_SRVS = 3;
+
     /** */
     private static TestingCluster zkCluster;
 
@@ -181,8 +182,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        IgnitionEx.TEST_ZK = false;
+
         if (USE_TEST_CLUSTER) {
-            zkCluster = new TestingCluster(3);
+            zkCluster = new TestingCluster(ZK_SRVS);
+
             zkCluster.start();
         }
     }
@@ -860,6 +864,32 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomTopologyChanges() throws Exception {
+        randomTopologyChanges(false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRandomTopologyChangesRestartZk() throws Exception {
+        randomTopologyChanges(true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRandomTopologyChangesCloseClients() throws Exception {
+        randomTopologyChanges(false, true);
+    }
+
+    /**
+     * @param restartZk If {@code true} in background restarts on of ZK servers.
+     * @param closeClientSock If {@code true} in background closes zk clients' sockets.
+     * @throws Exception If failed.
+     */
+    private void randomTopologyChanges(boolean restartZk, boolean closeClientSock) throws Exception {
+        if (closeClientSock)
+            testSockNio = true;
+
         List<Integer> startedNodes = new ArrayList<>();
         List<String> startedCaches = new ArrayList<>();
 
@@ -871,72 +901,90 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         int MAX_NODES = 20;
         int MAX_CACHES = 10;
 
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        AtomicBoolean stop = new AtomicBoolean();
 
-        while (System.currentTimeMillis() < stopTime) {
-            if (startedNodes.size() > 0 && rnd.nextInt(10) == 0) {
-                boolean startCache = startedCaches.size() < 2 ||
-                    (startedCaches.size() < MAX_CACHES && rnd.nextInt(5) != 0);
+        IgniteInternalFuture<?> fut1 = restartZk ? startRestartZkServers(stopTime, stop) : null;
+        IgniteInternalFuture<?> fut2 = closeClientSock ? startCloseZkClientSocket(stopTime, stop) : null;
 
-                int nodeIdx = startedNodes.get(rnd.nextInt(startedNodes.size()));
+        try {
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                if (startCache) {
-                    String cacheName = "cache-" + nextCacheIdx++;
+            while (System.currentTimeMillis() < stopTime) {
+                if (startedNodes.size() > 0 && rnd.nextInt(10) == 0) {
+                    boolean startCache = startedCaches.size() < 2 ||
+                        (startedCaches.size() < MAX_CACHES && rnd.nextInt(5) != 0);
 
-                    log.info("Next, start new cache [cacheName=" + cacheName +
-                        ", node=" + nodeIdx +
-                        ", crd=" + (startedNodes.isEmpty() ? null : Collections.min(startedNodes)) +
-                        ", curCaches=" + startedCaches.size() + ']');
+                    int nodeIdx = startedNodes.get(rnd.nextInt(startedNodes.size()));
 
-                    ignite(nodeIdx).createCache(new CacheConfiguration<>(cacheName));
+                    if (startCache) {
+                        String cacheName = "cache-" + nextCacheIdx++;
 
-                    startedCaches.add(cacheName);
-                }
-                else {
-                    if (startedCaches.size() > 1) {
-                        String cacheName = startedCaches.get(rnd.nextInt(startedCaches.size()));
-
-                        log.info("Next, stop cache [nodeIdx=" + nodeIdx +
+                        log.info("Next, start new cache [cacheName=" + cacheName +
                             ", node=" + nodeIdx +
                             ", crd=" + (startedNodes.isEmpty() ? null : Collections.min(startedNodes)) +
-                            ", cacheName=" + startedCaches.size() + ']');
+                            ", curCaches=" + startedCaches.size() + ']');
 
-                        ignite(nodeIdx).destroyCache(cacheName);
+                        ignite(nodeIdx).createCache(new CacheConfiguration<>(cacheName));
 
-                        assertTrue(startedCaches.remove(cacheName));
+                        startedCaches.add(cacheName);
+                    }
+                    else {
+                        if (startedCaches.size() > 1) {
+                            String cacheName = startedCaches.get(rnd.nextInt(startedCaches.size()));
+
+                            log.info("Next, stop cache [nodeIdx=" + nodeIdx +
+                                ", node=" + nodeIdx +
+                                ", crd=" + (startedNodes.isEmpty() ? null : Collections.min(startedNodes)) +
+                                ", cacheName=" + startedCaches.size() + ']');
+
+                            ignite(nodeIdx).destroyCache(cacheName);
+
+                            assertTrue(startedCaches.remove(cacheName));
+                        }
                     }
                 }
-            }
-            else {
-                boolean startNode = startedNodes.size() < 2 ||
-                    (startedNodes.size() < MAX_NODES && rnd.nextInt(5) != 0);
-
-                if (startNode) {
-                    int nodeIdx = nextNodeIdx++;
-
-                    log.info("Next, start new node [nodeIdx=" + nodeIdx +
-                        ", crd=" + (startedNodes.isEmpty() ? null : Collections.min(startedNodes)) +
-                        ", curNodes=" + startedNodes.size() + ']');
-
-                    startGrid(nodeIdx);
-
-                    assertTrue(startedNodes.add(nodeIdx));
-                }
                 else {
-                    if (startedNodes.size() > 1) {
-                        int nodeIdx = startedNodes.get(rnd.nextInt(startedNodes.size()));
+                    boolean startNode = startedNodes.size() < 2 ||
+                        (startedNodes.size() < MAX_NODES && rnd.nextInt(5) != 0);
 
-                        log.info("Next, stop [nodeIdx=" + nodeIdx +
+                    if (startNode) {
+                        int nodeIdx = nextNodeIdx++;
+
+                        log.info("Next, start new node [nodeIdx=" + nodeIdx +
                             ", crd=" + (startedNodes.isEmpty() ? null : Collections.min(startedNodes)) +
                             ", curNodes=" + startedNodes.size() + ']');
 
-                        stopGrid(nodeIdx);
+                        startGrid(nodeIdx);
 
-                        assertTrue(startedNodes.remove((Integer)nodeIdx));
+                        assertTrue(startedNodes.add(nodeIdx));
+                    }
+                    else {
+                        if (startedNodes.size() > 1) {
+                            int nodeIdx = startedNodes.get(rnd.nextInt(startedNodes.size()));
+
+                            log.info("Next, stop [nodeIdx=" + nodeIdx +
+                                ", crd=" + (startedNodes.isEmpty() ? null : Collections.min(startedNodes)) +
+                                ", curNodes=" + startedNodes.size() + ']');
+
+                            stopGrid(nodeIdx);
+
+                            assertTrue(startedNodes.remove((Integer)nodeIdx));
+                        }
                     }
                 }
+
+                U.sleep(rnd.nextInt(100) + 1);
             }
         }
+        finally {
+            stop.set(true);
+        }
+
+        if (fut1 != null)
+            fut1.get();
+
+        if (fut2 != null)
+            fut2.get();
     }
 
     /**
@@ -952,6 +1000,72 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         err = false;
 
         evts.clear();
+    }
+
+    /**
+     * @param stopTime Stop time.
+     * @param stop Stop flag.
+     * @return Future.
+     */
+    private IgniteInternalFuture<?> startRestartZkServers(final long stopTime, final AtomicBoolean stop) {
+        return GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                while (!stop.get() && System.currentTimeMillis() < stopTime) {
+                    U.sleep(rnd.nextLong(500) + 500);
+
+                    int idx = rnd.nextInt(ZK_SRVS);
+
+                    log.info("Restart ZK server: " + idx);
+
+                    zkCluster.getServers().get(idx).restart();
+
+                }
+
+                return null;
+            }
+        }, "zk-restart-thread");
+    }
+
+    /**
+     * @param stopTime Stop time.
+     * @param stop Stop flag.
+     * @return Future.
+     */
+    private IgniteInternalFuture<?> startCloseZkClientSocket(final long stopTime, final AtomicBoolean stop) {
+        assert testSockNio;
+
+        return GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                while (!stop.get() && System.currentTimeMillis() < stopTime) {
+                    U.sleep(rnd.nextLong(100) + 50);
+
+                    List<Ignite> nodes = G.allGrids();
+
+                    if (nodes.size() > 0) {
+                        Ignite node = nodes.get(rnd.nextInt(nodes.size()));
+
+                        ZkTestClientCnxnSocketNIO nio = ZkTestClientCnxnSocketNIO.forNode(node);
+
+                        if (nio != null) {
+                            info("Close zk client socket for node: " + node.name());
+
+                            try {
+                                nio.closeSocket(false);
+                            }
+                            catch (Exception e) {
+                                info("Failed to close zk client socket for node: " + node.name());
+                            }
+                        }
+                    }
+                }
+
+                return null;
+            }
+        }, "zk-restart-thread");
     }
 
     /**

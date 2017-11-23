@@ -249,8 +249,13 @@ public class ZookeeperDiscoveryImpl {
         }
 
         try {
-            // TODO ZK: handle retries.
-            zkClient.createIfNeeded(zkPaths.customEvtsDir + "/" + locNode.id() + '|', msgBytes, CreateMode.PERSISTENT_SEQUENTIAL);
+            String prefix = UUID.randomUUID().toString();
+
+            zkClient.createSequential(prefix,
+                zkPaths.customEvtsDir,
+                prefix + ":" + locNode.id() + '|',
+                msgBytes,
+                CreateMode.PERSISTENT_SEQUENTIAL);
         }
         catch (ZookeeperClientFailedException e) {
             throw new IgniteException(e);
@@ -485,7 +490,8 @@ public class ZookeeperDiscoveryImpl {
                 if (log.isInfoEnabled())
                     log.info("Previous node watch event: " + evt);
 
-                zkClient.existsAsync(evt.getPath(), this, this);
+                if (evt.getType() != Event.EventType.None)
+                    zkClient.existsAsync(evt.getPath(), this, this);
             }
         }
 
@@ -585,9 +591,8 @@ public class ZookeeperDiscoveryImpl {
      */
     private class AliveNodeDataWatcher implements Watcher {
         @Override public void process(WatchedEvent evt) {
-            if (evt.getType() == Event.EventType.NodeDataChanged) {
+            if (evt.getType() == Event.EventType.NodeDataChanged)
                 zkClient.getDataAsync(evt.getPath(), this, aliveNodeDataUpdateCallback);
-            }
         }
     }
 
