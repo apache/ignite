@@ -28,8 +28,10 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 public abstract class SimpleGroupTrainer<LC extends HasTrainingUUID, K, V, IR extends Serializable,
 R extends Serializable, I extends Serializable,
 M extends Model, T extends Distributive<K>,
-G, O extends Serializable> extends
+G, O extends Serializable, D> extends
     GroupTrainer<LC, K, V, IR, R, I, M, T, G> {
+    private Metaoptimizer<IR, I, D, O, G> metaoptimizer;
+
     public SimpleGroupTrainer(
         IgniteCache<GroupTrainerCacheKey<K>, V> cache,
         Ignite ignite) {
