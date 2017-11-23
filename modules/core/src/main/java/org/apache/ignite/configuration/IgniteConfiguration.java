@@ -165,6 +165,9 @@ public class IgniteConfiguration {
     /** Default size of management thread pool. */
     public static final int DFLT_MGMT_THREAD_CNT = 4;
 
+    /** Default failure processing policy. */
+    public static final FailureProcessingPolicy DFLT_FLR_PLC = FailureProcessingPolicy.STOP;
+
     /** Default segmentation policy. */
     public static final SegmentationPolicy DFLT_SEG_PLC = STOP;
 
@@ -311,6 +314,9 @@ public class IgniteConfiguration {
 
     /** Discovery SPI. */
     private DiscoverySpi discoSpi;
+
+    /** Failure processing policy */
+    private FailureProcessingPolicy flrPlc = DFLT_FLR_PLC;
 
     /** Segmentation policy. */
     private SegmentationPolicy segPlc = DFLT_SEG_PLC;
@@ -1589,6 +1595,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setDiscoverySpi(DiscoverySpi discoSpi) {
         this.discoSpi = discoSpi;
+
+        return this;
+    }
+
+    /**
+     * Returns Failure processing policy. Default is {@link #DFLT_FLR_PLC}.
+     *
+     * @return Failure processing policy.
+     */
+    public FailureProcessingPolicy getFailureProcessingPolicy() {
+        return flrPlc;
+    }
+
+    /**
+     * Sets Failure processing policy.
+     *
+     * @param flrPlc Failure processing policy.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setFailureProcessingPolicy(FailureProcessingPolicy flrPlc) {
+        this.flrPlc = flrPlc;
 
         return this;
     }

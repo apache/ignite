@@ -46,6 +46,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.FailureProcessingPolicy;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
@@ -99,6 +100,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -116,6 +118,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.configuration.FailureProcessingPolicy.NOOP;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -2180,6 +2183,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            try {
+                body0();
+            }
+            finally {
+                if (!stop) {
+                    log.warning("Unexpected ExchangeWorker death!");
+
+                    onExchangeWorkerDeath();
+                }
+            }
+        }
+
+        /**
+         *
+         */
+        private void body0() throws InterruptedException, IgniteInterruptedCheckedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
             int cnt = 0;
@@ -2469,6 +2488,54 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
         }
+    }
+
+    /**
+     *
+     */
+    private void onExchangeWorkerDeath() {
+        FailureProcessingPolicy flrPlc = cctx.gridConfig().getFailureProcessingPolicy();
+
+        switch (flrPlc) {
+            case RESTART_JVM:
+                U.warn(log, "Restarting JVM according to configured failure processing policy.");
+
+                restartJvm();
+
+                break;
+
+            case STOP:
+                U.warn(log, "Stopping local node according to configured failure processing policy.");
+
+                stopNode();
+
+                break;
+
+            default:
+                assert flrPlc == NOOP : "Unsupported failure processing policy value: " + flrPlc;
+        }
+    }
+
+    /** Restarts JVM. */
+    private void restartJvm() {
+        new Thread(
+            new Runnable() {
+                @Override public void run() {
+                    G.restart(true);
+                }
+            }
+        ).start();
+    }
+
+    /** Stops local node. */
+    private void stopNode() {
+        new Thread(
+            new Runnable() {
+                @Override public void run() {
+                    G.stop(cctx.igniteInstanceName(), true);
+                }
+            }
+        ).start();
     }
 
     /**
