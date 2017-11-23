@@ -234,7 +234,8 @@ public class ProjectionsCache {
     }
 
     /**
-     * Returns projections of regions on given feature filtered by maximal depth in the form of (region index -> region projection).
+     * Returns projections of regions on given feature filtered by maximal depth in the form of (region index -> region
+     * projection).
      *
      * @param featureIdx Feature index.
      * @param maxDepth Maximal depth of the tree.
@@ -243,7 +244,8 @@ public class ProjectionsCache {
      * @param affinity Affinity function.
      * @param trainingUUID UUID of training.
      * @param ignite Ignite instance.
-     * @return Projections of regions on given feature filtered by maximal depth in the form of (region index -> region projection).
+     * @return Projections of regions on given feature filtered by maximal depth in the form of (region index -> region
+     * projection).
      */
     public static Map<Integer, RegionProjection> projectionsOfFeature(int featureIdx, int maxDepth, int regsCnt,
         int blockSize, IgniteFunction<Integer, Object> affinity, UUID trainingUUID, Ignite ignite) {

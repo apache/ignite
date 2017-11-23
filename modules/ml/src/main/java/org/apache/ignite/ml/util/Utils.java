@@ -29,6 +29,7 @@ import java.io.ObjectOutputStream;
 public class Utils {
     /**
      * Perform deep copy of an object.
+     *
      * @param orig Original object.
      * @param <T> Class of original object;
      * @return Deep copy of original object.

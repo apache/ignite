@@ -418,7 +418,6 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
 
         Matrix hat = mdl.calculateHat();
 
-
         // Reference data is upper half of symmetric hat matrix
         double[] refData = new double[] {
             .418, -.002, .079, -.274, -.046, .181, .128, .222, .050, .242,
