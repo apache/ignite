@@ -28,6 +28,8 @@ public class DDLGeneratorTest {
     /** */
     private static final String[] RESOURCES = new String[] {
         "org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml",
+        "org/apache/ignite/tests/persistence/primitive/persistence-settings-2.xml",
+        "org/apache/ignite/tests/persistence/primitive/persistence-settings-3-handler.xml",
         "org/apache/ignite/tests/persistence/pojo/persistence-settings-1.xml",
         "org/apache/ignite/tests/persistence/pojo/persistence-settings-2.xml",
         "org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml",
@@ -35,8 +37,6 @@ public class DDLGeneratorTest {
         "org/apache/ignite/tests/persistence/pojo/persistence-settings-5.xml",
         "org/apache/ignite/tests/persistence/pojo/persistence-settings-6.xml",
         "org/apache/ignite/tests/persistence/pojo/persistence-settings-7-handler.xml",
-        "org/apache/ignite/tests/persistence/pojo/persistence-settings-8-handler.xml",
-        "org/apache/ignite/tests/persistence/pojo/persistence-settings-9-handler.xml",
         "org/apache/ignite/tests/persistence/pojo/product.xml",
         "org/apache/ignite/tests/persistence/pojo/order.xml"
     };

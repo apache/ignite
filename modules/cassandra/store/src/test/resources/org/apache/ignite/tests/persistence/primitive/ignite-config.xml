@@ -36,6 +36,11 @@
         <constructor-arg type="org.springframework.core.io.Resource" value="classpath:org/apache/ignite/tests/persistence/primitive/persistence-settings-2.xml" />
     </bean>
 
+    <!-- Persistence settings for 'cache2' -->
+    <bean id="cache3_persistence_settings" class="org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings">
+        <constructor-arg type="org.springframework.core.io.Resource" value="classpath:org/apache/ignite/tests/persistence/primitive/persistence-settings-3-handler.xml" />
+    </bean>
+
     <!-- Ignite configuration -->
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="cacheConfiguration">

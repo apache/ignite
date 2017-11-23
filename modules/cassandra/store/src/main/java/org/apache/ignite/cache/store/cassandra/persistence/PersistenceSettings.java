@@ -130,9 +130,6 @@ public abstract class PersistenceSettings implements Serializable {
 
         if (el.hasAttribute(HANDLER_CLASS_ATTR) && PersistenceStrategy.PRIMITIVE == stgy) {
             typeHandler = TypeHandlerHelper.getInstanceFromClassName(el.getAttribute(HANDLER_CLASS_ATTR));
-            if(typeHandler != null) {
-                javaCls = typeHandler.getClazz();
-            }
         }
 
         if (!el.hasAttribute(CLASS_ATTR) && PersistenceStrategy.BLOB != stgy && typeHandler == null) {
@@ -142,6 +139,9 @@ public abstract class PersistenceSettings implements Serializable {
 
         try {
             javaCls = el.hasAttribute(CLASS_ATTR) ? getClassInstance(el.getAttribute(CLASS_ATTR).trim()) : null;
+            if(javaCls == null && typeHandler != null) {
+                javaCls = typeHandler.getClazz();
+            }
         }
         catch (Throwable e) {
             throw new IllegalArgumentException("Incorrect java class specified '" + el.getAttribute(CLASS_ATTR) + "' " +

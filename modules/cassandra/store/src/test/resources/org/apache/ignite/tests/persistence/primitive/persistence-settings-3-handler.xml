@@ -15,7 +15,7 @@
   limitations under the License.
 -->
 
-<persistence keyspace="test1" table="pojo_test8">
-    <keyPersistence class="java.lang.Long" strategy="PRIMITIVE" />
-    <valuePersistence class="java.util.Date" strategy="PRIMITIVE" handlerClass="org.apache.ignite.tests.handlers.LongToDateHandler" />
+<persistence keyspace="test1" table="primitive_test3">
+    <keyPersistence strategy="PRIMITIVE" handlerClass="org.apache.ignite.tests.handlers.LongToStringHandler" />
+    <valuePersistence class="java.lang.Long" strategy="PRIMITIVE"  handlerClass="org.apache.ignite.tests.handlers.StringToLongHandler" />
 </persistence>

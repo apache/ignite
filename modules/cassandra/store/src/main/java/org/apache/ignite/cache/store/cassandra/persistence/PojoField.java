@@ -255,7 +255,9 @@ public abstract class PojoField implements Serializable {
      * @param accessor {@link PojoFieldAccessor} accessor.
      */
     private void init(PojoFieldAccessor accessor) {
-        DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(accessor.getFieldType());
+        Class cassandraClazz = typeHandler != null ? typeHandler.getClazz() : accessor.getFieldType();
+
+        DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(cassandraClazz);
         cassandraType = cassandraType == null ? DataType.Name.BLOB : cassandraType;
 
         this.colDDL = "\"" + col + "\" " + cassandraType.toString();

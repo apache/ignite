@@ -236,6 +236,21 @@ public class TestsHelper {
     }
 
     /** */
+    public static Collection<CacheEntryImpl<Long, String>> generateLongStringEntries() {
+        return generateLongStringEntries(BULK_OPERATION_SIZE);
+    }
+
+    /** */
+    public static Collection<CacheEntryImpl<Long, String>> generateLongStringEntries(int cnt) {
+        Collection<CacheEntryImpl<Long, String>> entries = new LinkedList<>();
+
+        for (long i = 0; i < cnt; i++)
+            entries.add(new CacheEntryImpl<>(i, Long.toString(i + 123)));
+
+        return entries;
+    }
+
+    /** */
     public static Map<String, String> generateStringsMap() {
         return generateStringsMap(BULK_OPERATION_SIZE);
     }
@@ -246,6 +261,21 @@ public class TestsHelper {
 
         for (int i = 0; i < cnt; i++)
             map.put(Integer.toString(i), randomString(5));
+
+        return map;
+    }
+
+    /** */
+    public static Map<Long, String> generateLongStringMap() {
+        return generateLongStringMap(BULK_OPERATION_SIZE);
+    }
+
+    /** */
+    public static Map<Long, String> generateLongStringMap(int cnt) {
+        Map<Long, String> map = new HashMap<>();
+
+        for (long i = 0; i < cnt; i++)
+            map.put(i, Long.toString(i+123));
 
         return map;
     }
@@ -352,6 +382,24 @@ public class TestsHelper {
             PersonId id = generateRandomPersonId();
 
             entries.add(new CacheEntryImpl<>(id, generateRandomPerson(id.getPersonNumber())));
+        }
+
+        return entries;
+    }
+
+    /** */
+    public static Collection<CacheEntryImpl<PersonId, Person>> generatePersonIdsPersonsForHandlerEntries() {
+        return generatePersonIdsPersonsForHandlerEntries(BULK_OPERATION_SIZE);
+    }
+
+    /** */
+    public static Collection<CacheEntryImpl<PersonId, Person>> generatePersonIdsPersonsForHandlerEntries(int cnt) {
+        Collection<CacheEntryImpl<PersonId, Person>> entries = new LinkedList<>();
+
+        for (int i = 0; i < cnt; i++) {
+            PersonId id = generateRandomPersonIdForHandler();
+
+            entries.add(new CacheEntryImpl<>(id, generateRandomPersonForHandler(id.getPersonNumber())));
         }
 
         return entries;
@@ -511,10 +559,27 @@ public class TestsHelper {
         return new Person(personNum, randomString(4), randomString(4), RANDOM.nextInt(100),
             RANDOM.nextBoolean(), RANDOM.nextLong(), RANDOM.nextFloat(), new Date(), phones);
     }
+    /** */
+    public static Person generateRandomPersonForHandler(long personNum) {
+        int phonesCnt = RANDOM.nextInt(4);
+
+        List<String> phones = new LinkedList<>();
+
+        for (int i = 0; i < phonesCnt; i++)
+            phones.add(randomNumber(4));
+
+        return new Person(personNum, randomString(4), Long.toString(RANDOM.nextInt(100)), RANDOM.nextInt(100),
+            RANDOM.nextBoolean(), RANDOM.nextLong(), RANDOM.nextFloat(), new Date(), phones);
+    }
 
     /** */
     public static PersonId generateRandomPersonId() {
         return new PersonId(randomString(4), randomString(4), RANDOM.nextInt(100));
+    }
+
+    /** */
+    public static PersonId generateRandomPersonIdForHandler() {
+        return new PersonId(Long.toString(RANDOM.nextInt(100)), randomString(4), RANDOM.nextInt(100));
     }
 
     /** */

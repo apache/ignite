@@ -3,15 +3,13 @@ package org.apache.ignite.tests.handlers;
 import com.datastax.driver.core.Row;
 import org.apache.ignite.cache.store.cassandra.common.TypeHandler;
 
-import java.util.Date;
-
-public class LongToDateHandler implements TypeHandler<Long, Date> {
+public class LongToStringHandler implements TypeHandler<Long, String> {
     @Override
     public Long toJavaType(Row row, int index) {
         if (row.isNull(index)) {
             return null;
         }
-        return row.getTimestamp(index).getTime();
+        return Long.parseLong(row.getString(index));
     }
 
     @Override
@@ -19,19 +17,19 @@ public class LongToDateHandler implements TypeHandler<Long, Date> {
         if (row.isNull(col)) {
             return null;
         }
-        return row.getTimestamp(col).getTime();
+        return Long.parseLong(row.getString(col));
     }
 
     @Override
-    public Date toCassandraPrimitiveType(Long javaValue) {
+    public String toCassandraPrimitiveType(Long javaValue) {
         if (javaValue == null) {
             return null;
         }
-        return new Date(javaValue);
+        return String.valueOf(javaValue);
     }
 
     @Override
-    public Class<Date> getClazz() {
-        return Date.class;
+    public Class<String> getClazz() {
+        return String.class;
     }
 }
