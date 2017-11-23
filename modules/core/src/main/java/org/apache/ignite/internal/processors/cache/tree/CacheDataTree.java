@@ -144,12 +144,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         return rowStore.dataRow(cacheId, hash, link, x);
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean isRowMatching(BPlusIO<CacheSearchRow> io, long pageAddr, int idx,
-        Object filter) throws IgniteCheckedException {
-        return true;
-    }
-
     /**
      * @param key Key.
      * @param link Link.

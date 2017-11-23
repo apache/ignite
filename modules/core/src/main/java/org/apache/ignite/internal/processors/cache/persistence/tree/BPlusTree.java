@@ -1906,116 +1906,116 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * !!! For debug only! May produce wrong results on concurrent access.
+     * Returns number of elements in the tree by scanning pages of the bottom (leaf) level.
+     * Since a concurrent access is permitted, there is no guarantee about
+     * momentary consistency: the method may miss updates made in already scanned pages.
      *
-     * @return Size.
+     * @return Number of elements in the tree.
      * @throws IgniteCheckedException If failed.
      */
     @Override public final long size() throws IgniteCheckedException {
-        checkDestroyed();
-
-        long pageId;
-
-        long metaPage = acquirePage(metaPageId);
-        try {
-            pageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
-        }
-        finally {
-            releasePage(metaPageId, metaPage);
-        }
-
-        BPlusIO<L> io = null;
-
-        long cnt = 0;
-
-        while (pageId != 0) {
-            long curId = pageId;
-            long curPage = acquirePage(curId);
-            try {
-                long curAddr = readLock(curId, curPage); // No correctness guaranties.
-
-                try {
-                    if (io == null) {
-                        io = io(curAddr);
-
-                        assert io.isLeaf();
-                    }
-
-                    cnt += io.getCount(curAddr);
-
-                    pageId = io.getForward(curAddr);
-                }
-                finally {
-                    readUnlock(curId, curPage, curAddr);
-                }
-            }
-            finally {
-                releasePage(curId, curPage);
-            }
-        }
-
-        checkDestroyed();
-
-        return cnt;
+        return countMatchingRows(null);
     }
 
     /**
-     * FIXME
+     * Returns number of elements that match filter in the tree by scanning pages of the bottom (leaf) level.
+     * Since a concurrent access to the tree is permitted, there is no guarantee about
+     * momentary consistency: the method may miss updates made in already scanned pages.
      *
-     * @param x
-     * @return
-     * @throws IgniteCheckedException
+     * @param filter The filter to use or null to count all elements
+     * @return Number of elements in the tree.
+     * @throws IgniteCheckedException If failed.
      */
-    public long countMatchingRows(Object x) throws IgniteCheckedException {
+    public long countMatchingRows(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
         checkDestroyed();
 
-        long pageId;
+        for (;;) {
+            long curPageId;
 
-        long metaPage = acquirePage(metaPageId);
-        try {
-            pageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
-        }
-        finally {
-            releasePage(metaPageId, metaPage);
-        }
-
-        BPlusIO<L> io = null;
-
-        long cnt = 0;
-
-        while (pageId != 0) {
-            long curId = pageId;
-            long curPage = acquirePage(curId);
+            long metaPage = acquirePage(metaPageId);
             try {
-                long curAddr = readLock(curId, curPage); // No correctness guaranties.
+                curPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
+            }
+            finally {
+                releasePage(metaPageId, metaPage);
+            }
+
+            long matchingRowsCnt = 0;
+
+            long curPage = acquirePage(curPageId);
+            try {
+                long curPageAddr = readLock(curPageId, curPage);
+                if (curPageAddr == 0)
+                    // The first page has gone: restart scan
+                    continue;
 
                 try {
-                    if (io == null) {
-                        io = io(curAddr);
+                    BPlusIO<L> io = io(curPageAddr);
+                    assert io.isLeaf();
 
-                        assert io.isLeaf();
+                    for (;;) {
+                        int curPageSize = io.getCount(curPageAddr);
+
+                        if (filter == null)
+                            matchingRowsCnt += curPageSize;
+                        else {
+                            for (int i = 0; i < curPageSize; ++i) {
+                                if (filter.apply(this, io, curPageAddr, i))
+                                    ++matchingRowsCnt;
+                            }
+                        }
+
+                        long nextPageId = io.getForward(curPageAddr);
+
+                        if (nextPageId == 0) {
+                            checkDestroyed();
+
+                            return matchingRowsCnt;
+                        }
+
+                        long nextPage = acquirePage(nextPageId);
+                        try {
+                            long nextPageAddr = readLock(nextPageId, nextPage);
+
+                            // In the current implementation the next page can't change when the current page is locked
+                            assert nextPageAddr != 0 : nextPageAddr;
+
+                            try {
+                                readUnlock(curPageId, curPage, curPageAddr);
+                                curPageAddr = 0; // Set to zero to avoid double unlocking in finalizer
+
+                                releasePage(curPageId, curPage);
+                                curPage = 0; // Set to zero to avoid double release in finalizer
+
+                                curPageId = nextPageId;
+
+                                // The following 4 assignments should be done atomically, but it's OK here.
+                                curPage = nextPage;
+                                curPageAddr = nextPageAddr;
+                                nextPage = 0;
+                                nextPageAddr = 0;
+                            }
+                            finally {
+                                if (nextPageAddr != 0)
+                                    readUnlock(nextPageId, nextPage, nextPageAddr);
+                            }
+                        }
+                        finally {
+                            if (nextPage != 0)
+                                releasePage(nextPageId, nextPage);
+                        }
                     }
-
-                    int curPageCnt = io.getCount(curAddr);
-                    for (int i = 0; i < curPageCnt; ++i) {
-                        if (isRowMatching(io, curAddr, i, x))
-                            ++cnt;
-                    }
-
-                    pageId = io.getForward(curAddr);
                 }
                 finally {
-                    readUnlock(curId, curPage, curAddr);
+                    if (curPageAddr != 0)
+                        readUnlock(curPageId, curPage, curPageAddr);
                 }
             }
             finally {
-                releasePage(curId, curPage);
+                if (curPage != 0)
+                    releasePage(curPageId, curPage);
             }
         }
-
-        checkDestroyed();
-
-        return cnt;
     }
 
     /**
@@ -4433,18 +4433,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     protected abstract T getRow(BPlusIO<L> io, long pageAddr, int idx, Object x) throws IgniteCheckedException;
 
     /**
-     * Tests the row against the filter possibly without deserializing the actual row.
-     *
-     * @param io The IO object.
-     * @param pageAddr The page address.
-     * @param idx Row index within the page.
-     * @param filter The filter object to apply (details are up to subclass implementor).
-     * @return true if row is matching filter, false otherwise.
-     * @throws IgniteCheckedException If execution failed for any reason.
-     */
-    protected abstract boolean isRowMatching(BPlusIO<L> io, long pageAddr, int idx, Object filter) throws IgniteCheckedException;
-
-    /**
      * Forward cursor.
      */
     @SuppressWarnings("unchecked")
@@ -4873,5 +4861,24 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** */
         DONE
+    }
+
+    /**
+     * A generic visitor-style interface for performing filtering/modifications/miscellaneous operations on the tree.
+     */
+    public interface TreeRowClosure<L, T extends L> {
+        /**
+         * Performs inspection or operation on a specified row and returns true if this row is
+         * required or matches or /operation successful (depending on the context).
+         *
+         * @param tree The tree.
+         * @param io Tree IO.
+         * @param pageAddr Page address.
+         * @param idx Item index.
+         * @return {@code True} if item pass predicate. TODO IGNITE-3478
+         * @throws IgniteCheckedException If failed.
+         */
+        public boolean apply(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx)
+            throws IgniteCheckedException;
     }
 }

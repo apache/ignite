@@ -219,12 +219,6 @@ public class MetadataStorage implements MetaStore {
             final int idx, Object ignore) throws IgniteCheckedException {
             return readRow(pageAddr, ((IndexIO)io).getOffset(pageAddr, idx));
         }
-
-        /** {@inheritDoc} */
-        @Override protected boolean isRowMatching(BPlusIO<IndexItem> io, long pageAddr, int idx,
-            Object filter) throws IgniteCheckedException {
-            return true;
-        }
     }
 
     /**

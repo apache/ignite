@@ -115,10 +115,4 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
 
         return flag == WITHOUT_KEY ? row : row.initKey(grp);
     }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isRowMatching(BPlusIO<PendingRow> io, long pageAddr, int idx,
-        Object filter) throws IgniteCheckedException {
-        return true;
-    }
 }
