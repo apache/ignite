@@ -38,7 +38,7 @@ public class MnistUtils {
      * @param rnd Random numbers generatror.
      * @param count Count of samples to read.
      * @return Stream of MNIST samples.
-     * @throws IOException
+     * @throws IOException in case of exception.
      */
     public static Stream<DenseLocalOnHeapVector> mnist(String imagesPath, String labelsPath, Random rnd, int count) throws IOException {
         FileInputStream isImages = new FileInputStream(imagesPath);
@@ -84,7 +84,7 @@ public class MnistUtils {
      * @param outPath Path to output path.
      * @param rnd Random numbers generator.
      * @param count Count of samples to read.
-     * @throws IOException
+     * @throws IOException in case of exception.
      */
     public static void asLIBSVM(String imagesPath, String labelsPath, String outPath, Random rnd, int count) throws IOException {
 
@@ -113,7 +113,7 @@ public class MnistUtils {
     /**
      * Utility method for reading 4 bytes from input stream.
      * @param is Input stream.
-     * @throws IOException
+     * @throws IOException in case of exception.
      */
     private static int read4Bytes(FileInputStream is) throws IOException {
         return (is.read() << 24) | (is.read() << 16) | (is.read() << 8) | (is.read());
