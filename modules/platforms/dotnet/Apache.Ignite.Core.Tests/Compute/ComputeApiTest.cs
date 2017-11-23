@@ -165,9 +165,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         protected virtual Tuple<string, string, string> GetConfigs()
         {
             return Tuple.Create(
-                "config\\compute\\compute-grid1.xml",
-                "config\\compute\\compute-grid2.xml",
-                "config\\compute\\compute-grid3.xml");
+                "Config\\Compute\\compute-grid1.xml",
+                "Config\\Compute\\compute-grid2.xml",
+                "Config\\Compute\\compute-grid3.xml");
         }
 
         /// <summary>
