@@ -27,8 +27,8 @@ namespace ignite
     {
         namespace query
         {
-            BatchQuery::BatchQuery(diagnostic::Diagnosable& diag, Connection& connection,
-                const std::string& sql, const app::ParameterSet& params) :
+            BatchQuery::BatchQuery(diagnostic::Diagnosable& diag, Connection& connection, const std::string& sql,
+                const app::ParameterSet& params, int32_t& timeout) :
                 Query(diag, QueryType::BATCH),
                 connection(connection),
                 sql(sql),
@@ -37,7 +37,8 @@ namespace ignite
                 rowsAffected(0),
                 setsProcessed(0),
                 executed(false),
-                dataRetrieved(false)
+                dataRetrieved(false),
+                timeout(timeout)
             {
                 // No-op.
             }
@@ -137,6 +138,10 @@ namespace ignite
 
             SqlResult::Type BatchQuery::Close()
             {
+                executed = false;
+                rowsAffected = 0;
+                setsProcessed = 0;
+
                 return SqlResult::AI_SUCCESS;
             }
 
@@ -154,12 +159,22 @@ namespace ignite
             {
                 const std::string& schema = connection.GetSchema();
 
-                QueryExecuteBatchtRequest req(schema, sql, params, begin, end, last);
+                QueryExecuteBatchtRequest req(schema, sql, params, begin, end, last, timeout);
                 QueryExecuteBatchResponse rsp;
 
                 try
                 {
-                    connection.SyncMessage(req, rsp);
+                    // Setting connection timeout to 1 second more than query timeout itself.
+                    int32_t connectionTimeout = timeout ? timeout + 1 : 0;
+
+                    bool success = connection.SyncMessage(req, rsp, connectionTimeout);
+
+                    if (!success)
+                    {
+                        diag.AddStatusRecord(SqlState::SHYT00_TIMEOUT_EXPIRED, "Query timeout expired");
+
+                        return SqlResult::AI_ERROR;
+                    }
                 }
                 catch (const OdbcError& err)
                 {

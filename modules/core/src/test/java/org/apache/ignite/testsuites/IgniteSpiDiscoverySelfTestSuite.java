@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryMarshallerCheckSelfTest;
@@ -102,6 +103,9 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         // SSL.
         suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySslSecuredUnsecuredTest.class));
+
+        // Disco cache reuse.
+        suite.addTest(new TestSuite(IgniteDiscoveryCacheReuseSelfTest.class));
 
         return suite;
     }

@@ -59,6 +59,9 @@ class Paragraph {
         self.maxPages = 0;
         self.filter = '';
         self.useAsDefaultSchema = false;
+        self.localQueryMode = false;
+        self.csvIsPreparing = false;
+        self.scanningInProgress = false;
 
         _.assign(this, paragraph);
 
@@ -200,11 +203,19 @@ class Paragraph {
     chartTimeLineEnabled() {
         return _.nonEmpty(this.chartKeyCols) && _.eq(this.chartKeyCols[0], TIME_LINE);
     }
+
+    executionInProgress(showLocal = false) {
+        return this.loading && (this.localQueryMode === showLocal);
+    }
+
+    checkScanInProgress(showLocal = false) {
+        return this.scanningInProgress && (this.localQueryMode === showLocal);
+    }
 }
 
 // Controller for SQL notebook screen.
-export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes',
-    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes) {
+export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard',
+    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard) {
         const $ctrl = this;
 
         // Define template urls.
@@ -836,7 +847,6 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
         /**
          * Update caches list.
-         * @private
          */
         const _refreshFn = () =>
             agentMgr.topology(true)
@@ -859,12 +869,13 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                                 ip: _.head(node.attributes['org.apache.ignite.ips'].split(', ')),
                                 version: node.attributes['org.apache.ignite.build.ver'],
                                 gridName: node.attributes['org.apache.ignite.ignite.name'],
-                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`
+                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`,
+                                client: node.attributes['org.apache.ignite.cache.client']
                             });
                         });
 
                         return cachesAcc;
-                    }, []), 'label');
+                    }, []), (cache) => cache.label.toLowerCase());
 
                     // Reset to first cache in case of stopped selected.
                     const cacheNames = _.map($scope.caches, (cache) => cache.value);
@@ -1316,7 +1327,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             if (_.isEmpty(name))
                 return Promise.resolve(null);
 
-            const nodes = cacheNodes(name);
+            const nodes = _.filter(cacheNodes(name), (node) => !node.client);
 
             if (local) {
                 return Nodes.selectNode(nodes, name)
@@ -1403,6 +1414,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
 
+                    paragraph.localQueryMode = local;
                     paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
 
                     _showLoading(paragraph, true);
@@ -1495,8 +1507,12 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
+            paragraph.localQueryMode = local;
+
             $scope.scanAvailable(paragraph) && _chooseNode(cacheName, local)
                 .then((nid) => {
+                    paragraph.scanningInProgress = true;
+
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
 
@@ -1526,7 +1542,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                             paragraph.setError(err);
 
                             _showLoading(paragraph, false);
-                        });
+                        })
+                        .then(() => paragraph.scanningInProgress = false);
                 });
         };
 
@@ -1584,7 +1601,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .then(() => paragraph.ace && paragraph.ace.focus());
         };
 
-        const _export = (fileName, columnDefs, meta, rows) => {
+        const _export = (fileName, columnDefs, meta, rows, toClipBoard = false) => {
             let csvContent = '';
 
             const cols = [];
@@ -1623,11 +1640,34 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 csvContent += cols.join(';') + '\n';
             });
 
-            LegacyUtils.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
+            if (toClipBoard)
+                IgniteCopyToClipboard.copy(csvContent);
+            else
+                LegacyUtils.download('text/csv', fileName, csvContent);
+        };
+
+        /**
+         * Generate file name with query results.
+         *
+         * @param paragraph {Object} Query paragraph .
+         * @param all {Boolean} All result export flag.
+         * @returns {string}
+         */
+        const exportFileName = (paragraph, all) => {
+            const args = paragraph.queryArgs;
+
+            if (args.type === 'SCAN')
+                return `export-scan-${args.cacheName}-${paragraph.name}${all ? '-all' : ''}.csv`;
+
+            return `export-query-${paragraph.name}${all ? '-all' : ''}.csv`;
+        };
+
+        $scope.exportCsvToClipBoard = (paragraph) => {
+            _export(exportFileName(paragraph, false), paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows, true);
         };
 
         $scope.exportCsv = function(paragraph) {
-            _export(paragraph.name + '.csv', paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows);
+            _export(exportFileName(paragraph, false), paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows);
 
             // paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
@@ -1637,15 +1677,21 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         };
 
         $scope.exportCsvAll = (paragraph) => {
+            paragraph.csvIsPreparing = true;
+
             const args = paragraph.queryArgs;
 
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
                     ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
                     : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy))
-                .then((res) => _export(paragraph.name + '-all.csv', paragraph.gridOptions.columnDefs, res.columns, res.rows))
+                .then((res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
-                .then(() => paragraph.ace && paragraph.ace.focus());
+                .then(() => {
+                    paragraph.csvIsPreparing = false;
+
+                    return paragraph.ace && paragraph.ace.focus();
+                });
         };
 
         // $scope.exportPdfAll = function(paragraph) {
@@ -1716,7 +1762,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         };
 
         $scope.scanAvailable = function(paragraph) {
-            return $scope.caches.length && !paragraph.loading;
+            return $scope.caches.length && !(paragraph.loading || paragraph.csvIsPreparing);
         };
 
         $scope.scanTooltip = function(paragraph) {
@@ -1788,6 +1834,10 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                     scope.title = 'SQL query';
                     scope.content = paragraph.queryArgs.query.split(/\r?\n/);
                 }
+
+                // Attach duration and selected node info
+                scope.meta = `Duration: ${$filter('duration')(paragraph.duration)}.`;
+                scope.meta += paragraph.localQueryMode ? ` Node ID8: ${_.id8(paragraph.resNodeId)}` : '';
 
                 // Show a basic modal from a controller
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});
