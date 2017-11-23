@@ -431,7 +431,7 @@ public class GridH2Table extends TableBase {
      * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException If failed.
      */
-    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, @Nullable MvccCoordinatorVersion newVer,
+    public void  update(CacheDataRow row, @Nullable CacheDataRow prevRow, @Nullable MvccCoordinatorVersion newVer,
         boolean prevRowAvailable, boolean idxRebuild) throws IgniteCheckedException {
         assert desc != null;
 
