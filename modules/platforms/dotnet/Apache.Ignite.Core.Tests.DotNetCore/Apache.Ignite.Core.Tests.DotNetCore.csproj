@@ -63,7 +63,11 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestBase.cs" Link="ThinClient\ClientTestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicLongTest.cs" Link="DataStructures\AtomicLongTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicReferenceTest.cs" Link="DataStructures\AtomicReferenceTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicSequenceTest.cs" Link="DataStructures\AtomicSequenceTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\IgniteTestBase.cs" Link="Common\IgniteTestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Log\CustomLoggerTest.cs" Link="Log\CustomLoggerTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\MessagingTest.cs" Link="Common\MessagingTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Query\BinarizablePerson.cs" Link="Cache\Query\BinarizablePerson.cs" />
@@ -115,6 +119,7 @@
     <Folder Include="Compute\" />
     <Folder Include="Config\Compute\" />
     <Folder Include="Log\" />
+    <Folder Include="DataStructures\" />
     <Folder Include="ThinClient\Cache\" />
   </ItemGroup>
 
