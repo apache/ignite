@@ -266,6 +266,55 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    String createSequential(String checkPrefix, String dir, String childPath, byte[] data, CreateMode createMode)
+        throws ZookeeperClientFailedException, InterruptedException
+    {
+        assert createMode.isSequential() : createMode;
+
+        if (data == null)
+            data = EMPTY_BYTES;
+
+        boolean first = true;
+
+        String path = dir + "/" + childPath;
+
+        for (;;) {
+            long connStartTime = this.connStartTime;
+
+            try {
+                if (first) {
+                    List<String> children = zk.getChildren(dir, false);
+
+                    for (int i = 0; i < children.size(); i++) {
+                        String child = children.get(i);
+
+                        if (children.get(i).startsWith(checkPrefix)) {
+                            String resPath = dir + "/" + child;
+
+                            log.info("Check before retry, node already created: " + resPath);
+
+                            return resPath;
+                        }
+                    }
+                }
+
+                return zk.create(path, data, ZK_ACL, createMode);
+            }
+            catch (KeeperException.NodeExistsException e) {
+                assert !createMode.isSequential() : createMode;
+
+                log.info("Node already exists: " + path);
+
+                return path;
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+
+            first = false;
+        }
+    }
+
     List<String> getChildren(String path)
         throws ZookeeperClientFailedException, InterruptedException
     {
@@ -469,6 +518,7 @@ public class ZookeeperClient implements Watcher {
                     U.warn(log, "Zookeeper operation failed, will retry [err=" + e +
                         ", retryTimeout=" + RETRY_TIMEOUT +
                         ", connLossTimeout=" + connLossTimeout +
+                        ", path=" + ((KeeperException)e).getPath() +
                         ", remainingWaitTime=" + remainingTime + ']');
 
                     stateMux.wait(RETRY_TIMEOUT);

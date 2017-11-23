@@ -171,49 +171,93 @@ class ZkIgnitePaths {
      * @param path Relative path.
      * @return Full path.
      */
-    String zkPath(String path) {
+    private String zkPath(String path) {
         return basePath + "/" + clusterName + "/" + path;
     }
 
+    /**
+     * @param path Alive node zk path.
+     * @return Node internal ID.
+     */
     static int aliveInternalId(String path) {
         int idx = path.lastIndexOf('|');
 
         return Integer.parseInt(path.substring(idx + 1));
     }
 
+    /**
+     * @param path Alive node zk path.
+     * @return Node ID.
+     */
+    static String aliveNodePrefixId(String path) {
+        return path.substring(0, ZkIgnitePaths.UUID_LEN);
+    }
+
+    /**
+     * @param path Alive node zk path.
+     * @return Node ID.
+     */
     static UUID aliveNodeId(String path) {
-        String idStr = path.substring(0, ZkIgnitePaths.UUID_LEN);
+        // <uuid prefix>:<node id>|<join data seq>|<alive seq>
+        int startIdx = ZkIgnitePaths.UUID_LEN + 1;
+
+        String idStr = path.substring(startIdx, startIdx + ZkIgnitePaths.UUID_LEN);
 
         return UUID.fromString(idStr);
     }
 
-    static int aliveJoinSequence(String path) {
+    /**
+     * @param path Alive node zk path.
+     * @return Joined node sequence.
+     */
+    static int aliveJoinDataSequence(String path) {
         int idx1 = path.indexOf('|');
         int idx2 = path.lastIndexOf('|');
 
         return Integer.parseInt(path.substring(idx1 + 1, idx2));
     }
 
+    /**
+     * @param path Event zk path.
+     * @return Event sequence number.
+     */
     static int customEventSequence(String path) {
         int idx = path.lastIndexOf('|');
 
         return Integer.parseInt(path.substring(idx + 1));
     }
 
+    /**
+     * @param path Custom event zl path.
+     * @return Event node ID.
+     */
     static UUID customEventSendNodeId(String path) {
         String idStr = path.substring(0, ZkIgnitePaths.UUID_LEN);
 
         return UUID.fromString(idStr);
     }
 
+    /**
+     * @param evtId Event ID.
+     * @return Event zk path.
+     */
     String joinEventDataPath(long evtId) {
         return evtsPath + "/" + evtId;
     }
 
+    /**
+     * @param evtId Event ID.
+     * @return Event zk path.
+     */
     String joinEventDataPathForJoined(long evtId) {
         return evtsPath + "/joined-" + evtId;
     }
 
+    /**
+     * @param ack Ack event flag.
+     * @param child Event child path.
+     * @return Full event data path.
+     */
     String customEventDataPath(boolean ack, String child) {
         String baseDir = ack ? customEvtsAcksDir : customEvtsDir;
 

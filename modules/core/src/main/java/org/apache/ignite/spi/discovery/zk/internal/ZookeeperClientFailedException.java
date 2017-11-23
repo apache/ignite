@@ -27,7 +27,7 @@ public class ZookeeperClientFailedException extends Exception {
     /**
      * @param cause Cause.
      */
-    public ZookeeperClientFailedException(Throwable cause) {
+    ZookeeperClientFailedException(Throwable cause) {
         super(cause);
     }
 }

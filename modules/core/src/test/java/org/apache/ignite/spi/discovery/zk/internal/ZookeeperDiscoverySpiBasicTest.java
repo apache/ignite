@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.test.TestingCluster;
@@ -183,14 +185,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             zkCluster = new TestingCluster(3);
             zkCluster.start();
         }
-
-        System.setProperty(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD, "1");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD);
-
         if (zkCluster != null) {
             try {
                 zkCluster.close();
@@ -203,6 +201,20 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }
 
         super.afterTestsStopped();
+    }
+
+    /**
+     *
+     */
+    private static void ackEveryEventSystemProperty() {
+        System.setProperty(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD, "1");
+    }
+
+    /**
+     *
+     */
+    private void clearAckEveryEventSystemProperty() {
+        System.setProperty(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD, "1");
     }
 
     /** {@inheritDoc} */
@@ -226,6 +238,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
             stopAllGrids();
         }
+
+        clearAckEveryEventSystemProperty();
     }
 
     /**
@@ -301,6 +315,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomEventsSimple1_SingleNode() throws Exception {
+        ackEveryEventSystemProperty();
+
         Ignite srv0 = startGrid(0);
 
         srv0.createCache(new CacheConfiguration<>("c1"));
@@ -312,6 +328,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomEventsSimple1_5_Nodes() throws Exception {
+        ackEveryEventSystemProperty();
+
         Ignite srv0 = startGrids(5);
 
         srv0.createCache(new CacheConfiguration<>("c1"));
@@ -662,7 +680,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         startGrids(2);
 
         for (Ignite node : G.allGrids()) {
-            IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
+            IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache);
 
@@ -680,6 +698,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStop_2_Nodes() throws Exception {
+        ackEveryEventSystemProperty();
+
         startGrid(0);
 
         waitForTopology(1);
@@ -700,6 +720,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStop1() throws Exception {
+        ackEveryEventSystemProperty();
+
         startGridsMultiThreaded(5, false);
 
         waitForTopology(5);
@@ -725,24 +747,46 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param node Node.
      * @throws Exception If failed.
      */
-    private void waitForEventsAcks(final Ignite node) throws Exception {
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                Map<Object, Object> evts = GridTestUtils.getFieldValue(node.configuration().getDiscoverySpi(),
-                    "impl", "evtsData", "evts");
+    public void testStartStop3() throws Exception {
+        startGrids(4);
 
-                if (!evts.isEmpty()) {
-                    info("Unacked events: " + evts);
+        awaitPartitionMapExchange();
 
-                    return false;
-                }
+        stopGrid(0);
 
-                return true;
-            }
-        }, 10_000));
+        startGrid(5);
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStop4() throws Exception {
+        startGrids(6);
+
+        awaitPartitionMapExchange();
+
+        stopGrid(2);
+
+        if (ThreadLocalRandom.current().nextBoolean())
+            awaitPartitionMapExchange();
+
+        stopGrid(1);
+
+        if (ThreadLocalRandom.current().nextBoolean())
+            awaitPartitionMapExchange();
+
+        stopGrid(0);
+
+        if (ThreadLocalRandom.current().nextBoolean())
+            awaitPartitionMapExchange();
+
+        startGrid(7);
+
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -796,6 +840,106 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testTopologyChangeAndZkRestart() throws Exception {
+
+    }
+
+    /**
+     * @param restartZk
+     * @throws Exception If failed.
+     */
+    private void topologyChangeWithRestarts(boolean restartZk) throws Exception {
+        startGrid(0);
+
+        long stopTime = System.currentTimeMillis();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRandomTopologyChanges() throws Exception {
+        List<Integer> startedNodes = new ArrayList<>();
+        List<String> startedCaches = new ArrayList<>();
+
+        int nextNodeIdx = 0;
+        int nextCacheIdx = 0;
+
+        long stopTime = System.currentTimeMillis() + 60_000;
+
+        int MAX_NODES = 20;
+        int MAX_CACHES = 10;
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        while (System.currentTimeMillis() < stopTime) {
+            if (startedNodes.size() > 0 && rnd.nextInt(10) == 0) {
+                boolean startCache = startedCaches.size() < 2 ||
+                    (startedCaches.size() < MAX_CACHES && rnd.nextInt(5) != 0);
+
+                int nodeIdx = startedNodes.get(rnd.nextInt(startedNodes.size()));
+
+                if (startCache) {
+                    String cacheName = "cache-" + nextCacheIdx++;
+
+                    log.info("Next, start new cache [cacheName=" + cacheName +
+                        ", node=" + nodeIdx +
+                        ", crd=" + (startedNodes.isEmpty() ? null : Collections.min(startedNodes)) +
+                        ", curCaches=" + startedCaches.size() + ']');
+
+                    ignite(nodeIdx).createCache(new CacheConfiguration<>(cacheName));
+
+                    startedCaches.add(cacheName);
+                }
+                else {
+                    if (startedCaches.size() > 1) {
+                        String cacheName = startedCaches.get(rnd.nextInt(startedCaches.size()));
+
+                        log.info("Next, stop cache [nodeIdx=" + nodeIdx +
+                            ", node=" + nodeIdx +
+                            ", crd=" + (startedNodes.isEmpty() ? null : Collections.min(startedNodes)) +
+                            ", cacheName=" + startedCaches.size() + ']');
+
+                        ignite(nodeIdx).destroyCache(cacheName);
+
+                        assertTrue(startedCaches.remove(cacheName));
+                    }
+                }
+            }
+            else {
+                boolean startNode = startedNodes.size() < 2 ||
+                    (startedNodes.size() < MAX_NODES && rnd.nextInt(5) != 0);
+
+                if (startNode) {
+                    int nodeIdx = nextNodeIdx++;
+
+                    log.info("Next, start new node [nodeIdx=" + nodeIdx +
+                        ", crd=" + (startedNodes.isEmpty() ? null : Collections.min(startedNodes)) +
+                        ", curNodes=" + startedNodes.size() + ']');
+
+                    startGrid(nodeIdx);
+
+                    assertTrue(startedNodes.add(nodeIdx));
+                }
+                else {
+                    if (startedNodes.size() > 1) {
+                        int nodeIdx = startedNodes.get(rnd.nextInt(startedNodes.size()));
+
+                        log.info("Next, stop [nodeIdx=" + nodeIdx +
+                            ", crd=" + (startedNodes.isEmpty() ? null : Collections.min(startedNodes)) +
+                            ", curNodes=" + startedNodes.size() + ']');
+
+                        stopGrid(nodeIdx);
+
+                        assertTrue(startedNodes.remove((Integer)nodeIdx));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      *
      */
     private void reset() {
@@ -808,6 +952,27 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         err = false;
 
         evts.clear();
+    }
+
+    /**
+     * @param node Node.
+     * @throws Exception If failed.
+     */
+    private void waitForEventsAcks(final Ignite node) throws Exception {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Map<Object, Object> evts = GridTestUtils.getFieldValue(node.configuration().getDiscoverySpi(),
+                    "impl", "evtsData", "evts");
+
+                if (!evts.isEmpty()) {
+                    info("Unacked events: " + evts);
+
+                    return false;
+                }
+
+                return true;
+            }
+        }, 10_000));
     }
 
     /**

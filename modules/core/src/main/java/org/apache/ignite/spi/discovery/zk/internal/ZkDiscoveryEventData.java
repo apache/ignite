@@ -49,6 +49,7 @@ abstract class ZkDiscoveryEventData implements Serializable {
     int flags;
 
     /**
+     * @param evtId Event ID.
      * @param evtType Event type.
      * @param topVer Topology version.
      */
@@ -60,21 +61,46 @@ abstract class ZkDiscoveryEventData implements Serializable {
         this.topVer = topVer;
     }
 
-    void remainingAcks(Collection<ZookeeperClusterNode> nodes) {
+    /**
+     * @param nodes Current nodes in topology.
+     */
+    void initRemainingAcks(Collection<ZookeeperClusterNode> nodes) {
         assert remainingAcks == null : this;
 
         remainingAcks = U.newHashSet(nodes.size());
 
         for (ZookeeperClusterNode node : nodes) {
-            if (!node.isLocal() && node.order() <= topVer)
-                remainingAcks.add(node.internalId());
+            if (!node.isLocal() && node.order() <= topVer) {
+                boolean add = remainingAcks.add(node.internalId());
+
+                assert add : node;
+            }
         }
     }
 
+    /**
+     * @param node Node.
+     */
+    void addRemainingAck(ZookeeperClusterNode node) {
+        assert node.order() <= topVer : node;
+
+        boolean add = remainingAcks.add(node.internalId());
+
+        assert add : node;
+    }
+
+    /**
+     * @return {@code True} if all nodes processed event.
+     */
     boolean allAcksReceived() {
         return remainingAcks.isEmpty();
     }
 
+    /**
+     * @param nodeInternalId Node ID.
+     * @param ackEvtId Last event ID processed on node.
+     * @return {@code True} if all nodes processed event.
+     */
     boolean onAckReceived(Integer nodeInternalId, long ackEvtId) {
         assert remainingAcks != null;
 
@@ -84,6 +110,10 @@ abstract class ZkDiscoveryEventData implements Serializable {
         return remainingAcks.isEmpty();
     }
 
+    /**
+     * @param node Failed node.
+     * @return {@code True} if all nodes processed event.
+     */
     boolean onNodeFail(ZookeeperClusterNode node) {
         assert remainingAcks != null : this;
 
@@ -92,18 +122,31 @@ abstract class ZkDiscoveryEventData implements Serializable {
         return remainingAcks.isEmpty();
     }
 
+    /**
+     * @param flag Flag mask.
+     * @return {@code True} if flag set.
+     */
     boolean flagSet(int flag) {
         return (flags & flag) == flag;
     }
 
+    /**
+     * @return Event ID.
+     */
     long eventId() {
         return evtId;
     }
 
+    /**
+     * @return Event type.
+     */
     int eventType() {
         return evtType;
     }
 
+    /**
+     * @return Event topology version.
+     */
     long topologyVersion() {
         return topVer;
     }

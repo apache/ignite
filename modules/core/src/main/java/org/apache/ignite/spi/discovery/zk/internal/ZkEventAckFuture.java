@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;

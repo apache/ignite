@@ -44,9 +44,9 @@ class ZkDiscoveryEventsData implements Serializable {
     TreeMap<Long, ZkDiscoveryEventData> evts;
 
     /**
-     * @param topVer
-     * @param gridStartTime
-     * @param evts
+     * @param topVer Current topology version.
+     * @param gridStartTime Cluster start time.
+     * @param evts Events history.
      */
     ZkDiscoveryEventsData(long gridStartTime, long topVer, TreeMap<Long, ZkDiscoveryEventData> evts) {
         this.gridStartTime = gridStartTime;
@@ -55,6 +55,7 @@ class ZkDiscoveryEventsData implements Serializable {
     }
 
     /**
+     * @param nodes Current nodes in topology (these nodes should ack that event processed).
      * @param evt Event.
      */
     void addEvent(Collection<ZookeeperClusterNode> nodes, ZkDiscoveryEventData evt) {
@@ -62,6 +63,6 @@ class ZkDiscoveryEventsData implements Serializable {
 
         assert old == null : old;
 
-        evt.remainingAcks(nodes);
+        evt.initRemainingAcks(nodes);
     }
 }

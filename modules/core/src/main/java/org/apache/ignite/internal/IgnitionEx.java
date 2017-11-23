@@ -44,6 +44,7 @@ import java.util.logging.Handler;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -153,6 +154,25 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_J
  * GridConfiguration cfg = new GridConfiguration();
  */
 public class IgnitionEx {
+    /** */
+    public static final boolean TEST_ZK = true;
+
+    /** */
+    public static TestingCluster zkCluster;
+
+    static {
+        if (TEST_ZK) {
+            zkCluster = new TestingCluster(1);
+
+            try {
+                zkCluster.start();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     /** Default configuration path relative to Ignite home. */
     public static final String DFLT_CFG = "config/default-config.xml";
 
@@ -2222,11 +2242,13 @@ public class IgnitionEx {
 
             initializeDataStorageConfiguration(myCfg);
 
-            ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+            if (TEST_ZK) {
+                ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
 
-            zkSpi.setZkConnectionString(IgniteKernal.zkCluster.getConnectString());
+                zkSpi.setZkConnectionString(zkCluster.getConnectString());
 
-            myCfg.setDiscoverySpi(zkSpi);
+                myCfg.setDiscoverySpi(zkSpi);
+            }
 
             return myCfg;
         }
