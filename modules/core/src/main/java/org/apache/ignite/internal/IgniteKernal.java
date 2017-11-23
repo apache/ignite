@@ -1705,11 +1705,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Register instance of ClusterMetricsMBean.
      *
      * @param mbean MBean instance to register.
-     * @param mbeanItf MBean interface to register.
+     * @param clazz MBean interface to register.
      * @param <T> MBean type.
      * @throws IgniteCheckedException If registration failed.
      */
-    private <T> ObjectName registerClusterMetricsMBean(T mbean, Class<T> mbeanItf) throws IgniteCheckedException {
+    private <T> ObjectName registerClusterMetricsMBean(T mbean, Class<T> clazz) throws IgniteCheckedException {
         if(U.IGNITE_MBEANS_DISABLED)
             return null;
 
@@ -1722,7 +1722,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 "Kernal",
                 mbean.getClass().getSimpleName(),
                 mbean,
-                mbeanItf);
+                clazz);
 
             if (log.isDebugEnabled())
                 log.debug("Registered MBean: " + objName);
@@ -1736,11 +1736,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** @throws IgniteCheckedException If registration failed. */
     private void registerClusterMetricsMBeans() throws IgniteCheckedException {
-        ClusterLocalNodeMetricsMXBean locNodeImpl = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery().localNode());
-        ClusterMetricsMXBean allNodesImpl = new ClusterMetricsMXBeanImpl(cluster());
-
-        locNodeMBean = registerClusterMetricsMBean(locNodeImpl, ClusterLocalNodeMetricsMXBean.class);
-        allNodesMBean = registerClusterMetricsMBean(allNodesImpl, ClusterMetricsMXBean.class);
+        locNodeMBean = registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery().localNode()),
+            ClusterLocalNodeMetricsMXBean.class);
+        allNodesMBean = registerClusterMetricsMBean(new ClusterMetricsMXBeanImpl(cluster()),
+            ClusterMetricsMXBean.class);
     }
 
     /**

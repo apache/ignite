@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterNodeFilter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 
@@ -373,15 +373,13 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public int countNodes(String name, String val, boolean srv, boolean client) {
-        ClusterGroup grp = clusterGroup(srv, client);
-
+    @Override public int countNodes(String attrName, String attrVal, boolean srv, boolean client) {
         int cnt = 0;
 
-        for (ClusterNode node : grp.nodes()) {
-            Object nodeVal = node.attribute(name);
+        for (ClusterNode node : nodesList(srv, client)) {
+            Object val = node.attribute(attrName);
 
-            if (nodeVal != null && nodeVal.toString().equals(val))
+            if (val != null && val.toString().equals(attrVal))
                 ++cnt;
         }
 
@@ -389,24 +387,11 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Object, Integer> groupNodes(String name, boolean srv, boolean client) {
-        ClusterGroup grp = clusterGroup(srv, client);
-
-        return countNodesByAttribute(name, grp.nodes());
-    }
-
-    /**
-     * Map nodes by attribute value.
-     *
-     * @param nodes Node list.
-     * @param attr Attribute name.
-     * @return The number of nodes grouped by the node attribute value.
-     */
-    private Map<Object, Integer> countNodesByAttribute(String attr, Iterable<ClusterNode> nodes) {
+    @Override public Map<Object, Integer> groupNodes(String attrName, boolean srv, boolean client) {
         Map<Object, Integer> attrGroups = new HashMap<>();
 
-        for (ClusterNode node : nodes) {
-            Object attrVal = node.attribute(attr);
+        for (ClusterNode node : nodesList(srv, client)) {
+            Object attrVal = node.attribute(attrName);
 
             if (attrVal != null) {
                 Integer cnt = attrGroups.get(attrVal);
@@ -419,21 +404,22 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /**
-     * Get specified cluster group.
+     * Get list with the specified node types.
      *
-     * @param srv Include server nodes.
-     * @param client Include client nodes.
-     * @return Cluster group with specified nodes.
+     * @param srv {@code True} to include server nodes.
+     * @param client {@code True} to include client nodes.
+     * @return List with the specified node types.
      */
-    private ClusterGroup clusterGroup(boolean srv, boolean client) {
-        if (srv && client)
-            return cluster.forOthers(cluster.forDaemons());
-        else if (srv)
-            return cluster.forServers();
-        else if (client)
-            return cluster.forClients();
-        else
-            return cluster.forDaemons();
+    private List<ClusterNode> nodesList(boolean srv, boolean client) {
+        List<ClusterNode> nodes = new ArrayList<>();
+
+        if (srv)
+            nodes.addAll(cluster.forServers().nodes());
+
+        if (client)
+            nodes.addAll(cluster.forClients().nodes());
+
+        return nodes;
     }
 
     /** {@inheritDoc} */

@@ -18,8 +18,13 @@
 package org.apache.ignite.internal;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
 import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -34,9 +39,9 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.messaging.MessagingListenActor;
-import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -373,13 +378,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJmxClusterMetrics() throws Exception {
-        IgniteEx node = grid();
-
-        Ignition.setDaemon(true);
-
-        startGrid(3);
-
-        Ignition.setDaemon(false);
+        Ignite node = grid();
 
         Ignite node1 = startGrid(1);
 
@@ -389,25 +388,26 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         waitForDiscovery(node2, node1, node);
 
-        ClusterMetricsMXBean clusterMBean = new ClusterMetricsMXBeanImpl(node.cluster());
+        JmxClusterMetricsHelper h = new JmxClusterMetricsHelper(node.configuration());
 
-        assertEquals(node.cluster().topologyVersion(), clusterMBean.getTopologyVersion());
+        assertEquals(node.cluster().topologyVersion(), h.attr("TopologyVersion"));
 
-        assertEquals(2, clusterMBean.getTotalServerNodes());
-        assertEquals(1, clusterMBean.getTotalClientNodes());
+        assertEquals(2, h.attr("TotalServerNodes"));
+        assertEquals(1, h.attr("TotalClientNodes"));
 
-        assertEquals(3, clusterMBean.countNodes(ATTR_BUILD_VER, VER_STR, true, true));
-        assertEquals(2, clusterMBean.countNodes(ATTR_BUILD_VER, VER_STR, true, false));
-        assertEquals(1, clusterMBean.countNodes(ATTR_BUILD_VER, VER_STR, false, true));
-        assertEquals(1, clusterMBean.countNodes(ATTR_BUILD_VER, VER_STR, false, false));
-        assertEquals(2, clusterMBean.countNodes(ATTR_CLIENT_MODE, "false", true, true));
-        assertEquals(1, clusterMBean.countNodes(ATTR_CLIENT_MODE, "false", false, false));
-        assertEquals(1, clusterMBean.countNodes(ATTR_CLIENT_MODE, "true", true, true));
+        assertEquals(3, h.countNodes(ATTR_BUILD_VER, VER_STR, true, true));
+        assertEquals(2, h.countNodes(ATTR_BUILD_VER, VER_STR, true, false));
+        assertEquals(1, h.countNodes(ATTR_BUILD_VER, VER_STR, false, true));
+        assertEquals(0, h.countNodes(ATTR_BUILD_VER, VER_STR, false, false));
 
-        assertEquals(F.asMap(false, 2, true, 1), clusterMBean.groupNodes(ATTR_CLIENT_MODE, true, true));
-        assertEquals(F.asMap(false, 2), clusterMBean.groupNodes(ATTR_CLIENT_MODE, true, false));
-        assertEquals(F.asMap(false, 1), clusterMBean.groupNodes(ATTR_CLIENT_MODE, false, false));
-        assertEquals(F.asMap(true, 1), clusterMBean.groupNodes(ATTR_CLIENT_MODE, false, true));
+        assertEquals(2, h.countNodes(ATTR_CLIENT_MODE, "false", true, true));
+        assertEquals(0, h.countNodes(ATTR_CLIENT_MODE, "false", false, false));
+        assertEquals(1, h.countNodes(ATTR_CLIENT_MODE, "true", true, true));
+
+        assertEquals(F.asMap(false, 2, true, 1), h.groupNodes(ATTR_CLIENT_MODE, true, true));
+        assertEquals(F.asMap(false, 2), h.groupNodes(ATTR_CLIENT_MODE, true, false));
+        assertEquals(F.asMap(true, 1), h.groupNodes(ATTR_CLIENT_MODE, false, true));
+        assertEquals(Collections.emptyMap(), h.groupNodes(ATTR_CLIENT_MODE, false, false));
     }
 
     /**
@@ -425,5 +425,71 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     @GridInternal
     private static class TestInternalTask extends GridTestTask {
         // No-op.
+    }
+
+    /**
+     * Helper class to simplify ClusterMetricsMXBean testing.
+     */
+    private static class JmxClusterMetricsHelper {
+        /** MBean server. */
+        private final MBeanServer mbeanSrv;
+
+        /** ClusterMetrics MX bean name. */
+        private final ObjectName mbean;
+
+        /**
+         * @param cfg Ignite configuration.
+         * @throws MalformedObjectNameException Thrown in case of any errors.
+         */
+        private JmxClusterMetricsHelper(IgniteConfiguration cfg) throws MalformedObjectNameException {
+            this.mbeanSrv = cfg.getMBeanServer();
+
+            this.mbean = U.makeMBeanName(cfg.getIgniteInstanceName(), "Kernal",
+                ClusterMetricsMXBeanImpl.class.getSimpleName());
+        }
+
+        /**
+         * Invoke "countNodes" method through MBean server.
+         *
+         * @param attrName Node attribute name,
+         * @param attrVal Node attribute value,
+         * @param srv Include server nodes.
+         * @param client Include client nodes.
+         * @return Count of nodes filtered by node attribute.
+         * @throws Exception If failed.
+         */
+        private int countNodes(String attrName, String attrVal, boolean srv, boolean client) throws Exception {
+            String[] signature = {"java.lang.String", "java.lang.String", "boolean", "boolean"};
+            Object[] params = {attrName, attrVal, srv, client};
+
+            return (int)mbeanSrv.invoke(mbean, "countNodes", params, signature);
+        }
+
+        /**
+         * Invoke "groupNodes" method through MBean server.
+         *
+         * @param attrName Node attribute name.
+         * @param srv Include server nodes.
+         * @param client Include client nodes.
+         * @return The number of nodes grouped by node attribute name.
+         * @throws Exception If failed.
+         */
+        private Map groupNodes(String attrName, boolean srv, boolean client) throws Exception {
+            String[] signature = {"java.lang.String", "boolean", "boolean"};
+            Object[] params = {attrName, srv, client};
+
+            return (Map)mbeanSrv.invoke(mbean, "groupNodes", params, signature);
+        }
+
+        /**
+         * Get MBean attribute through MBean server.
+         *
+         * @param name Attribute name.
+         * @return Current value of attribute.
+         * @throws Exception If failed.
+         */
+        private Object attr(String name) throws Exception {
+            return mbeanSrv.getAttribute(mbean, name);
+        }
     }
 }

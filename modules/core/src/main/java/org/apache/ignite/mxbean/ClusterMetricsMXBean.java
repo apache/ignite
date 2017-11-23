@@ -51,35 +51,35 @@ public interface ClusterMetricsMXBean extends ClusterLocalNodeMetricsMXBean {
     /**
      * Get the number of nodes that have specified attribute.
      *
-     * @param name Attribute name.
-     * @param val Attribute value.
+     * @param attrName Attribute name.
+     * @param attrVal Attribute value.
      * @param srv Include server nodes.
      * @param client Include client nodes.
      * @return The number of nodes that have specified attribute.
      */
     @MXBeanDescription("Get the number of nodes that have specified attribute.")
     @MXBeanParametersNames(
-        {"name", "value", "server", "client"}
+        {"attrName", "attrValue", "server", "client"}
     )
     @MXBeanParametersDescriptions(
         {"Attribute name.", "Attribute value.", "Include server nodes.", "Include client nodes."}
     )
-    public int countNodes(String name, String val, boolean srv, boolean client);
+    public int countNodes(String attrName, String attrVal, boolean srv, boolean client);
 
     /**
      * Get the number of nodes grouped by the node attribute value.
      *
-     * @param name Attribute name.
+     * @param attrName Attribute name.
      * @param srv Include server nodes.
      * @param client Include client nodes.
      * @return The number of nodes grouped by the node attribute value.
      */
     @MXBeanDescription("Get the number of nodes grouped by the node attribute.")
     @MXBeanParametersNames(
-        {"name", "server", "client"}
+        {"attrName", "server", "client"}
     )
     @MXBeanParametersDescriptions(
         {"Attribute name.", "Include server nodes.", "Include client nodes."}
     )
-    public Map<Object, Integer> groupNodes(String name, boolean srv, boolean client);
+    public Map<Object, Integer> groupNodes(String attrName, boolean srv, boolean client);
 }
