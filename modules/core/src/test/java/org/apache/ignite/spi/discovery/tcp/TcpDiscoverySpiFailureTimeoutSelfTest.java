@@ -35,6 +35,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
+
 /**
  *
  */
@@ -88,9 +90,9 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         assertTrue(firstSpi().failureDetectionTimeoutEnabled());
         assertTrue(secondSpi().failureDetectionTimeoutEnabled());
 
-        assertEquals(IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT.longValue(),
+        assertEquals(DFLT_FAILURE_DETECTION_TIMEOUT.longValue(),
                 firstSpi().failureDetectionTimeout());
-        assertEquals(IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT.longValue(),
+        assertEquals(DFLT_FAILURE_DETECTION_TIMEOUT.longValue(),
                 secondSpi().failureDetectionTimeout());
 
         assertEquals(IgniteConfiguration.DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT.longValue(),
@@ -162,12 +164,16 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
      * @throws Exception In case of error.
      */
     public void testConnectionCheckMessage() throws Exception {
+        TestTcpDiscoverySpi prevSpi = (TestTcpDiscoverySpi)spis.get(3);
+
+        assert prevSpi != null;
+
         TestTcpDiscoverySpi nextSpi = null;
 
         try {
-            assert firstSpi().connCheckStatusMsgCntSent == 0;
+            assert prevSpi.connCheckStatusMsgCntSent == 0;
 
-            TcpDiscoveryNode nextNode = ((ServerImpl)(firstSpi().impl)).ring().nextNode();
+            TcpDiscoveryNode nextNode = ((ServerImpl)(prevSpi.impl)).ring().nextNode();
 
             assertNotNull(nextNode);
 
@@ -181,24 +187,32 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
 
             assertNotNull(nextSpi);
 
+            if (log.isInfoEnabled())
+                log.info("Start connection check counting");
+
             assert nextSpi.connCheckStatusMsgCntReceived == 0;
 
-            firstSpi().cntConnCheckMsg = true;
+            prevSpi.cntConnCheckMsg = true;
             nextSpi.cntConnCheckMsg = true;
 
             Thread.sleep(firstSpi().failureDetectionTimeout());
 
-            firstSpi().cntConnCheckMsg = false;
+            if (log.isInfoEnabled())
+                log.info("Stop connection check counting");
+
+            prevSpi.cntConnCheckMsg = false;
             nextSpi.cntConnCheckMsg = false;
 
-            int sent = firstSpi().connCheckStatusMsgCntSent;
+            int sent = prevSpi.connCheckStatusMsgCntSent;
             int received = nextSpi.connCheckStatusMsgCntReceived;
 
-            assert sent >= 3 && sent < 7 : "messages sent: " + sent;
-            assert received >= 3 && received < 7 : "messages received: " + received;
+            int expected = (int)(firstSpi().failureDetectionTimeout() / firstSpi().metricsUpdateFreq);
+
+            assert sent >= expected - 1 && sent <= expected : "messages sent: " + sent;
+            assert received >= expected - 1 && received <= expected : "messages received: " + received;
         }
         finally {
-            firstSpi().resetState();
+            prevSpi.resetState();
 
             if (nextSpi != null)
                 nextSpi.resetState();
@@ -295,6 +309,10 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
+
+            if (log.isTraceEnabled())
+                log.trace("$> send [sock=" + sock + ", msg=" + msg + ']');
+
             if (!(msg instanceof TcpDiscoveryPingRequest)) {
                 if (cntConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                     connCheckStatusMsgCntSent++;
@@ -304,7 +322,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 return;
             }
 
-            if (timeout >= IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT) {
+            if (timeout >= DFLT_FAILURE_DETECTION_TIMEOUT) {
                 validTimeout = false;
 
                 throw new IgniteCheckedException("Invalid timeout: " + timeout);
@@ -325,6 +343,10 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         /** {@inheritDoc} */
         protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
             throws IOException {
+
+            if (log.isTraceEnabled())
+                log.trace("$> respond [sock=" + sock + ", msg=" + msg + ']');
+
             if (cntConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                 connCheckStatusMsgCntReceived++;
 

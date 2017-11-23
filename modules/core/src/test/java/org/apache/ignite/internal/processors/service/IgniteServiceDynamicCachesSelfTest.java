@@ -114,6 +114,8 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeployCalledBeforeCacheStart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4912");
+
         String cacheName = "cache";
 
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);

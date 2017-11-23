@@ -506,6 +506,71 @@ public class TcpDiscoveryNodesRing {
     }
 
     /**
+     * Finds previous node in the topology.
+     *
+     * @return Previous node.
+     */
+    @Nullable public TcpDiscoveryNode prevNode() {
+        rwLock.readLock().lock();
+
+        try {
+            if (nodes.size() < 2)
+                return null;
+
+            return prevNode(null);
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Finds previous node in the topology filtering excluded nodes from search.
+     * <p>
+     * This may be used when detecting and handling nodes failure.
+     *
+     * @param excluded Nodes to exclude from the search (optional). If provided,
+     * cannot contain local node.
+     * @return Previous node or {@code null} if all nodes were filtered out or
+     * topology contains less than two nodes.
+     */
+    @Nullable public TcpDiscoveryNode prevNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
+        assert locNode.internalOrder() > 0 : locNode;
+        assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode) : excluded;
+
+        rwLock.readLock().lock();
+
+        try {
+            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
+
+            if (filtered.size() < 2)
+                return null;
+
+            Iterator<TcpDiscoveryNode> iter = filtered.iterator();
+
+            TcpDiscoveryNode prevNode = null;
+
+            while (iter.hasNext()) {
+                TcpDiscoveryNode node = iter.next();
+
+                if (locNode.equals(node))
+                    break;
+
+                prevNode = node;
+            }
+
+            if (prevNode == null)
+                while (iter.hasNext())
+                    prevNode = iter.next();
+
+            return prevNode;
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    /**
      * Gets current topology version.
      *
      * @return Current topology version.

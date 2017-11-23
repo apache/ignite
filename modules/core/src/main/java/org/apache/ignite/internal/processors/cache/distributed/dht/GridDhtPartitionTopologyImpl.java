@@ -36,6 +36,7 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -1819,7 +1820,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             try {
                                 //TODO https://issues.apache.org/jira/browse/IGNITE-6433
                                 locPart.tryEvict();
-                                locPart.rent(false).get();
+
+                                IgniteInternalFuture<?> rentFut = locPart.rent(false);
+
+                                lock.writeLock().unlock();
+                                try {
+                                    rentFut.get();
+                                }
+                                finally {
+                                    lock.writeLock().lock();
+                                }
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to wait for RENTING partition eviction after partition LOST event",

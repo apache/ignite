@@ -1272,19 +1272,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch cnt = new CountDownLatch(1);
 
-        ((TcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(
-            new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
-                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
-                    try {
-                        cnt.await(10, MINUTES);
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-
-                        throw new IgniteInterruptedException(e);
-                    }
-                }
-            });
+        ((TestTcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).skipNodeAdded = true;
 
         try {
             netTimeout = 500;
@@ -2424,6 +2412,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         /** */
         private volatile boolean skipNodeAdded;
 
+        /** */
+        private boolean skipReadReceipt;
+
         /**
          * @param lock Lock.
          */
@@ -2496,8 +2487,12 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             long timeout) throws IOException, IgniteCheckedException {
             waitFor(writeLock);
 
-            if (!onMessage(sock, msg))
+            if (!onMessage(sock, msg)) {
+                skipReadReceipt = true;
+
                 return;
+            }
+            skipReadReceipt = false;
 
             super.writeToSocket(sock, out, msg, timeout);
 
@@ -2613,6 +2608,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
+            if (skipReadReceipt) {
+                log.info("Skip reading receipt. Result OK");
+
+                skipReadReceipt = false;
+
+                return TcpDiscoveryImpl.RES_OK;
+            }
+
             int res = super.readReceipt(sock, timeout);
 
             if (res != TcpDiscoveryImpl.RES_OK) {

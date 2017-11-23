@@ -1966,13 +1966,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     log.info("Count1: " + cnt);
 
-                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 2);
+                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 3);
 
                     cnt = stats.receivedMessages().get(TcpDiscoveryNodeFailedMessage.class.getSimpleName());
 
                     log.info("Count2: " + cnt);
 
-                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 2);
+                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 3);
                 }
             }
         }
@@ -2264,12 +2264,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                         }
 
                         log.info("Stop sleep on message send: " + msg);
-
-                        if (node.equals(errNext)) {
-                            log.info("Fail write after sleep [node=" + node.id() + ", msg=" + msg + ']');
-
-                            throw new SocketTimeoutException();
-                        }
                     }
                 }
             }
@@ -2605,7 +2599,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     throw new RuntimeException("Failing ring message worker explicitly");
                 else {
                     try {
-                        Thread.sleep(5_000);
+                        Thread.sleep(timeout);
                     }
                     catch (InterruptedException ignored) {
                         // No-op.

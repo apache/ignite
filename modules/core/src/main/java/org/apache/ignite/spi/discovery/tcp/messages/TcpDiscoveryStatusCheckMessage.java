@@ -73,6 +73,11 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
         this.status = msg.status;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean highPriority() {
+        return failedNodeId != null;
+    }
+
     /**
      * Gets creator node.
      *
