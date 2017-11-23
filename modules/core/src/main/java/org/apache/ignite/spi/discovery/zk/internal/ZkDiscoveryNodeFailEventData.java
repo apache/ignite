@@ -24,6 +24,9 @@ import org.apache.ignite.events.EventType;
  */
 class ZkDiscoveryNodeFailEventData extends ZkDiscoveryEventData {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private int failedNodeInternalId;
 
     /**

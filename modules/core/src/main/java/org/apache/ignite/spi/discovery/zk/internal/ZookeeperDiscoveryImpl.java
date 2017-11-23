@@ -1363,6 +1363,9 @@ public class ZookeeperDiscoveryImpl {
      *
      */
     private class ConnectionLossListener implements IgniteRunnable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public void run() {
             // TODO ZK, can be called from any thread.

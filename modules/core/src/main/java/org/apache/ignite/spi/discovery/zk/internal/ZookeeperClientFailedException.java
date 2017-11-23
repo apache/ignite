@@ -21,6 +21,9 @@ package org.apache.ignite.spi.discovery.zk.internal;
  *
  */
 public class ZookeeperClientFailedException extends Exception {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param cause Cause.
      */

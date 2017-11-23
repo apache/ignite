@@ -25,6 +25,9 @@ import org.apache.ignite.events.EventType;
  */
 class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     final int joinedInternalId;
 
     /** */

@@ -27,6 +27,9 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
  */
 class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private static final int CUSTOM_MSG_ACK_FLAG = 1;
 
     /** */
