@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,6 +46,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -281,6 +283,61 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Collection<BaselineNode> currentBaselineTopology() {
+        guard();
+
+        try {
+            BaselineTopology blt = ctx.state().clusterState().baselineTopology();
+
+            return blt != null ? blt.currentBaseline() : null;
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(Collection<BaselineNode> baselineTop) {
+        guard();
+
+        try {
+            if (!ctx.state().clusterState().active())
+                throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
+
+            if (baselineTop != null) {
+                if (baselineTop.isEmpty())
+                    throw new IgniteException("BaselineTopology must contain at least one node.");
+
+                if (!baselineTop.containsAll(ctx.discovery().aliveServerNodes()))
+                    throw new IgniteException("Removing online nodes from BaselineTopology is not supported.");
+            }
+
+            ctx.state().changeGlobalState(true, baselineTop, true).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(long topVer) {
+
     }
 
     /** {@inheritDoc} */

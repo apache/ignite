@@ -41,8 +41,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapt
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
@@ -1173,12 +1173,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             // Use grp.sharedGroup() flag since it is possible cacheId is not yet set here.
             boolean sizeWithCacheId = grp.sharedGroup();
 
-            int oldLen = FreeListImpl.getRowSize(oldRow, sizeWithCacheId);
+            int oldLen = DataPageIO.getRowSize(oldRow, sizeWithCacheId);
 
             if (oldLen > updateValSizeThreshold)
                 return false;
 
-            int newLen = FreeListImpl.getRowSize(dataRow, sizeWithCacheId);
+            int newLen = DataPageIO.getRowSize(dataRow, sizeWithCacheId);
 
             return oldLen == newLen;
         }

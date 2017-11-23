@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,71 +32,63 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ConsistentIdMapper {
     /** Discovery manager. */
-    private final GridDiscoveryManager discoveryManager;
+    private final GridDiscoveryManager discoveryMgr;
 
     /**
      * Create an instance of mapper.
      *
-     * @param discoveryManager Discovery manager.
+     * @param discoveryMgr Discovery manager.
      */
-    public ConsistentIdMapper(GridDiscoveryManager discoveryManager) {
-        this.discoveryManager = discoveryManager;
+    public ConsistentIdMapper(GridDiscoveryManager discoveryMgr) {
+        this.discoveryMgr = discoveryMgr;
     }
 
     /**
-     * Map UUID to consistent id.
+     * Maps UUID to compact ID for given baseline topology.
      *
      * @param topVer Topology version.
      * @param nodeId UUID of node.
-     * @return Consistent id of node.
+     * @param baselineTop Baseline topology.
+     * @return Compact ID of node for given baseline topology.
      */
-    public Object mapToConsistentId(AffinityTopologyVersion topVer, UUID nodeId) {
-        ClusterNode node = discoveryManager.node(topVer, nodeId);
+    public short mapToCompactId(AffinityTopologyVersion topVer, UUID nodeId, BaselineTopology baselineTop) {
+        ClusterNode node = discoveryMgr.node(topVer, nodeId);
 
         if (node == null)
             throw new IllegalStateException("Unable to find node by UUID [nodeId=" + nodeId + ", topVer=" + topVer + ']');
 
-        return node.consistentId();
+        return baselineTop.consistentIdMapping().get(node.consistentId());
     }
 
     /**
-     * Map consistent id to UUID.
-     *
-     * @param consistentId Consistent id of node.
-     * @return UUID of node.
-     */
-    @Nullable public UUID mapToUUID(Object consistentId) {
-        for (ClusterNode node : discoveryManager.allNodes())
-            if (node.consistentId().equals(consistentId))
-                return node.id();
-
-        return null;
-    }
-
-    /**
-     * Map primary -> backup node UUIDs to consistent ids.
+     * Map primary -> backup node compact ID accordingly to baseline topology..
      *
      * @param txNodes Primary -> backup UUID nodes.
-     * @return Primary -> backup consistent id nodes.
+     * @return Primary -> backup compact ID nodes.
      */
-    public Map<Object, Collection<Object>> mapToConsistentIds(AffinityTopologyVersion topVer, @Nullable Map<UUID, Collection<UUID>> txNodes) {
+    public Map<Short, Collection<Short>> mapToCompactIds(
+        AffinityTopologyVersion topVer,
+        @Nullable Map<UUID, Collection<UUID>> txNodes,
+        BaselineTopology baselineTop
+    ) {
         if (txNodes == null)
             return null;
 
-        Map<Object, Collection<Object>> consistentMap = U.newHashMap(txNodes.keySet().size());
+        Map<Short, Collection<Short>> consistentMap = U.newHashMap(txNodes.size());
 
-        for (UUID node : txNodes.keySet()) {
-            Collection<UUID> backupNodes = txNodes.get(node);
+        for (Map.Entry<UUID, Collection<UUID>> e : txNodes.entrySet()) {
+            UUID node = e.getKey();
 
-            Collection<Object> consistentIdsBackups = new ArrayList<>(backupNodes.size());
+            Collection<UUID> backupNodes = e.getValue();
+
+            Collection<Short> backups = new ArrayList<>(backupNodes.size());
 
             for (UUID backup : backupNodes)
-                consistentIdsBackups.add(mapToConsistentId(topVer, backup));
+                backups.add(mapToCompactId(topVer, backup, baselineTop));
 
-            consistentMap.put(mapToConsistentId(topVer, node), consistentIdsBackups);
+            consistentMap.put(mapToCompactId(topVer, node, baselineTop), backups);
         }
 
         return consistentMap;
     }
-
 }

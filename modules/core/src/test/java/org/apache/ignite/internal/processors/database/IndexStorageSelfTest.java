@@ -25,13 +25,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.MetadataStorage;
-import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -39,7 +39,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class MetadataStorageSelfTest extends GridCommonAbstractTest {
+public class IndexStorageSelfTest extends GridCommonAbstractTest {
     /** Make sure page is small enough to trigger multiple pages in a linked list. */
     private static final int PAGE_SIZE = 1024;
 
@@ -74,7 +74,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
         mem.start();
 
         try {
-            final Map<Integer, MetadataStorage> storeMap = new HashMap<>();
+            final Map<Integer, IndexStorageImpl> storeMap = new HashMap<>();
 
             for (int i = 0; i < 1_000; i++) {
                 int cacheId = cacheIds[i % cacheIds.length];
@@ -93,10 +93,10 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     idxName = randomName();
                 } while (idxMap.containsKey(idxName));
 
-                MetadataStorage metaStore = storeMap.get(cacheId);
+                IndexStorageImpl metaStore = storeMap.get(cacheId);
 
                 if (metaStore == null) {
-                    metaStore = new MetadataStorage(mem, null, new AtomicLong(), cacheId,
+                    metaStore = new IndexStorageImpl(mem, null, new AtomicLong(), cacheId,
                         PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX,
                         null, mem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX), true);
 

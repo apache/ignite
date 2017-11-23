@@ -194,14 +194,21 @@ public class ExchangeActions {
      * @return {@code True} if has deactivate request.
      */
     public boolean deactivate() {
-        return stateChangeReq != null && !stateChangeReq.activate();
+        return stateChangeReq != null && stateChangeReq.activeChanged() && !stateChangeReq.activate();
     }
 
     /**
      * @return {@code True} if has activate request.
      */
     public boolean activate() {
-        return stateChangeReq != null && stateChangeReq.activate();
+        return stateChangeReq != null && stateChangeReq.activeChanged() && stateChangeReq.activate();
+    }
+
+    /**
+     * @return {@code True} if has baseline topology change request.
+     */
+    public boolean changedBaseline() {
+        return stateChangeReq != null && !stateChangeReq.activeChanged();
     }
 
     /**

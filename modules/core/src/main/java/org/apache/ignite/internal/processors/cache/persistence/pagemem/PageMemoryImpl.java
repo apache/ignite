@@ -355,8 +355,10 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         U.shutdownNow(getClass(), asyncRunner, log);
 
-        for (Segment seg : segments)
-            seg.close();
+        if (segments != null) {
+            for (Segment seg : segments)
+                seg.close();
+        }
 
         directMemoryProvider.shutdown();
     }

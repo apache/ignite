@@ -558,6 +558,20 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return null;
                     }
 
+                    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData) {
+                        for (GridComponent comp : ctx) {
+                            if (comp.discoveryDataType() == null)
+                                continue;
+
+                            IgniteNodeValidationResult err = comp.validateNode(node, discoData.newJoinerDiscoveryData(comp.discoveryDataType().ordinal()));
+
+                            if (err != null)
+                                return err;
+                        }
+
+                        return null;
+                    }
+
                     @Override public Collection<SecuritySubject> authenticatedSubjects() {
                         try {
                             return ctx.security().authenticatedSubjects();
@@ -701,6 +715,11 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
         return null;
     }
 
