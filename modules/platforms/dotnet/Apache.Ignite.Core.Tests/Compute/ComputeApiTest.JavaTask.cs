@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // ReSharper disable SpecifyACultureInStringConversionExplicitly
 namespace Apache.Ignite.Core.Tests.Compute
 {
@@ -34,6 +33,90 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public partial class ComputeApiTest
     {
+        /** Echo task name. */
+        public const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
+
+        /** Binary argument task name. */
+        public const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
+
+        /** Broadcast task name. */
+        public const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
+
+        /** Broadcast task name. */
+        private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
+
+        /** Echo type: null. */
+        private const int EchoTypeNull = 0;
+
+        /** Echo type: byte. */
+        private const int EchoTypeByte = 1;
+
+        /** Echo type: bool. */
+        private const int EchoTypeBool = 2;
+
+        /** Echo type: short. */
+        private const int EchoTypeShort = 3;
+
+        /** Echo type: char. */
+        private const int EchoTypeChar = 4;
+
+        /** Echo type: int. */
+        private const int EchoTypeInt = 5;
+
+        /** Echo type: long. */
+        private const int EchoTypeLong = 6;
+
+        /** Echo type: float. */
+        private const int EchoTypeFloat = 7;
+
+        /** Echo type: double. */
+        private const int EchoTypeDouble = 8;
+
+        /** Echo type: array. */
+        private const int EchoTypeArray = 9;
+
+        /** Echo type: collection. */
+        private const int EchoTypeCollection = 10;
+
+        /** Echo type: map. */
+        private const int EchoTypeMap = 11;
+
+        /** Echo type: binarizable. */
+        public const int EchoTypeBinarizable = 12;
+
+        /** Echo type: binary (Java only). */
+        private const int EchoTypeBinarizableJava = 13;
+
+        /** Type: object array. */
+        private const int EchoTypeObjArray = 14;
+
+        /** Type: binary object array. */
+        private const int EchoTypeBinarizableArray = 15;
+
+        /** Type: enum. */
+        private const int EchoTypeEnum = 16;
+
+        /** Type: enum array. */
+        private const int EchoTypeEnumArray = 17;
+
+        /** Type: enum field. */
+        private const int EchoTypeEnumField = 18;
+
+        /** Type: affinity key. */
+        public const int EchoTypeAffinityKey = 19;
+
+        /** Type: enum from cache. */
+        private const int EchoTypeEnumFromCache = 20;
+
+        /** Type: enum array from cache. */
+        private const int EchoTypeEnumArrayFromCache = 21;
+
+        /** Echo type: IgniteUuid. */
+        private const int EchoTypeIgniteUuid = 22;
+
+        /** Echo type: binary enum (created with builder). */
+        private const int EchoTypeBinaryEnum = 23;
+
         /// <summary>
         /// Test echo with decimals.
         /// </summary>
@@ -466,6 +549,34 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(2, filteredRes.Count);
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(1)));
+        }
+
+        /// <summary>
+        /// Test "withNoFailover" feature.
+        /// </summary>
+        [Test]
+        public void TestWithNoFailover()
+        {
+            var res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection>(BroadcastTask, null)
+                .OfType<Guid>().ToList();
+
+            Assert.AreEqual(2, res.Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
+        }
+
+        /// <summary>
+        /// Test "withTimeout" feature.
+        /// </summary>
+        [Test]
+        public void TestWithTimeout()
+        {
+            var res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection>(BroadcastTask, null)
+                .OfType<Guid>().ToList();
+
+            Assert.AreEqual(2, res.Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
         }
     }
 }
