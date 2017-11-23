@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
+import org.h2.result.Row;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.value.DataType;
@@ -38,7 +39,9 @@ import java.sql.Connection;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * H2 utility methods.
@@ -259,6 +262,19 @@ public class H2Utils {
         Value h2Val = desc.wrap(val, objType);
 
         return h2Val.convertTo(type).getObject();
+    }
+
+    /** FIXME */
+    public static boolean areRowsEqual(Row left, Row right) {
+        return left == right
+            || (right != null
+                && left.getColumnCount() == right.getColumnCount()
+                && Arrays.equals(left.getValueList(), right.getValueList()));
+    }
+
+    /** FIXME */
+    public static int rowHashCode(Row row) {
+        return (row == null) ? 0 : Objects.hash(row.getValueList());
     }
 
     /**

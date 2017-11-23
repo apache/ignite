@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.store.Data;
@@ -99,5 +100,17 @@ public abstract class GridH2SearchRowAdapter implements Row {
     /** {@inheritDoc} */
     @Override public Value[] getValueList() {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return H2Utils.rowHashCode(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        return obj != null
+            && obj instanceof Row
+            && H2Utils.areRowsEqual(this, (Row) obj);
     }
 }
