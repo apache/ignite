@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// </summary>
         protected virtual IBinaryNameMapper GetNameMapper()
         {
-            return BinaryBasicNameMapper.FullNameInstance;
+            return new BinaryBasicNameMapper {IsSimpleName = false};
         }
 
         /// <summary>

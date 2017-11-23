@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 }
             }
 
-            TestUtils.AssertReflectionEqual(cfg, cfg2);
+            AssertExtensions.ReflectionEqual(cfg, cfg2);
         }
 
         /// <summary>

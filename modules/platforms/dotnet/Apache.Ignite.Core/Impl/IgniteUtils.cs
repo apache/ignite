@@ -19,8 +19,6 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -33,6 +31,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
     using Microsoft.Win32;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
@@ -46,17 +45,28 @@ namespace Apache.Ignite.Core.Impl
         private const string EnvJavaHome = "JAVA_HOME";
 
         /** Lookup paths. */
-        private static readonly string[] JvmDllLookupPaths =
-        {
-            // JRE paths
-            @"bin\server",
-            @"bin\client",
+        private static readonly string[] JvmDllLookupPaths = Os.IsWindows
+            ? new[]
+            {
+                // JRE paths
+                @"bin\server",
+                @"bin\client",
 
-            // JDK paths
-            @"jre\bin\server",
-            @"jre\bin\client",
-            @"jre\bin\default"
-        };
+                // JDK paths
+                @"jre\bin\server",
+                @"jre\bin\client",
+                @"jre\bin\default"
+            }
+            : new[]
+            {
+                // JRE paths
+                "lib/amd64/server",
+                "lib/amd64/client",
+
+                // JDK paths
+                "jre/lib/amd64/server",
+                "jre/lib/amd64/client"
+            };
 
         /** Registry lookup paths. */
         private static readonly string[] JreRegistryKeys =
@@ -65,8 +75,8 @@ namespace Apache.Ignite.Core.Impl
             @"Software\Wow6432Node\JavaSoft\Java Runtime Environment"
         };
 
-        /** File: jvm.dll. */
-        internal const string FileJvmDll = "jvm.dll";
+        /** Jvm dll file name. */
+        internal static readonly string FileJvmDll = Os.IsWindows ? "jvm.dll" : "libjvm.so";
 
         /** Prefix for temp directory names. */
         private const string DirIgniteTmp = "Ignite_";
@@ -195,15 +205,15 @@ namespace Apache.Ignite.Core.Impl
             {
                 log.Debug("Trying to load JVM dll from [option={0}, path={1}]...", dllPath.Key, dllPath.Value);
 
-                var errCode = LoadDll(dllPath.Value, FileJvmDll);
-                if (errCode == 0)
+                var errInfo = LoadDll(dllPath.Value, FileJvmDll);
+                if (errInfo == null)
                 {
                     log.Debug("jvm.dll successfully loaded from [option={0}, path={1}]", dllPath.Key, dllPath.Value);
                     return;
                 }
 
                 var message = string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]",
-                                                  dllPath.Key, dllPath.Value, FormatWin32Error(errCode));
+                                                  dllPath.Key, dllPath.Value, errInfo);
                 messages.Add(message);
 
                 log.Debug("Failed to load jvm.dll: " + message);
@@ -228,62 +238,32 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Formats the Win32 error.
-        /// </summary>
-        [ExcludeFromCodeCoverage]
-        private static string FormatWin32Error(int errorCode)
-        {
-            if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)
-            {
-                var mode = Environment.Is64BitProcess ? "x64" : "x86";
-
-                return string.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
-                                     "This is often caused by x64/x86 mismatch. " +
-                                     "Current process runs in {0} mode, and DLL is not {0}.", mode);
-            }
-
-            if (errorCode == NativeMethods.ERROR_MOD_NOT_FOUND)
-            {
-                return "DLL could not be loaded (126: ERROR_MOD_NOT_FOUND). " +
-                       "This can be caused by missing dependencies. ";
-            }
-
-            return string.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
-        }
-
-        /// <summary>
         /// Try loading DLLs first using file path, then using it's simple name.
         /// </summary>
         /// <param name="filePath"></param>
         /// <param name="simpleName"></param>
-        /// <returns>Zero in case of success, error code in case of failure.</returns>
-        private static int LoadDll(string filePath, string simpleName)
+        /// <returns>Null in case of success, error info in case of failure.</returns>
+        private static string LoadDll(string filePath, string simpleName)
         {
-            int res = 0;
-
-            IntPtr ptr;
+            string res = null;
 
             if (filePath != null)
             {
-                ptr = NativeMethods.LoadLibrary(filePath);
+                res = DllLoader.Load(filePath);
 
-                if (ptr == IntPtr.Zero)
-                    res = Marshal.GetLastWin32Error();
-                else
-                    return res;
+                if (res == null)
+                {
+                    return null;  // Success.
+                }
             }
 
             // Failed to load using file path, fallback to simple name.
-            ptr = NativeMethods.LoadLibrary(simpleName);
+            var res2 = DllLoader.Load(simpleName);
 
-            if (ptr == IntPtr.Zero)
+            if (res2 == null)
             {
-                // Preserve the first error code, if any.
-                if (res == 0)
-                    res = Marshal.GetLastWin32Error();
+                return null;  // Success.
             }
-            else
-                res = 0;
 
             return res;
         }
@@ -294,16 +274,37 @@ namespace Apache.Ignite.Core.Impl
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPaths(string configJvmDllPath)
         {
             if (!string.IsNullOrEmpty(configJvmDllPath))
+            {
                 yield return new KeyValuePair<string, string>("IgniteConfiguration.JvmDllPath", configJvmDllPath);
+            }
 
             var javaHomeDir = Environment.GetEnvironmentVariable(EnvJavaHome);
 
             if (!string.IsNullOrEmpty(javaHomeDir))
+            {
                 foreach (var path in JvmDllLookupPaths)
+                {
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
+                }
+            }
 
-            // Get paths from the Windows Registry
+            foreach (var keyValuePair in GetJvmDllPathsFromRegistry().Concat(GetJvmDllPathsFromSymlink()))
+            {
+                yield return keyValuePair;
+            }
+        }
+
+        /// <summary>
+        /// Gets Jvm dll paths from Windows registry.
+        /// </summary>
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromRegistry()
+        {
+            if (!Os.IsWindows)
+            {
+                yield break;
+            }
+
             foreach (var regPath in JreRegistryKeys)
             {
                 using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
@@ -327,6 +328,50 @@ namespace Apache.Ignite.Core.Impl
                         }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Gets the Jvm dll paths from symlink.
+        /// </summary>
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromSymlink()
+        {
+            if (Os.IsWindows)
+            {
+                yield break;
+            }
+
+            const string javaExec = "/usr/bin/java";
+            if (!File.Exists(javaExec))
+            {
+                yield break;
+            }
+
+            var file = Shell.BashExecute("readlink -f /usr/bin/java");
+            // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+
+            var dir = Path.GetDirectoryName(file);
+            // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin
+
+            if (dir == null)
+            {
+                yield break;
+            }
+
+            var libFolder = Path.GetFullPath(Path.Combine(dir, "../lib/"));
+            if (!Directory.Exists(libFolder))
+            {
+                yield break;
+            }
+
+            // Predefined path: /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so
+            yield return new KeyValuePair<string, string>(javaExec,
+                Path.Combine(libFolder, "amd64", "server", FileJvmDll));
+
+            // Last resort - custom paths:
+            foreach (var f in Directory.GetFiles(libFolder, FileJvmDll, SearchOption.AllDirectories))
+            {
+                yield return new KeyValuePair<string, string>(javaExec, f);
             }
         }
 

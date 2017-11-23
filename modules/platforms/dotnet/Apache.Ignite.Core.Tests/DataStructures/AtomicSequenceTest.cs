@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Initializes a new instance of the <see cref="AtomicSequenceTest"/> class.
         /// </summary>
-        public AtomicSequenceTest() : base("config\\compute\\compute-grid1.xml")
+        public AtomicSequenceTest() : base("Config\\Compute\\compute-grid1.xml")
         {
             // No-op.
         }

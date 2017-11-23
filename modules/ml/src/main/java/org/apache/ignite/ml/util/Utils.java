@@ -29,25 +29,30 @@ import java.io.ObjectOutputStream;
 public class Utils {
     /**
      * Perform deep copy of an object.
+     *
      * @param orig Original object.
      * @param <T> Class of original object;
      * @return Deep copy of original object.
      */
     public static <T> T copy(T orig) {
         Object obj = null;
+
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream out = new ObjectOutputStream(baos);
+
             out.writeObject(orig);
             out.flush();
             out.close();
-            ObjectInputStream in = new ObjectInputStream(
-                new ByteArrayInputStream(baos.toByteArray()));
+
+            ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+
             obj = in.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+
         return (T)obj;
     }
 }
