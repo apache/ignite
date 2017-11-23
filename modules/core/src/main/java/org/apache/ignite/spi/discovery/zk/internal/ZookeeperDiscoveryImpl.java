@@ -498,9 +498,9 @@ public class ZookeeperDiscoveryImpl {
         @Override public void processResult(int rc, String path, Object ctx, Stat stat) {
             log.info("Previous node stat callback [rc=" + rc + ", path=" + path + ", stat=" + stat + ']');
 
-            assert rc == 0 : rc;
+            assert rc == 0 || rc == KeeperException.Code.NONODE.intValue() : rc;
 
-            if (stat == null) {
+            if (rc == KeeperException.Code.NONODE.intValue() || stat == null) {
                 try {
                     onPreviousNodeFail();
                 }

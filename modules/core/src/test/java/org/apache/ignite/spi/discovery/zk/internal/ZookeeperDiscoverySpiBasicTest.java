@@ -846,18 +846,117 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTopologyChangeAndZkRestart() throws Exception {
-
+    public void testTopologyChangeMultithreaded() throws Exception {
+        topologyChangeWithRestarts(false, false);
     }
 
     /**
-     * @param restartZk
      * @throws Exception If failed.
      */
-    private void topologyChangeWithRestarts(boolean restartZk) throws Exception {
-        startGrid(0);
+    public void testTopologyChangeMultithreaded_RestartZk() throws Exception {
+        topologyChangeWithRestarts(true, false);
+    }
 
-        long stopTime = System.currentTimeMillis();
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTopologyChangeMultithreaded_RestartZk_CloseClients() throws Exception {
+        topologyChangeWithRestarts(true, true);
+    }
+
+    /**
+     * @param restartZk If {@code true} in background restarts on of ZK servers.
+     * @param closeClientSock If {@code true} in background closes zk clients' sockets.
+     * @throws Exception If failed.
+     */
+    private void topologyChangeWithRestarts(boolean restartZk, boolean closeClientSock) throws Exception {
+        if (closeClientSock)
+            testSockNio = true;
+
+        long stopTime = System.currentTimeMillis() + 60_000;
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut1 = restartZk ? startRestartZkServers(stopTime, stop) : null;
+        IgniteInternalFuture<?> fut2 = closeClientSock ? startCloseZkClientSocket(stopTime, stop) : null;
+
+        int INIT_NODES = 10;
+
+        startGridsMultiThreaded(INIT_NODES);
+
+        final int MAX_NODES = 20;
+
+        final List<Integer> startedNodes = new ArrayList<>();
+
+        for (int i = 0; i < INIT_NODES; i++)
+            startedNodes.add(i);
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        final AtomicInteger startIdx = new AtomicInteger(INIT_NODES);
+
+        try {
+            while (System.currentTimeMillis() < stopTime) {
+                if (startedNodes.size() >= MAX_NODES) {
+                    int stopNodes = rnd.nextInt(5) + 1;
+
+                    log.info("Next, stop nodes: " + stopNodes);
+
+                    final List<Integer> idxs = new ArrayList<>();
+
+                    while (idxs.size() < stopNodes) {
+                        Integer stopIdx = rnd.nextInt(startedNodes.size());
+
+                        if (!idxs.contains(stopIdx))
+                            idxs.add(startedNodes.get(stopIdx));
+                    }
+
+                    GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+                        @Override public void apply(Integer threadIdx) {
+                            int stopNodeIdx = idxs.get(threadIdx);
+
+                            info("Stop node: " + stopNodeIdx);
+
+                            stopGrid(stopNodeIdx);
+                        }
+                    }, stopNodes, "stop-node");
+
+                    startedNodes.removeAll(idxs);
+                }
+                else {
+                    int startNodes = rnd.nextInt(5) + 1;
+
+                    log.info("Next, start nodes: " + startNodes);
+
+                    GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            int idx = startIdx.incrementAndGet();
+
+                            log.info("Start node: " + idx);
+
+                            startGrid(idx);
+
+                            synchronized (startedNodes) {
+                                startedNodes.add(idx);
+                            }
+
+                            return null;
+                        }
+                    }, startNodes, "start-node");
+                }
+
+                U.sleep(rnd.nextInt(100) + 1);
+            }
+        }
+        finally {
+            stop.set(true);
+        }
+
+        if (fut1 != null)
+            fut1.get();
+
+        if (fut2 != null)
+            fut2.get();
     }
 
     /**
@@ -870,14 +969,14 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRandomTopologyChangesRestartZk() throws Exception {
+    public void testRandomTopologyChanges_RestartZk() throws Exception {
         randomTopologyChanges(true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testRandomTopologyChangesCloseClients() throws Exception {
+    public void testRandomTopologyChanges_CloseClients() throws Exception {
         randomTopologyChanges(false, true);
     }
 
