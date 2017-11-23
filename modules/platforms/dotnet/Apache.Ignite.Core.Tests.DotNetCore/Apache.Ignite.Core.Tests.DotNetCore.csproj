@@ -25,6 +25,8 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableAddArgCacheEntryProcessor.cs" Link="Cache\BinarizableAddArgCacheEntryProcessor.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableTestException.cs" Link="Cache\BinarizableTestException.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTest.cs" Link="Cache\CacheAbstractTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTransactionalTest.cs" Link="Cache\CacheAbstractTransactionalTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CachePartitionedTest.cs" Link="Cache\CachePartitionedTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestAsyncWrapper.cs" Link="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestKey.cs" Link="Cache\CacheTestKey.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\NonSerializableCacheEntryProcessor.cs" Link="Cache\NonSerializableCacheEntryProcessor.cs" />
@@ -53,6 +55,9 @@
 
   <ItemGroup>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-binarizables.xml" Link="Config\cache-binarizables.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\native-client-test-cache.xml" Link="Config\native-client-test-cache.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\spring-test.xml" Link="Config\spring-test.xml">
