@@ -17,9 +17,7 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
-
 import org.apache.ignite.ml.math.Vector;
-
 
 /**
  * Block for {@link SparseBlockDistributedVector}.
