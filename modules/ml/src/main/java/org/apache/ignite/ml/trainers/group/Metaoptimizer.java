@@ -20,5 +20,5 @@ package org.apache.ignite.ml.trainers.group;
 public interface Metaoptimizer<IR, I, D, O, G> {
     D initialRemotePostProcess(ResultAndUpdates<IR> resAndUpdates, G globalCtx);
 
-
+    
 }
