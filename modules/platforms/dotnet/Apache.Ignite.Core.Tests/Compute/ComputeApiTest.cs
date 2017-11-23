@@ -27,9 +27,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
-#if !NETCOREAPP2_0
-    using Apache.Ignite.Core.Impl;
-#endif
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -806,7 +803,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestFooterSetting()
         {
-            Assert.AreEqual(CompactFooter, ((Ignite)_grid1).Marshaller.CompactFooter);
+            Assert.AreEqual(CompactFooter, ((Impl.Ignite) _grid1).Marshaller.CompactFooter);
 
             foreach (var g in new[] {_grid1, _grid2, _grid3})
                 Assert.AreEqual(CompactFooter, g.GetConfiguration().BinaryConfiguration.CompactFooter);
