@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
@@ -89,5 +90,31 @@ namespace Apache.Ignite.Core.Tests
 
             return (T) res;
         }
+
+        /// <summary>
+        /// Creates a uniquely named, empty temporary directory on disk and returns the full path of that directory.
+        /// </summary>
+        /// <returns>The full path of the temporary directory.</returns>
+        internal static string GetTempDirectoryName()
+        {
+            var baseDir = Path.Combine(Path.GetTempPath(), "IgniteTemp_");
+
+            while (true)
+            {
+                try
+                {
+                    return Directory.CreateDirectory(baseDir + Path.GetRandomFileName()).FullName;
+                }
+                catch (IOException)
+                {
+                    // Expected
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // Expected
+                }
+            }
+        }
+
     }
 }

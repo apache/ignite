@@ -425,5 +425,13 @@ namespace Apache.Ignite.Core.Tests
         {
             return GetPrimaryKeys(ignite, cacheName, node).First();
         }
+
+        /// <summary>
+        /// Gets the name of the temporary directory.
+        /// </summary>
+        public static string GetTempDirectoryName()
+        {
+            return IgniteUtils.GetTempDirectoryName();
+        }
     }
 }
