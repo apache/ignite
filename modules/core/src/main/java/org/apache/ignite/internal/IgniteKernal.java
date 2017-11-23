@@ -504,6 +504,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public Map<Long, Long> getLongJVMPauseLastEvents() {
+        return LongJVMPauseDetector.longPauseEvents();
+    }
+
+    /** {@inheritDoc} */
     @Override public String getUpTimeFormatted() {
         return X.timeSpan2HMSM(U.currentTimeMillis() - startTime);
     }

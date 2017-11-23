@@ -18,6 +18,7 @@
 package org.apache.ignite.mxbean;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
 
@@ -110,6 +111,14 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Long JVM pauses total duration.")
     public long getLongJVMPausesTotalDuration();
+
+    /**
+     * Gets long JVM pause last events.
+     *
+     * @return Long JVM pause last events.
+     */
+    @MXBeanDescription("Long JVM pause last events.")
+    public Map<Long, Long> getLongJVMPauseLastEvents();
 
     /**
      * Gets a list of formatted user-defined attributes added to this node.
