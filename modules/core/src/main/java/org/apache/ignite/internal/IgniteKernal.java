@@ -29,7 +29,6 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -811,6 +810,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Ack various information.
         ackAsciiLogo();
         ackConfigUrl();
+
+        if (!log.isQuiet())
+            log.info(cfg.toString());
+
         ackDaemon();
         ackOsInfo();
         ackLanguageRuntime();
@@ -823,7 +826,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackCacheConfiguration();
         ackP2pConfiguration();
         ackRebalanceConfiguration();
-        ackIgniteConfigurationInfo();
 
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(igniteInstanceName, execSvc, log);
@@ -2526,37 +2528,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             log.debug("Grid event storage SPI  : " + cfg.getEventStorageSpi());
             log.debug("Grid failover SPI       : " + Arrays.toString(cfg.getFailoverSpi()));
             log.debug("Grid load balancing SPI : " + Arrays.toString(cfg.getLoadBalancingSpi()));
-        }
-    }
-
-    /**
-     *Log fields and values of IgniteConfiguration class.
-     */
-    private void ackIgniteConfigurationInfo(){
-
-        Field[] allFields = IgniteConfiguration.class.getDeclaredFields();
-
-
-        if (log.isInfoEnabled()) {
-            for (Field field :
-                    allFields) {
-                try {
-                    log.info(field.getName() + ": " + field.get(cfg));
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        if (log.isQuiet()) {
-            for (Field field :
-                    allFields) {
-                try {
-                    U.quiet(false, field.getName() + ": " + field.get(cfg));
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
