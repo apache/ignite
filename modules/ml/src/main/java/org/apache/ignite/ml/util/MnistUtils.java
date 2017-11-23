@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
@@ -109,7 +110,7 @@ public class MnistUtils {
 
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    throw new IgniteException("Error while converting to LIBSVM.");
                 }
             });
         }
