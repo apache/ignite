@@ -901,10 +901,10 @@ namespace Apache.Ignite.Core.Tests.Compute
 #if !NETCOREAPP2_0
                 var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
 
-                Assert.AreEqual(dotNetBin.Header.HashCode, binRes.Header.HashCode);
+                Assert.AreEqual(dotNetBin.Header.HashCode, ((BinaryObject) binRes).Header.HashCode);
 
                 Func<BinaryObject, byte[]> getData = bo => bo.Data.Skip(bo.Offset).Take(bo.Header.Length).ToArray();
-                Assert.AreEqual(getData(dotNetBin), getData(binRes));
+                Assert.AreEqual(getData(dotNetBin), getData((BinaryObject) binRes));
 #endif
             }
         }
