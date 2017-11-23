@@ -38,7 +38,7 @@ Creating NuGet package:
         <projectUrl>https://ignite.apache.org/</projectUrl>
         <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
-        <description>log4net Logger for Apache Ignite. Supports .NET 4+ and .NET Core 2.0+.</description>
+        <description>log4net Logger for Apache Ignite</description>
         <releaseNotes></releaseNotes>
         <copyright>Copyright 2017</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache log4net logger</tags>
