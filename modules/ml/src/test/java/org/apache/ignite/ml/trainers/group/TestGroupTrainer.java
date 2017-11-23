@@ -93,7 +93,6 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     @Override protected Integer defaultFinalResult() {
-        // Default result is null;
         return 0;
     }
 
