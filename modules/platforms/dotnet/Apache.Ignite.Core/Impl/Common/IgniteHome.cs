@@ -114,9 +114,11 @@ namespace Apache.Ignite.Core.Impl.Common
                        (dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
                         dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
                        || // NuGet home
-                       (dir.EnumerateDirectories().Any(x => x.Name == "Libs") &&
+                       (dir.EnumerateDirectories().Any(x => x.Name == "libs") &&
                         (dir.EnumerateFiles("Apache.Ignite.Core.dll").Any() ||
                          dir.EnumerateFiles("Apache.Ignite.*.nupkg").Any() ||
+                         dir.EnumerateFiles("apache.ignite.*.nupkg").Any() ||  // Lowercase on Linux
+                         dir.EnumerateFiles("apache.ignite.nuspec").Any() ||  // Lowercase on Linux
                          dir.EnumerateFiles("Apache.Ignite.nuspec").Any()));
             }
             catch (IOException)

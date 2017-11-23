@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const string CacheName = "cache";
 
         /** Path to XML configuration. */
-        private const string CfgPath = "config\\cache-query.xml";
+        private const string CfgPath = "Config\\cache-query.xml";
 
         /** Maximum amount of items in cache. */
         private const int MaxItemCnt = 100;
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         protected virtual IBinaryNameMapper GetNameMapper()
         {
-            return BinaryBasicNameMapper.FullNameInstance;
+            return new BinaryBasicNameMapper {IsSimpleName = false};
         }
 
         /// <summary>

@@ -76,6 +76,7 @@
     <Compile Include="ApiParity\ParityTest.cs" />
     <Compile Include="ApiParity\CacheConfigurationParityTest.cs" />
     <Compile Include="ApiParity\QueryEntityConfigurationParityTest.cs" />
+    <Compile Include="AssertExtensions.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
     <Compile Include="Binary\BinaryDateTimeTest.cs" />
     <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
@@ -117,6 +118,7 @@
     <Compile Include="Client\RawSocketTest.cs" />
     <Compile Include="Client\ClientConnectionTest.cs" />
     <Compile Include="Client\IgniteClientConfigurationTest.cs" />
+    <Compile Include="Compute\ComputeApiTest.JavaTask.cs" />
     <Compile Include="Deployment\CacheGetFunc.cs" />
     <Compile Include="Deployment\GetAddressFunc.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingAllApisTest.cs" />
@@ -271,7 +273,7 @@
     <Compile Include="Binary\Serializable\AdvancedSerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="Services\ServicesTestFullFooter.cs" />
-    <Compile Include="TestUtils.cs" />
+    <Compile Include="TestUtils.Common.cs" />
     <Compile Include="Memory\InteropMemoryTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTest.cs" />
     <Compile Include="Binary\BinarySelfTest.cs" />
@@ -459,6 +461,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+    <Compile Include="TestUtils.Windows.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' != 'AnyCPU'">

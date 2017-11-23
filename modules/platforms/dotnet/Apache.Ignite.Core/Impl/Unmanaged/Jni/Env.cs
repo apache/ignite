@@ -460,13 +460,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private void ExceptionCheck()
         {
-            if (!_exceptionCheck(_envPtr))
+            var res = _exceptionCheck(_envPtr);
+            if (res == 0)
             {
                 return;
             }
 
             var err = _exceptionOccurred(_envPtr);
-            Debug.Assert(err != IntPtr.Zero);
+
+            if (err == IntPtr.Zero)
+            {
+                throw new IgniteException("Inconsistent JNI ExceptionCheck status.");
+            }
 
             _exceptionClear(_envPtr);
 
