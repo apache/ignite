@@ -54,6 +54,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSimpleName.cs" Link="Cache\Query\Linq\CacheLinqTestSimpleName.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" Link="Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\TestReferenceObject.cs" Link="Cache\TestReferenceObject.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Query\BinarizablePerson.cs" Link="Cache\Query\BinarizablePerson.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />

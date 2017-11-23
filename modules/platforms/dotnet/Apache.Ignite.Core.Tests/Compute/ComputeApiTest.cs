@@ -30,8 +30,10 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
+#if !NETCOREAPP2_0
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+#endif
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -145,8 +147,6 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureSetUp]
         public void InitClient()
         {
-            TestUtils.KillProcesses();
-
             var configs = GetConfigs();
 
             _grid1 = Ignition.Start(Configuration(configs.Item1));
@@ -894,16 +894,18 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.AreEqual(val, res.Field);
 
                 // Binary mode.
-                var binRes = compute.WithKeepBinary().ExecuteJavaTask<BinaryObject>(EchoTask, EchoTypeBinarizable);
+                var binRes = compute.WithKeepBinary().ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizable);
 
                 Assert.AreEqual(val, binRes.GetField<long>("Field"));
 
+#if !NETCOREAPP2_0
                 var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
 
                 Assert.AreEqual(dotNetBin.Header.HashCode, binRes.Header.HashCode);
 
                 Func<BinaryObject, byte[]> getData = bo => bo.Data.Skip(bo.Offset).Take(bo.Header.Length).ToArray();
                 Assert.AreEqual(getData(dotNetBin), getData(binRes));
+#endif
             }
         }
 
@@ -1339,6 +1341,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
         }
 
+#if !NETCOREAPP2_0
         /// <summary>
         /// Tests the footer setting.
         /// </summary>
@@ -1350,6 +1353,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             foreach (var g in new[] {_grid1, _grid2, _grid3})
                 Assert.AreEqual(CompactFooter, g.GetConfiguration().BinaryConfiguration.CompactFooter);
         }
+#endif
 
         /// <summary>
         /// Create configuration.
@@ -1369,7 +1373,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                         new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
                         new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
                     },
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                    NameMapper = new BinaryBasicNameMapper { IsSimpleName = true }
                 },
                 SpringConfigUrl = path
             };
@@ -1492,7 +1496,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     class ComputeAction : IComputeAction
     {
         [InstanceResource]
-        #pragma warning disable 649
+#pragma warning disable 649
         private IIgnite _grid;
 
         public static ConcurrentBag<Guid> Invokes = new ConcurrentBag<Guid>();
