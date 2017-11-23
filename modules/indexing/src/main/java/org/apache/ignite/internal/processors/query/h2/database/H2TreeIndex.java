@@ -23,12 +23,16 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -275,19 +279,43 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
         try {
-            IndexingQueryFilter f = threadLocalFilter();
-            IndexingQueryCacheFilter p = null;
-
-            if (f != null) {
-                String cacheName = getTable().cacheName();
-                p = f.forCache(cacheName);
-            }
-
-            return treeForRead(threadLocalSegment()).countMatchingRows(p);
+            return treeForRead(threadLocalSegment()).countMatchingRows(filter(GridH2QueryContext.get()));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
+    }
+
+    /**
+     * Returns a filter to apply to rows in the current index to obtain only the
+     * rows owned by the this cache.
+     *
+     * @param qctx H2 Query Context object to supply the main row filter
+     * @return The filter, which returns true for rows owned by this cache.
+     */
+    // TODO: replace with proper filter function when merging with IGNITE-3478.
+    @Nullable private BPlusTree.TreeRowClosure<SearchRow, GridH2Row> filter(GridH2QueryContext qctx) {
+
+        IndexingQueryFilter iqf = qctx.filter();
+
+        if (iqf == null)
+            return null;
+
+        final IndexingQueryCacheFilter iqcf = iqf.forCache(getTable().cacheName());
+
+        if (iqcf == null)
+            return null;
+
+        return new BPlusTree.TreeRowClosure<SearchRow, GridH2Row>() {
+
+            @Override public boolean apply(BPlusTree<SearchRow, GridH2Row> tree,
+                BPlusIO<SearchRow> io, long pageAddr, int idx) throws IgniteCheckedException {
+
+                H2RowLinkIO h2io = (H2RowLinkIO)io;
+
+                return iqcf.applyPartition(PageIdUtils.partId(PageIdUtils.pageId(h2io.getLink(pageAddr, idx))));
+            }
+        };
     }
 
     /** {@inheritDoc} */
