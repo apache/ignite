@@ -20,15 +20,11 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
-    using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
@@ -81,14 +77,6 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private static int _seed = Environment.TickCount;
-
-        /// <summary>
-        /// Kill Ignite processes.
-        /// </summary>
-        public static void KillProcesses()
-        {
-            IgniteProcess.KillAll();
-        }
 
         /// <summary>
         ///
@@ -277,67 +265,6 @@ namespace Apache.Ignite.Core.Tests
                 },
                 SocketTimeout = TimeSpan.FromSeconds(0.3)
             };
-        }
-
-        /// <summary>
-        /// Gets the default code-based test configuration.
-        /// </summary>
-        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null)
-        {
-            return new IgniteConfiguration
-            {
-                DiscoverySpi = GetStaticDiscovery(),
-                Localhost = "127.0.0.1",
-                JvmOptions = TestJavaOptions(jvmDebug),
-                JvmClasspath = CreateTestClasspath(),
-                IgniteInstanceName = name,
-                DataStorageConfiguration = new DataStorageConfiguration
-                {
-                    DefaultDataRegionConfiguration = new DataRegionConfiguration
-                    {
-                        Name = DataStorageConfiguration.DefaultDataRegionName,
-                        InitialSize = 128 * 1024 * 1024,
-                        MaxSize = Environment.Is64BitProcess
-                            ? DataRegionConfiguration.DefaultMaxSize
-                            : 256 * 1024 * 1024
-                    }
-                }
-            };
-        }
-
-        /// <summary>
-        /// Runs the test in new process.
-        /// </summary>
-        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-        public static void RunTestInNewProcess(string fixtureName, string testName)
-        {
-            var procStart = new ProcessStartInfo
-            {
-                FileName = typeof(TestUtils).Assembly.Location,
-                Arguments = fixtureName + " " + testName,
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            var proc = System.Diagnostics.Process.Start(procStart);
-            Assert.IsNotNull(proc);
-
-            try
-            {
-                IgniteProcess.AttachProcessConsoleReader(proc);
-
-                Assert.IsTrue(proc.WaitForExit(19000));
-                Assert.AreEqual(0, proc.ExitCode);
-            }
-            finally
-            {
-                if (!proc.HasExited)
-                {
-                    proc.Kill();
-                }
-            }
         }
 
         /// <summary>

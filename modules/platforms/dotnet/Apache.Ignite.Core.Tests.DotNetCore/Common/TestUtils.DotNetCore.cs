@@ -15,20 +15,14 @@
  * limitations under the License.
  */
 
-// ReSharper disable once CheckNamespace - use same TestUtils namespace to reuse tests from main project.
 namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Static;
 
-    /// <summary>
-    /// Test utils.
-    /// </summary>
-    internal static class TestUtils
+    public static partial class TestUtils
     {
         /** */
         private static readonly IList<string> JvmOpts =
@@ -42,21 +36,6 @@ namespace Apache.Ignite.Core.Tests
                 //"-Djava.compiler=NONE",
                 //"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
             };
-
-        /// <summary>
-        /// Gets the static discovery.
-        /// </summary>
-        public static TcpDiscoverySpi GetStaticDiscovery()
-        {
-            return new TcpDiscoverySpi
-            {
-                IpFinder = new TcpDiscoveryStaticIpFinder
-                {
-                    Endpoints = new[] {"127.0.0.1:47500"}
-                },
-                SocketTimeout = TimeSpan.FromSeconds(0.3)
-            };
-        }
 
         /// <summary>
         /// Gets the default code-based test configuration.
@@ -80,15 +59,15 @@ namespace Apache.Ignite.Core.Tests
             var marshType = typeof(IIgnite).Assembly.GetType("Apache.Ignite.Core.Impl.Binary.Marshaller");
             var marsh = Activator.CreateInstance(marshType, new object[] { null, null });
             marshType.GetProperty("CompactFooter").SetValue(marsh, false);
-            
+
             var bytes = marshType.GetMethod("Marshal").MakeGenericMethod(typeof(object))
                 .Invoke(marsh, new object[] { obj });
 
             var res = marshType.GetMethods().Single(mi =>
                     mi.Name == "Unmarshal" && mi.GetParameters().First().ParameterType == typeof(byte[]))
-                .MakeGenericMethod(typeof(object)).Invoke(marsh, new[] {bytes, 0});
+                .MakeGenericMethod(typeof(object)).Invoke(marsh, new[] { bytes, 0 });
 
-            return (T) res;
+            return (T)res;
         }
 
         /// <summary>

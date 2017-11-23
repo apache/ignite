@@ -32,7 +32,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Common;
 #if !NETCOREAPP2_0
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Cache.Expiry;
 #endif
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
@@ -50,8 +49,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            TestUtils.KillProcesses();
-
             IgniteConfiguration cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(
@@ -1306,6 +1303,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 ICacheEntry<int, int> entry = e.Current;
 
+                Assert.IsNotNull(entry);
+
                 Assert.IsTrue(keys.Contains(entry.Key), "Unexpected entry: " + entry);
 
                 Assert.AreEqual(entry.Key + 1, entry.Value);
@@ -2553,6 +2552,27 @@ namespace Apache.Ignite.Core.Tests.Cache
             public int Id;
 
             public Container Inner;
+        }
+
+        private class ExpiryPolicyFactory : IFactory<IExpiryPolicy>
+        {
+            /** */
+            private readonly IExpiryPolicy _expiryPolicy;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ExpiryPolicyFactory"/> class.
+            /// </summary>
+            /// <param name="expiryPolicy">The expiry policy.</param>
+            public ExpiryPolicyFactory(IExpiryPolicy expiryPolicy)
+            {
+                _expiryPolicy = expiryPolicy;
+            }
+
+            /** <inheritdoc /> */
+            public IExpiryPolicy CreateInstance()
+            {
+                return _expiryPolicy;
+            }
         }
     }
 }
