@@ -28,9 +28,9 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 public abstract class SimpleGroupTrainer<LC extends HasTrainingUUID, K, V, IR extends Serializable,
 R extends Serializable, I extends Serializable,
 M extends Model, T extends Distributive<K>,
-G, O extends Serializable, D> extends
+G, O extends Serializable, D, X> extends
     GroupTrainer<LC, K, V, IR, R, I, M, T, G> {
-    private Metaoptimizer<IR, I, D, O, G> metaoptimizer;
+    private Metaoptimizer<IR, LC, X, I, D, O> metaoptimizer;
 
     public SimpleGroupTrainer(
         IgniteCache<GroupTrainerCacheKey<K>, V> cache,
@@ -38,16 +38,22 @@ G, O extends Serializable, D> extends
         super(cache, ignite);
     }
 
+    protected abstract X extractDataToProcess();
+
+    protected abstract D processData(X data);
+
     protected DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep() {
         // TODO: Implement
         return null;
     }
 
-//    default <O1 extends Serializable, G> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributedForEntries(
+    @Override protected I processInitData(IR data, LC locCtx) {
+        return null;
+    }
+
+    //    default <O1 extends Serializable, G> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributedForEntries(
 //        IgniteBiFunction<O, L, G> remoteCtxExtractor,
 //        IgniteTriFunction<O, L, EntryAndContext<K, V, G>, ResultAndUpdates<O1>> distributedWorker,
 //        IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
 //        O1 identity,
-
-    protected abstract O, L, EntryAndContext<K, V, G>, ResultAndUpdates<O1>
 }
