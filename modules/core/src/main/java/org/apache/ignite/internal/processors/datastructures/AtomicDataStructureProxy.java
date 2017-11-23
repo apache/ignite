@@ -85,17 +85,29 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
         log = ctx.logger(getClass());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Name of atomic.
+     *
+     * @return Name of atomic.
+     */
     public String name() {
-            return name;
-        }
+        return name;
+    }
 
-    /** {@inheritDoc} */
+    /**
+     * Get current atomic key.
+     *
+     * @return Atomic key.
+     */
     public GridCacheInternalKey key() {
-            return key;
-        }
+        return key;
+    }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets status of atomic.
+     *
+     * @return {@code true} if atomic was removed from cache, {@code false} in other case.
+     */
     public boolean removed() {
         return rmvd;
     }
