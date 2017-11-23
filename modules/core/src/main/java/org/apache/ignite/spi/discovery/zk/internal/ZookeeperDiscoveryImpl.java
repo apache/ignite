@@ -249,8 +249,13 @@ public class ZookeeperDiscoveryImpl {
         }
 
         try {
-            // TODO ZK: handle retries.
-            zkClient.createIfNeeded(zkPaths.customEvtsDir + "/" + locNode.id() + '|', msgBytes, CreateMode.PERSISTENT_SEQUENTIAL);
+            String prefix = UUID.randomUUID().toString();
+
+            zkClient.createSequential(prefix,
+                zkPaths.customEvtsDir,
+                prefix + ":" + locNode.id() + '|',
+                msgBytes,
+                CreateMode.PERSISTENT_SEQUENTIAL);
         }
         catch (ZookeeperClientFailedException e) {
             throw new IgniteException(e);
