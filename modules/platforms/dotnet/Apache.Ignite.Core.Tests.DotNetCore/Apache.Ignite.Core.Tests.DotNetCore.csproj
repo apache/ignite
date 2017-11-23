@@ -12,6 +12,10 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <NoWarn>1701;1702;1705;NU1701</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\Apache.Ignite.Core.Tests\AssertExtensions.cs" Link="Common\AssertExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\BinaryConfigurationTest.cs" Link="Binary\BinaryConfigurationTest.cs" />
