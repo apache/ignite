@@ -52,25 +52,6 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Serializes and deserializes back an object.
-        /// </summary>
-        public static T SerializeDeserialize<T>(T obj)
-        {
-            var marshType = typeof(IIgnite).Assembly.GetType("Apache.Ignite.Core.Impl.Binary.Marshaller");
-            var marsh = Activator.CreateInstance(marshType, new object[] { null, null });
-            marshType.GetProperty("CompactFooter").SetValue(marsh, false);
-
-            var bytes = marshType.GetMethod("Marshal").MakeGenericMethod(typeof(object))
-                .Invoke(marsh, new object[] { obj });
-
-            var res = marshType.GetMethods().Single(mi =>
-                    mi.Name == "Unmarshal" && mi.GetParameters().First().ParameterType == typeof(byte[]))
-                .MakeGenericMethod(typeof(object)).Invoke(marsh, new[] { bytes, 0 });
-
-            return (T)res;
-        }
-
-        /// <summary>
         /// Creates a uniquely named, empty temporary directory on disk and returns the full path of that directory.
         /// </summary>
         /// <returns>The full path of the temporary directory.</returns>
@@ -94,6 +75,5 @@ namespace Apache.Ignite.Core.Tests
                 }
             }
         }
-
     }
 }

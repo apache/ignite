@@ -25,6 +25,10 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
+#if !NETCOREAPP2_0
+    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
+#endif
     using NUnit.Framework;
 
     /// <summary>
@@ -285,6 +289,81 @@ namespace Apache.Ignite.Core.Tests
         public static int GetPrimaryKey(IIgnite ignite, string cacheName, IClusterNode node = null)
         {
             return GetPrimaryKeys(ignite, cacheName, node).First();
+        }
+
+        /// <summary>
+        /// Asserts that the handle registry is empty.
+        /// </summary>
+        /// <param name="timeout">Timeout, in milliseconds.</param>
+        /// <param name="grids">Grids to check.</param>
+        public static void AssertHandleRegistryIsEmpty(int timeout, params IIgnite[] grids)
+        {
+            foreach (var g in grids)
+                AssertHandleRegistryHasItems(g, 0, timeout);
+        }
+
+        /// <summary>
+        /// Asserts that the handle registry has specified number of entries.
+        /// </summary>
+        /// <param name="timeout">Timeout, in milliseconds.</param>
+        /// <param name="expectedCount">Expected item count.</param>
+        /// <param name="grids">Grids to check.</param>
+        public static void AssertHandleRegistryHasItems(int timeout, int expectedCount, params IIgnite[] grids)
+        {
+            foreach (var g in grids)
+                AssertHandleRegistryHasItems(g, expectedCount, timeout);
+        }
+
+        /// <summary>
+        /// Asserts that the handle registry has specified number of entries.
+        /// </summary>
+        /// <param name="grid">The grid to check.</param>
+        /// <param name="expectedCount">Expected item count.</param>
+        /// <param name="timeout">Timeout, in milliseconds.</param>
+        public static void AssertHandleRegistryHasItems(IIgnite grid, int expectedCount, int timeout)
+        {
+#if !NETCOREAPP2_0
+            var handleRegistry = ((Ignite)grid).HandleRegistry;
+
+            expectedCount++;  // Skip default lifecycle bean
+
+            if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
+                return;
+
+            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder)).ToList();
+
+            if (items.Any())
+            {
+                Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'",
+                    grid.Name, expectedCount, handleRegistry.Count,
+                    items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Serializes and deserializes back an object.
+        /// </summary>
+        public static T SerializeDeserialize<T>(T obj)
+        {
+#if NETCOREAPP2_0
+            var marshType = typeof(IIgnite).Assembly.GetType("Apache.Ignite.Core.Impl.Binary.Marshaller");
+            var marsh = Activator.CreateInstance(marshType, new object[] { null, null });
+            marshType.GetProperty("CompactFooter").SetValue(marsh, false);
+
+            var bytes = marshType.GetMethod("Marshal").MakeGenericMethod(typeof(object))
+                .Invoke(marsh, new object[] { obj });
+
+            var res = marshType.GetMethods().Single(mi =>
+                    mi.Name == "Unmarshal" && mi.GetParameters().First().ParameterType == typeof(byte[]))
+                .MakeGenericMethod(typeof(object)).Invoke(marsh, new[] { bytes, 0 });
+
+            return (T)res;
+#else
+            var marsh = new Marshaller(null) { CompactFooter = false };
+
+            return marsh.Unmarshal<T>(marsh.Marshal(obj));
+#endif
         }
     }
 }

@@ -33,6 +33,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\NonSerializableCacheEntryProcessor.cs" Link="Cache\NonSerializableCacheEntryProcessor.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\NonSerializableException.cs" Link="Cache\NonSerializableException.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\PersistenceTest.cs" Link="Cache\PersistenceTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheQueriesTest.cs" Link="Cache\Query\CacheQueriesTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Aggregates.cs" Link="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\Query\Linq\CacheLinqTest.Base.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" Link="Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" />
@@ -56,6 +57,9 @@
 
   <ItemGroup>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-binarizables.xml" Link="Config\cache-binarizables.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-query.xml" Link="Config\cache-query.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\native-client-test-cache.xml" Link="Config\native-client-test-cache.xml">
