@@ -64,10 +64,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Log\ConcurrentMemoryTarget.cs" Link="Log\ConcurrentMemoryTarget.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Log\CustomLoggerTest.cs" Link="Log\CustomLoggerTest.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Log\Log4NetLoggerTest.cs" Link="Log\Log4NetLoggerTest.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Log\NLogLoggerTest.cs" Link="Log\NLogLoggerTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\MessagingTest.cs" Link="Common\MessagingTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Query\BinarizablePerson.cs" Link="Cache\Query\BinarizablePerson.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
