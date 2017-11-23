@@ -318,7 +318,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             catch (Throwable e) {
                 err = e;
 
-                U.error(log, "Error during parallel index creation.", e);
+                U.error(log, "Error during parallel index create/rebuild.", e);
 
                 stop = true;
             }
