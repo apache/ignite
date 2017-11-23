@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 var ex = Assert.Throws<AggregateException>(() => Ignition.StartClient(clientCfg));
                 Assert.AreEqual("Failed to establish Ignite thin client connection, " +
-                                "examine inner exceptions for details.", ex.Message);
+                                "examine inner exceptions for details.", ex.Message.Substring(0, 88));
             }
         }
 
