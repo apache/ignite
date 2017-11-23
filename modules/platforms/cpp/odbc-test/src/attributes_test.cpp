@@ -227,4 +227,26 @@ BOOST_AUTO_TEST_CASE(StatementAttributeQueryTimeout)
     BOOST_REQUIRE_EQUAL(timeout, 7);
 }
 
+BOOST_AUTO_TEST_CASE(ConnectionAttributeConnectionTimeout)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLUINTEGER timeout = -1;
+    SQLRETURN ret = SQLGetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, &timeout, 0, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+    BOOST_REQUIRE_EQUAL(timeout, 0);
+
+    ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, reinterpret_cast<SQLPOINTER>(42), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    timeout = -1;
+
+    ret = SQLGetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, &timeout, 0, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+    BOOST_REQUIRE_EQUAL(timeout, 42);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

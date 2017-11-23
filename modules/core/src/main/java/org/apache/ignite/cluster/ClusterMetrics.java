@@ -225,6 +225,16 @@ public interface ClusterMetrics {
     public int getTotalExecutedJobs();
 
     /**
+     * Gets total time all finished jobs takes to execute on the node since node startup.
+     * <p>
+     * <b>Note:</b> Unlike most of other aggregation metrics this metric is not calculated over history
+     * but over the entire node life.
+     *
+     * @return Total jobs execution time.
+     */
+    public long getTotalJobsExecutionTime();
+
+    /**
      * Gets maximum time a job ever spent waiting in a queue to be executed.
      * <p>
      * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are

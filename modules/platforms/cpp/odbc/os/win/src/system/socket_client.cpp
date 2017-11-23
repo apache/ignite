@@ -34,17 +34,17 @@
 namespace
 {
     /**
-     * Get last socket error message.
-     * @return Last socket error message string.
+     * Get socket error message for the error code.
+     * @param error Error code.
+     * @return Socket error message string.
      */
-    std::string GetLastSocketErrorMessage()
+    std::string GetSocketErrorMessage(HRESULT error)
     {
-        HRESULT lastError = WSAGetLastError();
         std::stringstream res;
 
-        res << "error_code=" << lastError;
+        res << "error_code=" << error;
 
-        if (lastError == 0)
+        if (error == 0)
             return res.str();
 
         LPTSTR errorText = NULL;
@@ -58,7 +58,7 @@ namespace
             | FORMAT_MESSAGE_IGNORE_INSERTS,
             // unused with FORMAT_MESSAGE_FROM_SYSTEM
             NULL,
-            lastError,
+            error,
             MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
             // output
             reinterpret_cast<LPTSTR>(&errorText),
@@ -77,6 +77,17 @@ namespace
 
         return res.str();
     }
+
+    /**
+     * Get last socket error message.
+     * @return Last socket error message string.
+     */
+    std::string GetLastSocketErrorMessage()
+    {
+        HRESULT lastError = WSAGetLastError();
+
+        return GetSocketErrorMessage(lastError);
+    }
 }
 
 namespace ignite
@@ -86,7 +97,9 @@ namespace ignite
         namespace tcp
         {
 
-            SocketClient::SocketClient() : socketHandle(INVALID_SOCKET)
+            SocketClient::SocketClient() :
+                socketHandle(INVALID_SOCKET),
+                blocking(true)
             {
                 // No-op.
             }
@@ -170,11 +183,27 @@ namespace ignite
                     res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
                     if (SOCKET_ERROR == res)
                     {
-                        LOG_MSG("Connection failed: " << GetLastSocketErrorMessage());
+                        int lastError = WSAGetLastError();
 
-                        Close();
+                        if (lastError != WSAEWOULDBLOCK)
+                        {
+                            LOG_MSG("Connection failed: " << GetSocketErrorMessage(lastError));
 
-                        continue;
+                            Close();
+
+                            continue;
+                        }
+
+                        res = WaitOnSocket(CONNECT_TIMEOUT, false);
+
+                        if (res < 0 || res == WaitResult::TIMEOUT)
+                        {
+                            LOG_MSG("Connection timeout expired: " << GetSocketErrorMessage(-res));
+
+                            Close();
+
+                            continue;
+                        }
                     }
                     break;
                 }
@@ -194,20 +223,38 @@ namespace ignite
                 }
             }
 
-            int SocketClient::Send(const int8_t* data, size_t size)
+            int SocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
             {
+                if (!blocking)
+                {
+                    int res = WaitOnSocket(timeout, false);
+
+                    if (res < 0 || res == WaitResult::TIMEOUT)
+                        return res;
+                }
+
                 return send(socketHandle, reinterpret_cast<const char*>(data), static_cast<int>(size), 0);
             }
 
-            int SocketClient::Receive(int8_t* buffer, size_t size)
+            int SocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
             {
+                if (!blocking)
+                {
+                    int res = WaitOnSocket(timeout, true);
+
+                    if (res < 0 || res == WaitResult::TIMEOUT)
+                        return res;
+                }
+
                 return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
             }
 
             void SocketClient::TrySetOptions(diagnostic::Diagnosable& diag)
             {
                 BOOL trueOpt = TRUE;
+                ULONG uTrueOpt = TRUE;
                 int bufSizeOpt = BUFFER_SIZE;
+
 
                 int res = setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF,
                     reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
@@ -240,6 +287,29 @@ namespace ignite
 
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP no-delay mode");
+                }
+
+                res = setsockopt(socketHandle, SOL_SOCKET, SO_OOBINLINE,
+                    reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
+
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("TCP out-of-bound data inlining setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP out-of-bound data inlining");
+                }
+
+                blocking = false;
+                res = ioctlsocket(socketHandle, FIONBIO, &uTrueOpt);
+
+                if (res == SOCKET_ERROR)
+                {
+                    blocking = true;
+                    LOG_MSG("Non-blocking mode setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up non-blocking mode. Timeouts are not available.");
                 }
 
                 res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE,
@@ -318,6 +388,44 @@ namespace ignite
 #endif
             }
 
+            int SocketClient::WaitOnSocket(int32_t timeout, bool rd)
+            {
+                int ready = 0;
+                int lastError = 0;
+
+                fd_set fds;
+
+                do {
+                    struct timeval tv = { 0 };
+                    tv.tv_sec = timeout;
+
+                    FD_ZERO(&fds);
+                    FD_SET(socketHandle, &fds);
+
+                    fd_set* readFds = 0;
+                    fd_set* writeFds = 0;
+
+                    if (rd)
+                        readFds = &fds;
+                    else
+                        writeFds = &fds;
+
+                    ready = select(static_cast<int>((socketHandle) + 1),
+                        readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
+
+                    if (ready == SOCKET_ERROR)
+                        lastError = WSAGetLastError();
+
+                } while (ready == SOCKET_ERROR && lastError == WSAEINTR);
+
+                if (ready == SOCKET_ERROR)
+                    return -lastError;
+
+                if (ready == 0)
+                    return WaitResult::TIMEOUT;
+
+                return WaitResult::SUCCESS;
+            }
         }
     }
 }
