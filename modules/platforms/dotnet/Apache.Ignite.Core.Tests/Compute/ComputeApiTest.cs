@@ -787,10 +787,16 @@ namespace Apache.Ignite.Core.Tests.Compute
                 _grid1.GetCluster().ForRemotes().GetCompute().Broadcast(new ExceptionalComputeAction()));
 
             Assert.IsNotNull(ex.InnerException);
+#if NETCOREAPP2_0
+            // Exceptions can't be serialized on .NET Core
+            Assert.AreEqual("Operation is not supported on this platform.",
+                ex.InnerException.Message);
+#else
             Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.",
                 ex.InnerException.Message);
             Assert.IsNotNull(ex.InnerException.InnerException);
             Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
+#endif
         }
 
 #if !NETCOREAPP2_0
