@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             // No template: default configuration.
             var cache = Client.CreateCache<int, int>("foobar");
-            TestUtils.AssertReflectionEqual(new CacheClientConfiguration("foobar"), cache.GetConfiguration());
+            AssertExtensions.ReflectionEqual(new CacheClientConfiguration("foobar"), cache.GetConfiguration());
 
             // Create when exists.
             var ex = Assert.Throws<IgniteClientException>(() => Client.CreateCache<int, int>(cache.Name));
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             // No template: default configuration.
             var cache = Client.GetOrCreateCache<int, int>("foobar");
-            TestUtils.AssertReflectionEqual(new CacheClientConfiguration { Name = "foobar"}, cache.GetConfiguration());
+            AssertExtensions.ReflectionEqual(new CacheClientConfiguration { Name = "foobar"}, cache.GetConfiguration());
             cache[1] = 1;
 
             // Create when exists.
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // Default config.
             var cfg = new CacheClientConfiguration("a");
             var cache = Client.CreateCache<int, int>(cfg);
-            TestUtils.AssertReflectionEqual(cfg, cache.GetConfiguration());
+            AssertExtensions.ReflectionEqual(cfg, cache.GetConfiguration());
 
             // Create when exists.
             var ex = Assert.Throws<IgniteClientException>(() => Client.CreateCache<int, int>(cfg));
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // Default configur.
             var cfg = new CacheClientConfiguration("a");
             var cache = Client.GetOrCreateCache<int, int>(cfg);
-            TestUtils.AssertReflectionEqual(cfg, cache.GetConfiguration());
+            AssertExtensions.ReflectionEqual(cfg, cache.GetConfiguration());
             cache[1] = 1;
 
             // Create when exists.

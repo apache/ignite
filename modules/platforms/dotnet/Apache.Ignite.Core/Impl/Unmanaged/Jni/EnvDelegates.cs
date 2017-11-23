@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         internal delegate void ExceptionClear(IntPtr env);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        internal delegate bool ExceptionCheck(IntPtr env);
+        internal delegate byte ExceptionCheck(IntPtr env);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate IntPtr GetObjectClass(IntPtr env, IntPtr obj);

@@ -118,6 +118,7 @@ namespace Apache.Ignite.Core.Tests.Log
             Assert.IsInstanceOf<ArithmeticException>(err.Exception);
         }
 
+#if !NETCOREAPP2_0  // Exception serialization is not supported in .NET Core
         /// <summary>
         /// Tests that .NET exception propagates through Java to the log.
         /// </summary>
@@ -139,9 +140,11 @@ namespace Apache.Ignite.Core.Tests.Log
 
                 var errFromJava = TestLogger.Entries.Single(x => x.Exception != null);
                 Assert.IsNotNull(errFromJava.Exception.InnerException);
-                Assert.AreEqual("Error in func.", ((ArithmeticException) errFromJava.Exception.InnerException).Message);
+                Assert.AreEqual("Error in func.", 
+                    ((ArithmeticException) errFromJava.Exception.InnerException).Message);
             }
         }
+#endif
 
         /// <summary>
         /// Tests the <see cref="QueryEntity"/> validation.
