@@ -1630,15 +1630,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheIds Cache IDs.
      * @return Future that will be completed when rebuilding is finished.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(Collection<Integer> cacheIds) {
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(Set<Integer> cacheIds) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes from hash (grid is stopping).");
+
+        // Because of alt type ids, there can be few entries in 'types' for a single cache.
+        // In order to avoid processing a cache more than once, let's track processed names.
+        Set<String> processedCacheNames = new HashSet<>();
 
         try {
             GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<Object, Object>();
 
             for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
-                if (cacheIds.contains(CU.cacheId(e.getKey().cacheName())))
+                if (cacheIds.contains(CU.cacheId(e.getKey().cacheName())) &&
+                    processedCacheNames.add(e.getKey().cacheName()))
                     fut.add(rebuildIndexesFromHash(e.getKey().cacheName(), e.getValue()));
             }
 

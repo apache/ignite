@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-
+import java.util.concurrent.Semaphore;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -45,36 +45,27 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteCallable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
- * T.
+ * Index rebuild after node restart test.
  */
 public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /** Data size. */
-    private final static int AMOUNT = 40;
+    private final static int AMOUNT = 10;
+
+    /** Data size. */
+    private final static String CACHE_NAME = "T";
 
     /** Test instance to allow interaction with static context. */
     private static GridIndexRebuildSelfTest INSTANCE;
 
-    /** Next key to put. */
-    private int nextKey = 1;
-
-    /** Next value to put. */
-    private int nextVal = 1;
-
-    /** Latch to signal that rebuild may continue. */
-    private CountDownLatch rebuildLatch;
+    /** Latch to signal that rebuild may start. */
+    private final CountDownLatch rebuildLatch = new CountDownLatch(1);
 
     /** Latch to signal that concurrent put may start. */
-    private CountDownLatch putLatch;
-
-    /** */
-    public GridIndexRebuildSelfTest() {
-        INSTANCE = this;
-    }
+    private final Semaphore rebuildSemaphore = new Semaphore(1, true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
@@ -92,13 +83,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         // Just in case.
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
 
-        nextKey = 1;
-
-        nextVal = 1;
-
-        rebuildLatch = new CountDownLatch(1);
-
-        putLatch = new CountDownLatch(1);
+        INSTANCE = this;
     }
 
     /**
@@ -116,7 +101,25 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     }
 
     /**
-     * Do test.
+     * Do test.<p>
+     * Steps are as follows:
+     * <ul>
+     *     <li>Put some data;</li>
+     *     <li>Stop the node;</li>
+     *     <li>Remove index file;</li>
+     *     <li>Restart the node and block index rebuild;</li>
+     *     <li>For half of the keys do cache puts <b>before</b> corresponding key
+     *     has been processed during index rebuild;</li>
+     *     <li>Check that:
+     *         <ul>
+     *             <li>For MVCC case: some keys have all versions that existed before restart, while those
+     *             updated concurrently have only put version (one with mark value -1)
+     *             and latest version present before node restart;</li>
+     *             <li>For non MVCC case: keys updated concurrently must have mark values of -1 despite that
+     *             index rebuild for them has happened after put.</li>
+     *         </ul>
+     *     </li>
+     * </ul>
      * @param mvccEnabled MVCC flag.
      * @throws Exception if failed.
      */
@@ -128,7 +131,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         execute(srv, "CREATE INDEX IDX ON T(v)");
 
-        IgniteInternalCache cc = srv.cachex("T");
+        IgniteInternalCache cc = srv.cachex(CACHE_NAME);
 
         assertNotNull(cc);
 
@@ -137,7 +140,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         putData(srv, false);
 
-        checkTreeState(srv, mvccEnabled, false);
+        checkDataState(srv, mvccEnabled, false);
 
         File cacheWorkDir = ((FilePageStoreManager)cc.context().shared().pageStore()).cacheWorkDir(cc.configuration());
 
@@ -149,15 +152,9 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         srv = startServer(mvccEnabled);
 
-        U.await(putLatch);
-
-        nextKey = AMOUNT / 2;
-
         putData(srv, true);
 
-        rebuildLatch.countDown();
-
-        checkTreeState(srv, mvccEnabled, true);
+        checkDataState(srv, mvccEnabled, true);
     }
 
     /**
@@ -168,10 +165,10 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    private void checkTreeState(IgniteEx srv, boolean mvccEnabled, boolean afterRebuild) throws IgniteCheckedException {
-        IgniteInternalCache icache = srv.cachex("T");
+    private void checkDataState(IgniteEx srv, boolean mvccEnabled, boolean afterRebuild) throws IgniteCheckedException {
+        IgniteInternalCache icache = srv.cachex(CACHE_NAME);
 
-        IgniteCache cache = srv.cache("T");
+        IgniteCache cache = srv.cache(CACHE_NAME);
 
         assertNotNull(icache);
 
@@ -190,7 +187,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                         assertEquals(key, vers.size());
                     else {
                         // For keys affected by concurrent put there are two versions -
-                        // -1 (concurrent put mark) and newest restored value.
+                        // -1 (concurrent put mark) and newest restored value as long as put cleans obsolete versions.
                         assertEquals(2, vers.size());
 
                         assertEquals(-1, vers.get(0).getKey());
@@ -200,9 +197,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                 else {
                     if (!afterRebuild || key <= AMOUNT / 2)
                         assertEquals(key, cache.get(key));
-                    else {
+                    else
                         assertEquals(-1, cache.get(key));
-                    }
                 }
             }
         }
@@ -223,52 +219,30 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * @throws Exception if failed.
      */
     private void putData(Ignite node, final boolean forConcurrentPut) throws Exception {
-        final IgniteCache<Integer, Integer> cache = node.cache("T");
+        final IgniteCache<Integer, Integer> cache = node.cache(CACHE_NAME);
 
         assertNotNull(cache);
 
-        // Data streamer is not used intentionally in order to preserve all versions.
-        multithreadedAsync(new IgniteCallable<Void>() {
-            @Override public Void call() throws Exception {
-                T2<Integer, Integer> t;
+        for (int i = 1; i <= AMOUNT; i++) {
+            if (forConcurrentPut) {
+                // Concurrent put affects only second half of the keys.
+                if (i <= AMOUNT / 2)
+                    continue;
 
-                while ((t = forConcurrentPut ? nextKeyAndValueForConcurrentPut() : nextKeyAndValue()) != null)
-                    cache.put(t.getKey(), t.getValue());
+                rebuildSemaphore.acquire();
 
-                return null;
+                cache.put(i, -1);
+
+                rebuildLatch.countDown();
+
+                rebuildSemaphore.release();
             }
-        }, 4).get();
-    }
-
-    /**
-     * @return Next key-value pair to put to cache.
-     */
-    private synchronized T2<Integer, Integer> nextKeyAndValue() {
-        if (nextKey <= AMOUNT && nextVal <= AMOUNT) {
-            T2<Integer, Integer> res = new T2<>(nextKey, nextVal);
-
-            if (nextVal == nextKey) {
-                nextVal = 1;
-
-                nextKey++;
+            else {
+                // Data streamer is not used intentionally in order to preserve all versions.
+                for (int j = 1; j <= i; j++)
+                    cache.put(i, j);
             }
-            else
-                nextVal++;
-
-            return res;
         }
-
-        return null;
-    }
-
-    /**
-     * @return Next key-value pair for concurrent put.
-     */
-    private synchronized T2<Integer, Integer> nextKeyAndValueForConcurrentPut() {
-        if (++nextKey <= AMOUNT)
-            return new T2<>(nextKey, -1);
-
-        return null;
     }
 
     /**
@@ -293,6 +267,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+
         stopAllGrids();
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
@@ -311,6 +286,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
         @Override public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException {
+            U.await(INSTANCE.rebuildLatch);
+
             int cacheId = CU.cacheId(cacheName);
 
             GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
@@ -332,7 +309,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     private final static class TestRebuildClosure extends RebuildIndexFromHashClosure {
         /** Seen keys set to track moment when concurrent put may start. */
         private final Set<KeyCacheObject> keys =
-            Collections.newSetFromMap(new IdentityHashMap<KeyCacheObject, Boolean>());
+            Collections.newSetFromMap(new ConcurrentHashMap<KeyCacheObject, Boolean>());
 
         /**
          * @param qryMgr      Query manager.
@@ -344,15 +321,23 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-            // When we have processed half of the keys, let's signal
-            // to concurrent put that it may start.
-            if (keys.add(row.key()) && keys.size() == AMOUNT / 2 + 1) {
-                INSTANCE.putLatch.countDown();
+            // For half of the keys, we want to do rebuild
+            // after corresponding key had been put from a concurrent thread.
+            boolean keyFirstMet = keys.add(row.key()) && keys.size() > AMOUNT / 2;
 
-                U.await(INSTANCE.rebuildLatch);
+            if (keyFirstMet) {
+                try {
+                    INSTANCE.rebuildSemaphore.acquire();
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteCheckedException(e);
+                }
             }
 
             super.apply(row);
+
+            if (keyFirstMet)
+                INSTANCE.rebuildSemaphore.release();
         }
     }
 }
