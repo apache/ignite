@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Net.Sockets;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -108,6 +107,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.Throws<ArgumentNullException>(() => Ignition.StartClient(new IgniteClientConfiguration()));
         }
 
+#if !NETCOREAPP2_0
         /// <summary>
         /// Tests the incorrect protocol version error.
         /// </summary>
@@ -118,15 +118,17 @@ namespace Apache.Ignite.Core.Tests.Client
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 // ReSharper disable once ObjectCreationAsStatement
-                var ex = Assert.Throws<IgniteClientException>(() => new ClientSocket(GetClientConfiguration(),
-                    new ClientProtocolVersion(-1, -1, -1)));
+                var ex = Assert.Throws<IgniteClientException>(() =>
+                    new Impl.Client.ClientSocket(GetClientConfiguration(),
+                    new Impl.Client.ClientProtocolVersion(-1, -1, -1)));
 
-                Assert.AreEqual((int) ClientStatus.Fail, ex.ErrorCode);
+                Assert.AreEqual((int) Impl.Client.ClientStatus.Fail, ex.ErrorCode);
 
                 Assert.AreEqual("Client handhsake failed: 'Unsupported version.'. " +
                                 "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
             }
         }
+#endif
 
         /// <summary>
         /// Tests that connector can be disabled.
@@ -148,7 +150,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 var ex = Assert.Throws<AggregateException>(() => Ignition.StartClient(clientCfg));
                 Assert.AreEqual("Failed to establish Ignite thin client connection, " +
-                                "examine inner exceptions for details.", ex.Message);
+                                "examine inner exceptions for details.", ex.Message.Substring(0, 88));
             }
         }
 

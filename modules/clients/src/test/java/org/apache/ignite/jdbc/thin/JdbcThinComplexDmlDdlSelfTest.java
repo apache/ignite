@@ -32,7 +32,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -151,12 +150,12 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
         sql(new UpdateChecker(0),
             "CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
                 "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name()
-                + ",affinitykey=city\"");
+                + ",affinity_key=city\"");
 
         sql(new UpdateChecker(0), "CREATE INDEX idx on person (city asc, name asc)");
 
         sql(new UpdateChecker(0), "CREATE TABLE city (name varchar, population int, primary key (name)) WITH " +
-            "\"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinitykey=name\"");
+            "\"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinity_key=name\"");
 
         sql(new UpdateChecker(3),
             "INSERT INTO city (name, population) values(?, ?), (?, ?), (?, ?)",
