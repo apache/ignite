@@ -1078,7 +1078,6 @@ public class ZookeeperDiscoveryImpl {
 
         List<ZookeeperClusterNode> allNodes = dataForJoined.topology();
 
-        // TODO ZK
         for (int i = 0; i < allNodes.size(); i++) {
             ZookeeperClusterNode node = allNodes.get(i);
 
@@ -1139,6 +1138,8 @@ public class ZookeeperDiscoveryImpl {
 
         joinedNode.order(evtData.topologyVersion());
         joinedNode.internalId(evtData.joinedInternalId);
+
+        joinedNode.setMetrics(new ClusterMetricsSnapshot());
 
         top.addNode(joinedNode);
 

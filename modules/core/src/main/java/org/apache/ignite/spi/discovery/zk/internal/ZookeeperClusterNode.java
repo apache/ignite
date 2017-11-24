@@ -68,6 +68,10 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
     @GridToStringExclude
     private Map<String, Object> attrs;
 
+    /** Metrics provider. */
+    @GridToStringExclude
+    private transient DiscoveryMetricsProvider metricsProvider;
+
     /** */
     private transient boolean loc;
 
@@ -101,7 +105,8 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
         IgniteProductVersion ver,
         Map<String, Object> attrs,
         Serializable consistentId,
-        boolean client
+        boolean client,
+        DiscoveryMetricsProvider metricsProvider
     ) {
         assert id != null;
         assert consistentId != null;
@@ -110,6 +115,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
         this.ver = ver;
         this.attrs = U.sealMap(attrs);
         this.consistentId = consistentId;
+        this.metricsProvider = metricsProvider;
 
         if (client)
             flags |= CLIENT_NODE_MASK;
@@ -152,6 +158,19 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
 
     /** {@inheritDoc} */
     @Override public ClusterMetrics metrics() {
+        if (metricsProvider != null) {
+            ClusterMetrics metrics0 = metricsProvider.metrics();
+
+            assert metrics0 != null;
+
+            metrics = metrics0;
+
+            return metrics0;
+        }
+
+        if (metrics == null)
+            System.out.println();
+
         return metrics;
     }
 
@@ -164,6 +183,14 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
 
     /** {@inheritDoc} */
     @Override public Map<Integer, CacheMetrics> cacheMetrics() {
+        if (metricsProvider != null) {
+            Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
+
+            cacheMetrics = cacheMetrics0;
+
+            return cacheMetrics0;
+        }
+
         return cacheMetrics;
     }
 

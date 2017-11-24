@@ -324,7 +324,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             locNodeVer,
             locNodeAttrs,
             consistentId,
-            ignite.configuration().isClientMode());
+            ignite.configuration().isClientMode(),
+            metricsProvider);
 
         locNode.local(true);
 
