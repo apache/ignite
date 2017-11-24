@@ -675,6 +675,57 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     }
 
     /**
+     * Test {@link CacheMetrics#getSize()}, {@link CacheMetrics#getSizeLong()}, {@link CacheMetrics#getKeySize()} and
+     * {@link CacheMetrics#getKeySizeLong()}.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSize() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertEquals(0, cache.metrics().getSize());
+        assertEquals(0L, cache.metrics().getSizeLong());
+
+        // Metrics works strange with the LOCAL cache mode.
+        boolean isLocal = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.LOCAL;
+
+        boolean isTransactional = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
+        // In transactional cache operations work slower than in atomic.
+        int count = isTransactional ? KEY_CNT / 20 : KEY_CNT;
+
+        for (int i = 0; i < count; i++) {
+            cache.put(i, i);
+
+            assertEquals(isLocal ? 0 : i + 1, cache.metrics().getSize());
+            assertEquals(isLocal ? 0 : i + 1, cache.metrics().getSizeLong());
+            assertEquals(isLocal ? 0 : i + 1, cache.metrics().getKeySize());
+            assertEquals(isLocal ? 0 : i + 1, cache.metrics().getKeySizeLong());
+            assertEquals(isLocal ? 0 : i + 1, cache.localMetrics().getSize());
+            assertEquals(isLocal ? 0 : i + 1, cache.localMetrics().getSizeLong());
+            assertEquals(isLocal ? 0 : i + 1, cache.localMetrics().getKeySize());
+            assertEquals(isLocal ? 0 : i + 1, cache.localMetrics().getKeySizeLong());
+        }
+
+        for (int i = 0; i < count / 2; i++) {
+            cache.remove(i, i);
+
+            assertEquals(isLocal ? 0 : count - i - 1, cache.metrics().getSize());
+            assertEquals(isLocal ? 0 : count - i - 1, cache.metrics().getSizeLong());
+            assertEquals(isLocal ? 0 : count - i - 1, cache.metrics().getKeySize());
+            assertEquals(isLocal ? 0 : count - i - 1, cache.metrics().getKeySizeLong());
+            assertEquals(isLocal ? 0 : count - i - 1, cache.localMetrics().getSize());
+            assertEquals(isLocal ? 0 : count - i - 1, cache.localMetrics().getSizeLong());
+            assertEquals(isLocal ? 0 : count - i - 1, cache.localMetrics().getKeySize());
+            assertEquals(isLocal ? 0 : count - i - 1, cache.localMetrics().getKeySizeLong());
+        }
+
+        cache.removeAll();
+
+        assertEquals(0, cache.metrics().getSize());
+        assertEquals(0L, cache.metrics().getSizeLong());
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testTxEvictions() throws Exception {
