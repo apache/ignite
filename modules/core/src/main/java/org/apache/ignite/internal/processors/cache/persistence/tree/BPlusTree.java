@@ -1914,7 +1914,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     @Override public final long size() throws IgniteCheckedException {
-        return countMatchingRows(null);
+        return size(null);
     }
 
     /**
@@ -1926,13 +1926,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Number of elements in the tree.
      * @throws IgniteCheckedException If failed.
      */
-    public long countMatchingRows(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
+    public long size(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
         checkDestroyed();
 
         for (;;) {
             long curPageId;
 
             long metaPage = acquirePage(metaPageId);
+
             try {
                 curPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
             }
@@ -1945,12 +1946,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             long curPage = acquirePage(curPageId);
             try {
                 long curPageAddr = readLock(curPageId, curPage);
+
                 if (curPageAddr == 0)
-                    // The first page has gone: restart scan
-                    continue;
+                    continue; // The first page has gone: restart scan.
 
                 try {
                     BPlusIO<L> io = io(curPageAddr);
+
                     assert io.isLeaf();
 
                     for (;;) {
@@ -1961,7 +1963,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         else {
                             for (int i = 0; i < curPageSize; ++i) {
                                 if (filter.apply(this, io, curPageAddr, i))
-                                    ++matchingRowsCnt;
+                                    matchingRowsCnt++;
                             }
                         }
 
@@ -1974,18 +1976,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         }
 
                         long nextPage = acquirePage(nextPageId);
+
                         try {
                             long nextPageAddr = readLock(nextPageId, nextPage);
 
-                            // In the current implementation the next page can't change when the current page is locked
+                            // In the current implementation the next page can't change when the current page is locked.
                             assert nextPageAddr != 0 : nextPageAddr;
 
                             try {
                                 readUnlock(curPageId, curPage, curPageAddr);
-                                curPageAddr = 0; // Set to zero to avoid double unlocking in finalizer
+
+                                curPageAddr = 0; // Set to zero to avoid double unlocking in finalizer.
 
                                 releasePage(curPageId, curPage);
-                                curPage = 0; // Set to zero to avoid double release in finalizer
+
+                                curPage = 0; // Set to zero to avoid double release in finalizer.
 
                                 curPageId = nextPageId;
 

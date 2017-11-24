@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -169,20 +168,13 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            IndexingQueryFilter f = threadLocalFilter();
-            IndexingQueryCacheFilter p = null;
-
-            if (f != null) {
-                String cacheName = getTable().cacheName();
-
-                p = f.forCache(cacheName);
-            }
+            IndexingQueryCacheFilter filter = partitionFilter();
 
             int seg = threadLocalSegment();
 
             H2Tree tree = treeForRead(seg);
 
-            return new H2Cursor(tree.find(lower, upper, p));
+            return new H2Cursor(tree.find(lower, upper, filter));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -279,7 +271,13 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
         try {
-            return treeForRead(threadLocalSegment()).countMatchingRows(filter(GridH2QueryContext.get()));
+            int seg = threadLocalSegment();
+
+            H2Tree tree = treeForRead(seg);
+
+            BPlusTree.TreeRowClosure<SearchRow, GridH2Row> filter = filter();
+
+            return tree.size(filter);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -290,30 +288,22 @@ public class H2TreeIndex extends GridH2IndexBase {
      * Returns a filter to apply to rows in the current index to obtain only the
      * rows owned by the this cache.
      *
-     * @param qctx H2 Query Context object to supply the main row filter
      * @return The filter, which returns true for rows owned by this cache.
      */
     // TODO: replace with proper filter function when merging with IGNITE-3478.
-    @Nullable private BPlusTree.TreeRowClosure<SearchRow, GridH2Row> filter(GridH2QueryContext qctx) {
+    @Nullable private BPlusTree.TreeRowClosure<SearchRow, GridH2Row> filter() {
+        final IndexingQueryCacheFilter filter = partitionFilter();
 
-        IndexingQueryFilter iqf = qctx.filter();
-
-        if (iqf == null)
-            return null;
-
-        final IndexingQueryCacheFilter iqcf = iqf.forCache(getTable().cacheName());
-
-        if (iqcf == null)
+        if (filter == null)
             return null;
 
         return new BPlusTree.TreeRowClosure<SearchRow, GridH2Row>() {
-
             @Override public boolean apply(BPlusTree<SearchRow, GridH2Row> tree,
                 BPlusIO<SearchRow> io, long pageAddr, int idx) throws IgniteCheckedException {
 
                 H2RowLinkIO h2io = (H2RowLinkIO)io;
 
-                return iqcf.applyPartition(PageIdUtils.partId(PageIdUtils.pageId(h2io.getLink(pageAddr, idx))));
+                return filter.applyPartition(PageIdUtils.partId(PageIdUtils.pageId(h2io.getLink(pageAddr, idx))));
             }
         };
     }
@@ -396,6 +386,24 @@ public class H2TreeIndex extends GridH2IndexBase {
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
+    }
+
+    /**
+     * Partition filter.
+     *
+     * @return Filter
+     */
+    @Nullable private IndexingQueryCacheFilter partitionFilter() {
+        IndexingQueryFilter f = threadLocalFilter();
+        IndexingQueryCacheFilter p = null;
+
+        if (f != null) {
+            String cacheName = getTable().cacheName();
+
+            p = f.forCache(cacheName);
+        }
+
+        return p;
     }
 
     /**

@@ -1165,7 +1165,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that {@link BPlusTree#size} and {@link BPlusTree#countMatchingRows} methods behave correctly
+     * Verifies that {@link BPlusTree#size} and {@link BPlusTree#size} methods behave correctly
      * on single-threaded addition and removal of elements in random order.
      *
      * @throws IgniteCheckedException If failed.
@@ -1216,7 +1216,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             if (rowMatcher.apply(row))
                 ++correctMatchingRows;
 
-            assertEquals(correctMatchingRows, testTree.countMatchingRows(rowClosure));
+            assertEquals(correctMatchingRows, testTree.size(rowClosure));
 
             long correctSize = goldenMap.size();
 
@@ -1241,7 +1241,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             if (rowMatcher.apply(row))
                 --correctMatchingRows;
 
-            assertEquals(correctMatchingRows, testTree.countMatchingRows(rowClosure));
+            assertEquals(correctMatchingRows, testTree.size(rowClosure));
 
             long correctSize = goldenMap.size();
 
@@ -1498,7 +1498,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     long correctSize = curPutKey.get() - curRmvKey.get();
 
                     treeContents.clear();
-                    long treeSize = tree.countMatchingRows(rowDumper);
+                    long treeSize = tree.size(rowDumper);
 
                     long minBound = correctSize - putRmvThreadCnt;
                     long maxBound = correctSize + putRmvThreadCnt;
@@ -1553,7 +1553,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * The test forces {@link BPlusTree#countMatchingRows} method to run into a livelock: during single run
+     * The test forces {@link BPlusTree#size} method to run into a livelock: during single run
      * the method is picking up new pages which are concurrently added to the tree until the new pages are not added
      * anymore. Test verifies that despite livelock condition a size from a valid range is returned.
      *
@@ -1650,7 +1650,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 while (!stop.get()) {
                     treeContents.clear();
 
-                    long treeSize = tree.countMatchingRows(rowDumper);
+                    long treeSize = tree.size(rowDumper);
                     long curPutVal = curPutKey.get();
 
                     X.println(" ======> size=" + treeSize + "; last-put-value=" + curPutVal);
