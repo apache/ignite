@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
     using DataPageEvictionMode = Apache.Ignite.Core.Configuration.DataPageEvictionMode;
 
@@ -32,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class PersistenceTest
     {
         /** Temp dir for WAL. */
-        private readonly string _tempDir = IgniteUtils.GetTempDirectoryName();
+        private readonly string _tempDir = TestUtils.GetTempDirectoryName();
 
         /// <summary>
         /// Tears down the test.

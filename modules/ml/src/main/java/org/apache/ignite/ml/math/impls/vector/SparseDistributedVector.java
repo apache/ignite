@@ -17,27 +17,14 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.lang.IgniteUuid;
+import java.util.UUID;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
-import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.ml.math.impls.matrix.*;
-import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorage;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Sparse distributed vector implementation based on data grid.
@@ -59,7 +46,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
     }
 
     /**
-     * @param size    Vector size.
+     * @param size Vector size.
      * @param acsMode Vector elements access mode..
      */
     public SparseDistributedVector(int size, int acsMode) {
@@ -67,29 +54,33 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
         assert size > 0;
         assertAccessMode(acsMode);
 
-
         setStorage(new SparseDistributedVectorStorage(size, acsMode));
     }
 
+    /**
+     * @param size Size.
+     */
     public SparseDistributedVector(int size) {
         this(size, StorageConstants.RANDOM_ACCESS_MODE);
     }
 
     /**
-     * @param data
+     * @param data Data.
      */
     public SparseDistributedVector(double[] data) {
         setStorage(new SparseDistributedVectorStorage(data.length, StorageConstants.RANDOM_ACCESS_MODE));
+
         for (int i = 0; i < data.length; i++) {
-            double value = data[i];
-            if (value != 0.0) storage().set(i, value);
+            double val = data[i];
+
+            if (val != 0.0)
+                storage().set(i, val);
         }
     }
 
-
     /** */
     public SparseDistributedVectorStorage storage() {
-        return (SparseDistributedVectorStorage) getStorage();
+        return (SparseDistributedVectorStorage)getStorage();
     }
 
     /**
@@ -101,13 +92,13 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
         return mapOverValues(v -> v / d);
     }
 
-    @Override
-    public Vector like(int size) {
+    /** {@inheritDoc} */
+    @Override public Vector like(int size) {
         return new SparseDistributedVector(size, storage().accessMode());
     }
 
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    /** {@inheritDoc} */
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return new SparseDistributedMatrix(rows, cols);
     }
 
@@ -128,7 +119,6 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
     @Override public Vector times(double x) {
         return mapOverValues(v -> v * x);
     }
-
 
     /** {@inheritDoc} */
     @Override public Vector assign(double val) {
@@ -152,6 +142,6 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
 
     /** */
     public UUID getUUID() {
-        return ((SparseDistributedVectorStorage) getStorage()).getUUID();
+        return ((SparseDistributedVectorStorage)getStorage()).getUUID();
     }
 }

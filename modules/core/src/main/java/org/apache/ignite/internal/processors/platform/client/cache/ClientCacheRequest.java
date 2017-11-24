@@ -87,9 +87,21 @@ class ClientCacheRequest extends ClientRequest {
     /**
      * Gets the cache descriptor.
      *
+     * @param ctx Context.
      * @return Cache descriptor.
      */
     protected DynamicCacheDescriptor cacheDescriptor(ClientConnectionContext ctx) {
+        return cacheDescriptor(ctx, cacheId);
+    }
+
+    /**
+     * Gets the cache descriptor.
+     *
+     * @param ctx Context.
+     * @param cacheId Cache id.
+     * @return Cache descriptor.
+     */
+    public static DynamicCacheDescriptor cacheDescriptor(ClientConnectionContext ctx, int cacheId) {
         DynamicCacheDescriptor desc = ctx.kernalContext().cache().cacheDescriptor(cacheId);
 
         if (desc == null)

@@ -160,7 +160,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getPhysicalMemoryPages() {
-        if (!metricsEnabled || !persistenceEnabled)
+        if (!persistenceEnabled)
+            return getTotalAllocatedPages();
+
+        if (!metricsEnabled)
             return 0;
 
         assert pageMem != null;

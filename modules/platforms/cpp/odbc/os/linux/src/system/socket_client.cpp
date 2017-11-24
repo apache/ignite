@@ -20,6 +20,7 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <cstring>
 
@@ -35,25 +36,35 @@ namespace
 {
     /**
      * Get last socket error message.
+     * @param error Error code.
+     * @return Last socket error message string.
+     */
+    std::string GetSocketErrorMessage(int error)
+    {
+        std::stringstream res;
+
+        res << "error_code=" << error;
+
+        if (error == 0)
+            return res.str();
+
+        char buffer[1024] = "";
+
+        if (!strerror_r(error, buffer, sizeof(buffer)))
+            res << ", msg=" << buffer;
+
+        return res.str();
+    }
+
+    /**
+     * Get last socket error message.
      * @return Last socket error message string.
      */
     std::string GetLastSocketErrorMessage()
     {
         int lastError = errno;
-        std::stringstream res;
 
-        res << "error_code=" << lastError;
-
-        if (lastError == 0)
-            return res.str();
-
-        char buffer[1024] = "";
-
-        strerror_r(lastError, buffer, sizeof(buffer));
-
-        res << ", msg=" << buffer;
-
-        return res.str();
+        return GetSocketErrorMessage(lastError);
     }
 }
 
@@ -64,7 +75,9 @@ namespace ignite
         namespace tcp
         {
 
-            SocketClient::SocketClient() : socketHandle(SOCKET_ERROR)
+            SocketClient::SocketClient() :
+                socketHandle(SOCKET_ERROR),
+                blocking(true)
             {
                 // No-op.
             }
@@ -129,11 +142,27 @@ namespace ignite
                     res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
                     if (SOCKET_ERROR == res)
                     {
-                        LOG_MSG("Connection failed: " << GetLastSocketErrorMessage());
+                        int lastError = errno;
 
-                        Close();
+                        if (lastError != EWOULDBLOCK && lastError != EINPROGRESS)
+                        {
+                            LOG_MSG("Connection failed: " << GetSocketErrorMessage(lastError));
 
-                        continue;
+                            Close();
+
+                            continue;
+                        }
+
+                        res = WaitOnSocket(CONNECT_TIMEOUT, false);
+
+                        if (res < 0 || res == WaitResult::TIMEOUT)
+                        {
+                            LOG_MSG("Connection timeout expired: " << GetSocketErrorMessage(-res));
+
+                            Close();
+
+                            continue;
+                        }
                     }
                     break;
                 }
@@ -153,13 +182,29 @@ namespace ignite
                 }
             }
 
-            int SocketClient::Send(const int8_t* data, size_t size)
+            int SocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
             {
+                if (!blocking)
+                {
+                    int res = WaitOnSocket(timeout, false);
+
+                    if (res < 0 || res == WaitResult::TIMEOUT)
+                        return res;
+                }
+
                 return send(socketHandle, reinterpret_cast<const char*>(data), static_cast<int>(size), 0);
             }
 
-            int SocketClient::Receive(int8_t* buffer, size_t size)
+            int SocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
             {
+                if (!blocking)
+                {
+                    int res = WaitOnSocket(timeout, true);
+
+                    if (res < 0 || res == WaitResult::TIMEOUT)
+                        return res;
+                }
+
                 return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
             }
 
@@ -203,6 +248,30 @@ namespace ignite
                         "Can not set up TCP no-delay mode");
                 }
 
+                res = setsockopt(socketHandle, SOL_SOCKET, SO_OOBINLINE,
+                    reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
+
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("TCP out-of-bound data inlining setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP out-of-bound data inlining");
+                }
+
+                blocking = false;
+
+                int flags;
+                if (((flags = fcntl(socketHandle, F_GETFL, 0)) < 0) ||
+                    (fcntl(socketHandle, F_SETFL, flags | O_NONBLOCK) < 0))
+                {
+                    blocking = true;
+                    LOG_MSG("Non-blocking mode setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up non-blocking mode. Timeouts are not available.");
+                }
+
                 res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE,
                     reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
 
@@ -238,6 +307,52 @@ namespace ignite
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP keep-alive probes period");
                 }
+
+            }
+
+            int SocketClient::WaitOnSocket(int32_t timeout, bool rd)
+            {
+                int ready = 0;
+                int lastError = 0;
+
+                fd_set fds;
+
+                do {
+                    struct timeval tv = { 0 };
+                    tv.tv_sec = timeout;
+
+                    FD_ZERO(&fds);
+                    FD_SET(socketHandle, &fds);
+
+                    fd_set* readFds = 0;
+                    fd_set* writeFds = 0;
+
+                    if (rd)
+                        readFds = &fds;
+                    else
+                        writeFds = &fds;
+
+                    ready = select(static_cast<int>((socketHandle) + 1),
+                        readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
+
+                    if (ready == SOCKET_ERROR)
+                        lastError = errno;
+
+                } while (ready == SOCKET_ERROR && lastError == EINTR);
+
+                if (ready == SOCKET_ERROR)
+                    return -lastError;
+
+                socklen_t size = sizeof(lastError);
+                int res = getsockopt(socketHandle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
+
+                if (res != SOCKET_ERROR && lastError != 0)
+                    return -lastError;
+
+                if (ready == 0)
+                    return WaitResult::TIMEOUT;
+
+                return WaitResult::SUCCESS;
             }
         }
     }
