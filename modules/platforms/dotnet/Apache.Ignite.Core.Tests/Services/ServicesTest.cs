@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    //using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Tests.Compute;
@@ -742,6 +741,8 @@ namespace Apache.Ignite.Core.Tests.Services
             // Deploy Java service
             Grid1.GetCompute()
                 .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
+
+            TestUtils.WaitForCondition(() => Services.GetServiceDescriptors().Any(x => x.Name == javaSvcName), 1000);
 
             // Verify decriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
