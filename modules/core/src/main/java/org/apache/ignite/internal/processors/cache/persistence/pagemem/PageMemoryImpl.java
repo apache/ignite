@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -74,6 +75,8 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.intellij.lang.annotations.Flow;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
@@ -827,6 +830,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException {
+        if (segments == null)
+            return new GridMultiCollectionWrapper<>(new Collection[0]);
+
         Collection[] collections = new Collection[segments.length];
 
         for (int i = 0; i < segments.length; i++) {
