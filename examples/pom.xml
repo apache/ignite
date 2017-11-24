@@ -318,6 +318,7 @@
                                 <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>
                                 <source>${ml.folder}</source>
+                                <source>${spark_2.11.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

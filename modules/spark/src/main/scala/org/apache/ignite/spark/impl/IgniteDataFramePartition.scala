@@ -26,6 +26,6 @@ import org.apache.spark.Partition
   * sparkPartitionIdx - index of partition
   * primary - primary node for list of ignitePartitions
   */
-case class IgniteDataFramePartition(sparkPartitionIdx: Int, primary: ClusterNode, ignitePartitions: List[Int]) extends Partition {
-    override def index: Int = sparkPartitionIdx
+case class IgniteDataFramePartition(sparkPartIdx: Int, primary: ClusterNode, igniteParts: List[Int]) extends Partition {
+    override def index: Int = sparkPartIdx
 }

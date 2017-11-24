@@ -22,7 +22,7 @@ import java.lang.reflect.Modifier
 import org.apache.ignite.cache.query.ScanQuery
 import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.spark.impl.IgniteSqlRDD
-import org.apache.spark.sql.{Row, SQLContext, ignite}
+import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{Metadata, StructField, StructType}
 import javax.cache.Cache
@@ -30,12 +30,9 @@ import javax.cache.Cache
 import org.apache.ignite.IgniteException
 import org.apache.ignite.binary.BinaryObject
 import org.apache.ignite.lang.IgniteBiPredicate
-import org.apache.ignite.utils._
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 
 import scala.annotation.tailrec
-
-import org.apache.spark.sql.ignite._
 
 /**
   * Relation to provide data from regular key-value cache.
@@ -209,9 +206,8 @@ object IgniteCacheRelation {
 
             if (obj == null)
                 null
-            else if (keepBinary) {
+            else if (keepBinary)
                 obj.asInstanceOf[BinaryObject].field(fieldName)
-            }
             else {
                 val field = obj.getClass.getField(fieldName)
 

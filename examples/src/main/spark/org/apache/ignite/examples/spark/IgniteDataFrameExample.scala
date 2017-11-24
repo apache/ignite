@@ -59,7 +59,7 @@ object IgniteDataFrameExample extends App {
 
         //Executing examples.
 
-        sparkDSMExample
+        sparkDSLExample
 
         nativeSparkSqlExample
 
@@ -74,7 +74,7 @@ object IgniteDataFrameExample extends App {
       *
       * @param spark SparkSession.
       */
-    def sparkDSMExample(implicit spark: SparkSession): Unit = {
+    def sparkDSLExample(implicit spark: SparkSession): Unit = {
         val igniteDF = spark.read
             .format(IGNITE) //Data source type.
             .option(TABLE, "person") //Table to read.

@@ -25,15 +25,12 @@ import org.apache.ignite.spark.impl.{IgniteDataFramePartition, IgniteSQLDataFram
 import org.apache.ignite.spark.IgniteSQLRelation.sqlCacheName
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, SortOrder}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SQLContext}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
-
-import org.apache.spark.sql.ignite._
 
 /**
   * Apache Ignite implementation of Spark BaseRelation with PrunedFilteredScan for Ignite SQL Tables
@@ -158,28 +155,28 @@ class IgniteSQLRelation[K, V](
         if (ccfg.getCacheMode == CacheMode.REPLICATED) {
             val serverNodes = ic.ignite().cluster().forCacheNodes(sqlCacheName(tableName)).forServers().nodes()
 
-            Array(IgniteDataFramePartition(0, serverNodes.iterator.next, Stream.from(1).take(1024).toList))
+            Array(IgniteDataFramePartition(0, serverNodes.head, Stream.from(0).take(1024).toList))
         }
         else {
             val aff = ic.ignite().affinity(sqlCacheName(tableName))
 
             val parts = aff.partitions()
 
-            val nodesToPartitions = (0 until parts).foldLeft(Map[ClusterNode, ArrayBuffer[Int]]()) {
-                case (nodeToPartitions, ignitePartitionIdx) ⇒
-                    val primary = aff.mapPartitionToPrimaryAndBackups(ignitePartitionIdx).iterator().next()
+            val nodesToParts = (0 until parts).foldLeft(Map[ClusterNode, ArrayBuffer[Int]]()) {
+                case (nodeToParts, ignitePartIdx) ⇒
+                    val primary = aff.mapPartitionToPrimaryAndBackups(ignitePartIdx).head
 
-                    if (nodeToPartitions.contains(primary)) {
-                        nodeToPartitions(primary) += ignitePartitionIdx
+                    if (nodeToParts.contains(primary)) {
+                        nodeToParts(primary) += ignitePartIdx
 
-                        nodeToPartitions
+                        nodeToParts
                     }
                     else
-                        nodeToPartitions + (primary → ArrayBuffer[Int](ignitePartitionIdx))
+                        nodeToParts + (primary → ArrayBuffer[Int](ignitePartIdx))
             }
 
-            val partitions = nodesToPartitions.zipWithIndex.map { case ((node, nodesPartitions), i) ⇒
-                IgniteDataFramePartition(i, node, nodesPartitions.toList)
+            val partitions = nodesToParts.zipWithIndex.map { case ((node, nodesParts), i) ⇒
+                IgniteDataFramePartition(i, node, nodesParts.toList)
             }
 
             partitions.toArray

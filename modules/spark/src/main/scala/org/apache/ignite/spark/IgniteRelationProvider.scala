@@ -30,8 +30,6 @@ import org.apache.spark.sql.sources._
 
 import scala.collection.JavaConversions._
 
-import org.apache.spark.sql.ignite._
-
 /**
   * Apache Ignite relation provider.
   */

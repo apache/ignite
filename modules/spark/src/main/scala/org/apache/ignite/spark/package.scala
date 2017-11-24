@@ -1,41 +1,33 @@
-package org.apache.spark.sql
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import org.apache.spark.sql.catalyst.DefinedByConstructorParams
+package org.apache.ignite
 
 import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
-import scala.reflect.runtime.universe.TypeTag
 import org.apache.commons.lang.StringUtils.equalsIgnoreCase
 import org.apache.ignite.cache.QueryEntity
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.{Ignite, IgniteState, Ignition}
 import org.apache.ignite.internal.util.lang.GridFunc.contains
-import org.apache.ignite.spark.IgniteSQLRelation
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.catalyst.plans.logical.LocalRelation
 
-/**
-  * @author NIzhikov
-  */
-package object ignite {
-    def makeDataset[T <: DefinedByConstructorParams : TypeTag](
-        data: Seq[T],
-        sparkSession: SparkSession): Dataset[T] = {
-        val enc = ExpressionEncoder[T]()
-
-        val encoded = data.map(d => enc.toRow(d).copy())
-
-        val plan = new LocalRelation(enc.schema.toAttributes, encoded)
-
-        val queryExecution = sparkSession.sessionState.executePlan(plan)
-
-        new Dataset[T](sparkSession, queryExecution, enc)
-    }
-
+package object spark {
     def ensureIgnite(gridName: String): Unit =
         if (!igniteExists(gridName))
-            throw new AnalysisException(s"Ignite grid with name '$gridName' does not exist.")
+            throw new IgniteException(s"Ignite grid with name '$gridName' does not exist.")
 
     def igniteExists(gridName: String): Boolean =
         if (gridName == "")
@@ -99,5 +91,10 @@ package object ignite {
       */
     def isKeyColumn(table: QueryEntity, column: String): Boolean =
         contains(table.getKeyFields, column) || equalsIgnoreCase(table.getKeyFieldName, column)
+
+    /**
+      * Enclose some closure, so it doesn't on outer object(default scala behaviour) while serializing.
+      */
+    def enclose[E, R](enclosed: E)(func: E => R): R = func(enclosed)
 
 }

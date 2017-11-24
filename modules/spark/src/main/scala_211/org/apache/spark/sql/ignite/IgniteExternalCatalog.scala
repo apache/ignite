@@ -31,6 +31,7 @@ import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.types.StructType
 
 import scala.collection.JavaConversions._
+import org.apache.ignite.spark._
 
 /**
   */

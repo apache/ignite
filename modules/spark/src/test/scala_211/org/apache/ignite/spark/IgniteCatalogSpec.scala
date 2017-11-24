@@ -21,7 +21,6 @@ import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.spark.AbstractDataFrameSpec.INT_STR_CACHE_NAME
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder
-import org.apache.ignite.utils
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -101,7 +100,7 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
 
         createCityTable(client, INT_STR_CACHE_NAME)
 
-        val configProvider = utils.enclose(null) (x ⇒ () ⇒ {
+        val configProvider = enclose(null) (x ⇒ () ⇒ {
             val cfg = new IgniteConfiguration
 
             val discoSpi = new TcpDiscoverySpi
