@@ -108,50 +108,58 @@ public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
             }
 
         // Add JDBC types.
-        if (factory != null && factory instanceof CacheJdbcPojoStoreFactory) {
+        if (factory instanceof CacheJdbcPojoStoreFactory) {
              CacheJdbcPojoStoreFactory jdbcFactory = (CacheJdbcPojoStoreFactory) factory;
 
-            for (JdbcType jdbcType : jdbcFactory.getTypes()) {
-                VisorCacheTypeMetadata meta = metaMap.get(jdbcType.getKeyType());
+            JdbcType[] jdbcTypes = jdbcFactory.getTypes();
 
-                boolean notFound = meta == null;
+            if (jdbcTypes != null && jdbcTypes.length > 0) {
+                for (JdbcType jdbcType : jdbcTypes) {
+                    VisorCacheTypeMetadata meta = metaMap.get(jdbcType.getKeyType());
 
-                if (notFound) {
-                    meta = new VisorCacheTypeMetadata();
+                    boolean notFound = meta == null;
 
-                    meta.keyType = jdbcType.getKeyType();
-                    meta.valType = jdbcType.getValueType();
+                    if (notFound) {
+                        meta = new VisorCacheTypeMetadata();
 
-                    meta.qryFlds = Collections.emptyMap();
-                    meta.ascFlds = Collections.emptyMap();
-                    meta.descFlds = Collections.emptyMap();
-                    meta.txtFlds = Collections.emptyList();
-                    meta.grps = Collections.emptyMap();
+                        meta.keyType = jdbcType.getKeyType();
+                        meta.valType = jdbcType.getValueType();
+
+                        meta.qryFlds = Collections.emptyMap();
+                        meta.ascFlds = Collections.emptyMap();
+                        meta.descFlds = Collections.emptyMap();
+                        meta.txtFlds = Collections.emptyList();
+                        meta.grps = Collections.emptyMap();
+                    }
+
+                    meta.dbSchema = jdbcType.getDatabaseSchema();
+                    meta.dbTbl = jdbcType.getDatabaseTable();
+
+                    JdbcTypeField[] keyFields = jdbcType.getKeyFields();
+
+                    if (keyFields != null) {
+                        meta.keyFields = new ArrayList<>(keyFields.length);
+
+                        for (JdbcTypeField fld : keyFields)
+                            meta.keyFields.add(new VisorCacheTypeFieldMetadata(
+                                fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
+                                fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
+                    }
+
+                    JdbcTypeField[] valFields = jdbcType.getValueFields();
+
+                    if (valFields != null) {
+                        meta.valFields = new ArrayList<>(valFields.length);
+
+                        for (JdbcTypeField fld : valFields)
+                            meta.valFields.add(new VisorCacheTypeFieldMetadata(
+                                fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
+                                fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
+                    }
+
+                    if (notFound)
+                        metas.add(meta);
                 }
-
-                meta.dbSchema = jdbcType.getDatabaseSchema();
-                meta.dbTbl = jdbcType.getDatabaseTable();
-
-                JdbcTypeField[] keyFields = jdbcType.getKeyFields();
-
-                meta.keyFields = new ArrayList<>(keyFields.length);
-
-                for (JdbcTypeField fld : keyFields)
-                    meta.keyFields.add(new VisorCacheTypeFieldMetadata(
-                        fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
-                        fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
-
-                JdbcTypeField[] valFields = jdbcType.getValueFields();
-
-                meta.valFields = new ArrayList<>(valFields.length);
-
-                for (JdbcTypeField fld : valFields)
-                    meta.valFields.add(new VisorCacheTypeFieldMetadata(
-                            fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
-                            fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
-
-                if (notFound)
-                    metas.add(meta);
             }
         }
 

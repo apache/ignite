@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Services;
@@ -40,7 +40,8 @@ namespace Apache.Ignite.Core.Impl
     /// Grid proxy with fake serialization.
     /// </summary>
     [Serializable]
-    internal class IgniteProxy : IIgnite, IClusterGroupEx, IBinaryWriteAware, ICluster
+    [ExcludeFromCodeCoverage]
+    internal class IgniteProxy : IIgnite, IBinaryWriteAware, ICluster
     {
         /** */
         [NonSerialized]
@@ -158,6 +159,12 @@ namespace Apache.Ignite.Core.Impl
         public IClusterGroup ForRemotes()
         {
             return _ignite.GetCluster().ForRemotes();
+        }
+
+        /** <inheritdoc /> */
+        public IClusterGroup ForDaemons()
+        {
+            return _ignite.GetCluster().ForDaemons();
         }
 
         /** <inheritdoc /> */
@@ -386,6 +393,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public ILogger Logger
+        {
+            get { return _ignite.Logger; }
+        }
+
+        /** <inheritdoc /> */
         public event EventHandler Stopping
         {
             add { _ignite.Stopping += value; }
@@ -440,12 +453,6 @@ namespace Apache.Ignite.Core.Impl
             {
                 return _ignite;
             }
-        }
-
-        /** <inheritdoc /> */
-        public IBinaryType GetBinaryType(int typeId)
-        {
-            return _ignite.GetBinaryType(typeId);
         }
     }
 }

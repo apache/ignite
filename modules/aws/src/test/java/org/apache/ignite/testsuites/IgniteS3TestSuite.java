@@ -24,6 +24,7 @@ import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiStartStopSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3SessionCheckpointSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderSelfTest;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
  * S3 integration tests.
@@ -34,17 +35,17 @@ public class IgniteS3TestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("S3 Integration Test Suite");
+        TestSuite suite = new IgniteTestSuite("S3 Integration Test Suite");
 
         // Checkpoint SPI.
-        suite.addTest(new TestSuite(S3CheckpointSpiConfigSelfTest.class));
-        suite.addTest(new TestSuite(S3CheckpointSpiSelfTest.class));
-        suite.addTest(new TestSuite(S3CheckpointSpiStartStopSelfTest.class));
-        suite.addTest(new TestSuite(S3CheckpointManagerSelfTest.class));
-        suite.addTest(new TestSuite(S3SessionCheckpointSelfTest.class));
+        suite.addTestSuite(S3CheckpointSpiConfigSelfTest.class);
+        suite.addTestSuite(S3CheckpointSpiSelfTest.class);
+        suite.addTestSuite(S3CheckpointSpiStartStopSelfTest.class);
+        suite.addTestSuite(S3CheckpointManagerSelfTest.class);
+        suite.addTestSuite(S3SessionCheckpointSelfTest.class);
 
         // S3 IP finder.
-        suite.addTest(new TestSuite(TcpDiscoveryS3IpFinderSelfTest.class));
+        suite.addTestSuite(TcpDiscoveryS3IpFinderSelfTest.class);
 
         return suite;
     }

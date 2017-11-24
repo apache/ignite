@@ -30,6 +30,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
+import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -72,7 +73,12 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
         assert top != null;
         assert job != null;
 
-        return getSpi(ses.getLoadBalancingSpi()).getBalancedNode(ses, top, job);
+        LoadBalancingSpi spi = getSpi(ses.getLoadBalancingSpi());
+
+        if (ses.isInternal() && !(spi instanceof RoundRobinLoadBalancingSpi))
+            return getSpi(RoundRobinLoadBalancingSpi.class.getSimpleName()).getBalancedNode(ses, top, job);
+
+        return spi.getBalancedNode(ses, top, job);
     }
 
     /**

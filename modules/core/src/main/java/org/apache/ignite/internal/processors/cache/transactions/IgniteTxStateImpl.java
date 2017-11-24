@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -374,6 +376,13 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         return txMap == null ? Collections.<IgniteTxEntry>emptySet() : txMap.values();
     }
 
+    /**
+     * @return All entries. Returned collection is copy of internal collection.
+     */
+    public synchronized Collection<IgniteTxEntry> allEntriesCopy() {
+        return txMap == null ? Collections.<IgniteTxEntry>emptySet() : new HashSet<>(txMap.values());
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteTxEntry entry(IgniteTxKey key) {
         return txMap == null ? null : txMap.get(key);
@@ -420,7 +429,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEntry(IgniteTxEntry entry) {
+    @Override public synchronized void addEntry(IgniteTxEntry entry) {
         txMap.put(entry.txKey(), entry);
     }
 

@@ -21,7 +21,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 
 /**
- * Class for {@code PojoCacheStore} tests.
+ * Test for {@link CacheJdbcPojoStore} with optimized marshaller.
  */
 public class CacheJdbcPojoStoreOptimizedMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
     /** {@inheritDoc} */

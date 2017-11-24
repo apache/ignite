@@ -68,6 +68,13 @@ public class IgniteNoCustomEventsOnNodeStart extends GridCommonAbstractTest {
         assertFalse(failed);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      *
      */

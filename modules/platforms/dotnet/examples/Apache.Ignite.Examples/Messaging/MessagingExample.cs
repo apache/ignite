@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-using System;
-using System.Threading;
-using Apache.Ignite.Core;
-using Apache.Ignite.ExamplesDll.Messaging;
-
 namespace Apache.Ignite.Examples.Messaging
 {
+    using System;
+    using System.Threading;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.ExamplesDll.Messaging;
+
     /// <summary>
     /// Example demonstrating Ignite messaging. Should be run with standalone Apache Ignite.NET node.
     /// <para />

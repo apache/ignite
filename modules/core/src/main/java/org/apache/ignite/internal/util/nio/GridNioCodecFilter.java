@@ -110,7 +110,7 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
                         if (directMode)
                             return;
 
-                        LT.warn(log, null, "Parser returned null but there are still unread data in input buffer (bug in " +
+                        LT.warn(log, "Parser returned null but there are still unread data in input buffer (bug in " +
                             "parser code?) [parser=" + parser + ", ses=" + ses + ']');
 
                         input.position(input.limit());

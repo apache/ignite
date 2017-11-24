@@ -115,6 +115,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @GridDirectTransient
     private TxEntryValueHolder prevVal = new TxEntryValueHolder();
 
+    /** Old value before update. */
+    @GridToStringInclude
+    private TxEntryValueHolder oldVal = new TxEntryValueHolder();
+
     /** Transform. */
     @GridToStringInclude
     @GridDirectTransient
@@ -497,7 +501,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @param oldValOnPrimary {@code True} If old value for 'invoke' operation was non null on primary node.
+     * @param oldValOnPrimary {@code True} If old value for was non null on primary node.
      */
     public void oldValueOnPrimary(boolean oldValOnPrimary) {
         setFlag(oldValOnPrimary, OLD_VAL_ON_PRIMARY);
@@ -580,6 +584,30 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     @Nullable public CacheObject value() {
         return val.value();
+    }
+
+    /**
+     * @return Old value.
+     */
+    @Nullable public CacheObject oldValue() {
+        return oldVal != null ? oldVal.value() : null;
+    }
+
+    /**
+     * @param oldVal Old value.
+     */
+    public void oldValue(CacheObject oldVal, boolean hasOldVal) {
+        if (this.oldVal == null)
+            this.oldVal = new TxEntryValueHolder();
+
+        this.oldVal.value(op(), oldVal, hasOldVal, hasOldVal);
+    }
+
+    /**
+     * @return {@code True} if old value present.
+     */
+    public boolean hasOldValue() {
+        return oldVal != null && oldVal.hasValue();
     }
 
     /**
@@ -894,8 +922,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         // Unmarshal transform closure anyway if it exists.
         if (transformClosBytes != null && entryProcessorsCol == null)
-            entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes,
-                U.resolveClassLoader(clsLdr, ctx.gridConfig()));
+            entryProcessorsCol = U.unmarshal(ctx, transformClosBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
 
         if (filters == null)
             filters = CU.empty0();
@@ -913,7 +940,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         val.unmarshal(this.ctx, clsLdr);
 
         if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
+            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
     }
 
     /**
@@ -1069,6 +1096,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 writer.incrementState();
 
+            case 13:
+                if (!writer.writeMessage("oldVal", oldVal))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -1186,6 +1218,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 reader.incrementState();
 
+            case 13:
+                oldVal = reader.readMessage("oldVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(IgniteTxEntry.class);
@@ -1198,7 +1237,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 
     /** {@inheritDoc} */

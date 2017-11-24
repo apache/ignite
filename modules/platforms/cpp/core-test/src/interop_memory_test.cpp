@@ -39,7 +39,8 @@ BOOST_AUTO_TEST_CASE(MemoryReallocationTest)
 
     SharedPointer<InteropMemory> mem = env.AllocateMemory();
 
-    BOOST_CHECK_EQUAL(mem.Get()->Capacity(), IgniteEnvironment::DEFAULT_ALLOCATION_SIZE);
+    BOOST_CHECK_EQUAL(mem.Get()->Capacity(),
+        static_cast<int32_t>(IgniteEnvironment::DEFAULT_ALLOCATION_SIZE));
 
     BOOST_CHECK(mem.Get()->Data() != NULL);
 

@@ -299,7 +299,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         String path = baseDir + File.separator + gridName + File.separator + ignite.configuration().getNodeId();
 
         try {
-            dir = U.resolveWorkDirectory(path, true);
+            dir = U.resolveWorkDirectory(ignite.configuration().getWorkDirectory(), path, true);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException(e);
@@ -596,7 +596,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         if (keyBytes == null) {
             try {
-                keyBytes = ignite.configuration().getMarshaller().marshal(key.key());
+                keyBytes = U.marshal(ignite.configuration().getMarshaller(), key.key());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to marshal key: " + key.key(), e);
@@ -639,7 +639,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         if (space == null && create) {
             validateName(name);
 
-            Space old = spaces.putIfAbsent(masked, space = new Space(masked));
+            Space old = spaces.putIfAbsent(masked, space = new Space(masked, log));
 
             if (old != null)
                 space = old;
@@ -833,13 +833,21 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         /** */
         private final int maxSize;
 
+        /** */
+        private final IgniteLogger log;
+
+        /** */
+        private boolean queueSizeWarn;
+
         /**
          * @param minTakeSize Min size.
          * @param maxSize Max size.
+         * @param log logger
          */
-        private SwapValuesQueue(int minTakeSize, int maxSize) {
+        private SwapValuesQueue(int minTakeSize, int maxSize, IgniteLogger log) {
             this.minTakeSize = minTakeSize;
             this.maxSize = maxSize;
+            this.log = log;
         }
 
         /**
@@ -852,8 +860,24 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             lock.lock();
 
             try {
-                while (size + val.len > maxSize)
-                    mayAdd.await();
+                boolean largeVal = val.len > maxSize;
+
+                if (largeVal) {
+                    if (!queueSizeWarn) {
+                        U.warn(log, "Trying to save in swap entry which have size more than write queue size. " +
+                            "You may wish to increase 'maxWriteQueueSize' in FileSwapSpaceSpi configuration " +
+                            "[queueMaxSize=" + maxSize + ", valSize=" + val.len + ']');
+
+                        queueSizeWarn = true;
+                    }
+
+                    while (size >= minTakeSize)
+                        mayAdd.await();
+                }
+                else {
+                    while (size + val.len > maxSize)
+                        mayAdd.await();
+                }
 
                 size += val.len;
 
@@ -1419,7 +1443,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         private SwapFile right;
 
         /** */
-        private final SwapValuesQueue que = new SwapValuesQueue(writeBufSize, maxWriteQueSize);
+        private final SwapValuesQueue que;
 
         /** Partitions. */
         private final ConcurrentMap<Integer, ConcurrentMap<SwapKey, SwapValue>> parts =
@@ -1442,11 +1466,13 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         /**
          * @param name Space name.
+         * @param log Logger.
          */
-        private Space(String name) {
+        private Space(String name, IgniteLogger log) {
             assert name != null;
 
             this.name = name;
+            this.que = new SwapValuesQueue(writeBufSize, maxWriteQueSize, log);
         }
 
         /**

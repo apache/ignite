@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritDoc /> */
         public ICollection<IBinaryType> GetBinaryTypes()
         {
-            return Marshaller.Ignite.ClusterGroup.GetBinaryTypes();
+            return Marshaller.Ignite.BinaryProcessor.GetBinaryTypes();
         }
 
         /** <inheritDoc /> */

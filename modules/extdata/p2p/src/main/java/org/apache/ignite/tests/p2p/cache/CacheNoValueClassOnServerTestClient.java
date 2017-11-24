@@ -55,8 +55,6 @@ public class CacheNoValueClassOnServerTestClient {
 
         cfg.setDiscoverySpi(disco);
 
-        U.setWorkDirectory(null, U.getIgniteHome());
-
         try (Ignite ignite = Ignition.start(cfg)) {
             System.out.println("Test external node started");
 

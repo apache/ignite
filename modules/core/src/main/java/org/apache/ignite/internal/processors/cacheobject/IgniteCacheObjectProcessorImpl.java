@@ -108,8 +108,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException {
-        return ctx.kernalContext().cache().context().marshaller().unmarshal(bytes, U.resolveClassLoader(clsLdr,
-            ctx.kernalContext().config()));
+        return U.unmarshal(ctx.kernalContext(), bytes, U.resolveClassLoader(clsLdr, ctx.kernalContext().config()));
     }
 
     /** {@inheritDoc} */
@@ -245,9 +244,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         CacheMemoryMode memMode = ccfg.getMemoryMode();
 
-        boolean storeVal = ctx.config().isPeerClassLoadingEnabled() ||
-            GridQueryProcessor.isEnabled(ccfg) ||
-            !ccfg.isCopyOnRead();
+        boolean storeVal = !ccfg.isCopyOnRead() || (!isBinaryEnabled(ccfg) &&
+            (GridQueryProcessor.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
 
         CacheObjectContext res = new CacheObjectContext(ctx,
             ccfg.getName(),

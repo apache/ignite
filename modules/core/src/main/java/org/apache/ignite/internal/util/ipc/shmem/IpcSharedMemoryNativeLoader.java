@@ -150,7 +150,7 @@ public class IpcSharedMemoryNativeLoader {
 
             try {
                 if (log != null)
-                    LT.warn(log, null, "Failed to load 'igniteshmem' library from classpath. Will try to load it from IGNITE_HOME.");
+                    LT.warn(log, "Failed to load 'igniteshmem' library from classpath. Will try to load it from IGNITE_HOME.");
 
                 String igniteHome = X.resolveIgniteHome();
 

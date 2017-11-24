@@ -32,8 +32,22 @@ namespace ignite
              */
             enum Operation
             {
-                /** Get metrics operation. */
-                OP_METRICS = 2
+                /** Get metrics. */
+                OP_METRICS = 2,
+                /** Start tx. */
+                OP_START = 3,
+                /** Commit. */
+                OP_COMMIT = 4,
+                /** Rollback. */
+                OP_ROLLBACK = 5,
+                /** Close tx. */
+                OP_CLOSE = 6,
+                /** Get tx state. */
+                OP_STATE = 7,
+                /** Set rollback-only mode. */
+                OP_SET_ROLLBACK_ONLY = 8,
+                /** Reset metrics. */
+                OP_RESET_METRICS = 11,
             };
 
             TransactionsImpl::TransactionsImpl(SP_IgniteEnvironment env, jobject javaRef) :
@@ -47,28 +61,103 @@ namespace ignite
                 // No-op.
             }
 
+            /*
+             * Input operation for starting a transaction.
+             */
+            class InTransactionStartOperation : public InputOperation
+            {
+            public:
+                /**
+                * Constructor.
+                *
+                * @param concurrency Concurrency.
+                * @param isolation Isolation.
+                * @param timeout Timeout in milliseconds. Zero if for infinite timeout.
+                * @param txSize Number of entries participating in transaction (may be approximate).
+                */
+                InTransactionStartOperation(int concurrency, int isolation, int64_t timeout, int32_t txSize) :
+                    concurrency(concurrency), isolation(isolation), timeout(timeout), txSize(txSize)
+                {
+                    // No-op.
+                }
+
+                virtual void ProcessInput(binary::BinaryWriterImpl& writer)
+                {                        
+                    writer.WriteInt32(concurrency);
+                    writer.WriteInt32(isolation);
+                    writer.WriteInt64(timeout);
+                    writer.WriteInt32(txSize);
+                }
+            private:
+                int concurrency; 
+                
+                int isolation;
+                    
+                int64_t timeout;
+                
+                int32_t txSize;
+
+                IGNITE_NO_COPY_ASSIGNMENT(InTransactionStartOperation)
+            };
+
+            /**
+            * Output operation for starting a transaction.
+            */
+            class OutTransactionStartOperation : public OutputOperation
+            {
+            public:
+                /**
+                * Constructor.
+                */
+                OutTransactionStartOperation(): val(0)
+                {
+                    // No-op.
+                }
+
+                virtual void ProcessOutput(binary::BinaryReaderImpl& reader) 
+                {
+                    val = reader.ReadInt64();
+                }
+
+                virtual void SetNull()
+                {
+                    // No-op.
+                }
+
+                /**
+                * Get value.
+                *
+                * @return Value.
+                */
+                int64_t Get()
+                {
+                    return val;
+                }
+
+            private:
+                /** Value */
+                int64_t val;
+
+                IGNITE_NO_COPY_ASSIGNMENT(OutTransactionStartOperation)
+            };
+
+
             int64_t TransactionsImpl::TxStart(int concurrency, int isolation,
                 int64_t timeout, int32_t txSize, IgniteError& err)
             {
-                JniErrorInfo jniErr;
+                InTransactionStartOperation inOp(concurrency, isolation, timeout, txSize);
+                OutTransactionStartOperation outOp;
 
-                int64_t id = GetEnvironment().Context()->TransactionsStart(GetTarget(),
-                    concurrency, isolation, timeout, txSize, &jniErr);
+                OutInOp(OP_START, inOp, outOp, &err);
 
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
-
-                return id;
+                return outOp.Get();
             }
 
             TransactionsImpl::TransactionState TransactionsImpl::TxCommit(int64_t id, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
-                int state = GetEnvironment().Context()->TransactionsCommit(GetTarget(), id, &jniErr);
-
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                int state = static_cast<int>(OutInOpLong(OP_COMMIT, id, &err));
 
                 return ToTransactionState(state);
             }
@@ -77,10 +166,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = GetEnvironment().Context()->TransactionsRollback(GetTarget(), id, &jniErr);
-
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                int state = static_cast<int>(OutInOpLong(OP_ROLLBACK, id, &err));
 
                 return ToTransactionState(state);
             }
@@ -89,10 +175,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = GetEnvironment().Context()->TransactionsClose(GetTarget(), id, &jniErr);
-
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                int state = static_cast<int>(OutInOpLong(OP_CLOSE, id, &err));
 
                 return ToTransactionState(state);
             }
@@ -101,10 +184,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                bool rollbackOnly = GetEnvironment().Context()->TransactionsSetRollbackOnly(GetTarget(), id, &jniErr);
-
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                bool rollbackOnly = OutInOpLong(OP_SET_ROLLBACK_ONLY, id, &err) == 1;
 
                 return rollbackOnly;
             }
@@ -113,10 +193,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = GetEnvironment().Context()->TransactionsState(GetTarget(), id, &jniErr);
-
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                int state = static_cast<int>(OutInOpLong(OP_STATE, id, &err));
 
                 return ToTransactionState(state);
             }
@@ -143,6 +220,11 @@ namespace ignite
                     int32_t rollbacks = reader.ReadInt32();
 
                     val = TransactionMetrics(commitTime, rollbackTime, commits, rollbacks);
+                }
+
+                virtual void SetNull()
+                {
+                    // No-op.
                 }
 
                 /**

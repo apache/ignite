@@ -173,7 +173,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
         try {
             switch (scope) {
                 case GLOBAL_SCOPE: {
-                    byte[] data = state == null ? null : marsh.marshal(state);
+                    byte[] data = state == null ? null : U.marshal(marsh, state);
 
                     saved = getSpi(ses.getCheckpointSpi()).saveCheckpoint(key, data, timeout, override);
 
@@ -204,7 +204,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                         timeout = ses.getEndTime() - now;
 
                     // Save it first to avoid getting null value on another node.
-                    byte[] data = state == null ? null : marsh.marshal(state);
+                    byte[] data = state == null ? null : U.marshal(marsh, state);
 
                     Set<String> keys = keyMap.get(ses.getId());
 
@@ -338,7 +338,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
             // Always deserialize with task/session class loader.
             if (data != null)
-                state = marsh.unmarshal(data, U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
+                state = U.unmarshal(marsh, data, U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
 
             record(EVT_CHECKPOINT_LOADED, key);
 
@@ -449,7 +449,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
          * @param msg Received message.
          */
         @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridCheckpointRequest req = (GridCheckpointRequest)msg;
 
             if (log.isDebugEnabled())

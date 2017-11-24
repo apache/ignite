@@ -20,25 +20,22 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -52,16 +49,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_ST
 /**
  * Lite dht cache backup update request.
  */
-public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements GridCacheDeployable {
+public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Message index. */
-    public static final int CACHE_MSG_IDX = nextIndexId();
-
-    /** Node ID. */
-    @GridDirectTransient
-    private UUID nodeId;
 
     /** Future version. */
     private GridCacheVersion futVer;
@@ -151,10 +141,6 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** Partition. */
     private GridLongList updateCntrs;
 
-    /** On response flag. Access should be synced on future. */
-    @GridDirectTransient
-    private boolean onRes;
-
     /** */
     @GridDirectTransient
     private List<Integer> partIds;
@@ -162,9 +148,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** Keep binary flag. */
     private boolean keepBinary;
 
-    /**
-     * Additional flags.
-     */
+    /** Additional flags. */
     private byte flags;
 
     /**
@@ -204,10 +188,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         boolean keepBinary,
         boolean skipStore
     ) {
-        assert invokeArgs == null || forceTransformBackups;
+        super(cacheId, nodeId);
 
-        this.cacheId = cacheId;
-        this.nodeId = nodeId;
         this.futVer = futVer;
         this.writeVer = writeVer;
         this.syncMode = syncMode;
@@ -215,12 +197,14 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         this.forceTransformBackups = forceTransformBackups;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+
+        assert invokeArgs == null || forceTransformBackups;
+
         this.invokeArgs = invokeArgs;
         this.addDepInfo = addDepInfo;
         this.keepBinary = keepBinary;
 
-        if (skipStore)
-            flags = (byte)(flags | SKIP_STORE_FLAG_MASK);
+        setFlag(skipStore, SKIP_STORE_FLAG_MASK);
 
         keys = new ArrayList<>();
         partIds = new ArrayList<>();
@@ -233,26 +217,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
             vals = new ArrayList<>();
     }
 
-    /**
-     * @return Force transform backups flag.
-     */
-    public boolean forceTransformBackups() {
-        return forceTransformBackups;
-    }
-
-    /**
-     * @param key Key to add.
-     * @param val Value, {@code null} if should be removed.
-     * @param entryProcessor Entry processor.
-     * @param ttl TTL (optional).
-     * @param conflictExpireTime Conflict expire time (optional).
-     * @param conflictVer Conflict version (optional).
-     * @param addPrevVal If {@code true} adds previous value.
-     * @param partId Partition.
-     * @param prevVal Previous value.
-     * @param updateCntr Update counter.
-     */
-    public void addWriteValue(KeyCacheObject key,
+    /** {@inheritDoc} */
+    @Override public void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
@@ -328,14 +294,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
             conflictExpireTimes.add(conflictExpireTime);
     }
 
-    /**
-     * @param key Key to add.
-     * @param val Value, {@code null} if should be removed.
-     * @param entryProcessor Entry processor.
-     * @param ttl TTL.
-     * @param expireTime Expire time.
-     */
-    public void addNearWriteValue(KeyCacheObject key,
+    /** {@inheritDoc} */
+    @Override public void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
@@ -387,183 +347,114 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public int lookupIndex() {
-        return CACHE_MSG_IDX;
+    @Override public boolean forceTransformBackups() {
+        return forceTransformBackups;
     }
 
-    /**
-     * @return Node ID.
-     */
-    public UUID nodeId() {
-        return nodeId;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    public UUID subjectId() {
+    /** {@inheritDoc} */
+    @Override public UUID subjectId() {
         return subjId;
     }
 
-    /**
-     * @return Task name.
-     */
-    public int taskNameHash() {
+    /** {@inheritDoc} */
+    @Override public int taskNameHash() {
         return taskNameHash;
     }
 
-    /**
-     * @return Keys size.
-     */
-    public int size() {
-        return keys.size();
-    }
-
-    /**
-     * @return Keys size.
-     */
-    public int nearSize() {
-        return nearKeys != null ? nearKeys.size() : 0;
-    }
-
-    /**
-     * @return Version assigned on primary node.
-     */
-    public GridCacheVersion futureVersion() {
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion futureVersion() {
         return futVer;
     }
 
-    /**
-     * @return Write version.
-     */
-    public GridCacheVersion writeVersion() {
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion writeVersion() {
         return writeVer;
     }
 
-    /**
-     * @return Cache write synchronization mode.
-     */
-    public CacheWriteSynchronizationMode writeSynchronizationMode() {
+    /** {@inheritDoc} */
+    @Override public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return syncMode;
     }
 
-    /**
-     * @return Topology version.
-     */
+    /** {@inheritDoc} */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
-    /**
-     * @return Keys.
-     */
-    public Collection<KeyCacheObject> keys() {
-        return keys;
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return keys.size();
     }
 
-    /**
-     * @param idx Key index.
-     * @return Key.
-     */
-    public KeyCacheObject key(int idx) {
+    /** {@inheritDoc} */
+    @Override public int nearSize() {
+        return nearKeys != null ? nearKeys.size() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasKey(KeyCacheObject key) {
+        return F.contains(keys, key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject key(int idx) {
         return keys.get(idx);
     }
 
-    /**
-     * @param idx Partition index.
-     * @return Partition id.
-     */
-    public int partitionId(int idx) {
+    /** {@inheritDoc} */
+    @Override public int partitionId(int idx) {
         return partIds.get(idx);
     }
 
-    /**
-     * @return Skip write-through to a persistent storage.
-     */
-    public boolean skipStore() {
-        return (flags & SKIP_STORE_FLAG_MASK) == SKIP_STORE_FLAG_MASK;
-    }
-
-    /**
-     * @param updCntr Update counter.
-     * @return Update counter.
-     */
-    public Long updateCounter(int updCntr) {
+    /** {@inheritDoc} */
+    @Override public Long updateCounter(int updCntr) {
         if (updateCntrs != null && updCntr < updateCntrs.size())
             return updateCntrs.get(updCntr);
 
         return null;
     }
 
-    /**
-     * @param idx Near key index.
-     * @return Key.
-     */
-    public KeyCacheObject nearKey(int idx) {
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject nearKey(int idx) {
         return nearKeys.get(idx);
     }
 
-    /**
-     * @return Keep binary flag.
-     */
-    public boolean keepBinary() {
-        return keepBinary;
-    }
-
-    /**
-     * @param idx Key index.
-     * @return Value.
-     */
-    @Nullable public CacheObject value(int idx) {
+    /** {@inheritDoc} */
+    @Override @Nullable public CacheObject value(int idx) {
         if (vals != null)
             return vals.get(idx);
 
         return null;
     }
 
-    /**
-     * @param idx Key index.
-     * @return Value.
-     */
-    @Nullable public CacheObject previousValue(int idx) {
+    /** {@inheritDoc} */
+    @Override @Nullable public CacheObject previousValue(int idx) {
         if (prevVals != null)
             return prevVals.get(idx);
 
         return null;
     }
 
-    /**
-     * @param idx Key index.
-     * @return Entry processor.
-     */
-    @Nullable public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
+    /** {@inheritDoc} */
+    @Override @Nullable public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         return entryProcessors == null ? null : entryProcessors.get(idx);
     }
 
-    /**
-     * @param idx Near key index.
-     * @return Value.
-     */
-    @Nullable public CacheObject nearValue(int idx) {
+    /** {@inheritDoc} */
+    @Override @Nullable public CacheObject nearValue(int idx) {
         if (nearVals != null)
             return nearVals.get(idx);
 
         return null;
     }
 
-    /**
-     * @param idx Key index.
-     * @return Transform closure.
-     */
-    @Nullable public EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
+    /** {@inheritDoc} */
+    @Override @Nullable public EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
         return nearEntryProcessors == null ? null : nearEntryProcessors.get(idx);
     }
 
-    /**
-     * @param idx Index.
-     * @return Conflict version.
-     */
-    @Nullable public GridCacheVersion conflictVersion(int idx) {
+    /** {@inheritDoc} */
+    @Override @Nullable public GridCacheVersion conflictVersion(int idx) {
         if (conflictVers != null) {
             assert idx >= 0 && idx < conflictVers.size();
 
@@ -573,11 +464,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         return null;
     }
 
-    /**
-     * @param idx Index.
-     * @return TTL.
-     */
-    public long ttl(int idx) {
+    /** {@inheritDoc} */
+    @Override public long ttl(int idx) {
         if (ttls != null) {
             assert idx >= 0 && idx < ttls.size();
 
@@ -587,11 +475,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         return CU.TTL_NOT_CHANGED;
     }
 
-    /**
-     * @param idx Index.
-     * @return TTL for near cache update.
-     */
-    public long nearTtl(int idx) {
+    /** {@inheritDoc} */
+    @Override public long nearTtl(int idx) {
         if (nearTtls != null) {
             assert idx >= 0 && idx < nearTtls.size();
 
@@ -601,11 +486,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         return CU.TTL_NOT_CHANGED;
     }
 
-    /**
-     * @param idx Index.
-     * @return Conflict expire time.
-     */
-    public long conflictExpireTime(int idx) {
+    /** {@inheritDoc} */
+    @Override public long conflictExpireTime(int idx) {
         if (conflictExpireTimes != null) {
             assert idx >= 0 && idx < conflictExpireTimes.size();
 
@@ -615,11 +497,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
-    /**
-     * @param idx Index.
-     * @return Expire time for near cache update.
-     */
-    public long nearExpireTime(int idx) {
+    /** {@inheritDoc} */
+    @Override public long nearExpireTime(int idx) {
         if (nearExpireTimes != null) {
             assert idx >= 0 && idx < nearExpireTimes.size();
 
@@ -629,17 +508,18 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
-    /**
-     * @return {@code True} if on response flag changed.
-     */
-    public boolean onResponse() {
-        return !onRes && (onRes = true);
+    /** {@inheritDoc} */
+    @Override public boolean keepBinary() {
+        return keepBinary;
     }
 
-    /**
-     * @return Optional arguments for entry processor.
-     */
-    @Nullable public Object[] invokeArguments() {
+    /** {@inheritDoc} */
+    @Override public boolean skipStore() {
+        return isFlag(SKIP_STORE_FLAG_MASK);
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public Object[] invokeArguments() {
         return invokeArgs;
     }
 
@@ -708,16 +588,6 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
             for (int i = 0; i < keys.size(); i++)
                 keys.get(i).partition(partIds.get(i));
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
-        return ctx.atomicMessageLogger();
     }
 
     /** {@inheritDoc} */
@@ -1083,14 +953,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        cleanup();
-    }
-
-    /**
-     * Cleanup values not needed after message was sent.
-     */
-    private void cleanup() {
+    @Override protected void cleanup() {
         nearVals = null;
         prevVals = null;
     }
@@ -1104,6 +967,27 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     @Override public byte fieldsCount() {
         return 26;
     }
+
+    /**
+     * Sets flag mask.
+     *
+     * @param flag Set or clear.
+     * @param mask Mask.
+     */
+    private void setFlag(boolean flag, int mask) {
+        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+    }
+
+    /**
+     * Reags flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    private boolean isFlag(int mask) {
+        return (flags & mask) != 0;
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

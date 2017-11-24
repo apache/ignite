@@ -66,7 +66,7 @@ namespace Apache.Ignite.Benchmarks.Interop
                     "-DIGNITE_QUIET=false",
                     "-DIGNITE_NO_SHUTDOWN_HOOK=true"
                 },
-                JvmClasspath = Classpath ?? Core.Impl.Common.Classpath.CreateClasspath(),
+                JvmClasspath = Classpath ?? Core.Impl.Common.Classpath.CreateClasspath(forceTestClasspath: true),
                 JvmDllPath = DllPath,
                 SpringConfigUrl = ConfigPath
             };

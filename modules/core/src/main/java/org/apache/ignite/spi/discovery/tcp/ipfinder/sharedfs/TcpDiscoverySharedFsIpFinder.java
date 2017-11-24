@@ -140,7 +140,7 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
                     tmp = new File(path);
                 else {
                     try {
-                        tmp = U.resolveWorkDirectory(path, false);
+                        tmp = U.resolveWorkDirectory(ignite.configuration().getWorkDirectory(), path, false);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteSpiException("Failed to resolve directory [path=" + path +

@@ -41,7 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Geo-indexing test.
  */
 public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
     /** */

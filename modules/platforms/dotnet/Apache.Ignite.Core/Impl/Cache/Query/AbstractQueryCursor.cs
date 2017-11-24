@@ -37,6 +37,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** */
         private const int OpGetBatch = 2;
 
+        /** */
+        private const int OpIterator = 4;
+
+        /** */
+        private const int OpIteratorClose = 5;
+
         /** Position before head. */
         private const int BatchPosBeforeHead = -1;
 
@@ -94,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         {
             try
             {
-                UU.QueryCursorClose(Target);
+                DoOutInOp(OpIteratorClose);
             }
             finally 
             {
@@ -119,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                 throw new InvalidOperationException("Failed to get enumerator entries because " + 
                     "GetAll() method has already been called.");
 
-            UU.QueryCursorIterator(Target);
+            DoOutInOp(OpIterator);
 
             _iterCalled = true;
 

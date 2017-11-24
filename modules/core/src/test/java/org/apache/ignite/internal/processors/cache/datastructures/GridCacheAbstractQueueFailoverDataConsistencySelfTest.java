@@ -365,7 +365,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         for (int i = 0; i < gridCount(); i++) {
             for (GridCacheEntryEx e : ((IgniteKernal)grid(i)).context().cache().internalCache(cctx.name()).allEntries()) {
-                if (aff.primary(grid(i).localNode(), e.key(), AffinityTopologyVersion.NONE)
+                if (aff.primaryByKey(grid(i).localNode(), e.key(), AffinityTopologyVersion.NONE)
                     && e.key().value(cctx.cacheObjectContext(), false) instanceof GridCacheQueueHeaderKey)
                     return i;
             }

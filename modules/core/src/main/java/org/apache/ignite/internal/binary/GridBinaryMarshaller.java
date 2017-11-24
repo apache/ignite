@@ -43,7 +43,7 @@ public class GridBinaryMarshaller {
     private static final ThreadLocal<BinaryContext> BINARY_CTX = new ThreadLocal<>();
 
     /** */
-    static final byte OPTM_MARSH = -2;
+    public static final byte OPTM_MARSH = -2;
 
     /** */
     public static final byte BYTE = 1;

@@ -1,0 +1,178 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins.jade
+
+-var credentialsModel = 'model.S3.awsCredentials'
+-var clientCfgModel = 'model.S3.clientConfiguration'
+-var checkpointS3 = 'model.kind === "S3"'
+-var checkpointS3Path = checkpointS3 + ' && model.S3.awsCredentials.kind === "Properties"'
+-var checkpointS3Custom = checkpointS3 + ' && model.S3.awsCredentials.kind === "Custom"'
+
+-var clientRetryModel = clientCfgModel + '.retryPolicy'
+-var checkpointS3DefaultMaxRetry = checkpointS3 + ' && ' + clientRetryModel + '.kind === "DefaultMaxRetries"'
+-var checkpointS3DynamoDbMaxRetry = checkpointS3 + ' && ' + clientRetryModel + '.kind === "DynamoDBMaxRetries"'
+-var checkpointS3CustomRetry = checkpointS3 + ' && ' + clientRetryModel + '.kind === "Custom"'
+
+.settings-row
+    +dropdown-required('AWS credentials:', 'model.S3.awsCredentials.kind', '"checkpointS3AwsCredentials"', 'true', checkpointS3, 'Custom', '[\
+        {value: "Basic", label: "Basic"},\
+        {value: "Properties", label: "Properties"},\
+        {value: "Anonymous", label: "Anonymous"},\
+        {value: "BasicSession", label: "Basic with session"},\
+        {value: "Custom", label: "Custom"}\
+    ]',
+    'AWS credentials\
+    <ul>\
+        <li>Basic - Allows callers to pass in the AWS access key and secret access in the constructor</li>\
+        <li>Properties - Reads in AWS access keys from a properties file</li>\
+        <li>Anonymous - Allows use of "anonymous" credentials</li>\
+        <li>Database - Session credentials with keys and session token</li>\
+        <li>Custom - Custom AWS credentials provider</li>\
+    </ul>')
+.settings-row
+    label Note, AWS credentials will be generated as stub
+.panel-details(ng-show=checkpointS3Path)
+    .details-row
+        +text('Path:', credentialsModel + '.Properties.path', '"checkpointS3PropertiesPath"', checkpointS3Path, 'Input properties file path',
+        'The file from which to read the AWS credentials properties')
+.panel-details(ng-show=checkpointS3Custom)
+    .details-row
+        +java-class('Class name:', credentialsModel + '.Custom.className', '"checkpointS3CustomClassName" + $index', 'true', checkpointS3Custom,
+        'Custom AWS credentials provider implementation class', checkpointS3Custom)
+.settings-row
+    +text('Bucket name suffix:', 'model.S3.bucketNameSuffix', '"checkpointS3BucketNameSuffix"', 'false', 'default-bucket', 'Bucket name suffix')
+.settings-row
+    +java-class('Listener:', 'model.S3.checkpointListener', '"checkpointS3Listener" + $index', 'true', 'false',
+        'Checkpoint listener implementation class name', checkpointS3)
++showHideLink('s3Expanded', 'client configuration')
+    .details-row
+        +dropdown('Protocol:', clientCfgModel + '.protocol', '"checkpointS3Protocol"', 'true', 'HTTPS', '[\
+                {value: "HTTP", label: "HTTP"},\
+                {value: "HTTPS", label: "HTTPS"}\
+            ]',
+        'Provides an ability to save an intermediate job state\
+        <ul>\
+            <li>HTTP - Using the HTTP protocol is less secure than HTTPS, but can slightly reduce\
+                the system resources used when communicating with AWS</li>\
+            <li>HTTPS - Using the HTTPS protocol is more secure than using the HTTP protocol, but\
+                may use slightly more system resources. AWS recommends using HTTPS for maximize security</li>\
+        </ul>')
+    .details-row
+        +number('Maximum connections:', clientCfgModel + '.maxConnections', '"checkpointS3MaxConnections"',
+        'true', '50', '1', 'Maximum number of allowed open HTTP connections')
+    .details-row
+        +text('User agent:', clientCfgModel + '.userAgent', '"checkpointS3UserAgent"', 'false', 'System specific header',
+        'HTTP user agent header to send with all requests')
+    .details-row
+        +text-ip-address('Local address:', clientCfgModel + '.localAddress', '"checkpointS3LocalAddress"', 'true', 'Not specified',
+        'Optionally specifies the local address to bind to')
+    .details-row
+        +text('Proxy host:', clientCfgModel + '.proxyHost', '"checkpointS3ProxyHost"', 'false', 'Not specified',
+        'Optional proxy host the client will connect through')
+    .details-row
+        +number('Proxy port:', clientCfgModel + '.proxyPort', '"checkpointS3ProxyPort"', 'true', 'Not specified', '0',
+        'Optional proxy port the client will connect through')
+    .details-row
+        +text('Proxy user:', clientCfgModel + '.proxyUsername', '"checkpointS3ProxyUsername"', 'false', 'Not specified',
+        'Optional proxy user name to use if connecting through a proxy')
+    .details-row
+        +text('Proxy domain:', clientCfgModel + '.proxyDomain', '"checkpointS3ProxyDomain"', 'false', 'Not specified',
+        'Optional Windows domain name for configuring an NTLM proxy')
+    .details-row
+        +text('Proxy workstation:', clientCfgModel + '.proxyWorkstation', '"checkpointS3ProxyWorkstation"', 'false', 'Not specified',
+        'Optional Windows workstation name for configuring NTLM proxy support')
+    .details-row
+        +dropdown('Retry policy:', clientRetryModel + '.kind', '"checkpointS3RetryPolicy"', 'true', 'Default', '[\
+                                            {value: "Default", label: "Default SDK retry policy"},\
+                                            {value: "DefaultMaxRetries", label: "Default with the specified max retry count"},\
+                                            {value: "DynamoDB", label: "Default for DynamoDB client"},\
+                                            {value: "DynamoDBMaxRetries", label: "DynamoDB with the specified max retry count"},\
+                                            {value: "Custom", label: "Custom configured"}\
+                                        ]',
+        'Provides an ability to save an intermediate job state\
+        <ul>\
+            <li>SDK default retry policy - This policy will honor the maxErrorRetry set in ClientConfiguration</li>\
+            <li>Default with the specified max retry count - Default SDK retry policy with the specified max retry count</li>\
+            <li>Default for DynamoDB client - This policy will honor the maxErrorRetry set in ClientConfiguration</li>\
+            <li>DynamoDB with the specified max retry count - This policy will honor the maxErrorRetry set in ClientConfiguration with the specified max retry count</li>\
+            <li>Custom configured - Custom configured SDK retry policy</li>\
+        </ul>')
+    .panel-details(ng-show=checkpointS3DefaultMaxRetry)
+        .details-row
+            +number-required('Maximum retry attempts:', clientRetryModel + '.DefaultMaxRetries.maxErrorRetry', '"checkpointS3DefaultMaxErrorRetry"', 'true', checkpointS3DefaultMaxRetry, '-1', '1',
+            'Maximum number of retry attempts for failed requests')
+    .panel-details(ng-show=checkpointS3DynamoDbMaxRetry)
+        .details-row
+            +number-required('Maximum retry attempts:', clientRetryModel + '.DynamoDBMaxRetries.maxErrorRetry', '"checkpointS3DynamoDBMaxErrorRetry"', 'true', checkpointS3DynamoDbMaxRetry, '-1', '1',
+            'Maximum number of retry attempts for failed requests')
+    .panel-details(ng-show=checkpointS3CustomRetry)
+        .details-row
+            +java-class('Retry condition:', clientRetryModel + '.Custom.retryCondition', '"checkpointS3CustomRetryPolicy" + $index', 'true', checkpointS3CustomRetry,
+            'Retry condition on whether a specific request and exception should be retried', checkpointS3CustomRetry)
+        .details-row
+            +java-class('Backoff strategy:', clientRetryModel + '.Custom.backoffStrategy', '"checkpointS3CustomBackoffStrategy" + $index', 'true', checkpointS3CustomRetry,
+            'Back-off strategy for controlling how long the next retry should wait', checkpointS3CustomRetry)
+        .details-row
+            +number-required('Maximum retry attempts:', clientRetryModel + '.Custom.maxErrorRetry', '"checkpointS3CustomMaxErrorRetry"', 'true', checkpointS3CustomRetry, '-1', '1',
+            'Maximum number of retry attempts for failed requests')
+        .details-row
+            +checkbox('Honor the max error retry set', clientRetryModel + '.Custom.honorMaxErrorRetryInClientConfig', '"checkpointS3CustomHonorMaxErrorRetryInClientConfig"',
+            'Whether this retry policy should honor the max error retry set by ClientConfiguration#setMaxErrorRetry(int)')
+    .details-row
+        +number('Maximum retry attempts:', clientCfgModel + '.maxErrorRetry', '"checkpointS3MaxErrorRetry"', 'true', '-1', '0',
+        'Maximum number of retry attempts for failed retryable requests<br/>\
+        If -1 the configured RetryPolicy will be used to control the retry count')
+    .details-row
+        +number('Socket timeout:', clientCfgModel + '.socketTimeout', '"checkpointS3SocketTimeout"', 'true', '50000', '0',
+        'Amount of time in milliseconds to wait for data to be transfered over an established, open connection before the connection times out and is closed<br/>\
+        A value of <b>0</b> means infinity')
+    .details-row
+        +number('Connection timeout:', clientCfgModel + '.connectionTimeout', '"checkpointS3ConnectionTimeout"', 'true', '50000', '0',
+        'Amount of time in milliseconds to wait when initially establishing a connection before giving up and timing out<br/>\
+        A value of <b>0</b> means infinity')
+    .details-row
+        +number('Request timeout:', clientCfgModel + '.requestTimeout', '"checkpointS3RequestTimeout"', 'true', '0', '-1',
+        'Amount of time in milliseconds to wait for the request to complete before giving up and timing out<br/>\
+        A non - positive value means infinity')
+    .details-row
+        +text('Signature algorithm:', clientCfgModel + '.signerOverride', '"checkpointS3SignerOverride"', 'false', 'Not specified',
+        'Name of the signature algorithm to use for signing requests made by this client')
+    .details-row
+        +number('Connection TTL:', clientCfgModel + '.connectionTTL', '"checkpointS3ConnectionTTL"', 'true', '-1', '-1',
+        'Expiration time in milliseconds for a connection in the connection pool<br/>\
+        By default, it is set to <b>-1</b>, i.e. connections do not expire')
+    .details-row
+        +number('Idle timeout:', clientCfgModel + '.connectionMaxIdleMillis', '"checkpointS3ConnectionMaxIdleMillis"', 'true', '60000', '0',
+        'Maximum amount of time that an idle connection may sit in the connection pool and still be eligible for reuse')
+    .details-row
+        +java-class('DNS resolver:', clientCfgModel + '.dnsResolver', '"checkpointS3DnsResolver" + $index', 'true', 'false',
+        'DNS Resolver that should be used to for resolving AWS IP addresses', checkpointS3)
+    .details-row
+        +number('Response metadata cache size:', clientCfgModel + '.responseMetadataCacheSize', '"checkpointS3ResponseMetadataCacheSize"', 'true', '50', '0',
+        'Response metadata cache size')
+    .details-row
+        +java-class('SecureRandom class name:', clientCfgModel + '.secureRandom', '"checkpointS3SecureRandom" + $index', 'true', 'false',
+        'SecureRandom to be used by the SDK class name', checkpointS3)
+    .details-row
+        +checkbox('Use reaper', clientCfgModel + '.useReaper', '"checkpointS3UseReaper"', 'Checks if the IdleConnectionReaper is to be started')
+    .details-row
+        +checkbox('Use GZIP', clientCfgModel + '.useGzip', '"checkpointS3UseGzip"', 'Checks if gzip compression is used')
+    .details-row
+        +checkbox('Preemptively basic authentication', clientCfgModel + '.preemptiveBasicProxyAuth', '"checkpointS3PreemptiveBasicProxyAuth"',
+        'Attempt to authenticate preemptively against proxy servers using basic authentication')
+    .details-row
+        +checkbox('TCP KeepAlive', clientCfgModel + '.useTcpKeepAlive', '"checkpointS3UseTcpKeepAlive"', 'TCP KeepAlive support is enabled')

@@ -66,6 +66,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.IsTrue(err != null);
 
+            var aggregate = err as AggregateException;
+
+            if (aggregate != null)
+                err = aggregate.InnerException;
+
             SerializableException err0 = err as SerializableException;
 
             Assert.IsTrue(err0 != null);

@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Transactions;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Transactions facade.
@@ -36,7 +35,35 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
         /** */
         private const int OpMetrics = 2;
-        
+
+        /** */
+        private const int OpStart = 3;
+
+        /** */
+        private const int OpCommit = 4;
+
+        /** */
+        private const int OpRollback = 5;
+
+        /** */
+        private const int OpClose = 6;
+
+        /** */
+        private const int OpState = 7;
+
+        /** */
+        private const int OpSetRollbackOnly = 8;
+
+        /** */
+        private const int OpCommitAsync = 9;
+
+        /** */
+        private const int OpRollbackAsync = 10;
+
+        /** */
+        private const int OpResetMetrics = 11;
+
+
         /** */
         private readonly TransactionConcurrency _dfltConcurrency;
 
@@ -95,8 +122,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
         public ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout, int txSize)
         {
-            var id = UU.TransactionsStart(Target, (int)concurrency, (int)isolation, (long)timeout.TotalMilliseconds,
-                txSize);
+            var id = DoOutInOp(OpStart, w =>
+            {
+                w.WriteInt((int) concurrency);
+                w.WriteInt((int) isolation);
+                w.WriteTimeSpanAsLong(timeout);
+                w.WriteInt(txSize);
+            }, s => s.ReadLong());
 
             var innerTx = new TransactionImpl(id, this, concurrency, isolation, timeout, _localNodeId);
             
@@ -123,7 +155,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public void ResetMetrics()
         {
-            UU.TransactionsResetMetrics(Target);
+            DoOutInOp(OpResetMetrics);
         }
 
         /// <summary>
@@ -133,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal TransactionState TxCommit(TransactionImpl tx)
         {
-            return (TransactionState) UU.TransactionsCommit(Target, tx.Id);
+            return (TransactionState) DoOutInOp(OpCommit, tx.Id);
         }
 
         /// <summary>
@@ -143,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal TransactionState TxRollback(TransactionImpl tx)
         {
-            return (TransactionState)UU.TransactionsRollback(Target, tx.Id);
+            return (TransactionState) DoOutInOp(OpRollback, tx.Id);
         }
 
         /// <summary>
@@ -153,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal int TxClose(TransactionImpl tx)
         {
-            return UU.TransactionsClose(Target, tx.Id);
+            return (int) DoOutInOp(OpClose, tx.Id);
         }
 
         /// <summary>
@@ -163,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Transaction current state.</returns>
         internal TransactionState TxState(TransactionImpl tx)
         {
-            return GetTransactionState(UU.TransactionsState(Target, tx.Id));
+            return (TransactionState) DoOutInOp(OpState, tx.Id);
         }
 
         /// <summary>
@@ -173,7 +205,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns><c>true</c> if the flag was set.</returns>
         internal bool TxSetRollbackOnly(TransactionImpl tx)
         {
-            return UU.TransactionsSetRollbackOnly(Target, tx.Id);
+            return DoOutInOp(OpSetRollbackOnly, tx.Id) == True;
         }
 
         /// <summary>
@@ -181,7 +213,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal Task CommitAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsCommitAsync(Target, tx.Id, futId)).Task;
+            return DoOutOpAsync(OpCommitAsync, w => w.WriteLong(tx.Id));
         }
 
         /// <summary>
@@ -189,15 +221,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal Task RollbackAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsRollbackAsync(Target, tx.Id, futId)).Task;
-        }
- 
-        /// <summary>
-        /// Gets the state of the transaction from int.
-        /// </summary>
-        private static TransactionState GetTransactionState(int state)
-        {
-            return (TransactionState)state;
+            return DoOutOpAsync(OpRollbackAsync, w => w.WriteLong(tx.Id));
         }
     }
 }

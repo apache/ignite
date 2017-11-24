@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using Apache.Ignite.Core;
-using Apache.Ignite.ExamplesDll.Compute;
-using Apache.Ignite.ExamplesDll.Binary;
-
 namespace Apache.Ignite.Examples.Compute
 {
+    using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.ExamplesDll.Compute;
+
     /// <summary>
     /// Example demonstrating task execution.
     /// <para />
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Examples.Compute
         /// <returns>Collection of employees.</returns>
         private static ICollection<Employee> Employees()
         {
-            return new []
+            return new[]
             {
                 new Employee(
                     "James Wilson",

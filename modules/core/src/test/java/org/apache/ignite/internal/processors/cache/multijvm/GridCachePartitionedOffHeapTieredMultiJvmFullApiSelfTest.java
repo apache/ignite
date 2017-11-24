@@ -33,4 +33,9 @@ public class GridCachePartitionedOffHeapTieredMultiJvmFullApiSelfTest
     @Override public void testLocalClearKeys() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1107");
     }
+
+    /** {@inheritDoc} */
+    @Override public void testRemoveLoad() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12698");
+    }
 }

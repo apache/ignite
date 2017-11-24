@@ -103,10 +103,13 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap2>
         for (Map.Entry<UUID, GridDhtPartitionMap2> e : m.entrySet()) {
             GridDhtPartitionMap2 part = e.getValue();
 
-            if (onlyActive)
-                put(e.getKey(), new GridDhtPartitionMap2(part.nodeId(), part.updateSequence(), part.topologyVersion(), part.map(), true));
-            else
-                put(e.getKey(), part);
+            GridDhtPartitionMap2 cpy = new GridDhtPartitionMap2(part.nodeId(),
+                part.updateSequence(),
+                part.topologyVersion(),
+                part.map(),
+                onlyActive);
+
+            put(e.getKey(), cpy);
         }
     }
 
@@ -155,6 +158,31 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap2>
      */
     public long updateSequence() {
         return updateSeq;
+    }
+
+    /**
+     * @param fullMap Map.
+     * @return {@code True} if this map and given map contain the same data.
+     */
+    public boolean partitionStateEquals(GridDhtPartitionFullMap fullMap) {
+        if (size() != fullMap.size())
+            return false;
+
+        for (Map.Entry<UUID, GridDhtPartitionMap2> e : entrySet()) {
+            GridDhtPartitionMap2 m = fullMap.get(e.getKey());
+
+            if (m == null || !m.map().equals(e.getValue().map()))
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param updateSeq New update sequence value.
+     */
+    public void newUpdateSequence(long updateSeq) {
+        this.updateSeq = updateSeq;
     }
 
     /**

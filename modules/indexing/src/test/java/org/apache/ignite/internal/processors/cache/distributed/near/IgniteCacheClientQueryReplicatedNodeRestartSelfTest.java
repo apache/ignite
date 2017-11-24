@@ -159,6 +159,13 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
         return c;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      *
      */

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
     using System.Diagnostics;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -31,6 +32,19 @@ namespace Apache.Ignite.Core.Impl.DataStructures
     {
         /** */
         private readonly string _name;
+
+        /** Operation codes. */
+        private enum Op
+        {
+            AddAndGet = 1,
+            Close = 2,
+            CompareAndSetAndGet = 4,
+            DecrementAndGet = 5,
+            Get = 6,
+            GetAndSet = 10,
+            IncrementAndGet = 11,
+            IsClosed = 12
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AtomicLong"/> class.
@@ -54,49 +68,53 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public long Read()
         {
-            return UU.AtomicLongGet(Target);
+            return DoOutInOp((int) Op.Get);
         }
 
         /** <inheritDoc /> */
         public long Increment()
         {
-            return UU.AtomicLongIncrementAndGet(Target);
+            return DoOutInOp((int) Op.IncrementAndGet);
         }
 
         /** <inheritDoc /> */
         public long Add(long value)
         {
-            return UU.AtomicLongAddAndGet(Target, value);
+            return DoOutInOp((int) Op.AddAndGet, value);
         }
 
         /** <inheritDoc /> */
         public long Decrement()
         {
-            return UU.AtomicLongDecrementAndGet(Target);
+            return DoOutInOp((int) Op.DecrementAndGet);
         }
 
         /** <inheritDoc /> */
         public long Exchange(long value)
         {
-            return UU.AtomicLongGetAndSet(Target, value);
+            return DoOutInOp((int) Op.GetAndSet, value);
         }
 
         /** <inheritDoc /> */
         public long CompareExchange(long value, long comparand)
         {
-            return UU.AtomicLongCompareAndSetAndGet(Target, comparand, value);
+            return DoOutOp((int) Op.CompareAndSetAndGet, (IBinaryStream s) =>
+            {
+                s.WriteLong(comparand);
+                s.WriteLong(value);
+            });
         }
 
         /** <inheritDoc /> */
         public void Close()
         {
-            UU.AtomicLongClose(Target);
+            DoOutInOp((int) Op.Close);
         }
 
         /** <inheritDoc /> */
         public bool IsClosed()
         {
-            return UU.AtomicLongIsClosed(Target);
+            return DoOutInOp((int) Op.IsClosed) == True;
         }
     }
 }

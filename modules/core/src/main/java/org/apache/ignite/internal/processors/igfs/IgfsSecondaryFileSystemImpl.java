@@ -86,7 +86,7 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystemV2 {
     /** {@inheritDoc} */
     @Override public IgfsSecondaryFileSystemPositionedReadable open(IgfsPath path, int bufSize)
         throws IgniteException {
-        return igfs.open(path, bufSize);
+        return (IgfsSecondaryFileSystemPositionedReadable)igfs.open(path, bufSize);
     }
 
     /** {@inheritDoc} */

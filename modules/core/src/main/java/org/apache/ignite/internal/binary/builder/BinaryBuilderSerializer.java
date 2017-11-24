@@ -116,7 +116,11 @@ class BinaryBuilderSerializer {
             String typeName = writer.context().userTypeName(clsName);
 
             BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true);
+
             writer.context().updateMetadata(typeId, meta);
+
+            // Need register class for marshaller to be able to deserialize enum value.
+            writer.context().descriptorForClass(val.getClass(), false);
 
             writer.writeByte(GridBinaryMarshaller.ENUM);
             writer.writeInt(typeId);

@@ -18,7 +18,9 @@
 package org.apache.ignite.cache.query;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -55,6 +57,9 @@ public final class SqlFieldsQuery extends Query<List<?>> {
 
     /** Collocation flag. */
     private boolean collocated;
+
+    /** Query timeout in millis. */
+    private int timeout;
 
     /** */
     private boolean enforceJoinOrder;
@@ -122,6 +127,27 @@ public final class SqlFieldsQuery extends Query<List<?>> {
      */
     public SqlFieldsQuery setArgs(Object... args) {
         this.args = args;
+
+        return this;
+    }
+
+    /**
+     * Gets the query execution timeout in milliseconds.
+     *
+     * @return Timeout value.
+     */
+    public int getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * Sets the query execution timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+     * @param timeout Timeout value. Zero value disables timeout.
+     * @param timeUnit Time unit.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setTimeout(int timeout, TimeUnit timeUnit) {
+        this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
 
         return this;
     }

@@ -27,6 +27,7 @@
 #include "ignite/cache/cache_entry.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
+#include "ignite/impl/binary/binary_utils.h"
 #include "ignite/binary/binary.h"
 
 namespace ignite
@@ -270,7 +271,12 @@ namespace ignite
              *
              * @param reader Reader.
              */
-            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader) = 0;
+            virtual void ProcessOutput(binary::BinaryReaderImpl& reader) = 0;
+
+            /**
+             * Sets result to null value.
+             */
+            virtual void SetNull() = 0;
         };
 
         /**
@@ -288,9 +294,14 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
+            virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
                 val = reader.ReadTopObject<T>();
+            }
+
+            virtual void SetNull()
+            {
+                val = binary::BinaryUtils::GetDefaultValue<T>();
             }
 
             /**
@@ -324,10 +335,16 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
+            virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
                 val1 = reader.ReadTopObject<T1>();
                 val2 = reader.ReadTopObject<T2>();
+            }
+
+            virtual void SetNull()
+            {
+                val1 = binary::BinaryUtils::GetDefaultValue<T1>();
+                val2 = binary::BinaryUtils::GetDefaultValue<T2>();
             }
 
             /**
@@ -375,12 +392,20 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
+            virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
                 val1 = reader.ReadTopObject<T1>();
                 val2 = reader.ReadTopObject<T2>();
                 val3 = reader.ReadTopObject<T3>();
                 val4 = reader.ReadTopObject<T4>();
+            }
+
+            virtual void SetNull()
+            {
+                val1 = binary::BinaryUtils::GetDefaultValue<T1>();
+                val2 = binary::BinaryUtils::GetDefaultValue<T2>();
+                val3 = binary::BinaryUtils::GetDefaultValue<T3>();
+                val4 = binary::BinaryUtils::GetDefaultValue<T4>();
             }
 
             /**
@@ -454,7 +479,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
+            virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
                 bool exists = reader.GetStream()->ReadBool();
 
@@ -473,6 +498,11 @@ namespace ignite
 
                     val = val0;
                 }
+            }
+
+            virtual void SetNull()
+            {
+                // No-op.
             }
 
             /**
@@ -506,7 +536,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
+            virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
                 int32_t cnt = reader.ReadInt32();
 
@@ -517,6 +547,11 @@ namespace ignite
 
                     res->push_back(ignite::cache::CacheEntry<K, V>(key, val));
                 }
+            }
+
+            virtual void SetNull()
+            {
+                res->clear();
             }
 
         private:

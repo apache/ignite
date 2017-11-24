@@ -187,7 +187,10 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.NotNull(prj);
 
-            Assert.IsTrue(prj == prj.Ignite);
+            Assert.AreEqual(prj, prj.Ignite);
+
+            // Check that default Compute projection excludes client nodes.
+            CollectionAssert.AreEquivalent(prj.ForServers().GetNodes(), prj.GetCompute().ClusterGroup.GetNodes());
         }
 
         /// <summary>
@@ -524,6 +527,32 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Test for daemon nodes projection.
+        /// </summary>
+        [Test]
+        public void TestForDaemons()
+        {
+            Assert.AreEqual(0, _grid1.GetCluster().ForDaemons().GetNodes().Count);
+
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    SpringConfigUrl = GetConfigs().Item1,
+                    GridName = "daemonGrid",
+                    IsDaemon = true
+                })
+            )
+            {
+                var prj = _grid1.GetCluster().ForDaemons();
+
+                Assert.AreEqual(1, prj.GetNodes().Count);
+                Assert.AreEqual(ignite.GetCluster().GetLocalNode().Id, prj.GetNode().Id);
+
+                Assert.IsTrue(prj.GetNode().IsDaemon);
+                Assert.IsTrue(ignite.GetCluster().GetLocalNode().IsDaemon);
+            }
+        }
+
+        /// <summary>
         /// Test for host nodes projection.
         /// </summary>
         [Test]
@@ -789,16 +818,16 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(val = decimal.Parse("-11,12"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
 
             // Test echo with overflow.
-            try
-            {
-                _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { null, decimal.MaxValue.ToString() + 1 });
+            var ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
+                .ExecuteJavaTask<object>(DecimalTask, new object[] {null, decimal.MaxValue.ToString() + 1}));
 
-                Assert.Fail();
-            }
-            catch (IgniteException)
-            {
-                // No-op.
-            }
+            Assert.AreEqual("Decimal magnitude overflow (must be less than 96 bits): 104", ex.Message);
+
+            // Negative scale. 1E+1 parses to "1 scale -1" on Java side.
+            ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
+                .ExecuteJavaTask<object>(DecimalTask, new object[] {null, "1E+1"}));
+
+            Assert.AreEqual("Decimal value scale overflow (must be between 0 and 28): -1", ex.Message);
         }
 
         /// <summary>
@@ -965,9 +994,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             compute.WithKeepBinary();
 
-            PlatformComputeNetBinarizable arg = new PlatformComputeNetBinarizable();
-
-            arg.Field = 100;
+            PlatformComputeNetBinarizable arg = new PlatformComputeNetBinarizable {Field = 100};
 
             int res = compute.ExecuteJavaTask<int>(BinaryArgTask, arg);
 
@@ -1010,9 +1037,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestBroadcastAction()
         {
             var id = Guid.NewGuid();
-            
             _grid1.GetCompute().Broadcast(new ComputeAction(id));
+            Assert.AreEqual(2, ComputeAction.InvokeCount(id));
 
+            id = Guid.NewGuid();
+            _grid1.GetCompute().BroadcastAsync(new ComputeAction(id)).Wait();
             Assert.AreEqual(2, ComputeAction.InvokeCount(id));
         }
 
@@ -1023,9 +1052,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestRunAction()
         {
             var id = Guid.NewGuid();
-
             _grid1.GetCompute().Run(new ComputeAction(id));
+            Assert.AreEqual(1, ComputeAction.InvokeCount(id));
 
+            id = Guid.NewGuid();
+            _grid1.GetCompute().RunAsync(new ComputeAction(id)).Wait();
             Assert.AreEqual(1, ComputeAction.InvokeCount(id));
         }
 
@@ -1055,12 +1086,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestRunActions()
         {
             var id = Guid.NewGuid();
-
-            var actions = Enumerable.Range(0, 10).Select(x => new ComputeAction(id));
-            
-            _grid1.GetCompute().Run(actions);
-
+            _grid1.GetCompute().Run(Enumerable.Range(0, 10).Select(x => new ComputeAction(id)));
             Assert.AreEqual(10, ComputeAction.InvokeCount(id));
+
+            var id2 = Guid.NewGuid();
+            _grid1.GetCompute().RunAsync(Enumerable.Range(0, 10).Select(x => new ComputeAction(id2))).Wait();
+            Assert.AreEqual(10, ComputeAction.InvokeCount(id2));
         }
 
         /// <summary>
@@ -1083,7 +1114,9 @@ namespace Apache.Ignite.Core.Tests.Compute
                 var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
 
                 _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
+                Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
 
+                _grid1.GetCompute().AffinityRunAsync(cacheName, affinityKey, new ComputeAction()).Wait();
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
             }
         }
@@ -1108,6 +1141,15 @@ namespace Apache.Ignite.Core.Tests.Compute
                 var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
 
                 var result = _grid1.GetCompute().AffinityCall(cacheName, affinityKey, new ComputeFunc());
+
+                Assert.AreEqual(result, ComputeFunc.InvokeCount);
+
+                Assert.AreEqual(node.Id, ComputeFunc.LastNodeId);
+
+                // Async.
+                ComputeFunc.InvokeCount = 0;
+
+                result = _grid1.GetCompute().AffinityCallAsync(cacheName, affinityKey, new ComputeFunc()).Result;
 
                 Assert.AreEqual(result, ComputeFunc.InvokeCount);
 
@@ -1149,10 +1191,18 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestNetTaskSimple()
         {
-            int res = _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
-                    typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Res;
+            Assert.AreEqual(2, _grid1.GetCompute()
+                .Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
+                typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Res);
 
-            Assert.AreEqual(2, res);
+            Assert.AreEqual(2, _grid1.GetCompute()
+                .ExecuteAsync<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
+                typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Result.Res);
+
+            Assert.AreEqual(4, _grid1.GetCompute().Execute(new NetSimpleTask(), new NetSimpleJobArgument(2)).Res);
+
+            Assert.AreEqual(6, _grid1.GetCompute().ExecuteAsync(new NetSimpleTask(), new NetSimpleJobArgument(3))
+                .Result.Res);
         }
 
         /// <summary>
@@ -1381,6 +1431,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         int IComputeFunc<int>.Invoke()
         {
+            Thread.Sleep(10);
             InvokeCount++;
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
             return InvokeCount;

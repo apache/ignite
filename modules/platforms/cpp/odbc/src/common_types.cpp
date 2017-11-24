@@ -37,6 +37,9 @@ namespace ignite
                 case SQL_RESULT_NO_DATA:
                     return SQL_NO_DATA;
 
+                case SQL_RESULT_NEED_DATA:
+                    return SQL_NEED_DATA;
+
                 case SQL_RESULT_ERROR:
                 default:
                     return SQL_ERROR;

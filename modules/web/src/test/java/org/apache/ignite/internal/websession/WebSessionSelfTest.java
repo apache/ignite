@@ -46,6 +46,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -88,6 +89,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-3663")
     public void testSessionRenewalDuringLogin() throws Exception {
         testSessionRenewalDuringLogin("/modules/core/src/test/config/websession/example-cache.xml");
     }

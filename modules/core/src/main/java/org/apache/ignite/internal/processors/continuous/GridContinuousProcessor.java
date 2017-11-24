@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -175,8 +176,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     UUID routineId = e.getKey();
                     RemoteRoutineInfo info = e.getValue();
 
-                    if (info.autoUnsubscribe && nodeId.equals(info.nodeId))
-                        unregisterRemote(routineId);
+                    if (nodeId.equals(info.nodeId)) {
+                        if (info.autoUnsubscribe)
+                            unregisterRemote(routineId);
+
+                        if (info.hnd.isQuery())
+                            info.hnd.onNodeLeft();
+                    }
                 }
 
                 for (Map.Entry<IgniteUuid, SyncMessageAckFuture> e : syncMsgFuts.entrySet()) {
@@ -234,9 +240,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                 GridCacheContext cctx = interCache != null ? interCache.context() : null;
 
                                 if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
-                                    cntrsPerNode.put(ctx.localNodeId(), cctx.topology().updateCounters());
-
-                                routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
+                                    cntrsPerNode.put(ctx.localNodeId(), cctx.topology().updateCounters(false));
                             }
 
                             fut.onRemoteRegistered();
@@ -283,12 +287,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             });
 
         ctx.io().addMessageListener(TOPIC_CONTINUOUS, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object obj) {
+            @Override public void onMessage(UUID nodeId, Object obj, byte plc) {
                 GridContinuousMessage msg = (GridContinuousMessage)obj;
 
                 if (msg.data() == null && msg.dataBytes() != null) {
                     try {
-                        msg.data(marsh.unmarshal(msg.dataBytes(), U.resolveClassLoader(ctx.config())));
+                        msg.data(U.unmarshal(marsh, msg.dataBytes(), U.resolveClassLoader(ctx.config())));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to process message (ignoring): " + msg, e);
@@ -473,11 +477,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     // Register handler only if local node passes projection predicate.
                     if ((item.prjPred == null || item.prjPred.apply(ctx.discovery().localNode())) &&
-                        !locInfos.containsKey(item.routineId)) {
-                        if (registerHandler(data.nodeId, item.routineId, item.hnd, item.bufSize, item.interval,
-                            item.autoUnsubscribe, false))
-                            item.hnd.onListenerRegistered(item.routineId, ctx);
-                    }
+                        !locInfos.containsKey(item.routineId))
+                        registerHandler(data.nodeId, item.routineId, item.hnd, item.bufSize, item.interval,
+                            item.autoUnsubscribe, false);
 
                     if (!item.autoUnsubscribe)
                         // Register routine locally.
@@ -504,14 +506,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                 ctx.resource().injectGeneric(info.prjPred);
 
                             if (info.prjPred == null || info.prjPred.apply(ctx.discovery().localNode())) {
-                                if (registerHandler(clientNodeId,
+                                registerHandler(clientNodeId,
                                     routineId,
                                     info.hnd,
                                     info.bufSize,
                                     info.interval,
                                     info.autoUnsubscribe,
-                                    false))
-                                    info.hnd.onListenerRegistered(routineId, ctx);
+                                    false);
                             }
                         }
                         catch (IgniteCheckedException err) {
@@ -550,9 +551,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 GridContinuousHandler.RegisterStatus status = hnd.register(rmtInfo.nodeId, routineId, this.ctx);
 
                 assert status != GridContinuousHandler.RegisterStatus.DELAYED;
-
-                if (status == GridContinuousHandler.RegisterStatus.REGISTERED)
-                    hnd.onListenerRegistered(routineId, this.ctx);
             }
         }
     }
@@ -570,6 +568,29 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             if (hnd.isQuery() && F.eq(ctx.name(), hnd.cacheName()))
                 it.remove();
+        }
+
+        // Deregister local handlers.
+        Iterator<Map.Entry<UUID, LocalRoutineInfo>> it2 = locInfos.entrySet().iterator();
+
+        while (it2.hasNext()) {
+            Map.Entry<UUID, LocalRoutineInfo> entry = it2.next();
+
+            GridContinuousHandler hnd = entry.getValue().hnd;
+
+            if (hnd.isQuery() && F.eq(ctx.name(), hnd.cacheName())) {
+                it2.remove();
+
+                assert hnd instanceof CacheContinuousQueryHandler : hnd;
+
+                CacheContinuousQueryHandler hnd0 = (CacheContinuousQueryHandler)hnd;
+
+                unregisterHandler(entry.getKey(), hnd, true);
+
+                CacheContinuousQueryManager qryMgr = ctx.continuousQueries();
+
+                qryMgr.unregisterListener(hnd0.internal(), entry.getKey());
+            }
         }
     }
 
@@ -644,8 +665,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             try {
                 registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true);
 
-                hnd.onListenerRegistered(routineId, ctx);
-
                 return new GridFinishedFuture<>(routineId);
             }
             catch (IgniteCheckedException e) {
@@ -695,9 +714,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         startFuts.put(routineId, fut);
 
         try {
-            if (locIncluded
-                && registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true))
-                hnd.onListenerRegistered(routineId, ctx);
+            if (locIncluded || hnd.isQuery())
+                registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true);
 
             ctx.discovery().sendCustomEvent(new StartRoutineDiscoveryMessage(routineId, reqData,
                 reqData.handler().keepBinary()));
@@ -725,7 +743,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private void registerMessageListener(GridContinuousHandler hnd) {
         if (hnd.orderedTopic() != null) {
             ctx.io().addMessageListener(hnd.orderedTopic(), new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object obj) {
+                @Override public void onMessage(UUID nodeId, Object obj, byte plc) {
                     GridContinuousMessage msg = (GridContinuousMessage)obj;
 
                     // Only notification can be ordered.
@@ -733,7 +751,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     if (msg.data() == null && msg.dataBytes() != null) {
                         try {
-                            msg.data(marsh.unmarshal(msg.dataBytes(), U.resolveClassLoader(ctx.config())));
+                            msg.data(U.unmarshal(marsh, msg.dataBytes(), U.resolveClassLoader(ctx.config())));
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to process message (ignoring): " + msg, e);
@@ -824,6 +842,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             if (!toSnd.isEmpty())
                 sendNotification(nodeId, routineId, null, toSnd, orderedTopic, true, null);
         }
+        else {
+            LocalRoutineInfo localRoutineInfo = locInfos.get(routineId);
+
+            if (localRoutineInfo != null)
+                localRoutineInfo.handler().notifyCallback(nodeId, routineId, objs, ctx);
+        }
     }
 
     /**
@@ -865,6 +889,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 try {
                     sendNotification(nodeId, routineId, futId, F.asList(obj), null, msg, null);
+
+                    info.hnd.onBatchAcknowledged(routineId, info.add(obj), ctx);
                 }
                 catch (IgniteCheckedException e) {
                     syncMsgFuts.remove(futId);
@@ -1013,8 +1039,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 data.autoUnsubscribe()));
         }
 
-        boolean registered = false;
-
         if (err == null) {
             try {
                 IgnitePredicate<ClusterNode> prjPred = data.projectionPredicate();
@@ -1023,10 +1047,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     ctx.resource().injectGeneric(prjPred);
 
                 if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
-                    !locInfos.containsKey(routineId)) {
-                    registered = registerHandler(node.id(), routineId, hnd0, data.bufferSize(), data.interval(),
+                    !locInfos.containsKey(routineId))
+                    registerHandler(node.id(), routineId, hnd0, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);
-                }
 
                 if (!data.autoUnsubscribe())
                     // Register routine locally.
@@ -1048,15 +1071,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 GridCacheAdapter cache = ctx.cache().internalCache(hnd0.cacheName());
 
                 if (cache != null && !cache.isLocal() && cache.context().userCache())
-                    req.addUpdateCounters(ctx.localNodeId(), cache.context().topology().updateCounters());
+                    req.addUpdateCounters(ctx.localNodeId(), cache.context().topology().updateCounters(false));
             }
         }
 
         if (err != null)
             req.addError(ctx.localNodeId(), err);
-
-        if (registered)
-            hnd0.onListenerRegistered(routineId, ctx);
     }
 
     /**
@@ -1324,7 +1344,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (!msg.messages() &&
             msg.data() != null &&
             (nodes.size() > 1 || !ctx.localNodeId().equals(F.first(nodes).id())))
-            msg.dataBytes(marsh.marshal(msg.data()));
+            msg.dataBytes(U.marshal(marsh, msg.data()));
 
         for (ClusterNode node : nodes) {
             int cnt = 0;

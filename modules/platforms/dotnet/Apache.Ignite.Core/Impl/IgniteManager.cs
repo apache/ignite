@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Log;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
@@ -57,8 +58,9 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="cbs">Callbacks.</param>
+        /// <param name="log"></param>
         /// <returns>Context.</returns>
-        internal static void CreateJvmContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
+        internal static void CreateJvmContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs, ILogger log)
         {
             lock (SyncRoot)
             {
@@ -69,7 +71,7 @@ namespace Apache.Ignite.Core.Impl
                 {
                     if (!_jvmCfg.Equals(jvmCfg))
                     {
-                        Logger.LogWarning("Attempting to start Ignite node with different Java " +
+                        log.Warn("Attempting to start Ignite node with different Java " +
                             "configuration; current Java configuration will be ignored (consider " +
                             "starting node in separate process) [oldConfig=" + _jvmCfg +
                             ", newConfig=" + jvmCfg + ']');

@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Compute
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
@@ -71,14 +72,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected override ICollection<Type> GetBinaryTypes()
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJobArgument)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJobResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTaskArgument)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTaskResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJob)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableWrapper)));
+            return new[]
+            {
+                typeof(BinarizableJobResult),
+                typeof(BinarizableTaskArgument),
+                typeof(BinarizableTaskResult),
+                typeof(BinarizableJobArgument),
+                typeof(BinarizableJob),
+                typeof(BinarizableWrapper)
+            };
         }
 
         /// <summary>

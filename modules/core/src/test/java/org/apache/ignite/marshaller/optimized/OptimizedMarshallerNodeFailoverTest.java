@@ -160,8 +160,6 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
             for (int i = 0; i < workDirs.length; i++) {
                 workDir = workDirs[i];
 
-                U.nullifyWorkDirectory();
-
                 startGrid(i);
             }
 
@@ -177,8 +175,6 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
 
             for (int i = 0; i < workDirs.length; i++) {
                 workDir = workDirs[i];
-
-                U.nullifyWorkDirectory();
 
                 startGrid(i);
             }

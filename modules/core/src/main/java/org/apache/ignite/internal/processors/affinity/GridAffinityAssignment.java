@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Cached affinity calculations.
  */
-public class GridAffinityAssignment implements Serializable {
+public class GridAffinityAssignment implements AffinityAssignment, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -86,7 +86,7 @@ public class GridAffinityAssignment implements Serializable {
 
         this.topVer = topVer;
         this.assignment = assignment;
-        this.idealAssignment = idealAssignment;
+        this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
 
         primary = new HashMap<>();
         backup = new HashMap<>();
@@ -274,10 +274,10 @@ public class GridAffinityAssignment implements Serializable {
         if (o == this)
             return true;
 
-        if (o == null || getClass() != o.getClass())
+        if (o == null || !(o instanceof AffinityAssignment))
             return false;
 
-        return topVer.equals(((GridAffinityAssignment)o).topVer);
+        return topVer.equals(((AffinityAssignment)o).topologyVersion());
     }
 
     /** {@inheritDoc} */

@@ -55,38 +55,88 @@ public class VisorEventMapper implements IgniteClosure<Event, VisorGridEvent> {
      */
     protected VisorGridEvent map(Event evt, int type, IgniteUuid id, String name, UUID nid, long ts, String msg,
         String shortDisplay) {
-        if (evt instanceof TaskEvent) {
-            TaskEvent te = (TaskEvent)evt;
+        if (evt instanceof TaskEvent)
+            return taskEvent((TaskEvent)evt, type, id, name, nid, ts, msg, shortDisplay);
 
-            return new VisorGridTaskEvent(type, id, name, nid, ts, msg, shortDisplay,
-                te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal());
-        }
+        if (evt instanceof JobEvent)
+            return jobEvent((JobEvent)evt, type, id, name, nid, ts, msg, shortDisplay);
 
-        if (evt instanceof JobEvent) {
-            JobEvent je = (JobEvent)evt;
+        if (evt instanceof DeploymentEvent)
+            return deploymentEvent((DeploymentEvent)evt, type, id, name, nid, ts, msg, shortDisplay);
 
-            return new VisorGridJobEvent(type, id, name, nid, ts, msg, shortDisplay,
-                je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId());
-        }
-
-        if (evt instanceof DeploymentEvent) {
-            DeploymentEvent de = (DeploymentEvent)evt;
-
-            return new VisorGridDeploymentEvent(type, id, name, nid, ts, msg, shortDisplay, de.alias());
-        }
-
-        if (evt instanceof DiscoveryEvent) {
-            DiscoveryEvent de = (DiscoveryEvent)evt;
-
-            ClusterNode node = de.eventNode();
-
-            String addr = F.first(node.addresses());
-
-            return new VisorGridDiscoveryEvent(type, id, name, nid, ts, msg, shortDisplay,
-                node.id(), addr, node.isDaemon());
-        }
+        if (evt instanceof DiscoveryEvent)
+            return discoveryEvent((DiscoveryEvent)evt, type, id, name, nid, ts, msg, shortDisplay);
 
         return null;
+    }
+
+    /**
+     * @param te Task event.
+     * @param type Event's type.
+     * @param id Event id.
+     * @param name Event name.
+     * @param nid Event node ID.
+     * @param ts Event timestamp.
+     * @param msg Event message.
+     * @param shortDisplay Shortened version of {@code toString()} result.
+     * @return Visor data transfer object for event.
+     */
+    protected VisorGridEvent taskEvent(TaskEvent te, int type, IgniteUuid id, String name, UUID nid, long ts,
+        String msg, String shortDisplay) {
+        return new VisorGridTaskEvent(type, id, name, nid, ts, msg, shortDisplay,
+            te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal());
+    }
+
+    /**
+     * @param je Job event.
+     * @param type Event's type.
+     * @param id Event id.
+     * @param name Event name.
+     * @param nid Event node ID.
+     * @param ts Event timestamp.
+     * @param msg Event message.
+     * @param shortDisplay Shortened version of {@code toString()} result.
+     * @return Visor data transfer object for event.
+     */
+    protected VisorGridEvent jobEvent(JobEvent je, int type, IgniteUuid id, String name, UUID nid, long ts,
+        String msg, String shortDisplay) {
+        return new VisorGridJobEvent(type, id, name, nid, ts, msg, shortDisplay, je.taskName(), je.taskClassName(),
+            je.taskSessionId(), je.jobId());
+    }
+
+    /**
+     * @param de Deployment event.
+     * @param type Event's type.
+     * @param id Event id.
+     * @param name Event name.
+     * @param nid Event node ID.
+     * @param ts Event timestamp.
+     * @param msg Event message.
+     * @param shortDisplay Shortened version of {@code toString()} result.
+     * @return Visor data transfer object for event.
+     */
+    protected VisorGridEvent deploymentEvent(DeploymentEvent de, int type, IgniteUuid id, String name, UUID nid,
+        long ts, String msg, String shortDisplay) {
+        return new VisorGridDeploymentEvent(type, id, name, nid, ts, msg, shortDisplay, de.alias());
+    }
+
+    /**
+     * @param de Discovery event.
+     * @param type Event's type.
+     * @param id Event id.
+     * @param name Event name.
+     * @param nid Event node ID.
+     * @param ts Event timestamp.
+     * @param msg Event message.
+     * @param shortDisplay Shortened version of {@code toString()} result.
+     * @return Visor data transfer object for event.
+     */
+    protected VisorGridEvent discoveryEvent(DiscoveryEvent de, int type, IgniteUuid id, String name, UUID nid,
+        long ts, String msg, String shortDisplay) {
+        ClusterNode node = de.eventNode();
+
+        return new VisorGridDiscoveryEvent(type, id, name, nid, ts, msg, shortDisplay, node.id(),
+            F.first(node.addresses()), node.isDaemon());
     }
 
     /** {@inheritDoc} */

@@ -22,7 +22,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.memory.PlatformExternalMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -35,7 +37,11 @@ public abstract class PlatformAbstractBootstrap implements PlatformBootstrap {
     /** {@inheritDoc} */
     @Override public PlatformProcessor start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
         long envPtr, long dataPtr) {
-        Ignition.setClientMode(new PlatformExternalMemory(null, dataPtr).input().readBoolean());
+        final PlatformInputStream input = new PlatformExternalMemory(null, dataPtr).input();
+
+        Ignition.setClientMode(input.readBoolean());
+
+        processInput(input, cfg);
 
         IgniteConfiguration cfg0 = closure(envPtr).apply(cfg);
 
@@ -61,4 +67,14 @@ public abstract class PlatformAbstractBootstrap implements PlatformBootstrap {
      * @return Closure.
      */
     protected abstract IgniteClosure<IgniteConfiguration, IgniteConfiguration> closure(long envPtr);
+
+    /**
+     * Processes any additional input data.
+     *
+     * @param input Input stream.
+     * @param cfg Config.
+     */
+    protected void processInput(PlatformInputStream input, IgniteConfiguration cfg) {
+        // No-op.
+    }
 }

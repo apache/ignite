@@ -154,6 +154,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder());
 
             QueryCursor<List<?>> qryCursor = cache.query(qry);
 
@@ -198,6 +199,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             assert !CURSORS.containsKey(uuid) : "Concurrent cursor modification.";
 
         return new QueryResult(uuid, finished, rows, cols, tbls, types);
+    }
+
+    /**
+     * @return Enforce join order flag (SQL hit).
+     */
+    protected boolean enforceJoinOrder() {
+        return false;
     }
 
     /**

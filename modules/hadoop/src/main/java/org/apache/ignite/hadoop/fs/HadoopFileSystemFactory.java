@@ -17,16 +17,13 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 import java.io.IOException;
 import java.io.Serializable;
 
 /**
- * Factory for Hadoop {@link FileSystem} used by {@link IgniteHadoopIgfsSecondaryFileSystem}.
+ * Factory for Hadoop {@code FileSystem} used by {@link IgniteHadoopIgfsSecondaryFileSystem}.
  * <p>
  * {@link #get(String)} method will be used whenever a call to a target {@code FileSystem} is required.
  * <p>
@@ -35,10 +32,6 @@ import java.io.Serializable;
  * <p>
  * Concrete factory may implement {@link LifecycleAware} interface. In this case start and stop callbacks will be
  * performed by Ignite. You may want to implement some initialization or cleanup there.
- * <p>
- * Note that factory extends {@link Serializable} interface as it might be necessary to transfer factories over the
- * wire to {@link IgniteHadoopFileSystem} if {@link IgfsMode#PROXY} is enabled for some file
- * system paths.
  */
 public interface HadoopFileSystemFactory extends Serializable {
     /**
@@ -48,5 +41,5 @@ public interface HadoopFileSystemFactory extends Serializable {
      * @return File system.
      * @throws IOException In case of error.
      */
-    public FileSystem get(String usrName) throws IOException;
+    public Object get(String usrName) throws IOException;
 }

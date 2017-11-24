@@ -202,10 +202,9 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         try {
             IgniteBiTuple<String, Object> t = stash.get();
 
-            String gridNameR = t.get1();
             Object ctgrR = t.get2();
 
-            IgniteLogger log = IgnitionEx.gridx(gridNameR).log();
+            IgniteLogger log = IgnitionEx.localIgnite().log();
 
             return ctgrR != null ? log.getLogger(ctgrR) : log;
         }

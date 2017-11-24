@@ -41,4 +41,9 @@ public class CacheContinuousQueryAsyncFailoverTxSelfTest extends CacheContinuous
     @Override protected boolean asyncCallback() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    public void testNoEventLossOnTopologyChange() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4015");
+    }
 }

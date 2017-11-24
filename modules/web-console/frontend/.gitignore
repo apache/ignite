@@ -1,0 +1,7 @@
+*.idea
+*.log
+.npmrc
+build/*
+node_modules
+ignite_modules_temp/*
+public/stylesheets/*.css

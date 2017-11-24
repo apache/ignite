@@ -158,7 +158,7 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
             head.onExceptionCaught(ses, e);
         }
         catch (Exception ex) {
-            LT.warn(log, ex, "Failed to forward GridNioException to filter chain [ses=" + ses + ", e=" + e + ']');
+            LT.error(log, ex, "Failed to forward GridNioException to filter chain [ses=" + ses + ", e=" + e + ']');
         }
     }
 

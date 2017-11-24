@@ -82,7 +82,7 @@ public class JdbcType implements Serializable {
     /**
      * Gets associated cache name.
      *
-     * @return Сache name.
+     * @return Cache name.
      */
     public String getCacheName() {
         return cacheName;

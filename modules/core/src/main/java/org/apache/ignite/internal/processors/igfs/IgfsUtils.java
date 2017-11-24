@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -31,8 +30,8 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -53,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,12 +60,14 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -119,9 +121,12 @@ public class IgfsUtils {
     /** Separator between id and name parts in the trash name. */
     private static final char TRASH_NAME_SEPARATOR = '|';
 
-    /**
-     * Static initializer.
-     */
+    /** Flag: this is a directory. */
+    private static final byte FLAG_DIR = 0x1;
+
+    /** Flag: this is a file. */
+    private static final byte FLAG_FILE = 0x2;
+
     static {
         TRASH_IDS = new IgniteUuid[TRASH_CONCURRENCY];
 
@@ -374,8 +379,7 @@ public class IgfsUtils {
                         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
                         // Set co-located affinity mapper if needed.
-                        if (igfsCfg.isColocateMetadata() && ccfg.getCacheMode() == CacheMode.REPLICATED &&
-                            ccfg.getAffinityMapper() == null)
+                        if (igfsCfg.isColocateMetadata() && ccfg.getAffinityMapper() == null)
                             ccfg.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
 
                         return;
@@ -744,6 +748,55 @@ public class IgfsUtils {
     }
 
     /**
+     * Read non-null path from the input.
+     *
+     * @param in Input.
+     * @return IGFS path.
+     * @throws IOException If failed.
+     */
+    public static IgfsPath readPath(ObjectInput in) throws IOException {
+        IgfsPath res = new IgfsPath();
+
+        res.readExternal(in);
+
+        return res;
+    }
+
+    /**
+     * Write IgfsFileAffinityRange.
+     *
+     * @param writer Writer
+     * @param affRange affinity range.
+     */
+    public static void writeFileAffinityRange(BinaryRawWriter writer, @Nullable IgfsFileAffinityRange affRange) {
+        if (affRange != null) {
+            writer.writeBoolean(true);
+
+            affRange.writeRawBinary(writer);
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
+     * Read IgfsFileAffinityRange.
+     *
+     * @param reader Reader.
+     * @return File affinity range.
+     */
+    public static IgfsFileAffinityRange readFileAffinityRange(BinaryRawReader reader) {
+        if (reader.readBoolean()) {
+            IgfsFileAffinityRange affRange = new IgfsFileAffinityRange();
+
+            affRange.readRawBinary(reader);
+
+            return affRange;
+        }
+        else
+            return null;
+    }
+
+    /**
      * Parses the TRASH file name to extract the original path.
      *
      * @param name The TRASH short (entry) name.
@@ -819,11 +872,13 @@ public class IgfsUtils {
      *
      * @param dfltMode The root mode. Must always be not null.
      * @param modes The subdirectory modes.
+     * @param dualParentsContainingPrimaryChildren The set to store parents into.
      * @return Descending list of filtered and checked modes.
-     * @throws IgniteCheckedException On error or
+     * @throws IgniteCheckedException On error.
      */
     public static ArrayList<T2<IgfsPath, IgfsMode>> preparePathModes(final IgfsMode dfltMode,
-        @Nullable List<T2<IgfsPath, IgfsMode>> modes) throws IgniteCheckedException {
+        @Nullable List<T2<IgfsPath, IgfsMode>> modes, Set<IgfsPath> dualParentsContainingPrimaryChildren)
+        throws IgniteCheckedException {
         if (modes == null)
             return null;
 
@@ -836,7 +891,7 @@ public class IgfsUtils {
 
         ArrayList<T2<IgfsPath, IgfsMode>> resModes = new ArrayList<>(modes.size() + 1);
 
-        resModes.add(new T2<>(new IgfsPath("/"), dfltMode));
+        resModes.add(new T2<>(IgfsPath.ROOT, dfltMode));
 
         for (T2<IgfsPath, IgfsMode> mode : modes) {
             assert mode.getKey() != null;
@@ -857,6 +912,10 @@ public class IgfsUtils {
                     // Add to the 1st position (deep first).
                     resModes.add(0, mode);
 
+                    // Store primary paths inside dual paths in separate collection:
+                    if (mode.getValue() == PRIMARY)
+                        dualParentsContainingPrimaryChildren.add(mode.getKey().parent());
+
                     break;
                 }
             }
@@ -866,5 +925,52 @@ public class IgfsUtils {
         resModes.remove(resModes.size() - 1);
 
         return resModes;
+    }
+
+    /**
+     * Create flags value.
+     *
+     * @param isDir Directory flag.
+     * @param isFile File flag.
+     * @return Result.
+     */
+    public static byte flags(boolean isDir, boolean isFile) {
+        byte res = isDir ? FLAG_DIR : 0;
+
+        if (isFile)
+            res |= FLAG_FILE;
+
+        return res;
+    }
+
+    /**
+     * Check whether passed flags represent directory.
+     *
+     * @param flags Flags.
+     * @return {@code True} if this is directory.
+     */
+    public static boolean isDirectory(byte flags) {
+        return hasFlag(flags, FLAG_DIR);
+    }
+
+    /**
+     * Check whether passed flags represent file.
+     *
+     * @param flags Flags.
+     * @return {@code True} if this is file.
+     */
+    public static boolean isFile(byte flags) {
+        return hasFlag(flags, FLAG_FILE);
+    }
+
+    /**
+     * Check whether certain flag is set.
+     *
+     * @param flags Flags.
+     * @param flag Flag to check.
+     * @return {@code True} if flag is set.
+     */
+    private static boolean hasFlag(byte flags, byte flag) {
+        return (flags & flag) == flag;
     }
 }

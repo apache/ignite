@@ -19,6 +19,7 @@
 
 #include <string>
 
+#include <ignite/jni/java.h>
 #include <ignite/common/common.h>
 
 namespace ignite
@@ -35,11 +36,99 @@ namespace ignite
              * Destructor.
              */
             ~AttachHelper();
-			
+
             /**
              * Callback invoked on successful thread attach ot JVM.
              */
             static void OnThreadAttach();
+        };
+
+        /**
+        * Represents global reference to Java object.
+        */
+        class IGNITE_IMPORT_EXPORT JavaGlobalRef
+        {
+        public:
+            /**
+            * Default constructor
+            */
+            JavaGlobalRef() :
+                ctx(0),
+                obj(0)
+            {
+                // No-op.
+            }
+
+            /**
+            * Constructor
+            *
+            * @param ctx JNI context.
+            * @param obj Java object.
+            */
+            JavaGlobalRef(java::JniContext& ctx, jobject obj) :
+                ctx(&ctx),
+                obj(ctx.Acquire(obj))
+            {
+                // No-op.
+            }
+
+            /**
+            * Copy constructor
+            *
+            * @param other Other instance.
+            */
+            JavaGlobalRef(const JavaGlobalRef& other) :
+                ctx(other.ctx),
+                obj(ctx->Acquire(other.obj))
+            {
+                // No-op.
+            }
+
+            /**
+            * Assignment operator.
+            *
+            * @param other Other instance.
+            * @return *this.
+            */
+            JavaGlobalRef& operator=(const JavaGlobalRef& other)
+            {
+                if (this != &other)
+                {
+                    if (ctx)
+                        ctx->Release(obj);
+
+                    ctx = other.ctx;
+                    obj = ctx->Acquire(other.obj);
+                }
+
+                return *this;
+            }
+
+            /**
+            * Destructor.
+            */
+            ~JavaGlobalRef()
+            {
+                if (ctx)
+                    ctx->Release(obj);
+            }
+
+            /**
+            * Get object.
+            *
+            * @return Object.
+            */
+            jobject Get()
+            {
+                return obj;
+            }
+
+        private:
+            /** Context. */
+            java::JniContext* ctx;
+
+            /** Object. */
+            jobject obj;
         };
 
         /**

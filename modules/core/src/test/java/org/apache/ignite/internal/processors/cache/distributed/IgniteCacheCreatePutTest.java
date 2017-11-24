@@ -102,6 +102,8 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartNodes() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12900");
+
         long stopTime = System.currentTimeMillis() + 2 * 60_000;
 
         try {

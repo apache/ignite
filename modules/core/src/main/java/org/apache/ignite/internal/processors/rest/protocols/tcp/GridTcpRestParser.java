@@ -718,7 +718,7 @@ public class GridTcpRestParser implements GridNioParser {
         assert bytes != null;
 
         if ((flags & SERIALIZED_FLAG) != 0)
-            return jdkMarshaller.unmarshal(bytes, null);
+            return U.unmarshal(jdkMarshaller, bytes, null);
 
         int masked = flags & 0xff00;
 
@@ -800,7 +800,7 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BYTE_ARR_FLAG;
         }
         else {
-            jdkMarshaller.marshal(obj, out);
+            U.marshal(jdkMarshaller, obj, out);
 
             flags |= SERIALIZED_FLAG;
         }

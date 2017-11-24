@@ -253,7 +253,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest req) {
         IgniteReducer<Object, Object> rdc = req.reducer();
-        IgniteClosure<Object, Object> trans = req.transformer();
+        IgniteClosure<Object, Object> trans = (IgniteClosure<Object, Object>)req.transformer();
 
         ClusterNode sndNode = cctx.node(sndId);
 
@@ -578,16 +578,16 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "serial"})
-    @Override public GridCloseableIterator<Map.Entry<K, V>> scanQueryDistributed(final GridCacheQueryAdapter qry,
+    @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert !cctx.isLocal() : cctx.name();
         assert qry.type() == GridCacheQueryType.SCAN: qry;
 
-        GridCloseableIterator<Map.Entry<K, V>> locIter0 = null;
+        GridCloseableIterator locIter0 = null;
 
         for (ClusterNode node : nodes) {
             if (node.isLocal()) {
-                locIter0 = (GridCloseableIterator)scanQueryLocal(qry, false);
+                locIter0 = scanQueryLocal(qry, false);
 
                 Collection<ClusterNode> rmtNodes = new ArrayList<>(nodes.size() - 1);
 
@@ -603,21 +603,21 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             }
         }
 
-        final GridCloseableIterator<Map.Entry<K, V>> locIter = locIter0;
+        final GridCloseableIterator locIter = locIter0;
 
-        final GridCacheQueryBean bean = new GridCacheQueryBean(qry, null, null, null);
+        final GridCacheQueryBean bean = new GridCacheQueryBean(qry, null, qry.<K, V>transform(), null);
 
-        final CacheQueryFuture<Map.Entry<K, V>> fut = (CacheQueryFuture<Map.Entry<K, V>>)queryDistributed(bean, nodes);
+        final CacheQueryFuture fut = (CacheQueryFuture)queryDistributed(bean, nodes);
 
-        return new GridCloseableIteratorAdapter<Map.Entry<K, V>>() {
+        return new GridCloseableIteratorAdapter() {
             /** */
-            private Map.Entry<K, V> cur;
+            private Object cur;
 
-            @Override protected Map.Entry<K, V> onNext() throws IgniteCheckedException {
+            @Override protected Object onNext() throws IgniteCheckedException {
                 if (!onHasNext())
                     throw new NoSuchElementException();
 
-                Map.Entry<K, V> e = cur;
+                Object e = cur;
 
                 cur = null;
 

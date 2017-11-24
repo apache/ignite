@@ -115,21 +115,21 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         startGrid(2);
         startGrid(3);
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         for (int i = 0; i < 2; i++) {
             stopGrid(3);
 
-            awaitPartitionMapExchange(true, true);
+            awaitPartitionMapExchange(true, true, null);
 
             startGrid(3);
 
-            awaitPartitionMapExchange(true, true);
+            awaitPartitionMapExchange(true, true, null);
         }
 
         startGrid(4);
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         assert rs.isEmpty();
 

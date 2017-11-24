@@ -129,32 +129,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureTearDown]
         public void StopClient()
         {
-            if (Grid1 != null)
-                Ignition.Stop(Grid1.Name, true);
-
-            if (_fork)
-            {
-                if (_proc2 != null) {
-                    _proc2.Kill();
-
-                    _proc2.Join();
-                }
-
-                if (_proc3 != null)
-                {
-                    _proc3.Kill();
-
-                    _proc3.Join();
-                }
-            }
-            else
-            {
-                if (_grid2 != null)
-                    Ignition.Stop(_grid2.Name, true);
-
-                if (_grid3 != null)
-                    Ignition.Stop(_grid3.Name, true);
-            }
+            Ignition.StopAll(true);
+            IgniteProcess.KillAll();
         }
 
         /// <summary>
@@ -162,30 +138,21 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         /// <param name="path">Path to Java XML configuration.</param>
         /// <returns>Node configuration.</returns>
-        protected IgniteConfiguration Configuration(string path)
+        private IgniteConfiguration Configuration(string path)
         {
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            if (!_fork)
+            return new IgniteConfiguration
             {
-                BinaryConfiguration portCfg = new BinaryConfiguration();
-
-                ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
-
-                GetBinaryTypeConfigurations(portTypeCfgs);
-
-                portCfg.TypeConfigurations = portTypeCfgs;
-
-                cfg.BinaryConfiguration = portCfg;
-            }
-
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-
-            cfg.SpringConfigUrl = path;
-
-            return cfg;
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
+                SpringConfigUrl = path,
+                BinaryConfiguration = _fork
+                    ? null
+                    : new BinaryConfiguration
+                    {
+                        TypeConfigurations =
+                            (GetBinaryTypes() ?? new Type[0]).Select(t => new BinaryTypeConfiguration(t)).ToList()
+                    }
+            };
         }
 
         /// <summary>
@@ -209,10 +176,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Define binary types.
         /// </summary>
-        /// <param name="portTypeCfgs">Binary type configurations.</param>
-        protected virtual void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected virtual ICollection<Type> GetBinaryTypes()
         {
-            // No-op.
+            return null;
         }
 
         /// <summary>

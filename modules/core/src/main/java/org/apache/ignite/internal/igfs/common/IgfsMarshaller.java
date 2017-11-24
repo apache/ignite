@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -331,21 +332,12 @@ public class IgfsMarshaller {
     }
 
     /**
-     * Reads IGFS path from data input that was written by {@link #writePath(ObjectOutput, org.apache.ignite.igfs.IgfsPath)}
-     * method.
+     * Reads IGFS path from data input that was written by {@link #writePath(ObjectOutput, IgfsPath)} method.
      *
      * @param in Data input.
      * @return Written path or {@code null}.
      */
     @Nullable private IgfsPath readPath(ObjectInput in) throws IOException {
-        if(in.readBoolean()) {
-            IgfsPath path = new IgfsPath();
-
-            path.readExternal(in);
-
-            return path;
-        }
-
-        return null;
+        return in.readBoolean() ? IgfsUtils.readPath(in) : null;
     }
 }

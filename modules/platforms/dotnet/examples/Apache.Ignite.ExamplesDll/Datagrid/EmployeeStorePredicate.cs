@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core.Cache;
-
 namespace Apache.Ignite.ExamplesDll.Datagrid
 {
+    using System;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>

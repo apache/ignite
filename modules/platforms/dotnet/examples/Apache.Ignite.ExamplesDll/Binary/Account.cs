@@ -34,12 +34,12 @@ namespace Apache.Ignite.ExamplesDll.Binary
             Id = id;
             Balance = balance;
         }
-    
+
         /// <summary>
         /// Account ID.
         /// </summary>
         public int Id { get; set; }
-    
+
         /// <summary>
         /// Account balance.
         /// </summary>
@@ -51,7 +51,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <returns>
         /// A string that represents the current object.
         /// </returns>
-        override public String ToString()
+        public override String ToString()
         {
             return string.Format("{0} [id={1}, balance={2}]", typeof(Account).Name, Id, Balance);
         }

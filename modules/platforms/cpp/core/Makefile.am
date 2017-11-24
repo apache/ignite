@@ -31,7 +31,9 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/jni/os/linux/include \
     -I$(JAVA_HOME)/include \
     -I$(JAVA_HOME)/include/linux \
-    -DIGNITE_IMPL
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
     -Wall \
@@ -59,6 +61,7 @@ libignite_la_SOURCES = \
     src/impl/handle_registry.cpp \
     src/impl/cache/query/query_impl.cpp \
     src/impl/cache/cache_impl.cpp \
+    src/impl/cache/query/query_batch.cpp \
     src/impl/interop/interop_external_memory.cpp \
     src/impl/interop/interop_target.cpp \
     src/impl/transactions/transaction_impl.cpp \

@@ -125,8 +125,11 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
                 if (log.isDebugEnabled())
                     log.debug("Failed to send message [client=" + this + ", err=" + e + ']');
 
-                if (e.getCause() instanceof IOException)
+                if (e.getCause() instanceof IOException) {
+                    ses.close();
+
                     return true;
+                }
                 else
                     throw new IgniteCheckedException("Failed to send message [client=" + this + ']', e);
             }

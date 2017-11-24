@@ -181,11 +181,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 // Put from local node.
                 cache1.GetAndPut(key1, Entry(key1));
-                CheckCallbackSingle(key1, null, Entry(key1));
+                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created);
 
                 // Put from remote node.
                 cache2.GetAndPut(key2, Entry(key2));
-                CheckCallbackSingle(key2, null, Entry(key2));
+                CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created);
             }
 
             qryHnd.Dispose();
@@ -217,13 +217,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 // Put from local node.
                 cache1.GetAndPut(key1, Entry(key1));
-                CheckCallbackSingle(key1, null, Entry(key1));
+                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created);
 
                 cache1.GetAndPut(key1, Entry(key1 + 1));
-                CheckCallbackSingle(key1, Entry(key1), Entry(key1 + 1));
+                CheckCallbackSingle(key1, Entry(key1), Entry(key1 + 1), CacheEntryEventType.Updated);
 
                 cache1.Remove(key1);
-                CheckCallbackSingle(key1, Entry(key1 + 1), null);
+                CheckCallbackSingle(key1, Entry(key1 + 1), null, CacheEntryEventType.Removed);
 
                 // Put from remote node.
                 cache2.GetAndPut(key2, Entry(key2));
@@ -231,21 +231,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (loc)
                     CheckNoCallback(100);
                 else
-                    CheckCallbackSingle(key2, null, Entry(key2));
+                    CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created);
 
                 cache1.GetAndPut(key2, Entry(key2 + 1));
 
                 if (loc)
                     CheckNoCallback(100);
                 else
-                    CheckCallbackSingle(key2, Entry(key2), Entry(key2 + 1));
+                    CheckCallbackSingle(key2, Entry(key2), Entry(key2 + 1), CacheEntryEventType.Updated);
 
                 cache1.Remove(key2);
 
                 if (loc)
                     CheckNoCallback(100);
                 else
-                    CheckCallbackSingle(key2, Entry(key2 + 1), null);
+                    CheckCallbackSingle(key2, Entry(key2 + 1), null, CacheEntryEventType.Removed);
             }
 
             cache1.Put(key1, Entry(key1));
@@ -310,7 +310,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 int key1 = PrimaryKey(cache1);
                 cache1.GetAndPut(key1, Entry(key1));
                 CheckFilterSingle(key1, null, Entry(key1));
-                CheckCallbackSingle(key1, null, Entry(key1));
+                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created);
 
                 // Put from remote node.
                 int key2 = PrimaryKey(cache2);
@@ -324,7 +324,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 else
                 {
                     CheckFilterSingle(key2, null, Entry(key2));
-                    CheckCallbackSingle(key2, null, Entry(key2));
+                    CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created);
                 }
 
                 AbstractFilter<BinarizableEntry>.res = false;
@@ -755,12 +755,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 // Put from local node.
                 cache1.GetAndPut(key1, Entry(key1));
-                CheckCallbackSingle(key1, null, Entry(key1));
+                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created);
 
                 // Put from remote node.
                 cache1.GetAndPut(key2, Entry(key2));
                 CheckNoCallback(100);
-                CheckCallbackSingle(key2, null, Entry(key2), 1000);
+                CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created);
             }
         }
 
@@ -851,7 +851,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                     // Check continuous query
                     cache1.Put(44, Entry(44));
-                    CheckCallbackSingle(44, null, Entry(44));
+                    CheckCallbackSingle(44, null, Entry(44), CacheEntryEventType.Created);
                 }
 
                 Assert.Throws<ObjectDisposedException>(() => contQry.GetInitialQueryCursor());
@@ -922,19 +922,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expKey">Expected key.</param>
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected new value.</param>
-        private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal)
-        {
-            CheckCallbackSingle(expKey, expOldVal, expVal, 1000);
-        }
-
-        /// <summary>
-        /// Check single callback event.
-        /// </summary>
-        /// <param name="expKey">Expected key.</param>
-        /// <param name="expOldVal">Expected old value.</param>
-        /// <param name="expVal">Expected new value.</param>
+        /// <param name="expType">Expected type.</param>
         /// <param name="timeout">Timeout.</param>
-        private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal, int timeout)
+        private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal,
+            CacheEntryEventType expType, int timeout = 1000)
         {
             CallbackEvent evt;
 
@@ -946,6 +937,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             Assert.AreEqual(expKey, e.Key);
             Assert.AreEqual(expOldVal, e.OldValue);
             Assert.AreEqual(expVal, e.Value);
+            Assert.AreEqual(expType, e.EventType);
         }
 
         /// <summary>

@@ -173,7 +173,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                     cache.get(i);
 
-                    checkNormalTxFinish(tx, commit);
+                    checkFastTxFinish(tx, commit);
                 }
 
                 try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {

@@ -82,7 +82,7 @@ void CheckRowData(Row& row, size_t rowIdx)
     char strBuf[1024];
     SQLGUID guidBuf;
     char bitBuf;
-    size_t* offset = 0;
+    int* offset = 0;
 
     ApplicationDataBuffer appLongBuf(type_traits::IGNITE_ODBC_C_TYPE_SIGNED_LONG, &longBuf, sizeof(longBuf), &reslen, &offset);
     ApplicationDataBuffer appStrBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, &offset);

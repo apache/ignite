@@ -266,22 +266,40 @@ public class IgfsFileAffinityRange implements Message, Externalizable, Binaryliz
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-        BinaryRawWriter out = writer.rawWriter();
-
-        BinaryUtils.writeIgniteUuid(out, affKey);
-        out.writeInt(status);
-        out.writeLong(startOff);
-        out.writeLong(endOff);
+        writeRawBinary(writer.rawWriter());
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-        BinaryRawReader in = reader.rawReader();
+        readRawBinary(reader.rawReader());
+    }
 
-        affKey = BinaryUtils.readIgniteUuid(in);
-        status = in.readInt();
-        startOff = in.readLong();
-        endOff = in.readLong();
+    /**
+     * Writes fields to provided writer.
+     *
+     * @param writer Writer.
+     * @throws BinaryObjectException If fails.
+     */
+    public void writeRawBinary(BinaryRawWriter writer) throws BinaryObjectException {
+        BinaryUtils.writeIgniteUuid(writer, affKey);
+
+        writer.writeInt(status);
+        writer.writeLong(startOff);
+        writer.writeLong(endOff);
+    }
+
+    /**
+     * Reads fields from provided reader.
+     *
+     * @param reader Reader.
+     * @throws BinaryObjectException If fails.
+     */
+    public void readRawBinary(BinaryRawReader reader) throws BinaryObjectException {
+        affKey = BinaryUtils.readIgniteUuid(reader);
+
+        status = reader.readInt();
+        startOff = reader.readLong();
+        endOff = reader.readLong();
     }
 
     /** {@inheritDoc} */

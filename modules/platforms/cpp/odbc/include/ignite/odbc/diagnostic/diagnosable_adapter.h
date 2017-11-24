@@ -62,6 +62,16 @@ namespace ignite
                 }
 
                 /**
+                 * Get diagnostic record.
+                 *
+                 * @return Diagnostic record.
+                 */
+                virtual diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords()
+                {
+                    return diagnosticRecords;
+                }
+
+                /**
                  * Add new status record.
                  *
                  * @param sqlState SQL state.

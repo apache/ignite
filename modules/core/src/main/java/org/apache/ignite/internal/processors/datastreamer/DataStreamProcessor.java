@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -29,13 +30,18 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.thread.IgniteThread;
@@ -74,7 +80,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
         if (!ctx.clientNode()) {
             ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     assert msg instanceof DataStreamerRequest;
 
                     processRequest(nodeId, (DataStreamerRequest)msg);
@@ -90,7 +96,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        marshErrBytes = marsh.marshal(new IgniteCheckedException("Failed to marshal response error, " +
+        marshErrBytes = U.marshal(marsh, new IgniteCheckedException("Failed to marshal response error, " +
             "see node log for details."));
 
         flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
@@ -235,7 +241,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             Object topic;
 
             try {
-                topic = marsh.unmarshal(req.responseTopicBytes(), U.resolveClassLoader(null, ctx.config()));
+                topic = U.unmarshal(marsh, req.responseTopicBytes(), U.resolveClassLoader(null, ctx.config()));
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal topic from request: " + req, e);
@@ -275,7 +281,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             StreamReceiver<K, V> updater;
 
             try {
-                updater = marsh.unmarshal(req.updaterBytes(), U.resolveClassLoader(clsLdr, ctx.config()));
+                updater = U.unmarshal(marsh, req.updaterBytes(), U.resolveClassLoader(clsLdr, ctx.config()));
 
                 if (updater != null)
                     ctx.resource().injectGeneric(updater);
@@ -288,32 +294,102 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 return;
             }
 
-            Collection<DataStreamerEntry> col = req.entries();
-
-            DataStreamerUpdateJob job = new DataStreamerUpdateJob(ctx,
-                log,
-                req.cacheName(),
-                col,
-                req.ignoreDeploymentOwnership(),
-                req.skipStore(),
-                req.keepBinary(),
-                updater);
-
-            Exception err = null;
-
-            try {
-                job.call();
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to finish update job.", e);
-
-                err = e;
-            }
-
-            sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
+            localUpdate(nodeId, req, updater, topic);
         }
         finally {
             busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param req Request.
+     * @param updater Updater.
+     * @param topic Topic.
+     */
+    private void localUpdate(final UUID nodeId,
+        final DataStreamerRequest req,
+        final StreamReceiver<K, V> updater,
+        final Object topic) {
+        final boolean allowOverwrite = !(updater instanceof DataStreamerImpl.IsolatedUpdater);
+
+        try {
+            GridCacheAdapter cache = ctx.cache().internalCache(req.cacheName());
+
+            if (cache == null)
+                throw new IgniteCheckedException("Cache not created or already destroyed.");
+
+            GridCacheContext cctx = cache.context();
+
+            DataStreamerUpdateJob job = null;
+
+            GridFutureAdapter waitFut = null;
+
+            if (!allowOverwrite)
+                cctx.topology().readLock();
+
+            GridDhtTopologyFuture topWaitFut = null;
+
+            try {
+                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+
+                AffinityTopologyVersion topVer = fut.topologyVersion();
+
+                if (!allowOverwrite && !topVer.equals(req.topologyVersion())) {
+                    Exception err = new IgniteCheckedException(
+                        "DataStreamer will retry data transfer at stable topology " +
+                            "[reqTop=" + req.topologyVersion() + ", topVer=" + topVer + ", node=remote]");
+
+                    sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
+                }
+                else if (allowOverwrite || fut.isDone()) {
+                    job = new DataStreamerUpdateJob(ctx,
+                        log,
+                        req.cacheName(),
+                        req.entries(),
+                        req.ignoreDeploymentOwnership(),
+                        req.skipStore(),
+                        req.keepBinary(),
+                        updater);
+
+                    waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(topVer);
+                }
+                else
+                    topWaitFut = fut;
+            }
+            finally {
+                if (!allowOverwrite)
+                    cctx.topology().readUnlock();
+            }
+
+            if (topWaitFut != null) {
+                // Need call 'listen' after topology read lock is released.
+                topWaitFut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
+                        localUpdate(nodeId, req, updater, topic);
+                    }
+                });
+
+                return;
+            }
+
+            if (job != null) {
+                try {
+                    job.call();
+
+                    sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
+                }
+                finally {
+                    if (waitFut != null)
+                        waitFut.onDone();
+                }
+            }
+        }
+        catch (Throwable e) {
+            sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 
@@ -329,7 +405,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         byte[] errBytes;
 
         try {
-            errBytes = err != null ? marsh.marshal(err) : null;
+            errBytes = err != null ? U.marshal(marsh, err) : null;
         }
         catch (Exception e) {
             U.error(log, "Failed to marshal error [err=" + err + ", marshErr=" + e + ']', e);

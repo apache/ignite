@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -63,6 +64,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     private boolean fields;
 
     /** */
+    @GridToStringInclude(sensitive = true)
     private String clause;
 
     /** */
@@ -84,7 +86,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
     /** */
     @GridDirectTransient
-    private IgniteClosure<Object, Object> trans;
+    private IgniteClosure<?, ?> trans;
 
     /** */
     private byte[] transBytes;
@@ -233,7 +235,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         IgniteBiPredicate<Object, Object> keyValFilter,
         @Nullable Integer part,
         IgniteReducer<Object, Object> rdc,
-        IgniteClosure<Object, Object> trans,
+        IgniteClosure<?, ?> trans,
         int pageSize,
         boolean incBackups,
         Object[] args,
@@ -319,16 +321,16 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         Marshaller mrsh = ctx.marshaller();
 
         if (keyValFilterBytes != null && keyValFilter == null)
-            keyValFilter = mrsh.unmarshal(keyValFilterBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            keyValFilter = U.unmarshal(mrsh, keyValFilterBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (rdcBytes != null && rdc == null)
-            rdc = mrsh.unmarshal(rdcBytes, ldr);
+            rdc = U.unmarshal(mrsh, rdcBytes, ldr);
 
         if (transBytes != null && trans == null)
-            trans = mrsh.unmarshal(transBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            trans = U.unmarshal(mrsh, transBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (argsBytes != null && args == null)
-            args = mrsh.unmarshal(argsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            args = U.unmarshal(mrsh, argsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
@@ -343,9 +345,9 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     void beforeLocalExecution(GridCacheContext ctx) throws IgniteCheckedException {
         Marshaller marsh = ctx.marshaller();
 
-        rdc = rdc != null ? marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(rdc),
+        rdc = rdc != null ? U.<IgniteReducer<Object, Object>>unmarshal(marsh, U.marshal(marsh, rdc),
             U.resolveClassLoader(ctx.gridConfig())) : null;
-        trans = trans != null ? marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(trans),
+        trans = trans != null ? U.<IgniteClosure<Object, Object>>unmarshal(marsh, U.marshal(marsh, trans),
             U.resolveClassLoader(ctx.gridConfig())) : null;
     }
 
@@ -422,7 +424,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     /**
      * @return Transformer.
      */
-    public IgniteClosure<Object, Object> transformer() {
+    public IgniteClosure<?, ?> transformer() {
         return trans;
     }
 
