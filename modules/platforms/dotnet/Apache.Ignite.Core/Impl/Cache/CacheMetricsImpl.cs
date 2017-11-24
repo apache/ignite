@@ -115,6 +115,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** */
         private readonly int _keySize;
 
+		/** */
+		private readonly long _sizeLong;
+
+		/** */
+		private readonly long _keySizeLong;
+
         /** */
         private readonly bool _isEmpty;
 
@@ -412,8 +418,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public int Size { get { return _size; } }
 
+		/** <inheritDoc /> */
+		public long SizeLong { get { return _sizeLong; } }
+
         /** <inheritDoc /> */
         public int KeySize { get { return _keySize; } }
+
+		/** <inheritDoc /> */
+		public int KeySizeLong { get { return _keySizeLong; } }
 
         /** <inheritDoc /> */
         public bool IsEmpty { get { return _isEmpty; } }
