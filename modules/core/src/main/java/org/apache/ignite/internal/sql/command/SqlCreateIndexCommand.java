@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlLexerToken;
+import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -33,6 +36,7 @@ import java.util.Set;
 import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
+import static org.apache.ignite.internal.sql.SqlKeyword.INLINE_SIZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ON;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
@@ -69,6 +73,9 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /** Column names. */
     @GridToStringExclude
     private Set<String> colNames;
+
+    /** Inline size. Zero effectively disables inlining. */
+    private int inlineSize = QueryIndex.DFLT_INLINE_SIZE;
 
     /** {@inheritDoc} */
     @Override public String schemaName() {
@@ -109,6 +116,13 @@ public class SqlCreateIndexCommand implements SqlCommand {
     }
 
     /**
+     * @return Inline size.
+     */
+    public int inlineSize() {
+        return inlineSize;
+    }
+
+    /**
      * @param spatial Spatial index flag.
      * @return This instance.
      */
@@ -129,7 +143,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
     @Override public SqlCommand parse(SqlLexer lex) {
         ifNotExists = parseIfNotExists(lex);
 
-        idxName = parseIdentifier(lex, IF);
+        idxName = parseIndexName(lex);
 
         skipIfMatchesKeyword(lex, ON);
 
@@ -140,10 +154,45 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
         parseColumnList(lex);
 
+        parseInlineSize(lex);
+
         return this;
     }
 
-    /*
+    /**
+     * Pasrse index name.
+     *
+     * @param lex Lexer.
+     * @return Index name.
+     */
+    private static @Nullable String parseIndexName(SqlLexer lex) {
+        if (matchesKeyword(lex.lookAhead(), ON))
+            return null;
+
+        return parseIdentifier(lex, IF);
+    }
+
+    /**
+     * Parses inline size option if exists.
+     *
+     * @param lex Lexer.
+     */
+    private void parseInlineSize(SqlLexer lex) {
+        SqlLexerToken nextTok = lex.lookAhead();
+
+        if (matchesKeyword(nextTok, INLINE_SIZE)) {
+            lex.shift();
+
+            int stmtInlineSize = SqlParserUtils.parseInt(lex);
+
+            if (stmtInlineSize < 0)
+                throw error(lex, "Inline size should be positive: " + stmtInlineSize);
+
+            inlineSize = stmtInlineSize;
+        }
+    }
+
+    /**
      * @param lex Lexer.
      */
     private void parseColumnList(SqlLexer lex) {
@@ -151,7 +200,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
             throw errorUnexpectedToken(lex, "(");
 
         while (true) {
-            perseIndexColumn(lex);
+            parseIndexColumn(lex);
 
             if (skipCommaOrRightParenthesis(lex))
                 break;
@@ -161,7 +210,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /**
      * @param lex Lexer.
      */
-    private void perseIndexColumn(SqlLexer lex) {
+    private void parseIndexColumn(SqlLexer lex) {
         String name = parseIdentifier(lex);
         boolean desc = false;
 

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import saver from 'file-saver';
+
 // TODO: Refactor this service for legacy tables with more than one input field.
 export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
     function isDefined(v) {
@@ -351,20 +353,10 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
             return !isEmpty;
         },
         domainForStoreConfigured,
-        download(type, name, data) {
-            const file = document.createElement('a');
+        download(type = 'application/octet-stream', name = 'file.txt', data = '') {
+            const file = new Blob([data], { type: `${type};charset=utf-8`});
 
-            file.setAttribute('href', 'data:' + type + ';charset=utf-8,' + data);
-            file.setAttribute('download', name);
-            file.setAttribute('target', '_self');
-
-            file.style.display = 'none';
-
-            document.body.appendChild(file);
-
-            file.click();
-
-            document.body.removeChild(file);
+            saver.saveAs(file, name, false);
         },
         getQueryVariable(name) {
             const attrs = window.location.search.substring(1).split('&');

@@ -215,6 +215,11 @@ namespace Apache.Ignite.Core
         public const bool DefaultIsActiveOnStart = true;
 
         /// <summary>
+        /// Default value for <see cref="RedirectJavaConsoleOutput"/> property.
+        /// </summary>
+        public const bool DefaultRedirectJavaConsoleOutput = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
         /// </summary>
         public IgniteConfiguration()
@@ -222,6 +227,7 @@ namespace Apache.Ignite.Core
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
             ClientConnectorConfigurationEnabled = DefaultClientConnectorConfigurationEnabled;
+            RedirectJavaConsoleOutput = DefaultRedirectJavaConsoleOutput;
         }
 
         /// <summary>
@@ -727,11 +733,6 @@ namespace Apache.Ignite.Core
 
             JvmInitialMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
             JvmMaxMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
-
-            // Local data (not from reader)
-            JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
-                .Single(x => string.Equals(x.ModuleName, IgniteUtils.FileJvmDll, StringComparison.OrdinalIgnoreCase))
-                .FileName;
         }
 
         /// <summary>
@@ -750,6 +751,7 @@ namespace Apache.Ignite.Core
             IgniteHome = cfg.IgniteHome;
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
+            JvmDllPath = cfg.JvmDllPath;
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleHandlers = cfg.LifecycleHandlers;
@@ -760,6 +762,7 @@ namespace Apache.Ignite.Core
             AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
             PeerAssemblyLoadingMode = cfg.PeerAssemblyLoadingMode;
             LocalEventListeners = cfg.LocalEventListeners;
+            RedirectJavaConsoleOutput = cfg.RedirectJavaConsoleOutput;
 
             if (CacheConfiguration != null && cfg.CacheConfiguration != null)
             {
@@ -1420,5 +1423,21 @@ namespace Apache.Ignite.Core
         /// Gets or sets consistent globally unique node identifier which survives node restarts.
         /// </summary>
         public object ConsistentId { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether Java console output should be redirected
+        /// to <see cref="Console.Out"/> and <see cref="Console.Error"/>, respectively.
+        /// <para />
+        /// Default is <see cref="DefaultRedirectJavaConsoleOutput"/>.
+        /// <para />
+        /// Java code outputs valuable information to console. However, since that is Java console,
+        /// it is not possible to capture that output with standard .NET APIs (<see cref="Console.SetOut"/>).
+        /// As a result, many tools (IDEs, test runners) are not able to display Ignite console output in UI.
+        /// <para />
+        /// This property is enabled by default and redirects Java console output to standard .NET console.
+        /// It is recommended to disable this in production.
+        /// </summary>
+        [DefaultValue(DefaultRedirectJavaConsoleOutput)]
+        public bool RedirectJavaConsoleOutput { get; set; }
     }
 }

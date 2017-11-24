@@ -30,7 +30,6 @@ import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.jdbc.JdbcConnection;
 import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.logger.java.JavaLogger;
 
 /**
@@ -304,12 +303,6 @@ public class IgniteJdbcDriver implements Driver {
     /** Collocated parameter name. */
     private static final String PARAM_COLLOCATED = "collocated";
 
-    /** Parameter: enforce join order flag. */
-    public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
-
-    /** Parameter: lazy query execution flag. */
-    public static final String PARAM_LAZY = "lazy";
-
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
@@ -337,6 +330,12 @@ public class IgniteJdbcDriver implements Driver {
     /** Skip reducer on update property name. */
     private static final String PARAM_SKIP_REDUCER_ON_UPDATE = "skipReducerOnUpdate";
 
+    /** Parameter: enforce join order flag (SQL hint). */
+    public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
+
+    /** Parameter: replicated only flag (SQL hint). */
+    public static final String PARAM_LAZY = "lazy";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -357,12 +356,6 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
-
-    /** Enforce join order property name. */
-    public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
-
-    /** Lazy query execution property name. */
-    public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
 
     /** Transactions allowed property name. */
     public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
@@ -387,6 +380,12 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Skip reducer on update update property name. */
     public static final String PROP_SKIP_REDUCER_ON_UPDATE = PROP_PREFIX + PARAM_SKIP_REDUCER_ON_UPDATE;
+
+    /** Transactions allowed property name. */
+    public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
+
+    /** Lazy property name. */
+    public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -457,8 +456,8 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Local", info.getProperty(PROP_LOCAL), ""),
             new JdbcDriverPropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), ""),
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
-            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
-            new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(JdbcThinUtils.PROP_LAZY), ""),
+            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), ""),
+            new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(PROP_LAZY), ""),
             new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
             new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
             new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), "")
