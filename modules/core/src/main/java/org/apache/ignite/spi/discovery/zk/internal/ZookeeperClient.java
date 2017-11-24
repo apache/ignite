@@ -250,6 +250,9 @@ public class ZookeeperClient implements Watcher {
 
                 return;
             }
+            catch (KeeperException.NodeExistsException e) {
+                throw e;
+            }
             catch (Exception e) {
                 onZookeeperError(connStartTime, e);
             }
