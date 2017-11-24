@@ -60,10 +60,14 @@ namespace Apache.Ignite.Core.Impl
             : new[]
             {
                 // JRE paths
+                "lib/server",
+                "lib/client",
                 "lib/amd64/server",
                 "lib/amd64/client",
 
                 // JDK paths
+                "jre/lib/server",
+                "jre/lib/client",
                 "jre/lib/amd64/server",
                 "jre/lib/amd64/client"
             };
