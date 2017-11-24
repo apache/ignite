@@ -27,5 +27,5 @@ public interface Assertion {
      *
      * @throws AssertionError if the condition was not satisfied.
      */
-    public void test() throws AssertionError;
+    void test() throws AssertionError;
 }

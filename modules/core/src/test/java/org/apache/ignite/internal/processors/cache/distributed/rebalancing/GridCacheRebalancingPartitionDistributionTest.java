@@ -32,6 +32,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.assertions.Assertion;
+import org.apache.ignite.testframework.assertions.CacheNodeSafeAssertion;
 import org.apache.ignite.testframework.junits.common.GridRollingRestartAbstractTest;
 
 
