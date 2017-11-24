@@ -18,27 +18,23 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
+#if !NETCOREAPP2_0
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Tests.Process;
+#endif
     using NUnit.Framework;
 
     /// <summary>
     /// Test utility methods.
     /// </summary>
-    public static class TestUtils
+    public static partial class TestUtils
     {
         /** Indicates long running and/or memory/cpu intensive test. */
         public const string CategoryIntensive = "LONG_TEST";
@@ -68,7 +64,8 @@ namespace Apache.Ignite.Core.Tests
                 "-Xmx99m",
                 "-ea",
                 "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
-                "-DIGNITE_QUIET=true"
+                "-DIGNITE_QUIET=true",
+                "-Duser.timezone=UTC"
             };
 
         /** */
@@ -84,14 +81,6 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private static int _seed = Environment.TickCount;
-
-        /// <summary>
-        /// Kill Ignite processes.
-        /// </summary>
-        public static void KillProcesses()
-        {
-            IgniteProcess.KillAll();
-        }
 
         /// <summary>
         ///
@@ -116,15 +105,6 @@ namespace Apache.Ignite.Core.Tests
             }
 
             return ops;
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
-        public static string CreateTestClasspath()
-        {
-            return Classpath.CreateClasspath(forceTestClasspath: true);
         }
 
         /// <summary>
@@ -250,51 +230,7 @@ namespace Apache.Ignite.Core.Tests
             return false;
         }
 
-        /// <summary>
-        /// Asserts that the handle registry is empty.
-        /// </summary>
-        /// <param name="timeout">Timeout, in milliseconds.</param>
-        /// <param name="grids">Grids to check.</param>
-        public static void AssertHandleRegistryIsEmpty(int timeout, params IIgnite[] grids)
-        {
-            foreach (var g in grids)
-                AssertHandleRegistryHasItems(g, 0, timeout);
-        }
 
-        /// <summary>
-        /// Asserts that the handle registry has specified number of entries.
-        /// </summary>
-        /// <param name="timeout">Timeout, in milliseconds.</param>
-        /// <param name="expectedCount">Expected item count.</param>
-        /// <param name="grids">Grids to check.</param>
-        public static void AssertHandleRegistryHasItems(int timeout, int expectedCount, params IIgnite[] grids)
-        {
-            foreach (var g in grids)
-                AssertHandleRegistryHasItems(g, expectedCount, timeout);
-        }
-
-        /// <summary>
-        /// Asserts that the handle registry has specified number of entries.
-        /// </summary>
-        /// <param name="grid">The grid to check.</param>
-        /// <param name="expectedCount">Expected item count.</param>
-        /// <param name="timeout">Timeout, in milliseconds.</param>
-        public static void AssertHandleRegistryHasItems(IIgnite grid, int expectedCount, int timeout)
-        {
-            var handleRegistry = ((Ignite)grid).HandleRegistry;
-
-            expectedCount++;  // Skip default lifecycle bean
-
-            if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
-                return;
-
-            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder)).ToList();
-
-            if (items.Any())
-                Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'", 
-                    grid.Name, expectedCount, handleRegistry.Count,
-                    items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
-        }
 
         /// <summary>
         /// Waits for condition, polling in busy wait loop.
@@ -336,77 +272,6 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Gets the default code-based test configuration.
-        /// </summary>
-        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null)
-        {
-            return new IgniteConfiguration
-            {
-                DiscoverySpi = GetStaticDiscovery(),
-                Localhost = "127.0.0.1",
-                JvmOptions = TestJavaOptions(jvmDebug),
-                JvmClasspath = CreateTestClasspath(),
-                IgniteInstanceName = name,
-                DataStorageConfiguration = new DataStorageConfiguration
-                {
-                    DefaultDataRegionConfiguration = new DataRegionConfiguration
-                    {
-                        Name = DataStorageConfiguration.DefaultDataRegionName,
-                        InitialSize = 128 * 1024 * 1024,
-                        MaxSize = Environment.Is64BitProcess
-                            ? DataRegionConfiguration.DefaultMaxSize
-                            : 256 * 1024 * 1024
-                    }
-                }
-            };
-        }
-
-        /// <summary>
-        /// Runs the test in new process.
-        /// </summary>
-        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-        public static void RunTestInNewProcess(string fixtureName, string testName)
-        {
-            var procStart = new ProcessStartInfo
-            {
-                FileName = typeof(TestUtils).Assembly.Location,
-                Arguments = fixtureName + " " + testName,
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            var proc = System.Diagnostics.Process.Start(procStart);
-            Assert.IsNotNull(proc);
-
-            try
-            {
-                IgniteProcess.AttachProcessConsoleReader(proc);
-
-                Assert.IsTrue(proc.WaitForExit(19000));
-                Assert.AreEqual(0, proc.ExitCode);
-            }
-            finally
-            {
-                if (!proc.HasExited)
-                {
-                    proc.Kill();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Serializes and deserializes back an object.
-        /// </summary>
-        public static T SerializeDeserialize<T>(T obj)
-        {
-            var marsh = new Marshaller(null) {CompactFooter = false};
-
-            return marsh.Unmarshal<T>(marsh.Marshal(obj));
-        }
-
-        /// <summary>
         /// Gets the primary keys.
         /// </summary>
         public static IEnumerable<int> GetPrimaryKeys(IIgnite ignite, string cacheName,
@@ -427,62 +292,78 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Asserts equality with reflection.
+        /// Asserts that the handle registry is empty.
         /// </summary>
-        public static void AssertReflectionEqual(object x, object y, string propertyPath = null,
-            HashSet<string> ignoredProperties = null)
+        /// <param name="timeout">Timeout, in milliseconds.</param>
+        /// <param name="grids">Grids to check.</param>
+        public static void AssertHandleRegistryIsEmpty(int timeout, params IIgnite[] grids)
         {
-            if (x == null && y == null)
-            {
+            foreach (var g in grids)
+                AssertHandleRegistryHasItems(g, 0, timeout);
+        }
+
+        /// <summary>
+        /// Asserts that the handle registry has specified number of entries.
+        /// </summary>
+        /// <param name="timeout">Timeout, in milliseconds.</param>
+        /// <param name="expectedCount">Expected item count.</param>
+        /// <param name="grids">Grids to check.</param>
+        public static void AssertHandleRegistryHasItems(int timeout, int expectedCount, params IIgnite[] grids)
+        {
+            foreach (var g in grids)
+                AssertHandleRegistryHasItems(g, expectedCount, timeout);
+        }
+
+        /// <summary>
+        /// Asserts that the handle registry has specified number of entries.
+        /// </summary>
+        /// <param name="grid">The grid to check.</param>
+        /// <param name="expectedCount">Expected item count.</param>
+        /// <param name="timeout">Timeout, in milliseconds.</param>
+        public static void AssertHandleRegistryHasItems(IIgnite grid, int expectedCount, int timeout)
+        {
+#if !NETCOREAPP2_0
+            var handleRegistry = ((Ignite)grid).HandleRegistry;
+
+            expectedCount++;  // Skip default lifecycle bean
+
+            if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
                 return;
-            }
 
-            Assert.IsNotNull(x, propertyPath);
-            Assert.IsNotNull(y, propertyPath);
+            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder)).ToList();
 
-            var type = x.GetType();
-
-            if (type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type))
+            if (items.Any())
             {
-                var xCol = ((IEnumerable)x).OfType<object>().ToList();
-                var yCol = ((IEnumerable)y).OfType<object>().ToList();
-
-                Assert.AreEqual(xCol.Count, yCol.Count, propertyPath);
-
-                for (var i = 0; i < xCol.Count; i++)
-                {
-                    AssertReflectionEqual(xCol[i], yCol[i], propertyPath, ignoredProperties);
-                }
-
-                return;
+                Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'",
+                    grid.Name, expectedCount, handleRegistry.Count,
+                    items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
             }
+#endif
+        }
 
-            Assert.AreEqual(type, y.GetType());
+        /// <summary>
+        /// Serializes and deserializes back an object.
+        /// </summary>
+        public static T SerializeDeserialize<T>(T obj)
+        {
+#if NETCOREAPP2_0
+            var marshType = typeof(IIgnite).Assembly.GetType("Apache.Ignite.Core.Impl.Binary.Marshaller");
+            var marsh = Activator.CreateInstance(marshType, new object[] { null, null });
+            marshType.GetProperty("CompactFooter").SetValue(marsh, false);
 
-            propertyPath = propertyPath ?? type.Name;
+            var bytes = marshType.GetMethod("Marshal").MakeGenericMethod(typeof(object))
+                .Invoke(marsh, new object[] { obj });
 
-            if (type.IsValueType || type == typeof(string) || type.IsSubclassOf(typeof(Type)))
-            {
-                Assert.AreEqual(x, y, propertyPath);
-                return;
-            }
+            var res = marshType.GetMethods().Single(mi =>
+                    mi.Name == "Unmarshal" && mi.GetParameters().First().ParameterType == typeof(byte[]))
+                .MakeGenericMethod(typeof(object)).Invoke(marsh, new[] { bytes, 0 });
 
-            var props = type.GetProperties().Where(p => p.GetIndexParameters().Length == 0);
+            return (T)res;
+#else
+            var marsh = new Marshaller(null) { CompactFooter = false };
 
-            foreach (var propInfo in props)
-            {
-                if (ignoredProperties != null && ignoredProperties.Contains(propInfo.Name))
-                {
-                    continue;
-                }
-
-                var propName = propertyPath + "." + propInfo.Name;
-
-                var xVal = propInfo.GetValue(x, null);
-                var yVal = propInfo.GetValue(y, null);
-
-                AssertReflectionEqual(xVal, yVal, propName, ignoredProperties);
-            }
+            return marsh.Unmarshal<T>(marsh.Marshal(obj));
+#endif
         }
     }
 }

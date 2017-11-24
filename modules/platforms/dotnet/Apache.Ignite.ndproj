@@ -7218,7 +7218,7 @@ select new {
 //<HowToFix>
 // *Pascal Case* the names of matched types.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods name should begin with an Upper character</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods name should begin with an Upper character</Name>
 warnif count > 0 
 from m in JustMyCode.Methods where 
   !m.NameLike (@"^[A-Z]") && 

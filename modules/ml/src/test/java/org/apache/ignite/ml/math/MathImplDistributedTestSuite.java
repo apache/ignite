@@ -33,14 +33,14 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        CacheVectorTest.class,
-        CacheMatrixTest.class,
-        SparseDistributedMatrixStorageTest.class,
-        SparseDistributedMatrixTest.class,
-        SparseDistributedBlockMatrixTest.class,
-        SparseDistributedVectorStorageTest.class,
-        SparseDistributedVectorTest.class,
-        SparseBlockDistributedVectorTest.class
+    CacheVectorTest.class,
+    CacheMatrixTest.class,
+    SparseDistributedMatrixStorageTest.class,
+    SparseDistributedMatrixTest.class,
+    SparseDistributedBlockMatrixTest.class,
+    SparseDistributedVectorStorageTest.class,
+    SparseDistributedVectorTest.class,
+    SparseBlockDistributedVectorTest.class
 })
 public class MathImplDistributedTestSuite {
     // No-op.
