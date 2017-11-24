@@ -350,7 +350,8 @@ public class ZookeeperDiscoveryImpl {
                 zkClient.createAll(dirs, PERSISTENT);
             }
             catch (KeeperException.NodeExistsException e) {
-                U.warn(log, "Failed to create nodes using bulk operation: " + e);
+                if (log.isDebugEnabled())
+                    log.debug("Failed to create nodes using bulk operation: " + e);
 
                 for (String dir : dirs)
                     zkClient.createIfNeeded(dir, null, PERSISTENT);
