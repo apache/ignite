@@ -79,19 +79,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             var env = AttachCurrentThread();
             _methodId = new MethodId(env);
-            _callbacks = GetCallbacks(env, this);
+
+            // Keep AppDomain check here to avoid JITting GetCallbacksFromDefaultDomain method on .NET Core
+            // (which fails due to _AppDomain usage).
+            _callbacks = AppDomain.CurrentDomain.IsDefaultAppDomain()
+                ? new Callbacks(env, this)
+                : GetCallbacksFromDefaultDomain();
         }
 
         /// <summary>
         /// Gets the callbacks.
         /// </summary>
-        private static Callbacks GetCallbacks(Env env, Jvm jvm)
+        private static Callbacks GetCallbacksFromDefaultDomain()
         {
-            if (AppDomain.CurrentDomain.IsDefaultAppDomain())
-            {
-                return new Callbacks(env, jvm);
-            }
-
             // JVM exists once per process, and JVM callbacks exist once per process.
             // We should register callbacks ONLY from the default AppDomain (which can't be unloaded).
             // Non-default appDomains should delegate this logic to the default one.
@@ -278,16 +278,52 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             private readonly byte ignoreUnrecognized;
         }
 
+        private static class JniNativeMethods
+        {
+            internal static JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
+                JvmInitArgs* args)
+            {
+                return Os.IsWindows
+                    ? JniNativeMethodsWindows.JNI_CreateJavaVM(out pvm, out penv, args)
+                    : JniNativeMethodsLinux.JNI_CreateJavaVM(out pvm, out penv, args);
+            }
+
+            internal static JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size, out int size2)
+            {
+                return Os.IsWindows
+                    ? JniNativeMethodsWindows.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
+                    : JniNativeMethodsLinux.JNI_GetCreatedJavaVMs(out pvm, size, out size2);
+            }
+        }
+
         /// <summary>
         /// DLL imports.
         /// </summary>
-        private static class JniNativeMethods
+        private static class JniNativeMethodsWindows
         {
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("jvm.dll", CallingConvention = CallingConvention.StdCall)]
             internal static extern JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
                 JvmInitArgs* args);
 
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("jvm.dll", CallingConvention = CallingConvention.StdCall)]
+            internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
+                [Out] out int size2);
+        }
+
+        /// <summary>
+        /// DLL imports.
+        /// </summary>
+        private static class JniNativeMethodsLinux
+        {
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libjvm.so", CallingConvention = CallingConvention.StdCall)]
+            internal static extern JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
+                JvmInitArgs* args);
+
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libjvm.so", CallingConvention = CallingConvention.StdCall)]
             internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
                 [Out] out int size2);
         }

@@ -87,6 +87,9 @@ public class GridJobMetrics {
     private double avgJobExecTime;
 
     /** */
+    private long totalJobExecTime;
+
+    /** */
     private long totalIdleTime;
 
     /** */
@@ -244,6 +247,15 @@ public class GridJobMetrics {
      */
     public double getAverageJobExecuteTime() {
         return avgJobExecTime;
+    }
+
+    /**
+     * Gets total jobs execution time.
+     *
+     * @return Total jobs execution time.
+     */
+    public long getTotalJobsExecutionTime() {
+        return totalJobExecTime;
     }
 
     /**
@@ -418,6 +430,13 @@ public class GridJobMetrics {
      */
     void setAverageJobExecutionTime(double avgJobExecTime) {
         this.avgJobExecTime = avgJobExecTime;
+    }
+
+    /**
+     * @param totalJobExecTime The totalJobExecTime to set.
+     */
+    public void setTotalJobsExecutionTime(long totalJobExecTime) {
+        this.totalJobExecTime = totalJobExecTime;
     }
 
     /**

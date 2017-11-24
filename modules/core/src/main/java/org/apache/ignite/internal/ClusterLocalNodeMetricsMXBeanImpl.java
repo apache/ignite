@@ -19,12 +19,12 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
+import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 
 /**
  * Local node metrics MBean.
  */
-public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetricsMXBean {
+public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** Grid node. */
     private final ClusterNode node;
 
@@ -260,6 +260,11 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     /** {@inheritDoc} */
     @Override public int getTotalExecutedJobs() {
         return node.metrics().getTotalExecutedJobs();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalJobsExecutionTime() {
+        return node.metrics().getTotalJobsExecutionTime();
     }
 
     /** {@inheritDoc} */
