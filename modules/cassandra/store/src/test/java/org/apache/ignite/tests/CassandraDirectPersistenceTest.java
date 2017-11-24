@@ -103,10 +103,6 @@ public class CassandraDirectPersistenceTest {
         Collection<CacheEntryImpl<Long, Long>> longEntries = TestsHelper.generateLongsEntries();
         Collection<CacheEntryImpl<String, String>> strEntries = TestsHelper.generateStringsEntries();
         Collection<CacheEntryImpl<Long, String>> longStrEntries = TestsHelper.generateLongStringEntries();
-        List<CacheEntryImpl<String, Long>> reverseLongStrEntries = new ArrayList<>(longStrEntries.size());
-        for (Cache.Entry<Long, String> v : longStrEntries) {
-            reverseLongStrEntries.add(new CacheEntryImpl<>(Long.toString(v.getKey()), Long.parseLong(v.getValue())));
-        }
 
 
         Collection<Long> fakeLongKeys = TestsHelper.getKeys(longEntries);
@@ -157,8 +153,8 @@ public class CassandraDirectPersistenceTest {
         if (!strEntries.iterator().next().getValue().equals(strVal))
             throw new RuntimeException("String values were incorrectly deserialized from Cassandra");
 
-        Long longStrVal = (Long) store3.load(longStrEntries.iterator().next().getKey());
-        if (!longStrEntries.iterator().next().getValue().equals(Long.toString(longStrVal)))
+        String longStrVal = (String) store3.load(longStrEntries.iterator().next().getKey());
+        if (!longStrEntries.iterator().next().getValue().equals(longStrVal))
             throw new RuntimeException("LongString values were incorrectly deserialized from Cassandra");
 
         LOGGER.info("Running fake keys read tests");
@@ -171,7 +167,7 @@ public class CassandraDirectPersistenceTest {
         if (strVal != null)
             throw new RuntimeException("String value with fake key '-1' was found in Cassandra");
 
-        longStrVal = (Long) store3.load(-1L);
+        longStrVal = (String) store3.load(-1L);
         if (longStrVal != null)
             throw new RuntimeException("LongString value with fake key '-1' was found in Cassandra");
 
@@ -190,7 +186,7 @@ public class CassandraDirectPersistenceTest {
             throw new RuntimeException("String values were incorrectly deserialized from Cassandra");
 
         Map longStrValues = store3.loadAll(TestsHelper.getKeys(longStrEntries));
-        if (!TestsHelper.checkCollectionsEqual(longStrValues, reverseLongStrEntries))
+        if (!TestsHelper.checkCollectionsEqual(longStrValues, longStrEntries))
             throw new RuntimeException("LongString values were incorrectly deserialized from Cassandra");
 
         LOGGER.info("Running fake keys read tests");
@@ -204,7 +200,7 @@ public class CassandraDirectPersistenceTest {
             throw new RuntimeException("String values were incorrectly deserialized from Cassandra");
 
         longStrValues = store3.loadAll(fakeLongStrKeys);
-        if (!TestsHelper.checkCollectionsEqual(longStrValues, reverseLongStrEntries))
+        if (!TestsHelper.checkCollectionsEqual(longStrValues, longStrEntries))
             throw new RuntimeException("LongString values were incorrectly deserialized from Cassandra");
 
         LOGGER.info("Bulk read operation tests passed");

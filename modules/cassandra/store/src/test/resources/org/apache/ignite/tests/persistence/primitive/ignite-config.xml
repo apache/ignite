@@ -70,6 +70,19 @@
                         </bean>
                     </property>
                 </bean>
+
+                <!-- Configuring persistence for "cache3" cache -->
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache3"/>
+                    <property name="readThrough" value="true"/>
+                    <property name="writeThrough" value="true"/>
+                    <property name="cacheStoreFactory">
+                        <bean class="org.apache.ignite.cache.store.cassandra.CassandraCacheStoreFactory">
+                            <property name="dataSourceBean" value="cassandraAdminDataSource"/>
+                            <property name="persistenceSettingsBean" value="cache3_persistence_settings"/>
+                        </bean>
+                    </property>
+                </bean>
             </list>
         </property>
 

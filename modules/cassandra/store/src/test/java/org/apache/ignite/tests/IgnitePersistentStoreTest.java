@@ -111,21 +111,25 @@ public class IgnitePersistentStoreTest {
 
         Map<Long, Long> longMap = TestsHelper.generateLongsMap();
         Map<String, String> strMap = TestsHelper.generateStringsMap();
+        Map<Long, String> longStrMap = TestsHelper.generateLongStringMap();
 
         LOGGER.info("Running PRIMITIVE strategy write tests");
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/primitive/ignite-config.xml")) {
             IgniteCache<Long, Long> longCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Long>("cache1"));
             IgniteCache<String, String> strCache = ignite.getOrCreateCache(new CacheConfiguration<String, String>("cache2"));
+            IgniteCache<Long, String> longStrCache = ignite.getOrCreateCache(new CacheConfiguration<Long, String>("cache3"));
 
             LOGGER.info("Running single operation write tests");
             longCache.put(1L, 1L);
             strCache.put("1", "1");
+            longStrCache.put(1L, "1");
             LOGGER.info("Single operation write tests passed");
 
             LOGGER.info("Running bulk operation write tests");
             longCache.putAll(longMap);
             strCache.putAll(strMap);
+            longStrCache.putAll(longStrMap);
             LOGGER.info("Bulk operation write tests passed");
         }
 
@@ -138,6 +142,7 @@ public class IgnitePersistentStoreTest {
 
             IgniteCache<Long, Long> longCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Long>("cache1"));
             IgniteCache<String, String> strCache = ignite.getOrCreateCache(new CacheConfiguration<String, String>("cache2"));
+            IgniteCache<Long, String> longStrCache = ignite.getOrCreateCache(new CacheConfiguration<Long, String>("cache3"));
 
             LOGGER.info("Running single operation read tests");
 
@@ -148,6 +153,10 @@ public class IgnitePersistentStoreTest {
             String strVal = strCache.get("1");
             if (!strVal.equals(strMap.get("1")))
                 throw new RuntimeException("String value was incorrectly deserialized from Cassandra");
+
+            String longStrVal = longStrCache.get(1L);
+            if (!longStrVal.equals(longStrMap.get(1L)))
+                throw new RuntimeException("LongString value was incorrectly deserialized from Cassandra");
 
             LOGGER.info("Single operation read tests passed");
 
@@ -161,6 +170,10 @@ public class IgnitePersistentStoreTest {
             if (!TestsHelper.checkMapsEqual(strMap, strMap1))
                 throw new RuntimeException("String values batch was incorrectly deserialized from Cassandra");
 
+            Map<Long, String> longStrMap1 = longStrCache.getAll(longStrMap.keySet());
+            if (!TestsHelper.checkMapsEqual(longStrMap, longStrMap1))
+                throw new RuntimeException("LongString values batch was incorrectly deserialized from Cassandra");
+
             LOGGER.info("Bulk operation read tests passed");
 
             LOGGER.info("PRIMITIVE strategy read tests passed");
@@ -172,6 +185,9 @@ public class IgnitePersistentStoreTest {
 
             strCache.remove("1");
             strCache.removeAll(strMap.keySet());
+
+            longStrCache.remove(1L);
+            longStrCache.removeAll(longStrMap.keySet());
 
             LOGGER.info("PRIMITIVE strategy delete tests passed");
         }
@@ -287,6 +303,7 @@ public class IgnitePersistentStoreTest {
 
         Map<Long, Person> personMap1 = TestsHelper.generateLongsPersonsMap();
         Map<PersonId, Person> personMap2 = TestsHelper.generatePersonIdsPersonsMap();
+        Map<PersonId, Person> personMap7 = TestsHelper.generatePersonIdsPersonsForHandlerMap();
         Map<Long, Product> productsMap = TestsHelper.generateProductsMap();
         Map<Long, ProductOrder> ordersMap = TestsHelper.generateOrdersMap();
 
@@ -298,6 +315,7 @@ public class IgnitePersistentStoreTest {
             IgniteCache<PersonId, Person> personCache2 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache2"));
             IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
             IgniteCache<PersonId, Person> personCache4 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache4"));
+            IgniteCache<PersonId, Person> personCache7 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache7"));
             IgniteCache<Long, Product> productCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Product>("product"));
             IgniteCache<Long, ProductOrder> orderCache = ignite.getOrCreateCache(new CacheConfiguration<Long, ProductOrder>("order"));
 
@@ -312,6 +330,9 @@ public class IgnitePersistentStoreTest {
             personCache3.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
             personCache4.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
 
+            id = TestsHelper.generateRandomPersonIdForHandler();
+            personCache7.put(id, TestsHelper.generateRandomPersonForHandler(id.getPersonNumber()));
+
             productCache.put(product.getId(), product);
             orderCache.put(order.getId(), order);
 
@@ -322,6 +343,7 @@ public class IgnitePersistentStoreTest {
             personCache2.putAll(personMap2);
             personCache3.putAll(personMap2);
             personCache4.putAll(personMap2);
+            personCache7.putAll(personMap7);
             productCache.putAll(productsMap);
             orderCache.putAll(ordersMap);
             LOGGER.info("Bulk operation write tests passed");
@@ -338,6 +360,7 @@ public class IgnitePersistentStoreTest {
             IgniteCache<PersonId, Person> personCache2 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache2"));
             IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
             IgniteCache<PersonId, Person> personCache4 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache4"));
+            IgniteCache<PersonId, Person> personCache7 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache7"));
             IgniteCache<Long, Product> productCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Product>("product"));
             IgniteCache<Long, ProductOrder> orderCache = ignite.getOrCreateCache(new CacheConfiguration<Long, ProductOrder>("order"));
 
@@ -358,6 +381,11 @@ public class IgnitePersistentStoreTest {
 
             person = personCache4.get(id);
             if (!person.equals(personMap2.get(id)))
+                throw new RuntimeException("Person value was incorrectly deserialized from Cassandra");
+
+            PersonId idHandler = personMap7.keySet().iterator().next();
+            person = personCache7.get(idHandler);
+            if (!person.equals(personMap7.get(idHandler)))
                 throw new RuntimeException("Person value was incorrectly deserialized from Cassandra");
 
             Product product1 = productCache.get(product.getId());
@@ -388,6 +416,10 @@ public class IgnitePersistentStoreTest {
             if (!TestsHelper.checkPersonMapsEqual(persons4, personMap2, false))
                 throw new RuntimeException("Person values batch was incorrectly deserialized from Cassandra");
 
+            Map<PersonId, Person> persons7 = personCache7.getAll(personMap7.keySet());
+            if (!TestsHelper.checkPersonMapsEqual(persons7, personMap7, false))
+                throw new RuntimeException("Person values batch was incorrectly deserialized from Cassandra");
+
             Map<Long, Product> productsMap1 = productCache.getAll(productsMap.keySet());
             if (!TestsHelper.checkProductMapsEqual(productsMap, productsMap1))
                 throw new RuntimeException("Product values batch was incorrectly deserialized from Cassandra");
@@ -413,6 +445,9 @@ public class IgnitePersistentStoreTest {
 
             personCache4.remove(id);
             personCache4.removeAll(personMap2.keySet());
+
+            personCache7.remove(idHandler);
+            personCache7.removeAll(personMap7.keySet());
 
             productCache.remove(product.getId());
             productCache.removeAll(productsMap.keySet());

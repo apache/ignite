@@ -1,6 +1,8 @@
-package org.apache.ignite.cache.store.cassandra.common;
+package org.apache.ignite.tests.cache.store.cassandra.common;
 
 import com.datastax.driver.core.Row;
+import org.apache.ignite.cache.store.cassandra.common.TypeHandler;
+import org.apache.ignite.cache.store.cassandra.common.TypeHandlerHelper;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.*;

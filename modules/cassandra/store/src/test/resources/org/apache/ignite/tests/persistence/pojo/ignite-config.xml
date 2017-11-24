@@ -153,6 +153,19 @@
                     </property>
                 </bean>
 
+                <!-- Configuring persistence for "cache7" cache -->
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache7"/>
+                    <property name="readThrough" value="true"/>
+                    <property name="writeThrough" value="true"/>
+                    <property name="cacheStoreFactory">
+                        <bean class="org.apache.ignite.cache.store.cassandra.CassandraCacheStoreFactory">
+                            <property name="dataSourceBean" value="cassandraAdminDataSource"/>
+                            <property name="persistenceSettingsBean" value="cache7_persistence_settings"/>
+                        </bean>
+                    </property>
+                </bean>
+
                 <!-- Configuring persistence for "product" cache -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="product"/>

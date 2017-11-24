@@ -385,8 +385,12 @@ public class PersistenceController {
         Class clazz = settings.getJavaClass();
         String col = settings.getColumn();
 
-        if (PersistenceStrategy.PRIMITIVE == stg)
+        if (PersistenceStrategy.PRIMITIVE == stg) {
+            if(settings.getTypeHandler() != null) {
+                return settings.getTypeHandler().toJavaType(row, col);
+            }
             return PropertyMappingHelper.getCassandraColumnValue(row, col, clazz, null);
+        }
 
         if (PersistenceStrategy.BLOB == stg)
             return settings.getSerializer().deserialize(row.getBytes(col));

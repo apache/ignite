@@ -352,6 +352,24 @@ public class TestsHelper {
     }
 
     /** */
+    public static Map<PersonId, Person> generatePersonIdsPersonsForHandlerMap() {
+        return generatePersonIdsPersonsForHandlerMap(BULK_OPERATION_SIZE);
+    }
+
+    /** */
+    public static Map<PersonId, Person> generatePersonIdsPersonsForHandlerMap(int cnt) {
+        Map<PersonId, Person> map = new HashMap<>();
+
+        for (int i = 0; i < cnt; i++) {
+            PersonId id = generateRandomPersonIdForHandler();
+
+            map.put(id, generateRandomPersonForHandler(id.getPersonNumber()));
+        }
+
+        return map;
+    }
+
+    /** */
     public static Collection<CacheEntryImpl<SimplePersonId, SimplePerson>> generateSimplePersonIdsPersonsEntries() {
         return generateSimplePersonIdsPersonsEntries(BULK_OPERATION_SIZE);
     }
