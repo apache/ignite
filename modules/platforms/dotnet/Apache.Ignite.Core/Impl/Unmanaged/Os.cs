@@ -32,12 +32,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var platform = Environment.OSVersion.Platform;
 
             IsLinux = platform == PlatformID.Unix
-                      || platform == PlatformID.MacOSX
                       || (int) Environment.OSVersion.Platform == 128;
 
             IsWindows = platform == PlatformID.Win32NT
                         || platform == PlatformID.Win32S
                         || platform == PlatformID.Win32Windows;
+
+            IsMacOs = platform == PlatformID.MacOSX;
 
             IsMono = Type.GetType("Mono.Runtime") != null;
             IsNetCore = !IsMono;
@@ -62,5 +63,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Linux.
         /// </summary>
         public static bool IsLinux { get; private set; }
+
+        /// <summary>
+        /// MacOs.
+        /// </summary>
+        public static bool IsMacOs { get; private set; }
     }
 }

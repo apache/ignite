@@ -58,6 +58,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     : null;
             }
 
+            if (Os.IsMacOs)
+            {
+                return NativeMethodsMacOs.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
+                    ? GetErrorText(NativeMethodsMacOs.dlerror())
+                    : null;
+            }
+
             if (Os.IsLinux)
             {
                 if (Os.IsMono)
@@ -169,6 +176,22 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("libcoreclr.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
+            internal static extern IntPtr dlerror();
+        }
+
+        /// <summary>
+        /// macOs uses "libSystem.dylib".
+        /// </summary>
+        private static class NativeMethodsMacOs
+        {
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libSystem.dylib", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
+            internal static extern IntPtr dlopen(string filename, int flags);
+
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libSystem.dylib", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlerror();
         }
