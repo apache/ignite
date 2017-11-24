@@ -762,7 +762,11 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         BaselineTopology joiningNodeBlt = joiningNodeState.baselineTopology();
         BaselineTopology clusterBlt = globalState.baselineTopology();
 
-        String msg = "BaselineTopology of joining node is not compatible with BaselineTopology in cluster: " + node.consistentId();
+        String msg = "BaselineTopology of joining node ("
+            + node.consistentId()
+            + ") is not compatible with BaselineTopology in cluster. "
+            + "Joining node " + joiningNodeBlt + ','
+            + " cluster " + clusterBlt + '.';
 
         if (joiningNodeBlt.id() > clusterBlt.id())
             return new IgniteNodeValidationResult(node.id(), msg, msg);
