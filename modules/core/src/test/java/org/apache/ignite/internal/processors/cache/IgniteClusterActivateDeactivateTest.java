@@ -1137,20 +1137,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testActivateFailover3() throws Exception {
-        stateChangeFailover3(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDeactivateFailover3() throws Exception {
-        stateChangeFailover3(false);
-    }
-
-    /**
      * @param activate If {@code true} tests activation, otherwise deactivation.
      * @throws Exception If failed.
      */
