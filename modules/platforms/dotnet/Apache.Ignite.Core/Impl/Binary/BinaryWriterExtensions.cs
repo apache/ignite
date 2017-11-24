@@ -184,6 +184,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             writer.Stream.WriteInt(pos, cnt);
         }
 
+ 
         /// <summary>
         /// Writes the collection of write-aware items.
         /// </summary>
