@@ -250,6 +250,8 @@ public class CassandraSessionImpl implements CassandraSession {
                             else if (CassandraHelper.isPreparedStatementClusterError(e)) {
                                 prepStatEx = e;
                                 handlePreparedStatementClusterError(e);
+                                preparedSt = prepareStatement(assistant.getTable(), assistant.getStatement(),
+                                        assistant.getPersistenceSettings(), assistant.tableExistenceRequired());
                             }
                             else
                                 unknownEx = e;
