@@ -91,6 +91,15 @@ public class GridH2PlainRowFactory extends RowFactory {
             key = v;
         }
 
+        /**
+         * {@inheritDoc}
+         *
+         * <p>Please note that the original copies are returned.
+         */
+        @Override public Value[] getValueList() {
+            return new Value[] {key};
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(RowKey.class, this);
@@ -137,6 +146,15 @@ public class GridH2PlainRowFactory extends RowFactory {
             }
         }
 
+        /**
+         * {@inheritDoc}
+         *
+         * <p>Please note that the original copies are returned.
+         */
+        @Override public Value[] getValueList() {
+            return new Value[] {v1, v2};
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(RowPair.class, this);
@@ -176,6 +194,15 @@ public class GridH2PlainRowFactory extends RowFactory {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(RowSimple.class, this);
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * <p>Please note that the original copies are returned.
+         */
+        @Override public Value[] getValueList() {
+            return vals;
         }
     }
 }

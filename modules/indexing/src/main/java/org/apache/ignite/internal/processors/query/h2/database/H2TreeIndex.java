@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.processors.query.h2.H2SingletonCursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -165,27 +166,27 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            IndexingQueryFilter f = threadLocalFilter();
-            IndexingQueryCacheFilter p = null;
+            IndexingQueryFilter threadLocalFilter = threadLocalFilter();
+            IndexingQueryCacheFilter cacheFilter = null;
 
-            if (f != null) {
+            if (threadLocalFilter != null) {
                 String cacheName = getTable().cacheName();
 
-                p = f.forCache(cacheName);
+                cacheFilter = threadLocalFilter.forCache(cacheName);
             }
 
             int seg = threadLocalSegment();
 
             H2Tree tree = treeForRead(seg);
 
-            GridCursor<GridH2Row> gridCursor;
-
-            if (indexType.isPrimaryKey() && lower != null && lower.equals(upper))
-                gridCursor = tree.findOne(lower, p);
-            else
-                gridCursor = tree.find(lower, upper, p);
-
-            return new H2Cursor(gridCursor);
+            if (indexType.isPrimaryKey() && lower != null && lower.equals(upper)) {
+                GridH2Row row = tree.findOne(lower, cacheFilter);
+                return new H2SingletonCursor(row);
+            }
+            else {
+                GridCursor<GridH2Row> gridCursor = tree.find(lower, upper, cacheFilter);
+                return new H2Cursor(gridCursor);
+            }
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);

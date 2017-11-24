@@ -667,6 +667,21 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         assert res.isEmpty();
     }
 
+    /**
+     * FIXME
+     *
+     * @throws Exception If failed.
+     */
+    public void testSingleResultUsesFindOne() throws Exception {
+        QueryCursor<List<?>> qry =
+            personCache.query(sqlFieldsQuery("select name from Person where age = 25"));
+
+        Collection<List<?>> res = qry.getAll();
+
+        assert res != null;
+        assert res.size() == 1;
+    }
+
     /** @throws Exception If failed. */
     public void testQueryString() throws Exception {
         QueryCursor<List<?>> qry = strCache.query(sqlFieldsQuery("select * from String"));
