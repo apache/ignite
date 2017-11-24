@@ -706,9 +706,8 @@ public class GridMapQueryExecutor {
                 }
 
                 // All request results are in the memory in result set already, so it's ok to release partitions.
-                if (!lazy) {
+                if (!lazy)
                     releaseReservations();
-                }
             }
             catch (Throwable e){
                 releaseReservations();
@@ -753,7 +752,7 @@ public class GridMapQueryExecutor {
     private void releaseReservations() {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        if (qctx != null) { // No-op if already released
+        if (qctx != null) { // No-op if already released.
             GridH2QueryContext.clearThreadLocal();
 
             if (qctx.distributedJoinMode() == OFF)
@@ -979,7 +978,7 @@ public class GridMapQueryExecutor {
             if (qr.isAllClosed()) {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
-                // Release reservations only if the last page fetched, all requests are closed and this is a lazy worker
+                // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
                 if (MapQueryLazyWorker.currentWorker() != null)
                     releaseReservations();
             }
