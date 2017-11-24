@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         || platform == PlatformID.Win32S
                         || platform == PlatformID.Win32Windows;
 
-            IsMacOs = IsLinux && Shell.BashExecute("uname") == "Darwin";
+            IsMacOs = IsLinux && Shell.BashExecute("uname").Contains("Darwin");
 
             // TODO:
             if (IsLinux)
