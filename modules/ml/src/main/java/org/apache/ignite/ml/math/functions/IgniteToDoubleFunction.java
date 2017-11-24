@@ -24,5 +24,6 @@ import java.util.function.ToDoubleFunction;
  * Represents a function that produces a double-valued result.
  * @param <T> the type of the input to the function
  */
-@FunctionalInterface public interface IgniteToDoubleFunction<T> extends ToDoubleFunction<T>, Serializable {
+@FunctionalInterface
+public interface IgniteToDoubleFunction<T> extends ToDoubleFunction<T>, Serializable {
 }

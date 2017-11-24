@@ -185,7 +185,7 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
+import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
@@ -303,6 +303,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     @GridToStringExclude
     private ObjectName locNodeMBean;
+
+    /** */
+    @GridToStringExclude
+    private ObjectName allNodesMBean;
 
     /** */
     @GridToStringExclude
@@ -1086,7 +1090,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Register MBeans.
             registerKernalMBean();
-            registerLocalNodeMBean();
+            registerClusterMetricsMBeans();
             registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc, qryExecSvc,
                 schemaExecSvc);
 
@@ -1703,30 +1707,41 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /** @throws IgniteCheckedException If registration failed. */
-    private void registerLocalNodeMBean() throws IgniteCheckedException {
+    /**
+     * Register instance of ClusterMetricsMBean.
+     *
+     * @param mbean MBean instance to register.
+     * @throws IgniteCheckedException If registration failed.
+     */
+    private ObjectName registerClusterMetricsMBean(ClusterMetricsMXBean mbean) throws IgniteCheckedException {
         if(U.IGNITE_MBEANS_DISABLED)
-            return;
+            return null;
 
-        ClusterLocalNodeMetricsMXBean mbean = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery().localNode());
+        ObjectName objectName;
 
         try {
-            locNodeMBean = U.registerMBean(
+            objectName = U.registerMBean(
                 cfg.getMBeanServer(),
                 cfg.getIgniteInstanceName(),
                 "Kernal",
                 mbean.getClass().getSimpleName(),
                 mbean,
-                ClusterLocalNodeMetricsMXBean.class);
+                ClusterMetricsMXBean.class);
 
             if (log.isDebugEnabled())
-                log.debug("Registered local node MBean: " + locNodeMBean);
+                log.debug("Registered MBean: " + objectName);
+
+            return objectName;
         }
         catch (JMException e) {
-            locNodeMBean = null;
-
-            throw new IgniteCheckedException("Failed to register local node MBean.", e);
+            throw new IgniteCheckedException("Failed to register MBean: " + mbean.getClass().getSimpleName(), e);
         }
+    }
+
+    /** @throws IgniteCheckedException If registration failed. */
+    private void registerClusterMetricsMBeans() throws IgniteCheckedException {
+        locNodeMBean = registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery().localNode()));
+        allNodesMBean = registerClusterMetricsMBean(new ClusterMetricsMXBeanImpl(cluster()));
     }
 
     /**
@@ -2278,6 +2293,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     unregisterMBean(p2PExecSvcMBean) &
                     unregisterMBean(kernalMBean) &
                     unregisterMBean(locNodeMBean) &
+                    unregisterMBean(allNodesMBean) &
                     unregisterMBean(restExecSvcMBean) &
                     unregisterMBean(qryExecSvcMBean) &
                     unregisterMBean(schemaExecSvcMBean) &

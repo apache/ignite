@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -64,16 +65,13 @@ import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -114,7 +112,9 @@ import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExe
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
@@ -1358,7 +1358,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (log.isDebugEnabled())
                 log.debug("Failed to parse SQL with native parser [qry=" + qry.getSql() + ", err=" + e + ']');
 
-            return null;
+            if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK))
+                return null;
+
+            int code = IgniteQueryErrorCode.PARSING;
+
+            if (e instanceof SqlParseException)
+                code = ((SqlParseException)e).code();
+
+            throw new IgniteSQLException("Failed to parse DDL statement: " + qry.getSql(), code, e);
         }
 
         // Execute.
@@ -2010,44 +2018,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
-        IgniteCacheOffheapManager offheapMgr = cctx.isNear() ? cctx.near().dht().context().offheap() : cctx.offheap();
+        final GridCacheQueryManager qryMgr = cctx.queries();
 
-        for (int p = 0; p < cctx.affinity().partitions(); p++) {
-            try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.cacheKeysIterator(cctx.cacheId(), p)) {
-                while (keyIter.hasNext()) {
-                    cctx.shared().database().checkpointReadLock();
+        SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
 
-                    try {
-                        KeyCacheObject key = keyIter.next();
-
-                        while (true) {
-                            GridCacheEntryEx entry = null;
-
-                            try {
-                                entry = cctx.isNear() ?
-                                    cctx.near().dht().entryEx(key) : cctx.cache().entryEx(key);
-
-                                entry.ensureIndexed();
-
-                                break;
-                            }
-                            catch (GridCacheEntryRemovedException ignore) {
-                                // Retry.
-                            }
-                            finally {
-                                if (entry != null)
-                                    entry.context().evicts().touch(entry, AffinityTopologyVersion.NONE);
-                            }
-                        }
-                    } catch (GridDhtInvalidPartitionException ignore) {
-                        break;
-                    }
-                    finally {
-                        cctx.shared().database().checkpointReadUnlock();
-                    }
-                }
-            }
-        }
+        visitor.visit(new RebuldIndexFromHashClosure(qryMgr));
 
         for (H2TableDescriptor tblDesc : tables(cacheName))
             tblDesc.table().markRebuildFromHashInProgress(false);
@@ -2477,6 +2452,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @param readyVer Ready topology version.
+     *
+     * @return {@code true} If pending distributed exchange exists because server topology is changed.
+     */
+    public boolean serverTopologyChanged(AffinityTopologyVersion readyVer) {
+        GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
+
+        if (fut.isDone())
+            return false;
+
+        AffinityTopologyVersion initVer = fut.initialVersion();
+
+        return initVer.compareTo(readyVer) > 0 && !CU.clientNode(fut.firstEvent().node());
+    }
+
+    /**
      * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
      */
@@ -2625,5 +2616,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
         // No-op.
+    }
+
+    /** */
+    private static class RebuldIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
+        /** */
+        private final GridCacheQueryManager qryMgr;
+
+        /**
+         * @param qryMgr Query manager.
+         */
+        RebuldIndexFromHashClosure(GridCacheQueryManager qryMgr) {
+            this.qryMgr = qryMgr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
+            qryMgr.store(row, null, false);
+        }
     }
 }

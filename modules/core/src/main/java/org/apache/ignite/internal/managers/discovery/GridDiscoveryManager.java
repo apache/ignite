@@ -1064,6 +1064,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nm.setTotalRejectedJobs(jm.getTotalRejectedJobs());
                 nm.setTotalCancelledJobs(jm.getTotalCancelledJobs());
                 nm.setTotalExecutedJobs(jm.getTotalExecutedJobs());
+                nm.setTotalJobsExecutionTime(jm.getTotalJobsExecutionTime());
                 nm.setMaximumJobWaitTime(jm.getMaximumJobWaitTime());
                 nm.setCurrentJobWaitTime(jm.getCurrentJobWaitTime());
                 nm.setAverageJobWaitTime(jm.getAverageJobWaitTime());

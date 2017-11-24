@@ -480,7 +480,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         assertIndex(CACHE_NAME,
             QueryUtils.normalizeObjectName(TBL_NAME, true),
-            QueryUtils.normalizeObjectName(IDX_NAME_1, false),
+            QueryUtils.normalizeObjectName(IDX_NAME_1, false), QueryIndex.DFLT_INLINE_SIZE,
             field(QueryUtils.normalizeObjectName(FIELD_NAME_1_ESCAPED, false)));
     }
 

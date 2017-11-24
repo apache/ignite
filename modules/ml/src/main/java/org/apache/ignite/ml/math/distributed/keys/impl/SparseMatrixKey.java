@@ -34,8 +34,10 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     /** */
     private int idx;
+
     /** */
     private UUID matrixId;
+
     /** */
     @AffinityKeyMapped
     private Object affinityKey;
@@ -43,7 +45,7 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     /**
      * Default constructor (required by Externalizable).
      */
-    public SparseMatrixKey(){
+    public SparseMatrixKey() {
 
     }
 
@@ -65,7 +67,7 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID matrixId() {
+    @Override public UUID dataStructureId() {
         return matrixId;
     }
 
@@ -76,7 +78,6 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-//        U.writeGridUuid(out, matrixId);
         out.writeObject(matrixId);
         out.writeObject(affinityKey);
         out.writeInt(idx);
