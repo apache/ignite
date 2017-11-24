@@ -19,12 +19,12 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.mxbean.ClusterMetricsMXBean;
+import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 
 /**
  * Local node metrics MBean.
  */
-public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
+public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetricsMXBean {
     /** Grid node. */
     private final ClusterNode node;
 
