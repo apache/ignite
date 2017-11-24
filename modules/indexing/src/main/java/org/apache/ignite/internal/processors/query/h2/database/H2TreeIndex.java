@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -28,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
-import org.apache.ignite.internal.processors.query.h2.H2SingletonCursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -42,6 +43,7 @@ import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
+import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
@@ -181,7 +183,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             if (indexType.isPrimaryKey() && lower != null && lower.equals(upper)) {
                 GridH2Row row = tree.findOne(lower, cacheFilter);
-                return new H2SingletonCursor(row);
+                return (row == null) ? new EmptyCursor() : new SingletonCursor(row);
             }
             else {
                 GridCursor<GridH2Row> gridCursor = tree.find(lower, upper, cacheFilter);
@@ -427,5 +429,79 @@ public class H2TreeIndex extends GridH2IndexBase {
      */
     private void dropMetaPage(String name, int segIdx) throws IgniteCheckedException {
         cctx.offheap().dropRootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
+    }
+
+    /** FIXME */
+    public static class EmptyCursor implements Cursor {
+
+        /** FIXME */
+        public EmptyCursor() {
+        }
+
+        /** {@inheritDoc} */
+        @Override public Row get() {
+            throw DbException.convert(new NoSuchElementException("Empty cursor"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public SearchRow getSearchRow() {
+            throw DbException.convert(new NoSuchElementException("Empty cursor"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean previous() {
+            return false;
+        }
+    }
+
+    /** FIXME */
+    public static class SingletonCursor implements Cursor {
+
+        /** FIXME */
+        private final GridH2Row row;
+        /** FIXME */
+        private boolean isBeforeFirstRow;
+
+        /** FIXME */
+        public SingletonCursor(GridH2Row row) {
+            this.row = row;
+            this.isBeforeFirstRow = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Row get() {
+            if (isBeforeFirstRow)
+                DbException.convert(new NoSuchElementException("next() has to be called before get()"));
+
+            return row;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SearchRow getSearchRow() {
+            return get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            if (!isBeforeFirstRow)
+                return false;
+
+            isBeforeFirstRow = false;
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean previous() {
+            if (isBeforeFirstRow)
+                return false;
+
+            isBeforeFirstRow = true;
+            return true;
+        }
     }
 }
