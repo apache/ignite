@@ -55,7 +55,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return data1 + data2;
     }
 
-    @Override protected Double processInitData(Integer data, TestGroupTrainerLocalContext locCtx) {
+    @Override protected Double locallyProcessInitData(Integer data, TestGroupTrainerLocalContext locCtx) {
         return data.doubleValue();
     }
 

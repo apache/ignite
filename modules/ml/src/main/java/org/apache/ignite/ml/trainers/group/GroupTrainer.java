@@ -50,7 +50,7 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IR extends 
 
         M res = chain.
             thenDistributedForKeys(this::initGlobal, (t, lc) -> () -> data.initialKeys(trainingUUID), this::reduceGlobalInitData).
-            thenLocally(this::processInitData).
+            thenLocally(this::locallyProcessInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
             thenDistributedForEntries(this::extractContextForModelCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), defaultFinalResult(), this::reduceFinalResults).
             thenLocally(this::mapFinalResult).
@@ -67,7 +67,7 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IR extends 
 
     protected abstract IR reduceGlobalInitData(IR data1, IR data2);
 
-    protected abstract I processInitData(IR data, LC locCtx);
+    protected abstract I locallyProcessInitData(IR data, LC locCtx);
 
     protected abstract DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep();
 

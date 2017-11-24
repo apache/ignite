@@ -18,19 +18,22 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.trainers.group.chain.DC;
 import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
+import org.apache.ignite.ml.trainers.group.chain.HasCacheContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
-public abstract class SimpleGroupTrainer<LC extends HasTrainingUUID, K, V, IR extends Serializable,
+public abstract class SimpleGroupTrainer<LC extends HasTrainingUUID, K, V, D extends Serializable,
 R extends Serializable, I extends Serializable,
 M extends Model, T extends Distributive<K>,
-G, O extends Serializable, D, X> extends
-    GroupTrainer<LC, K, V, IR, R, I, M, T, G> {
-    private Metaoptimizer<IR, LC, X, I, D, O> metaoptimizer;
+G, O extends Serializable, IR, X, Y> extends
+    GroupTrainer<LC, K, V, D, R, I, M, T, G> {
+    private Metaoptimizer<IR, LC, X, Y, I, D, O> metaoptimizer;
 
     public SimpleGroupTrainer(
         IgniteCache<GroupTrainerCacheKey<K>, V> cache,
@@ -38,22 +41,28 @@ G, O extends Serializable, D, X> extends
         super(cache, ignite);
     }
 
-    protected abstract X extractDataToProcess();
+    protected abstract X extractDataToProcessInTrainingLoop(EntryAndContext<K, V, G> entryAndContext);
 
-    protected abstract D processData(X data);
+    protected abstract Stream<GroupTrainerCacheKey<K>> keysToProcessInTrainingLoop(LC locCtx);
 
-    protected DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep() {
-        // TODO: Implement
-        return null;
+    protected abstract G extractRemoteContext(I input, LC ctx);
+
+    protected abstract ResultAndUpdates<Y> processData(X data);
+
+    @Override protected DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep() {
+        DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, O> chain = DC.create(new MetaoptimizerDistributedStep<>(metaoptimizer, this));
+        return chain.thenLocally(metaoptimizer::localProcessor);
     }
 
-    @Override protected I processInitData(IR data, LC locCtx) {
-        return null;
+    @Override protected I locallyProcessInitData(D data, LC locCtx) {
+        return metaoptimizer.locallyProcessInitData(data, locCtx);
     }
 
-    //    default <O1 extends Serializable, G> DistributedTrainerWorkersChain<L, K, V, I, C, O1> thenDistributedForEntries(
-//        IgniteBiFunction<O, L, G> remoteCtxExtractor,
-//        IgniteTriFunction<O, L, EntryAndContext<K, V, G>, ResultAndUpdates<O1>> distributedWorker,
-//        IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
-//        O1 identity,
+    @Override protected boolean shouldContinue(I data, LC locCtx) {
+        return metaoptimizer.shouldContinue(data, locCtx);
+    }
+
+    @Override protected D reduceGlobalInitData(D data1, D data2) {
+        return metaoptimizer.initialReducer(data1, data2);
+    }
 }

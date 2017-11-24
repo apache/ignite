@@ -73,6 +73,15 @@ public class ResultAndUpdates<R> {
         return new ResultAndUpdates<>(res, allUpdates);
     }
 
+    public Map<String, Map> updates() {
+        return updates;
+    }
+
+    ResultAndUpdates<R> setUpdates(Map<String, Map> updates) {
+        this.updates = updates;
+        return this;
+    }
+
     void processUpdates(Ignite ignite) {
         for (Map.Entry<String, Map> entry : updates.entrySet()) {
             IgniteCache<Object, Object> cache = ignite.getOrCreateCache(entry.getKey());
