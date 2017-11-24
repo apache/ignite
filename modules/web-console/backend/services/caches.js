@@ -17,21 +17,22 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/caches',
-    inject: ['require(lodash)', 'mongo', 'services/spaces', 'errors']
+    inject: ['mongo', 'services/spaces', 'errors']
 };
 
 /**
- * @param _
  * @param mongo
  * @param {SpacesService} spaceService
  * @param errors
  * @returns {CachesService}
  */
-module.exports.factory = (_, mongo, spaceService, errors) => {
+module.exports.factory = (mongo, spaceService, errors) => {
     /**
      * Convert remove status operation to own presentation.
      *
