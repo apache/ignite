@@ -211,12 +211,13 @@ namespace Apache.Ignite.Core.Impl
             var messages = new List<string>();
             foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
             {
-                log.Debug("Trying to load JVM dll from [option={0}, path={1}]...", dllPath.Key, dllPath.Value);
+                log.Debug("Trying to load {0} from [option={1}, path={2}]...", FileJvmDll, dllPath.Key, dllPath.Value);
 
                 var errInfo = LoadDll(dllPath.Value, FileJvmDll);
                 if (errInfo == null)
                 {
-                    log.Debug("jvm.dll successfully loaded from [option={0}, path={1}]", dllPath.Key, dllPath.Value);
+                    log.Debug("{0} successfully loaded from [option={1}, path={2}]", 
+                        FileJvmDll, dllPath.Key, dllPath.Value);
                     return;
                 }
 
@@ -224,19 +225,23 @@ namespace Apache.Ignite.Core.Impl
                                                   dllPath.Key, dllPath.Value, errInfo);
                 messages.Add(message);
 
-                log.Debug("Failed to load jvm.dll: " + message);
+                log.Debug("Failed to load {0}:  {1}", FileJvmDll, message);
 
                 if (dllPath.Value == configJvmDllPath)
                     break;  // if configJvmDllPath is specified and is invalid - do not try other options
             }
 
-            if (!messages.Any())  // not loaded and no messages - everything was null
-                messages.Add(string.Format(CultureInfo.InvariantCulture, 
+            if (!messages.Any()) // not loaded and no messages - everything was null
+            {
+                messages.Add(string.Format(CultureInfo.InvariantCulture,
                     "Please specify IgniteConfiguration.JvmDllPath or {0}.", EnvJavaHome));
+            }
 
             if (messages.Count == 1)
-                throw new IgniteException(string.Format(CultureInfo.InvariantCulture, "Failed to load {0} ({1})", 
+            {
+                throw new IgniteException(string.Format(CultureInfo.InvariantCulture, "Failed to load {0} ({1})",
                     FileJvmDll, messages[0]));
+            }
 
             var combinedMessage =
                 messages.Aggregate((x, y) => string.Format(CultureInfo.InvariantCulture, "{0}\n{1}", x, y));
