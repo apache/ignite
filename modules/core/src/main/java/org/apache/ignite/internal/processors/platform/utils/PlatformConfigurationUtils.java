@@ -209,11 +209,7 @@ public class PlatformConfigurationUtils {
         ccfg.setMaxQueryIteratorsCount(in.readInt());
         ccfg.setQueryDetailMetricsSize(in.readInt());
         ccfg.setQueryParallelism(in.readInt());
-
-        String sqlSchema = in.readString();
-        if (sqlSchema != null) {
-            ccfg.setSqlSchema(sqlSchema);
-        }
+        ccfg.setSqlSchema(in.readString());
 
         int qryEntCnt = in.readInt();
 
@@ -480,12 +476,14 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return QueryEntity.
      */
-    private static QueryEntity readQueryEntity(BinaryRawReader in) {
+    public static QueryEntity readQueryEntity(BinaryRawReader in) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
         res.setValueType(in.readString());
         res.setTableName(in.readString());
+        res.setKeyFieldName(in.readString());
+        res.setValueFieldName(in.readString());
 
         // Fields
         int cnt = in.readInt();
@@ -540,9 +538,6 @@ public class PlatformConfigurationUtils {
 
             res.setIndexes(indexes);
         }
-
-        res.setKeyFieldName(in.readString());
-        res.setValueFieldName(in.readString());
 
         return res;
     }
@@ -988,12 +983,14 @@ public class PlatformConfigurationUtils {
      * @param writer Writer.
      * @param queryEntity Query entity.
      */
-    private static void writeQueryEntity(BinaryRawWriter writer, QueryEntity queryEntity) {
+    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity queryEntity) {
         assert queryEntity != null;
 
         writer.writeString(queryEntity.getKeyType());
         writer.writeString(queryEntity.getValueType());
         writer.writeString(queryEntity.getTableName());
+        writer.writeString(queryEntity.getKeyFieldName());
+        writer.writeString(queryEntity.getValueFieldName());
 
         // Fields
         LinkedHashMap<String, String> fields = queryEntity.getFields();
@@ -1039,9 +1036,6 @@ public class PlatformConfigurationUtils {
         }
         else
             writer.writeInt(0);
-
-        writer.writeString(queryEntity.getKeyFieldName());
-        writer.writeString(queryEntity.getValueFieldName());
     }
 
     /**
@@ -1343,7 +1337,7 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      * @param e Enum.
      */
-    private static void writeEnumInt(BinaryRawWriter w, Enum e) {
+    public static void writeEnumInt(BinaryRawWriter w, Enum e) {
         w.writeInt(e == null ? 0 : e.ordinal());
     }
 
@@ -1353,7 +1347,7 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      * @param e Enum.
      */
-    private static void writeEnumInt(BinaryRawWriter w, Enum e, Enum def) {
+    public static void writeEnumInt(BinaryRawWriter w, Enum e, Enum def) {
         assert def != null;
 
         w.writeInt(e == null ? def.ordinal() : e.ordinal());

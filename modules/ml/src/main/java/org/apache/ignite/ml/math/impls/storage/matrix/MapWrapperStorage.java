@@ -52,7 +52,7 @@ public class MapWrapperStorage implements VectorStorage {
 
         assert min >= 0;
 
-        size =  (max - min) + 1;
+        size = (max - min) + 1;
     }
 
     /**

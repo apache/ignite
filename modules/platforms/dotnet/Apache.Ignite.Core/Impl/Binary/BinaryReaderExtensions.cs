@@ -128,6 +128,24 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Reads the string collection.
+        /// </summary>
+        public static ICollection<string> ReadStringCollection(this IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            var cnt = reader.ReadInt();
+            var res = new List<string>(cnt);
+
+            for (var i = 0; i < cnt; i++)
+            {
+                res.Add(reader.ReadString());
+            }
+
+            return res;
+        }
+
+        /// <summary>
         /// Reads a nullable collection. The collection could be produced by Java 
         /// PlatformUtils.writeNullableCollection() from org.apache.ignite.internal.processors.platform.utils package.
         /// </summary>
