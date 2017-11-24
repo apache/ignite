@@ -621,7 +621,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                         @Override
                                         public void apply(UUID uuid,
                                             GridCacheLockImpl2Fair.ReleasedThreadMessage message) {
-                                            releasers.get(message.name).apply(message);
+                                            releasers.get(message.getName()).apply(message);
                                         }
                                     });
 
@@ -629,7 +629,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                     new IgniteBiInClosure<UUID, GridCacheLockImpl2Unfair.ReleasedMessage>() {
                                         @Override
                                         public void apply(UUID uuid, GridCacheLockImpl2Unfair.ReleasedMessage message) {
-                                            releasers.get(message.name).apply(message);
+                                            releasers.get(message.getName()).apply(message);
                                         }
                                     });
                             }

@@ -112,7 +112,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         private static final int CACHE_MSG_IDX = nextIndexId();
 
         /** Lock name. */
-        String name;
+        private String name;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -133,6 +133,15 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             this.name = name;
 
             cacheId(id);
+        }
+
+        /**
+         * Return lock name.
+         *
+         * @return Lock name.
+         */
+        String getName() {
+            return name;
         }
 
         /** {@inheritDoc} */
