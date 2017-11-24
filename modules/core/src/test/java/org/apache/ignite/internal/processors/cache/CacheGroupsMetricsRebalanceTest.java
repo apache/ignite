@@ -57,6 +57,12 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     private static final String CACHE2 = "cache2";
 
     /** */
+    private static final String CACHE3 = "cache3";
+
+    /** */
+    private static final long REBALANCE_DELAY = 5_000;
+
+    /** */
     private static final String GROUP = "group1";
 
     /** {@inheritDoc} */
@@ -90,7 +96,16 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         CacheConfiguration cfg2 = new CacheConfiguration(cfg1)
             .setName(CACHE2);
 
-        cfg.setCacheConfiguration(cfg1, cfg2);
+        CacheConfiguration cfg3 = new CacheConfiguration()
+            .setName(CACHE3)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setRebalanceMode(CacheRebalanceMode.ASYNC)
+            .setRebalanceBatchSize(100)
+            .setStatisticsEnabled(true)
+            .setRebalanceDelay(REBALANCE_DELAY);
+
+        cfg.setCacheConfiguration(cfg1, cfg2, cfg3);
 
         return cfg;
     }
@@ -199,6 +214,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         assertTrue(startTime > 0);
         assertTrue((U.currentTimeMillis() - startTime) < 5000);
+        assertTrue((U.currentTimeMillis() - startTime) > 0);
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -259,5 +275,31 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         long diff = finishTime - U.currentTimeMillis();
 
         assertTrue("Expected less 5000, Actual:" + diff, Math.abs(diff) < 10_000);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRebalanceDelay() throws Exception {
+        Ignite ig1 = startGrid(1);
+
+        final IgniteCache<Object, Object> cache = ig1.cache(CACHE3);
+
+        for (int i = 0; i < 10000; i++)
+            cache.put(i, CACHE3 + "-" + i);
+
+        long beforeStartTime = U.currentTimeMillis();
+
+        startGrid(2);
+        startGrid(3);
+
+        waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return cache.localMetrics().getRebalancingStartTime() != -1L;
+            }
+        }, 5_000);
+
+        assert(cache.localMetrics().getRebalancingStartTime() < U.currentTimeMillis() + REBALANCE_DELAY);
+        assert(cache.localMetrics().getRebalancingStartTime() > beforeStartTime + REBALANCE_DELAY);
     }
 }
