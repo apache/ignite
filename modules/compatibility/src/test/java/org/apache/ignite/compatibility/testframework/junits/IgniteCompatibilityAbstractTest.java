@@ -170,11 +170,16 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 String corePathTemplate = "modules/core/target/classes";
                 String coreTestsPathTemplate = "modules/core/target/test-classes";
 
+                //todo extract set of modules to replace
+                String indexingPathTemplate = "modules/indexing/target/classes";
+                String indexingTestsPathTemplate = "modules/indexing/target/test-classes";
+
                 for (URL url : ldr.getURLs()) {
                     String path = url.getPath();
 
                     if (!path.contains(corePathTemplate) && !path.contains(coreTestsPathTemplate))
-                        pathBuilder.append(path).append(File.pathSeparator);
+                        if (!path.contains(indexingPathTemplate) && !path.contains(indexingTestsPathTemplate))
+                            pathBuilder.append(path).append(File.pathSeparator);
                 }
 
                 String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);
@@ -185,9 +190,19 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
                 pathBuilder.append(pathToTestsArtifact).append(File.pathSeparator);
 
+
+                String pathToIgniteIndexingArtifact = MavenUtils.getPathToIgniteIndexingArtifact(ver, null);
+
+                pathBuilder.append(pathToIgniteIndexingArtifact).append(File.pathSeparator);
+
+                String pathToIgniteIndexingTestsArtifact = MavenUtils.getPathToIgniteIndexingArtifact(ver, "tests");
+
+                pathBuilder.append(pathToIgniteIndexingTestsArtifact).append(File.pathSeparator);
+
                 filteredJvmArgs.add("-cp");
                 filteredJvmArgs.add(pathBuilder.toString());
 
+                setupJvmArgs(filteredJvmArgs);
                 return filteredJvmArgs;
             }
         };
@@ -210,6 +225,14 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             rmJvmInstance = ignite;
 
         return ignite;
+    }
+
+    /**
+     * Allows to setup JVM arguments for standalone JVM
+     * @param filteredJvmArgs in/out collection with JVM arguments
+     */
+    protected void setupJvmArgs(Collection<String> filteredJvmArgs) {
+        //noop, hook for tests
     }
 
     /** {@inheritDoc} */
