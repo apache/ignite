@@ -23,15 +23,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
@@ -40,9 +42,12 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTE
 /**
  *
  */
-public class ZookeeperClusterNode implements ClusterNode, Serializable {
+public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final byte CLIENT_NODE_MASK = 0x01;
 
     /** */
     private UUID id;
@@ -63,14 +68,22 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
     @GridToStringExclude
     private Map<String, Object> attrs;
 
+    /** Metrics provider (transient). */
+    @GridToStringExclude
+    private transient DiscoveryMetricsProvider metricsProvider;
+
     /** */
     private transient boolean loc;
 
-    /** TODO ZK */
-    private transient ClusterMetrics metrics;
+    /** */
+    private transient volatile ClusterMetrics metrics;
+
+    /** Node cache metrics. */
+    @GridToStringExclude
+    private transient volatile Map<Integer, CacheMetrics> cacheMetrics;
 
     /** */
-    private boolean client;
+    private byte flags;
 
     /** Daemon node flag. */
     @GridToStringExclude
@@ -87,11 +100,14 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
      * @param consistentId Consistent ID.
      * @param client Client node flag.
      */
-    public ZookeeperClusterNode(UUID id,
+    public ZookeeperClusterNode(
+        UUID id,
         IgniteProductVersion ver,
         Map<String, Object> attrs,
         Serializable consistentId,
-        boolean client) {
+        boolean client,
+        DiscoveryMetricsProvider metricsProvider
+    ) {
         assert id != null;
         assert consistentId != null;
 
@@ -99,7 +115,10 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
         this.ver = ver;
         this.attrs = U.sealMap(attrs);
         this.consistentId = consistentId;
-        this.client = client;
+        this.metricsProvider = metricsProvider;
+
+        if (client)
+            flags |= CLIENT_NODE_MASK;
     }
 
     /** {@inheritDoc} */
@@ -112,11 +131,7 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
         return consistentId;
     }
 
-    /**
-     * Sets consistent globally unique node ID which survives node restarts.
-     *
-     * @param consistentId Consistent globally unique node ID.
-     */
+    /** {@inheritDoc} */
     public void setConsistentId(Serializable consistentId) {
         this.consistentId = consistentId;
 
@@ -125,6 +140,11 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
         map.put(ATTR_NODE_CONSISTENT_ID, consistentId);
 
         attrs = Collections.unmodifiableMap(map);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCacheClient() {
+        return isClient();
     }
 
     /** {@inheritDoc} */
@@ -138,10 +158,44 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
 
     /** {@inheritDoc} */
     @Override public ClusterMetrics metrics() {
+        if (metricsProvider != null) {
+            ClusterMetrics metrics0 = metricsProvider.metrics();
+
+            metrics = metrics0;
+
+            return metrics0;
+        }
+
+        // TODO: ZK
         if (metrics == null)
-            metrics = new ClusterMetricsSnapshot();
+            return new ClusterMetricsSnapshot();
 
         return metrics;
+    }
+
+    /** {@inheritDoc} */
+    public void setMetrics(ClusterMetrics metrics) {
+        assert metrics != null;
+
+        this.metrics = metrics;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, CacheMetrics> cacheMetrics() {
+        if (metricsProvider != null) {
+            Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
+
+            cacheMetrics = cacheMetrics0;
+
+            return cacheMetrics0;
+        }
+
+        return cacheMetrics;
+    }
+
+    /** {@inheritDoc} */
+    public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
+        this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -219,7 +273,7 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
 
     /** {@inheritDoc} */
     @Override public boolean isClient() {
-        return client;
+        return (CLIENT_NODE_MASK & flags) != 0;
     }
 
     /** {@inheritDoc} */
@@ -234,6 +288,6 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ZookeeperClusterNode [id=" + id + ", order=" + order + ", client=" + client + ']';
+        return "ZookeeperClusterNode [id=" + id + ", order=" + order + ", client=" + isClient() + ']';
     }
 }

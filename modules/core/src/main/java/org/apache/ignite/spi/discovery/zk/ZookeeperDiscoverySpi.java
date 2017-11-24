@@ -23,13 +23,14 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.discovery.JoiningNodesAware;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
@@ -51,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiMultipleInstancesSupport(true)
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
-public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, JoiningNodesAware {
+public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, IgniteDiscoverySpi {
     /** */
     @GridToStringInclude
     private String zkConnectionString;
@@ -105,6 +106,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     @GridToStringExclude
     private IgniteLogger log;
 
+    /** */
+    private boolean clientReconnectDisabled;
+
     public String getBasePath() {
         return basePath;
     }
@@ -143,6 +147,35 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         this.zkConnectionString = zkConnectionString;
 
         return this;
+    }
+
+    /**
+     * If {@code true} client does not try to reconnect.
+     *
+     * @return Client reconnect disabled flag.
+     */
+    public boolean isClientReconnectDisabled() {
+        return clientReconnectDisabled;
+    }
+
+    /**
+     * Sets client reconnect disabled flag.
+     *
+     * @param clientReconnectDisabled Client reconnect disabled flag.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setClientReconnectDisabled(boolean clientReconnectDisabled) {
+        this.clientReconnectDisabled = clientReconnectDisabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean reconnectSupported() {
+        return !clientReconnectDisabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reconnect() {
+        // TODO ZK
     }
 
     /** {@inheritDoc} */
@@ -291,7 +324,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             locNodeVer,
             locNodeAttrs,
             consistentId,
-            ignite.configuration().isClientMode());
+            ignite.configuration().isClientMode(),
+            metricsProvider);
 
         locNode.local(true);
 

@@ -18,10 +18,15 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.util.UUID;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 /**
  * TODO ZK
  */
-public interface JoiningNodesAware {
+public interface IgniteDiscoverySpi extends DiscoverySpi {
     public boolean knownNode(UUID nodeId);
+
+    public boolean reconnectSupported();
+
+    public void reconnect();
 }

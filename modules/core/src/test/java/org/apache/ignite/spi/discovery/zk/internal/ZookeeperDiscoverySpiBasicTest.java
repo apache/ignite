@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,9 +32,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -186,9 +189,45 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         IgnitionEx.TEST_ZK = false;
 
         if (USE_TEST_CLUSTER) {
-            zkCluster = new TestingCluster(ZK_SRVS);
+            zkCluster = createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
+        }
+    }
+
+    private static TestingCluster createTestingCluster(int instances) {
+        String tmpDir = System.getProperty("java.io.tmpdir");
+
+        List<InstanceSpec> specs = new ArrayList<>();
+
+        for (int i = 0; i < instances; i++) {
+            File file = new File(tmpDir, "apacheIgniteTestZk-" + i);
+
+            if (file.isDirectory())
+                deleteRecursively0(file);
+            else {
+                if (!file.mkdirs())
+                    throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
+            }
+
+
+            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, -1));
+        }
+
+        return new TestingCluster(specs);
+    }
+
+    private static void deleteRecursively0(File file) {
+        File[] files = file.listFiles();
+
+        if (files == null)
+            return;
+
+        for (File f : files) {
+            if (f.isDirectory())
+                deleteRecursively0(f);
+            else
+                f.delete();
         }
     }
 

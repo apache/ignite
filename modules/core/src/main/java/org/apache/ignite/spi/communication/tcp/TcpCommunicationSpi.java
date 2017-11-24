@@ -64,7 +64,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.discovery.JoiningNodesAware;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
@@ -491,8 +491,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 unknownNode = false;
                         }
                     }
-                    else if (discoverySpi instanceof JoiningNodesAware)
-                        unknownNode = !((JoiningNodesAware) discoverySpi).knownNode(sndId);
+                    else if (discoverySpi instanceof IgniteDiscoverySpi)
+                        unknownNode = !((IgniteDiscoverySpi) discoverySpi).knownNode(sndId);
 
                     if (unknownNode) {
                         U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId + ", ses=" + ses + ']');

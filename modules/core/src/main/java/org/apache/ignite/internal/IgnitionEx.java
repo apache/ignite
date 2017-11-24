@@ -44,6 +44,7 @@ import java.util.logging.Handler;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -162,7 +163,7 @@ public class IgnitionEx {
 
     static {
         if (TEST_ZK) {
-            zkCluster = new TestingCluster(1);
+            zkCluster = createTestingCluster(1);
 
             try {
                 zkCluster.start();
@@ -170,6 +171,42 @@ public class IgnitionEx {
             catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private static TestingCluster createTestingCluster(int instances) {
+        String tmpDir = System.getProperty("java.io.tmpdir");
+
+        List<InstanceSpec> specs = new ArrayList<>();
+
+        for (int i = 0; i < instances; i++) {
+            File file = new File(tmpDir, "apacheIgniteTestZk-" + i);
+
+            if (file.isDirectory())
+                deleteRecursively0(file);
+            else {
+                if (!file.mkdirs())
+                    throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
+            }
+
+
+            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, -1));
+        }
+
+        return new TestingCluster(specs);
+    }
+
+    private static void deleteRecursively0(File file) {
+        File[] files = file.listFiles();
+
+        if (files == null)
+            return;
+
+        for (File f : files) {
+            if (f.isDirectory())
+                deleteRecursively0(f);
+            else
+                f.delete();
         }
     }
 
