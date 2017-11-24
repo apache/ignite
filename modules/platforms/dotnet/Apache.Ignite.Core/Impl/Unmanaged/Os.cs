@@ -41,6 +41,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             IsMacOs = IsLinux && Shell.BashExecute("uname") == "Darwin";
 
+            // TODO:
+            if (IsLinux)
+            {
+                Console.WriteLine("uname: `{0}`", Shell.BashExecute("uname"));
+                Console.WriteLine("IsMacOs: " + IsMacOs);
+            }
+
             IsMono = Type.GetType("Mono.Runtime") != null;
             IsNetCore = !IsMono;
         }
