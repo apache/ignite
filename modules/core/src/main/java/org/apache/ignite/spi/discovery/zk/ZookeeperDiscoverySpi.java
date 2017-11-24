@@ -324,8 +324,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             locNodeVer,
             locNodeAttrs,
             consistentId,
-            ignite.configuration().isClientMode(),
-            metricsProvider);
+            ignite.configuration().isClientMode());
 
         locNode.local(true);
 
@@ -336,6 +335,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
         if (log.isDebugEnabled())
             log.debug("Local node initialized: " + locNode);
+
+        if (metricsProvider != null) {
+            locNode.setMetrics(metricsProvider.metrics());
+            locNode.setCacheMetrics(metricsProvider.cacheMetrics());
+        }
 
         return locNode;
     }

@@ -211,6 +211,10 @@ public class DiscoCache {
         return null;
     }
 
+    public boolean alive(UUID nodeId) {
+        return alives.contains(nodeId);
+    }
+
     /**
      * Gets all nodes that have cache with given name.
      *

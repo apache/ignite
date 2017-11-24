@@ -117,6 +117,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
+import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
@@ -872,6 +873,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 128:
                 msg = new CacheGroupAffinityMessage();
+
+                break;
+
+            case 129:
+                msg = new ClusterMetricsUpdateMessage();
 
                 break;
 

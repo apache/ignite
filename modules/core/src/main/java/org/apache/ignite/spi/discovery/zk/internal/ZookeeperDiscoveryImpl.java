@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -89,6 +90,9 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     private final GridFutureAdapter<Void> joinFut = new GridFutureAdapter<>();
+
+    /** */
+    private final AliveNodeDataWatcher aliveNodeDataWatcher = new AliveNodeDataWatcher();
 
     /** */
     private final ZkWatcher watcher;
@@ -585,66 +589,7 @@ public class ZookeeperDiscoveryImpl {
         String path = zkPaths.aliveNodesDir + "/" + alivePath;
 
         if (!path.equals(locNodeZkPath))
-            zkClient.getDataAsync(path, aliveNodeDataWatcher, aliveNodeDataUpdateCallback);
-    }
-
-    /** */
-    private final AliveNodeDataWatcher aliveNodeDataWatcher = new AliveNodeDataWatcher();
-
-    /** */
-    private AliveNodeDataUpdateCallback aliveNodeDataUpdateCallback = new AliveNodeDataUpdateCallback();
-
-    /**
-     *
-     */
-    private class AliveNodeDataWatcher implements Watcher {
-        @Override public void process(WatchedEvent evt) {
-            if (evt.getType() == Event.EventType.NodeDataChanged)
-                zkClient.getDataAsync(evt.getPath(), this, aliveNodeDataUpdateCallback);
-        }
-    }
-
-    /**
-     *
-     */
-    private class AliveNodeDataUpdateCallback implements AsyncCallback.DataCallback {
-        @Override public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
-            assert crd;
-
-            if (rc == KeeperException.Code.NONODE.intValue()) {
-                if (log.isDebugEnabled())
-                    log.debug("Alive node callaback, no node: " + path);
-
-                return;
-            }
-
-            assert rc == 0 : KeeperException.Code.get(rc);
-
-            try {
-                if (data.length > 0) {
-                    ZkAliveNodeData nodeData = unmarshal(data);
-
-                    Integer nodeInternalId = ZkIgnitePaths.aliveInternalId(path);
-
-                    Iterator<ZkDiscoveryEventData> it = evtsData.evts.values().iterator();
-
-                    boolean processed = false;
-
-                    while (it.hasNext()) {
-                        ZkDiscoveryEventData evtData = it.next();
-
-                        if (evtData.onAckReceived(nodeInternalId, nodeData.lastProcEvt))
-                            processed = true;
-                    }
-
-                    if (processed)
-                        handleProcessedEvents();
-                }
-            }
-            catch (Throwable e) {
-                onFatalError(e);
-            }
-        }
+            zkClient.getDataAsync(path, aliveNodeDataWatcher, aliveNodeDataWatcher);
     }
 
     /**
@@ -1133,8 +1078,14 @@ public class ZookeeperDiscoveryImpl {
 
         List<ZookeeperClusterNode> allNodes = dataForJoined.topology();
 
-        for (ZookeeperClusterNode node : allNodes)
+        // TODO ZK
+        for (int i = 0; i < allNodes.size(); i++) {
+            ZookeeperClusterNode node = allNodes.get(i);
+
+            node.setMetrics(new ClusterMetricsSnapshot());
+
             top.addNode(node);
+        }
 
         top.addNode(locNode);
 
@@ -1486,6 +1437,54 @@ public class ZookeeperDiscoveryImpl {
                 }
                 else
                     U.warn(log, "Data callback for unknown path: " + path);
+            }
+            catch (Throwable e) {
+                onFatalError(e);
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private class AliveNodeDataWatcher implements Watcher, AsyncCallback.DataCallback {
+        @Override public void process(WatchedEvent evt) {
+            if (evt.getType() == Event.EventType.NodeDataChanged)
+                zkClient.getDataAsync(evt.getPath(), this, this);
+        }
+
+        @Override public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
+            assert crd;
+
+            if (rc == KeeperException.Code.NONODE.intValue()) {
+                if (log.isDebugEnabled())
+                    log.debug("Alive node callaback, no node: " + path);
+
+                return;
+            }
+
+            assert rc == 0 : KeeperException.Code.get(rc);
+
+            try {
+                if (data.length > 0) {
+                    ZkAliveNodeData nodeData = unmarshal(data);
+
+                    Integer nodeInternalId = ZkIgnitePaths.aliveInternalId(path);
+
+                    Iterator<ZkDiscoveryEventData> it = evtsData.evts.values().iterator();
+
+                    boolean processed = false;
+
+                    while (it.hasNext()) {
+                        ZkDiscoveryEventData evtData = it.next();
+
+                        if (evtData.onAckReceived(nodeInternalId, nodeData.lastProcEvt))
+                            processed = true;
+                    }
+
+                    if (processed)
+                        handleProcessedEvents();
+                }
             }
             catch (Throwable e) {
                 onFatalError(e);
