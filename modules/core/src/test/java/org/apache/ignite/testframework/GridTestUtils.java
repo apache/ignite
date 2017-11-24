@@ -107,7 +107,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings({"UnusedCatchParameter"})
 public final class GridTestUtils {
-    /** Default busy wait sleep interval in milliseconds.  */
+    /** Default busy wait sleep interval in milliseconds. */
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
 
     /** */
@@ -221,8 +221,7 @@ public final class GridTestUtils {
      * @param log Logger (optional).
      * @param call Callable.
      * @param cls Exception class.
-     * @param msg Exception message (optional). If provided exception message
-     *      and this message should be equal.
+     * @param msg Exception message (optional). If provided exception message and this message should be equal.
      * @return Thrown throwable.
      */
     public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
@@ -269,8 +268,7 @@ public final class GridTestUtils {
      * @param log Logger (optional).
      * @param call Callable.
      * @param cls Exception class.
-     * @param msg Exception message (optional). If provided exception message
-     *      and this message should be equal.
+     * @param msg Exception message (optional). If provided exception message and this message should be equal.
      * @return Thrown throwable.
      */
     public static Throwable assertThrowsAnyCause(@Nullable IgniteLogger log, Callable<?> call,
@@ -306,8 +304,7 @@ public final class GridTestUtils {
      * @param log Logger (optional).
      * @param call Callable.
      * @param cls Exception class.
-     * @param msg Exception message (optional). If provided exception message
-     *      and this message should be equal.
+     * @param msg Exception message (optional). If provided exception message and this message should be equal.
      * @return Thrown throwable.
      */
     @Nullable public static Throwable assertThrowsInherited(@Nullable IgniteLogger log, Callable<?> call,
@@ -339,8 +336,8 @@ public final class GridTestUtils {
     }
 
     /**
-     * Checks whether callable throws exception, which is itself of a specified
-     * class, or has a cause of the specified class.
+     * Checks whether callable throws exception, which is itself of a specified class, or has a cause of the specified
+     * class.
      *
      * @param call Callable.
      * @param cls Expected class.
@@ -384,8 +381,7 @@ public final class GridTestUtils {
      *
      * @param log Logger (optional).
      * @param cls Exception class.
-     * @param msg Exception message (optional). If provided exception message
-     *      and this message should be equal.
+     * @param msg Exception message (optional). If provided exception message and this message should be equal.
      * @param obj Object to invoke method for.
      * @param mtd Object's method to invoke.
      * @param params Method parameters.
@@ -401,8 +397,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * Asserts that each element in iterable has one-to-one correspondence with a
-     * predicate from list.
+     * Asserts that each element in iterable has one-to-one correspondence with a predicate from list.
      *
      * @param it Input iterable of elements.
      * @param ps Array of predicates (by number of elements in iterable).
@@ -441,8 +436,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * Every invocation of this method will never return a
-     * repeating multicast port for a different test case.
+     * Every invocation of this method will never return a repeating multicast port for a different test case.
      *
      * @param cls Class.
      * @return Next multicast port.
@@ -488,8 +482,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * Every invocation of this method will never return a
-     * repeating communication port for a different test case.
+     * Every invocation of this method will never return a repeating communication port for a different test case.
      *
      * @param cls Class.
      * @return Next communication port.
@@ -515,8 +508,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * Every invocation of this method will never return a
-     * repeating discovery port for a different test case.
+     * Every invocation of this method will never return a repeating discovery port for a different test case.
      *
      * @param cls Class.
      * @return Next discovery port.
@@ -541,8 +533,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * Every invocation of this method will never return a
-     * repeating multicast group for a different test case.
+     * Every invocation of this method will never return a repeating multicast group for a different test case.
      *
      * @param cls Class.
      * @return Next multicast group.
@@ -659,7 +650,8 @@ public final class GridTestUtils {
      * @return Future for the run. Future returns execution time in milliseconds.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    public static IgniteInternalFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum, final String threadName) {
+    public static IgniteInternalFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum,
+        final String threadName) {
         final List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
         final GridTestSafeThreadFactory threadFactory = new GridTestSafeThreadFactory(threadName);
 
@@ -811,8 +803,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * Interrupts and waits for termination of all the threads started
-     * so far by current test.
+     * Interrupts and waits for termination of all the threads started so far by current test.
      *
      * @param log Logger.
      */
@@ -945,8 +936,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * Silent stop grid.
-     * Method doesn't throw any exception.
+     * Silent stop grid. Method doesn't throw any exception.
      *
      * @param ignite Grid to stop.
      * @param log Logger.
@@ -963,8 +953,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * Silent stop grid.
-     * Method doesn't throw any exception.
+     * Silent stop grid. Method doesn't throw any exception.
      *
      * @param gridName Grid name.
      * @param log Logger.
@@ -980,11 +969,10 @@ public final class GridTestUtils {
     }
 
     /**
-     * Gets file representing the path passed in. First the check is made if path is absolute.
-     * If not, then the check is made if path is relative to ${IGNITE_HOME}. If both checks fail,
-     * then {@code null} is returned, otherwise file representing path is returned.
-     * <p>
-     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     * Gets file representing the path passed in. First the check is made if path is absolute. If not, then the check is
+     * made if path is relative to ${IGNITE_HOME}. If both checks fail, then {@code null} is returned, otherwise file
+     * representing path is returned. <p> See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is
+     * retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
@@ -1356,10 +1344,10 @@ public final class GridTestUtils {
                 Throwable cause = e.getCause();
 
                 if (cause instanceof Error)
-                    throw (Error) cause;
+                    throw (Error)cause;
 
                 if (cause instanceof Exception)
-                    throw (Exception) cause;
+                    throw (Exception)cause;
 
                 throw new RuntimeException("Failed to invoke method)" +
                     " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
@@ -1392,15 +1380,14 @@ public final class GridTestUtils {
     }
 
     /**
-     * Tries few times to perform some assertion. In the worst case
-     * {@code assertion} closure will be executed {@code retries} + 1 times and
-     * thread will spend approximately {@code retries} * {@code retryInterval} sleeping.
+     * Tries few times to perform some assertion. In the worst case {@code assertion} closure will be executed {@code
+     * retries} + 1 times and thread will spend approximately {@code retries} * {@code retryInterval} sleeping.
      *
      * @param log Log.
      * @param retries Number of retries.
      * @param retryInterval Interval between retries in milliseconds.
-     * @param c Closure with assertion. All {@link AssertionError}s thrown
-     *      from this closure will be ignored {@code retries} times.
+     * @param c Closure with assertion. All {@link AssertionError}s thrown from this closure will be ignored {@code
+     * retries} times.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     @SuppressWarnings("ErrorNotRethrown")
@@ -1434,7 +1421,7 @@ public final class GridTestUtils {
         assert file.exists();
         assert file.length() < Integer.MAX_VALUE;
 
-        byte[] bytes = new byte[(int) file.length()];
+        byte[] bytes = new byte[(int)file.length()];
 
         try (FileInputStream fis = new FileInputStream(file)) {
             int readBytesCnt = fis.read(bytes);
@@ -1445,9 +1432,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * Sleeps and increments an integer.
-     * <p>
-     * Allows for loops like the following:
+     * Sleeps and increments an integer. <p> Allows for loops like the following:
      * <pre>{@code
      *     for (int i = 0; i < 20 && !condition; i = sleepAndIncrement(200, i)) {
      *         ...
@@ -1474,7 +1459,8 @@ public final class GridTestUtils {
      * @return {@code true} if condition was achieved, {@code false} otherwise.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
-    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedCheckedException {
+    public static boolean waitForCondition(GridAbsPredicate cond,
+        long timeout) throws IgniteInterruptedCheckedException {
         long curTime = U.currentTimeMillis();
         long endTime = curTime + timeout;
 
@@ -1490,7 +1476,7 @@ public final class GridTestUtils {
             curTime = U.currentTimeMillis();
         }
 
-        return false;
+        return cond.apply();
     }
 
     /**
@@ -1515,7 +1501,7 @@ public final class GridTestUtils {
         keyMgrFactory.init(keyStore, storePass);
 
         ctx.init(keyMgrFactory.getKeyManagers(),
-            new TrustManager[]{GridSslBasicContextFactory.getDisabledTrustManager()}, null);
+            new TrustManager[] {GridSslBasicContextFactory.getDisabledTrustManager()}, null);
 
         return ctx;
     }
@@ -1536,7 +1522,6 @@ public final class GridTestUtils {
 
         return factory;
     }
-
 
     /**
      * Creates test-purposed SSL context factory from test key store with disabled trust manager.
@@ -1683,9 +1668,8 @@ public final class GridTestUtils {
     }
 
     /**
-     * Prompt to execute garbage collector.
-     * {@code System.gc();} is not guaranteed to garbage collection, this method try to fill memory to crowd out dead
-     * objects.
+     * Prompt to execute garbage collector. {@code System.gc();} is not guaranteed to garbage collection, this method
+     * try to fill memory to crowd out dead objects.
      */
     public static void runGC() {
         System.gc();
@@ -1715,8 +1699,8 @@ public final class GridTestUtils {
 
     /**
      * {@link Class#getSimpleName()} does not return outer class name prefix for inner classes, for example,
-     * getSimpleName() returns "RegularDiscovery" instead of "GridDiscoveryManagerSelfTest$RegularDiscovery"
-     * This method return correct simple name for inner classes.
+     * getSimpleName() returns "RegularDiscovery" instead of "GridDiscoveryManagerSelfTest$RegularDiscovery" This method
+     * return correct simple name for inner classes.
      *
      * @param cls Class
      * @return Simple name with outer class prefix.
