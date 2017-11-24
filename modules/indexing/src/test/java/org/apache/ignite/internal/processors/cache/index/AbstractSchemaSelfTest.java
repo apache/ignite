@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,6 +41,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -39,6 +51,7 @@ import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -46,18 +59,11 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Tests for dynamic schema changes.
  */
 @SuppressWarnings("unchecked")
-public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
+public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /** Cache. */
     protected static final String CACHE_NAME = "cache";
 
@@ -155,7 +161,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param inlineSize Inline size.
      * @param fields Fields.
      */
-    protected static void assertIndex(String cacheName, String tblName, String idxName,
+    static void assertIndex(String cacheName, String tblName, String idxName,
         int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         assertIndex(cacheName, false, tblName, idxName, inlineSize, fields);
     }
@@ -171,7 +177,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param inlineSize Inline size.
      * @param fields Fields.
      */
-    protected static void assertIndex(String cacheName, boolean checkNonAffinityNodes, String tblName, String idxName,
+    private static void assertIndex(String cacheName, boolean checkNonAffinityNodes, String tblName, String idxName,
         int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         for (Ignite node : Ignition.allGrids())
             assertIndex(node, checkNonAffinityNodes, cacheName, tblName, idxName, inlineSize, fields);
@@ -189,73 +195,45 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param inlineSize Inline size.
      * @param fields Fields.
      */
-    protected static void assertIndex(Ignite node, boolean checkNonAffinityNode, String cacheName, String tblName,
+    static void assertIndex(Ignite node, boolean checkNonAffinityNode, String cacheName, String tblName,
         String idxName, int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
+        node.cache(cacheName);
+
         IgniteEx node0 = (IgniteEx)node;
 
-        assertIndexDescriptor(node0, cacheName, tblName, idxName, fields);
+        ArrayList<IgniteBiTuple<String, Boolean>> res = new ArrayList<>();
 
-        if (checkNonAffinityNode || affinityNode(node0, cacheName)) {
-            QueryTypeDescriptorImpl typeDesc = typeExisting(node0, cacheName, tblName);
-
-            assertIndex(typeDesc, idxName, inlineSize, fields);
-        }
-    }
-
-    /**
-     * Make sure index exists in cache descriptor.
-     *
-     * @param node Node.
-     * @param cacheName Cache name.
-     * @param tblName Table name.
-     * @param idxName Index name.
-     * @param fields Fields.
-     */
-    protected static void assertIndexDescriptor(IgniteEx node, String cacheName, String tblName, String idxName,
-        IgniteBiTuple<String, Boolean>... fields) {
-        awaitCompletion();
-
-        DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
-
-        assert desc != null;
-
-        for (QueryEntity entity : desc.schema().entities()) {
-            if (F.eq(tblName, entity.getTableName())) {
-                for (QueryIndex idx : entity.getIndexes()) {
-                    if (F.eq(QueryUtils.indexName(entity, idx), idxName)) {
-                        LinkedHashMap<String, Boolean> idxFields = idx.getFields();
-
-                        assertEquals(idxFields.size(), fields.length);
-
-                        int i = 0;
-
-                        for (String idxField : idxFields.keySet()) {
-                            assertEquals(idxField.toLowerCase(), fields[i].get1().toLowerCase());
-                            assertEquals(idxFields.get(idxField), fields[i].get2());
-
-                            i++;
-                        }
-
-                        return;
+        try {
+            try (Connection c = connect(node0)) {
+                try (ResultSet rs = c.getMetaData().getIndexInfo(null, cacheName, tblName, false, false)) {
+                    while (rs.next()) {
+                        if (F.eq(idxName, rs.getString("INDEX_NAME")))
+                            res.add(new T2<>(rs.getString("COLUMN_NAME"), F.eq("A", rs.getString("ASC_OR_DESC"))));
                     }
                 }
             }
+
+            assertTrue("Index not found: " + idxName, res.size() > 0);
+
+            assertEquals(Arrays.asList(fields), res);
+        }
+        catch (SQLException e) {
+            throw new AssertionError(e);
         }
 
-        fail("Index not found [node=" + node.name() + ", cacheName=" + cacheName + ", tlbName=" + tblName +
-            ", idxName=" + idxName + ']');
+        // Also, let's check internal stuff not visible via JDBC - like inline size.
+        QueryTypeDescriptorImpl typeDesc = typeExisting(node0, cacheName, tblName);
+
+        assertInternalIndexParams(typeDesc, idxName, inlineSize);
     }
 
     /**
-     * Assert index state.
-     *
+     * Assert index details not available via JDBC.
      * @param typeDesc Type descriptor.
      * @param idxName Index name.
      * @param inlineSize Inline size.
-     * @param fields Fields (order is important).
      */
-    protected static void assertIndex(QueryTypeDescriptorImpl typeDesc, String idxName,
-        int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
+    private static void assertInternalIndexParams(QueryTypeDescriptorImpl typeDesc, String idxName, int inlineSize) {
         QueryIndexDescriptorImpl idxDesc = typeDesc.index(idxName);
 
         assertNotNull(idxDesc);
@@ -264,22 +242,32 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         assertEquals(typeDesc, idxDesc.typeDescriptor());
         assertEquals(QueryIndexType.SORTED, idxDesc.type());
         assertEquals(inlineSize, idxDesc.inlineSize());
+    }
 
-        List<String> fieldNames = new ArrayList<>(idxDesc.fields());
+    /**
+     * @param node Node to connect to.
+     * @return Thin JDBC connection to specified node.
+     */
+    private static Connection connect(IgniteEx node) {
+        Collection<GridPortRecord> recs = node.context().ports().records();
 
-        assertEquals(fields.length, fieldNames.size());
+        GridPortRecord cliLsnrRec = null;
 
-        for (int i = 0; i < fields.length; i++) {
-            String expFieldName = fields[i].get1();
-            boolean expFieldAsc = fields[i].get2();
+        for (GridPortRecord rec : recs) {
+            if (rec.clazz() == ClientListenerProcessor.class) {
+                cliLsnrRec = rec;
 
-            assertEquals("Index field mismatch [pos=" + i + ", expField=" + expFieldName + ", actualField=" +
-                fieldNames.get(i) + ']', expFieldName.toLowerCase(), fieldNames.get(i).toLowerCase());
+                break;
+            }
+        }
 
-            boolean fieldAsc = !idxDesc.descending(expFieldName);
+        assertNotNull(cliLsnrRec);
 
-            assertEquals("Index field sort mismatch [pos=" + i + ", field=" + expFieldName +
-                ", expAsc=" + expFieldAsc + ", actualAsc=" + fieldAsc + ']', expFieldAsc, fieldAsc);
+        try {
+            return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + cliLsnrRec.port());
+        }
+        catch (SQLException e) {
+            throw new AssertionError(e);
         }
     }
 
@@ -378,6 +366,9 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         return filter == null || filter.apply(node.localNode());
     }
 
+
+
+
     /**
      * Get table name for class.
      *
@@ -448,7 +439,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @return Field.
      */
     protected static IgniteBiTuple<String, Boolean> field(String name, boolean asc) {
-        return F.t(name, asc);
+        return F.t(name.toUpperCase(), asc);
     }
 
     /**

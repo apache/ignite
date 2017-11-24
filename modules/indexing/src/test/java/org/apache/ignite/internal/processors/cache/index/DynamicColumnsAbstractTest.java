@@ -110,8 +110,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
             assertEquals(exp.typeName(), act.typeName());
 
-            // TODO uncomment after IGNITE-6529 is implemented.
-            //assertEquals(exp.isNullable(), act.isNullable());
+            assertEquals(exp.isNullable(), act.isNullable());
         }
     }
 
