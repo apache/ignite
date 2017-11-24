@@ -290,6 +290,61 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getEntryProcessorPuts() {
+        return cache.clusterMetrics().getEntryProcessorPuts();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorRemovals() {
+        return cache.clusterMetrics().getEntryProcessorRemovals();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorReadOnlyInvocations() {
+        return cache.clusterMetrics().getEntryProcessorReadOnlyInvocations();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorInvocations() {
+        return cache.clusterMetrics().getEntryProcessorInvocations();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorHits() {
+        return cache.clusterMetrics().getEntryProcessorHits();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorHitPercentage() {
+        return cache.clusterMetrics().getEntryProcessorHitPercentage();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMissPercentage() {
+        return cache.clusterMetrics().getEntryProcessorMissPercentage();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorMisses() {
+        return cache.clusterMetrics().getEntryProcessorMisses();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getAverageEntryProcessorInvocationTime() {
+        return cache.clusterMetrics().getAverageEntryProcessorInvocationTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getMinEntryProcessorInvocationTime() {
+        return cache.clusterMetrics().getMinEntryProcessorInvocationTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getMaxEntryProcessorInvocationTime() {
+        return cache.clusterMetrics().getMaxEntryProcessorInvocationTime();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getCacheRemovals() {
         return cache.clusterMetrics().getCacheRemovals();
     }

@@ -478,8 +478,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable CacheEntryPredicate[] filter,
         boolean intercept,
         UUID subjId,
-        String taskName)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        String taskName,
+        boolean transformOp
+    )throws IgniteCheckedException, GridCacheEntryRemovedException {
         return new GridTuple3<>(false, null, null);
     }
 
@@ -512,7 +513,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         String taskName,
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
-        @Nullable GridDhtAtomicAbstractUpdateFuture fut) throws IgniteCheckedException,
+        @Nullable GridDhtAtomicAbstractUpdateFuture fut,
+        boolean transformOp
+    ) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
         assert false;
 

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDh
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridCircularBuffer;
@@ -197,7 +198,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     req.keepBinary(),
                     req.nodeId(),
                     req.subjectId(),
-                    taskName);
+                    taskName,
+                    req.operation() == TRANSFORM);
             }
             catch (IgniteCheckedException e) {
                 res.addFailedKey(key, new IgniteCheckedException("Failed to update key in near cache: " + key, e));
@@ -214,6 +216,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param nodeId Node ID.
      * @param subjId Subject ID.
      * @param taskName Task name.
+     * @param transformedValue {@code True} if transformed value.
      * @throws IgniteCheckedException If failed.
      */
     private void processNearAtomicUpdateResponse(
@@ -225,8 +228,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean keepBinary,
         UUID nodeId,
         UUID subjId,
-        String taskName
-    ) throws IgniteCheckedException {
+        String taskName,
+        boolean transformedValue) throws IgniteCheckedException {
         try {
             while (true) {
                 GridCacheEntryEx entry = null;
@@ -266,7 +269,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         taskName,
                         null,
                         null,
-                        null);
+                        null,
+                        transformedValue);
 
                     if (updRes.removeVersion() != null)
                         ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -365,7 +369,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             taskName,
                             null,
                             null,
-                            null);
+                            null, false);
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
