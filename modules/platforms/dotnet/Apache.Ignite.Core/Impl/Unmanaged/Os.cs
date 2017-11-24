@@ -32,13 +32,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var platform = Environment.OSVersion.Platform;
 
             IsLinux = platform == PlatformID.Unix
+                      || platform == PlatformID.MacOSX
                       || (int) Environment.OSVersion.Platform == 128;
 
             IsWindows = platform == PlatformID.Win32NT
                         || platform == PlatformID.Win32S
                         || platform == PlatformID.Win32Windows;
 
-            IsMacOs = platform == PlatformID.MacOSX;
+            IsMacOs = IsLinux && Shell.BashExecute("uname") == "Darwin";
 
             IsMono = Type.GetType("Mono.Runtime") != null;
             IsNetCore = !IsMono;
