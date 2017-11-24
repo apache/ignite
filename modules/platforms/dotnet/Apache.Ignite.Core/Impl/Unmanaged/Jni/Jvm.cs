@@ -285,14 +285,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 return Os.IsWindows
                     ? JniNativeMethodsWindows.JNI_CreateJavaVM(out pvm, out penv, args)
-                    : JniNativeMethodsLinux.JNI_CreateJavaVM(out pvm, out penv, args);
+                    : Os.IsMacOs
+                        ? JniNativeMethodsMacOs.JNI_CreateJavaVM(out pvm, out penv, args)
+                        : JniNativeMethodsLinux.JNI_CreateJavaVM(out pvm, out penv, args);
             }
 
             internal static JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size, out int size2)
             {
                 return Os.IsWindows
                     ? JniNativeMethodsWindows.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
-                    : JniNativeMethodsLinux.JNI_GetCreatedJavaVMs(out pvm, size, out size2);
+                    : Os.IsMacOs
+                        ? JniNativeMethodsMacOs.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
+                        : JniNativeMethodsLinux.JNI_GetCreatedJavaVMs(out pvm, size, out size2);
             }
         }
 
@@ -324,6 +328,22 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("libjvm.so", CallingConvention = CallingConvention.StdCall)]
+            internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
+                [Out] out int size2);
+        }
+
+        /// <summary>
+        /// DLL imports.
+        /// </summary>
+        private static class JniNativeMethodsMacOs
+        {
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libjvm.dylib", CallingConvention = CallingConvention.StdCall)]
+            internal static extern JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
+                JvmInitArgs* args);
+
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libjvm.dylib", CallingConvention = CallingConvention.StdCall)]
             internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
                 [Out] out int size2);
         }

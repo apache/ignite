@@ -336,7 +336,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromSymlink()
         {
-            if (Os.IsWindows)
+            if (Os.IsWindows || Os.IsMacOs)
             {
                 yield break;
             }
