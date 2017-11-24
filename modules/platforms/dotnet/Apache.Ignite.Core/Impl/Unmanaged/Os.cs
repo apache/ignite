@@ -44,7 +44,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             // TODO:
             if (IsLinux)
             {
-                Console.WriteLine("uname: `{0}`", Shell.BashExecute("uname"));
+                var uname = Shell.BashExecute("uname");
+                Console.WriteLine("uname: `{0}` ({1})", uname, uname.Length);
                 Console.WriteLine("IsMacOs: " + IsMacOs);
             }
 
