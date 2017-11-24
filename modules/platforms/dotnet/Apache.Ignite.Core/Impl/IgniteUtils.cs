@@ -80,7 +80,11 @@ namespace Apache.Ignite.Core.Impl
         };
 
         /** Jvm dll file name. */
-        internal static readonly string FileJvmDll = Os.IsWindows ? "jvm.dll" : "libjvm.so";
+        internal static readonly string FileJvmDll = Os.IsWindows
+            ? "jvm.dll"
+            : Os.IsMacOs
+                ? "libjvm.dylib"
+                : "libjvm.so";
 
         /** Prefix for temp directory names. */
         private const string DirIgniteTmp = "Ignite_";
