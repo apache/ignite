@@ -121,6 +121,25 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+        public void DeployAll(IEnumerable<ServiceConfiguration> configurations)
+        {
+            try
+            {
+                _services.DeployAllAsync(configurations).Wait();
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.InnerException;
+            }
+        }
+
+        /** <inheritDoc /> */
+        public Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations)
+        {
+            return _services.DeployAllAsync(configurations);
+        }
+
+        /** <inheritDoc /> */
         public void Cancel(string name)
         {
             _services.CancelAsync(name).Wait();

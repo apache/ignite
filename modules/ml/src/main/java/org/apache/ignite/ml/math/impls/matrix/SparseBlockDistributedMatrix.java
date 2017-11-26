@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -36,11 +40,6 @@ import org.apache.ignite.ml.math.impls.storage.matrix.BlockVectorStorage;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Sparse block distributed matrix. This matrix represented by blocks 32x32 {@link MatrixBlockEntry}.
@@ -71,11 +70,12 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
      */
     public SparseBlockDistributedMatrix(double[][] data) {
         assert data.length > 0;
+
         setStorage(new BlockMatrixStorage(data.length, getMaxAmountOfColumns(data)));
 
         for (int i = 0; i < data.length; i++)
             for (int j = 0; j < data[i].length; j++)
-                storage().set(i,j,data[i][j]);
+                storage().set(i, j, data[i][j]);
     }
 
     /**
@@ -166,9 +166,6 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         return matrixC;
     }
 
-
-
-
     /**
      * {@inheritDoc}
      */
@@ -181,8 +178,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
             throw new CardinalityException(columnSize(), vec.size());
 
         SparseBlockDistributedMatrix matrixA = this;
-        SparseBlockDistributedVector vectorB = (SparseBlockDistributedVector) vec;
-
+        SparseBlockDistributedVector vectorB = (SparseBlockDistributedVector)vec;
 
         String cacheName = this.storage().cacheName();
         SparseBlockDistributedVector vectorC = new SparseBlockDistributedVector(matrixA.rowSize());
@@ -207,7 +203,6 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
             locKeys.forEach(key -> {
                 long newBlockId = key.blockId();
 
-
                 IgnitePair<Long> newBlockIdForMtx = new IgnitePair<>(newBlockId, 0L);
 
                 VectorBlockEntry blockC = null;
@@ -230,50 +225,6 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         return vectorC;
     }
 
-
-
-/*    @SuppressWarnings({"unchecked"})
-    @Override public Vector times(final Vector vec) {
-        if (vec == null)
-            throw new IllegalArgumentException("The vector should be not null.");
-
-        if (columnSize() != vec.size())
-            throw new CardinalityException(columnSize(), vec.size());
-
-        SparseBlockDistributedMatrix matrixA = this;
-        SparseBlockDistributedVector vectorB = (SparseBlockDistributedVector) vec;
-
-        String cacheName = this.storage().cacheName();
-
-        int rows = this.rowSize();
-
-        SparseDistributedVector vectorC = (SparseDistributedVector) likeVector(rows);
-
-        CacheUtils.bcast(cacheName, () -> {
-            Ignite ignite = Ignition.localIgnite();
-            Affinity affinity = ignite.affinity(cacheName);
-
-            ClusterNode locNode = ignite.cluster().localNode();
-
-            SparseDistributedVectorStorage storageC = vectorC.storage();
-
-            Map<ClusterNode, Collection<RowColMatrixKey>> keysCToNodes = affinity.mapKeysToNodes(storageC.getAllKeys());
-            Collection<RowColMatrixKey> locKeys = keysCToNodes.get(locNode);
-
-            if (locKeys == null)
-                return;
-
-            locKeys.forEach(key -> {
-                int idx = key.index();
-                Vector Aik = matrixA.getRow(idx);
-                vectorC.set(idx, Aik.times(vectorB).sum());
-            });
-
-        });
-
-        return vectorC;
-    }*/
-
     /** {@inheritDoc} */
     @Override public Vector getCol(int col) {
         checkColumnIndex(col);
@@ -281,7 +232,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         Vector res = new SparseDistributedVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
-            res.setX(i, getX(i,col));
+            res.setX(i, getX(i, col));
         return res;
     }
 
@@ -292,9 +243,10 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         Vector res = new SparseDistributedVector(columnSize());
 
         for (int i = 0; i < columnSize(); i++)
-            res.setX(i, getX(row,i));
+            res.setX(i, getX(row, i));
         return res;
     }
+
     /** {@inheritDoc} */
     @Override public Matrix assign(double val) {
         return mapOverValues(v -> val);

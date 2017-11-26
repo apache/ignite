@@ -17,6 +17,16 @@
 
 package org.apache.ignite.ml.math.distributed;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BinaryOperator;
+import java.util.stream.Stream;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -36,15 +46,15 @@ import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.MatrixBlockKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.VectorBlockKey;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.ml.math.functions.*;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteConsumer;
+import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry;
 import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
-
-import javax.cache.Cache;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BinaryOperator;
-import java.util.stream.Stream;
 
 /**
  * Distribution-related misc. support.
@@ -386,7 +396,7 @@ public class CacheUtils {
      * @param <V> Cache value object type.
      */
     protected static <K, V> void foreach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun,
-                                         IgnitePredicate<K> keyFilter) {
+        IgnitePredicate<K> keyFilter) {
         bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
             IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
@@ -562,8 +572,8 @@ public class CacheUtils {
      * @param isNilpotent Is nilpotent.
      */
     private static <K, V, A> A sparseFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
-                                          IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, IgniteSupplier<A> zeroValSupp, V defVal, K defKey,
-                                          long defValCnt, boolean isNilpotent) {
+        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, IgniteSupplier<A> zeroValSupp, V defVal, K defKey,
+        long defValCnt, boolean isNilpotent) {
 
         A defRes = zeroValSupp.get();
 
@@ -599,6 +609,18 @@ public class CacheUtils {
         return totalRes.stream().reduce(defRes, accumulator);
     }
 
+    /**
+     * Distributed version of fold operation. This method also applicable to sparse zeroes.
+     *
+     * @param cacheName Cache name.
+     * @param ignite ignite
+     * @param acc Accumulator
+     * @param supp supplier
+     * @param entriesGen entries generator
+     * @param comb combiner
+     * @param zeroValSupp Zero value supplier.
+     * @return aggregated result
+     */
     public static <K, V, A, W> A reduce(String cacheName, Ignite ignite,
         IgniteTriFunction<W, Cache.Entry<K, V>, A, A> acc,
         IgniteSupplier<W> supp,
@@ -622,9 +644,22 @@ public class CacheUtils {
         return totalRes.stream().reduce(defRes, comb);
     }
 
-    public static <K, V, A, W> A reduce(String cacheName, IgniteTriFunction<W, Cache.Entry<K, V>, A, A> acc,
+    /**
+     * Distributed version of fold operation.
+     *
+     * @param cacheName Cache name.
+     * @param acc Accumulator
+     * @param supp supplier
+     * @param entriesGen entries generator
+     * @param comb combiner
+     * @param zeroValSupp Zero value supplier
+     * @return aggregated result
+     */
+    public static <K, V, A, W> A reduce(String cacheName,
+        IgniteTriFunction<W, Cache.Entry<K, V>, A, A> acc,
         IgniteSupplier<W> supp,
-        IgniteSupplier<Iterable<Cache.Entry<K, V>>> entriesGen, IgniteBinaryOperator<A> comb,
+        IgniteSupplier<Iterable<Cache.Entry<K, V>>> entriesGen,
+        IgniteBinaryOperator<A> comb,
         IgniteSupplier<A> zeroValSupp) {
         return reduce(cacheName, Ignition.localIgnite(), acc, supp, entriesGen, comb, zeroValSupp);
     }
@@ -639,6 +674,7 @@ public class CacheUtils {
 
     /**
      * Broadcast runnable to data nodes of given cache.
+     *
      * @param cacheName Cache name.
      * @param run Runnable.
      */
@@ -657,6 +693,7 @@ public class CacheUtils {
 
     /**
      * Broadcast callable to data nodes of given cache.
+     *
      * @param cacheName Cache name.
      * @param ignite Ignite instance.
      * @param call Callable to broadcast.
@@ -682,13 +719,15 @@ public class CacheUtils {
 
             V v = ce.entry().getValue();
 
-            if (v instanceof VectorBlockEntry){
+            if (v instanceof VectorBlockEntry) {
                 VectorBlockEntry entry = (VectorBlockEntry)v;
 
-                for (int i = 0; i < entry.size(); i++) entry.set(i, (Double) mapper.apply(entry.get(i)));
+                for (int i = 0; i < entry.size(); i++)
+                    entry.set(i, (Double)mapper.apply(entry.get(i)));
 
-                ce.cache().put(k, (V) entry);
-            } else {
+                ce.cache().put(k, (V)entry);
+            }
+            else {
                 V mappingRes = mapper.apply((Double)v);
                 ce.cache().put(k, mappingRes);
             }

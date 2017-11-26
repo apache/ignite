@@ -48,7 +48,7 @@ public class LocalModelsTest {
      *
      */
     @Test
-    public void importExportKMeansModelTest(){
+    public void importExportKMeansModelTest() {
         Path mdlPath = Paths.get(mdlFilePath);
 
         KMeansModel mdl = getClusterModel();
@@ -67,7 +67,7 @@ public class LocalModelsTest {
     /**
      *
      */
-    private KMeansModel getClusterModel(){
+    private KMeansModel getClusterModel() {
         KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
 
         double[] v1 = new double[] {1959, 325100};

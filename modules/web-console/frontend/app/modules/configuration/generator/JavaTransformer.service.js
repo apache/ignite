@@ -1654,6 +1654,8 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         }
 
         if ((_.nonEmpty(clientNearCaches) || demo) && shortFactoryCls) {
+            imports.push('org.apache.ignite.Ignite');
+
             sb.append(`Ignite ignite = Ignition.start(${cfgRef});`);
 
             _.forEach(clientNearCaches, (cache, idx) => {

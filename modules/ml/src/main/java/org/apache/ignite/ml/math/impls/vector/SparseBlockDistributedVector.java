@@ -17,18 +17,14 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
-import org.apache.ignite.lang.IgniteUuid;
+import java.util.UUID;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockVectorStorage;
-import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorage;
-
-import java.util.UUID;
 
 /**
  * Sparse distributed vector implementation based on data grid.
@@ -58,20 +54,17 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
         setStorage(new BlockVectorStorage(size));
     }
 
-
     /**
-     *
      * @param data Data to fill storage
      */
     public SparseBlockDistributedVector(double[] data) {
         setStorage(new BlockVectorStorage(data.length));
         for (int i = 0; i < data.length; i++) {
             double val = data[i];
-            if(val != 0.0) storage().set(i, val);
+            if (val != 0.0)
+                storage().set(i, val);
         }
     }
-
-
 
     /** */
     public BlockVectorStorage storage() {
@@ -87,10 +80,12 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
         return mapOverValues(v -> v / d);
     }
 
+    /** {@inheritDoc} */
     @Override public Vector like(int size) {
         return new SparseBlockDistributedVector(size);
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
         return new SparseBlockDistributedMatrix(rows, cols);
     }
@@ -112,7 +107,6 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
     @Override public Vector times(double x) {
         return mapOverValues(v -> v * x);
     }
-
 
     /** {@inheritDoc} */
     @Override public Vector assign(double val) {

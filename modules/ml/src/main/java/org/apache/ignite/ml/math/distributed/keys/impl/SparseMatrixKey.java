@@ -35,8 +35,10 @@ import java.util.UUID;
 public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     /** */
     private int idx;
+
     /** */
     private UUID matrixId;
+
     /** */
     @AffinityKeyMapped
     private Object affinityKey;
@@ -44,7 +46,7 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     /**
      * Default constructor (required by Externalizable).
      */
-    public SparseMatrixKey(){
+    public SparseMatrixKey() {
 
     }
 

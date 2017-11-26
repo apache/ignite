@@ -49,14 +49,19 @@ import java.util.stream.IntStream;
 public class SparseDistributedMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants, DistributedStorage<RowColMatrixKey> {
     /** Cache name used for all instances of {@link SparseDistributedMatrixStorage}. */
     private static final String CACHE_NAME = "ML_SPARSE_MATRICES_CONTAINER";
+
     /** Amount of rows in the matrix. */
     private int rows;
+
     /** Amount of columns in the matrix. */
     private int cols;
+
     /** Row or column based storage mode. */
     private int stoMode;
+
     /** Random or sequential access mode. */
     private int acsMode;
+
     /** Matrix uuid. */
     private UUID uuid;
 

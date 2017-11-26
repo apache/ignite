@@ -110,5 +110,4 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
         return distance.equals(that.distance) && Arrays.deepEquals(centers, that.centers);
     }
 
-
 }

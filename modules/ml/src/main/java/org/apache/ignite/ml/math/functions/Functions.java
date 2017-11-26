@@ -80,6 +80,7 @@ public final class Functions {
 
     /**
      * Generic 'max' function.
+     *
      * @param a First object to compare.
      * @param b Second object to compare.
      * @param f Comparator.
@@ -92,6 +93,7 @@ public final class Functions {
 
     /**
      * Generic 'min' function.
+     *
      * @param a First object to compare.
      * @param b Second object to compare.
      * @param f Comparator.
@@ -215,6 +217,7 @@ public final class Functions {
 
     /**
      * Curry bifunction.
+     *
      * @param f Bifunction to curry.
      * @param <A> Type of first argument of {@code f}.
      * @param <B> Type of second argument of {@code f}.
