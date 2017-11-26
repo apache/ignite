@@ -295,6 +295,22 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Rollback transactions blocking partition map exchange.
+     *
+     * @param topVer Initial exchange version.
+     */
+    public void rollbackOnTopologyChange(AffinityTopologyVersion topVer) {
+        for (IgniteInternalTx tx : activeTransactions()) {
+            if (needWaitTransaction(tx, topVer) && tx.near()) {
+                if (log.isInfoEnabled())
+                    log.info("Forcibly rolling back near transaction: " + tx);
+
+                tx.rollbackAsync();
+            }
+        }
+    }
+
+    /**
      * @param cacheId Cache ID.
      * @param txMap Transactions map.
      */
@@ -1719,6 +1735,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return All transactions.
      */
     public Collection<IgniteInternalTx> txs() {
+        // TODO txs() is the same as activeTransactions()
         return F.concat(false, idMap.values(), nearIdMap.values());
     }
 

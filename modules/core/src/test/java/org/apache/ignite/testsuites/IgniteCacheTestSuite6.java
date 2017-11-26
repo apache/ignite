@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimistic
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTimeoutTest;
 
 /**
  * Test suite.
@@ -51,6 +52,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(CacheExchangeMergeTest.class);
 
         suite.addTestSuite(TxRollbackOnTimeoutTest.class);
+        suite.addTestSuite(TxRollbackOnTopologyChangeTimeoutTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
         suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);

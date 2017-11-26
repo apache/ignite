@@ -1051,6 +1051,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public IgniteInternalFuture<?> finishExplicitLocks(AffinityTopologyVersion topVer) {
         GridCompoundFuture<Object, Object> res = new CacheObjectsReleaseFuture<>("ExplicitLock", topVer);
 
+        // TODO pendingExplicit.values() could be changed to activeExplicitLocks()
         for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
             AffinityTopologyVersion snapshot = span.topologyVersion();
 
@@ -1061,6 +1062,38 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         res.markInitialized();
 
         return res;
+    }
+
+    /**
+     * Complete active futures blocking partition map exchange.
+     *
+     * @param topVer Initial exchange version.
+     */
+    public void cancelOnTopologyChange(AffinityTopologyVersion topVer) {
+        for (GridCacheFuture<?> fut: activeFutures()) {
+            if (fut instanceof GridCacheVersionedFuture) {
+                GridCacheVersionedFuture f = (GridCacheVersionedFuture)fut;
+
+                // TODO how to relate GridCacheVersion to AffinityTopologyVersion?
+                IgniteInternalTx tx = cctx.tm().tx(f.version());
+
+                if (tx != null && tx.near()) {
+                    AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
+
+                    if(txTopVer != null && txTopVer.compareTo(topVer) < 0) {
+                        if (log.isInfoEnabled())
+                            log.info("Forcibly canceling future: " + f);
+
+                        try {
+                            f.cancel();
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to cancel the future: " + f, e);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
