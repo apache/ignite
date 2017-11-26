@@ -18,6 +18,8 @@ package org.apache.ignite.ml.math.distances;
 
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.functions.Functions;
+import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 import java.io.IOException;
@@ -25,18 +27,20 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
- * Calculates the L<sub>2</sub> (Euclidean) distance between two points.
- *
- * http://www.saedsayad.com/k_nearest_neighbors_reg.htm
+ * Calculates the Hamming distance between two points.
  */
 public class HammingDistance implements DistanceMeasure {
     /** Serializable version identifier. */
-    private static final long serialVersionUID = 1717556319784040040L;
+    private static final long serialVersionUID = 1771556549784040098L;
 
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b)
         throws CardinalityException {
-        return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
+        IgniteDoubleFunction<Double> fun = (value -> {
+            if (value == 0) return 0.0;
+            else return 1.0;
+        });
+        return MatrixUtil.localCopyOf(a).minus(b).foldMap(Functions.PLUS, fun, 0d);
     }
 
     /** {@inheritDoc} */
