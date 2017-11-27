@@ -275,18 +275,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 }
             }
 
-            foreach (var keyValuePair in GetJvmDllPathsFromRegistry().Concat(GetJvmDllPathsFromSymlink()))
+            foreach (var keyValuePair in
+                GetJvmDllPathsWindows()
+                    .Concat(GetJvmDllPathsLinux())
+                    .Concat(GetJvmDllPathsMacOs()))
             {
                 yield return keyValuePair;
             }
-
-            // TODO: On MacOs look into /Library/Java/JavaVirtualMachines/*/Contents/Home/lib/server or jre/lib/server
         }
 
         /// <summary>
         /// Gets Jvm dll paths from Windows registry.
         /// </summary>
-        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromRegistry()
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsWindows()
         {
             if (!Os.IsWindows)
             {
@@ -320,9 +321,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
 
         /// <summary>
-        /// Gets the Jvm dll paths from symlink.
+        /// Gets the Jvm dll paths from /usr/bin/java symlink.
         /// </summary>
-        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromSymlink()
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsLinux()
         {
             if (Os.IsWindows || Os.IsMacOs)
             {
@@ -361,6 +362,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 yield return new KeyValuePair<string, string>(javaExec, f);
             }
+        }
+
+        /// <summary>
+        /// Gets the JVM DLL paths on macOs.
+        /// </summary>
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsMacOs()
+        {
+            // TODO: On MacOs look into /Library/Java/JavaVirtualMachines/*/Contents/Home/lib/server or jre/lib/server
+            yield break;
         }
 
         /// <summary>
