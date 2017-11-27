@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.proto;
 
+import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolKillJobT
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolNextTaskIdTask;
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolSubmitJobTask;
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolTaskArguments;
+import org.apache.ignite.internal.processors.hadoop.impl.security.HadoopCredentials;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.IOException;
@@ -122,8 +124,10 @@ public class HadoopClientProtocol implements ClientProtocol {
         try {
             conf.setLong(HadoopCommonUtils.JOB_SUBMISSION_START_TS_PROPERTY, U.currentTimeMillis());
 
+            byte[] credentials = SerializationUtils.serialize(new HadoopCredentials(ts));
+
             HadoopJobStatus status = execute(HadoopProtocolSubmitJobTask.class,
-                jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf));
+                jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf, credentials));
 
             if (status == null)
                 throw new IOException("Failed to submit job (null status obtained): " + jobId);

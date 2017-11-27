@@ -41,7 +41,7 @@ public class HadoopFileSystemCacheUtils {
         return new HadoopLazyConcurrentMap<>(
             new HadoopLazyConcurrentMap.ValueFactory<FsCacheKey, FileSystem>() {
                 @Override public FileSystem createValue(FsCacheKey key) throws IOException {
-                    try {
+
                         assert key != null;
 
                         // Explicitly disable FileSystem caching:
@@ -56,13 +56,8 @@ public class HadoopFileSystemCacheUtils {
 
                         cfg.setBoolean(prop, true);
 
-                        return FileSystem.get(uri, cfg, key.user());
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
+                        return FileSystem.get(uri, cfg);
 
-                        throw new IOException("Failed to create file system due to interrupt.", e);
-                    }
                 }
             }
         );

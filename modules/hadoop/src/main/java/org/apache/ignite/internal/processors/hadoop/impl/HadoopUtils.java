@@ -211,10 +211,11 @@ public class HadoopUtils {
      * Creates JobInfo from hadoop configuration.
      *
      * @param cfg Hadoop configuration.
+     * @param credentials Credentials.
      * @return Job info.
      * @throws IgniteCheckedException If failed.
      */
-    public static HadoopDefaultJobInfo createJobInfo(Configuration cfg) throws IgniteCheckedException {
+    public static HadoopDefaultJobInfo createJobInfo(Configuration cfg, byte[] credentials) throws IgniteCheckedException {
         JobConf jobConf = new JobConf(cfg);
 
         boolean hasCombiner = jobConf.get("mapred.combiner.class") != null
@@ -269,7 +270,7 @@ public class HadoopUtils {
         for (Map.Entry<String, String> entry : jobConf)
             props.put(entry.getKey(), entry.getValue());
 
-        return new HadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props);
+        return new HadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props, credentials);
     }
 
     /**

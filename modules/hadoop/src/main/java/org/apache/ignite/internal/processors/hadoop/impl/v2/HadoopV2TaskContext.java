@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
+import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -38,6 +39,7 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.JobSubmissionFiles;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.TaskType;
+import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
@@ -62,6 +64,7 @@ import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCountersImpl;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLazyConcurrentMap;
+import org.apache.ignite.internal.processors.hadoop.impl.security.HadoopCredentials;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1CleanupTask;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1MapTask;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1Partitioner;
@@ -548,41 +551,61 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
 
     /** {@inheritDoc} */
     @Override public <T> T runAsJobOwner(final Callable<T> c) throws IgniteCheckedException {
-        String user = job.info().user();
+        if (job.info().credentials() == null) {
 
-        user = IgfsUtils.fixUserName(user);
+            String user = job.info().user();
 
-        assert user != null;
+            user = IgfsUtils.fixUserName(user);
 
-        String ugiUser;
+            assert user != null;
 
-        try {
-            UserGroupInformation currUser = UserGroupInformation.getCurrentUser();
+            String ugiUser;
 
-            assert currUser != null;
+            try {
+                UserGroupInformation currUser = UserGroupInformation.getCurrentUser();
 
-            ugiUser = currUser.getShortUserName();
-        }
-        catch (IOException ioe) {
-            throw new IgniteCheckedException(ioe);
-        }
+                assert currUser != null;
 
-        try {
-            if (F.eq(user, ugiUser))
-                // if current UGI context user is the same, do direct call:
-                return c.call();
-            else {
-                UserGroupInformation ugi = UserGroupInformation.getBestUGI(null, user);
+                ugiUser = currUser.getShortUserName();
+            }
+            catch (IOException ioe) {
+                throw new IgniteCheckedException(ioe);
+            }
 
+            try {
+                if (F.eq(user, ugiUser))
+                    // if current UGI context user is the same, do direct call:
+                    return c.call();
+                else {
+                    UserGroupInformation ugi = UserGroupInformation.getBestUGI(null, user);
+
+                    return ugi.doAs(new PrivilegedExceptionAction<T>() {
+                        @Override public T run() throws Exception {
+                            return c.call();
+                        }
+                    });
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(e);
+            }
+        } else {
+            HadoopCredentials credentials = (HadoopCredentials)SerializationUtils.deserialize(job.info().credentials());
+
+            UserGroupInformation ugi = UserGroupInformation.createRemoteUser(job.info().user());
+            ugi.addCredentials(credentials.getCredentials());
+            ugi.setAuthenticationMethod(SaslRpcServer.AuthMethod.TOKEN);
+
+            try {
                 return ugi.doAs(new PrivilegedExceptionAction<T>() {
-                    @Override public T run() throws Exception {
+                    @Override
+                    public T run() throws Exception {
                         return c.call();
                     }
                 });
+            } catch (Exception e) {
+                throw new IgniteCheckedException(e);
             }
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException(e);
         }
     }
 
