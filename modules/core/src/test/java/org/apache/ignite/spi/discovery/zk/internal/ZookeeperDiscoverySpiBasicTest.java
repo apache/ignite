@@ -1298,7 +1298,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 Map<Object, Object> evts = GridTestUtils.getFieldValue(node.configuration().getDiscoverySpi(),
-                    "impl", "evtsData", "evts");
+                    "impl", "state", "evtsData", "evts");
 
                 if (!evts.isEmpty()) {
                     info("Unacked events: " + evts);
