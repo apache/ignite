@@ -120,8 +120,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
         }
 
-        private unsafe delegate JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args);
-        private delegate JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size, out int size2);
+        private unsafe delegate JniResult CreateJvmDel(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args);
+        private delegate JniResult GetCreatedJvmsDel(out IntPtr pvm, int size, out int size2);
 
         /// <summary>
         /// Creates the JVM.
@@ -132,16 +132,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             if (Os.IsMacOs)
             {
                 var ptr = DllLoader.NativeMethodsMacOs.dlsym(_ptr, "JNI_CreateJavaVM");
-                var del = (JNI_CreateJavaVM) Marshal.GetDelegateForFunctionPointer(ptr, typeof(JNI_CreateJavaVM));
+                var del = (CreateJvmDel) Marshal.GetDelegateForFunctionPointer(ptr, typeof(CreateJvmDel));
 
                 return del(out pvm, out penv, args);
             }
 
             return Os.IsWindows
                 ? JniNativeMethodsWindows.JNI_CreateJavaVM(out pvm, out penv, args)
-                : Os.IsMacOs
-                    ? JniNativeMethodsMacOs.JNI_CreateJavaVM(out pvm, out penv, args)
-                    : JniNativeMethodsLinux.JNI_CreateJavaVM(out pvm, out penv, args);
+                : JniNativeMethodsLinux.JNI_CreateJavaVM(out pvm, out penv, args);
         }
 
         /// <summary>
@@ -153,17 +151,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             if (Os.IsMacOs)
             {
                 var ptr = DllLoader.NativeMethodsMacOs.dlsym(_ptr, "JNI_GetCreatedJavaVMs");
-                var del = (JNI_GetCreatedJavaVMs)Marshal.GetDelegateForFunctionPointer(ptr, 
-                    typeof(JNI_GetCreatedJavaVMs));
+                var del = (GetCreatedJvmsDel)Marshal.GetDelegateForFunctionPointer(ptr, 
+                    typeof(GetCreatedJvmsDel));
 
                 return del(out pvm, size, out size2);
             }
 
             return Os.IsWindows
                 ? JniNativeMethodsWindows.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
-                : Os.IsMacOs
-                    ? JniNativeMethodsMacOs.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
-                    : JniNativeMethodsLinux.JNI_GetCreatedJavaVMs(out pvm, size, out size2);
+                : JniNativeMethodsLinux.JNI_GetCreatedJavaVMs(out pvm, size, out size2);
         }
 
 
@@ -396,20 +392,5 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
                 [Out] out int size2);
         }
-
-        /// <summary>
-        /// DLL imports.
-        /// </summary>
-        private static unsafe class JniNativeMethodsMacOs
-        {
-            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("libjvm.dylib", CallingConvention = CallingConvention.StdCall)]
-            internal static extern JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args);
-
-            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("libjvm.dylib", CallingConvention = CallingConvention.StdCall)]
-            internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
-                [Out] out int size2);
-        }
-    }
+   }
 }
