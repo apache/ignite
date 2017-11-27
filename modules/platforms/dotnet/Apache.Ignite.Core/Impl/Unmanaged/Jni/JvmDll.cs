@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -29,8 +30,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     /// <summary>
     /// Jvm.dll loader (libjvm.so on Linux, libjvm.dylib on macOs).
     /// </summary>
-    internal static class JvmDll
+    internal class JvmDll
     {
+        /** Cached instance. */
+        private static JvmDll _instance;
+
         /** Environment variable: JAVA_HOME. */
         private const string EnvJavaHome = "JAVA_HOME";
 
@@ -76,11 +80,39 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 ? "libjvm.dylib"
                 : "libjvm.so";
 
+        /** Library ptr. */
+        private IntPtr _ptr;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JvmDll"/> class.
+        /// </summary>
+        private JvmDll(IntPtr ptr)
+        {
+            Debug.Assert(ptr != IntPtr.Zero);
+
+            _ptr = ptr;
+        }
+
+        /// <summary>
+        /// Gets the instance.
+        /// </summary>
+        public static JvmDll Instance
+        {
+            get { return _instance; }
+        }
+
         /// <summary>
         /// Loads the JVM DLL.
         /// </summary>
         public static void Load(string configJvmDllPath, ILogger log)
         {
+            // Load only once.
+            // Locking is performed by the caller three, omit here.
+            if (_instance != null)
+            {
+                return;
+            }
+
             // TODO: Keep ptr in a static variable.
             // TODO: log.Debug("JNI dll is already loaded.");
 
@@ -89,16 +121,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 log.Debug("Trying to load {0} from [option={1}, path={2}]...", FileJvmDll, dllPath.Key, dllPath.Value);
 
-                var errInfo = LoadDll(dllPath.Value, FileJvmDll);
-                if (errInfo == null)
+                var res = LoadDll(dllPath.Value, FileJvmDll);
+                if (res.Key != IntPtr.Zero)
                 {
                     log.Debug("{0} successfully loaded from [option={1}, path={2}]",
                         FileJvmDll, dllPath.Key, dllPath.Value);
+
+                    _instance = new JvmDll(res.Key);
+
                     return;
                 }
 
                 var message = string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]",
-                    dllPath.Key, dllPath.Value, errInfo);
+                    dllPath.Key, dllPath.Value, res.Value);
                 messages.Add(message);
 
                 log.Debug("Failed to load {0}:  {1}", FileJvmDll, message);
@@ -132,29 +167,29 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <param name="filePath"></param>
         /// <param name="simpleName"></param>
         /// <returns>Null in case of success, error info in case of failure.</returns>
-        private static string LoadDll(string filePath, string simpleName)
+        private static KeyValuePair<IntPtr, string> LoadDll(string filePath, string simpleName)
         {
-            string res = null;
+            KeyValuePair<IntPtr, string> res = new KeyValuePair<IntPtr, string>();
 
             if (filePath != null)
             {
                 res = DllLoader.Load(filePath);
 
-                if (res == null)
+                if (res.Key != IntPtr.Zero)
                 {
-                    return null; // Success.
+                    return res; // Success.
                 }
             }
 
             // Failed to load using file path, fallback to simple name.
             var res2 = DllLoader.Load(simpleName);
 
-            if (res2 == null)
+            if (res2.Key != IntPtr.Zero)
             {
-                return null; // Success.
+                return res2; // Success.
             }
 
-            return res;
+            return res.Value != null ? res : res2;
         }
 
         /// <summary>
