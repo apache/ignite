@@ -25,6 +25,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,16 +34,20 @@ import javax.cache.CacheException;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessorException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Task to test exception mappings.
  */
+@SuppressWarnings("unused")  // Used by .NET ExceptionsTest.
 public class PlatformExceptionTask extends ComputeTaskAdapter<String, String> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String arg) {
+        assert arg != null;
+
         switch (arg) {
             case "IllegalArgumentException": throw new IllegalArgumentException(arg);
             case "IllegalStateException": throw new IllegalStateException(arg);
@@ -66,6 +72,8 @@ public class PlatformExceptionTask extends ComputeTaskAdapter<String, String> {
             case "TransactionHeuristicException": throw new TransactionHeuristicException(arg);
             case "TransactionDeadlockException": throw new TransactionDeadlockException(arg);
             case "IgniteFutureCancelledException": throw new IgniteFutureCancelledException(arg);
+            case "ServiceDeploymentException": throw new ServiceDeploymentException(arg,
+                    Collections.singletonList(new ServiceConfiguration().setName("foo")));
         }
 
         return null;

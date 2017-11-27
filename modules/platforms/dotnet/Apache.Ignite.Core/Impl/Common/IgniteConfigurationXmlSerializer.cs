@@ -403,7 +403,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static List<Type> GetConcreteDerivedTypes(Type type)
         {
-            return typeof(IIgnite).Assembly.GetTypes()
+            return TypeResolver.GetAssemblyTypesSafe(typeof(IIgnite).Assembly)
                 .Where(t => t.IsClass && !t.IsAbstract && type.IsAssignableFrom(t)).ToList();
         }
 

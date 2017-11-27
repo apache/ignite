@@ -44,4 +44,11 @@ public class PlatformDotNetServiceImpl extends PlatformAbstractService implement
     public PlatformDotNetServiceImpl(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
         super(svc, ctx, srvKeepBinary);
     }
+
+    /**
+     * @return Service itself
+     */
+    public Object getInternalService() {
+        return svc;
+    }
 }

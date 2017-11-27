@@ -733,11 +733,6 @@ namespace Apache.Ignite.Core
 
             JvmInitialMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
             JvmMaxMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
-
-            // Local data (not from reader)
-            JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
-                .Single(x => string.Equals(x.ModuleName, IgniteUtils.FileJvmDll, StringComparison.OrdinalIgnoreCase))
-                .FileName;
         }
 
         /// <summary>
@@ -756,6 +751,7 @@ namespace Apache.Ignite.Core
             IgniteHome = cfg.IgniteHome;
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
+            JvmDllPath = cfg.JvmDllPath;
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleHandlers = cfg.LifecycleHandlers;
