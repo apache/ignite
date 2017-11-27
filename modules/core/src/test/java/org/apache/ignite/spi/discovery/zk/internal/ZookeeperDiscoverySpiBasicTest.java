@@ -1085,7 +1085,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testClientReconnect1() throws Exception {
+    public void testClientReconnectSessionExpire1() throws Exception {
         startGrid(0);
 
         sesTimeout = 2000;
@@ -1094,7 +1094,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         Ignite client = startGrid(1);
 
+        client.cache(DEFAULT_CACHE_NAME).put(1, 1);
+
         reconnectClientNodes(log, Collections.singletonList(client), null);
+
+        assertEquals(1, client.cache(DEFAULT_CACHE_NAME).get(1));
     }
 
     /**
