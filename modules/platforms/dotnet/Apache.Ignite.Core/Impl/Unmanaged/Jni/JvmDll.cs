@@ -282,7 +282,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 yield return keyValuePair;
             }
 
-            // TODO: On MacOs look into /Library/Java/JavaVirtualMachines/*/Contents/Home/lib/server
+            // TODO: On MacOs look into /Library/Java/JavaVirtualMachines/*/Contents/Home/lib/server or jre/lib/server
         }
 
         /// <summary>
