@@ -77,7 +77,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     private static String CACHE_PERSON = "person-PARTITIONED-TRANSACTIONAL";
 
     /** Name of SQL table. */
-    private static String TABLE_PERSON = "\"" + CACHE_PERSON +  "\".\"PERSON\"";
+    private static String TABLE_PERSON = "\"" + CACHE_PERSON + "\".\"PERSON\"";
 
     /** Template of cache with read-through setting. */
     private static String CACHE_READ_THROUGH = "cacheReadThrough";
@@ -151,17 +151,19 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     private List<CacheConfiguration> cacheConfigurations() {
         List<CacheConfiguration> res = new ArrayList<>();
 
-        for (boolean wrt : new boolean[] { false, true}) {
-            res.add(buildCacheConfiguration(CacheMode.LOCAL, CacheAtomicityMode.ATOMIC, false, wrt));
-            res.add(buildCacheConfiguration(CacheMode.LOCAL, CacheAtomicityMode.TRANSACTIONAL, false, wrt));
+        for (boolean wrt : new boolean[] {false, true}) {
+            for (boolean annot : new boolean[] {false, true}) {
+                res.add(buildCacheConfiguration(CacheMode.LOCAL, CacheAtomicityMode.ATOMIC, false, wrt, annot));
+                res.add(buildCacheConfiguration(CacheMode.LOCAL, CacheAtomicityMode.TRANSACTIONAL, false, wrt, annot));
 
-            res.add(buildCacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, false, wrt));
-            res.add(buildCacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, false, wrt));
+                res.add(buildCacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, false, wrt, annot));
+                res.add(buildCacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, false, wrt, annot));
 
-            res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, false, wrt));
-            res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, true, wrt));
-            res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, false, wrt));
-            res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, true, wrt));
+                res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, false, wrt, annot));
+                res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, true, wrt, annot));
+                res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, false, wrt, annot));
+                res.add(buildCacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, true, wrt, annot));
+            }
         }
 
         return res;
@@ -169,11 +171,11 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
     /** */
     private CacheConfiguration buildCacheConfiguration(CacheMode mode,
-        CacheAtomicityMode atomicityMode, boolean hasNear, boolean writeThrough) {
+        CacheAtomicityMode atomicityMode, boolean hasNear, boolean writeThrough, boolean notNullAnnotated) {
 
         CacheConfiguration cfg = new CacheConfiguration(CACHE_PREFIX + "-" +
             mode.name() + "-" + atomicityMode.name() + (hasNear ? "-near" : "") +
-            (writeThrough ? "-writethrough" : ""));
+            (writeThrough ? "-writethrough" : "") + (notNullAnnotated ? "-annot" : ""));
 
         cfg.setCacheMode(mode);
         cfg.setAtomicityMode(atomicityMode);
@@ -181,7 +183,8 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
         QueryEntity qe = new QueryEntity(new QueryEntity(Integer.class, Person.class));
 
-        qe.setNotNullFields(Collections.singleton("name"));
+        if (!notNullAnnotated)
+            qe.setNotNullFields(Collections.singleton("name"));
 
         cfg.setQueryEntities(F.asList(qe));
 
@@ -716,7 +719,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     /** */
     private void checkNotNullCheckDmlInsertValues(CacheAtomicityMode atomicityMode) throws Exception {
         executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR NOT NULL) WITH \"atomicity="
-                + atomicityMode.name() + "\"");
+            + atomicityMode.name() + "\"");
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1022,7 +1025,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
     /** */
     private void cleanup() throws Exception {
-        for (CacheConfiguration ccfg: cacheConfigurations()) {
+        for (CacheConfiguration ccfg : cacheConfigurations()) {
             String cacheName = ccfg.getName();
 
             if (ccfg.getCacheMode() == CacheMode.LOCAL) {
@@ -1088,7 +1091,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     /** */
     public static class Person {
         /** */
-        @QuerySqlField
+        @QuerySqlField(notNull = true)
         private String name;
 
         /** */

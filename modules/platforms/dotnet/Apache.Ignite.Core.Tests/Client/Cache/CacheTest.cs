@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -841,7 +840,51 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 var ex = Assert.Throws<IgniteClientException>(() => cache.Put(1, 1));
 
                 Assert.AreEqual("Cache doesn't exist: foobar", ex.Message);
-                Assert.AreEqual((int) ClientStatus.CacheDoesNotExist, ex.ErrorCode);
+#if !NETCOREAPP2_0
+                Assert.AreEqual((int) Impl.Client.ClientStatus.CacheDoesNotExist, ex.ErrorCode);
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Tests various cache names.
+        /// Cache id as calculated as a hash code and passed to the server side; this test verifies correct id
+        /// calculation for different strings.
+        /// </summary>
+        [Test]
+        public void TestCacheNames()
+        {
+            var cacheNames = new[]
+            {
+                "foo-bar",
+                "Foo-Bar",
+                "FOO-BAR",
+                "testCache1",
+                "TestCache2",
+                "TESTCACHE3",
+                new string('c', 100),
+                new string('C', 100),
+                Guid.NewGuid().ToString(),
+                "тест",
+                "Тест",
+                "ТЕСТ",
+                "тест1",
+                "Тест2",
+                "ТЕСТ3"
+            };
+
+            var ignite = Ignition.GetIgnite();
+
+            for (var i = 0; i < cacheNames.Length; i++)
+            {
+                var cacheName = cacheNames[i];
+                ignite.CreateCache<int, string>(cacheName).Put(i, cacheName);
+
+                using (var client = GetClient())
+                {
+                    var cache = client.GetCache<int, string>(cacheName);
+                    Assert.AreEqual(cacheName, cache[i]);
+                }
             }
         }
 

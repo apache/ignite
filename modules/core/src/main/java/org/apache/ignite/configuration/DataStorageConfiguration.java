@@ -145,6 +145,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default write throttling enabled. */
     public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
 
+    /** Default wal compaction enabled. */
+    public static final boolean DFLT_WAL_COMPACTION_ENABLED = false;
+
     /** Size of a memory chunk reserved for system cache initially. */
     private long sysRegionInitSize = DFLT_SYS_CACHE_INIT_SIZE;
 
@@ -171,9 +174,6 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Lock wait time, in milliseconds. */
     private long lockWaitTime = DFLT_LOCK_WAIT_TIME;
-
-    /** */
-    private long checkpointPageBufSize;
 
     /** */
     private int checkpointThreads = DFLT_CHECKPOINT_THREADS;
@@ -244,6 +244,12 @@ public class DataStorageConfiguration implements Serializable {
      * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
      */
     private boolean writeThrottlingEnabled = DFLT_WRITE_THROTTLING_ENABLED;
+
+    /**
+     * Flag to enable WAL compaction. If true, system filters and compresses WAL archive in background.
+     * Compressed WAL archive gets automatically decompressed on demand.
+     */
+    private boolean walCompactionEnabled = DFLT_WAL_COMPACTION_ENABLED;
 
     /**
      * Initial size of a data region reserved for system cache.
@@ -423,32 +429,6 @@ public class DataStorageConfiguration implements Serializable {
 
         return this;
     }
-
-    /**
-     * Gets amount of memory allocated for a checkpoint temporary buffer.
-     *
-     * @return Checkpoint page buffer size in bytes or {@code 0} for Ignite
-     *      to choose the buffer size automatically.
-     */
-    public long getCheckpointPageBufferSize() {
-        return checkpointPageBufSize;
-    }
-
-    /**
-     * Sets amount of memory allocated for the checkpoint temporary buffer. The buffer is used to create temporary
-     * copies of pages that are being written to disk and being update in parallel while the checkpoint is in
-     * progress.
-     *
-     * @param checkpointPageBufSize Checkpoint page buffer size in bytes or {@code 0} for Ignite to
-     *      choose the buffer size automatically.
-     * @return {@code this} for chaining.
-     */
-    public DataStorageConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
-        this.checkpointPageBufSize = checkpointPageBufSize;
-
-        return this;
-    }
-
 
     /**
      * Gets a number of threads to use for the checkpoint purposes.
@@ -876,6 +856,24 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setCheckpointWriteOrder(CheckpointWriteOrder checkpointWriteOrder) {
         this.checkpointWriteOrder = checkpointWriteOrder;
+
+        return this;
+    }
+
+    /**
+     * @return Flag indicating whether WAL compaction is enabled.
+     */
+    public boolean isWalCompactionEnabled() {
+        return walCompactionEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether WAL compaction is enabled.
+     *
+     * @param walCompactionEnabled Wal compaction enabled flag.
+     */
+    public DataStorageConfiguration setWalCompactionEnabled(boolean walCompactionEnabled) {
+        this.walCompactionEnabled = walCompactionEnabled;
 
         return this;
     }

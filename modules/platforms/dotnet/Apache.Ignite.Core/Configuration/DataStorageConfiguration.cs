@@ -134,6 +134,11 @@ namespace Apache.Ignite.Core.Configuration
         public const bool DefaultWriteThrottlingEnabled = false;
 
         /// <summary>
+        /// Default value for <see cref="WalCompactionEnabled"/>.
+        /// </summary>
+        public const bool DefaultWalCompactionEnabled = false;
+
+        /// <summary>
         /// Default size of a memory chunk reserved for system cache initially.
         /// </summary>
         public const long DefaultSystemRegionInitialSize = 40 * 1024 * 1024;
@@ -174,6 +179,7 @@ namespace Apache.Ignite.Core.Configuration
             WalPath = DefaultWalPath;
             CheckpointWriteOrder = DefaultCheckpointWriteOrder;
             WriteThrottlingEnabled = DefaultWriteThrottlingEnabled;
+            WalCompactionEnabled = DefaultWalCompactionEnabled;
             SystemRegionInitialSize = DefaultSystemRegionInitialSize;
             SystemRegionMaxSize = DefaultSystemRegionMaxSize;
             PageSize = DefaultPageSize;
@@ -189,7 +195,6 @@ namespace Apache.Ignite.Core.Configuration
 
             StoragePath = reader.ReadString();
             CheckpointFrequency = reader.ReadLongAsTimespan();
-            CheckpointPageBufferSize = reader.ReadLong();
             CheckpointThreads = reader.ReadInt();
             LockWaitTime = reader.ReadLongAsTimespan();
             WalHistorySize = reader.ReadInt();
@@ -208,6 +213,7 @@ namespace Apache.Ignite.Core.Configuration
             MetricsRateTimeInterval = reader.ReadLongAsTimespan();
             CheckpointWriteOrder = (CheckpointWriteOrder)reader.ReadInt();
             WriteThrottlingEnabled = reader.ReadBoolean();
+            WalCompactionEnabled = reader.ReadBoolean();
 
             SystemRegionInitialSize = reader.ReadLong();
             SystemRegionMaxSize = reader.ReadLong();
@@ -239,7 +245,6 @@ namespace Apache.Ignite.Core.Configuration
 
             writer.WriteString(StoragePath);
             writer.WriteTimeSpanAsLong(CheckpointFrequency);
-            writer.WriteLong(CheckpointPageBufferSize);
             writer.WriteInt(CheckpointThreads);
             writer.WriteTimeSpanAsLong(LockWaitTime);
             writer.WriteInt(WalHistorySize);
@@ -258,6 +263,7 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteTimeSpanAsLong(MetricsRateTimeInterval);
             writer.WriteInt((int)CheckpointWriteOrder);
             writer.WriteBoolean(WriteThrottlingEnabled);
+            writer.WriteBoolean(WalCompactionEnabled);
 
             writer.WriteLong(SystemRegionInitialSize);
             writer.WriteLong(SystemRegionMaxSize);
@@ -306,13 +312,6 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:03:00")]
         public TimeSpan CheckpointFrequency { get; set; }
-
-        /// <summary>
-        /// Gets or sets the size of the checkpointing page buffer.
-        /// <para />
-        /// Default is <c>0</c>: Ignite will choose buffer size automatically.
-        /// </summary>
-        public long CheckpointPageBufferSize { get; set; }
 
         /// <summary>
         /// Gets or sets the number of threads for checkpointing.
@@ -427,6 +426,14 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(DefaultWriteThrottlingEnabled)]
         public bool WriteThrottlingEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets flag indicating whether WAL compaction is enabled.
+        /// If true, system filters and compresses WAL archive in background.
+        /// Compressed WAL archive gets automatically decompressed on demand.
+        /// </summary>
+        [DefaultValue(DefaultWalCompactionEnabled)]
+        public bool WalCompactionEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets the size of a memory chunk reserved for system needs.

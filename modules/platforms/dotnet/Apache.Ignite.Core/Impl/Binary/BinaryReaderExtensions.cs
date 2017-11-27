@@ -100,7 +100,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Reads the collection.
+        /// Reads the collection. The collection could be produced by Java PlatformUtils.writeCollection()
+        /// from org.apache.ignite.internal.processors.platform.utils package
+        /// Note: return null if collection is empty
         /// </summary>
         public static ICollection<T> ReadCollectionRaw<T, TReader>(this TReader reader,
             Func<TReader, T> factory) where TReader : IBinaryRawReader
@@ -123,6 +125,43 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Reads the string collection.
+        /// </summary>
+        public static ICollection<string> ReadStringCollection(this IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            var cnt = reader.ReadInt();
+            var res = new List<string>(cnt);
+
+            for (var i = 0; i < cnt; i++)
+            {
+                res.Add(reader.ReadString());
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Reads a nullable collection. The collection could be produced by Java 
+        /// PlatformUtils.writeNullableCollection() from org.apache.ignite.internal.processors.platform.utils package.
+        /// </summary>
+        public static ICollection<T> ReadNullableCollectionRaw<T, TReader>(this TReader reader,
+            Func<TReader, T> factory) where TReader : IBinaryRawReader
+        {
+            Debug.Assert(reader != null);
+            Debug.Assert(factory != null);
+
+            var hasVal = reader.ReadBoolean();
+
+            if (!hasVal)
+            {
+                return null;
+            }
+            return ReadCollectionRaw(reader, factory);
         }
     }
 }

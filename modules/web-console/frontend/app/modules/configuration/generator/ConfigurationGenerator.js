@@ -78,6 +78,10 @@ export default class IgniteConfigurationGenerator {
         this.clusterBinary(cluster.binaryConfiguration, cfg);
         this.clusterCacheKeyConfiguration(cluster.cacheKeyConfiguration, cfg);
         this.clusterCheckpoint(cluster, cluster.caches, cfg);
+
+        if (available('2.3.0'))
+            this.clusterClientConnector(cluster, available, cfg);
+
         this.clusterCollision(cluster.collision, cfg);
         this.clusterCommunication(cluster, cfg);
         this.clusterConnector(cluster.connector, cfg);
@@ -106,7 +110,9 @@ export default class IgniteConfigurationGenerator {
         if (available(['2.1.0', '2.3.0']))
             this.clusterPersistence(cluster.persistenceStoreConfiguration, available, cfg);
 
-        this.clusterQuery(cluster, available, cfg);
+        if (available(['2.1.0', '2.3.0']))
+            this.clusterQuery(cluster, available, cfg);
+
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
         this.clusterSsl(cluster, cfg);
 
@@ -760,6 +766,33 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
+    // Generate cluster query group.
+    static clusterClientConnector(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
+        if (!available('2.3.0'))
+            return cfg;
+
+        cfg.intProperty('longQueryWarningTimeout');
+
+        if (_.get(cluster, 'clientConnectorConfiguration.enabled') !== true)
+            return cfg;
+
+        const bean = new Bean('org.apache.ignite.configuration.ClientConnectorConfiguration', 'cliConnCfg',
+            cluster.clientConnectorConfiguration, clusterDflts.clientConnectorConfiguration);
+
+        bean.stringProperty('host')
+            .intProperty('port')
+            .intProperty('portRange')
+            .intProperty('socketSendBufferSize')
+            .intProperty('socketReceiveBufferSize')
+            .intProperty('maxOpenCursorsPerConnection')
+            .intProperty('threadPoolSize')
+            .boolProperty('tcpNoDelay');
+
+        cfg.beanProperty('clientConnectorConfiguration', bean);
+
+        return cfg;
+    }
+
     // Generate collision group.
     static clusterCollision(collision, cfg = this.igniteConfigurationBean()) {
         let colSpi;
@@ -1345,7 +1378,7 @@ export default class IgniteConfigurationGenerator {
     static dataRegionConfiguration(dataRegionCfg) {
         const plcBean = new Bean('org.apache.ignite.configuration.DataRegionConfiguration', 'dataRegionCfg', dataRegionCfg, clusterDflts.dataStorageConfiguration.dataRegionConfigurations);
 
-        return plcBean.stringProperty('name')
+        plcBean.stringProperty('name')
             .longProperty('initialSize')
             .longProperty('maxSize')
             .stringProperty('swapPath')
@@ -1354,8 +1387,11 @@ export default class IgniteConfigurationGenerator {
             .intProperty('emptyPagesPoolSize')
             .intProperty('metricsSubIntervalCount')
             .longProperty('metricsRateTimeInterval')
+            .longProperty('checkpointPageBufferSize')
             .boolProperty('metricsEnabled')
             .boolProperty('persistenceEnabled');
+
+        return plcBean;
     }
 
     // Generate data storage configuration.

@@ -344,9 +344,9 @@ public class BinaryClassDescriptor {
         Method writeReplaceMthd;
 
         if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
-            readResolveMtd = U.getNonPublicMethod(cls, "readResolve");
+            readResolveMtd = U.findInheritableMethod(cls, "readResolve");
 
-            writeReplaceMthd = U.getNonPublicMethod(cls, "writeReplace");
+            writeReplaceMthd = U.findInheritableMethod(cls, "writeReplace");
         }
         else {
             readResolveMtd = null;

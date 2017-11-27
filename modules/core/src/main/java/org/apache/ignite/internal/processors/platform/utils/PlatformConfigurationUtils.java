@@ -202,6 +202,14 @@ public class PlatformConfigurationUtils {
             ccfg.setCacheStoreFactory(new PlatformDotNetCacheStoreFactoryNative(storeFactory));
 
         ccfg.setSqlIndexMaxInlineSize(in.readInt());
+        ccfg.setOnheapCacheEnabled(in.readBoolean());
+        ccfg.setStoreConcurrentLoadAllThreshold(in.readInt());
+        ccfg.setRebalanceOrder(in.readInt());
+        ccfg.setRebalanceBatchesPrefetchCount(in.readLong());
+        ccfg.setMaxQueryIteratorsCount(in.readInt());
+        ccfg.setQueryDetailMetricsSize(in.readInt());
+        ccfg.setQueryParallelism(in.readInt());
+        ccfg.setSqlSchema(in.readString());
 
         int qryEntCnt = in.readInt();
 
@@ -468,12 +476,14 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return QueryEntity.
      */
-    private static QueryEntity readQueryEntity(BinaryRawReader in) {
+    public static QueryEntity readQueryEntity(BinaryRawReader in) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
         res.setValueType(in.readString());
         res.setTableName(in.readString());
+        res.setKeyFieldName(in.readString());
+        res.setValueFieldName(in.readString());
 
         // Fields
         int cnt = in.readInt();
@@ -528,9 +538,6 @@ public class PlatformConfigurationUtils {
 
             res.setIndexes(indexes);
         }
-
-        res.setKeyFieldName(in.readString());
-        res.setValueFieldName(in.readString());
 
         return res;
     }
@@ -903,6 +910,14 @@ public class PlatformConfigurationUtils {
             writer.writeObject(null);
 
         writer.writeInt(ccfg.getSqlIndexMaxInlineSize());
+        writer.writeBoolean(ccfg.isOnheapCacheEnabled());
+        writer.writeInt(ccfg.getStoreConcurrentLoadAllThreshold());
+        writer.writeInt(ccfg.getRebalanceOrder());
+        writer.writeLong(ccfg.getRebalanceBatchesPrefetchCount());
+        writer.writeInt(ccfg.getMaxQueryIteratorsCount());
+        writer.writeInt(ccfg.getQueryDetailMetricsSize());
+        writer.writeInt(ccfg.getQueryParallelism());
+        writer.writeString(ccfg.getSqlSchema());
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
@@ -968,12 +983,14 @@ public class PlatformConfigurationUtils {
      * @param writer Writer.
      * @param queryEntity Query entity.
      */
-    private static void writeQueryEntity(BinaryRawWriter writer, QueryEntity queryEntity) {
+    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity queryEntity) {
         assert queryEntity != null;
 
         writer.writeString(queryEntity.getKeyType());
         writer.writeString(queryEntity.getValueType());
         writer.writeString(queryEntity.getTableName());
+        writer.writeString(queryEntity.getKeyFieldName());
+        writer.writeString(queryEntity.getValueFieldName());
 
         // Fields
         LinkedHashMap<String, String> fields = queryEntity.getFields();
@@ -1019,9 +1036,6 @@ public class PlatformConfigurationUtils {
         }
         else
             writer.writeInt(0);
-
-        writer.writeString(queryEntity.getKeyFieldName());
-        writer.writeString(queryEntity.getValueFieldName());
     }
 
     /**
@@ -1323,7 +1337,7 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      * @param e Enum.
      */
-    private static void writeEnumInt(BinaryRawWriter w, Enum e) {
+    public static void writeEnumInt(BinaryRawWriter w, Enum e) {
         w.writeInt(e == null ? 0 : e.ordinal());
     }
 
@@ -1333,7 +1347,7 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      * @param e Enum.
      */
-    private static void writeEnumInt(BinaryRawWriter w, Enum e, Enum def) {
+    public static void writeEnumInt(BinaryRawWriter w, Enum e, Enum def) {
         assert def != null;
 
         w.writeInt(e == null ? def.ordinal() : e.ordinal());
@@ -1648,7 +1662,6 @@ public class PlatformConfigurationUtils {
         DataStorageConfiguration res = new DataStorageConfiguration()
                 .setStoragePath(in.readString())
                 .setCheckpointFrequency(in.readLong())
-                .setCheckpointPageBufferSize(in.readLong())
                 .setCheckpointThreads(in.readInt())
                 .setLockWaitTime((int) in.readLong())
                 .setWalHistorySize(in.readInt())
@@ -1667,6 +1680,7 @@ public class PlatformConfigurationUtils {
                 .setMetricsRateTimeInterval(in.readLong())
                 .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
                 .setWriteThrottlingEnabled(in.readBoolean())
+                .setWalCompactionEnabled(in.readBoolean())
                 .setSystemRegionInitialSize(in.readLong())
                 .setSystemRegionMaxSize(in.readLong())
                 .setPageSize(in.readInt())
@@ -1743,7 +1757,6 @@ public class PlatformConfigurationUtils {
 
             w.writeString(cfg.getStoragePath());
             w.writeLong(cfg.getCheckpointFrequency());
-            w.writeLong(cfg.getCheckpointPageBufferSize());
             w.writeInt(cfg.getCheckpointThreads());
             w.writeLong(cfg.getLockWaitTime());
             w.writeInt(cfg.getWalHistorySize());
@@ -1762,6 +1775,7 @@ public class PlatformConfigurationUtils {
             w.writeLong(cfg.getMetricsRateTimeInterval());
             w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
             w.writeBoolean(cfg.isWriteThrottlingEnabled());
+            w.writeBoolean(cfg.isWalCompactionEnabled());
             w.writeLong(cfg.getSystemRegionInitialSize());
             w.writeLong(cfg.getSystemRegionMaxSize());
             w.writeInt(cfg.getPageSize());
@@ -1808,6 +1822,7 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(cfg.isMetricsEnabled());
         w.writeInt(cfg.getMetricsSubIntervalCount());
         w.writeLong(cfg.getMetricsRateTimeInterval());
+        w.writeLong(cfg.getCheckpointPageBufferSize());
     }
 
     /**
@@ -1829,7 +1844,8 @@ public class PlatformConfigurationUtils {
                 .setEmptyPagesPoolSize(r.readInt())
                 .setMetricsEnabled(r.readBoolean())
                 .setMetricsSubIntervalCount(r.readInt())
-                .setMetricsRateTimeInterval(r.readLong());
+                .setMetricsRateTimeInterval(r.readLong())
+                .setCheckpointPageBufferSize(r.readLong());
     }
 
     /**

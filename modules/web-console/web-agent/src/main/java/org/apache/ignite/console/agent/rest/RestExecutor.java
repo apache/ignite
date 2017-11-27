@@ -329,11 +329,11 @@ public class RestExecutor {
                     break;
 
                 case VALUE_NUMBER_INT:
-                    gen.writeNumber(p.getLongValue());
+                    gen.writeNumber(p.getBigIntegerValue());
                     break;
 
                 case VALUE_NUMBER_FLOAT:
-                    gen.writeNumber(p.getDoubleValue());
+                    gen.writeNumber(p.getDecimalValue());
                     break;
 
                 case VALUE_TRUE:
