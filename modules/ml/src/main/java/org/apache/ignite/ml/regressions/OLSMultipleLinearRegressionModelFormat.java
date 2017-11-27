@@ -19,6 +19,7 @@ package org.apache.ignite.ml.regressions;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.decompositions.QRDSolver;
 
 /**
  * Linear regression model representation.
@@ -30,40 +31,16 @@ public class OLSMultipleLinearRegressionModelFormat implements Serializable {
     private final Matrix xMatrix;
 
     /** Whether or not the regression model includes an intercept.  True means no intercept. */
-    private final boolean noIntercept;
+    private final QRDSolver solver;
 
     /** */
-    public OLSMultipleLinearRegressionModelFormat(Matrix xMatrix, boolean noIntercept) {
+    public OLSMultipleLinearRegressionModelFormat(Matrix xMatrix, QRDSolver solver) {
         this.xMatrix = xMatrix;
-        this.noIntercept = noIntercept;
+        this.solver = solver;
     }
 
     /** */
     public OLSMultipleLinearRegressionModel getOLSMultipleLinearRegressionModel() {
-        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-        regression.setNoIntercept(true);
-        regression.newXSampleData(xMatrix);
-        regression.setNoIntercept(noIntercept);
-
-        return new OLSMultipleLinearRegressionModel(regression);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        OLSMultipleLinearRegressionModelFormat format = (OLSMultipleLinearRegressionModelFormat)o;
-
-        return noIntercept == format.noIntercept && xMatrix.equals(format.xMatrix);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = xMatrix.hashCode();
-        res = 31 * res + (noIntercept ? 1 : 0);
-        return res;
+        return new OLSMultipleLinearRegressionModel(xMatrix, solver);
     }
 }

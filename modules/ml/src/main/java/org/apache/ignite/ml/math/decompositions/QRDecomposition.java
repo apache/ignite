@@ -180,9 +180,7 @@ public class QRDecomposition implements Destroyable {
      * @throws IllegalArgumentException if {@code B.rows() != A.rows()}.
      */
     public Vector solve(Vector vec) {
-        Matrix res = new QRDSolver(q, r).solve(vec.likeMatrix(vec.size(), 1).assignColumn(0, vec));
-
-        return vec.like(res.rowSize()).assign(res.viewColumn(0));
+        return new QRDSolver(q, r).solve(vec);
     }
 
     /**

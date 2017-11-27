@@ -33,18 +33,20 @@ public class OLSMultipleLinearRegressionModelTest {
     public void testPerfectFit() {
         Vector val = new DenseLocalOnHeapVector(new double[] {11.0, 12.0, 13.0, 14.0, 15.0, 16.0});
 
-        Matrix x = new DenseLocalOnHeapMatrix(new double[][] {
-            new double[] {0, 0, 0, 0, 0},
-            new double[] {2.0, 0, 0, 0, 0},
-            new double[] {0, 3.0, 0, 0, 0},
-            new double[] {0, 0, 4.0, 0, 0},
-            new double[] {0, 0, 0, 5.0, 0},
-            new double[] {0, 0, 0, 0, 6.0}});
+        double[] data = new double[] {
+            0, 0, 0, 0, 0, 0, // IMPL NOTE values in this row are later replaced (with 1.0)
+            0, 2.0, 0, 0, 0, 0,
+            0, 0, 3.0, 0, 0, 0,
+            0, 0, 0, 4.0, 0, 0,
+            0, 0, 0, 0, 5.0, 0,
+            0, 0, 0, 0, 0, 6.0};
 
-        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-        regression.newSampleData(val, x);
+        final int nobs = 6, nvars = 5;
 
-        OLSMultipleLinearRegressionModel mdl = new OLSMultipleLinearRegressionModel(regression);
+        OLSMultipleLinearRegressionTrainer trainer
+            = new OLSMultipleLinearRegressionTrainer(0, nobs, nvars, new DenseLocalOnHeapMatrix(1, 1));
+
+        OLSMultipleLinearRegressionModel mdl = trainer.train(data);
 
         TestUtils.assertEquals(new double[] {0d, 0d, 0d, 0d, 0d, 0d},
             val.minus(mdl.predict(val)).getStorage().data(), 1e-13);

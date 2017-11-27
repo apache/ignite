@@ -20,7 +20,10 @@ package org.apache.ignite.ml.regressions;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.decompositions.QRDSolver;
+import org.apache.ignite.ml.math.decompositions.QRDecomposition;
 
 /**
  * Model for linear regression.
@@ -28,28 +31,29 @@ import org.apache.ignite.ml.math.Vector;
 public class OLSMultipleLinearRegressionModel implements Model<Vector, Vector>,
     Exportable<OLSMultipleLinearRegressionModelFormat> {
     /** */
-    private final OLSMultipleLinearRegression regression;
+    private final Matrix xMatrix;
+    /** */
+    private final QRDSolver solver;
 
     /**
      * Construct linear regression model.
      *
-     * @param regression Linear regression object.
+     * @param xMatrix See {@link QRDecomposition#QRDecomposition(Matrix)}.
+     * @param solver Linear regression solver object.
      */
-    public OLSMultipleLinearRegressionModel(OLSMultipleLinearRegression regression) {
-        this.regression = regression;
+    public OLSMultipleLinearRegressionModel(Matrix xMatrix, QRDSolver solver) {
+        this.xMatrix = xMatrix;
+        this.solver = solver;
     }
 
     /** {@inheritDoc} */
     @Override public Vector predict(Vector val) {
-        regression.newYSampleData(val);
-
-        return regression.getX().times(regression.calculateBeta());
+        return xMatrix.times(solver.solve(val));
     }
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<OLSMultipleLinearRegressionModelFormat, P> exporter, P path) {
-        exporter.save(new OLSMultipleLinearRegressionModelFormat(regression.getX(), regression.isNoIntercept()),
-            path);
+        exporter.save(new OLSMultipleLinearRegressionModelFormat(xMatrix, solver), path);
     }
 
     /** {@inheritDoc} */
@@ -61,11 +65,13 @@ public class OLSMultipleLinearRegressionModel implements Model<Vector, Vector>,
 
         OLSMultipleLinearRegressionModel mdl = (OLSMultipleLinearRegressionModel)o;
 
-        return regression.equals(mdl.regression);
+        return xMatrix.equals(mdl.xMatrix) && solver.equals(mdl.solver);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return regression.hashCode();
+        int res = xMatrix.hashCode();
+        res = 31 * res + solver.hashCode();
+        return res;
     }
 }

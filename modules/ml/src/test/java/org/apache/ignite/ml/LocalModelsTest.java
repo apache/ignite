@@ -24,13 +24,10 @@ import java.nio.file.Paths;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
 import org.apache.ignite.ml.clustering.KMeansModel;
 import org.apache.ignite.ml.math.EuclideanDistance;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModel;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModelFormat;
-import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionTrainer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,6 +58,9 @@ public class LocalModelsTest {
         Assert.assertTrue(String.format("File %s not found.", mdlPath.toString()), Files.exists(mdlPath));
 
         KMeansModelFormat load = exporter.load(mdlFilePath);
+
+        Assert.assertNotNull(load);
+
         KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
 
         Assert.assertTrue("", mdl.equals(importedMdl));
@@ -68,7 +68,7 @@ public class LocalModelsTest {
 
     /** */
     @Test
-    public void importExportAbstractMultipleLinearRegressionModelTest(){
+    public void importExportOLSMultipleLinearRegressionModelTest(){
         Path mdlPath = Paths.get(mdlFilePath);
 
         OLSMultipleLinearRegressionModel mdl = getAbstractMultipleLinearRegressionModel();
@@ -79,6 +79,8 @@ public class LocalModelsTest {
         Assert.assertTrue(String.format("File %s not found.", mdlPath.toString()), Files.exists(mdlPath));
 
         OLSMultipleLinearRegressionModelFormat load = exporter.load(mdlFilePath);
+
+        Assert.assertNotNull(load);
 
         OLSMultipleLinearRegressionModel importedMdl = load.getOLSMultipleLinearRegressionModel();
 
@@ -99,22 +101,19 @@ public class LocalModelsTest {
 
     /** */
     private OLSMultipleLinearRegressionModel getAbstractMultipleLinearRegressionModel(){
-        Matrix x = new DenseLocalOnHeapMatrix(new double[][] {
-            new double[] {0, 0, 0, 0, 0},
-            new double[] {2.0, 0, 0, 0, 0},
-            new double[] {0, 3.0, 0, 0, 0},
-            new double[] {0, 0, 4.0, 0, 0},
-            new double[] {0, 0, 0, 5.0, 0},
-            new double[] {0, 0, 0, 0, 6.0}});
+        double[] data = new double[] {
+            0, 0, 0, 0, 0, 0, // IMPL NOTE values in this row are later replaced (with 1.0)
+            0, 2.0, 0, 0, 0, 0,
+            0, 0, 3.0, 0, 0, 0,
+            0, 0, 0, 4.0, 0, 0,
+            0, 0, 0, 0, 5.0, 0,
+            0, 0, 0, 0, 0, 6.0};
 
-        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-        regression.newSampleData(getAMLRVector(), x);
+        final int nobs = 6, nvars = 5;
 
-        return new OLSMultipleLinearRegressionModel(regression);
-    }
+        OLSMultipleLinearRegressionTrainer trainer
+            = new OLSMultipleLinearRegressionTrainer(0, nobs, nvars, new DenseLocalOnHeapMatrix(1, 1));
 
-    /** */
-    private Vector getAMLRVector() {
-        return new DenseLocalOnHeapVector(new double[] {11.0, 12.0, 13.0, 14.0, 15.0, 16.0});
+        return trainer.train(data);
     }
 }

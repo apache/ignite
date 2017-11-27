@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.regression;
 
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.math.matrix.SparseDistributedMatrixExample;
@@ -26,8 +25,8 @@ import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
-import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModel;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -111,9 +110,11 @@ public class DistributedRegressionModelExample {
                 SparseDistributedMatrix distributedMatrix = new SparseDistributedMatrix(0, 0,
                     StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
-                System.out.println(">>> Create new linear regression object");
-                OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-                regression.newSampleData(data, nobs, nvars, distributedMatrix);
+                System.out.println(">>> Create new linear regression trainer object.");
+                OLSMultipleLinearRegressionTrainer trainer
+                    = new OLSMultipleLinearRegressionTrainer(0, nobs, nvars, distributedMatrix);
+                System.out.println(">>> Perform the training to get the model.");
+                OLSMultipleLinearRegressionModel mdl = trainer.train(data);
                 System.out.println();
 
                 Vector val = new SparseDistributedVector(nobs).assign((i) -> data[i * (nvars + 1)]);
@@ -121,11 +122,8 @@ public class DistributedRegressionModelExample {
                 System.out.println(">>> The input data:");
                 Tracer.showAscii(val);
 
-                System.out.println(">>> Estimate the regression parameters:");
-                System.out.println(Arrays.toString(regression.estimateRegressionParameters()));
-
-                System.out.println(">>> Model prediction results:");
-                Tracer.showAscii(new OLSMultipleLinearRegressionModel(regression).predict(val));
+                System.out.println(">>> Trained model prediction results:");
+                Tracer.showAscii(mdl.predict(val));
             });
 
             igniteThread.start();
