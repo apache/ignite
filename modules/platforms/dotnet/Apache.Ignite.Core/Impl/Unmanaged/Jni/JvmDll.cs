@@ -191,6 +191,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                     log.Debug("{0} successfully loaded from [option={1}, path={2}]",
                         FileJvmDll, dllPath.Key, dllPath.Value);
 
+
+                    // TODO: Set JAVA_HOME on MacOS to the detected file?
                     _instance = new JvmDll(res.Key);
 
                     return;
