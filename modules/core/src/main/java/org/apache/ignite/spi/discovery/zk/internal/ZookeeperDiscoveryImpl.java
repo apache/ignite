@@ -212,6 +212,8 @@ public class ZookeeperDiscoveryImpl {
      * @return Ping result.
      */
     public boolean pingNode(UUID nodeId) {
+        checkState();
+
         // TODO ZK
         return node(nodeId) != null;
     }
@@ -1378,7 +1380,7 @@ public class ZookeeperDiscoveryImpl {
     private void stop0(Throwable e) throws InterruptedException {
         log.info("Stop ZookeeperDiscovery [nodeId=" + locNode.id() + ", err=" + e + ']');
 
-        connState = ConnectionState.DISCONNECTED;
+        connState = ConnectionState.STOPPED;
 
         ZookeeperClient zkClient = state.zkClient;
 
@@ -1454,6 +1456,9 @@ public class ZookeeperDiscoveryImpl {
      */
     private class ZkEventWorker extends IgniteSpiThread {
         /** */
+        private final Runnable RECONNECT = new Runnable() {@Override public void run() {}};
+
+        /** */
         private final Runnable CONNECTION_LOST = new Runnable() {@Override public void run() {}};
 
         /** */
@@ -1475,6 +1480,8 @@ public class ZookeeperDiscoveryImpl {
             while (!isInterrupted()) {
                 Runnable r = evtsQ.take();
 
+                if (r == RECONNECT)
+                    processReconnect();
                 if (r == CONNECTION_LOST)
                     processConnectionLost();
                 else {
@@ -1501,6 +1508,35 @@ public class ZookeeperDiscoveryImpl {
         /**
          *
          */
+        void processReconnect() {
+            assert locNode.isClient() : locNode;
+
+            if (connState == ConnectionState.DISCONNECTED)
+                return;
+
+            connState = ConnectionState.DISCONNECTED;
+
+            state.zkClient.onCloseStart();
+
+            busyLock.block();
+
+            busyLock.unblock();
+
+            state.zkClient.close();
+
+            UUID newId = UUID.randomUUID();
+
+            U.quietAndWarn(log, "Local node will try to reconnect to cluster with new id due to network problems [" +
+                "newId=" + newId +
+                ", prevId=" + locNode.id() +
+                ", locNode=" + locNode + ']');
+
+            reconnect(newId);
+        }
+
+        /**
+         *
+         */
         void processConnectionLost() {
             if (clientReconnectEnabled) {
                 connState = ConnectionState.DISCONNECTED;
@@ -1516,41 +1552,48 @@ public class ZookeeperDiscoveryImpl {
                     ", prevId=" + locNode.id() +
                     ", locNode=" + locNode + ']');
 
-                locNode.onClientDisconnected(newId);
-
-                if (state.joined) {
-                    assert state.evtsData != null;
-
-                    lsnr.onDiscovery(EVT_CLIENT_NODE_DISCONNECTED,
-                        state.evtsData.topVer,
-                        locNode,
-                        state.top.topologySnapshot(),
-                        Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                        null);
-                }
-
-                state = new ZkRuntimeState(state.joined);
-
-                try {
-                    joinTopology0(true);
-                }
-                catch (Exception e) {
-                    U.error(log, "Failed to reconnect: " + e, e);
-
-                    onSegemented(e);
-                }
+                reconnect(newId);
             }
             else {
                 U.warn(log, "Connection to Zookeeper server is lost, local node SEGMENTED.");
 
-                onSegemented(new IgniteSpiException("Zookeeper connection loss."));
+                onSegmented(new IgniteSpiException("Zookeeper connection loss."));
+            }
+        }
+
+        /**
+         * @param newId New ID.
+         */
+        private void reconnect(UUID newId) {
+            locNode.onClientDisconnected(newId);
+
+            if (state.joined) {
+                assert state.evtsData != null;
+
+                lsnr.onDiscovery(EVT_CLIENT_NODE_DISCONNECTED,
+                    state.evtsData.topVer,
+                    locNode,
+                    state.top.topologySnapshot(),
+                    Collections.<Long, Collection<ClusterNode>>emptyMap(),
+                    null);
+            }
+
+            state = new ZkRuntimeState(state.joined);
+
+            try {
+                joinTopology0(true);
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to reconnect: " + e, e);
+
+                onSegmented(e);
             }
         }
 
         /**
          * @param e Error.
          */
-        private void onSegemented(Exception e) {
+        private void onSegmented(Exception e) {
             if (state.joined) {
                 assert state.evtsData != null;
 
