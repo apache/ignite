@@ -65,7 +65,7 @@ public class DetachedClusterNode implements ClusterNode {
 
     /** {@inheritDoc} */
     @Override public ClusterMetrics metrics() {
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Operation is not supported on DetachedClusterNode");
     }
 
     /** {@inheritDoc} */
@@ -75,22 +75,22 @@ public class DetachedClusterNode implements ClusterNode {
 
     /** {@inheritDoc} */
     @Override public Collection<String> addresses() {
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Operation is not supported on DetachedClusterNode");
     }
 
     /** {@inheritDoc} */
     @Override public Collection<String> hostNames() {
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Operation is not supported on DetachedClusterNode");
     }
 
     /** {@inheritDoc} */
     @Override public long order() {
-        return -1;
+        throw new UnsupportedOperationException("Operation is not supported on DetachedClusterNode");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Operation is not supported on DetachedClusterNode");
     }
 
     /** {@inheritDoc} */
