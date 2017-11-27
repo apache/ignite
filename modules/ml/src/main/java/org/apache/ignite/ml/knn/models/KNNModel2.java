@@ -17,21 +17,25 @@
 
 package org.apache.ignite.ml.knn.models;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.distances.DistanceMeasure;
-import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.structures.TypedLabeledDataset;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
-
-import java.util.*;
 
 /**
  * Model for kNN.
  */
-public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelFormat> {
+public class KNNModel2 implements Model<Vector, Double>, Exportable<KNNModelFormat> {
     /** Amount of nearest neighbors */
     protected final int k;
 
@@ -39,7 +43,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
     protected final DistanceMeasure distanceMeasure;
 
     /** Training dataset */
-    protected final TypedLabeledDataset<Matrix, Vector> training;
+    protected final LabeledDataset training;
 
     /** kNN strategy */
     protected final KNNStrategy strategy;
@@ -49,7 +53,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
      * @param k amount of nearest neighbors
      * @param training
      */
-    public KNNModel(int k, DistanceMeasure distanceMeasure, KNNStrategy strategy, TypedLabeledDataset<Matrix, Vector> training) {
+    public KNNModel2(int k, DistanceMeasure distanceMeasure, KNNStrategy strategy, LabeledDataset training) {
         this.k = k;
         this.distanceMeasure = distanceMeasure;
         this.training = training;
@@ -80,17 +84,19 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
 
     protected LabeledVector[] findKNearestNeighbors(Vector v){
         LabeledVector[] res = new LabeledVector[k];
-        Matrix trainingData = training.data();
+        LabeledVector[] trainingData = training.data();
 
-        // key - distanceMeasure from given vector before vector with idx stored in value
+        // key - distanceMeasure from given features before features with idx stored in value
         // value is presented with Set because there can be a few vectors with the same distance
         Map<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
 
-        for (int i = 0; i < trainingData.rowSize(); i++) {
+        for (int i = 0; i < trainingData.length; i++) {
 
-            double distance = distanceMeasure.compute(v, trainingData.getRow(i));
-            putDistanceIdxPair(distanceIdxPairs, i, distance);
-
+            LabeledVector labeledVector = trainingData[i];
+            if(labeledVector != null){
+                double distance = distanceMeasure.compute(v, labeledVector.features());
+                putDistanceIdxPair(distanceIdxPairs, i, distance);
+            }
         }
 
         int i = 0;
@@ -99,7 +105,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
             double key = iterator.next();
             Set<Integer> idxs = distanceIdxPairs.get(key);
             for (Integer idx : idxs){
-                res[i] = new LabeledVector(trainingData.getRow(idx), training.labels().get(idx));  // TODO: refactor LV and LD communication
+                res[i] = trainingData[idx];  // TODO: refactor LV and LD communication
                 i++;
                 if(i >= k) break; // go to next while-loop iteration
             }

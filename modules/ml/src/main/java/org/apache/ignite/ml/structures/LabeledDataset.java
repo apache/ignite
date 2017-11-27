@@ -17,145 +17,261 @@
 
 package org.apache.ignite.ml.structures;
 
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
-
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import org.apache.ignite.ml.knn.models.FillMissingValueWith;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
+import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
+import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Class for matrix with label.
- *
- * @param <M> Some class extending {@link Vector}.
- * @param <L> Type of label.
+ * Class for set of labeled vectors
  */
-public class LabeledDataset<M extends Matrix, L extends Vector> {
-    /** Vector. */
-    private final M matrix;
+public class LabeledDataset {
+    /** Data to keep */
+    private final LabeledVector<Vector, Double>[] data;
 
-    /** Label. */
-    private final L lbs;
+    /** Feature names (one name for each attribute in vector) */
+    private String[] featureNames;
 
-    /**
-     * Construct labeled dataset.
-     *
-     * @param matrix Matrix.
-     * @param lbs Labels.
-     */
-    public LabeledDataset(M matrix, L lbs) {
-        this.matrix = matrix;
-        this.lbs = lbs;
-    }
+    /** Amount of instances */
+    private int rowSize;
+
+    /** Amount of attributes in each vector */
+    private int colSize;
 
     /**
-     * Get the vector.
-     *
-     * @return Vector.
+     * Creates new Labeled Dataset by given data
+     * @param data Should be initialized with one vector at least
+     * @param colSize amount of observed attributes in each vector
      */
-    public M data() {
-        return matrix;
+    public LabeledDataset(LabeledVector[] data, int colSize) {
+        this(data, null, colSize);
     }
 
     /**
-     * Get the label.
-     *
-     * @return Label.
+     * Creates new Labeled Dataset by given data
+     * @param data Given data. Should be initialized with one vector at least
+     * @param featureNames Column names
+     * @param colSize Amount of observed attributes in each vector
      */
-    public L labels() {
-        return lbs;
+    public LabeledDataset(LabeledVector[] data, String[] featureNames, int colSize) {
+        assert data != null;
+        assert data.length > 0;
+
+        if(featureNames == null) generateFeatureNames();
+        else assert data.length == featureNames.length;
+
+        this.data = data;
+        this.rowSize = data.length;
+        this.colSize = colSize;
+        this.featureNames = featureNames;
+
     }
 
-    public int columnSize(){
-        return matrix.columnSize();
+    /**
+     * Creates new Labeled Dataset and initialized with empty data structure
+     * @param rowSize Amount of instances. Should be > 0
+     * @param colSize Amount of attributes. Should be > 0
+     * @param isDistributed Use distributed data structures to keep data
+     */
+    public LabeledDataset(int rowSize, int colSize,  boolean isDistributed){
+        this(rowSize, colSize, null, isDistributed);
     }
 
+    /**
+     * Creates new Labeled Dataset and initialized with empty data structure
+     * @param rowSize Amount of instances. Should be > 0
+     * @param colSize Amount of attributes. Should be > 0
+     */
+    public LabeledDataset(int rowSize, int colSize){
+        this(rowSize, colSize, null, false);
+    }
+
+    /**
+     * Creates new Labeled Dataset and initialized with empty data structure
+     * @param rowSize Amount of instances. Should be > 0
+     * @param colSize Amount of attributes. Should be > 0
+     * @param featureNames Column names
+     * @param isDistributed Use distributed data structures to keep data
+     */
+    public LabeledDataset(int rowSize, int colSize, String[] featureNames, boolean isDistributed){
+        assert rowSize > 0;
+        assert colSize > 0;
+
+        if(featureNames == null) generateFeatureNames();
+        else assert colSize == featureNames.length;
+
+        data = new LabeledVector[rowSize];
+        for (int i = 0; i < rowSize; i++)
+            data[i] = new LabeledVector(getVector(colSize, isDistributed), null);
+
+    }
+
+
+    private void generateFeatureNames() {
+        featureNames = new String[colSize];
+        for (int i = 0; i < colSize; i++)
+            featureNames[i] = "f_" + i;
+    }
+
+
+    /**
+     * Get vectors and their labels.
+     *
+     * @return array of Label Vector instances.
+     */
+    public LabeledVector[] data() {
+        return data;
+    }
+
+    /**
+     * Gets amount of observation
+     * @return amount of rows in dataset
+     */
     public int rowSize(){
-        return matrix.rowSize();
+        return rowSize;
+    }
+
+    /**
+     * Gets amount of attributes
+     * @return amount of attributes in each Labeled Vector
+     */
+    public int colSize(){
+        return colSize;
     }
 
     /**
      * Retrieves Labeled Vector by given index
      * @param idx index of observation
-     * @return Labeled vector
+     * @return Labeled features
      */
     public LabeledVector getRow(int idx){
-        return new LabeledVector(matrix.getRow(idx), lbs.get(idx));
+        return data[idx];
     }
 
+    /**
+     * Get the features
+     * @param idx index of observation
+     * @return Vector with features
+     */
+    public Vector features(int idx){
+        assert idx < rowSize;
+        assert data != null;
+        assert data[idx] != null;
 
+        return data[idx].features();
+    }
+
+    /**
+     * Returns label if label is attached or null if label is missed
+     * @param idx index of observation
+     * @return label
+     */
     public double label(int idx) {
-        return lbs.get(idx);
+        LabeledVector labeledVector = data[idx];
+        if(labeledVector!=null)
+            return (double)labeledVector.label();
+        else
+            return Double.parseDouble(null);
     }
+
+    /**
+     * Fill the label with given value
+     * @param idx index of observation
+     * @param label given label
+     */
+    public void setLabel(int idx, double label) {
+        LabeledVector labeledVector = data[idx];
+        if(labeledVector != null)
+            labeledVector.setLabel(label);
+        else
+            throw new NoLabelVectorException(idx);
+    }
+
     /**
      * Datafile should keep class labels in the first column
-     * @param pathToFile
-     * @param separator
-     * @return
+     * @param pathToFile Path to file
+     * @param separator Element to tokenize row on separate tokens
+     * @param isDistributed Generates distributed dataset if true
+     * @param isFallOnBadData Fall on incorrect data if true
+     * @return Labeled Dataset parsed from file
      */
-    public static LabeledDataset<Matrix, Vector> loadTxt(String pathToFile, String separator) {
+    public static LabeledDataset loadTxt(Path pathToFile, String separator, boolean isDistributed, boolean isFallOnBadData, FillMissingValueWith fillingStrategy) throws IOException {
+        Stream<String> stream = Files.lines(pathToFile);
+        List<String> list = new ArrayList<>();
+        stream.forEach(list::add);
 
+        final int rowSize = list.size();
 
-        Matrix mtx;
-        Vector labels;
+        LabeledVector[] data = new LabeledVector[rowSize];
 
-        try (Stream<String> stream = Files.lines(Paths.get(pathToFile))) {
-            List<String> list = new ArrayList<>();
-            stream.forEach(list::add);
+        if (rowSize > 0) {
+            final int columnSize = getColumnSize(separator, list) - 1;
+            for (int i = 0; i < rowSize; i++) {
+                Double clsLb;
+                final Vector vec = getVector(columnSize, isDistributed);
 
-            final int rowSize = list.size();
+                String[] rowData = list.get(i).split(separator);
 
-            if(rowSize > 0){
-                final int columnSize = getColumnSize(separator, list) - 1;
-
-                mtx = new SparseBlockDistributedMatrix(rowSize, columnSize);
-                labels = new SparseBlockDistributedVector(rowSize);
-                for (int i = 0; i < rowSize; i++) {
-                    String[] rowData = list.get(i).split(separator);
-
-                    try {
-                        double classLabel = Double.parseDouble(rowData[0]);
-                        labels.set(i, classLabel);
-                    } catch(NumberFormatException e) {
-                        // log or something else throw unparsed class label
-                        // mtx.set(i,j,0.0); should we set 0 or not?
-                    }
+                try {
+                    clsLb = Double.parseDouble(rowData[0]);
 
                     for (int j = 0; j < columnSize; j++) {
-                        
-                        if(rowData.length == columnSize + 1){
-                            double value = 0.0;
+
+                        if (rowData.length == columnSize + 1) {
+                            double val = fillMissedData(fillingStrategy);
                             try {
-                                 value = Double.parseDouble(rowData[j+1]);
-                                mtx.set(i,j,value);
-                            } catch(NumberFormatException e) {
-                                // log or something else
-                                // mtx.set(i,j,0.0); should we set 0 or not?
+                                val = Double.parseDouble(rowData[j + 1]);
+                                vec.set(j, val);
                             }
-                        } else {
-                            // throw Strange Size
+                            catch (NumberFormatException e) {
+                                if(isFallOnBadData)
+                                    throw new FileParsingException(rowData[j + 1], i, pathToFile);
+                                else
+                                    vec.set(j,val);
+                            }
                         }
+                        else throw new CardinalityException(columnSize + 1, rowData.length);
                     }
+                    data[i] = new LabeledVectorDouble(vec, clsLb);
                 }
-
-                return new LabeledDataset<>(mtx, labels);
-
-            } else {
-                // throw Exception : 0 rows were parsed, empty dataset
+                catch (NumberFormatException e) {
+                    if(isFallOnBadData)
+                        throw new FileParsingException(rowData[0], i, pathToFile);
+                    else
+                        clsLb = null;
+                }
             }
-
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            // throw and log
+            return new LabeledDataset(data, columnSize);
         }
-        return null;
+        else
+            throw new EmptyFileException(pathToFile.toString());
+    }
+
+    // TODO: add filling with mean, mode, ignoring and so on
+    private static double fillMissedData(FillMissingValueWith fillingStrategy) {
+        switch (fillingStrategy){
+            case ZERO: return 0.0;
+            default: throw new UnsupportedOperationException("Filling missing data is not supported for strategy " + fillingStrategy.name());
+        }
+
+    }
+
+    @NotNull private static Vector getVector(int size, boolean isDistributed) {
+
+        if(isDistributed) return new SparseBlockDistributedVector(size);
+        else return new DenseLocalOnHeapVector(size);
     }
 
     private static int getColumnSize(String separator, List<String> list) {
@@ -163,5 +279,4 @@ public class LabeledDataset<M extends Matrix, L extends Vector> {
 
         return rowData.length;
     }
-
 }

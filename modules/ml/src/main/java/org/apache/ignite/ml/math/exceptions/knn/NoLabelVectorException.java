@@ -15,53 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.structures;
+package org.apache.ignite.ml.math.exceptions.knn;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.IgniteException;
 
 /**
- * Class for vector with label.
- *
- * @param <V> Some class extending {@link Vector}.
- * @param <T> Type of label.
+ * Shows Labeled Dataset index with non-existing Labeled Vector.
  */
-public class LabeledVector<V extends Vector, T> {
-    /** Vector. */
-    private final V vector;
-
-    /** Label. */
-    private T lb;
+public class NoLabelVectorException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Construct labeled vector.
+     * Creates new exception.
      *
-     * @param vector Vector.
-     * @param lb Label.
+     * @param idx index of missed Labeled vector.
      */
-    public LabeledVector(V vector, T lb) {
-        this.vector = vector;
-        this.lb = lb;
-    }
-
-    /**
-     * Get the vector.
-     *
-     * @return Vector.
-     */
-    public V features() {
-        return vector;
-    }
-
-    /**
-     * Get the label.
-     *
-     * @return Label.
-     */
-    public T label() {
-        return lb;
-    }
-
-    public void setLabel(T label) {
-        this.lb = label;
+    public NoLabelVectorException(int idx) {
+        super("No vector in position" + idx);
     }
 }

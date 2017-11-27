@@ -15,53 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.structures;
+package org.apache.ignite.ml.math.exceptions.knn;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.IgniteException;
 
 /**
- * Class for vector with label.
- *
- * @param <V> Some class extending {@link Vector}.
- * @param <T> Type of label.
+ * Shows empty filename.
  */
-public class LabeledVector<V extends Vector, T> {
-    /** Vector. */
-    private final V vector;
-
-    /** Label. */
-    private T lb;
+public class EmptyFileException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Construct labeled vector.
+     * Creates new exception.
      *
-     * @param vector Vector.
-     * @param lb Label.
+     * @param filename Name of the file without content.
      */
-    public LabeledVector(V vector, T lb) {
-        this.vector = vector;
-        this.lb = lb;
-    }
-
-    /**
-     * Get the vector.
-     *
-     * @return Vector.
-     */
-    public V features() {
-        return vector;
-    }
-
-    /**
-     * Get the label.
-     *
-     * @return Label.
-     */
-    public T label() {
-        return lb;
-    }
-
-    public void setLabel(T label) {
-        this.lb = label;
+    public EmptyFileException(String filename) {
+        super("Empty file with filename " +  filename);
     }
 }

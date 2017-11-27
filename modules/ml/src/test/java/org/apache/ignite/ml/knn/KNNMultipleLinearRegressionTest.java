@@ -18,28 +18,16 @@
 package org.apache.ignite.ml.knn;
 
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.knn.models.KNNModel;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNMultipleLinearRegression;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
-import org.apache.ignite.ml.math.exceptions.NullArgumentException;
-import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
-import org.apache.ignite.ml.math.util.MatrixUtil;
-import org.apache.ignite.ml.regressions.AbstractMultipleLinearRegressionTest;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.TypedLabeledDataset;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 
 /**
  * Tests for {@link OLSMultipleLinearRegression}.
@@ -78,7 +66,7 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
         SparseBlockDistributedMatrix mtx = new SparseBlockDistributedMatrix(x);
         SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(y);
-        LabeledDataset<Matrix, Vector> training = new LabeledDataset<>(mtx, lbs);
+        TypedLabeledDataset<Matrix, Vector> training = new TypedLabeledDataset<>(mtx, lbs);
 
         KNNMultipleLinearRegression knnModel = new KNNMultipleLinearRegression(1, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new SparseBlockDistributedVector(new double[]{0, 0, 0, 5.0, 0.0});
@@ -114,7 +102,7 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
         SparseBlockDistributedMatrix mtx = new SparseBlockDistributedMatrix(x);
         SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(y);
-        LabeledDataset<Matrix, Vector> training = new LabeledDataset<>(mtx, lbs);
+        TypedLabeledDataset<Matrix, Vector> training = new TypedLabeledDataset<>(mtx, lbs);
 
         KNNMultipleLinearRegression knnModel = new KNNMultipleLinearRegression(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new SparseBlockDistributedVector(new double[]{104.6, 419180, 2822, 2857, 118734, 1956});
@@ -128,7 +116,7 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
     public void testLoadingMachineDatasetWithSimpleStrategyAndOneNeighboor(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset<Matrix, Vector> training = loadIrisDataset();
+        TypedLabeledDataset<Matrix, Vector> training = loadIrisDataset();
 
         KNNMultipleLinearRegression knnModel = new KNNMultipleLinearRegression(1, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new SparseBlockDistributedVector(new double[]{23,16000,32000,64,16,32});
@@ -139,7 +127,7 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
     public void testLoadingMachineDatasetWithSimpleStrategy(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset<Matrix, Vector> training = loadIrisDataset();
+        TypedLabeledDataset<Matrix, Vector> training = loadIrisDataset();
 
         KNNMultipleLinearRegression knnModel = new KNNMultipleLinearRegression(5, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new SparseBlockDistributedVector(new double[]{100,32000,64000,128,16,32});
@@ -154,7 +142,7 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
     public void testCalculateAverageErrorOnMachineDatasetWithSimpleStrategy(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset<Matrix, Vector> training = loadIrisDataset();
+        TypedLabeledDataset<Matrix, Vector> training = loadIrisDataset();
 
 
         for (int amountOfNeighbours = 3; amountOfNeighbours < 10; amountOfNeighbours+=2) {
@@ -164,7 +152,7 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
             int rss = 0;
             for (int i = 0; i < training.rowSize(); i++){
-                final Double prediction = knnModel.predict(training.getRow(i).vector());
+                final Double prediction = knnModel.predict(training.getRow(i).features());
                 final double y = training.label(i);
                 //System.out.println("Prediction is " + prediction + " y is " + y);
                 if(prediction != y) rss+=Math.pow(prediction-y, 2.0); // maybe sqrt from this? and divide after that
@@ -180,10 +168,10 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
 
 
-    private LabeledDataset<Matrix, Vector> loadIrisDataset() {
+    private TypedLabeledDataset<Matrix, Vector> loadIrisDataset() {
         String path = this.getClass().getClassLoader().getResource("knn/cleared_machines.txt").getPath();
 
-        return LabeledDataset.loadTxt(path, SEPARATOR);
+        return TypedLabeledDataset.loadTxt(path, SEPARATOR);
     }
 
 

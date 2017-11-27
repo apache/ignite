@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.TypedLabeledDataset;
 
 /** Tests behaviour of KNNClassificationTest. */
 public class KNNClassificationTest extends BaseKNNTest {
@@ -45,7 +45,7 @@ public class KNNClassificationTest extends BaseKNNTest {
                 {-2.0, -1.0}
             });
         SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
-        LabeledDataset<Matrix, Vector> training = new LabeledDataset<>(mtx, lbs);
+        TypedLabeledDataset<Matrix, Vector> training = new TypedLabeledDataset<>(mtx, lbs);
 
         KNNModel knnModel = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector firstVector = new SparseBlockDistributedVector(new double[] {2.0, 2.0});
@@ -68,7 +68,7 @@ public class KNNClassificationTest extends BaseKNNTest {
                 {-2.0, -1.0}
             });
         SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
-        LabeledDataset<Matrix, Vector> training = new LabeledDataset<>(mtx, lbs);
+        TypedLabeledDataset<Matrix, Vector> training = new TypedLabeledDataset<>(mtx, lbs);
 
         KNNModel knnModel = new KNNModel(1, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector firstVector = new SparseBlockDistributedVector(new double[] {1.1, 1.1});
@@ -93,7 +93,7 @@ public class KNNClassificationTest extends BaseKNNTest {
                 {-2.0, -1.0}
             });
         SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
-        LabeledDataset<Matrix, Vector> training = new LabeledDataset<>(mtx, lbs);
+        TypedLabeledDataset<Matrix, Vector> training = new TypedLabeledDataset<>(mtx, lbs);
 
         KNNModel knnModel = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new SparseBlockDistributedVector(new double[] {-1.01, -1.01});
@@ -114,7 +114,7 @@ public class KNNClassificationTest extends BaseKNNTest {
                 {-2.0, -1.0}
             });
         SparseBlockDistributedVector lbs = new SparseBlockDistributedVector(new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0});
-        LabeledDataset<Matrix, Vector> training = new LabeledDataset<>(mtx, lbs);
+        TypedLabeledDataset<Matrix, Vector> training = new TypedLabeledDataset<>(mtx, lbs);
 
         KNNModel knnModel = new KNNModel(3, new EuclideanDistance(), KNNStrategy.WEIGHTED, training);
         Vector vector = new SparseBlockDistributedVector(new double[] {-1.01, -1.01});
@@ -124,7 +124,7 @@ public class KNNClassificationTest extends BaseKNNTest {
 
     public void testLoadingIrisDatasetWithSimpleStrategy() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset<Matrix, Vector> training = loadIrisDataset();
+        TypedLabeledDataset<Matrix, Vector> training = loadIrisDataset();
 
         KNNModel knnModel = new KNNModel(7, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new SparseBlockDistributedVector(new double[] {5.15, 3.55, 1.45, 0.25});
@@ -134,7 +134,7 @@ public class KNNClassificationTest extends BaseKNNTest {
 
     public void testLoadingIrisDatasetWithWeightedStrategy() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset<Matrix, Vector> training = loadIrisDataset();
+        TypedLabeledDataset<Matrix, Vector> training = loadIrisDataset();
 
         KNNModel knnModel = new KNNModel(11, new EuclideanDistance(), KNNStrategy.WEIGHTED, training);
         Vector vector = new SparseBlockDistributedVector(new double[] {5.15, 3.55, 1.45, 0.25});
@@ -167,7 +167,7 @@ public class KNNClassificationTest extends BaseKNNTest {
     // with splitting on test and train data
     public void testCalculateAverageErrorOnIrisDatasetWithSimpleStrategy() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset<Matrix, Vector> training = loadIrisDataset();
+        TypedLabeledDataset<Matrix, Vector> training = loadIrisDataset();
 
         for (int amountOfNeighbours = 1; amountOfNeighbours < 20; amountOfNeighbours += 2) {
             System.out.println("Model initialized with k = " + amountOfNeighbours);
@@ -176,7 +176,7 @@ public class KNNClassificationTest extends BaseKNNTest {
 
             int amountOfErrors = 0;
             for (int i = 0; i < training.rowSize(); i++) {
-                if (knnModel.predict(training.getRow(i).vector()) != training.label(i))
+                if (knnModel.predict(training.getRow(i).features()) != training.label(i))
                     amountOfErrors++;
             }
 
@@ -186,10 +186,10 @@ public class KNNClassificationTest extends BaseKNNTest {
 
     }
 
-    private LabeledDataset<Matrix, Vector> loadIrisDataset() {
+    private TypedLabeledDataset<Matrix, Vector> loadIrisDataset() {
         String path = this.getClass().getClassLoader().getResource("knn/iris.txt").getPath();
 
-        return LabeledDataset.loadTxt(path, SEPARATOR);
+        return TypedLabeledDataset.loadTxt(path, SEPARATOR);
     }
 
     // add test with a few points with equal distance

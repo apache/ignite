@@ -21,7 +21,7 @@ import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.TypedLabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 
@@ -33,7 +33,7 @@ public class KNNMultipleLinearRegression extends KNNModel {
      * @param strategy
      * @param training
      */
-    public KNNMultipleLinearRegression(int k, DistanceMeasure distanceMeasure, KNNStrategy strategy, LabeledDataset<Matrix, Vector> training) {
+    public KNNMultipleLinearRegression(int k, DistanceMeasure distanceMeasure, KNNStrategy strategy, TypedLabeledDataset<Matrix, Vector> training) {
         super(k, distanceMeasure, strategy, training);
     }
 
