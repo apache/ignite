@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -166,7 +166,7 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
      * @return Map from partitions to set of nodes.
      */
     private Map<Integer, Set<String>> arrayToAllocationMap(int[][] arr) {
-        Map<Integer, Set<String>> res = new HashMap<>();
+        Map<Integer, Set<String>> res = new LinkedHashMap<>();
 
         for (int part = 0; part < arr.length; part++) {
             Set<String> nodeSet = new HashSet<>();
@@ -188,7 +188,7 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
      * @return Map from partitions to list of nodes.
      */
     private Map<Integer, List<String>> arrayToAssignmentMap(int[][] arr) {
-        Map<Integer, List<String>> res = new HashMap<>();
+        Map<Integer, List<String>> res = new LinkedHashMap<>();
 
         for (int part = 0; part < arr.length; part++) {
             List<String> nodeList = new ArrayList<>();

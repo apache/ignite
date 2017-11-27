@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -122,6 +121,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
      */
     private int nodePartitionsCountByState(UUID nodeId, GridDhtPartitionState state) {
         int partitions = ctx.topology().partitions();
+
         GridDhtPartitionMap partMap = ctx.topology().partitionMap(true).get(nodeId);
 
         int cnt = 0;
@@ -177,6 +177,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
      */
     private Map<Integer, Set<String>> clusterPartitionsMapByState(GridDhtPartitionState state) {
         int partitions = ctx.topology().partitions();
+
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(true);
 
         Map<Integer, Set<String>> partitionsMap = new LinkedHashMap<>();
@@ -212,8 +213,9 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         int part = 0;
 
         Map<Integer, List<String>> assignmentMap = new LinkedHashMap<>();
+
         for (List<ClusterNode> partAssignment : assignment.assignment()) {
-            List<String> partNodeIds = new LinkedList<>();
+            List<String> partNodeIds = new ArrayList<>(partAssignment.size());
 
             for (ClusterNode node : partAssignment)
                 partNodeIds.add(node.id().toString());
