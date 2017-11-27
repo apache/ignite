@@ -1941,7 +1941,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 releasePage(metaPageId, metaPage);
             }
 
-            long matchingRowsCnt = 0;
+            long cnt = 0;
 
             long curPage = acquirePage(curPageId);
             try {
@@ -1959,11 +1959,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         int curPageSize = io.getCount(curPageAddr);
 
                         if (filter == null)
-                            matchingRowsCnt += curPageSize;
+                            cnt += curPageSize;
                         else {
                             for (int i = 0; i < curPageSize; ++i) {
                                 if (filter.apply(this, io, curPageAddr, i))
-                                    matchingRowsCnt++;
+                                    cnt++;
                             }
                         }
 
@@ -1972,7 +1972,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         if (nextPageId == 0) {
                             checkDestroyed();
 
-                            return matchingRowsCnt;
+                            return cnt;
                         }
 
                         long nextPage = acquirePage(nextPageId);
@@ -1984,19 +1984,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             assert nextPageAddr != 0 : nextPageAddr;
 
                             try {
-                                readUnlock(curPageId, curPage, curPageAddr);
-
+                                long pa = curPageAddr;
                                 curPageAddr = 0; // Set to zero to avoid double unlocking in finalizer.
 
-                                releasePage(curPageId, curPage);
+                                readUnlock(curPageId, curPage, pa);
 
+                                long p = curPage;
                                 curPage = 0; // Set to zero to avoid double release in finalizer.
 
-                                curPageId = nextPageId;
+                                releasePage(curPageId, p);
 
-                                // The following 4 assignments should be done atomically, but it's OK here.
+                                curPageId = nextPageId;
                                 curPage = nextPage;
                                 curPageAddr = nextPageAddr;
+
                                 nextPage = 0;
                                 nextPageAddr = 0;
                             }
@@ -4877,10 +4878,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * required or matches or /operation successful (depending on the context).
          *
          * @param tree The tree.
-         * @param io Tree IO.
-         * @param pageAddr Page address.
-         * @param idx Item index.
-         * @return {@code True} if item pass predicate. TODO IGNITE-3478
+         * @param io Th tree IO object.
+         * @param pageAddr The page address.
+         * @param idx The item index.
+         * @return {@code True} if the item passes the predicate.
          * @throws IgniteCheckedException If failed.
          */
         public boolean apply(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx)

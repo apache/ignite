@@ -168,7 +168,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            IndexingQueryCacheFilter filter = partitionFilter();
+            IndexingQueryCacheFilter filter = partitionFilter(threadLocalFilter());
 
             int seg = threadLocalSegment();
 
@@ -285,27 +285,43 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /**
+     * An adapter from {@link IndexingQueryCacheFilter} to {@link BPlusTree.TreeRowClosure} to
+     * filter entries that belong to the current partition.
+     */
+    private static class PartitionFilterTreeRowClosure implements BPlusTree.TreeRowClosure<SearchRow, GridH2Row> {
+        private final IndexingQueryCacheFilter filter;
+
+        /** Creates the adapter based on the partition filter.
+         *
+         * @param filter The partition filter.
+         */
+        public PartitionFilterTreeRowClosure(IndexingQueryCacheFilter filter) {
+            this.filter = filter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(BPlusTree<SearchRow, GridH2Row> tree,
+            BPlusIO<SearchRow> io, long pageAddr, int idx) throws IgniteCheckedException {
+
+            H2RowLinkIO h2io = (H2RowLinkIO)io;
+
+            return filter.applyPartition(
+                PageIdUtils.partId(
+                    PageIdUtils.pageId(
+                        h2io.getLink(pageAddr, idx))));
+        }
+    }
+
+    /**
      * Returns a filter to apply to rows in the current index to obtain only the
      * rows owned by the this cache.
      *
      * @return The filter, which returns true for rows owned by this cache.
      */
-    // TODO: replace with proper filter function when merging with IGNITE-3478.
     @Nullable private BPlusTree.TreeRowClosure<SearchRow, GridH2Row> filter() {
-        final IndexingQueryCacheFilter filter = partitionFilter();
+        final IndexingQueryCacheFilter filter = partitionFilter(threadLocalFilter());
 
-        if (filter == null)
-            return null;
-
-        return new BPlusTree.TreeRowClosure<SearchRow, GridH2Row>() {
-            @Override public boolean apply(BPlusTree<SearchRow, GridH2Row> tree,
-                BPlusIO<SearchRow> io, long pageAddr, int idx) throws IgniteCheckedException {
-
-                H2RowLinkIO h2io = (H2RowLinkIO)io;
-
-                return filter.applyPartition(PageIdUtils.partId(PageIdUtils.pageId(h2io.getLink(pageAddr, idx))));
-            }
-        };
+        return filter != null ? new PartitionFilterTreeRowClosure(filter) : null;
     }
 
     /** {@inheritDoc} */
@@ -368,13 +384,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         @Nullable SearchRow last,
         IndexingQueryFilter filter) {
         try {
-            IndexingQueryCacheFilter p = null;
-
-            if (filter != null) {
-                String cacheName = getTable().cacheName();
-
-                p = filter.forCache(cacheName);
-            }
+            IndexingQueryCacheFilter p = partitionFilter(filter);
 
             GridCursor<GridH2Row> range = t.find(first, last, p);
 
@@ -389,21 +399,18 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /**
-     * Partition filter.
+     * Filter which returns true for entries belonging to particular partition.
      *
-     * @return Filter
+     * @param qryFilter Factory that creates a predicate for filtering entries for a particular cache.
+     * @return The filter or null if the filter is not needed (e.g., if the cache is not partitioned).
      */
-    @Nullable private IndexingQueryCacheFilter partitionFilter() {
-        IndexingQueryFilter f = threadLocalFilter();
-        IndexingQueryCacheFilter p = null;
+    @Nullable private IndexingQueryCacheFilter partitionFilter(IndexingQueryFilter qryFilter) {
+        if (qryFilter == null)
+            return null;
 
-        if (f != null) {
-            String cacheName = getTable().cacheName();
+        String cacheName = getTable().cacheName();
 
-            p = f.forCache(cacheName);
-        }
-
-        return p;
+        return qryFilter.forCache(cacheName);
     }
 
     /**
