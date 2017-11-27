@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 foreach (var path in JvmDllLookupPaths)
                 {
                     yield return
-                        new KeyValuePair<string, string>(dir, Path.Combine(jvmDir, subDir, path, FileJvmDll));
+                        new KeyValuePair<string, string>(dir, Path.Combine(dir, subDir, path, FileJvmDll));
                 }
             }
         }
