@@ -142,7 +142,7 @@
     <Compile Include="Impl\DataRegionMetrics.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
     <Compile Include="Impl\Shell.cs" />
-    <Compile Include="Impl\Unmanaged\DllLoader.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\DllLoader.cs" />
     <Compile Include="Impl\Unmanaged\Jni\AppDomains.cs" />
     <Compile Include="Impl\Unmanaged\Jni\CallbackDelegates.cs" />
     <Compile Include="Impl\Unmanaged\Jni\Callbacks.cs" />
