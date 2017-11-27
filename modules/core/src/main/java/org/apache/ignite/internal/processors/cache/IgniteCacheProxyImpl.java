@@ -118,7 +118,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * Ignite version that introduce {@link ContinuousQueryWithTransformer} feature.
      */
     private static final IgniteProductVersion CONT_QRY_WITH_TRANSFORMER_SINCE =
-        IgniteProductVersion.fromString("2.3.0");
+        IgniteProductVersion.fromString("2.4.0");
 
     /** Context. */
     private volatile GridCacheContext<K, V> ctx;
