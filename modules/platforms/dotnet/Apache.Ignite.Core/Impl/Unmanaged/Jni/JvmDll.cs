@@ -82,17 +82,46 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 ? "libjvm.dylib"
                 : "libjvm.so";
 
-        /** Library ptr. */
-        private readonly IntPtr _ptr;
+        /** */
+        private unsafe delegate JniResult CreateJvmDel(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args);
+
+        /** */
+        private delegate JniResult GetCreatedJvmsDel(out IntPtr pvm, int size, out int size2);
+
+        /** */
+        private readonly CreateJvmDel _createJvm;
+
+        /** */
+        private readonly GetCreatedJvmsDel _getCreatedJvms;
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JvmDll"/> class.
         /// </summary>
-        private JvmDll(IntPtr ptr)
+        private unsafe JvmDll(IntPtr ptr)
         {
             Debug.Assert(ptr != IntPtr.Zero);
 
-            _ptr = ptr;
+            if (Os.IsMacOs)
+            {
+                // dlopen + DllImport combo does not work on macOs, so we have to call dlsym manually.
+                var createJvmPtr = DllLoader.NativeMethodsMacOs.dlsym(ptr, "JNI_CreateJavaVM");
+                _createJvm = (CreateJvmDel) Marshal.GetDelegateForFunctionPointer(createJvmPtr, typeof(CreateJvmDel));
+
+                var getJvmsPtr = DllLoader.NativeMethodsMacOs.dlsym(ptr, "JNI_GetCreatedJavaVMs");
+                _getCreatedJvms = (GetCreatedJvmsDel) Marshal.GetDelegateForFunctionPointer(getJvmsPtr,
+                    typeof(GetCreatedJvmsDel));
+            }
+            else if (Os.IsWindows)
+            {
+                _createJvm = JniNativeMethodsWindows.JNI_CreateJavaVM;
+                _getCreatedJvms = JniNativeMethodsWindows.JNI_GetCreatedJavaVMs;
+            }
+            else
+            {
+                _createJvm = JniNativeMethodsLinux.JNI_CreateJavaVM;
+                _getCreatedJvms = JniNativeMethodsLinux.JNI_GetCreatedJavaVMs;
+            }
         }
 
         /// <summary>
@@ -120,26 +149,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
         }
 
-        private unsafe delegate JniResult CreateJvmDel(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args);
-        private delegate JniResult GetCreatedJvmsDel(out IntPtr pvm, int size, out int size2);
-
         /// <summary>
         /// Creates the JVM.
         /// </summary>
         public unsafe JniResult CreateJvm(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args)
         {
-            // TODO: Use common approach
-            if (Os.IsMacOs)
-            {
-                var ptr = DllLoader.NativeMethodsMacOs.dlsym(_ptr, "JNI_CreateJavaVM");
-                var del = (CreateJvmDel) Marshal.GetDelegateForFunctionPointer(ptr, typeof(CreateJvmDel));
-
-                return del(out pvm, out penv, args);
-            }
-
-            return Os.IsWindows
-                ? JniNativeMethodsWindows.JNI_CreateJavaVM(out pvm, out penv, args)
-                : JniNativeMethodsLinux.JNI_CreateJavaVM(out pvm, out penv, args);
+            return _createJvm(out pvm, out penv, args);
         }
 
         /// <summary>
@@ -147,24 +162,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         public JniResult GetCreatedJvms(out IntPtr pvm, int size, out int size2)
         {
-            // TODO: Use common approach
-            if (Os.IsMacOs)
-            {
-                var ptr = DllLoader.NativeMethodsMacOs.dlsym(_ptr, "JNI_GetCreatedJavaVMs");
-                var del = (GetCreatedJvmsDel)Marshal.GetDelegateForFunctionPointer(ptr, 
-                    typeof(GetCreatedJvmsDel));
-
-                return del(out pvm, size, out size2);
-            }
-
-            return Os.IsWindows
-                ? JniNativeMethodsWindows.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
-                : JniNativeMethodsLinux.JNI_GetCreatedJavaVMs(out pvm, size, out size2);
+            return _getCreatedJvms(out pvm, size, out size2);
         }
 
-
         /// <summary>
-        /// Loads the JVM DLL.
+        /// Loads the JVM DLL into process memory.
         /// </summary>
         public static void Load(string configJvmDllPath, ILogger log)
         {
@@ -187,8 +189,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                     log.Debug("{0} successfully loaded from [option={1}, path={2}]",
                         FileJvmDll, dllPath.Key, dllPath.Value);
 
-
-                    // TODO: Set JAVA_HOME on MacOS to the detected file?
                     _instance = new JvmDll(res.Key);
 
                     return;
@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <returns>Null in case of success, error info in case of failure.</returns>
         private static KeyValuePair<IntPtr, string> LoadDll(string filePath, string simpleName)
         {
-            KeyValuePair<IntPtr, string> res = new KeyValuePair<IntPtr, string>();
+            var res = new KeyValuePair<IntPtr, string>();
 
             if (filePath != null)
             {
