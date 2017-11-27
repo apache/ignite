@@ -405,6 +405,16 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
 
         /** {@inheritDoc} */
+        @Override public boolean isValidForReading() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isValidForWriting() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
         @Override public int getTotalPartitionsCount() {
             return 54;
         }
@@ -455,4 +465,3 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
     }
 }
-

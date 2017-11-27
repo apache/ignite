@@ -24,9 +24,9 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 
 /**
@@ -54,6 +54,9 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             case DATA_RECORD:
                 return delegateSerializer.size(record) + 8/*timestamp*/;
 
+            case SNAPSHOT:
+                return 8 + 1;
+
             default:
                 return delegateSerializer.size(record);
         }
@@ -76,6 +79,12 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
                 return new DataRecord(entries, timeStamp);
 
+            case SNAPSHOT:
+                long snpId = in.readLong();
+                byte full = in.readByte();
+
+                return new SnapshotRecord(snpId, full == 1);
+
             default:
                 return delegateSerializer.readRecord(type, in);
         }
@@ -95,6 +104,14 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
                 for (DataEntry dataEntry : dataRec.writeEntries())
                     RecordDataV1Serializer.putDataEntry(buf, dataEntry);
+
+                break;
+
+            case SNAPSHOT:
+                SnapshotRecord snpRec = (SnapshotRecord)record;
+
+                buf.putLong(snpRec.getSnapshotId());
+                buf.put(snpRec.isFull() ? (byte)1 : 0);
 
                 break;
 
