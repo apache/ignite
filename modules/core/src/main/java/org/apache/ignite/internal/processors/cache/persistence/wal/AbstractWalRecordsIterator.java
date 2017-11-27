@@ -30,7 +30,9 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -70,8 +72,8 @@ public abstract class AbstractWalRecordsIterator
      */
     @NotNull protected final GridCacheSharedContext sharedCtx;
 
-    /** Serializer of current version to read headers. */
-    @NotNull private final RecordSerializer serializer;
+    /** Serializer factory. */
+    @NotNull private final RecordSerializerFactory serializerFactory;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
     @NotNull protected final FileIOFactory ioFactory;
@@ -82,20 +84,20 @@ public abstract class AbstractWalRecordsIterator
     /**
      * @param log Logger.
      * @param sharedCtx Shared context.
-     * @param serializer Serializer of current version to read headers.
+     * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
      * @param bufSize buffer for reading records size.
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
-        @NotNull final RecordSerializer serializer,
+        @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
         final int bufSize
     ) {
         this.log = log;
         this.sharedCtx = sharedCtx;
-        this.serializer = serializer;
+        this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
 
         buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
@@ -107,7 +109,7 @@ public abstract class AbstractWalRecordsIterator
      * @return found WAL file descriptors
      */
     protected static FileWriteAheadLogManager.FileDescriptor[] loadFileDescriptors(@NotNull final File walFilesDir) throws IgniteCheckedException {
-        final File[] files = walFilesDir.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
+        final File[] files = walFilesDir.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
         if (files == null) {
             throw new IgniteCheckedException("WAL files directory does not not denote a " +
@@ -156,8 +158,12 @@ public abstract class AbstractWalRecordsIterator
             try {
                 curRec = advanceRecord(currWalSegment);
 
-                if (curRec != null)
+                if (curRec != null) {
+                    if (curRec.get2().type() == null)
+                        continue; // Record was skipped by filter of current serializer, should read next record.
+
                     return;
+                }
                 else {
                     currWalSegment = advanceSegment(currWalSegment);
 
@@ -275,20 +281,31 @@ public abstract class AbstractWalRecordsIterator
             FileIO fileIO = ioFactory.create(desc.file);
 
             try {
-                int serVer = FileWriteAheadLogManager.readSerializerVersion(fileIO);
+                IgniteBiTuple<Integer, Boolean> tup = FileWriteAheadLogManager.readSerializerVersionAndCompactedFlag(fileIO);
 
-                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, serVer);
+                int serVer = tup.get1();
+
+                boolean isCompacted = tup.get2();
 
                 FileInput in = new FileInput(fileIO, buf);
 
                 if (start != null && desc.idx == start.index()) {
-                    // Make sure we skip header with serializer version.
-                    long startOffset = Math.max(start.fileOffset(), fileIO.position());
+                    if (isCompacted) {
+                        serializerFactory.skipPositionCheck(true);
 
-                    in.seek(startOffset);
+                        if (start.fileOffset() != 0)
+                            serializerFactory.recordDeserializeFilter(new StartSeekingFilter(start));
+                    }
+                    else {
+                        // Make sure we skip header with serializer version.
+                        long startOff = Math.max(start.fileOffset(), fileIO.position());
+
+                        in.seek(startOff);
+                    }
                 }
 
-                return new FileWriteAheadLogManager.ReadFileHandle(fileIO, desc.idx, sharedCtx.igniteInstanceName(), ser, in);
+                return new FileWriteAheadLogManager.ReadFileHandle(
+                    fileIO, desc.idx, sharedCtx.igniteInstanceName(), serializerFactory.createSerializer(serVer), in);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {
@@ -320,4 +337,32 @@ public abstract class AbstractWalRecordsIterator
         }
     }
 
+    /**
+     * Filter that drops all records until given start pointer is reached.
+     */
+    private static class StartSeekingFilter implements P2<WALRecord.RecordType, WALPointer> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Start pointer. */
+        private final FileWALPointer start;
+
+        /** Start reached flag. */
+        private boolean startReached;
+
+        /**
+         * @param start Start.
+         */
+        StartSeekingFilter(FileWALPointer start) {
+            this.start = start;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(WALRecord.RecordType type, WALPointer pointer) {
+            if (start.fileOffset() == ((FileWALPointer)pointer).fileOffset())
+                startReached = true;
+
+            return startReached;
+        }
+    }
 }
