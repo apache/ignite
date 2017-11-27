@@ -799,12 +799,26 @@ public class ZookeeperDiscoveryImpl {
 
         evtWorker.evtsQ.add(new Runnable() {
             @Override public void run() {
+                if (connState == ConnectionState.DISCONNECTED)
+                    connState = ConnectionState.STARTED;
+
                 lsnr.onDiscovery(EventType.EVT_NODE_JOINED,
                     1L,
                     locNode,
                     topSnapshot,
                     Collections.<Long, Collection<ClusterNode>>emptyMap(),
                     null);
+
+                if (state.prevJoined) {
+                    lsnr.onDiscovery(EVT_CLIENT_NODE_RECONNECTED,
+                        1L,
+                        locNode,
+                        topSnapshot,
+                        Collections.<Long, Collection<ClusterNode>>emptyMap(),
+                        null);
+
+                    U.quietAndWarn(log, "Client node was reconnected after it was already considered failed.");
+                }
 
                 joinFut.onDone();
             }

@@ -29,6 +29,9 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
  */
 class ClusterNodeMetrics implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final byte[] metrics;
 
     /** */

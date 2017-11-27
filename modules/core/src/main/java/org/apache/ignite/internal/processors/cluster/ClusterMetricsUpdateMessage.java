@@ -34,6 +34,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ClusterMetricsUpdateMessage implements Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private byte[] nodeMetrics;
 
     /** */
