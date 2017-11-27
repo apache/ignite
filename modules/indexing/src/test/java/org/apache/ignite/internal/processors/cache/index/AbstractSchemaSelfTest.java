@@ -467,9 +467,11 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param tblName Table name.
      * @param idx Index.
      * @param ifNotExists When set to true operation will fail if index already exists.
+     * @param parallel Parallelism level.
      * @throws Exception If failed.
      */
-    protected void dynamicIndexCreate(Ignite node, String cacheName, String tblName, QueryIndex idx, boolean ifNotExists)
+    protected void dynamicIndexCreate(Ignite node, String cacheName, String tblName, QueryIndex idx,
+        boolean ifNotExists, int parallel)
         throws Exception {
         GridStringBuilder sql = new SB("CREATE INDEX ")
             .a(ifNotExists ? "IF NOT EXISTS " : "")
@@ -496,6 +498,9 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
 
         if (idx.getInlineSize() != QueryIndex.DFLT_INLINE_SIZE)
             sql.a(" INLINE_SIZE ").a(idx.getInlineSize());
+
+        if (parallel != 0)
+            sql.a(" PARALLEL ").a(parallel);
 
         executeSql(node, cacheName, sql.toString());
     }

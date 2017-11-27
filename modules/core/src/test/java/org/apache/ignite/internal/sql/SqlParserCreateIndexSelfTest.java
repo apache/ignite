@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.sql;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
@@ -34,7 +36,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
 @SuppressWarnings({"UnusedReturnValue", "ThrowableNotThrown"})
 public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
     /** Default properties */
-    private static final ImmutableMap<String, Object> DEFAULT_PROPS = getProps(null, null);
+    private static final Map<String, Object> DEFAULT_PROPS = getProps(null, null);
 
     /**
      * Tests for CREATE INDEX command.
@@ -187,7 +189,7 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
      * @return Command.
      */
     private static SqlCreateIndexCommand parseValidate(String schema, String sql, String expSchemaName,
-        String expTblName, String expIdxName, ImmutableMap<String, Object> props, Object... expColDefs) {
+        String expTblName, String expIdxName, Map<String, Object> props, Object... expColDefs) {
         SqlCreateIndexCommand cmd = (SqlCreateIndexCommand)new SqlParser(schema, sql).nextCommand();
 
         validate(cmd, expSchemaName, expTblName, expIdxName, props, expColDefs);
@@ -206,13 +208,12 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
      * @param expColDefs Expected column definitions.
      */
     private static void validate(SqlCreateIndexCommand cmd, String expSchemaName, String expTblName, String expIdxName,
-        ImmutableMap<String, Object> props, Object... expColDefs) {
+        Map<String, Object> props, Object... expColDefs) {
         assertEquals(expSchemaName, cmd.schemaName());
         assertEquals(expTblName, cmd.tableName());
         assertEquals(expIdxName, cmd.indexName());
 
-        ImmutableMap<String, Object> cmpProps =
-            ImmutableMap.of(PARALLEL, (Object)cmd.parallel(), INLINE_SIZE, cmd.inlineSize());
+        Map<String, Object> cmpProps = getProps(cmd.parallel(), cmd.inlineSize());
 
         assertEquals(cmpProps, props);
 
@@ -243,13 +244,18 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
      * @param inlineSize Inline size property value. <code>Null</code> for a default value.
      * @return Command properties.
      */
-    private static ImmutableMap<String, Object> getProps(Integer parallel, Integer inlineSize) {
+    private static Map<String, Object> getProps(Integer parallel, Integer inlineSize) {
         if (parallel == null)
             parallel = 0;
 
         if (inlineSize == null)
             inlineSize = QueryIndex.DFLT_INLINE_SIZE;
 
-        return ImmutableMap.of(PARALLEL, (Object)parallel, INLINE_SIZE, inlineSize);
+        Map<String, Object> props = new HashMap<>();
+
+        props.put(PARALLEL, parallel);
+        props.put(INLINE_SIZE, inlineSize);
+
+        return Collections.unmodifiableMap(props);
     }
 }
