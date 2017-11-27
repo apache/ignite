@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackG
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
@@ -219,5 +220,10 @@ public class PlatformLogger implements IgniteLogger {
         return ctgr instanceof Class
             ? ((Class)ctgr).getName()
             : (ctgr == null ? null : String.valueOf(ctgr));
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformLogger.class, this);
     }
 }

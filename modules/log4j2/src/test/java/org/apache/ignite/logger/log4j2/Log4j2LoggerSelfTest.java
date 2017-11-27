@@ -18,6 +18,7 @@
 package org.apache.ignite.logger.log4j2;
 
 import java.io.File;
+import java.net.URL;
 import java.util.Collections;
 import java.util.UUID;
 import junit.framework.TestCase;
@@ -59,6 +60,10 @@ public class Log4j2LoggerSelfTest extends TestCase {
 
         IgniteLogger log = new Log4J2Logger(xml).getLogger(getClass());
 
+        System.out.println(log.toString());
+        assertTrue(log.toString().contains("Log4J2Logger"));
+        assertTrue(log.toString().contains(xml.getPath()));
+
         ((LoggerNodeIdAware)log).setNodeId(UUID.randomUUID());
 
         checkLog(log);
@@ -73,7 +78,12 @@ public class Log4j2LoggerSelfTest extends TestCase {
         assert xml != null;
         assert xml.exists();
 
-        IgniteLogger log = new Log4J2Logger(xml.toURI().toURL()).getLogger(getClass());
+        URL url = xml.toURI().toURL();
+        IgniteLogger log = new Log4J2Logger(url).getLogger(getClass());
+
+        System.out.println(log.toString());
+        assertTrue(log.toString().contains("Log4J2Logger"));
+        assertTrue(log.toString().contains(url.getPath()));
 
         ((LoggerNodeIdAware)log).setNodeId(UUID.randomUUID());
 
@@ -85,6 +95,10 @@ public class Log4j2LoggerSelfTest extends TestCase {
      */
     public void testPathConstructor() throws Exception {
         IgniteLogger log = new Log4J2Logger(LOG_PATH_TEST).getLogger(getClass());
+
+        System.out.println(log.toString());
+        assertTrue(log.toString().contains("Log4J2Logger"));
+        assertTrue(log.toString().contains(LOG_PATH_TEST));
 
         ((LoggerNodeIdAware)log).setNodeId(UUID.randomUUID());
 

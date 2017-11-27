@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -100,10 +101,15 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private Logger impl;
 
+    /** Path to configuration file. */
+    @GridToStringInclude
+    private static String cfg;
+
     /** Quiet flag. */
     private final boolean quiet;
 
     /** Node ID. */
+    @GridToStringExclude
     private volatile UUID nodeId;
 
     /**
@@ -148,6 +154,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+        cfg = path;
     }
 
     /**
@@ -175,6 +182,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+        cfg = cfgFile.getPath();
     }
 
     /**
@@ -197,6 +205,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+        cfg = cfgUrl.getPath();
     }
 
     /**

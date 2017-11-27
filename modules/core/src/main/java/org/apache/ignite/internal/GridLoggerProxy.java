@@ -169,6 +169,14 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /**
+     * Gets the class name and parameters of the Logger type used
+     * @return Logger information (name and parameters)
+     */
+    public String getLoggerInfo() {
+        return impl.toString();
+    }
+
+    /**
      * Enriches the log message with Ignite instance name if
      * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_INSTANCE_NAME} or
      * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_GRID_NAME} system property is set.
