@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -79,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnrese
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
@@ -385,10 +383,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param mvccVer Mvcc version for update.
      * @param prevRow Previous row.
      * @param prevRowAvailable Whether previous row is available.
+     * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(CacheDataRow newRow, @Nullable MvccCoordinatorVersion mvccVer, @Nullable CacheDataRow prevRow, boolean prevRowAvailable)
-        throws IgniteCheckedException {
+    public void store(CacheDataRow newRow, @Nullable MvccCoordinatorVersion mvccVer, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable, boolean idxRebuild) throws IgniteCheckedException {
         assert enabled();
         assert newRow != null && newRow.value() != null && newRow.link() != 0 : newRow;
 
@@ -407,7 +406,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             if (qryProcEnabled)
-                qryProc.store(cctx, newRow, mvccVer, prevRow, prevRowAvailable);
+                qryProc.store(cctx, newRow, mvccVer, prevRow, prevRowAvailable, idxRebuild);
         }
         finally {
             invalidateResultCache();

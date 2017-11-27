@@ -1630,15 +1630,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheIds Cache IDs.
      * @return Future that will be completed when rebuilding is finished.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(Collection<Integer> cacheIds) {
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(Set<Integer> cacheIds) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes from hash (grid is stopping).");
+
+        // Because of alt type ids, there can be few entries in 'types' for a single cache.
+        // In order to avoid processing a cache more than once, let's track processed names.
+        Set<String> processedCacheNames = new HashSet<>();
 
         try {
             GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<Object, Object>();
 
             for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
-                if (cacheIds.contains(CU.cacheId(e.getKey().cacheName())))
+                if (cacheIds.contains(CU.cacheId(e.getKey().cacheName())) &&
+                    processedCacheNames.add(e.getKey().cacheName()))
                     fut.add(rebuildIndexesFromHash(e.getKey().cacheName(), e.getValue()));
             }
 
@@ -1709,15 +1714,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param newRow New row.
      * @param mvccVer Mvcc version for update.
      * @param prevRow Previous row.
+     * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    public void store(GridCacheContext cctx, CacheDataRow newRow,@Nullable MvccCoordinatorVersion mvccVer, @Nullable CacheDataRow prevRow,
-        boolean prevRowAvailable)
+    public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable MvccCoordinatorVersion mvccVer,
+        @Nullable CacheDataRow prevRow, boolean prevRowAvailable, boolean idxRebuild)
         throws IgniteCheckedException {
         assert cctx != null;
         assert newRow != null;
-        assert !cctx.mvccEnabled() || mvccVer != null;
+        assert !cctx.mvccEnabled() || mvccVer != null || idxRebuild;
         assert prevRowAvailable || prevRow == null;
 
         KeyCacheObject key = newRow.key();
@@ -1759,14 +1765,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (cctx.mvccEnabled()) {
                 // Add new mvcc value.
-                idx.store(cctx, desc, newRow, null, null, true);
+                idx.store(cctx, desc, newRow, null, null, true, idxRebuild);
 
                 // Set info about more recent version for previous record.
                 if (prevRow != null)
-                    idx.store(cctx, desc, prevRow, null, mvccVer, true);
+                    idx.store(cctx, desc, prevRow, null, mvccVer, true, idxRebuild);
             }
             else
-                idx.store(cctx, desc, newRow, prevRow, null, prevRowAvailable);
+                idx.store(cctx, desc, newRow, prevRow, null, prevRowAvailable, idxRebuild);
         }
         finally {
             busyLock.leaveBusy();
@@ -2368,7 +2374,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (cctx.mvccEnabled()) {
                 if (newVer != null) {
                     // Set info about more recent version for previous record.
-                    idx.store(cctx, desc, val, null, newVer, true);
+                    idx.store(cctx, desc, val, null, newVer, true, false);
                 }
                 else
                     idx.remove(cctx, desc, val);

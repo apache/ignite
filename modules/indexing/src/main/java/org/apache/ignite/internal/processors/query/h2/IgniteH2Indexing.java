@@ -583,7 +583,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         @Nullable CacheDataRow prevRow,
-        @Nullable MvccCoordinatorVersion newVer, boolean prevRowAvailable) throws IgniteCheckedException
+        @Nullable MvccCoordinatorVersion newVer,
+        boolean prevRowAvailable,
+        boolean idxRebuild) throws IgniteCheckedException
     {
         String cacheName = cctx.name();
 
@@ -592,7 +594,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        tbl.table().update(row, prevRow, newVer, prevRowAvailable);
+        tbl.table().update(row, prevRow, newVer, prevRowAvailable, idxRebuild);
 
         if (tbl.luceneIndex() != null) {
             long expireTime = row.expireTime();
@@ -2068,10 +2070,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Gets collection of table for given schema name.
      *
-     * @param cacheName Schema name.
+     * @param cacheName Cache name.
      * @return Collection of table descriptors.
      */
-    private Collection<H2TableDescriptor> tables(String cacheName) {
+    Collection<H2TableDescriptor> tables(String cacheName) {
         H2Schema s = schemas.get(schema(cacheName));
 
         if (s == null)
@@ -2126,7 +2128,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
 
-        visitor.visit(new RebuldIndexFromHashClosure(qryMgr));
+        visitor.visit(new RebuildIndexFromHashClosure(qryMgr, cctx.mvccEnabled()));
 
         for (H2TableDescriptor tblDesc : tables(cacheName))
             tblDesc.table().markRebuildFromHashInProgress(false);
@@ -2720,24 +2722,5 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
         // No-op.
-    }
-
-    /** */
-    private static class RebuldIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
-        /** */
-        private final GridCacheQueryManager qryMgr;
-
-        /**
-         * @param qryMgr Query manager.
-         */
-        RebuldIndexFromHashClosure(GridCacheQueryManager qryMgr) {
-            this.qryMgr = qryMgr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-            // TODO IGNITE-6929
-            qryMgr.store(row, null, null, false);
-        }
     }
 }
