@@ -44,24 +44,18 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
-public class OutputAckInformationTest extends GridCommonAbstractTest {
+public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
     /** Logger. */
-    IgniteLogger log = Mockito.spy(new GridStringLogger());
+    private IgniteLogger log = Mockito.spy(new GridStringLogger());
 
     /** Config. */
-    IgniteConfiguration cfg;
+    private static IgniteConfiguration cfg;
 
     /** User attributes. */
-    private Map<String, String> userattr = new HashMap<>();
+    private Map<String, String> userAttr = new HashMap<>();
 
-    /** Default configuration. */
-    private String dfltConfiguration = "default";
-
-    /** User attributes configuration. */
-    private String userAttrsConfiguration = "userAttributes";
-
-    /** Memory configuration. */
-    private String memoryConfiguration = "memoryConfiguration";
+    /** Logger string. */
+    private static String logStr;
 
     /**
      * {@inheritDoc}
@@ -71,36 +65,33 @@ public class OutputAckInformationTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
 
-        if (igniteInstanceName.equals(userAttrsConfiguration)) {
-            when(log.isInfoEnabled()).thenReturn(true);
+        when(log.isInfoEnabled()).thenReturn(true);
 
-            userattr.put("Name", "John Gold");
+        userAttr.put("Name", "John Gold");
 
-            cfg.setPeerClassLoadingEnabled(true);
+        cfg.setPeerClassLoadingEnabled(true);
 
-            cfg.setUserAttributes(userattr);
-        }
+        cfg.setUserAttributes(userAttr);
 
-        if (igniteInstanceName.equals(memoryConfiguration))
-            cfg.setMemoryConfiguration(new MemoryConfiguration());
+        cfg.setMemoryConfiguration(new MemoryConfiguration());
 
         cfg.setGridLogger(log);
 
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(0);
+
+        logStr = log.toString();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
 
         stopAllGrids();
     }
@@ -109,78 +100,64 @@ public class OutputAckInformationTest extends GridCommonAbstractTest {
      *
      */
     public void testAckAsciiLogo() throws Exception {
-        startGrid(dfltConfiguration);
-
-        assertTrue(log.toString().contains(ACK_VER_STR));
+        assertTrue(logStr.contains(ACK_VER_STR));
     }
 
     /**
      *
      */
     public void testAckConfigUrl() throws Exception {
-        startGrid(dfltConfiguration);
-
-        assertTrue(log.toString().contains(System.getProperty(IGNITE_CONFIG_URL, "n/a")));
+        assertTrue(logStr.contains(System.getProperty(IGNITE_CONFIG_URL, "n/a")));
     }
 
     /**
      *
      */
     public void testAckDaemon() throws Exception {
-        startGrid(dfltConfiguration);
-
         String demon = "Daemon mode: " + (cfg.isDaemon() ? "on" : "off");
 
-        assertTrue(log.toString().contains(demon));
+        assertTrue(logStr.contains(demon));
     }
 
     /**
      *
      */
     public void testAckOsInfo() throws Exception {
-        startGrid(dfltConfiguration);
+        assertTrue(logStr.contains(U.osString()));
 
-        assertTrue(log.toString().contains(U.osString()));
+        assertTrue(logStr.contains(System.getProperty("user.name")));
 
-        assertTrue(log.toString().contains(System.getProperty("user.name")));
-
-        assertTrue(log.toString().contains(String.valueOf(U.jvmPid())));
+        assertTrue(logStr.contains(String.valueOf(U.jvmPid())));
     }
 
     /**
      *
      */
     public void testAckLanguageRuntime() throws Exception {
-        startGrid(dfltConfiguration);
+        assertTrue(logStr.contains(U.jdkString()));
 
-        assertTrue(log.toString().contains(U.jdkString()));
+        assertTrue(logStr.contains(String.valueOf(U.heapSize(2))));
 
-        assertTrue(log.toString().contains(String.valueOf(U.heapSize(2))));
-
-        assertTrue(log.toString().contains(String.valueOf(U.jdkName())));
+        assertTrue(logStr.contains(String.valueOf(U.jdkName())));
     }
 
     /**
      *
      */
     public void testAckRemoteManagement() throws Exception {
-        startGrid(dfltConfiguration);
-
         boolean isClientNode = (cfg.isClientMode() != null && cfg.isClientMode()) || cfg.isDaemon();
 
         boolean isJmxRemoteEnabled = System.getProperty("com.sun.management.jmxremote") != null;
 
         boolean isRestartEnabled = System.getProperty(IGNITE_SUCCESS_FILE) != null;
 
-        boolean isRestEnabled = cfg.getConnectorConfiguration() != null &&
-            // By default rest processor doesn't start on client nodes.
-            (!isClientNode || (isClientNode && IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT)));
+        boolean isRestEnabled = cfg.getConnectorConfiguration() != null && (!isClientNode || IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT));
 
-        assertTrue(log.toString().contains("restart: " + onOff(isRestartEnabled)));
+        assertTrue(logStr.contains("restart: " + onOff(isRestartEnabled)));
 
-        assertTrue(log.toString().contains("REST: " + onOff(isRestEnabled)));
+        assertTrue(logStr.contains("REST: " + onOff(isRestEnabled)));
 
-        assertTrue(log.toString().contains("remote: " + onOff(isJmxRemoteEnabled)));
+        assertTrue(logStr.contains("remote: " + onOff(isJmxRemoteEnabled)));
     }
 
     /**
@@ -197,63 +174,53 @@ public class OutputAckInformationTest extends GridCommonAbstractTest {
      *
      */
     public void testAckVmArguments() throws Exception {
-        startGrid(dfltConfiguration);
-
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
-        assertTrue(log.toString().contains(cfg.getIgniteHome()));
+        assertTrue(logStr.contains(cfg.getIgniteHome()));
 
-        assertTrue(log.toString().contains(String.valueOf(rtBean.getInputArguments())));
+        assertTrue(logStr.contains(String.valueOf(rtBean.getInputArguments())));
     }
 
     /**
      *
      */
     public void testAckMemoryConfiguration() throws Exception {
-        startGrid(memoryConfiguration);
-
         MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
 
         assert
             memCfg != null;
 
-        assertTrue(log.toString().contains(String.valueOf(memCfg.getSystemCacheInitialSize() / (1024 * 1024))));
+        assertTrue(logStr.contains(String.valueOf(memCfg.getSystemCacheInitialSize() / (1024 * 1024))));
     }
 
     /**
      *
      */
     public void testAckCacheConfiguration() throws Exception {
-        startGrid(dfltConfiguration);
-
         CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
         for (CacheConfiguration c : cacheCfgs)
-            assertTrue(log.toString().contains(c.getName()));
+            assertTrue(logStr.contains(c.getName()));
     }
 
     /**
      *
      */
     public void testAckP2pConfiguration() throws Exception {
-        startGrid(dfltConfiguration);
-
         String p2pConfiguration = "Peer class loading is enabled (disable it in production for performance and " +
             "deployment consistency reasons)";
 
-        assertTrue(log.toString().contains(p2pConfiguration));
+        assertTrue(logStr.contains(p2pConfiguration));
     }
 
     /**
      *
      */
     public void testLogNodeUserAttributes() throws Exception {
-        startGrid(userAttrsConfiguration);
-
         for (Map.Entry<?, ?> attr : cfg.getUserAttributes().entrySet()) {
-            assertTrue(log.toString().contains(String.valueOf(attr.getKey())));
+            assertTrue(logStr.contains(String.valueOf(attr.getKey())));
 
-            assertTrue(log.toString().contains(String.valueOf(attr.getKey())));
+            assertTrue(logStr.contains(String.valueOf(attr.getKey())));
         }
     }
 
@@ -261,12 +228,10 @@ public class OutputAckInformationTest extends GridCommonAbstractTest {
      *
      */
     public void testAckStart() throws Exception {
-        startGrid(userAttrsConfiguration);
+        assertTrue(logStr.contains(VER_STR));
 
-        assertTrue(log.toString().contains(VER_STR));
+        assertTrue(logStr.contains(BUILD_TSTAMP_STR));
 
-        assertTrue(log.toString().contains(BUILD_TSTAMP_STR));
-
-        assertTrue(log.toString().contains(REV_HASH_STR));
+        assertTrue(logStr.contains(REV_HASH_STR));
     }
 }

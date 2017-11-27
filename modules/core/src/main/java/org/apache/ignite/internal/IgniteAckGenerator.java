@@ -50,11 +50,15 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 /**
  *
  */
-public class OutputAckInformation {
+class IgniteAckGenerator {
     /**
      * @param log Logger.
      */
+<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/OutputAckInformation.java
     OutputAckInformation(GridLoggerProxy log, IgniteConfiguration cfg, GridKernalContextImpl ctx) {
+=======
+    IgniteAckGenerator(IgniteLogger log, IgniteConfiguration cfg) {
+>>>>>>> code style changes:modules/core/src/main/java/org/apache/ignite/internal/IgniteAckGenerator.java
         this.cfg = cfg;
 
         this.log = log;
@@ -75,9 +79,6 @@ public class OutputAckInformation {
 
     /** Ignite site that is shown in log messages. */
     private static final String SITE = "ignite.apache.org";
-
-    /** */
-    private String igniteInstanceName;
 
     /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
@@ -442,7 +443,13 @@ public class OutputAckInformation {
      *
      * @param rtBean Java runtime bean.
      */
+<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/OutputAckInformation.java
     void ackStart(RuntimeMXBean rtBean) {
+=======
+    void ackStart(RuntimeMXBean rtBean, GridKernalContextImpl ctx) {
+        String igniteInstanceName = cfg.getIgniteInstanceName();
+
+>>>>>>> code style changes:modules/core/src/main/java/org/apache/ignite/internal/IgniteAckGenerator.java
         ClusterNode locNode = ctx.cluster().get().localNode();
 
         if (log.isQuiet()) {
