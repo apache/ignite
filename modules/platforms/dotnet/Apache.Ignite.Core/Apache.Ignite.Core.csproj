@@ -151,10 +151,12 @@
     <Compile Include="Impl\Unmanaged\Jni\Env.cs" />
     <Compile Include="Impl\Unmanaged\Jni\EnvInterface.cs" />
     <Compile Include="Impl\Unmanaged\Jni\JvmDll.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JvmInitArgs.cs" />
     <Compile Include="Impl\Unmanaged\Jni\JvmInterface.cs" />
     <Compile Include="Impl\PlatformDisposableTargetAdapter.cs" />
     <Compile Include="Impl\PlatformJniTarget.cs" />
     <Compile Include="Impl\Unmanaged\Jni\GlobalRef.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JvmOption.cs" />
     <Compile Include="Impl\Unmanaged\Jni\MethodId.cs" />
     <Compile Include="Impl\Unmanaged\Jni\NativeMethod.cs" />
     <Compile Include="Impl\Unmanaged\Jni\JniResult.cs" />

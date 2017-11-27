@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             int existingJvmCount;
 
             // Use existing JVM if present.
-            var res = JniNativeMethods.JNI_GetCreatedJavaVMs(out jvm, 1, out existingJvmCount);
+            var res = JvmDll.Instance.JNI_GetCreatedJavaVMs(out jvm, 1, out existingJvmCount);
             if (res != JniResult.Success)
             {
                 throw new IgniteException("JNI_GetCreatedJavaVMs failed: " + res);
@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
 
             IntPtr env;
-            res = JniNativeMethods.JNI_CreateJavaVM(out jvm, out env, &args);
+            res = JvmDll.Instance.JNI_CreateJavaVM(out jvm, out env, &args);
             if (res != JniResult.Success)
             {
                 throw new IgniteException("JNI_CreateJavaVM failed: " + res);
@@ -255,98 +255,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             del = (T) (object) Marshal.GetDelegateForFunctionPointer(ptr, typeof(T));
         }
 
-        /// <summary>
-        /// JavaVMOption.
-        /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable")]
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
-        private struct JvmOption
-        {
-            public IntPtr optionString;
-            private readonly IntPtr extraInfo;
-        }
-
-        /// <summary>
-        /// JavaVMInitArgs.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
-        private struct JvmInitArgs
-        {
-            public int version;
-            public int nOptions;
-            public JvmOption* options;
-            private readonly byte ignoreUnrecognized;
-        }
-
-        private static class JniNativeMethods
-        {
-            internal static JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
-                JvmInitArgs* args)
-            {
-                return Os.IsWindows
-                    ? JniNativeMethodsWindows.JNI_CreateJavaVM(out pvm, out penv, args)
-                    : Os.IsMacOs
-                        ? JniNativeMethodsMacOs.JNI_CreateJavaVM(out pvm, out penv, args)
-                        : JniNativeMethodsLinux.JNI_CreateJavaVM(out pvm, out penv, args);
-            }
-
-            internal static JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size, out int size2)
-            {
-                return Os.IsWindows
-                    ? JniNativeMethodsWindows.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
-                    : Os.IsMacOs
-                        ? JniNativeMethodsMacOs.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
-                        : JniNativeMethodsLinux.JNI_GetCreatedJavaVMs(out pvm, size, out size2);
-            }
-        }
-
-        /// <summary>
-        /// DLL imports.
-        /// </summary>
-        private static class JniNativeMethodsWindows
-        {
-            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("jvm.dll", CallingConvention = CallingConvention.StdCall)]
-            internal static extern JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
-                JvmInitArgs* args);
-
-            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("jvm.dll", CallingConvention = CallingConvention.StdCall)]
-            internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
-                [Out] out int size2);
-        }
-
-        /// <summary>
-        /// DLL imports.
-        /// </summary>
-        private static class JniNativeMethodsLinux
-        {
-            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("libjvm.so", CallingConvention = CallingConvention.StdCall)]
-            internal static extern JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
-                JvmInitArgs* args);
-
-            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("libjvm.so", CallingConvention = CallingConvention.StdCall)]
-            internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
-                [Out] out int size2);
-        }
-
-        /// <summary>
-        /// DLL imports.
-        /// </summary>
-        private static class JniNativeMethodsMacOs
-        {
-            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("libjvm.dylib", CallingConvention = CallingConvention.StdCall)]
-            internal static extern JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
-                JvmInitArgs* args);
-
-            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("libjvm.dylib", CallingConvention = CallingConvention.StdCall)]
-            internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
-                [Out] out int size2);
-        }
 
         /// <summary>
         /// Provides access to <see cref="Callbacks"/> instance in the default AppDomain.
