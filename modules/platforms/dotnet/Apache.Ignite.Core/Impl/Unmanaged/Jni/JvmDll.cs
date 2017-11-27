@@ -104,7 +104,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 if (_instance == null)
                 {
-                    throw new IgniteException(FileJvmDll + " has not been loaded.");
+                    // Retrieve already loaded dll by name.
+                    // This happens in defalt AppDomain when Ignite starts in another domain.
+                    var res = DllLoader.Load(FileJvmDll);
+
+                    if (res.Key == IntPtr.Zero)
+                    {
+                        throw new IgniteException(FileJvmDll + " has not been loaded.");
+                    }
+
+                    _instance = new JvmDll(res.Key);
                 }
 
                 return _instance;
