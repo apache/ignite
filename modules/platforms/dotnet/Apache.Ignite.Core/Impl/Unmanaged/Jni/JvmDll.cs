@@ -112,6 +112,31 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
 
         /// <summary>
+        /// Creates the JVM.
+        /// </summary>
+        public unsafe JniResult CreateJvm(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args)
+        {
+            return Os.IsWindows
+                ? JniNativeMethodsWindows.JNI_CreateJavaVM(out pvm, out penv, args)
+                : Os.IsMacOs
+                    ? JniNativeMethodsMacOs.JNI_CreateJavaVM(out pvm, out penv, args)
+                    : JniNativeMethodsLinux.JNI_CreateJavaVM(out pvm, out penv, args);
+        }
+
+        /// <summary>
+        /// Gets the created JVMS.
+        /// </summary>
+        public JniResult GetCreatedJvms(out IntPtr pvm, int size, out int size2)
+        {
+            return Os.IsWindows
+                ? JniNativeMethodsWindows.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
+                : Os.IsMacOs
+                    ? JniNativeMethodsMacOs.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
+                    : JniNativeMethodsLinux.JNI_GetCreatedJavaVMs(out pvm, size, out size2);
+        }
+
+
+        /// <summary>
         /// Loads the JVM DLL.
         /// </summary>
         public static void Load(string configJvmDllPath, ILogger log)
@@ -308,25 +333,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 yield return new KeyValuePair<string, string>(javaExec, f);
             }
         }
-
-        public unsafe JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args)
-        {
-            return Os.IsWindows
-                ? JniNativeMethodsWindows.JNI_CreateJavaVM(out pvm, out penv, args)
-                : Os.IsMacOs
-                    ? JniNativeMethodsMacOs.JNI_CreateJavaVM(out pvm, out penv, args)
-                    : JniNativeMethodsLinux.JNI_CreateJavaVM(out pvm, out penv, args);
-        }
-
-        public JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size, out int size2)
-        {
-            return Os.IsWindows
-                ? JniNativeMethodsWindows.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
-                : Os.IsMacOs
-                    ? JniNativeMethodsMacOs.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
-                    : JniNativeMethodsLinux.JNI_GetCreatedJavaVMs(out pvm, size, out size2);
-        }
-
 
         /// <summary>
         /// DLL imports.

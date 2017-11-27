@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// macOs uses "libSystem.dylib".
         /// </summary>
-        private static class NativeMethodsMacOs
+        internal static class NativeMethodsMacOs
         {
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("libSystem.dylib", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
@@ -200,6 +200,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             [DllImport("libSystem.dylib", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlerror();
+
+            [DllImport("libSystem.dylib")]
+            internal static extern IntPtr dlsym(IntPtr handle, string symbol);
         }
     }
 }

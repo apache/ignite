@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             int existingJvmCount;
 
             // Use existing JVM if present.
-            var res = JvmDll.Instance.JNI_GetCreatedJavaVMs(out jvm, 1, out existingJvmCount);
+            var res = JvmDll.Instance.GetCreatedJvms(out jvm, 1, out existingJvmCount);
             if (res != JniResult.Success)
             {
                 throw new IgniteException("JNI_GetCreatedJavaVMs failed: " + res);
@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
 
             IntPtr env;
-            res = JvmDll.Instance.JNI_CreateJavaVM(out jvm, out env, &args);
+            res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
             if (res != JniResult.Success)
             {
                 throw new IgniteException("JNI_CreateJavaVM failed: " + res);
