@@ -37,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
@@ -111,11 +112,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Cache object processor to reading {@link DataEntry DataEntries} */
     private final IgniteCacheObjectProcessor co;
 
+    /** Serializer of {@link TxRecord} records. */
+    private TxRecordSerializer txRecordSerializer;
+
     /**
      * @param cctx Cache shared context.
      */
     public RecordDataV1Serializer(GridCacheSharedContext cctx) {
         this.cctx = cctx;
+        this.txRecordSerializer = new TxRecordSerializer();
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
     }
@@ -287,6 +292,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case SWITCH_SEGMENT_RECORD:
                 // CRC is not loaded for switch segment.
                 return -CRC_SIZE;
+
+            case TX_RECORD:
+                return txRecordSerializer.size((TxRecord)record);
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -835,6 +843,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case SWITCH_SEGMENT_RECORD:
                 throw new EOFException("END OF SEGMENT");
 
+            case TX_RECORD:
+                res = txRecordSerializer.read(in);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1340,6 +1353,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.putInt(pageListMetaResetCntRecord.groupId());
                 buf.putLong(pageListMetaResetCntRecord.pageId());
+
+                break;
+
+            case TX_RECORD:
+                txRecordSerializer.write((TxRecord)record, buf);
 
                 break;
 
