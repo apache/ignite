@@ -1523,6 +1523,13 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * @return H2 to Grid objects map.
+     */
+    public Map objectsMap() {
+        return h2ObjToGridObj;
+    }
+
+    /**
      * @param qry Query.
      * @return Parsed query AST.
      */

@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -65,6 +66,9 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** One phase commit write version. */
     private GridCacheVersion writeVer;
+
+    /** */
+    private TxMvccInfo mvccInfo;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -121,7 +125,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         int taskNameHash,
         boolean addDepInfo,
         boolean retVal,
-        boolean waitRemoteTxs
+        boolean waitRemoteTxs,
+        TxMvccInfo mvccInfo
     ) {
         super(
             xidVer,
@@ -150,6 +155,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.nearNodeId = nearNodeId;
         this.isolation = isolation;
         this.miniId = miniId;
+        this.mvccInfo = mvccInfo;
 
         needReturnValue(retVal);
         waitRemoteTransactions(waitRemoteTxs);
@@ -206,7 +212,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean addDepInfo,
         Collection<Long> updateIdxs,
         boolean retVal,
-        boolean waitRemoteTxs
+        boolean waitRemoteTxs,
+        TxMvccInfo mvccInfo
     ) {
         this(nearNodeId,
             futId,
@@ -231,7 +238,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             taskNameHash,
             addDepInfo,
             retVal,
-            waitRemoteTxs);
+            waitRemoteTxs,
+            mvccInfo);
 
         if (updateIdxs != null && !updateIdxs.isEmpty()) {
             partUpdateCnt = new GridLongList(updateIdxs.size());
@@ -239,6 +247,13 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             for (Long idx : updateIdxs)
                 partUpdateCnt.add(idx);
         }
+    }
+
+    /**
+     * @return Counter.
+     */
+    public TxMvccInfo mvccInfo() {
+        return mvccInfo;
     }
 
     /**
@@ -367,24 +382,30 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeUuid("nearNodeId", nearNodeId))
+                if (!writer.writeMessage("mvccInfo", mvccInfo))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeMessage("partUpdateCnt", partUpdateCnt))
+                if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeCollection("pendingVers", pendingVers, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("partUpdateCnt", partUpdateCnt))
                     return false;
 
                 writer.incrementState();
 
             case 26:
+                if (!writer.writeCollection("pendingVers", pendingVers, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 27:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -427,7 +448,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 23:
-                nearNodeId = reader.readUuid("nearNodeId");
+                mvccInfo = reader.readMessage("mvccInfo");
 
                 if (!reader.isLastRead())
                     return false;
@@ -435,7 +456,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 24:
-                partUpdateCnt = reader.readMessage("partUpdateCnt");
+                nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -443,7 +464,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 25:
-                pendingVers = reader.readCollection("pendingVers", MessageCollectionItemType.MSG);
+                partUpdateCnt = reader.readMessage("partUpdateCnt");
 
                 if (!reader.isLastRead())
                     return false;
@@ -451,6 +472,14 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 26:
+                pendingVers = reader.readCollection("pendingVers", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 27:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
@@ -470,7 +499,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 27;
+        return 28;
     }
 
     /** {@inheritDoc} */

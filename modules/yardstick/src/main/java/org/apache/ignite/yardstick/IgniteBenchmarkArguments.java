@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick;
 import com.beust.jcommander.Parameter;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -251,6 +252,17 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-stbs", "--streamerBufSize"}, description = "Data streamer buffer size")
     private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
+
+    /** */
+    @Parameter(names = {"-mvcc", "--mvcc"}, description = "Enable MVCC for cache")
+    private boolean mvcc;
+
+    /**
+     * @return {@code True} if need enable cache mvcc (see {@link CacheConfiguration#isMvccEnabled()}).
+     */
+    public boolean mvccEnabled() {
+        return mvcc;
+    }
 
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.

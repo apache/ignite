@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -76,8 +75,9 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
@@ -380,12 +380,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * @param newRow New row.
+     * @param mvccVer Mvcc version for update.
      * @param prevRow Previous row.
      * @param prevRowAvailable Whether previous row is available.
+     * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(CacheDataRow newRow, @Nullable CacheDataRow prevRow, boolean prevRowAvailable)
-        throws IgniteCheckedException {
+    public void store(CacheDataRow newRow, @Nullable MvccCoordinatorVersion mvccVer, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable, boolean idxRebuild) throws IgniteCheckedException {
         assert enabled();
         assert newRow != null && newRow.value() != null && newRow.link() != 0 : newRow;
 
@@ -404,7 +406,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             if (qryProcEnabled)
-                qryProc.store(cctx, newRow, prevRow, prevRowAvailable);
+                qryProc.store(cctx, newRow, mvccVer, prevRow, prevRowAvailable, idxRebuild);
         }
         finally {
             invalidateResultCache();
@@ -416,9 +418,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param key Key.
      * @param prevRow Previous row.
+     * @param newVer Mvcc version for remove operation.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void remove(KeyCacheObject key, @Nullable CacheDataRow prevRow) throws IgniteCheckedException {
+    public void remove(KeyCacheObject key, @Nullable CacheDataRow prevRow, @Nullable MvccCoordinatorVersion newVer)
+        throws IgniteCheckedException {
         if (!QueryUtils.isEnabled(cctx.config()))
             return; // No-op.
 
@@ -434,7 +438,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             // val may be null if we have no previous value. We should not call processor in this case.
             if (qryProcEnabled && prevRow != null)
-                qryProc.remove(cctx, prevRow);
+                qryProc.remove(cctx, prevRow, newVer);
         }
         finally {
             invalidateResultCache();
@@ -593,7 +597,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
-                    iter = scanIterator(qry, false);
+                    iter = scanIterator(qry, false, null);
 
                     break;
 
@@ -799,11 +803,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param qry Query.
      * @param locNode Local node.
+     * @param mvccCrd Non null mvcc coordinator node if need ack mvcc query as finished on iterator close.
      * @return Full-scan row iterator.
      * @throws IgniteCheckedException If failed to get iterator.
      */
     @SuppressWarnings({"unchecked"})
-    private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, boolean locNode)
+    private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, boolean locNode, MvccCoordinator mvccCrd)
         throws IgniteCheckedException {
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
@@ -847,11 +852,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             else {
                 locPart = null;
 
-                // TODO shouldn't we reserve all involved partitions?
-                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer);
+                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer, qry.mvccVersion());
             }
 
-            return new ScanQueryIterator(it, qry, topVer, locPart, keyValFilter, locNode, cctx, log);
+            return new ScanQueryIterator(it, qry, topVer, locPart, keyValFilter, locNode, cctx, mvccCrd, log);
         }
         catch (IgniteCheckedException | RuntimeException e) {
             closeScanFilter(keyValFilter);
@@ -1440,7 +1444,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     taskName));
             }
 
-            GridCloseableIterator it = scanIterator(qry, true);
+            final MvccCoordinator mvccCrd;
+
+            // TODO IGNITE-3478.
+            if (cctx.mvccEnabled()) {
+                mvccCrd = cctx.affinity().mvccCoordinator(cctx.shared().exchange().readyAffinityVersion());
+
+                IgniteInternalFuture<MvccCoordinatorVersion> fut0 = cctx.shared().coordinators().requestQueryCounter(mvccCrd);
+
+                qry.mvccVersion(fut0.get());
+            }
+            else
+                mvccCrd = null;
+
+            GridCloseableIterator it = scanIterator(qry, true, mvccCrd);
 
             updateStatistics = false;
 
@@ -2929,6 +2946,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private IgniteCacheExpiryPolicy expiryPlc;
 
+        /** */
+        private MvccCoordinator mvccCrd;
+
+        /** */
+        private MvccCoordinatorVersion mvccVer;
+
         /**
          * @param it Iterator.
          * @param qry Query.
@@ -2947,19 +2970,25 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             IgniteBiPredicate<K, V> scanFilter,
             boolean locNode,
             GridCacheContext cctx,
+            MvccCoordinator mvccCrd,
             IgniteLogger log) {
+            assert mvccCrd == null || qry.mvccVersion() != null;
+
             this.it = it;
             this.topVer = topVer;
             this.locPart = locPart;
             this.scanFilter = scanFilter;
             this.cctx = cctx;
+            this.mvccCrd = mvccCrd;
+            this.mvccVer = qry.mvccVersion();
+
             this.log = log;
 
             statsEnabled = locNode && cctx.config().isStatisticsEnabled();
 
             readEvt = locNode && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
-            if(readEvt){
+            if (readEvt){
                 taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
                 subjId = qry.subjectId();
             }
@@ -3006,6 +3035,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override protected void onClose() {
+            if (mvccCrd != null)
+                dht.context().shared().coordinators().ackQueryDone(mvccCrd, mvccVer);
+
             if (expiryPlc != null && dht != null) {
                 dht.sendTtlUpdateRequest(expiryPlc);
 

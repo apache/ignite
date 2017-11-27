@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.ReaderArguments;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -103,6 +104,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Recovery context flag. */
     private final boolean recovery;
 
+    /** */
+    private final MvccCoordinatorVersion mvccVer;
+
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -115,6 +119,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param taskNameHash Task name hash code.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
+     * @param mvccVer Mvcc version.
      */
     public GridDhtGetSingleFuture(
         GridCacheContext<K, V> cctx,
@@ -128,7 +133,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean recovery
+        boolean recovery,
+        @Nullable MvccCoordinatorVersion mvccVer
     ) {
         assert reader != null;
         assert key != null;
@@ -145,6 +151,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.recovery = recovery;
+        this.mvccVer = mvccVer;
 
         futId = IgniteUuid.randomUuid();
 
@@ -365,7 +372,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 taskName,
                 expiryPlc,
                 skipVals,
-                recovery);
+                recovery,
+                mvccVer);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -390,7 +398,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 taskName,
                                 expiryPlc,
                                 skipVals,
-                                recovery);
+                                recovery,
+                                mvccVer);
 
                         fut0.listen(createGetFutureListener());
                     }

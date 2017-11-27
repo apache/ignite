@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -58,6 +59,7 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
@@ -273,17 +275,21 @@ public class GridH2RowDescriptor {
      * Creates new row.
      *
      * @param dataRow Data row.
+     * @param newVer Version of new mvcc value inserted for the same key.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheDataRow dataRow) throws IgniteCheckedException {
+    public GridH2Row createRow(CacheDataRow dataRow, @Nullable MvccCoordinatorVersion newVer) throws IgniteCheckedException {
         GridH2Row row;
 
         try {
-            if (dataRow.value() == null) // Only can happen for remove operation, can create simple search row.
+            if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
+                assert newVer == null;
+
                 row = new GridH2KeyRowOnheap(dataRow, wrap(dataRow.key(), keyType));
+            }
             else
-                row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
+                row = new GridH2KeyValueRowOnheap(this, dataRow, newVer, keyType, valType);
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +

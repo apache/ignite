@@ -870,7 +870,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     final int cacheId = cacheCtx.cacheId();
 
                     final IgniteInternalFuture<?> rebuildFut = cctx.kernalContext().query()
-                        .rebuildIndexesFromHash(Collections.singletonList(cacheCtx.cacheId()));
+                        .rebuildIndexesFromHash(Collections.singleton(cacheCtx.cacheId()));
 
                     idxRebuildFuts.put(cacheId, rebuildFut);
 

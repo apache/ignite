@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
@@ -51,10 +52,8 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
         return commit;
     }
 
-    /**
-     *
-     */
-    public void finish() {
+    /** {@inheritDoc} */
+    public void finish(boolean commit, boolean clearThreadMap) {
         try {
             if (commit) {
                 tx.state(PREPARING);
@@ -78,5 +77,10 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
         finally {
             onDone(tx);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onNodeStop(IgniteCheckedException e) {
+        onDone(tx, e);
     }
 }

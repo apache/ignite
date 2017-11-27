@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -83,6 +84,9 @@ public class GridH2QueryContext {
     /** */
     private GridH2CollocationModel qryCollocationMdl;
 
+    /** */
+    private MvccCoordinatorVersion mvccVer;
+
     /**
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
@@ -102,10 +106,31 @@ public class GridH2QueryContext {
      * @param segmentId Index segment ID.
      * @param type Query type.
      */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
+    public GridH2QueryContext(UUID locNodeId,
+        UUID nodeId,
+        long qryId,
+        int segmentId,
+        GridH2QueryType type) {
         assert segmentId == 0 || type == MAP;
 
         key = new Key(locNodeId, nodeId, qryId, segmentId, type);
+    }
+
+    /**
+     * @return Mvcc version.
+     */
+    @Nullable public MvccCoordinatorVersion mvccVersion() {
+        return mvccVer;
+    }
+
+    /**
+     * @param mvccVer Mvcc version.
+     * @return {@code this}.
+     */
+    public GridH2QueryContext mvccVersion(MvccCoordinatorVersion mvccVer) {
+        this.mvccVer = mvccVer;
+
+        return this;
     }
 
     /**

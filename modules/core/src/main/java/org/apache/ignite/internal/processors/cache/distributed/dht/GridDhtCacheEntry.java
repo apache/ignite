@@ -585,7 +585,10 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                         ']');
                 }
 
-                removeValue();
+                if (cctx.mvccEnabled())
+                    cctx.offheap().mvccRemoveAll(this);
+                else
+                    removeValue();
 
                 // Give to GC.
                 update(null, 0L, 0L, ver, true);

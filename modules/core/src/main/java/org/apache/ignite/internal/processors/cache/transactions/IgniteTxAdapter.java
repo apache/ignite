@@ -59,6 +59,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -252,6 +254,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** UUID to consistent id mapper. */
     protected ConsistentIdMapper consistentIdMapper;
 
+    /** */
+    protected TxMvccInfo mvccInfo;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -368,6 +373,27 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+    }
+
+    /**
+     * @return Mvcc info.
+     */
+    @Nullable public TxMvccInfo mvccInfo() {
+        return mvccInfo;
+    }
+
+    /**
+     * @return Mvcc version for update operation, should be always initialized if mvcc is enabled.
+     */
+    @Nullable protected final MvccCoordinatorVersion mvccVersionForUpdate() {
+        assert !txState().mvccEnabled(cctx) || mvccInfo != null : "Mvcc is not initialized: " + this;
+
+        return mvccInfo != null ? mvccInfo.version() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccInfo(TxMvccInfo mvccInfo) {
+        this.mvccInfo = mvccInfo;
     }
 
     /**
@@ -1494,7 +1520,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
-                    keepBinary);
+                    keepBinary,
+                    null); // TODO IGNITE-3478
             }
 
             boolean modified = false;
@@ -1875,6 +1902,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             this.timeout = timeout;
             this.state = state;
             this.rollbackOnly = rollbackOnly;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccInfo(TxMvccInfo mvccInfo) {
+            // No-op.
         }
 
         /** {@inheritDoc} */

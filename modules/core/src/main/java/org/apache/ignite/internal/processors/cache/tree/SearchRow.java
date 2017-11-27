@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -72,5 +74,20 @@ public class SearchRow implements CacheSearchRow {
     /** {@inheritDoc} */
     @Override public int cacheId() {
         return cacheId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCoordinatorVersion() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCounter() {
+        return CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SearchRow.class, this);
     }
 }

@@ -474,6 +474,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
+                        assert !txState.mvccEnabled(cctx) || mvccInfo != null : "Mvcc is not initialized: " + this;
+
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
                         List<DataEntry> dataEntries = null;
@@ -595,7 +597,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         CU.subjectId(this, cctx),
                                                         resolveTaskName(),
                                                         dhtVer,
-                                                        txEntry.updateCounter());
+                                                        txEntry.updateCounter(),
+                                                        mvccVersionForUpdate());
                                                 else {
                                                     assert val != null : txEntry;
 
@@ -619,7 +622,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         CU.subjectId(this, cctx),
                                                         resolveTaskName(),
                                                         dhtVer,
-                                                        txEntry.updateCounter());
+                                                        txEntry.updateCounter(),
+                                                        mvccVersionForUpdate());
 
                                                     // Keep near entry up to date.
                                                     if (nearCached != null) {
@@ -651,7 +655,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     CU.subjectId(this, cctx),
                                                     resolveTaskName(),
                                                     dhtVer,
-                                                    txEntry.updateCounter());
+                                                    txEntry.updateCounter(),
+                                                    mvccVersionForUpdate());
 
                                                 // Keep near entry up to date.
                                                 if (nearCached != null)

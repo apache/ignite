@@ -604,12 +604,19 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      */
     public static int getRowSize(CacheDataRow row, boolean withCacheId) throws IgniteCheckedException {
         KeyCacheObject key = row.key();
-        CacheObject val = row.value();
 
         int keyLen = key.valueBytesLength(null);
+
+        int len = keyLen + (withCacheId ? 4 : 0);
+
+        if (row.removed())
+            return len;
+
+        CacheObject val = row.value();
+
         int valLen = val.valueBytesLength(null);
 
-        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8 + (withCacheId ? 4 : 0);
+        return len + valLen + CacheVersionIO.size(row.version(), false) + 8;
     }
 
     /** {@inheritDoc} */

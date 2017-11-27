@@ -18,24 +18,45 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearTxPrepareFutureAdapter {
+    /** */
+    private static final AtomicIntegerFieldUpdater<MvccVersionFuture> LOCK_CNT_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(MvccVersionFuture.class, "lockCnt");
+
+    /** */
+    @GridToStringExclude
+    protected KeyLockFuture keyLockFut;
+
+    /** */
+    @GridToStringExclude
+    protected MvccVersionFuture mvccVerFut;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -169,9 +190,32 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     protected abstract void prepare0(boolean remap, boolean topLocked);
 
     /**
+     * @param mvccCrd
+     * @param lockCnt
+     * @param remap
+     */
+    final void initMvccVersionFuture(MvccCoordinator mvccCrd, int lockCnt, boolean remap) {
+        if (!remap) {
+            mvccVerFut = new MvccVersionFuture();
+
+            mvccVerFut.init(mvccCrd, lockCnt);
+
+            if (keyLockFut != null)
+                keyLockFut.listen(mvccVerFut);
+
+            add(mvccVerFut);
+        }
+        else {
+            assert mvccVerFut != null;
+
+            mvccVerFut.init(mvccCrd, lockCnt);
+        }
+    }
+
+    /**
      * Keys lock future.
      */
-    protected static class KeyLockFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
+    protected static class KeyLockFuture extends GridFutureAdapter<Void> {
         /** */
         @GridToStringInclude
         protected Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
@@ -216,7 +260,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
                 if (log.isDebugEnabled())
                     log.debug("All locks are acquired for near prepare future: " + this);
 
-                onDone((GridNearTxPrepareResponse)null);
+                onDone((Void)null);
             }
             else {
                 if (log.isDebugEnabled())
@@ -229,6 +273,88 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(KeyLockFuture.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    class MvccVersionFuture extends GridFutureAdapter implements MvccResponseListener,
+        IgniteInClosure<IgniteInternalFuture<Void>> {
+        /** */
+        MvccCoordinator crd;
+
+        /** */
+        volatile int lockCnt;
+
+        @Override public void apply(IgniteInternalFuture<Void> keyLockFut) {
+            try {
+                keyLockFut.get();
+
+                onLockReceived();
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("MvccVersionFuture ignores key lock future failure: " + e);
+            }
+        }
+
+        /**
+         * @param crd Mvcc coordinator.
+         * @param lockCnt Expected number of lock responses.
+         */
+        void init(MvccCoordinator crd, int lockCnt) {
+            assert crd != null;
+            assert lockCnt > 0;
+
+            this.crd = crd;
+            this.lockCnt = lockCnt;
+
+            assert !isDone();
+        }
+
+        /**
+         *
+         */
+        void onLockReceived() {
+            int remaining = LOCK_CNT_UPD.decrementAndGet(this);
+
+            assert remaining >= 0 : remaining;
+
+            if (remaining == 0) {
+                // TODO IGNTIE-3478: add method to do not create one more future in requestTxCounter.
+                if (cctx.localNodeId().equals(crd.nodeId()))
+                    onMvccResponse(crd.nodeId(), cctx.coordinators().requestTxCounterOnCoordinator(tx));
+                else
+                    cctx.coordinators().requestTxCounter(crd, this, tx.nearXidVersion());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMvccResponse(UUID crdId, MvccCoordinatorVersion res) {
+            tx.mvccInfo(new TxMvccInfo(crdId, res));
+
+            onDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMvccError(IgniteCheckedException e) {
+            if (e instanceof ClusterTopologyCheckedException) {
+                IgniteInternalFuture<?> fut = cctx.nextAffinityReadyFuture(tx.topologyVersion());
+
+                ((ClusterTopologyCheckedException)e).retryReadyFuture(fut);
+            }
+
+            ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
+
+            onDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "MvccVersionFuture [crd=" + crd.nodeId() +
+                ", lockCnt=" + lockCnt +
+                ", done=" + isDone() + ']';
         }
     }
 }

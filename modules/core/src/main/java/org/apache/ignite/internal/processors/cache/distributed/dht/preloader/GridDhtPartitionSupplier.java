@@ -29,10 +29,11 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -42,6 +43,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.versionForRemovedValue;
 
 /**
  * Thread pool for supplying partitions to demanding nodes.
@@ -371,13 +373,27 @@ class GridDhtPartitionSupplier {
 
                             CacheDataRow row = iter.next();
 
-                            GridCacheEntryInfo info = new GridCacheEntryInfo();
+                            GridCacheEntryInfo info = grp.mvccEnabled() ?
+                                new GridCacheMvccEntryInfo() : new GridCacheEntryInfo();
+
 
                             info.key(row.key());
-                            info.expireTime(row.expireTime());
-                            info.version(row.version());
-                            info.value(row.value());
                             info.cacheId(row.cacheId());
+
+                            boolean rmvd = false;
+
+                            if (grp.mvccEnabled()) {
+                                info.mvccCoordinatorVersion(row.mvccCoordinatorVersion());
+                                info.mvccCounter(row.mvccCounter());
+
+                                rmvd = versionForRemovedValue(row.mvccCoordinatorVersion());
+                            }
+
+                            if (!rmvd) {
+                                info.value(row.value());
+                                info.version(row.version());
+                                info.expireTime(row.expireTime());
+                            }
 
                             if (preloadPred == null || preloadPred.apply(info))
                                 s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());

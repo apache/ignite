@@ -24,12 +24,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -118,7 +121,8 @@ public class H2TreeIndex extends GridH2IndexBase {
                     page.isAllocated(),
                     cols,
                     inlineIdxs,
-                    computeInlineSize(inlineIdxs, inlineSize)) {
+                    computeInlineSize(inlineIdxs, inlineSize),
+                    cctx.mvccEnabled()) {
                     @Override public int compareValues(Value v1, Value v2) {
                         return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                     }
@@ -165,20 +169,15 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            IndexingQueryFilter f = threadLocalFilter();
-            IndexingQueryCacheFilter p = null;
-
-            if (f != null) {
-                String cacheName = getTable().cacheName();
-
-                p = f.forCache(cacheName);
-            }
+            assert lower == null || lower instanceof GridH2SearchRow : lower;
+            assert upper == null || upper instanceof GridH2SearchRow : upper;
 
             int seg = threadLocalSegment();
 
             H2Tree tree = treeForRead(seg);
 
-            return new H2Cursor(tree.find(lower, upper, p));
+            return new H2Cursor(tree.find((GridH2SearchRow)lower,
+                (GridH2SearchRow)upper, filter(GridH2QueryContext.get()), null));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -225,6 +224,8 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
+        assert row instanceof GridH2SearchRow : row;
+
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
@@ -232,7 +233,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            return tree.remove(row);
+            return tree.remove((GridH2SearchRow)row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -245,13 +246,15 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public boolean removex(SearchRow row) {
         try {
+            assert row instanceof GridH2SearchRow : row;
+
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
 
-            return tree.removex(row);
+            return tree.removex((GridH2SearchRow)row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -297,13 +300,10 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
         try {
-            int seg = threadLocalSegment();
+            H2Tree tree = treeForRead(threadLocalSegment());
+            GridH2QueryContext qctx = GridH2QueryContext.get();
 
-            H2Tree tree = treeForRead(seg);
-
-            GridH2Row row = b ? tree.findFirst(): tree.findLast();
-
-            return new SingleRowCursor(row);
+            return new SingleRowCursor(b ? tree.findFirst(filter(qctx)): tree.findLast(filter(qctx)));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -340,19 +340,10 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override protected H2Cursor doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
-        boolean includeFirst,
         @Nullable SearchRow last,
-        IndexingQueryFilter filter) {
+        BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter) {
         try {
-            IndexingQueryCacheFilter p = null;
-
-            if (filter != null) {
-                String cacheName = getTable().cacheName();
-
-                p = filter.forCache(cacheName);
-            }
-
-            GridCursor<GridH2Row> range = t.find(first, last, p);
+            GridCursor<GridH2Row> range = ((BPlusTree)t).find(first, last, filter, null);
 
             if (range == null)
                 range = EMPTY_CURSOR;
@@ -362,6 +353,26 @@ public class H2TreeIndex extends GridH2IndexBase {
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter(GridH2QueryContext qctx) {
+        if (qctx == null) {
+            assert !cctx.mvccEnabled();
+
+            return null;
+        }
+
+        IndexingQueryFilter f = qctx.filter();
+        IndexingQueryCacheFilter p = f == null ? null : f.forCache(getTable().cacheName());
+        MvccCoordinatorVersion v =qctx.mvccVersion();
+
+        assert !cctx.mvccEnabled() || v != null;
+
+        if(p == null && v == null)
+            return null;
+
+        return new H2TreeFilterClosure(p, v);
     }
 
     /**

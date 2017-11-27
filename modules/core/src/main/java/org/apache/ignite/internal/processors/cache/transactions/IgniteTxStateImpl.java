@@ -462,6 +462,15 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean mvccEnabled(GridCacheSharedContext cctx) {
+        assert !activeCacheIds.isEmpty();
+
+        int cacheId = activeCacheIds.get(0);
+
+        return cctx.cacheContext(cacheId).mvccEnabled();
+    }
+
+    /** {@inheritDoc} */
     public String toString() {
         return S.toString(IgniteTxStateImpl.class, this, "txMap", allEntriesCopy());
     }

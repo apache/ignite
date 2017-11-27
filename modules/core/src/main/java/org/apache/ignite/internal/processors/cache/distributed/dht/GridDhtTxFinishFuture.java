@@ -35,9 +35,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -291,6 +294,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             // No backup or near nodes to send commit message to (just complete then).
             sync = false;
 
+        GridLongList waitTxs = tx.mvccWaitTransactions();
+
+        if (waitTxs != null) {
+            TxMvccInfo mvccInfo = tx.mvccInfo();
+
+            assert mvccInfo != null;
+
+            IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(mvccInfo.coordinatorNodeId(), waitTxs);
+
+            add(fut);
+
+            sync = true;
+        }
+
         markInitialized();
 
         if (!sync)
@@ -347,7 +364,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 false,
-                false);
+                false,
+                null);
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -395,6 +413,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (tx.onePhaseCommit())
             return false;
 
+        assert !commit || !tx.txState().mvccEnabled(cctx) || tx.mvccInfo() != null || F.isEmpty(tx.writeEntries());
+
         boolean sync = tx.syncMode() == FULL_SYNC;
 
         if (tx.explicitLock())
@@ -403,6 +423,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         boolean res = false;
 
         int miniId = 0;
+
+        // Do not need process active transactions on backups.
+        TxMvccInfo mvccInfo = tx.mvccInfo();
+
+        if (mvccInfo != null)
+            mvccInfo = mvccInfo.withoutActiveTransactions();
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
@@ -450,7 +476,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 updCntrs,
                 false,
-                false);
+                false,
+                mvccInfo);
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -519,7 +546,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     false,
-                    false);
+                    false,
+                    mvccInfo);
 
                 req.writeVersion(tx.writeVersion());
 
@@ -562,6 +590,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     @SuppressWarnings("unchecked")
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
+            // TODO IGNITE-3478 (mvcc wait txs fut)
             for (IgniteInternalFuture fut : futures()) {
                 if (!fut.isDone()) {
                     MiniFuture f = (MiniFuture)fut;
@@ -591,9 +620,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]";
+                if (f.getClass() == MiniFuture.class) {
+                    return "[node=" + ((MiniFuture)f).node().id() +
+                        ", loc=" + ((MiniFuture)f).node().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                }
+                else if (f instanceof MvccCoordinatorFuture) {
+                    MvccCoordinatorFuture crdFut = (MvccCoordinatorFuture)f;
+
+                    return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
+                        ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +
+                        ", done=" + f.isDone() + "]";
+                }
+                else
+                    return f.toString();
             }
         });
 

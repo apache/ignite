@@ -2078,7 +2078,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return cfg;
     }
 
-
     /**
      * @param cls Class.
      * @return Masked class.

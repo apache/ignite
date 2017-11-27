@@ -60,4 +60,9 @@ public class GridH2KeyRowOnheap extends GridH2Row {
     @Override public long expireTime() {
         return 0;
     }
+
+    /** {@inheritDoc} */
+    @Override public void mvccVersion(long crdVer, long mvccCntr) {
+        throw new UnsupportedOperationException();
+    }
 }

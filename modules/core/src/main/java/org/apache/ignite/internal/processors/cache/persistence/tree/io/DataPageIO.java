@@ -1053,13 +1053,19 @@ public class DataPageIO extends PageIO {
         final int payloadSize
     ) throws IgniteCheckedException {
         final int keySize = row.key().valueBytesLength(null);
-        final int valSize = row.value().valueBytesLength(null);
+
+        boolean rmvd = row.removed();
+
+        final int valSize = rmvd ? 0 : row.value().valueBytesLength(null);
 
         int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.CACHE_ID, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.KEY, keySize, valSize);
-        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize);
-        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize);
-        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VERSION, keySize, valSize);
+
+        if (!rmvd) {
+            written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize);
+            written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize);
+            written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VERSION, keySize, valSize);
+        }
 
         assert written == payloadSize;
     }
@@ -1427,9 +1433,15 @@ public class DataPageIO extends PageIO {
             }
 
             addr += row.key().putValue(addr);
+
+            if (row.removed())
+                return;
         }
-        else
+        else {
+            assert !row.removed() : row;
+
             addr += (2 + cacheIdSize + row.key().valueBytesLength(null));
+        }
 
         addr += row.value().putValue(addr);
 

@@ -42,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
 
 /**
  * Cache data row adapter.
@@ -60,6 +61,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
     protected CacheObject val;
 
     /** */
+    @GridToStringInclude
     protected long expireTime = -1;
 
     /** */
@@ -573,6 +575,26 @@ public class CacheDataRowAdapter implements CacheDataRow {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public void mvccVersion(long crdVer, long mvccCntr) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCoordinatorVersion() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCounter() {
+        return MVCC_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removed() {
+        return false;
+    }
+
     /**
      *
      */
@@ -584,7 +606,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
         KEY_ONLY,
 
         /** */
-        NO_KEY
+        NO_KEY,
+
+        /** */
+        LINK_ONLY,
     }
 
     /** {@inheritDoc} */

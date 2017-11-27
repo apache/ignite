@@ -25,6 +25,8 @@ import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.versionForRemovedValue;
+
 /**
  *
  */
@@ -56,10 +58,48 @@ public class CacheDataRowStore extends RowStore {
     CacheSearchRow keySearchRow(int cacheId, int hash, long link) {
         DataRow dataRow = new DataRow(grp, hash, link, partId, CacheDataRowAdapter.RowData.KEY_ONLY);
 
-        if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID && grp.sharedGroup())
-            dataRow.cacheId(cacheId);
+        initDataRow(dataRow, cacheId);
 
         return dataRow;
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param hash Hash code.
+     * @param link Link.
+     * @param rowData Required row data.
+     * @param crdVer Mvcc coordinator version.
+     * @param mvccCntr Mvcc counter.
+     * @return Search row.
+     */
+    MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr) {
+        if (versionForRemovedValue(crdVer)) {
+            if (rowData == CacheDataRowAdapter.RowData.NO_KEY || rowData == CacheDataRowAdapter.RowData.LINK_ONLY)
+                return MvccDataRow.removedRowNoKey(link, partId, cacheId, crdVer, mvccCntr);
+            else
+                rowData = CacheDataRowAdapter.RowData.KEY_ONLY;
+        }
+
+        MvccDataRow dataRow = new MvccDataRow(grp,
+            hash,
+            link,
+            partId,
+            rowData,
+            crdVer,
+            mvccCntr);
+
+        initDataRow(dataRow, cacheId);
+
+        return dataRow;
+    }
+
+    /**
+     * @param dataRow Data row.
+     * @param cacheId Cache ID.
+     */
+    private void initDataRow(DataRow dataRow, int cacheId) {
+        if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID && grp.sharedGroup())
+            dataRow.cacheId(cacheId);
     }
 
     /**

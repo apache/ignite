@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerI
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccInnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccLeafIO;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 
@@ -37,6 +39,7 @@ import org.apache.ignite.logger.NullLogger;
 public class IgniteWalConverter {
     /**
      * @param args Args.
+     * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
         if (args.length < 2)
@@ -45,7 +48,7 @@ public class IgniteWalConverter {
                     "\t2. Path to dir with wal files.\n" +
                     "\t3. (Optional) Path to dir with archive wal files.");
 
-        PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
+        PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS, H2MvccInnerIO.VERSIONS, H2MvccLeafIO.VERSIONS);
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
 

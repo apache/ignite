@@ -1134,7 +1134,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", memoryPolicyName=" + memPlcName +
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
-                ", backups=" + cfg.getBackups() + ']');
+                ", backups=" + cfg.getBackups() +
+                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
         }
     }
 
@@ -2886,7 +2887,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     CacheConfiguration ccfg = req.startCacheConfiguration();
 
                     try {
-                        cachesInfo.validateStartCacheConfiguration(ccfg);
+                        cachesInfo.validateStartCacheConfiguration(ccfg, req.cacheType());
                     }
                     catch (IgniteCheckedException e) {
                         fut.onDone(e);

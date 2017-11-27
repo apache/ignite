@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -56,17 +58,24 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     /** */
     private Value ver;
 
+    /** */
+    private final MvccCoordinatorVersion newVer;
+
     /**
      * Constructor.
      *
      * @param desc Row descriptor.
      * @param row Row.
+     * @param newVer Version of new mvcc value inserted for the same key.
      * @param keyType Key type.
      * @param valType Value type.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, CacheDataRow row, int keyType, int valType)
-        throws IgniteCheckedException {
+    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc,
+        CacheDataRow row,
+        MvccCoordinatorVersion newVer,
+        int keyType,
+        int valType) throws IgniteCheckedException {
         super(row);
 
         this.desc = desc;
@@ -78,6 +87,28 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
         if (row.version() != null)
             this.ver = desc.wrap(row.version(), Value.JAVA_OBJECT);
+
+        this.newVer = newVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long newMvccCoordinatorVersion() {
+        return newVer != null ? newVer.coordinatorVersion() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long newMvccCounter() {
+        return newVer != null ? newVer.counter(): CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccVersion(long crdVer, long mvccCntr) {
+        row.mvccVersion(crdVer, mvccCntr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean indexSearchRow() {
+        return false;
     }
 
     /** {@inheritDoc} */

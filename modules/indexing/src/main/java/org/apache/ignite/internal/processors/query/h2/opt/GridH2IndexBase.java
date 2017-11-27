@@ -28,6 +28,8 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
@@ -266,15 +268,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         return (GridH2Table)super.getTable();
     }
 
-    /**
-     * @return Filter for currently running query or {@code null} if none.
-     */
-    protected static IndexingQueryFilter threadLocalFilter() {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        return qctx != null ? qctx.filter() : null;
-    }
-
     /** {@inheritDoc} */
     @Override public long getDiskSpaceUsed() {
         return 0;
@@ -421,7 +414,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     // This is the first request containing all the search rows.
                     assert !msg.bounds().isEmpty() : "empty bounds";
 
-                    src = new RangeSource(msg.bounds(), msg.segment(), qctx.filter());
+                    src = new RangeSource(msg.bounds(), msg.segment(), filter(qctx));
                 }
                 else {
                     // This is request to fetch next portion of data.
@@ -472,6 +465,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
         }
 
         send(singletonList(node), res);
+    }
+
+    /**
+     * @param qctx Query context.
+     * @return Row filter.
+     */
+    protected BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter(GridH2QueryContext qctx) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -1462,20 +1463,17 @@ public abstract class GridH2IndexBase extends BaseIndex {
         private final int segment;
 
         /** */
-        final IndexingQueryFilter filter;
+        private final BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter;
 
         /** Iterator. */
         Iterator<GridH2Row> iter = emptyIterator();
 
         /**
          * @param bounds Bounds.
+         * @param segment Segment.
          * @param filter Filter.
          */
-        RangeSource(
-            Iterable<GridH2RowRangeBounds> bounds,
-            int segment,
-            IndexingQueryFilter filter
-        ) {
+        RangeSource(Iterable<GridH2RowRangeBounds> bounds, int segment, BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter) {
             this.segment = segment;
             this.filter = filter;
             boundsIter = bounds.iterator();
@@ -1535,7 +1533,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                 IgniteTree t = treeForRead(segment);
 
-                iter = new CursorIteratorWrapper(doFind0(t, first, true, last, filter));
+                iter = new CursorIteratorWrapper(doFind0(t, first, last, filter));
 
                 if (!iter.hasNext()) {
                     // We have to return empty range here.
@@ -1558,9 +1556,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
+     * @param mvccFilter Mvcc filter.
      * @param t Tree.
      * @param first Lower bound.
-     * @param includeFirst Whether lower bound should be inclusive.
      * @param last Upper bound always inclusive.
      * @param filter Filter.
      * @return Iterator over rows in given range.
@@ -1568,9 +1566,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected H2Cursor doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
-        boolean includeFirst,
         @Nullable SearchRow last,
-        IndexingQueryFilter filter) {
+        BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter) {
         throw new UnsupportedOperationException();
     }
 

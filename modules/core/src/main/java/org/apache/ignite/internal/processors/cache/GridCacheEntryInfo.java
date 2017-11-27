@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccEmptyLongList;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo implements Message {
+public class GridCacheEntryInfo implements Message, MvccCoordinatorVersion {
     /** */
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
@@ -64,6 +67,45 @@ public class GridCacheEntryInfo implements Message {
     /** Deleted flag. */
     @GridDirectTransient
     private boolean deleted;
+
+    /**
+     * @param mvccCrdVer Mvcc coordinator version.
+     */
+    public void mvccCoordinatorVersion(long mvccCrdVer) {
+        // No-op.
+    }
+
+    /**
+     * @param mvccCntr Mvcc counter.
+     */
+    public void mvccCounter(long mvccCntr) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public final MvccLongList activeTransactions() {
+        return MvccEmptyLongList.INSTANCE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final MvccCoordinatorVersion withoutActiveTransactions() {
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long coordinatorVersion() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long cleanupVersion() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long counter() {
+        return 0;
+    }
 
     /**
      * @return Cache ID.

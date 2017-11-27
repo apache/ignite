@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -102,6 +103,20 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorAckRequestTxAndQueryEx;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorActiveQueriesMessage;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorFutureResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorAckRequestQuery;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryVersionRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorAckRequestTx;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorAckRequestTxAndQuery;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxCounterRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorWaitTxsRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersionResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersionWithoutTxs;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
+import org.apache.ignite.internal.processors.cache.mvcc.NewCoordinatorQueryAckRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -137,11 +152,11 @@ import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsSyncMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
 import org.apache.ignite.internal.util.GridByteArrayList;
@@ -874,6 +889,81 @@ public class GridIoMessageFactory implements MessageFactory {
                 msg = new CacheGroupAffinityMessage();
 
                 break;
+
+            case 129:
+                msg = new CoordinatorTxCounterRequest();
+
+                break;
+
+            case 131: // TODO IGNITE-3478 fix constants.
+                msg = new CoordinatorAckRequestTx();
+
+                break;
+
+            case 132:
+                msg = new CoordinatorFutureResponse();
+
+                break;
+
+            case 133:
+                msg = new CoordinatorQueryVersionRequest();
+
+                break;
+
+            case 134:
+                msg = new CoordinatorAckRequestQuery();
+
+                break;
+
+            case 136:
+                msg = new MvccCoordinatorVersionResponse();
+
+                return msg;
+
+            case 137:
+                msg = new CoordinatorWaitTxsRequest();
+
+                return msg;
+
+            case 138:
+                msg = new GridCacheMvccEntryInfo();
+
+                return msg;
+
+            case 139:
+                msg = new TxMvccInfo();
+
+                return msg;
+
+            case 140:
+                msg = new NewCoordinatorQueryAckRequest();
+
+                return msg;
+
+            case 141:
+                msg = new CoordinatorAckRequestTxAndQuery();
+
+                return msg;
+
+            case 142:
+                msg = new CoordinatorAckRequestTxAndQueryEx();
+
+                return msg;
+
+            case 143:
+                msg = new MvccCounter();
+
+                return msg;
+
+            case 144:
+                msg = new CoordinatorActiveQueriesMessage();
+
+                return msg;
+
+            case 145:
+                msg = new MvccCoordinatorVersionWithoutTxs();
+
+                return msg;
 
 
             // [-3..119] [124..128] [-23..-27] [-36..-55]- this

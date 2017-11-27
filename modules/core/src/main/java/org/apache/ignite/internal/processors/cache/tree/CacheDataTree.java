@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -28,12 +29,14 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
 
 /**
  *
@@ -46,7 +49,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private final CacheGroupContext grp;
 
     /**
-     * @param grp Ccahe group.
+     * @param grp Cache group.
      * @param name Tree name.
      * @param reuseList Reuse list.
      * @param rowStore Row store.
@@ -69,8 +72,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             grp.offheap().globalRemoveId(),
             metaPageId,
             reuseList,
-            grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS,
-            grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS);
+            innerIO(grp),
+            leafIO(grp));
 
         assert rowStore != null;
 
@@ -78,6 +81,28 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         this.grp = grp;
 
         initTree(initNew);
+    }
+
+    /**
+     * @param grp Cache group.
+     * @return Tree inner IO.
+     */
+    private static IOVersions<? extends AbstractDataInnerIO> innerIO(CacheGroupContext grp) {
+        if (grp.mvccEnabled())
+            return grp.sharedGroup() ? CacheIdAwareMvccDataInnerIO.VERSIONS : MvccDataInnerIO.VERSIONS;
+
+        return grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS;
+    }
+
+    /**
+     * @param grp Cache group.
+     * @return Tree leaf IO.
+     */
+    private static IOVersions<? extends AbstractDataLeafIO> leafIO(CacheGroupContext grp) {
+        if (grp.mvccEnabled())
+            return grp.sharedGroup() ? CacheIdAwareMvccDataLeafIO.VERSIONS : MvccDataLeafIO.VERSIONS;
+
+        return grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS;
     }
 
     /**
@@ -90,6 +115,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<CacheSearchRow> iox, long pageAddr, int idx, CacheSearchRow row)
         throws IgniteCheckedException {
+        assert !grp.mvccEnabled() || row.mvccCoordinatorVersion() != 0 : row;
+
         RowLinkIO io = (RowLinkIO)iox;
 
         int cmp;
@@ -127,21 +154,49 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         assert row.key() != null : row;
 
-        return compareKeys(row.key(), link);
+        cmp = compareKeys(row.key(), link);
+
+        if (cmp != 0 || !grp.mvccEnabled())
+            return cmp;
+
+        long mvccCrdVer = io.getMvccCoordinatorVersion(pageAddr, idx);
+
+        cmp = Long.compare(unmaskCoordinatorVersion(row.mvccCoordinatorVersion()),
+            unmaskCoordinatorVersion(mvccCrdVer));
+
+        if (cmp != 0)
+            return cmp;
+
+        long mvccCntr = io.getMvccCounter(pageAddr, idx);
+
+        assert row.mvccCounter() != CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
+
+        cmp = Long.compare(row.mvccCounter(), mvccCntr);
+
+        return cmp;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheDataRow getRow(BPlusIO<CacheSearchRow> io, long pageAddr, int idx, Object flags)
         throws IgniteCheckedException {
-        long link = ((RowLinkIO)io).getLink(pageAddr, idx);
-        int hash = ((RowLinkIO)io).getHash(pageAddr, idx);
-        int cacheId = ((RowLinkIO)io).getCacheId(pageAddr, idx);
+        RowLinkIO rowIo = (RowLinkIO)io;
+
+        long link = rowIo.getLink(pageAddr, idx);
+        int hash = rowIo.getHash(pageAddr, idx);
+        int cacheId = rowIo.getCacheId(pageAddr, idx);
 
         CacheDataRowAdapter.RowData x = flags != null ?
             (CacheDataRowAdapter.RowData)flags :
             CacheDataRowAdapter.RowData.FULL;
 
-        return rowStore.dataRow(cacheId, hash, link, x);
+        if (grp.mvccEnabled()) {
+            long mvccCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
+            long mvccCntr = rowIo.getMvccCounter(pageAddr, idx);
+
+            return rowStore.mvccRow(cacheId, hash, link, x, mvccCrdVer, mvccCntr);
+        }
+        else
+            return rowStore.dataRow(cacheId, hash, link, x);
     }
 
     /**

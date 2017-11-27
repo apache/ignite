@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
@@ -27,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheDataRow {
     /** Row. */
-    private CacheDataRow row;
+    protected final CacheDataRow row;
 
     /**
      * @param row Row.
@@ -84,5 +85,39 @@ public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheD
     /** {@inheritDoc} */
     @Override public int cacheId() {
         return row.cacheId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCoordinatorVersion() {
+        return row.mvccCoordinatorVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCounter() {
+        return row.mvccCounter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removed() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean indexSearchRow() {
+        return false;
+    }
+
+    /**
+     * @return Part of new mvcc version.
+     */
+    public long newMvccCoordinatorVersion() {
+        return 0;
+    }
+
+    /**
+     * @return Part of new mvcc version.
+     */
+    public long newMvccCounter() {
+        return CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
     }
 }

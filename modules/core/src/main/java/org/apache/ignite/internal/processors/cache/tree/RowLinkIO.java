@@ -41,4 +41,18 @@ public interface RowLinkIO {
      * @return Cache ID or {@code 0} if cache ID is not defined.
      */
     public int getCacheId(long pageAddr, int idx);
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc coordinator version.
+     */
+    public long getMvccCoordinatorVersion(long pageAddr, int idx);
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc counter.
+     */
+    public long getMvccCounter(long pageAddr, int idx);
 }

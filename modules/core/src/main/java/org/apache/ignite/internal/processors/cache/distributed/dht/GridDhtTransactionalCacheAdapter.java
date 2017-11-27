@@ -1283,7 +1283,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                 CacheObject val = null;
 
-                                if (ret)
+                                if (ret) {
                                     val = e.innerGet(
                                         null,
                                         tx,
@@ -1294,7 +1294,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,
-                                        req.keepBinary());
+                                        req.keepBinary(),
+                                        null); // TODO IGNITE-3478
+                                }
 
                                 assert e.lockedBy(mappedVer) ||
                                     (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :
