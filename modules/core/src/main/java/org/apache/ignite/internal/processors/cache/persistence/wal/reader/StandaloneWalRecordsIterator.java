@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExp
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -108,7 +109,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     ) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            FileWriteAheadLogManager.forVersion(sharedCtx, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION),
+            new RecordSerializerFactoryImpl(sharedCtx),
             ioFactory,
             BUF_SIZE);
         this.keepBinary = keepBinary;
@@ -136,7 +137,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             @NotNull File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            FileWriteAheadLogManager.forVersion(sharedCtx, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION),
+            new RecordSerializerFactoryImpl(sharedCtx),
             ioFactory,
             BUF_SIZE);
 
