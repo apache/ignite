@@ -171,6 +171,8 @@ public class OffheapReadWriteLock {
                     lockObj.lock();
 
                     try {
+                        // Note that we signal all waiters for this stripe. Since not all waiters in this
+                        // stripe/index belong to this particular lock, we can't wake up just one of them.
                         writeConditions[idx].signalAll();
                     }
                     finally {
@@ -295,6 +297,8 @@ public class OffheapReadWriteLock {
      * @param readWaitCnt Readers wait count.
      * @param idx Lock index.
      */
+    // Note that we signal all waiters for this stripe. Since not all waiters in this stripe/index belong
+    // to this particular lock, we can't wake up just one of them.
     private void signalNextWaiter(int writeWaitCnt, int readWaitCnt, int idx) {
         if (writeWaitCnt == 0) {
             Condition readCondition = readConditions[idx];
@@ -496,8 +500,10 @@ public class OffheapReadWriteLock {
     }
 
     /**
+     * Returns index of lock object corresponding to the stripe of this lock address.
+     *
      * @param lock Lock address.
-     * @return Lock monitor object.
+     * @return Lock monitor object that corresponds to the stripe for this lock address.
      */
     private int lockIndex(long lock) {
         return U.safeAbs(U.hash(lock)) & monitorsMask;

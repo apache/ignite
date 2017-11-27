@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -168,25 +169,21 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            IndexingQueryFilter threadLocalFilter = threadLocalFilter();
-            IndexingQueryCacheFilter cacheFilter = null;
-
-            if (threadLocalFilter != null) {
-                String cacheName = getTable().cacheName();
-
-                cacheFilter = threadLocalFilter.forCache(cacheName);
-            }
+            IndexingQueryCacheFilter cacheFilter = partitionFilter(threadLocalFilter());
 
             int seg = threadLocalSegment();
 
             H2Tree tree = treeForRead(seg);
 
-            if (indexType.isPrimaryKey() && lower != null && lower.equals(upper)) {
+            if (indexType.isPrimaryKey() && lower != null && H2Utils.areRowsEqual(lower, upper)) {
+
                 GridH2Row row = tree.findOne(lower, cacheFilter);
-                return (row == null) ? new EmptyCursor() : new SingletonCursor(row);
+
+                return (row == null) ? EMPTY_CURSOR : new SingletonCursor(row);
             }
             else {
                 GridCursor<GridH2Row> gridCursor = tree.find(lower, upper, cacheFilter);
+
                 return new H2Cursor(gridCursor);
             }
         }
@@ -352,20 +349,14 @@ public class H2TreeIndex extends GridH2IndexBase {
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
-        IndexingQueryFilter filter) {
+        IndexingQueryFilter queryFilter) {
         try {
-            IndexingQueryCacheFilter p = null;
+            IndexingQueryCacheFilter partitionFilter = partitionFilter(queryFilter);
 
-            if (filter != null) {
-                String cacheName = getTable().cacheName();
-
-                p = filter.forCache(cacheName);
-            }
-
-            GridCursor<GridH2Row> range = t.find(first, last, p);
+            GridCursor<GridH2Row> range = t.find(first, last, partitionFilter);
 
             if (range == null)
-                range = EMPTY_CURSOR;
+                range = GridH2IndexBase.EMPTY_CURSOR;
 
             return new H2Cursor(range);
         }
@@ -431,13 +422,22 @@ public class H2TreeIndex extends GridH2IndexBase {
         cctx.offheap().dropRootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
     }
 
-    /** FIXME */
-    public static class EmptyCursor implements Cursor {
+    /**
+     * Returns current partition filter or null if there is no need for partition filtering.
+     *
+     * @return partition filter or null
+     */
+    @Nullable private IndexingQueryCacheFilter partitionFilter(IndexingQueryFilter indexingQueryFilter) {
+        if (indexingQueryFilter == null)
+            return null;
 
-        /** FIXME */
-        public EmptyCursor() {
-        }
+        String cacheName = getTable().cacheName();
 
+        return indexingQueryFilter.forCache(cacheName);
+    }
+
+    /** A cursor for empty sequence. */
+    public static final Cursor EMPTY_CURSOR = new Cursor() {
         /** {@inheritDoc} */
         @Override public Row get() {
             throw DbException.convert(new NoSuchElementException("Empty cursor"));
@@ -457,25 +457,28 @@ public class H2TreeIndex extends GridH2IndexBase {
         @Override public boolean previous() {
             return false;
         }
-    }
+    };
 
-    /** FIXME */
+    /** A cursor that iterates over a single row. */
     public static class SingletonCursor implements Cursor {
 
-        /** FIXME */
+        /** The row to return. */
         private final GridH2Row row;
-        /** FIXME */
-        private boolean isBeforeFirstRow;
 
-        /** FIXME */
+        /** Current position of the iterator. */
+        private boolean isAtFirstRow;
+
+        /** Creates a singleton cursor with the specified row.
+         * @param row The row to return.
+         */
         public SingletonCursor(GridH2Row row) {
             this.row = row;
-            this.isBeforeFirstRow = true;
+            this.isAtFirstRow = false;
         }
 
         /** {@inheritDoc} */
         @Override public Row get() {
-            if (isBeforeFirstRow)
+            if (!isAtFirstRow)
                 DbException.convert(new NoSuchElementException("next() has to be called before get()"));
 
             return row;
@@ -488,19 +491,19 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            if (!isBeforeFirstRow)
+            if (isAtFirstRow)
                 return false;
 
-            isBeforeFirstRow = false;
+            isAtFirstRow = true;
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean previous() {
-            if (isBeforeFirstRow)
-                return false;
+            if (isAtFirstRow)
+                return true;
 
-            isBeforeFirstRow = true;
+            isAtFirstRow = false;
             return true;
         }
     }

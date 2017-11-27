@@ -229,6 +229,25 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     }
 
     /**
+     * Test that changes in cache affect index, and vice versa.
+     */
+    public void testFindOneUsedForSingleKeyLookup() {
+        IgniteCache<KeyClass, ValueClass> cache = cache();
+
+        assertColumnValues("val1", "val2", "val3");
+
+//        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
+//            + FIELD_NAME_1_ESCAPED + "\" ASC)"));
+
+        List<List<?>> selectedRows = cache.query(new SqlFieldsQuery("SELECT \"id\", \"" + FIELD_NAME_1_ESCAPED + "\" FROM \"" +
+            TBL_NAME_ESCAPED + "\" WHERE \"id\" = 2")).getAll();
+
+        assertEquals(1, selectedRows.size());
+
+//        cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1_ESCAPED + "\""));
+    }
+
+    /**
      * Check that values of {@code field1} match what we expect.
      * @param vals Expected values.
      */
@@ -335,7 +354,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         entity.addQueryField(FIELD_NAME_1_ESCAPED, String.class.getName(), null);
         entity.addQueryField(FIELD_NAME_2_ESCAPED, String.class.getName(), null);
 
-        entity.setKeyFields(Collections.singleton("id"));
+        entity.setKeyFieldName("id");
 
         entity.setAliases(Collections.singletonMap(FIELD_NAME_2_ESCAPED, alias(FIELD_NAME_2_ESCAPED)));
 

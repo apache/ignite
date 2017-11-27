@@ -107,10 +107,15 @@ public abstract class GridH2SearchRowAdapter implements Row {
         return H2Utils.rowHashCode(this);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * NOTE: the current implementation uses instanceof to compare rows: equality question should be
+     * carefully considered in the subclasses.
+     */
     @Override public boolean equals(Object obj) {
         return obj != null
-            && obj instanceof Row
-            && H2Utils.areRowsEqual(this, (Row) obj);
+            && obj instanceof SearchRow
+            && H2Utils.areRowsEqualInternal(this, (Row) obj);
     }
 }
