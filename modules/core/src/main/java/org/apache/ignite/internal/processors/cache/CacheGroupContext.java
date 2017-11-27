@@ -56,6 +56,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -143,6 +144,9 @@ public class CacheGroupContext {
     /** */
     private boolean qryEnabled;
 
+    /** MXBean. */
+    private CacheGroupMetricsMXBean mxBean;
+
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -193,6 +197,8 @@ public class CacheGroupContext {
         log = ctx.kernalContext().log(getClass());
 
         caches = new ArrayList<>();
+
+        mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }
 
     /**
@@ -284,7 +290,7 @@ public class CacheGroupContext {
             drEnabled = true;
 
         this.caches = caches;
-   }
+    }
 
     /**
      * @param cctx Cache context.
@@ -293,7 +299,7 @@ public class CacheGroupContext {
         ArrayList<GridCacheContext> caches = new ArrayList<>(this.caches);
 
         // It is possible cache was not added in case of errors on cache start.
-        for (Iterator<GridCacheContext> it = caches.iterator(); it.hasNext();) {
+        for (Iterator<GridCacheContext> it = caches.iterator(); it.hasNext(); ) {
             GridCacheContext next = it.next();
 
             if (next == cctx) {
@@ -343,8 +349,8 @@ public class CacheGroupContext {
         List<GridCacheContext> caches = this.caches;
 
         assert !sharedGroup() && caches.size() == 1 :
-            "stopping=" +  ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
-            ", caches=" + caches;
+            "stopping=" + ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
+                ", caches=" + caches;
 
         return caches.get(0);
     }
@@ -405,6 +411,7 @@ public class CacheGroupContext {
             }
         }
     }
+
     /**
      * Adds partition unload event.
      *
@@ -973,6 +980,13 @@ public class CacheGroupContext {
             top.onReconnected();
 
         preldr.onReconnected();
+    }
+
+    /**
+     * @return MXBean.
+     */
+    public CacheGroupMetricsMXBean mxBean() {
+        return mxBean;
     }
 
     /** {@inheritDoc} */

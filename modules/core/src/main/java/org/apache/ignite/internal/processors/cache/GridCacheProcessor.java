@@ -87,9 +87,9 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
@@ -141,6 +141,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -219,6 +220,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Internal cache names. */
     private final Set<String> internalCaches;
+
+    /** MBean group for cache group metrics */
+    private final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
 
     /**
      * @param ctx Kernal context.
@@ -582,6 +586,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (Object obj : grp.configuredUserObjects())
             cleanup(cfg, obj, false);
+
+        if (!grp.systemCache()) {
+            try {
+                ctx.config().getMBeanServer().unregisterMBean(U.makeMBeanName(ctx.igniteInstanceName(),
+                    CACHE_GRP_METRICS_MBEAN_GRP, grp.cacheOrGroupName()));
+            }
+            catch (Throwable e) {
+                U.error(log, "Failed to unregister MBean for cache group: " + grp.name(), e);
+            }
+        }
     }
 
     /**
@@ -1908,6 +1922,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         grp.start();
 
         CacheGroupContext old = cacheGrps.put(desc.groupId(), grp);
+
+        if (!grp.systemCache()) {
+            try {
+                U.registerMBean(ctx.config().getMBeanServer(), ctx.igniteInstanceName(), CACHE_GRP_METRICS_MBEAN_GRP,
+                    grp.cacheOrGroupName(), grp.mxBean(), CacheGroupMetricsMXBean.class);
+            }
+            catch (Throwable e) {
+                U.error(log, "Failed to register MBean for cache group: " + grp.name(), e);
+            }
+        }
 
         assert old == null : old.name();
 
