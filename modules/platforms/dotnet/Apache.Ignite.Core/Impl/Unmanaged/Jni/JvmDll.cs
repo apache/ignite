@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 : "libjvm.so";
 
         /** Library ptr. */
-        private IntPtr _ptr;
+        private readonly IntPtr _ptr;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JvmDll"/> class.
@@ -281,6 +281,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 yield return keyValuePair;
             }
+
+            // TODO: On MacOs look into /Library/Java/JavaVirtualMachines/*/Contents/Home/lib/server
         }
 
         /// <summary>
