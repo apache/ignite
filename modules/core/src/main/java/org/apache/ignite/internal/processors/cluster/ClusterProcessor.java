@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticInfo;
@@ -387,6 +388,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param sndNodeId Sender node ID.
      * @param msg Message.
      */
     private void processMetricsUpdateMessage(UUID sndNodeId, ClusterMetricsUpdateMessage msg) {
@@ -413,6 +415,11 @@ public class ClusterProcessor extends GridProcessorAdapter {
         }
     }
 
+    /**
+     * @param discoCache Discovery data cache.
+     * @param nodeId Node ID.
+     * @param metricsBytes Marshalled metrics.
+     */
     private void updateNodeMetrics(DiscoCache discoCache, UUID nodeId, byte[] metricsBytes) {
         ClusterNode node = discoCache.node(nodeId);
 
@@ -426,7 +433,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
 
             IgniteClusterNode node0 = (IgniteClusterNode)node;
 
-            node0.setMetrics(metrics.metrics());
+            node0.setMetrics(ClusterMetricsSnapshot.deserialize(metrics.metrics(), 0));
             node0.setCacheMetrics(metrics.cacheMetrics());
 
             ctx.discovery().metricsUpdateEvent(discoCache, node0);

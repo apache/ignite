@@ -283,15 +283,20 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             ", basePath=" + basePath +
             ", clusterName=" + clusterName + ']');
 
-        impl = new ZookeeperDiscoveryImpl(log,
+        impl = new ZookeeperDiscoveryImpl(
+            igniteInstanceName,
+            zkConnectionString,
+            sesTimeout,
+            log,
             basePath,
             clusterName,
             locNode,
             lsnr,
-            exchange);
+            exchange,
+            locNode.isClient() && !clientReconnectDisabled);
 
         try {
-            impl.joinTopology(igniteInstanceName, zkConnectionString, sesTimeout);
+            impl.joinTopology();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -302,8 +307,16 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        if (impl != null)
-            impl.stop();
+        if (impl != null) {
+            try {
+                impl.stop();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteSpiException(e);
+            }
+        }
     }
 
     /**

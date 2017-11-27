@@ -168,9 +168,6 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
             return metrics0;
         }
 
-        if (metrics == null)
-            System.out.println();
-
         return metrics;
     }
 
@@ -227,7 +224,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
     /**
      * @return Internal ID corresponds to Zookeeper sequential node.
      */
-    public int internalId() {
+    int internalId() {
         return internalId;
     }
 
@@ -238,10 +235,20 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
         this.internalId = internalId;
     }
 
+    /**
+     * @param order Node order.
+     */
     void order(long order) {
         assert order > 0 : order;
 
         this.order = order;
+    }
+
+    /**
+     * @param newId New node ID.
+     */
+    public void onClientDisconnected(UUID newId) {
+        id = newId;
     }
 
     /** {@inheritDoc} */

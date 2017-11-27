@@ -20,21 +20,41 @@ package org.apache.ignite.spi.discovery.zk.internal;
 /**
  *
  */
-class ZookeeperClientFailedException extends Exception {
+class ZkRuntimeState {
     /** */
-    private static final long serialVersionUID = 0L;
+    final boolean prevJoined;
+
+    /** */
+    ZookeeperClient zkClient;
+
+    /** */
+    long gridStartTime;
+
+    /** */
+    boolean joined;
+
+    /** */
+    ZkDiscoveryEventsData evtsData;
+
+    /** */
+    boolean crd;
+
+    /** */
+    String locNodeZkPath;
+
+    /** */
+    ZkAliveNodeData locNodeInfo = new ZkAliveNodeData();
+
+    /** */
+    int procEvtCnt;
+
+    /** */
+    final ZkClusterNodes top = new ZkClusterNodes();
 
     /**
-     * @param msg Message.
+     * @param prevJoined {@code True} if joined topology before reconnect attempt.
      */
-    ZookeeperClientFailedException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * @param cause Cause.
-     */
-    ZookeeperClientFailedException(Throwable cause) {
-        super(cause);
+    ZkRuntimeState(boolean prevJoined) {
+        this.prevJoined = prevJoined;
     }
 }

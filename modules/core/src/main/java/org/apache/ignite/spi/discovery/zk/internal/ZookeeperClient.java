@@ -77,6 +77,9 @@ public class ZookeeperClient implements Watcher {
     /** */
     private final ArrayDeque<ZkAsyncOperation> retryQ = new ArrayDeque<>();
 
+    /** */
+    private volatile boolean closing;
+
     /**
      * @param log Logger.
      * @param connectString ZK connection string.
@@ -122,13 +125,16 @@ public class ZookeeperClient implements Watcher {
             Thread.currentThread().setName(threadName);
         }
 
-        connTimer = new Timer("zk-timer-" + igniteInstanceName);
+        connTimer = new Timer("zk-client-timer-" + igniteInstanceName);
 
         scheduleConnectionCheck();
     }
 
     /** {@inheritDoc} */
     @Override public void process(WatchedEvent evt) {
+        if (closing)
+            return;
+
         if (evt.getType() == Event.EventType.None) {
             ConnectionState newState;
 
@@ -179,18 +185,18 @@ public class ZookeeperClient implements Watcher {
                     }
                     else if (newState == ConnectionState.Connected)
                         stateMux.notifyAll();
-                    else {
+                    else
                         assert state == ConnectionState.Lost : state;
-
-                        closeClient();
-                    }
                 }
                 else
                     return;
             }
 
-            if (newState == ConnectionState.Lost)
+            if (newState == ConnectionState.Lost) {
+                closeClient();
+
                 notifyConnectionLost();
+            }
             else if (newState == ConnectionState.Connected) {
                 for (ZkAsyncOperation op : retryQ)
                     op.execute();
@@ -557,6 +563,17 @@ public class ZookeeperClient implements Watcher {
     /**
      *
      */
+    void onCloseStart() {
+        closing = true;
+
+        synchronized (stateMux) {
+            stateMux.notifyAll();
+        }
+    }
+
+    /**
+     *
+     */
     public void close() {
         closeClient();
     }
@@ -573,6 +590,9 @@ public class ZookeeperClient implements Watcher {
         ZookeeperClientFailedException err = null;
 
         synchronized (stateMux) {
+            if (closing)
+                throw new ZookeeperClientFailedException("Zookeeper client is closed.");
+
             U.warn(log, "Failed to execute zookeeper operation [err=" + e + ", state=" + state + ']');
 
             if (zk.getState() == ZooKeeper.States.CLOSED)
@@ -609,8 +629,6 @@ public class ZookeeperClient implements Watcher {
                         U.warn(log, "Failed to establish zookeeper connection, close client " +
                             "[timeout=" + connLossTimeout + ']');
 
-                        closeClient();
-
                         err = new ZookeeperClientFailedException(e);
                     }
                 }
@@ -623,20 +641,23 @@ public class ZookeeperClient implements Watcher {
                         ", remainingWaitTime=" + remainingTime + ']');
 
                     stateMux.wait(RETRY_TIMEOUT);
+
+                    if (closing)
+                        throw new ZookeeperClientFailedException("Zookeeper client is closed.");
                 }
             }
             else {
                 U.error(log, "Operation failed with unexpected error, close client: " + e, e);
 
-                closeClient();
-
                 state = ConnectionState.Lost;
 
-                throw new ZookeeperClientFailedException(e);
+                err = new ZookeeperClientFailedException(e);
             }
         }
 
         if (err != null) {
+            closeClient();
+
             notifyConnectionLost();
 
             throw err;
@@ -955,13 +976,14 @@ public class ZookeeperClient implements Watcher {
                         "[timeout=" + connLossTimeout + ']');
 
                     connLoss = true;
-
-                    closeClient();
                 }
             }
 
-            if (connLoss)
+            if (connLoss) {
+                closeClient();
+
                 notifyConnectionLost();
+            }
         }
     }
 

@@ -175,6 +175,16 @@ class ZkIgnitePaths {
         return basePath + "/" + clusterName + "/" + path;
     }
 
+    String joiningNodeDataPath(UUID nodeId, String aliveNodePath) {
+        int joinSeq = ZkIgnitePaths.aliveJoinDataSequence(aliveNodePath);
+
+        return joinDataDir + '/' +
+            ZkIgnitePaths.aliveNodePrefixId(aliveNodePath) + ":" +
+            nodeId.toString() +
+            "|" +
+            String.format("%010d", joinSeq);
+    }
+
     /**
      * @param path Alive node zk path.
      * @return Node internal ID.
@@ -210,9 +220,9 @@ class ZkIgnitePaths {
      * @param path Alive node zk path.
      * @return Joined node sequence.
      */
-    static int aliveJoinDataSequence(String path) {
-        int idx1 = path.indexOf('|');
+    private static int aliveJoinDataSequence(String path) {
         int idx2 = path.lastIndexOf('|');
+        int idx1 = path.lastIndexOf('|', idx2 - 1);
 
         return Integer.parseInt(path.substring(idx1 + 1, idx2));
     }

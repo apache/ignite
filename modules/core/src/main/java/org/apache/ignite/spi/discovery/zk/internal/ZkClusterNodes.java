@@ -53,6 +53,14 @@ public class ZkClusterNodes {
     }
 
     /**
+     * @return Current nodes in topology.
+     */
+    @SuppressWarnings("unchecked")
+    List<ClusterNode> topologySnapshot() {
+        return new ArrayList<>((Collection)nodesByOrder.values());
+    }
+
+    /**
      * @param node New node.
      */
     void addNode(ZookeeperClusterNode node) {

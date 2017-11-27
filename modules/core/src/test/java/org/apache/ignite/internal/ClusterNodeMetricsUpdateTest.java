@@ -17,15 +17,23 @@
 
 package org.apache.ignite.internal;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -35,6 +43,9 @@ public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private boolean client;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -43,6 +54,8 @@ public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
 
         cfg.setMetricsUpdateFrequency(500);
 
+        cfg.setClientMode(client);
+
         return cfg;
     }
 
@@ -50,32 +63,85 @@ public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMetrics() throws Exception {
-        //IgnitionEx.TEST_ZK = false;
+        int NODES = 6;
 
-        Ignite srv0 = startGrids(3);
+        Ignite srv0 = startGridsMultiThreaded(NODES / 2);
 
-        IgniteCompute c1 = srv0.compute(srv0.cluster().forNodeId(nodeId(1)));
-        IgniteCompute c2 = srv0.compute(srv0.cluster().forNodeId(nodeId(2)));
+        client = true;
 
-        c1.call(new DummyCallable(null));
+        startGridsMultiThreaded(NODES / 2, NODES / 2);
 
-        Thread.sleep(3000);
+        Map<UUID, Integer> expJobs = new HashMap<>();
 
-        Ignite srv1 = ignite(0);
+        for (int i = 0; i < NODES; i++)
+            expJobs.put(nodeId(i), 0);
 
-        System.out.println(srv1.cluster().forNodeId(nodeId(0)).metrics().getAverageCpuLoad());
-        System.out.println(srv1.cluster().forNodeId(nodeId(1)).metrics().getAverageCpuLoad());
-        System.out.println(srv1.cluster().forNodeId(nodeId(2)).metrics().getAverageCpuLoad());
+        checkMetrics(NODES, expJobs);
 
-        Thread.sleep(3000);
+        for (int i = 0; i < NODES; i++) {
+            UUID nodeId = nodeId(i);
 
-        System.out.println(srv1.cluster().forNodeId(nodeId(0)).metrics().getTotalExecutedJobs());
-        System.out.println(srv1.cluster().forNodeId(nodeId(1)).metrics().getTotalExecutedJobs());
-        System.out.println(srv1.cluster().forNodeId(nodeId(2)).metrics().getTotalExecutedJobs());
+            IgniteCompute c = srv0.compute(srv0.cluster().forNodeId(nodeId(i)));
+
+            c.call(new DummyCallable(null));
+
+            expJobs.put(nodeId, 1);
+        }
     }
 
-    private UUID nodeId(int nodeIdx) {
-        return ignite(nodeIdx).cluster().localNode().id();
+    /**
+     * @param expNodes Expected nodes.
+     * @param expJobs Expected jobs number per node.
+     */
+    private void checkMetrics0(int expNodes, Map<UUID, Integer> expJobs) {
+        List<Ignite> nodes = Ignition.allGrids();
+
+        assertEquals(expNodes, nodes.size());
+        assertEquals(expNodes, expJobs.size());
+
+        int totalJobs = 0;
+
+        for (Integer c : expJobs.values())
+            totalJobs += c;
+
+        for (final Ignite ignite : nodes) {
+            ClusterMetrics m = ignite.cluster().metrics();
+
+            assertEquals(expNodes, m.getTotalNodes());
+            assertEquals(totalJobs, m.getTotalExecutedJobs());
+
+            for (Map.Entry<UUID, Integer> e : expJobs.entrySet()) {
+                UUID nodeId = e.getKey();
+
+                ClusterGroup g = ignite.cluster().forNodeId(nodeId);
+
+                ClusterMetrics nodeM = g.metrics();
+
+                assertEquals(e.getValue(), (Integer)nodeM.getTotalExecutedJobs());
+            }
+        }
+    }
+
+    /**
+     * @param expNodes Expected nodes.
+     * @param expJobs Expected jobs number per node.
+     * @throws Exception If failed.
+     */
+    private void checkMetrics(final int expNodes, final Map<UUID, Integer> expJobs) throws Exception {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    checkMetrics0(expNodes, expJobs);
+                }
+                catch (AssertionFailedError e) {
+                    return false;
+                }
+
+                return true;
+            }
+        }, 5000);
+
+        checkMetrics0(expNodes, expJobs);
     }
 
     /**

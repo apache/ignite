@@ -37,6 +37,7 @@ import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -55,13 +56,19 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
+import org.jetbrains.annotations.Nullable;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -387,7 +394,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSegmentation1() throws Exception {
-        sesTimeout = 1000;
+        sesTimeout = 2000;
         testSockNio = true;
 
         Ignite node0 = startGrid(0);
@@ -608,7 +615,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
                 blockedC.add(c);
 
-                failedZkNodes.add((String)GridTestUtils.getFieldValue(impl, "locNodeZkPath"));
+                failedZkNodes.add(aliveZkNodePath(spi));
             }
             else {
                 expEvts[expEvtCnt] = joinEvent(initNodes + expEvtCnt + 1);
@@ -617,7 +624,35 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
         }
 
-        final ZookeeperClient zkClient = new ZookeeperClient(log, zkCluster.getConnectString(), 10_000, null);
+        waitNoAliveZkNodes(failedZkNodes);
+
+        c0.allowConnect();
+
+        for (ZkTestClientCnxnSocketNIO c : blockedC)
+            c.allowConnect();
+
+        if (expEvts.length > 0) {
+            for (int i = 0; i < initNodes; i++)
+                checkEvents(ignite(i), expEvts);
+        }
+
+        fut.get();
+
+        waitForTopology(initNodes + startNodes - failCnt);
+    }
+
+    private static String aliveZkNodePath(Ignite node) {
+        return aliveZkNodePath(node.configuration().getDiscoverySpi());
+    }
+
+    private static String aliveZkNodePath(DiscoverySpi spi) {
+        String path = GridTestUtils.getFieldValue(spi, "impl", "state", "locNodeZkPath");
+
+        return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    private static void waitNoAliveZkNodes(final List<String> failedZkNodes) throws Exception {
+        final ZookeeperClient zkClient = new ZookeeperClient(new JavaLogger(), zkCluster.getConnectString(), 10_000, null);
 
         try {
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -643,20 +678,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         finally {
             zkClient.close();
         }
-
-        c0.allowConnect();
-
-        for (ZkTestClientCnxnSocketNIO c : blockedC)
-            c.allowConnect();
-
-        if (expEvts.length > 0) {
-            for (int i = 0; i < initNodes; i++)
-                checkEvents(ignite(i), expEvts);
-        }
-
-        fut.get();
-
-        waitForTopology(initNodes + startNodes - failCnt);
     }
 
     /**
@@ -1062,6 +1083,21 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnect1() throws Exception {
+        startGrid(0);
+
+        sesTimeout = 2000;
+        testSockNio = true;
+        client = true;
+
+        Ignite client = startGrid(1);
+
+        reconnectClientNodes(log, Collections.singletonList(client), null);
+    }
+
+    /**
      * @param restartZk If {@code true} in background restarts on of ZK servers.
      * @param closeClientSock If {@code true} in background closes zk clients' sockets.
      * @throws Exception If failed.
@@ -1431,6 +1467,79 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 return true;
             }
         }, 5000));
+    }
+    /**
+     * Reconnect client node.
+     *
+     * @param log  Logger.
+     * @param clients Clients.
+     * @param disconnectedC Closure which will be run when client node disconnected.
+     * @throws Exception If failed.
+     */
+    static void reconnectClientNodes(final IgniteLogger log,
+        List<Ignite> clients,
+        @Nullable Runnable disconnectedC)
+        throws Exception {
+        final CountDownLatch disconnectLatch = new CountDownLatch(clients.size());
+        final CountDownLatch reconnectLatch = new CountDownLatch(clients.size());
+
+        IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED) {
+                    log.info("Disconnected: " + evt);
+
+                    disconnectLatch.countDown();
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                    log.info("Reconnected: " + evt);
+
+                    reconnectLatch.countDown();
+                }
+
+                return true;
+            }
+        };
+
+        List<String> zkNodes = new ArrayList<>();
+
+        for (Ignite client : clients) {
+            client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+
+            zkNodes.add(aliveZkNodePath(client));
+        }
+
+        for (Ignite client : clients)
+            ZkTestClientCnxnSocketNIO.forNode(client.name()).closeSocket(true);
+
+        waitNoAliveZkNodes(zkNodes);
+
+        for (Ignite client : clients)
+            ZkTestClientCnxnSocketNIO.forNode(client.name()).allowConnect();
+
+        waitReconnectEvent(log, disconnectLatch);
+
+        if (disconnectedC != null)
+            disconnectedC.run();
+
+        waitReconnectEvent(log, reconnectLatch);
+
+        for (Ignite client : clients)
+            client.events().stopLocalListen(p);
+    }
+
+    /**
+     * @param log Logger.
+     * @param latch Latch.
+     * @throws Exception If failed.
+     */
+    protected static void waitReconnectEvent(IgniteLogger log, CountDownLatch latch) throws Exception {
+        if (!latch.await(30_000, MILLISECONDS)) {
+            log.error("Failed to wait for reconnect event, will dump threads, latch count: " + latch.getCount());
+
+            U.dumpThreads(log);
+
+            fail("Failed to wait for disconnect/reconnect event.");
+        }
     }
 
     /**

@@ -22,13 +22,14 @@ import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 
 /**
  *
  */
 class ClusterNodeMetrics implements Serializable {
     /** */
-    private final ClusterMetrics metrics;
+    private final byte[] metrics;
 
     /** */
     private final Map<Integer, CacheMetrics> cacheMetrics;
@@ -38,14 +39,14 @@ class ClusterNodeMetrics implements Serializable {
      * @param cacheMetrics Cache metrics.
      */
     ClusterNodeMetrics(ClusterMetrics metrics, Map<Integer, CacheMetrics> cacheMetrics) {
-        this.metrics = metrics;
+        this.metrics = ClusterMetricsSnapshot.serialize(metrics);
         this.cacheMetrics = cacheMetrics;
     }
 
     /**
      * @return Metrics.
      */
-    ClusterMetrics metrics() {
+    byte[] metrics() {
         return metrics;
     }
 
