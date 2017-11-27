@@ -111,11 +111,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
         }
 
+        private unsafe delegate JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args);
+        private delegate JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size, out int size2);
+
         /// <summary>
         /// Creates the JVM.
         /// </summary>
         public unsafe JniResult CreateJvm(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args)
         {
+            // TODO: Use common approach
+            if (Os.IsMacOs)
+            {
+                var ptr = DllLoader.NativeMethodsMacOs.dlsym(_ptr, "JNI_CreateJavaVM");
+                var del = (JNI_CreateJavaVM) Marshal.GetDelegateForFunctionPointer(ptr, typeof(JNI_CreateJavaVM));
+
+                return del(out pvm, out penv, args);
+            }
+
             return Os.IsWindows
                 ? JniNativeMethodsWindows.JNI_CreateJavaVM(out pvm, out penv, args)
                 : Os.IsMacOs
@@ -128,6 +140,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         public JniResult GetCreatedJvms(out IntPtr pvm, int size, out int size2)
         {
+            // TODO: Use common approach
+            if (Os.IsMacOs)
+            {
+                var ptr = DllLoader.NativeMethodsMacOs.dlsym(_ptr, "JNI_GetCreatedJavaVMs");
+                var del = (JNI_GetCreatedJavaVMs)Marshal.GetDelegateForFunctionPointer(ptr, 
+                    typeof(JNI_GetCreatedJavaVMs));
+
+                return del(out pvm, size, out size2);
+            }
+
             return Os.IsWindows
                 ? JniNativeMethodsWindows.JNI_GetCreatedJavaVMs(out pvm, size, out size2)
                 : Os.IsMacOs
@@ -145,11 +167,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             // Locking is performed by the caller three, omit here.
             if (_instance != null)
             {
+                log.Debug("JNI dll is already loaded.");
                 return;
             }
-
-            // TODO: Keep ptr in a static variable.
-            // TODO: log.Debug("JNI dll is already loaded.");
 
             var messages = new List<string>();
             foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
