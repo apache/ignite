@@ -1137,56 +1137,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @param activate If {@code true} tests activation, otherwise deactivation.
-     * @throws Exception If failed.
-     */
-    private void stateChangeFailover3(boolean activate) throws Exception {
-        testDiscoSpi = true;
-
-        startNodesAndBlockStatusChange(4, 0, 0, !activate);
-
-        client = false;
-
-        IgniteInternalFuture startFut1 = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(4);
-
-                return null;
-            }
-        }, "start-node1");
-
-        IgniteInternalFuture startFut2 = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(5);
-
-                return null;
-            }
-        }, "start-node2");
-
-        U.sleep(1000);
-
-        // Stop all nodes participating in state change and not allow last node to finish exchange.
-        for (int i = 0; i < 4; i++)
-            ((TestTcpDiscoverySpi)ignite(i).configuration().getDiscoverySpi()).simulateNodeFailure();
-
-        for (int i = 0; i < 4; i++)
-            stopGrid(getTestIgniteInstanceName(i), true, false);
-
-        startFut1.get();
-        startFut2.get();
-
-        assertFalse(ignite(4).active());
-        assertFalse(ignite(5).active());
-
-        ignite(4).active(true);
-
-        for (int i = 0; i < 4; i++)
-            startGrid(i);
-
-        checkCaches1(6);
-    }
-
-    /**
      * @param exp If {@code true} there should be recorded messages.
      */
     private void checkRecordedMessages(boolean exp) {
