@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePds
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsThreadInterruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryPPCTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryWithCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
 
 /**
@@ -49,6 +50,7 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
 
         suite.addTestSuite(IgniteWalRecoveryTest.class);
+        suite.addTestSuite(IgniteWalRecoveryWithCompactionTest.class);
         suite.addTestSuite(IgnitePdsNoActualWalHistoryTest.class);
         suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
         suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);

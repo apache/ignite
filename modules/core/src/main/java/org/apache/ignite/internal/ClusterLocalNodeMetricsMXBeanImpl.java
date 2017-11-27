@@ -263,6 +263,11 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     }
 
     /** {@inheritDoc} */
+    @Override public long getTotalJobsExecutionTime() {
+        return node.metrics().getTotalJobsExecutionTime();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getTotalIdleTime() {
         return node.metrics().getTotalIdleTime();
     }

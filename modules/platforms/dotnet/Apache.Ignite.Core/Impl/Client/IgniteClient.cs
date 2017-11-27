@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            DoOutOp(ClientOp.CacheDestroy, w => w.WriteString(name));
+            DoOutOp(ClientOp.CacheDestroy, w => w.WriteInt(BinaryUtils.GetCacheId(name)));
         }
 
         /** <inheritDoc /> */

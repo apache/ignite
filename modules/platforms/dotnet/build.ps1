@@ -246,10 +246,6 @@ if (!$skipNuGet) {
     # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present)
     ls *.nuspec -Recurse  `
         | % { 
-            If (Test-Path ([io.path]::ChangeExtension($_.FullName, ".csproj"))){
-                [io.path]::ChangeExtension($_.FullName, ".csproj")
-            } Else { $_.FullName }
-        } | % { 
             & $ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir
 
             # check result

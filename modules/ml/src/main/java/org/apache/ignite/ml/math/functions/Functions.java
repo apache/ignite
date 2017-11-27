@@ -17,11 +17,10 @@
 
 package org.apache.ignite.ml.math.functions;
 
-import org.apache.ignite.lang.IgniteBiTuple;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiFunction;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Compatibility with Apache Mahout.
@@ -80,6 +79,7 @@ public final class Functions {
 
     /**
      * Generic 'max' function.
+     *
      * @param a First object to compare.
      * @param b Second object to compare.
      * @param f Comparator.
@@ -92,6 +92,7 @@ public final class Functions {
 
     /**
      * Generic 'min' function.
+     *
      * @param a First object to compare.
      * @param b Second object to compare.
      * @param f Comparator.
@@ -215,6 +216,7 @@ public final class Functions {
 
     /**
      * Curry bifunction.
+     *
      * @param f Bifunction to curry.
      * @param <A> Type of first argument of {@code f}.
      * @param <B> Type of second argument of {@code f}.
