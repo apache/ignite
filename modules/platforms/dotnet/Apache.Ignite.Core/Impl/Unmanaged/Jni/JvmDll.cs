@@ -369,8 +369,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsMacOs()
         {
-            // TODO: On MacOs look into /Library/Java/JavaVirtualMachines/*/Contents/Home/lib/server or jre/lib/server
-            yield break;
+            const string jvmDir = "/Library/Java/JavaVirtualMachines";
+
+            if (!Directory.Exists(jvmDir))
+            {
+                yield break;
+            }
+
+            const string subDir = "Contents/Home";
+
+            foreach (var dir in Directory.GetDirectories(jvmDir))
+            {
+                foreach (var path in JvmDllLookupPaths)
+                {
+                    yield return
+                        new KeyValuePair<string, string>(dir, Path.Combine(jvmDir, subDir, path, FileJvmDll));
+                }
+            }
         }
 
         /// <summary>
