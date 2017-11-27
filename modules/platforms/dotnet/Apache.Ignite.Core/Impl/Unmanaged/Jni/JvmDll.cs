@@ -94,7 +94,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /** */
         private readonly GetCreatedJvmsDel _getCreatedJvms;
 
-
         /// <summary>
         /// Initializes a new instance of the <see cref="JvmDll"/> class.
         /// </summary>
