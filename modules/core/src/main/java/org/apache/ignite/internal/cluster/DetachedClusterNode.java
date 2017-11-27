@@ -85,7 +85,7 @@ public class DetachedClusterNode implements ClusterNode {
 
     /** {@inheritDoc} */
     @Override public long order() {
-        throw new UnsupportedOperationException("Not implemented");
+        return -1;
     }
 
     /** {@inheritDoc} */
