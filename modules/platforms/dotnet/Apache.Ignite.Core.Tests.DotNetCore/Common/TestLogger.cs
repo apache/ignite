@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.DotNetCore.Common
 {
     using System;
+    using System.Globalization;
     using System.IO;
     using Apache.Ignite.Core.Log;
 
@@ -49,7 +50,9 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         {
             lock (_file)
             {
-                var text = string.Format(formatProvider, message, args);
+                var text = args != null
+                    ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
+                    : message;
                 File.AppendAllText(_file, text);
             }
         }
