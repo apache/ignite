@@ -24,8 +24,10 @@ package org.apache.ignite.configuration;
 public enum FailureProcessingPolicy {
     /** Restart jvm. */
     RESTART_JVM,
+
     /** Stop. */
     STOP,
+
     /** Noop. */
     NOOP;
 }
