@@ -52,7 +52,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
@@ -459,7 +458,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @SuppressWarnings("ConstantConditions")
             @Override public Object call() throws Exception {
-                throw (Exception)e.getCause();
+                throw (Exception)e.getCause().getCause();
             }
         }, JdbcSQLException.class, "Table \"" + checkedTblName + "\" not found");
     }
@@ -891,13 +890,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             personId2cityCode.put(i, cityCode);
 
-            queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("insert into \"Person2\"(\"id\", " +
-                "\"city\") values (?, ?)").setArgs(i, cityName), true).getAll();
+            execute(client(), "insert into \"Person2\"(\"id\", \"city\") values (" + i + ", '" + cityName + "')");
         }
 
-        List<List<?>> res = queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("select \"id\", " +
+        List<List<?>> res = execute(client(), "select \"id\", " +
             "c.\"code\" from \"Person2\" p left join \"City\" c on p.\"city\" = c.\"name\" where c.\"name\" " +
-            "is not null"), true).getAll();
+            "is not null");
 
         assertEquals(100, res.size());
 
@@ -1476,24 +1474,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Check that a property in given descriptor is present and has parameters as expected.
-     * @param desc Descriptor.
-     * @param name Property name.
-     * @param type Expected property type.
-     * @param isKey {@code true} if the property is expected to belong to key, {@code false} is it's expected to belong
-     *     to value.
-     */
-    private void assertProperty(QueryTypeDescriptorImpl desc, String name, Class<?> type, boolean isKey) {
-        GridQueryProperty p = desc.property(name);
-
-        assertNotNull(name, p);
-
-        assertEquals(type, p.type());
-
-        assertEquals(isKey, p.key());
-    }
-
-    /**
      * Get configurations to be used in test.
      *
      * @return Configurations.
@@ -1555,7 +1535,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param sql Statement.
      */
     private List<List<?>> execute(Ignite node, String sql) {
-        return queryProcessor(node).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+        return node.cache("cache_idx").withKeepBinary().query(new SqlFieldsQuery(sql).setSchema("PUBLIC")).getAll();
     }
 
     /**
@@ -1564,7 +1544,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param sql Statement.
      */
     private List<List<?>> executeLocal(GridCacheContext cctx, String sql) {
-        return queryProcessor(cctx.grid()).querySqlFields(cctx, new SqlFieldsQuery(sql).setLocal(true), true).getAll();
+        return cctx.grid().cache(cctx.name()).withKeepBinary().query(new SqlFieldsQuery(sql).setLocal(true)).getAll();
     }
 
     /**

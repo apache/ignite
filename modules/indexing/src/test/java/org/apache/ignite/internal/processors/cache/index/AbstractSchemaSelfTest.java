@@ -455,7 +455,7 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     private void executeSql(Ignite node, String cacheName, String sql) {
         log.info("Executing DDL: " + sql);
 
-        node.cache(cacheName).query(new SqlFieldsQuery(sql)).getAll();
+        node.cache(cacheName).query(new SqlFieldsQuery(sql).setSchema(CACHE_NAME)).getAll();
     }
 
     /**
