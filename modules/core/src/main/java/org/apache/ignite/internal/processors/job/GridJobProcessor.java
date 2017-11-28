@@ -1044,11 +1044,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
-                        IgnitePredicate<ClusterNode> topologyPred = req.getTopologyPred();
+                        IgnitePredicate<ClusterNode> topologyPred = req.getTopologyPredicate();
 
-                        if(topologyPred == null && req.getTopologyPredBytes() != null)
-                            topologyPred = U.unmarshal(marsh, req.getTopologyPredBytes(),
-                                U.resolveClassLoader(dep.classLoader(),ctx.config()));
+                        if (topologyPred == null && req.getTopologyPredicateBytes() != null) {
+                            topologyPred = U.unmarshal(marsh, req.getTopologyPredicateBytes(),
+                                U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                        }
 
                         // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
@@ -1980,6 +1981,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     handleCollisions = true;
 
                     break;
+
                 case EVT_NODE_METRICS_UPDATED:
                     // Check for less-than-equal rather than just equal
                     // in guard against topology changes.

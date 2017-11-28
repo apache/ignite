@@ -780,8 +780,10 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         return ctx.checkpoint().removeCheckpoint(ses, key);
     }
 
-    /** */
-    public IgnitePredicate<ClusterNode> getTopologyPred() {
+    /**
+     * @return Topology predicate.
+     */
+    @Nullable public IgnitePredicate<ClusterNode> getTopologyPredicate() {
         return topPred;
     }
 
