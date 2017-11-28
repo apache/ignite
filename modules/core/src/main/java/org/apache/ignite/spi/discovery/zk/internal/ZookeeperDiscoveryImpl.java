@@ -292,7 +292,7 @@ public class ZookeeperDiscoveryImpl {
         byte[] msgBytes;
 
         try {
-            msgBytes = marshal(msg);
+            msgBytes = U.zip(marshal(msg));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal custom message: " + msg, e);
@@ -367,7 +367,7 @@ public class ZookeeperDiscoveryImpl {
         byte[] joinDataBytes;
 
         try {
-            joinDataBytes = marshal(joinData);
+            joinDataBytes = U.zip(marshal(joinData));
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to marshal joining node data", e);
@@ -724,7 +724,7 @@ public class ZookeeperDiscoveryImpl {
         }
 
         // TODO ZK: fail node if can not unmarshal.
-        ZkJoiningNodeData joiningNodeData = unmarshal(joinData);
+        ZkJoiningNodeData joiningNodeData = unmarshalZip(joinData);
 
         ZookeeperClusterNode joinedNode = joiningNodeData.node();
 
@@ -922,7 +922,7 @@ public class ZookeeperDiscoveryImpl {
                     DiscoverySpiCustomMessage msg;
 
                     try {
-                        msg = unmarshal(evtBytes);
+                        msg = unmarshalZip(evtBytes);
 
                         state.evtsData.evtIdGen++;
 
@@ -1034,7 +1034,7 @@ public class ZookeeperDiscoveryImpl {
                         else {
                             String path = zkPaths.joinEventDataPath(evtData.eventId());
 
-                            joiningData = unmarshal(state.zkClient.getData(path));
+                            joiningData = unmarshalZip(state.zkClient.getData(path));
 
                             DiscoveryDataBag dataBag = new DiscoveryDataBag(evtData0.nodeId);
 
@@ -1075,7 +1075,7 @@ public class ZookeeperDiscoveryImpl {
                             else
                                 path = zkPaths.customEventDataPath(false, evtData0.evtPath);
 
-                            msg = unmarshal(state.zkClient.getData(path));
+                            msg = unmarshalZip(state.zkClient.getData(path));
 
                             evtData0.msg = msg;
                         }
@@ -1313,7 +1313,7 @@ public class ZookeeperDiscoveryImpl {
 
                             long evtId = state.evtsData.evtIdGen;
 
-                            byte[] ackBytes = marshal(ack);
+                            byte[] ackBytes = U.zip(marshal(ack));
 
                             String path = zkPaths.ackEventDataPath(evtId);
 
