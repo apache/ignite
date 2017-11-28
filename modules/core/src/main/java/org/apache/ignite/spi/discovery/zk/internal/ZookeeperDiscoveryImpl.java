@@ -657,12 +657,17 @@ public class ZookeeperDiscoveryImpl {
     private void saveAndProcessNewEvents() throws Exception {
         long start = System.currentTimeMillis();
 
+        byte [] evtsBytes = marsh.marshal(state.evtsData);
+
         state.zkClient.setData(zkPaths.evtsPath, marsh.marshal(state.evtsData), -1);
 
         long time = System.currentTimeMillis() - start;
 
-        if (log.isInfoEnabled())
-            log.info("Discovery coordinator saved new topology events [topVer=" + state.evtsData.topVer + ", saveTime=" + time + ']');
+        if (log.isInfoEnabled()) {
+            log.info("Discovery coordinator saved new topology events [topVer=" + state.evtsData.topVer +
+                ", size=" + evtsBytes.length +
+                ", saveTime=" + time + ']');
+        }
 
         processNewEvents(state.evtsData);
     }
@@ -988,7 +993,7 @@ public class ZookeeperDiscoveryImpl {
             }
             else {
                 if (log.isInfoEnabled())
-                    log.info("New discovery event data: " + evtData + ']');
+                    log.info("New discovery event data [evt=" + evtData + ", evtsHist=" + evts.size() + ']');
 
                 switch (evtData.eventType()) {
                     case EventType.EVT_NODE_JOINED: {
