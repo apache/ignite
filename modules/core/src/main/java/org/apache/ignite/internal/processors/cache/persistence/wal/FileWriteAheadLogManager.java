@@ -2230,6 +2230,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         return ptr;
                     }
+                    catch (Throwable e) {
+                        log.error("!!! ERR:", e);
+
+                        ByteBuffer b = seg.buffer();
+
+                        log.info("!!! BUF: [" + "pos=" + b.position() + ", limit=" + b.limit() + ", remaining=" + b.remaining() + ", capacity=" + b.capacity() + ", class=" + b.getClass() +
+                            "]");
+                    }
                     finally {
                         seg.release();
 
