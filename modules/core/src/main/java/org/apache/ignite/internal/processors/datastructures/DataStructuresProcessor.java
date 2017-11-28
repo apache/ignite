@@ -660,10 +660,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, DEFAULT_REENTRANT_LOCK_GROUP_NAME);
 
-        // Check type of structure received by key from local cache.
-        GridCacheLockEx2 dataStructure = cast(dsMap.get(key), GridCacheLockEx2.class);
-
         synchronized (dsMap) {
+            // Check type of structure received by key from local cache.
+            GridCacheLockEx2 dataStructure = cast(dsMap.get(key), GridCacheLockEx2.class);
+
             if (dataStructure != null) {
                 return dataStructure;
             }
