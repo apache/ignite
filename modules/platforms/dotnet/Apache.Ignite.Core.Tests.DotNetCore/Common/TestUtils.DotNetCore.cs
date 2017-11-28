@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.DotNetCore.Common;
 
@@ -54,13 +55,14 @@ namespace Apache.Ignite.Core.Tests
                 var frame = st.GetFrame(i);
                 var method = frame.GetMethod();
 
-                if (method.DeclaringType != typeof(TestUtils) && method.DeclaringType != typeof(TestBase))
+                if (method.DeclaringType != typeof(TestUtils) 
+                    && method.DeclaringType != typeof(TestBase))
                 {
                     return $"{method.DeclaringType.Name}.{method.Name}";
                 }
             }
 
-            return "unknown";
+            return st.GetFrames().Skip(2).Select(x => x.ToString()).FirstOrDefault() ?? "unknown";
         }
 
         /// <summary>
