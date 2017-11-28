@@ -176,25 +176,29 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
             try {
                 IgniteLogger gridLog = new JavaLogger(false);
 
-                GridNioFilter[] filters;
+                ArrayList<GridNioFilter> filterArrayList = new ArrayList<>();
 
-                GridNioFilter codecFilter = new GridNioCodecFilter(new GridTcpRestParser(routerClient), gridLog, false);
+                filterArrayList.add(new GridNioCodecFilter(new GridTcpRestParser(routerClient), gridLog, false));
+
+                if (true /* Compress enabled flag. Need add to GridClientConfiguration. */) {
+                    GridNioCompressFilter compressFilter = new GridNioCompressFilter(true, ByteOrder.nativeOrder(), gridLog);
+
+                    compressFilter.directMode(false);
+
+                    filterArrayList.add(compressFilter);
+                }
 
                 if (sslCtx != null) {
                     GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog);
 
                     sslFilter.directMode(false);
 
-                    filters = new GridNioFilter[]{codecFilter, sslFilter};
+                    filterArrayList.add(sslFilter);
                 }
-                else if (true) {
-                    GridNioCompressFilter compressFilter = new GridNioCompressFilter(true, ByteOrder.nativeOrder(), gridLog);
 
-                    compressFilter.directMode(false);
+                GridNioFilter[] filters = new GridNioFilter[filterArrayList.size()];
 
-                    filters = new GridNioFilter[]{codecFilter, compressFilter};
-                } else
-                    filters = new GridNioFilter[]{codecFilter};
+                filterArrayList.toArray(filters);
 
                 srv = GridNioServer.builder().address(U.getLocalHost())
                     .port(-1)

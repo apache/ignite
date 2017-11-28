@@ -86,7 +86,7 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
         GridCompressMeta compressMeta = ses.meta(COMPRESS_META.ordinal());
 
         if (compressMeta == null) {
-            engine = new CompressEngine();
+            engine = new GZipCompressEngine();
 
             compressMeta = new GridCompressMeta();
 
@@ -114,7 +114,6 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
 
         if (alreadyDecoded != null)
             proceedMessageReceived(ses, alreadyDecoded);
-
     }
 
     /** {@inheritDoc} */
@@ -154,17 +153,17 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
 
     /**
      * @param ses Session.
-     * @param input Data to encrypt.
-     * @return Output buffer with encrypted data.
-     * @throws IOException If failed to encrypt.
+     * @param input Data to compress.
+     * @return Output buffer with compressed data.
+     * @throws IOException If failed to compress.
      */
-    public ByteBuffer encrypt(GridNioSession ses, ByteBuffer input) throws IOException {
+    public ByteBuffer compress(GridNioSession ses, ByteBuffer input) throws IOException {
         GridNioCompressHandler hnd = compressHandler(ses);
 
         hnd.lock();
 
         try {
-            return hnd.encrypt(input);
+            return hnd.compress(input);
         }
         finally {
             hnd.unlock();
@@ -191,7 +190,7 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
         hnd.lock();
 
         try {
-            hnd.encrypt(input);
+            hnd.compress(input);
 
             return hnd.writeNetBuffer(ackC);
         }

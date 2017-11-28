@@ -36,7 +36,7 @@ class GridNioCompressHandler extends ReentrantLock {
     /** Session of this handler. */
     private GridNioSession ses;
 
-    /** Output buffer into which encrypted data will be written. */
+    /** Output buffer into which compressed data will be written. */
     private ByteBuffer outNetBuf;
 
     /** Input buffer from which compress engine will decrypt data. */
@@ -171,13 +171,13 @@ class GridNioCompressHandler extends ReentrantLock {
     }
 
     /**
-     * Encrypts data to be written to the network.
+     * Compress data to be written to the network.
      *
-     * @param src data to encrypt.
+     * @param src data to compress.
      * @throws IOException on errors.
-     * @return Output buffer with encrypted data.
+     * @return Output buffer with compressed data.
      */
-    ByteBuffer encrypt(ByteBuffer src) throws IOException {
+    ByteBuffer compress(ByteBuffer src) throws IOException {
         assert isHeldByCurrentThread();
 
         // The data buffer is (must be) empty, we can reuse the entire
@@ -200,7 +200,7 @@ class GridNioCompressHandler extends ReentrantLock {
             CompressEngineResult res = compressEngine.wrap(src, outNetBuf);
 
             if (res != OK)
-                throw new IOException("Failed to encrypt data");
+                throw new IOException("Failed to compress data");
         }
 
         outNetBuf.flip();

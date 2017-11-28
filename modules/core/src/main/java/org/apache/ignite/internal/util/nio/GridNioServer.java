@@ -111,7 +111,7 @@ public class GridNioServer<T> {
     /** SSL system data buffer metadata key. */
     private static final int BUF_SSL_SYSTEM_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** SSL system data buffer metadata key. */
+    /** Compress system data buffer metadata key. */
     private static final int BUF_COMPRESS_SYSTEM_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** SSL write buf limit. */
@@ -1079,7 +1079,6 @@ public class GridNioServer<T> {
 
             // Attempt to read off the channel
             int cnt = sockCh.read(readBuf);
-            System.out.println("\t\t\t\t\tRead:"+cnt+" bytes");
 
             if (cnt == -1) {
                 if (log.isDebugEnabled())
@@ -1336,10 +1335,15 @@ public class GridNioServer<T> {
                 if (!handshakeFinished)
                     return;
 
+                if (netCompressFilter != null) {
+                    netCompressFilter.lock(ses);
+
+                    writeCompressSystem(ses, sockCh);
+                }
+
                 ByteBuffer sslNetBuf = ses.removeMeta(BUF_META_KEY);
 
                 if (sslNetBuf != null) {
-                    System.out.println("try to write sslNetBuf:"+sslNetBuf.remaining());
                     int cnt = sockCh.write(sslNetBuf);
 
                     if (metricsLsnr != null)
@@ -1431,6 +1435,9 @@ public class GridNioServer<T> {
                     int sesCap = buf.capacity();
 
                     buf.flip();
+
+                    if (netCompressFilter != null)
+                        buf = netCompressFilter.compress(ses, buf);
 
                     buf = sslFilter.encrypt(ses, buf);
 
@@ -1485,6 +1492,9 @@ public class GridNioServer<T> {
                 }
             }
             finally {
+                if (netCompressFilter != null && handshakeFinished)
+                    netCompressFilter.unlock(ses);
+
                 sslFilter.unlock(ses);
             }
         }
@@ -1517,18 +1527,18 @@ public class GridNioServer<T> {
             try {
                 writeCompressSystem(ses, sockCh);
 
-                ByteBuffer sslNetBuf = ses.removeMeta(BUF_META_KEY);
+                ByteBuffer compressNetBuf = ses.removeMeta(BUF_META_KEY);
 
-                if (sslNetBuf != null) {
-                    int cnt = sockCh.write(sslNetBuf);
+                if (compressNetBuf != null) {
+                    int cnt = sockCh.write(compressNetBuf);
 
                     if (metricsLsnr != null)
                         metricsLsnr.onBytesSent(cnt);
 
                     ses.bytesSent(cnt);
 
-                    if (sslNetBuf.hasRemaining()) {
-                        ses.addMeta(BUF_META_KEY, sslNetBuf);
+                    if (compressNetBuf.hasRemaining()) {
+                        ses.addMeta(BUF_META_KEY, compressNetBuf);
 
                         return;
                     }
@@ -1612,7 +1622,7 @@ public class GridNioServer<T> {
 
                     buf.flip();
 
-                    buf = netCompressFilter.encrypt(ses, buf);
+                    buf = netCompressFilter.compress(ses, buf);
 
                     ByteBuffer sesBuf = ses.writeBuffer();
 
@@ -1803,7 +1813,7 @@ public class GridNioServer<T> {
                     writer.setCurrentWriteClass(msg.getClass());
 
                 finished = msg.writeTo(buf, writer);
-//                System.out.println("MY one msg");
+
                 if (finished && writer != null)
                     writer.reset();
             }
@@ -1828,7 +1838,6 @@ public class GridNioServer<T> {
                     writer.setCurrentWriteClass(msg.getClass());
 
                 finished = msg.writeTo(buf, writer);
-//                System.out.print(" msg+1");
 
                 if (finished && writer != null)
                     writer.reset();
@@ -3607,10 +3616,9 @@ public class GridNioServer<T> {
                         if (worker != null)
                             worker.registerWrite(ses0);
                     }
-
-                    return null;
                 }
-                else if (compressSys) {
+
+                if (compressSys) {
                     ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_COMPRESS_SYSTEM_META_KEY);
 
                     assert queue != null;
@@ -3621,10 +3629,12 @@ public class GridNioServer<T> {
 
                     if (!ses0.procWrite.get() && ses0.procWrite.compareAndSet(false, true))
                         ses0.worker().registerWrite(ses0);
+                }
 
+                if (sslSys || compressSys)
                     return null;
-                } else
-                    return send(ses, (Message)msg, fut, ackC);
+
+                return send(ses, (Message)msg, fut, ackC);
             }
             else
                 return send(ses, (ByteBuffer)msg, fut, ackC);

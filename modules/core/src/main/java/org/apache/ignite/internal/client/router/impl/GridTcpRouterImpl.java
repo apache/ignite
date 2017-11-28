@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 import javax.management.JMException;
@@ -253,13 +254,19 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
         GridNioParser parser, boolean tcpNoDelay, @Nullable SSLContext sslCtx, boolean wantClientAuth,
         boolean needClientAuth) {
         try {
-            GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
-
             // This name is required to be unique in order to avoid collisions with
             // ThreadWorkerGroups running in the same JVM by other routers/nodes.
             String igniteInstanceName = "router-" + id;
 
-            GridNioFilter[] filters;
+            ArrayList<GridNioFilter> filterArrayList = new ArrayList<>();
+
+            filterArrayList.add(new GridNioCodecFilter(parser, log, false));
+
+            if (true /* Compress enabled flag. Need add to GridClientConfiguration. */) {
+                GridNioCompressFilter compressFilter = new GridNioCompressFilter(false, ByteOrder.nativeOrder(), log);
+
+                filterArrayList.add(compressFilter);
+            }
 
             if (sslCtx != null) {
                 GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, false, ByteOrder.nativeOrder(), log);
@@ -268,14 +275,12 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
                 sslFilter.needClientAuth(needClientAuth);
 
-                filters = new GridNioFilter[] { codec, sslFilter };
+                filterArrayList.add(sslFilter);
             }
-            else if (true) {
-                GridNioCompressFilter sslFilter = new GridNioCompressFilter(false, ByteOrder.nativeOrder(), log);
 
-                filters = new GridNioFilter[] { codec, sslFilter };
-            } else
-                filters = new GridNioFilter[] { codec };
+            GridNioFilter[] filters = new GridNioFilter[filterArrayList.size()];
+
+            filterArrayList.toArray(filters);
 
             srv = GridNioServer.<GridClientMessage>builder()
                 .address(hostAddr)

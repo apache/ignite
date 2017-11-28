@@ -23,10 +23,10 @@ public class BlockingCompressHandler {
     /** Compress engine. */
     private final CompressEngine compressEngine;
 
-    /** Output buffer into which encrypted data will be written. */
+    /** Output buffer into which compressed data will be written. */
     private ByteBuffer outNetBuf;
 
-    /** Input buffer from which Compress engine will decrypt data. */
+    /** Input buffer from which compress engine will decrypt data. */
     private ByteBuffer inNetBuf;
 
     /** Application buffer. */
@@ -80,13 +80,13 @@ public class BlockingCompressHandler {
     }
 
     /**
-     * Encrypts data to be written to the network.
+     * Compress data to be written to the network.
      *
-     * @param src data to encrypt.
+     * @param src data to compress.
      * @throws IOException on errors.
-     * @return Output buffer with encrypted data.
+     * @return Output buffer with compressed data.
      */
-    public ByteBuffer encrypt(ByteBuffer src) throws IOException {
+    public ByteBuffer compress(ByteBuffer src) throws IOException {
         // The data buffer is (must be) empty, we can reuse the entire
         // buffer.
         outNetBuf.clear();
@@ -105,9 +105,8 @@ public class BlockingCompressHandler {
 
             CompressEngineResult res = compressEngine.wrap(src, outNetBuf);
 
-
             if (res != OK)
-                throw new IOException("Failed to encrypt data (compress engine error) [status=" + res+']');
+                throw new IOException("Failed to compress data (compress engine error) [status=" + res+']');
         }
 
         outNetBuf.flip();

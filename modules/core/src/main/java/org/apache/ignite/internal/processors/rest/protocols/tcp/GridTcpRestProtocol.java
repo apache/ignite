@@ -227,9 +227,18 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
         GridNioParser parser, @Nullable SSLContext sslCtx, ConnectorConfiguration cfg) {
         try {
-            GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
+            ArrayList<GridNioFilter> filterArrayList = new ArrayList<>();
 
-            GridNioFilter[] filters;
+            filterArrayList.add(new GridNioCodecFilter(parser, log, false));
+
+            if (ctx.config().isNetworkCompressingEnabled()){
+                GridNioCompressFilter compressFilter = new GridNioCompressFilter(
+                    cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log);
+
+                compressFilter.directMode(false);
+
+                filterArrayList.add(compressFilter);
+            }
 
             if (sslCtx != null) {
                 GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx,
@@ -243,23 +252,12 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
                 sslFilter.needClientAuth(auth);
 
-                filters = new GridNioFilter[] {
-                    codec,
-                    sslFilter
-                };
+                filterArrayList.add(sslFilter);
             }
-            else if (ctx.config().isNetworkCompressingEnabled()){
-                GridNioCompressFilter compressFilter = new GridNioCompressFilter(
-                    cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log);
 
-                compressFilter.directMode(false);
+            GridNioFilter[] filters = new GridNioFilter[filterArrayList.size()];
 
-                filters = new GridNioFilter[] {
-                    codec,
-                    compressFilter
-                };
-            } else
-                filters = new GridNioFilter[] { codec };
+            filterArrayList.toArray(filters);
 
             srv = GridNioServer.<GridClientMessage>builder()
                 .address(hostAddr)
