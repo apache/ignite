@@ -130,8 +130,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         startGrid(3);
 
-        ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
-
         awaitPartitionMapExchange();
 
         examineStaticMetadata(4);
@@ -237,8 +235,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         startGrid(3);
 
-        ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
-
         awaitPartitionMapExchange();
 
         examineDynamicMetadata(2, contentExaminer0, contentExaminer1, structureExaminer1);
@@ -265,8 +261,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         ignite0.active(true);
 
         startGrid(2);
-
-        ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
 
         awaitPartitionMapExchange();
 
@@ -335,11 +329,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         startGrids(4);
 
-        ignite0 = grid(0);
-
         grid(0).active(true);
-
-        ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
 
         examineStaticMetadata(4);
 
