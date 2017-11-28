@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
+    using Apache.Ignite.Core.Tests.DotNetCore.Common;
 
     public static partial class TestUtils
     {
@@ -32,7 +33,8 @@ namespace Apache.Ignite.Core.Tests
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
                 JvmOptions = TestJavaOptions(),
-                IgniteInstanceName = name
+                IgniteInstanceName = name,
+                Logger = TestLogger.Instance
             };
         }
 
