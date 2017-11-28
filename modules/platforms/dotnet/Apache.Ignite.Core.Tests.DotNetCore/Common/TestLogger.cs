@@ -53,7 +53,11 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
                 var text = args != null
                     ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
                     : message;
-                File.AppendAllText(_file, text);
+
+                using (var writer = File.AppendText(_file))
+                {
+                    writer.WriteLine(text);
+                }
             }
         }
 
