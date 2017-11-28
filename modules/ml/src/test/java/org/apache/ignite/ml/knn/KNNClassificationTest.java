@@ -17,27 +17,17 @@
 
 package org.apache.ignite.ml.knn;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.knn.models.FillMissingValueWith;
 import org.apache.ignite.ml.knn.models.KNNModel;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.exceptions.NoDataException;
-import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
-import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.exceptions.knn.SmallTrainingDatasetSizeException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 
 /** Tests behaviour of KNNClassificationTest. */
 public class KNNClassificationTest extends BaseKNNTest {
-
-    private static final String KNN_IRIS_TXT = "knn/iris.txt";
 
     /** */
     public void testBinaryClassificationTest() {
@@ -133,7 +123,7 @@ public class KNNClassificationTest extends BaseKNNTest {
     /** */
     public void testPredictOnIrisDataset() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset training = loadIrisDataset(KNN_IRIS_TXT, false);
+        LabeledDataset training = loadDatasetFromTxt(KNN_IRIS_TXT, false);
 
         KNNModel knnModel = new KNNModel(7, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new DenseLocalOnHeapVector(new double[] {5.15, 3.55, 1.45, 0.25});
@@ -167,16 +157,11 @@ public class KNNClassificationTest extends BaseKNNTest {
 
     }
 
-    // TODO: to labeled dataset
-    public void testDifferentSizesMatrixAndVector() {
-
-    }
-
     // TODO: good idea for example http://www.rpubs.com/Drmadhu/IRISclassification
     // with splitting on test and train data
     public void testCalculateAverageErrorOnIrisDatasetWithSimpleStrategy() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset training = loadIrisDataset(KNN_IRIS_TXT, false);
+        LabeledDataset training = loadDatasetFromTxt(KNN_IRIS_TXT, false);
 
         for (int amountOfNeighbours = 1; amountOfNeighbours < 20; amountOfNeighbours += 2) {
             System.out.println("Model initialized with k = " + amountOfNeighbours);

@@ -36,7 +36,10 @@ public class BaseKNNTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 4;
 
     /** Separator */
-    private static final String SEPARATOR = "\t";
+    protected static final String SEPARATOR = "\t";
+
+    /** Path to the Iris dataset */
+    protected static final String KNN_IRIS_TXT = "knn/iris.txt";
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -68,10 +71,11 @@ public class BaseKNNTest extends GridCommonAbstractTest {
 
     /**
      * Loads labeled dataset from file with .txt extension
-     * @return null if path is incorrect
+     *
      * @param resourcePath
+     * @return null if path is incorrect
      */
-    protected LabeledDataset loadIrisDataset(String resourcePath, boolean isFallOnBadData) {
+    protected LabeledDataset loadDatasetFromTxt(String resourcePath, boolean isFallOnBadData) {
         try {
             Path path = Paths.get(this.getClass().getClassLoader().getResource(resourcePath).toURI());
             try {

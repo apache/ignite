@@ -16,16 +16,18 @@
  */
 package org.apache.ignite.ml.knn.regression;
 
+import org.apache.ignite.ml.knn.models.KNNModel;
 import org.apache.ignite.ml.knn.models.KNNModelForMatrix;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.TypedLabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 
-public class KNNMultipleLinearRegression extends KNNModelForMatrix {
+public class KNNMultipleLinearRegression extends KNNModel {
 
     /**
      * @param k               amount of nearest neighbors
@@ -33,7 +35,7 @@ public class KNNMultipleLinearRegression extends KNNModelForMatrix {
      * @param strategy
      * @param training
      */
-    public KNNMultipleLinearRegression(int k, DistanceMeasure distanceMeasure, KNNStrategy strategy, TypedLabeledDataset<Matrix, Vector> training) {
+    public KNNMultipleLinearRegression(int k, DistanceMeasure distanceMeasure, KNNStrategy strategy, LabeledDataset training) {
         super(k, distanceMeasure, strategy, training);
     }
 

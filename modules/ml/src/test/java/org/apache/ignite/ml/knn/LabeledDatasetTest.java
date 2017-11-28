@@ -40,7 +40,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
     /** */
     public void testLoadingCorrectTxtFile() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset training = loadIrisDataset(KNN_IRIS_TXT, false);
+        LabeledDataset training = loadDatasetFromTxt(KNN_IRIS_TXT, false);
         assertEquals(training.rowSize(), 150);
     }
 
@@ -49,7 +49,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         try {
-            LabeledDataset training = loadIrisDataset(EMPTY_TXT, false);
+            LabeledDataset training = loadDatasetFromTxt(EMPTY_TXT, false);
             fail("EmptyFileException");
         }
         catch (EmptyFileException e) {
@@ -63,7 +63,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         try {
-            LabeledDataset training = loadIrisDataset(NO_DATA_TXT, false);
+            LabeledDataset training = loadDatasetFromTxt(NO_DATA_TXT, false);
             fail("NoDataException");
         }
         catch (NoDataException e) {
@@ -76,7 +76,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
     public void testLoadingFileWithIncorrectData() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        LabeledDataset training = loadIrisDataset(IRIS_INCORRECT_TXT, false);
+        LabeledDataset training = loadDatasetFromTxt(IRIS_INCORRECT_TXT, false);
         assertEquals(149, training.rowSize());
     }
 
@@ -85,7 +85,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         try {
-            LabeledDataset training = loadIrisDataset(IRIS_INCORRECT_TXT, true);
+            LabeledDataset training = loadDatasetFromTxt(IRIS_INCORRECT_TXT, true);
             fail("FileParsingException");
         }
         catch (FileParsingException e) {
