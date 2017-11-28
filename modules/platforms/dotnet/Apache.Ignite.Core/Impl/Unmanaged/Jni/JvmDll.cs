@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
@@ -99,10 +98,22 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private unsafe JvmDll(IntPtr ptr)
         {
-            Debug.Assert(ptr != IntPtr.Zero);
-
             if (Os.IsMacOs)
             {
+                if (ptr == IntPtr.Zero)
+                {
+                    // Retrieve already loaded dll by name.
+                    // This happens in default AppDomain when Ignite starts in another domain.
+                    var res = DllLoader.Load(FileJvmDll);
+                    ptr = res.Key;
+
+                    if (res.Key == IntPtr.Zero)
+                    {
+                        throw new IgniteException(
+                            string.Format("{0} has not been loaded: {1}", FileJvmDll, res.Value));
+                    }
+                }
+
                 // dlopen + DllImport combo does not work on macOs, so we have to call dlsym manually.
                 var createJvmPtr = DllLoader.NativeMethodsMacOs.dlsym(ptr, "JNI_CreateJavaVM");
                 _createJvm = (CreateJvmDel) Marshal.GetDelegateForFunctionPointer(createJvmPtr, typeof(CreateJvmDel));
@@ -128,24 +139,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         public static JvmDll Instance
         {
-            get
-            {
-                if (_instance == null)
-                {
-                    // Retrieve already loaded dll by name.
-                    // This happens in defalt AppDomain when Ignite starts in another domain.
-                    var res = DllLoader.Load(FileJvmDll);
-
-                    if (res.Key == IntPtr.Zero)
-                    {
-                        throw new IgniteException(FileJvmDll + " has not been loaded.");
-                    }
-
-                    _instance = new JvmDll(res.Key);
-                }
-
-                return _instance;
-            }
+            get { return _instance ?? (_instance = new JvmDll(IntPtr.Zero)); }
         }
 
         /// <summary>
