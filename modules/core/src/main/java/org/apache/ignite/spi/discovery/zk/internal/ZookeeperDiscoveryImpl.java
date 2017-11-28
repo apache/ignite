@@ -461,6 +461,7 @@ public class ZookeeperDiscoveryImpl {
 
             log.info("Node started join [nodeId=" + locNode.id() +
                 ", instanceName=" + locNode.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) +
+                ", joinDataSize=" + joinDataBytes.length +
                 ", nodePath=" + state.locNodeZkPath + ']');
 
             state.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback());
@@ -765,15 +766,21 @@ public class ZookeeperDiscoveryImpl {
 
         evtData.addRemainingAck(joinedNode); // Topology for joined node does not contain joined node.
 
+        byte[] dataForJoinedBytes = marshal(dataForJoined);
+
         long start = System.currentTimeMillis();
 
         state.zkClient.createIfNeeded(zkPaths.joinEventDataPath(evtData.eventId()), joinData, PERSISTENT);
-        state.zkClient.createIfNeeded(zkPaths.joinEventDataPathForJoined(evtData.eventId()), marshal(dataForJoined), PERSISTENT);
+        state.zkClient.createIfNeeded(zkPaths.joinEventDataPathForJoined(evtData.eventId()), dataForJoinedBytes, PERSISTENT);
 
         long time = System.currentTimeMillis() - start;
 
-        if (log.isInfoEnabled())
-            log.info("Generated NODE_JOINED event [evt=" + evtData + ", addDataTime=" + time + ']');
+        if (log.isInfoEnabled()) {
+            log.info("Generated NODE_JOINED event [evt=" + evtData +
+                ", joinedDataSize=" + joinData.length +
+                ", dataForJoinedSize=" + dataForJoinedBytes.length +
+                ", addDataTime=" + time + ']');
+        }
     }
 
     /**
@@ -955,15 +962,28 @@ public class ZookeeperDiscoveryImpl {
 
         assert !state.crd;
 
-        ZkDiscoveryEventsData newEvtsData = unmarshal(data);
+        ZkDiscoveryEventsData newEvts = unmarshal(data);
 
         // Need keep processed custom events since they contains message object.
-        if (state.evtsData != null)
-            newEvtsData.evts.putAll(state.evtsData.evts);
+        if (state.evtsData != null) {
+            for (Map.Entry<Long, ZkDiscoveryEventData> e : state.evtsData.evts.entrySet()) {
+                ZkDiscoveryEventData evtData = e.getValue();
 
-        processNewEvents(newEvtsData);
+                if (evtData.eventType() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+                    ZkDiscoveryCustomEventData evtData0 =
+                        (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
 
-        state.evtsData = newEvtsData;
+                    if (evtData0 != null)
+                        evtData0.msg = ((ZkDiscoveryCustomEventData)evtData).msg;
+                }
+            }
+
+            newEvts.evts.putAll(state.evtsData.evts);
+        }
+
+        processNewEvents(newEvts);
+
+        state.evtsData = newEvts;
     }
 
     /**

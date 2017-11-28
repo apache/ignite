@@ -156,7 +156,7 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_J
  */
 public class IgnitionEx {
     /** */
-    public static volatile boolean TEST_ZK = true;
+    public static volatile boolean TEST_ZK = false;
 
     /** */
     public static TestingCluster zkCluster;
