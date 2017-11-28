@@ -81,7 +81,9 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     Host = "localhost",
                     Port = 2000,
-                    PortRange = 1
+                    PortRange = 1,
+                    SocketSendBufferSize = 100,
+                    SocketReceiveBufferSize = 50
                 }
             };
 
