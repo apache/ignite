@@ -632,8 +632,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         try {
             IgniteEx ctrlGrid = startGrid(0);
 
-            ctrlGrid.active(true);
-
             fork = true;
 
             IgniteEx cacheGrid = startGrid(1);
@@ -681,8 +679,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     public void testRecoveryLargeNoCheckpoint() throws Exception {
         try {
             IgniteEx ctrlGrid = startGrid(0);
-
-            ctrlGrid.active(true);
 
             fork = true;
 
@@ -739,8 +735,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         try {
             IgniteEx ctrlGrid = startGrid(0);
 
-            ctrlGrid.active(true);
-
             fork = true;
 
             IgniteEx cacheGrid = startGrid(1);
@@ -778,8 +772,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     public void testLargeRandomCrash() throws Exception {
         try {
             IgniteEx ctrlGrid = startGrid(0);
-
-            ctrlGrid.active(true);
 
             fork = true;
 

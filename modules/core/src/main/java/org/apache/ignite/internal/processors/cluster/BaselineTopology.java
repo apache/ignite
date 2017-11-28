@@ -325,8 +325,12 @@ public class BaselineTopology implements Serializable {
     private long calculateTopologyHash(Collection<BaselineNode> nodes) {
         long res = 0;
 
-        for (BaselineNode node : nodes)
-            res += (long)node.consistentId().hashCode();
+        Set<Object> bltConsIds = nodeMap.keySet();
+
+        for (BaselineNode node : nodes) {
+            if (bltConsIds.contains(node.consistentId()))
+                res += (long) node.consistentId().hashCode();
+        }
 
         return res;
     }

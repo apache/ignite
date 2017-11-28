@@ -506,6 +506,32 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     }
 
     /**
+     * Verifies that when new node joins already active cluster and new activation request is issued,
+     * no changes to BaselineTopology branching history happen.
+     */
+    public void testActivationHashIsNotUpdatedOnMultipleActivationRequests() throws Exception {
+        final long expectedActivationHash = (long)"A".hashCode();
+
+        BaselineTopologyVerifier verifier = new BaselineTopologyVerifier() {
+            @Override public void verify(BaselineTopology blt) {
+                long activationHash = U.field(blt, "branchingPntHash");
+
+                assertEquals(expectedActivationHash, activationHash);
+            }
+        };
+
+        Ignite nodeA = startGridWithConsistentId("A");
+
+        nodeA.active(true);
+
+        Ignite nodeB = startGridWithConsistentId("B");
+
+        nodeA.active(true);
+
+        verifyBaselineTopologyOnNodes(verifier, new Ignite[] {nodeA, nodeB});
+    }
+
+    /**
      * Verifies that grid is autoactivated when full BaselineTopology is preset even on one node
      * and then all other nodes from BaselineTopology are started.
      */
