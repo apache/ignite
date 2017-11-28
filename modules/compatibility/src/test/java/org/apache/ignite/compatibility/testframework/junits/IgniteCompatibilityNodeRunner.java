@@ -22,6 +22,8 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -64,43 +66,57 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
      * @throws Exception In case of an error.
      */
     public static void main(String[] args) throws Exception {
-        X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
+        try {
+            X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
 
-        X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
+            X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
-        if (args.length < 3) {
-            throw new IllegalArgumentException("At least four arguments expected:" +
-                " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [optional/path/to/closure/file]");
+            if (args.length < 3) {
+                throw new IllegalArgumentException("At least four arguments expected:" +
+                    " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [optional/path/to/closure/file]");
+            }
+
+            IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
+
+            IgniteInClosure<IgniteConfiguration> cfgClo = readClosureFromFileAndDelete(args[0]);
+
+            cfgClo.apply(cfg);
+
+            final UUID nodeId = UUID.fromString(args[2]);
+            final UUID syncNodeId = UUID.fromString(args[3]);
+
+            // Ignite instance name and id must be set according to arguments
+            // it's used for nodes managing: start, stop etc.
+            cfg.setIgniteInstanceName(args[1]);
+            cfg.setNodeId(nodeId);
+
+            final Ignite ignite = Ignition.start(cfg);
+
+            assert ignite.cluster().node(syncNodeId) != null : "Node has not joined [id=" + nodeId + "]";
+
+            // It needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
+            GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
+
+            if (args.length == 5) {
+                IgniteInClosure<Ignite> clo = readClosureFromFileAndDelete(args[4]);
+
+                clo.apply(ignite);
+            }
+
+            X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE + nodeId);
         }
+        catch (Throwable e) {
+            X.println("Dumping classpath, error occurred: " + e);
+            final ClassLoader clsLdr = IgniteCompatibilityNodeRunner.class.getClassLoader();
+            if (clsLdr instanceof URLClassLoader) {
+                URLClassLoader ldr = (URLClassLoader)clsLdr;
 
-        IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
-
-        IgniteInClosure<IgniteConfiguration> cfgClo = readClosureFromFileAndDelete(args[0]);
-
-        cfgClo.apply(cfg);
-
-        final UUID nodeId = UUID.fromString(args[2]);
-        final UUID syncNodeId = UUID.fromString(args[3]);
-
-        // Ignite instance name and id must be set according to arguments
-        // it's used for nodes managing: start, stop etc.
-        cfg.setIgniteInstanceName(args[1]);
-        cfg.setNodeId(nodeId);
-
-        final Ignite ignite = Ignition.start(cfg);
-
-        assert ignite.cluster().node(syncNodeId) != null : "Node has not joined [id=" + nodeId + "]";
-
-        // It needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
-        GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
-
-        if (args.length == 5) {
-            IgniteInClosure<Ignite> clo = readClosureFromFileAndDelete(args[4]);
-
-            clo.apply(ignite);
+                for (URL url : ldr.getURLs()) {
+                    X.println("Classpath url: [" + url.getPath() + "]");
+                }
+            }
+            throw e;
         }
-
-        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE + nodeId);
     }
 
     /**
