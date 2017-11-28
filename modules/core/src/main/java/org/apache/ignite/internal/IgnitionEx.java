@@ -156,13 +156,16 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_J
  */
 public class IgnitionEx {
     /** */
-    public static volatile boolean TEST_ZK = false;
+    // TODO ZK
+    public static volatile boolean TEST_ZK = IgniteSystemProperties.getBoolean("TEST_ZK", false);
 
     /** */
     public static TestingCluster zkCluster;
 
-    static {
-        if (TEST_ZK) {
+    synchronized static void startZk() {
+        if (TEST_ZK && zkCluster == null) {
+            System.out.println("Start ZK cluster for tests");
+
             zkCluster = createTestingCluster(1);
 
             try {
@@ -2280,6 +2283,8 @@ public class IgnitionEx {
             initializeDataStorageConfiguration(myCfg);
 
             if (TEST_ZK) {
+                startZk();
+
                 ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
 
                 zkSpi.setZkConnectionString(zkCluster.getConnectString());

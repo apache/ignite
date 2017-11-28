@@ -99,13 +99,6 @@ public final class MarshallerMappingTransport {
     public GridFutureAdapter<MappingExchangeResult> proposeMapping(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) throws IgniteCheckedException {
         GridFutureAdapter<MappingExchangeResult> fut = new MappingExchangeResultFuture(item);
 
-        // TODO ZK
-        if (true) {
-            fut.onDone(MappingExchangeResult.createExchangeDisabledResult());
-
-            return fut;
-        }
-
         GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, fut);
 
         if (oldFut != null)

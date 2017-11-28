@@ -35,6 +35,9 @@ public class ZkTestClientCnxnSocketNIO extends ClientCnxnSocketNIO {
     public static final IgniteLogger log = new JavaLogger().getLogger(ZkTestClientCnxnSocketNIO.class);
 
     /** */
+    public static volatile boolean DEBUG = false;
+
+    /** */
     public volatile CountDownLatch blockConnectLatch;
 
     /** */
@@ -76,14 +79,16 @@ public class ZkTestClientCnxnSocketNIO extends ClientCnxnSocketNIO {
 
         nodeName = threadName.substring(threadName.indexOf('-') + 1);
 
-        log.info("ZkTestClientCnxnSocketNIO created for node: " + nodeName);
+        if (DEBUG)
+            log.info("ZkTestClientCnxnSocketNIO created for node: " + nodeName);
     }
 
     /** {@inheritDoc} */
     @Override void connect(InetSocketAddress addr) throws IOException {
         CountDownLatch blockConnect = this.blockConnectLatch;
 
-        log.info("ZkTestClientCnxnSocketNIO connect [node=" + nodeName + ", addr=" + addr + ']');
+        if (DEBUG)
+            log.info("ZkTestClientCnxnSocketNIO connect [node=" + nodeName + ", addr=" + addr + ']');
 
         if (blockConnect != null && blockConnect.getCount() > 0) {
             try {

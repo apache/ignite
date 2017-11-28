@@ -222,7 +222,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
 
 
-            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, -1));
+            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, 1000, -1));
         }
 
         return new TestingCluster(specs);
@@ -628,7 +628,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
         }
 
-        waitNoAliveZkNodes(failedZkNodes);
+        waitNoAliveZkNodes(log, zkCluster.getConnectString(), failedZkNodes, 10_000);
 
         c0.allowConnect();
 
@@ -655,8 +655,12 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         return path.substring(path.lastIndexOf('/') + 1);
     }
 
-    private static void waitNoAliveZkNodes(final List<String> failedZkNodes) throws Exception {
-        final ZookeeperClient zkClient = new ZookeeperClient(new JavaLogger(), zkCluster.getConnectString(), 10_000, null);
+    private static void waitNoAliveZkNodes(final IgniteLogger log,
+        String connectString, final List<String> failedZkNodes,
+        long timeout)
+        throws Exception
+    {
+        final ZookeeperClient zkClient = new ZookeeperClient(log, connectString, 10_000, null);
 
         try {
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -665,8 +669,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                         List<String> c = zkClient.getChildren(IGNITE_ZK_ROOT + "/alive");
 
                         for (String failedZkNode : failedZkNodes) {
-                            if (c.contains(failedZkNode))
+                            if (c.contains(failedZkNode)) {
+                                log.info("Alive node is not removed [node=" + failedZkNode + ", all=" + c + ']');
+
                                 return false;
+                            }
                         }
 
                         return true;
@@ -677,7 +684,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                         return true;
                     }
                 }
-            }, 10_000));
+            }, timeout));
         }
         finally {
             zkClient.close();
@@ -1104,16 +1111,39 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         startGrid(0);
 
         sesTimeout = 2000;
-        testSockNio = true;
         client = true;
+        testSockNio = true;
 
         Ignite client = startGrid(1);
 
         client.cache(DEFAULT_CACHE_NAME).put(1, 1);
 
-        reconnectClientNodes(log, Collections.singletonList(client), null);
+        reconnectClientNodes(log, Collections.singletonList(client), null, true);
 
         assertEquals(1, client.cache(DEFAULT_CACHE_NAME).get(1));
+
+        client.compute().broadcast(new DummyCallable(null));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectSessionExpire2() throws Exception {
+        sesTimeout = 2000;
+        client = true;
+        testSockNio = true;
+
+        Ignite client0 = startGrid(0);
+
+        reconnectClientNodes(log, Collections.singletonList(client0), null, true);
+
+        client = false;
+
+        client0.configuration().getMarshaller().marshal(new DummyCallable(null));
+
+        startGrid(1);
+
+        client0.compute().broadcast(new DummyCallable(null));
     }
 
     /**
@@ -1444,11 +1474,19 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }, 10000));
     }
 
+    private static void closeZkClient(Ignite node) {
+        DiscoverySpi spi = node.configuration().getDiscoverySpi();
+
+        assertTrue(spi.getClass().getName(), spi instanceof ZookeeperDiscoverySpi);
+
+        closeZkClient((ZookeeperDiscoverySpi)spi);
+    }
+
     /**
      * @param spi Spi instance.
      */
-    private void closeZkClient(ZookeeperDiscoverySpi spi) {
-        ZooKeeper zk = GridTestUtils.getFieldValue(spi, "impl", "zkClient", "zk");
+    private static void closeZkClient(ZookeeperDiscoverySpi spi) {
+        ZooKeeper zk = GridTestUtils.getFieldValue(spi, "impl", "state", "zkClient", "zk");
 
         try {
             zk.close();
@@ -1485,7 +1523,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, 5000));
+        }, 15_000));
     }
     /**
      * Reconnect client node.
@@ -1495,9 +1533,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @param disconnectedC Closure which will be run when client node disconnected.
      * @throws Exception If failed.
      */
-    static void reconnectClientNodes(final IgniteLogger log,
+    public static void reconnectClientNodes(final IgniteLogger log,
         List<Ignite> clients,
-        @Nullable Runnable disconnectedC)
+        @Nullable Runnable disconnectedC,
+        boolean closeSock)
         throws Exception {
         final CountDownLatch disconnectLatch = new CountDownLatch(clients.size());
         final CountDownLatch reconnectLatch = new CountDownLatch(clients.size());
@@ -1527,13 +1566,31 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             zkNodes.add(aliveZkNodePath(client));
         }
 
-        for (Ignite client : clients)
-            ZkTestClientCnxnSocketNIO.forNode(client.name()).closeSocket(true);
+        long timeout = 10_000;
 
-        waitNoAliveZkNodes(zkNodes);
+        if (closeSock) {
+            for (Ignite client : clients) {
+                ZookeeperDiscoverySpi spi = (ZookeeperDiscoverySpi)client.configuration().getDiscoverySpi();
 
-        for (Ignite client : clients)
-            ZkTestClientCnxnSocketNIO.forNode(client.name()).allowConnect();
+                ZkTestClientCnxnSocketNIO.forNode(client.name()).closeSocket(true);
+
+                timeout = Math.max(timeout, (long)(spi.getSessionTimeout() * 1.5f));
+            }
+        }
+        else {
+            for (Ignite client : clients)
+                closeZkClient(client);
+        }
+
+        waitNoAliveZkNodes(log,
+            ((ZookeeperDiscoverySpi)clients.get(0).configuration().getDiscoverySpi()).getZkConnectionString(),
+            zkNodes,
+            timeout);
+
+        if (closeSock) {
+            for (Ignite client : clients)
+                ZkTestClientCnxnSocketNIO.forNode(client.name()).allowConnect();
+        }
 
         waitReconnectEvent(log, disconnectLatch);
 

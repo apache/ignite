@@ -53,6 +53,27 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testClose() throws Exception {
+        startZK(1);
+
+        final ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, null);
+
+        client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
+
+        client.zk().close();
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                client.createIfNeeded("/apacheIgnite2", null, CreateMode.PERSISTENT);
+
+                return null;
+            }
+        }, ZookeeperClientFailedException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCreateAll() throws Exception {
         startZK(1);
 

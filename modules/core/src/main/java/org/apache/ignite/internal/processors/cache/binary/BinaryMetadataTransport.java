@@ -69,9 +69,6 @@ final class BinaryMetadataTransport {
     private final IgniteLogger log;
 
     /** */
-    private final UUID locNodeId;
-
-    /** */
     private final boolean clientNode;
 
     /** */
@@ -116,8 +113,6 @@ final class BinaryMetadataTransport {
         this.log = log;
 
         discoMgr = ctx.discovery();
-
-        locNodeId = ctx.localNodeId();
 
         clientNode = ctx.clientNode();
 
@@ -170,7 +165,7 @@ final class BinaryMetadataTransport {
             unlabeledFutures.add(resFut);
 
             if (!stopping)
-                discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, locNodeId));
+                discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, ctx.localNodeId()));
             else
                 resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
         }
@@ -299,7 +294,7 @@ final class BinaryMetadataTransport {
                 acceptedVer = msg.acceptedVersion();
             }
 
-            if (locNodeId.equals(msg.origNodeId())) {
+            if (ctx.localNodeId().equals(msg.origNodeId())) {
                 MetadataUpdateResultFuture fut = unlabeledFutures.poll();
 
                 if (msg.rejected())

@@ -467,13 +467,13 @@ public class ZookeeperDiscoveryImpl {
             state.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback());
 
             state.zkClient.getDataAsync(zkPaths.evtsPath, watcher, dataCallback);
-
-            connStartLatch.countDown();
         }
         catch (ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
         }
         finally {
+            connStartLatch.countDown();
+
             busyLock.leaveBusy();
         }
     }

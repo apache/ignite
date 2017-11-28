@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
-import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -97,7 +96,7 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiBasicTest;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -112,6 +111,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
+import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -122,6 +122,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIEN
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
+import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
 /**
  * Common abstract test for Ignite tests.
@@ -193,6 +194,10 @@ public abstract class GridAbstractTest extends TestCase {
      *
      */
     static {
+        // TODO ZK
+        System.setProperty("TEST_ZK", "true");
+        System.setProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET, ZkTestClientCnxnSocketNIO.class.getName());
+
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
         System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
@@ -2163,6 +2168,36 @@ public abstract class GridAbstractTest extends TestCase {
         fail("Failed to find group for cache: " + cacheName);
 
         return 0;
+    }
+
+    /**
+     * @return {@code True} if nodes use {@link TcpDiscoverySpi}.
+     */
+    protected static boolean tcpDiscovery() {
+        List<Ignite> nodes = G.allGrids();
+
+        assertFalse("There are no nodes", nodes.isEmpty());
+
+        return nodes.get(0).configuration().getDiscoverySpi() instanceof TcpDiscoverySpi;
+    }
+
+    /** */
+    private static final String ZK_DISCOVERY = "org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi";
+
+    /**
+     * @param log Log.
+     * @param client Node to reconnect.
+     * @throws Exception If failed.
+     */
+    protected static void reconnectClient(IgniteLogger log, Ignite client) throws Exception {
+        List<Ignite> nodes = G.allGrids();
+
+        assertFalse("There are no nodes", nodes.isEmpty());
+
+        if (nodes.get(0).configuration().getDiscoverySpi().getClass().getName().equals(ZK_DISCOVERY))
+            ZookeeperDiscoverySpiBasicTest.reconnectClientNodes(log, Collections.singletonList(client), null, true);
+        else
+            fail("Reconnect is not supported");
     }
 
     /**

@@ -91,8 +91,12 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
             }
         }, EventType.EVT_CLIENT_NODE_RECONNECTED);
 
-        stopGrid(SRV_IDX);
-        startGrid(SRV_IDX);
+        if (tcpDiscovery()) {
+            stopGrid(SRV_IDX);
+            startGrid(SRV_IDX);
+        }
+        else
+            reconnectClient(log, cli);
 
         assert fut.get();
     }
