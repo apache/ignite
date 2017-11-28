@@ -674,14 +674,37 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
      */
     public void testSingleResultUsesFindOne() throws Exception {
         QueryCursor<List<?>> qry =
-            personCache.query(sqlFieldsQuery("select name from Person where _key = 25"));
+            intCache.query(sqlFieldsQuery("select _val from Integer where _key = 25"));
 
         List<List<?>> res = qry.getAll();
 
         assertNotNull(res);
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
-        assertEquals("John White", res.get(0).get(0));
+        assertEquals(25, res.get(0).get(0));
+    }
+
+    public void testIncompatibleTypesInWhereClause_FAILING() throws Exception {
+        try {
+            QueryCursor<List<?>> qry =
+                personCache.query(sqlFieldsQuery("select name from Person where _key = 25"));
+
+            List<List<?>> res = qry.getAll();
+
+        // FIXME: Replace with correct exception handling
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    public void testEmptyResultUsesFindOne() throws Exception {
+        QueryCursor<List<?>> qry =
+            intCache.query(sqlFieldsQuery("select _val from Integer where _key = -10"));
+
+        List<List<?>> res = qry.getAll();
+
+        assertNotNull(res);
+        assertEquals(0, res.size());
     }
 
     /** @throws Exception If failed. */
