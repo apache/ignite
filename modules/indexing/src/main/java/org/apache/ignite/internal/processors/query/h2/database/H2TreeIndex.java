@@ -71,9 +71,6 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
 
-    /** Value comparator for this index */
-    private Comparator<Value> valueComparator;
-
     /**
      * @param cctx Cache context.
      * @param tbl Table.
@@ -106,12 +103,6 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         name = BPlusTree.treeName(name, "H2Tree");
 
-        valueComparator = new Comparator<Value>() {
-            @Override public int compare(Value v1, Value v2) {
-                return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
-            }
-        };
-
         if (cctx.affinityNode()) {
             inlineIdxs = getAvailableInlineColumns(cols);
 
@@ -134,7 +125,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                     inlineIdxs,
                     computeInlineSize(inlineIdxs, inlineSize)) {
                     @Override public int compareValues(Value v1, Value v2) {
-                        return valueComparator.compare(v1, v2);
+                        return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                     }
                 };
             }
@@ -185,7 +176,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            if (indexType.isPrimaryKey() && lower != null && H2Utils.areRowsEqual(lower, upper, valueComparator)) {
+            if (indexType.isPrimaryKey() && lower != null && tree.compareRows(lower, upper) == 0) {
 
                 GridH2Row row = tree.findOne(lower, cacheFilter);
 
