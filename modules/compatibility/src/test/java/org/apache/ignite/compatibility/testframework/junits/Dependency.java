@@ -80,11 +80,11 @@ public class Dependency {
     /**
      * @return path based on local module name to exclude from classpath
      */
-    String localPathTemplate() {
+    public String localPathTemplate() {
         return "modules/" +
             locModuleName +
             "/target/" +
-            (test ? "classes" : "test-classes");
+            (test ? "test-classes" : "classes");
     }
 
     /**
