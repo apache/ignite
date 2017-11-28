@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processors.hadoop.impl.security;
+package org.apache.ignite.internal.processors.hadoop.security;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

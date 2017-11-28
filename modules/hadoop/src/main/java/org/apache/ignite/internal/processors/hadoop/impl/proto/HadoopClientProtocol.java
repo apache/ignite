@@ -59,7 +59,7 @@ import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolKillJobT
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolNextTaskIdTask;
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolSubmitJobTask;
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolTaskArguments;
-import org.apache.ignite.internal.processors.hadoop.impl.security.HadoopCredentials;
+import org.apache.ignite.internal.processors.hadoop.security.HadoopCredentials;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.IOException;

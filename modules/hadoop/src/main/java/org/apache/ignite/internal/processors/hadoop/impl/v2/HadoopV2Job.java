@@ -52,7 +52,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLazyConcurrentMap;
-import org.apache.ignite.internal.processors.hadoop.impl.security.HadoopCredentials;
+import org.apache.ignite.internal.processors.hadoop.security.HadoopCredentials;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1Splitter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
