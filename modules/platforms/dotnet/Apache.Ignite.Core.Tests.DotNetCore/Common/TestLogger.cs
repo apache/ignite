@@ -41,6 +41,12 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         {
             var binDir = Path.GetDirectoryName(GetType().Assembly.Location);
             var file = Path.Combine(binDir, "dotnet-test.log");
+
+            if (File.Exists(file))
+            {
+                File.Delete(file);
+            }
+
             _file = File.AppendText(file);
         }
 
