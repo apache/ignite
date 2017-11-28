@@ -72,36 +72,6 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
      */
     private boolean changed;
 
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        GridCacheLockState state = (GridCacheLockState)o;
-
-        if (cnt != state.cnt)
-            return false;
-        if (threadId != state.threadId)
-            return false;
-        if (failoverSafe != state.failoverSafe)
-            return false;
-        if (fair != state.fair)
-            return false;
-        if (changed != state.changed)
-            return false;
-        if (id != null ? !id.equals(state.id) : state.id != null)
-            return false;
-        if (conditionMap != null ? !conditionMap.equals(state.conditionMap) : state.conditionMap != null)
-            return false;
-        if (signals != null ? !signals.equals(state.signals) : state.signals != null)
-            return false;
-        if (nodes != null ? !nodes.equals(state.nodes) : state.nodes != null)
-            return false;
-
-        return true;
-    }
-
     /**
      * Constructor.
      *
@@ -123,25 +93,13 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
 
         signals = null;
 
-        nodes = new LinkedList<>();
+        nodes = new LinkedList<UUID>();
 
         this.fair = fair;
 
         this.failoverSafe = failoverSafe;
 
         this.gridStartTime = gridStartTime;
-    }
-
-    private GridCacheLockState(GridCacheLockState state) {
-        cnt = state.cnt;
-        threadId = state.threadId;
-        id = state.id;
-        failoverSafe = state.failoverSafe;
-        conditionMap = state.conditionMap;
-        signals = state.signals;
-        fair = state.fair;
-        nodes = new LinkedList<>(state.nodes);
-        changed = state.changed;
     }
 
     /**
@@ -285,11 +243,6 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
         return super.clone();
     }
 
-    /** */
-    public GridCacheLockState fastClone() {
-        return new GridCacheLockState(this);
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(cnt);
@@ -409,7 +362,6 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
         else
             nodes = null;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

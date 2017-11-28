@@ -1719,7 +1719,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If failed.
      * @return Closure return value.
      */
-    private synchronized static <T> T retryTopologySafe(IgniteOutClosureX<T> c) throws IgniteCheckedException {
+    private static <T> T retryTopologySafe(IgniteOutClosureX<T> c) throws IgniteCheckedException {
         for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
             try {
                 return c.applyx();
