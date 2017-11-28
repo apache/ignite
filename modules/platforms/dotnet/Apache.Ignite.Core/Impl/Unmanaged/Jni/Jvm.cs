@@ -126,11 +126,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the JVM.
         /// </summary>
-        public static Jvm Get()
+        public static Jvm Get(bool ignoreMissing = false)
         {
             var res = _instance;
 
-            if (res == null)
+            if (res == null && !ignoreMissing)
             {
                 throw new IgniteException("JVM has not been created.");
             }
