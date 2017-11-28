@@ -322,7 +322,7 @@ public class HadoopV2Job extends HadoopJobEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException {
+    @Override public void initialize(final boolean external, final UUID locNodeId) throws IgniteCheckedException {
         assert locNodeId != null;
 
         this.locNodeId = locNodeId;
