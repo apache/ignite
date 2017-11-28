@@ -78,13 +78,6 @@ namespace Apache.Ignite.Core.Tests.Log
             {
                 Assert.IsTrue(TestLogger.Entries.Any(x => x.Level == level), "No messages with level " + level);
             }
-
-            // Check IgniteHome and classpath messages.
-            Assert.IsTrue(TestLogger.Entries.Any(x => x.Level == LogLevel.Debug &&
-                                                      x.Message == "Classpath resolved to: {0}"));
-            
-            Assert.IsTrue(TestLogger.Entries.Any(x => x.Level == LogLevel.Debug &&
-                                                      x.Message == "IGNITE_HOME resolved to: {0}"));
         }
 
         /// <summary>

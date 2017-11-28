@@ -470,7 +470,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
                 final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
                 try {
-                    dynamicIndexCreate(node1, CACHE_NAME, TBL_NAME, idx, false);
+                    dynamicIndexCreate(node1, CACHE_NAME, TBL_NAME, idx, false, 0);
                 }
                 catch (Exception e) {
                     throw new IgniteException(e);
