@@ -1757,6 +1757,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
          * @throws IgniteCheckedException If failed.
          */
         T2<T, AtomicDataStructureValue> get(GridCacheInternalKey key,
-            @Nullable AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException;
+            @Nullable AtomicDataStructureValue val,
+            IgniteInternalCache cache) throws IgniteCheckedException;
     }
 }
