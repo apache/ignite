@@ -31,8 +31,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -81,7 +81,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private final PageHandler<CacheDataRow, Boolean> updateRow = new UpdateRowHandler();
 
     /** */
-    private final MemoryMetricsImpl memMetrics;
+    private final DataRegionMetricsImpl memMetrics;
 
     /** */
     private final PageEvictionTracker evictionTracker;
@@ -191,7 +191,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             CacheDataRow row,
             int rowSize
         ) throws IgniteCheckedException {
-            io.addRow(pageAddr, row, rowSize, pageSize());
+            io.addRow(pageId, pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
                 // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
@@ -256,12 +256,20 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
 
     /** */
-    private final PageHandler<Void, Long> rmvRow = new RemoveRowHandler();
+    private final PageHandler<Void, Long> rmvRow;
 
     /**
      *
      */
     private final class RemoveRowHandler extends PageHandler<Void, Long> {
+        /** Indicates whether partition ID should be masked from page ID. */
+        private final boolean maskPartId;
+
+        /** */
+        RemoveRowHandler(boolean maskPartId) {
+            this.maskPartId = maskPartId;
+        }
+
         @Override public Long run(
             int cacheId,
             long pageId,
@@ -293,6 +301,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
+                        pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
                         if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
                             put(null, pageId, page, pageAddr, newBucket);
                     }
@@ -313,7 +322,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @param cacheId Cache ID.
      * @param name Name (for debug purpose).
      * @param memMetrics Memory metrics.
-     * @param memPlc Memory policy.
+     * @param memPlc Data region.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
@@ -323,13 +332,16 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     public FreeListImpl(
         int cacheId,
         String name,
-        MemoryMetricsImpl memMetrics,
-        MemoryPolicy memPlc,
+        DataRegionMetricsImpl memMetrics,
+        DataRegion memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew) throws IgniteCheckedException {
         super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+
+        rmvRow = new RemoveRowHandler(cacheId == 0);
+
         this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
@@ -492,6 +504,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             if (allocated)
                 pageId = allocateDataPage(row.partition());
+            else
+                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
             DataPageIO init = reuseBucket || allocated ? DataPageIO.VERSIONS.latest() : null;
 

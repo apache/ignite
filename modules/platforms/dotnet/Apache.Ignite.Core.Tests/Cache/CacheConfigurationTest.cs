@@ -71,6 +71,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 IgniteInstanceName = CacheName,
                 BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
+#pragma warning disable 618
                 MemoryConfiguration = new MemoryConfiguration
                 {
                     MemoryPolicies = new[]
@@ -80,9 +81,17 @@ namespace Apache.Ignite.Core.Tests.Cache
                             Name = "myMemPolicy",
                             InitialSize = 77 * 1024 * 1024,
                             MaxSize = 99 * 1024 * 1024
+                        },
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = MemoryConfiguration.DefaultDefaultMemoryPolicyName,
+                            InitialSize = 55 * 1024 * 1024,
+                            MaxSize = 88 * 1024 * 1024
                         }
                     }
                 },
+#pragma warning restore 618
+                DataStorageConfiguration = null,
                 SpringConfigUrl = "Config\\cache-default.xml"
             };
 
@@ -121,8 +130,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             var springConfig = _ignite.GetCache<int, int>(SpringCacheName).GetConfiguration();
 
             var ignoredProps = new[] {"AffinityFunction"};
-
-            TestUtils.AssertReflectionEqual(springConfig, new CacheConfiguration(SpringCacheName),
+            
+            AssertExtensions.ReflectionEqual(springConfig, new CacheConfiguration(SpringCacheName),
                 ignoredProperties: new HashSet<string>(ignoredProps));
             
             AssertConfigIsDefault(springConfig);
@@ -165,6 +174,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Check put-get
             cache[1] = new Entity { Foo = 1 };
             Assert.AreEqual(1, cache[1].Foo);
+
+            // Check another config
+            cacheName = Guid.NewGuid().ToString();
+            cfg = GetCustomCacheConfiguration2(cacheName);
+
+            cache = _ignite.CreateCache<int, Entity>(cfg);
+            AssertConfigsAreEqual(cfg, cache.GetConfiguration());
         }
 
         /// <summary>
@@ -267,6 +283,14 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultReadThrough, cfg.ReadThrough);
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
             Assert.AreEqual(CacheConfiguration.DefaultKeepBinaryInStore, cfg.KeepBinaryInStore);
+            Assert.AreEqual(CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold, 
+                cfg.StoreConcurrentLoadAllThreshold);
+            Assert.AreEqual(CacheConfiguration.DefaultRebalanceOrder, cfg.RebalanceOrder);
+            Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchesPrefetchCount, cfg.RebalanceBatchesPrefetchCount);
+            Assert.AreEqual(CacheConfiguration.DefaultMaxQueryIteratorsCount, cfg.MaxQueryIteratorsCount);
+            Assert.AreEqual(CacheConfiguration.DefaultQueryDetailMetricsSize, cfg.QueryDetailMetricsSize);
+            Assert.IsNull(cfg.SqlSchema);
+            Assert.AreEqual(CacheConfiguration.DefaultQueryParallelism, cfg.QueryParallelism);
         }
 
         /// <summary>
@@ -297,7 +321,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
+#pragma warning disable 618
             Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
+#pragma warning restore 618
             Assert.AreEqual(x.PartitionLossPolicy, y.PartitionLossPolicy);
             Assert.AreEqual(x.WriteBehindCoalescing, y.WriteBehindCoalescing);
             Assert.AreEqual(x.GroupName, y.GroupName);
@@ -325,6 +351,17 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(x.PluginConfigurations.Select(p => p.GetType()),
                     y.PluginConfigurations.Select(p => p.GetType()));
             }
+
+            AssertExtensions.ReflectionEqual(x.KeyConfiguration, y.KeyConfiguration);
+
+            Assert.AreEqual(x.OnheapCacheEnabled, y.OnheapCacheEnabled);
+            Assert.AreEqual(x.StoreConcurrentLoadAllThreshold, y.StoreConcurrentLoadAllThreshold);
+            Assert.AreEqual(x.RebalanceOrder, y.RebalanceOrder);
+            Assert.AreEqual(x.RebalanceBatchesPrefetchCount, y.RebalanceBatchesPrefetchCount);
+            Assert.AreEqual(x.MaxQueryIteratorsCount, y.MaxQueryIteratorsCount);
+            Assert.AreEqual(x.QueryDetailMetricsSize, y.QueryDetailMetricsSize);
+            Assert.AreEqual(x.QueryParallelism, y.QueryParallelism);
+            Assert.AreEqual(x.SqlSchema, y.SqlSchema);
         }
 
         /// <summary>
@@ -541,7 +578,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Gets the custom cache configuration.
         /// </summary>
-        private static CacheConfiguration GetCustomCacheConfiguration(string name = null)
+        public static CacheConfiguration GetCustomCacheConfiguration(string name = null)
         {
             return new CacheConfiguration
             {
@@ -626,10 +663,28 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 ExpiryPolicyFactory = new ExpiryFactory(),
                 EnableStatistics = true,
+#pragma warning disable 618
                 MemoryPolicyName = "myMemPolicy",
+#pragma warning restore 618
                 PartitionLossPolicy = PartitionLossPolicy.ReadOnlySafe,
                 PluginConfigurations = new[] { new MyPluginConfiguration() },
-                SqlIndexMaxInlineSize = 10000
+                SqlIndexMaxInlineSize = 10000,
+                KeyConfiguration = new[]
+                {
+                    new CacheKeyConfiguration
+                    {
+                        TypeName = "foobar",
+                        AffinityKeyFieldName = "barbaz"
+                    }
+                },
+                OnheapCacheEnabled = true,
+                StoreConcurrentLoadAllThreshold = 7,
+                RebalanceOrder = 3,
+                RebalanceBatchesPrefetchCount = 4,
+                MaxQueryIteratorsCount = 512,
+                QueryDetailMetricsSize = 100,
+                QueryParallelism = 16,
+                SqlSchema = "foo" + name
             };
         }
         /// <summary>
@@ -709,7 +764,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     MaxSize = 26,
                     MaxMemorySize = 2501,
                     BatchSize = 33
-                },
+                }, 
+                OnheapCacheEnabled = true,  // Required with eviction policy
                 AffinityFunction = new RendezvousAffinityFunction
                 {
                     Partitions = 113,

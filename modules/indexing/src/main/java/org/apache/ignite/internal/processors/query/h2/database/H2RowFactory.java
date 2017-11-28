@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -64,16 +63,13 @@ public class H2RowFactory {
         GridH2Row row;
 
         try {
-            row = rowDesc.createRow(rowBuilder.key(),
-                PageIdUtils.partId(link), rowBuilder.value(), rowBuilder.version(), rowBuilder.expireTime());
-
-            row.link = link;
+            row = rowDesc.createRow(rowBuilder);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
 
-        assert row.ver != null;
+        assert row.version() != null;
 
         return row;
     }

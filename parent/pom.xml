@@ -460,6 +460,10 @@
                                 <title>Ignite Development Utils</title>
                                 <packages>org.apache.ignite.development.utils*</packages>
                             </group>
+                            <group>
+                                <title>Ignite ML</title>
+                                <packages>org.apache.ignite.ml*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[

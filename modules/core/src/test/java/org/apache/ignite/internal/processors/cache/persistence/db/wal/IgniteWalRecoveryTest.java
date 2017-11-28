@@ -48,10 +48,9 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -114,7 +113,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private int walSegmentSize;
 
-    /** Logger only. */
+    /** Log only. */
     private boolean logOnly;
 
     /** {@inheritDoc} */
@@ -136,34 +135,30 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
         dbCfg.setPageSize(4 * 1024);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg.setMaxSize(1024 * 1024 * 1024);
+        memPlcCfg.setPersistenceEnabled(true);
 
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        dbCfg.setDefaultDataRegionConfiguration(memPlcCfg);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        dbCfg.setWalRecordIteratorBufferSize(1024 * 1024);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
-
-        pCfg.setWalRecordIteratorBufferSize(1024 * 1024);
-
-        pCfg.setWalHistorySize(2);
+        dbCfg.setWalHistorySize(2);
 
         if (logOnly)
-            pCfg.setWalMode(WALMode.LOG_ONLY);
+            dbCfg.setWalMode(WALMode.LOG_ONLY);
 
         if (walSegmentSize != 0)
-            pCfg.setWalSegmentSize(walSegmentSize);
+            dbCfg.setWalSegmentSize(walSegmentSize);
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         cfg.setMarshaller(null);
 
@@ -976,7 +971,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                         delta.applyDelta(sharedCtx
                                 .database()
-                                .memoryPolicy(null)
+                                .dataRegion(null)
                                 .pageMemory(),
 
                                 ((DirectBuffer)buf1).address());
@@ -990,7 +985,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             info("Done apply...");
 
-            PageMemoryEx pageMem = (PageMemoryEx)db.memoryPolicy(null).pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx)db.dataRegion(null).pageMemory();
 
             for (Map.Entry<FullPageId, byte[]> entry : rolledPages.entrySet()) {
                 FullPageId fullId = entry.getKey();

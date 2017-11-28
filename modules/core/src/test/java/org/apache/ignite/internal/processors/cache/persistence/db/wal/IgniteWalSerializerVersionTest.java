@@ -22,8 +22,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -33,7 +34,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.RecordSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV2Serializer;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
@@ -63,7 +64,10 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(true)
+                .setMaxSize(100 * 1024 * 1024)));
 
         return cfg;
     }
@@ -72,6 +76,8 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCheckDifferentSerializerVersions() throws Exception {
+        System.setProperty(IGNITE_WAL_SERIALIZER_VERSION, "1");
+
         IgniteEx ig0 = (IgniteEx)startGrid();
 
         IgniteWriteAheadLogManager wal0 = ig0.context().cache().context().wal();
@@ -296,6 +302,11 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         deleteWorkFiles();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
     }
 
     /**

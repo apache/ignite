@@ -18,7 +18,7 @@
 package org.apache.ignite.visor.commands.top
 
 import org.apache.ignite.Ignition
-import org.apache.ignite.configuration.{IgniteConfiguration, MemoryConfiguration, PersistentStoreConfiguration}
+import org.apache.ignite.configuration._
 import org.apache.ignite.visor.commands.top.VisorTopologyCommand._
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 import VisorRuntimeBaseSpec._
@@ -30,11 +30,14 @@ class VisorActivationCommandSpec extends VisorRuntimeBaseSpec(2) {
     override protected def config(name: String): IgniteConfiguration = {
         val cfg = super.config(name)
 
-        val memCfg = new MemoryConfiguration
-        memCfg.setDefaultMemoryPolicySize(10 * 1024 * 1024)
+        val dfltReg = new DataRegionConfiguration
+        val dataRegCfg = new DataStorageConfiguration
 
-        cfg.setMemoryConfiguration(memCfg)
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration)
+        dfltReg.setMaxSize(10 * 1024 * 1024)
+        dfltReg.setPersistenceEnabled(true)
+        dataRegCfg.setDefaultDataRegionConfiguration(dfltReg)
+
+        cfg.setDataStorageConfiguration(dataRegCfg)
 
         cfg
     }

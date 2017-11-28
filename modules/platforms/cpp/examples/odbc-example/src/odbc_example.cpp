@@ -169,7 +169,7 @@ void GetDataWithOdbc(SQLHDBC dbc, const std::string& query)
 
 /**
  * Populate Person cache with sample data.
- * 
+ *
  * @param dbc Database connection.
  */
 void PopulatePerson(SQLHDBC dbc)
@@ -387,7 +387,7 @@ void PopulatePerson(SQLHDBC dbc)
 
 /**
  * Populate Organization cache with sample data.
- * 
+ *
  * @param dbc Database connection.
  */
 void PopulateOrganization(SQLHDBC dbc)
@@ -525,7 +525,7 @@ void DeletePerson(SQLHDBC dbc, int64_t key)
 
 /**
  * Query tables.
- * 
+ *
  * @param dbc Database connection.
  */
 void QueryData(SQLHDBC dbc)
@@ -552,7 +552,7 @@ void QueryData(SQLHDBC dbc)
  *
  * @return Exit code.
  */
-int main() 
+int main()
 {
     IgniteConfiguration cfg;
 

@@ -25,8 +25,9 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
@@ -109,7 +110,11 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
             cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(clientIpFinder));
         }
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(100 * 1024 * 1024)
+                .setPersistenceEnabled(true)));
+
         cfg.setConsistentId(name);
 
         return cfg;

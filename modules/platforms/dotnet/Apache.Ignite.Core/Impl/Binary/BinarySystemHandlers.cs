@@ -110,9 +110,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // 13. Arbitrary dictionary.
             ReadHandlers[BinaryTypeId.Dictionary] = new BinarySystemReader(ReadDictionary);
-            
-            // 14. Enum.
-            ReadHandlers[BinaryTypeId.ArrayEnum] = new BinarySystemReader(ReadEnumArray);
+
+            // 14. Enum. Should be read as Array, see WriteEnumArray implementation.
+            ReadHandlers[BinaryTypeId.ArrayEnum] = new BinarySystemReader(ReadArray);
         }
 
         /// <summary>
@@ -178,6 +178,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (type.IsArray)
             {
+                if (type.GetArrayRank() > 1)
+                {
+                    // int[,]-style arrays are wrapped, see comments in holder.
+                    return new BinarySystemWriteHandler<Array>(
+                        (w, o) => w.WriteObject(new MultidimensionalArrayHolder(o)), true);
+                }
+
                 // We know how to write any array type.
                 Type elemType = type.GetElementType();
                 
@@ -473,16 +480,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.WriteInt(binEnum.EnumValue);
         }
 
-        /**
-         * <summary>Read enum array.</summary>
-         */
-        private static object ReadEnumArray(BinaryReader ctx, Type type)
-        {
-            var elemType = type.GetElementType() ?? typeof(object);
-
-            return BinaryUtils.ReadTypedArray(ctx, true, elemType);
-        }
-
         /// <summary>
         /// Reads the array.
         /// </summary>
@@ -501,11 +498,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     // Infer element type from typeId.
                     var typeId = ctx.ReadInt();
-
-                    if (typeId != BinaryUtils.ObjTypeId)
-                    {
-                        elemType = ctx.Marshaller.GetDescriptor(true, typeId, true).Type;
-                    }
+                    elemType = BinaryUtils.GetArrayElementType(typeId, ctx.Marshaller);
 
                     return BinaryUtils.ReadTypedArray(ctx, false, elemType ?? typeof(object));
                 }

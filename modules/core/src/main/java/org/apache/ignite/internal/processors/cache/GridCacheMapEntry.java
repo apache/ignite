@@ -48,7 +48,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConfl
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -2543,9 +2544,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             boolean update;
 
-            boolean walEnabled = !cctx.isNear() && cctx.shared().wal() != null;
+            boolean walEnabled = !cctx.isNear() && cctx.group().persistenceEnabled();
 
-            if (cctx.shared().database().persistenceEnabled()) {
+            if (cctx.group().persistenceEnabled()) {
                 unswap(false);
 
                 if (!isNew()) {
@@ -3141,16 +3142,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void ensureIndexed() throws GridCacheEntryRemovedException, IgniteCheckedException {
-        synchronized (this) {
-            checkObsolete();
-
-            if (cctx.queries().enabled())
-                cctx.offheap().updateIndexes(cctx, key, localPartition());
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public synchronized CacheObject valueBytes() throws GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -3204,7 +3195,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert cctx.atomic();
 
         try {
-            if (cctx.shared().wal() != null)
+            if (cctx.group().persistenceEnabled())
                 cctx.shared().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
@@ -3300,18 +3291,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
-        GridCacheEntryRemovedException {
+    @Override public void updateIndex(SchemaIndexCacheFilter filter, SchemaIndexCacheVisitorClosure clo)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         synchronized (this) {
             if (isInternal())
                 return;
 
             checkObsolete();
 
-            unswap(false);
+            CacheDataRow row = cctx.offheap().read(this);
 
-            if (val != null)
-                clo.apply(key, partition(), val, ver, expireTimeUnlocked(), link);
+            if (row != null && (filter == null || filter.apply(row)))
+                clo.apply(row);
         }
     }
 
@@ -3326,13 +3317,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Evicts necessary number of data pages if per-page eviction is configured in current {@link MemoryPolicy}.
+     * Evicts necessary number of data pages if per-page eviction is configured in current {@link DataRegion}.
      */
     private void ensureFreeSpace() throws IgniteCheckedException {
         // Deadlock alert: evicting data page causes removing (and locking) all entries on the page one by one.
         assert !Thread.holdsLock(this);
 
-        cctx.shared().database().ensureFreeSpace(cctx.memoryPolicy());
+        cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
     }
 
     /**

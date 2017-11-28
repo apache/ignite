@@ -31,8 +31,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -131,12 +131,28 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putx(GridH2Row row) {
+        // Should not be called directly. Rows are inserted into underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("putx");
+    }
+
+    /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         // Should not be called directly. Rows are removed from underlying cache data stores.
 
         assert false;
 
         throw DbException.getUnsupportedException("remove");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removex(SearchRow row) {
+        // Should not be called directly. Rows are removed from underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("removex");
     }
 
     /** {@inheritDoc} */
@@ -197,11 +213,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
             try {
                 CacheDataRow dataRow = cursor.get();
 
-                GridH2Row row = tbl.rowDescriptor().createRow(dataRow.key(), dataRow.partition(), dataRow.value(), dataRow.version(), 0);
-
-                row.link(dataRow.link());
-
-                return row;
+                return tbl.rowDescriptor().createRow(dataRow);
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
@@ -222,7 +234,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
                     CacheDataRow dataRow = cursor.get();
 
-                    if (filter.apply(dataRow.key()))
+                    if (filter.applyPartition(dataRow.partition()))
                         return true;
                 }
 

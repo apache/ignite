@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -98,7 +99,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(CacheGroupContext grp, RowData rowData) throws IgniteCheckedException {
-        initFromLink(grp, grp.shared(), grp.memoryPolicy().pageMemory(), rowData);
+        initFromLink(grp, grp.shared(), grp.dataRegion().pageMemory(), rowData);
     }
 
     /**
@@ -132,7 +133,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             final long pageId = pageId(nextLink);
 
             // Group is null if try evict page, with persistence evictions should be disabled.
-            assert grp != null || !sharedCtx.database().persistenceEnabled();
+            assert grp != null || pageMem instanceof PageMemoryNoStoreImpl;
 
             int grpId = grp != null ? grp.groupId() : 0;
 
@@ -554,7 +555,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        return PageIdUtils.partId(link);
+        return PageIdUtils.partId(pageId(link));
     }
 
     /** {@inheritDoc} */

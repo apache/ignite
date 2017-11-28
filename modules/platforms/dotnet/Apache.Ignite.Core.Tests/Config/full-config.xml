@@ -23,7 +23,7 @@
               workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' 
               isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' 
               peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3' isActiveOnStart='false' 
-              consistentId='someId012'>
+              consistentId='someId012' redirectJavaConsoleOutput='false'>
     <localhost>127.1.1.1</localhost>
     <binaryConfiguration compactFooter='false' keepDeserialized='true'>
         <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
@@ -51,7 +51,9 @@
         <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
     </lifecycleHandlers>
     <cacheConfiguration>
-        <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll' groupName='fooGroup'>
+        <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll' groupName='fooGroup'
+                            onheapCacheEnabled='true' storeConcurrentLoadAllThreshold='8' rebalanceOrder='9' rebalanceBatchesPrefetchCount='10' maxQueryIteratorsCount='11' queryDetailMetricsSize='12'
+                            queryParallelism='13' sqlSchema='mySchema'>
             <queryEntities>
                 <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>
                     <fields>
@@ -78,6 +80,9 @@
             <pluginConfigurations>
                 <iCachePluginConfiguration type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyPluginConfiguration, Apache.Ignite.Core.Tests' />
             </pluginConfigurations>
+            <keyConfiguration>
+                <cacheKeyConfiguration typeName='foo' affinityKeyFieldName='bar' />
+            </keyConfiguration>
         </cacheConfiguration>
         <cacheConfiguration name='secondCache' />
     </cacheConfiguration>
@@ -131,4 +136,22 @@
             <listener type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyEventListener' />
         </localEventListener>
     </localEventListeners>
+    <dataStorageConfiguration alwaysWriteFullPages="false" checkpointFrequency="00:00:01"
+                              checkpointThreads="3" concurrencyLevel="4" lockWaitTime="00:00:05" metricsEnabled="true"
+                              pageSize="6" storagePath="cde" metricsRateTimeInterval="00:00:07"
+                              metricsSubIntervalCount="8" systemRegionInitialSize="9" systemRegionMaxSize="10" 
+                              walThreadLocalBufferSize="11"
+                              walArchivePath="abc" walFlushFrequency="00:00:12" walFsyncDelayNanos="13" walHistorySize="14"
+                              walMode="Background" walRecordIteratorBufferSize="15" walSegments="16" walSegmentSize="17"
+                              walPath="wal-store" writeThrottlingEnabled="true">
+        <dataRegionConfigurations>
+            <dataRegionConfiguration emptyPagesPoolSize="1" evictionThreshold="2" initialSize="3" metricsEnabled="true"
+                                     maxSize="4" name="reg2" pageEvictionMode="RandomLru" metricsRateTimeInterval="00:00:01"
+                                     metricsSubIntervalCount="5" swapPath="swap" checkpointPageBufferSize="7" />
+        </dataRegionConfigurations>
+        <defaultDataRegionConfiguration emptyPagesPoolSize="2" evictionThreshold="3" initialSize="4"
+                                        maxSize="5" metricsEnabled="false" name="reg1" pageEvictionMode="Disabled"
+                                        metricsRateTimeInterval="00:00:03" metricsSubIntervalCount="6"
+                                        swapPath="swap2" checkpointPageBufferSize="8" />
+    </dataStorageConfiguration>
 </igniteConfiguration>

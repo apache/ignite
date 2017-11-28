@@ -457,10 +457,15 @@ public class IgniteConfiguration {
     private ExecutorConfiguration[] execCfgs;
 
     /** Page memory configuration. */
+    @Deprecated
     private MemoryConfiguration memCfg;
 
     /** Persistence store configuration. */
+    @Deprecated
     private PersistentStoreConfiguration pstCfg;
+
+    /** Page memory configuration. */
+    private DataStorageConfiguration dsCfg;
 
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -510,6 +515,7 @@ public class IgniteConfiguration {
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
+        dsCfg = cfg.getDataStorageConfiguration();
         memCfg = cfg.getMemoryConfiguration();
         pstCfg = cfg.getPersistentStoreConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
@@ -2157,6 +2163,29 @@ public class IgniteConfiguration {
      *
      * @return Memory configuration.
      */
+    public DataStorageConfiguration getDataStorageConfiguration() {
+        return dsCfg;
+    }
+
+    /**
+     * Sets durable memory configuration.
+     *
+     * @param dsCfg Data storage configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDataStorageConfiguration(DataStorageConfiguration dsCfg) {
+        this.dsCfg = dsCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets page memory configuration.
+     *
+     * @return Memory configuration.
+     * @deprecated Use {@link DataStorageConfiguration} instead.
+     */
+    @Deprecated
     public MemoryConfiguration getMemoryConfiguration() {
         return memCfg;
     }
@@ -2166,7 +2195,9 @@ public class IgniteConfiguration {
      *
      * @param memCfg Memory configuration.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link DataStorageConfiguration} instead.
      */
+    @Deprecated
     public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
         this.memCfg = memCfg;
 
@@ -2177,14 +2208,20 @@ public class IgniteConfiguration {
      * Gets persistence configuration used by Apache Ignite Persistent Store.
      *
      * @return Persistence configuration.
+     *
+     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
+    @Deprecated
     public PersistentStoreConfiguration getPersistentStoreConfiguration() {
         return pstCfg;
     }
 
     /**
-     * @return Flag {@code true} if persistent enable, {@code false} if disable.
+     * @return Flag {@code true} if persistence is enabled, {@code false} if disabled.
+     *
+     * @deprecated Part of legacy configuration API. Doesn't work if new configuration API is used.
      */
+    @Deprecated
     public boolean isPersistentStoreEnabled() {
         return pstCfg != null;
     }
@@ -2194,7 +2231,10 @@ public class IgniteConfiguration {
      *
      * @param pstCfg Persistence configuration.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
+    @Deprecated
     public IgniteConfiguration setPersistentStoreConfiguration(PersistentStoreConfiguration pstCfg) {
         this.pstCfg = pstCfg;
 
@@ -2208,7 +2248,7 @@ public class IgniteConfiguration {
      * <p>
      * Default value is {@link #DFLT_ACTIVE_ON_START}.
      * <p>
-     * This flag is ignored when {@link PersistentStoreConfiguration} is present:
+     * This flag is ignored when {@link DataStorageConfiguration} is present:
      * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @return Active on start flag value.
@@ -2221,7 +2261,7 @@ public class IgniteConfiguration {
      * Sets flag indicating whether the cluster will be active on start. This value should be the same on all
      * nodes in the cluster.
      * <p>
-     * This flag is ignored when {@link PersistentStoreConfiguration} is present:
+     * This flag is ignored when {@link DataStorageConfiguration} is present:
      * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @param activeOnStart Active on start flag value.

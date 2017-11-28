@@ -52,9 +52,9 @@ namespace Apache.Ignite.Core.Tests.Client
             // Cache get.
             SendRequest(sock, stream =>
             {
-                stream.WriteShort(1); // OP_GET
+                stream.WriteShort(1000); // OP_GET
                 stream.WriteLong(1); // Request id.
-                var cacheId = BinaryUtils.GetStringHashCode(cache.Name);
+                var cacheId = BinaryUtils.GetStringHashCodeLowerCase(cache.Name);
                 stream.WriteInt(cacheId);
                 stream.WriteByte(0); // Flags (withSkipStore, etc)
 

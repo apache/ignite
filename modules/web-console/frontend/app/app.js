@@ -128,6 +128,8 @@ import gridItemSelected from './components/grid-item-selected';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
+import listEditable from './components/list-editable';
+
 import igniteServices from './services';
 
 // Inject external modules.
@@ -140,23 +142,23 @@ angular.module('ignite-console', [
     'ngAnimate',
     'ngSanitize',
     // Third party libs.
-    'ngRetina',
     'btford.socket-io',
-    'mgcrea.ngStrap',
-    'ui.router',
-    'ui.router.state.events',
-    'gridster',
     'dndLists',
+    'gridster',
+    'mgcrea.ngStrap',
+    'ngRetina',
     'nvd3',
+    'pascalprecht.translate',
     'smart-table',
     'treeControl',
-    'pascalprecht.translate',
     'ui.grid',
-    'ui.grid.saveState',
-    'ui.grid.selection',
-    'ui.grid.resizeColumns',
     'ui.grid.autoResize',
     'ui.grid.exporter',
+    'ui.grid.resizeColumns',
+    'ui.grid.saveState',
+    'ui.grid.selection',
+    'ui.router',
+    'ui.router.state.events',
     // Base modules.
     'ignite-console.core',
     'ignite-console.ace',
@@ -202,6 +204,7 @@ angular.module('ignite-console', [
     protectFromBsSelectRender.name,
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
+    listEditable.name,
     // Ignite modules.
     IgniteModules.name
 ])

@@ -34,8 +34,8 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -89,17 +89,12 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
             cfg.setDiscoverySpi(discoSpi);
         }
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE * 10)
+                .setName("dfltPlc"));
 
-        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
-
-        plc.setName("dfltPlc");
-        plc.setMaxSize(MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE * 10);
-
-        memCfg.setDefaultMemoryPolicyName("dfltPlc");
-        memCfg.setMemoryPolicies(plc);
-
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setClientMode(client);
 
@@ -196,7 +191,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
         ccfg.setWriteSynchronizationMode(syncMode);
 
         if (cacheMode == LOCAL)
-            ccfg.setMemoryPolicyName("dfltPlc");
+            ccfg.setDataRegionName("dfltPlc");
 
         IgniteCache cache = ignite(0).createCache(ccfg);
 
