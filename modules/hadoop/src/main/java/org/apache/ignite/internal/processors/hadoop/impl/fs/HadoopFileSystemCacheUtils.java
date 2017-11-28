@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.fs;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -41,23 +42,34 @@ public class HadoopFileSystemCacheUtils {
         return new HadoopLazyConcurrentMap<>(
             new HadoopLazyConcurrentMap.ValueFactory<FsCacheKey, FileSystem>() {
                 @Override public FileSystem createValue(FsCacheKey key) throws IOException {
+                    assert key != null;
 
-                        assert key != null;
+                    // Explicitly disable FileSystem caching:
+                    URI uri = key.uri();
 
-                        // Explicitly disable FileSystem caching:
-                        URI uri = key.uri();
+                    String scheme = uri.getScheme();
 
-                        String scheme = uri.getScheme();
+                    // Copy the configuration to avoid altering the external object.
+                    Configuration cfg = new Configuration(key.configuration());
 
-                        // Copy the configuration to avoid altering the external object.
-                        Configuration cfg = new Configuration(key.configuration());
+                    String prop = HadoopFileSystemsUtils.disableFsCachePropertyName(scheme);
 
-                        String prop = HadoopFileSystemsUtils.disableFsCachePropertyName(scheme);
+                    cfg.setBoolean(prop, true);
 
-                        cfg.setBoolean(prop, true);
-
+                    if (UserGroupInformation.getCurrentUser().getAuthenticationMethod() ==
+                        UserGroupInformation.AuthenticationMethod.TOKEN) {
                         return FileSystem.get(uri, cfg);
+                    }
+                    else {
+                        try {
+                            return FileSystem.get(uri, cfg, key.user());
+                        }
+                        catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
 
+                            throw new IOException("Failed to create file system due to interrupt.", e);
+                        }
+                    }
                 }
             }
         );

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedBytes;
+import java.io.DataInputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
@@ -27,6 +28,8 @@ import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.mapreduce.JobPriority;
 import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
@@ -394,5 +397,25 @@ public class HadoopUtils {
         }
 
         return len1 - len2;
+    }
+
+    public static void deserialize(Writable writable, byte[] bytes) throws IOException {
+        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+        DataInputStream dataIn = new DataInputStream(in);
+        writable.readFields(dataIn);
+        dataIn.close();
+    }
+
+    public static UserGroupInformation createUGI(String user, byte[] credentialsBytes) throws IOException {
+        Credentials credentials = new Credentials();
+        HadoopUtils.deserialize(credentials, credentialsBytes);
+
+        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(user);
+        ugi.addCredentials(credentials);
+
+        if (credentials.numberOfTokens() > 0)
+            ugi.setAuthenticationMethod(UserGroupInformation.AuthenticationMethod.TOKEN);
+
+        return ugi;
     }
 }

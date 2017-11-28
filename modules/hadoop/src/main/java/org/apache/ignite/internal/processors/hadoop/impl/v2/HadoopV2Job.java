@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
 import java.security.PrivilegedExceptionAction;
-import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -31,7 +30,6 @@ import org.apache.hadoop.mapreduce.JobSubmissionFiles;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.split.JobSplit;
 import org.apache.hadoop.mapreduce.split.SplitMetaInfoReader;
-import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -50,9 +48,9 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLazyConcurrentMap;
-import org.apache.ignite.internal.processors.hadoop.security.HadoopCredentials;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1Splitter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -330,12 +328,10 @@ public class HadoopV2Job extends HadoopJobEx {
         ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
 
         try {
-            if (jobInfo.credentials() != null) {
-                HadoopCredentials credentials = (HadoopCredentials)SerializationUtils.deserialize(jobInfo.credentials());
-
-                UserGroupInformation ugi = UserGroupInformation.createRemoteUser(jobInfo.user());
-                ugi.addCredentials(credentials.getCredentials());
-                ugi.setAuthenticationMethod(SaslRpcServer.AuthMethod.TOKEN);
+            if (jobInfo.credentials() == null) {
+                rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
+            } else {
+                UserGroupInformation ugi = HadoopUtils.createUGI(jobInfo.user(), jobInfo.credentials());
 
                 try {
                     ugi.doAs(new PrivilegedExceptionAction<Void>() {
@@ -350,8 +346,6 @@ public class HadoopV2Job extends HadoopJobEx {
                 catch (IOException | InterruptedException e) {
                     throw new IgniteCheckedException(e);
                 }
-            } else {
-                rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
             }
 
             if (HadoopJobProperty.get(jobInfo, JOB_SHARED_CLASSLOADER, true)) {
@@ -360,6 +354,9 @@ public class HadoopV2Job extends HadoopJobEx {
 
                 sharedClsLdr = createClassLoader(HadoopClassLoader.nameForJob(jobId));
             }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
         }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);

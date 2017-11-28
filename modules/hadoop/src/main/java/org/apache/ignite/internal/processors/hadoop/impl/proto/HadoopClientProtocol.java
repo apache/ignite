@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.proto;
 
-import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.hadoop.mapreduce.Cluster;
 import org.apache.hadoop.mapreduce.ClusterMetrics;
@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolKillJobT
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolNextTaskIdTask;
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolSubmitJobTask;
 import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolTaskArguments;
-import org.apache.ignite.internal.processors.hadoop.security.HadoopCredentials;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.IOException;
@@ -124,7 +123,10 @@ public class HadoopClientProtocol implements ClientProtocol {
         try {
             conf.setLong(HadoopCommonUtils.JOB_SUBMISSION_START_TS_PROPERTY, U.currentTimeMillis());
 
-            byte[] credentials = SerializationUtils.serialize(new HadoopCredentials(ts));
+            byte[] credentials = null;
+
+            if (ts != null)
+                credentials = WritableUtils.toByteArray(ts);
 
             HadoopJobStatus status = execute(HadoopProtocolSubmitJobTask.class,
                 jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf, credentials));

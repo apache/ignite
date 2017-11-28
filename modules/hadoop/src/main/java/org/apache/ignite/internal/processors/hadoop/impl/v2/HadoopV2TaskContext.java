@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
-import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -39,7 +38,6 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.JobSubmissionFiles;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.TaskType;
-import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
@@ -63,8 +61,8 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCountersImpl;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLazyConcurrentMap;
-import org.apache.ignite.internal.processors.hadoop.security.HadoopCredentials;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1CleanupTask;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1MapTask;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1Partitioner;
@@ -590,13 +588,9 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
                 throw new IgniteCheckedException(e);
             }
         } else {
-            HadoopCredentials credentials = (HadoopCredentials)SerializationUtils.deserialize(job.info().credentials());
-
-            UserGroupInformation ugi = UserGroupInformation.createRemoteUser(job.info().user());
-            ugi.addCredentials(credentials.getCredentials());
-            ugi.setAuthenticationMethod(SaslRpcServer.AuthMethod.TOKEN);
-
             try {
+                UserGroupInformation ugi = HadoopUtils.createUGI(job.info().user(), job.info().credentials());
+
                 return ugi.doAs(new PrivilegedExceptionAction<T>() {
                     @Override
                     public T run() throws Exception {
