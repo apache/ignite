@@ -490,7 +490,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
             File[] cpFiles = cpDir.listFiles();
 
-            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2);
+            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2 + 1); // starts & ends + node_start
         }
         finally {
             stopAllGrids();
