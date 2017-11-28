@@ -43,6 +43,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -276,45 +277,34 @@ public class H2Utils {
      *
      * <p>IMPORTANT NOTE: areRowsEqual(null, null) returns false, since it doesn't make a sense to compare null rows.
      *
-     * @param left 1st row to compare
-     * @param right 2nd row to compare
-     * @return true if rows are not null and have equal contents
+     * @param left 1st row to compare.
+     * @param right 2nd row to compare.
+     * @param valueComparator Value comparator, null if the default equals() is to be used.
+     * @return true if rows are not null and have equal contents.
      */
-    public static boolean areRowsEqual(SearchRow left, SearchRow right) {
+    public static boolean areRowsEqual(SearchRow left, SearchRow right, Comparator<Value> valueComparator) {
         if (left == null || right == null)
             return false;
 
         if (left.getColumnCount() != right.getColumnCount())
             return false;
 
-        if (left instanceof GridH2SearchRowAdapter)
-            return left.equals(right);
+        if (valueComparator == null) {
+            Value[] leftValues = getRowValues(left);
+            Value[] rightValues = getRowValues(right);
 
-        if (right instanceof GridH2SearchRowAdapter)
-            return right.equals(left);
+            assert leftValues.length == rightValues.length;
 
-        return areRowsEqualInternal(left, right);
-    }
+            return Arrays.equals(leftValues, rightValues);
+        }
+        else {
+            for (int i = 0; i < left.getColumnCount(); i++) {
+                if (valueComparator.compare(left.getValue(i), right.getValue(i)) != 0)
+                    return false;
+            }
 
-    /**
-     * Compares two H2 rows. Intended for use from {@link #areRowsEqual(SearchRow, SearchRow)} method and
-     * equals()/hashcode() methods of {@link Row} subclasses.
-     *
-     * @param left 1st row to compare
-     * @param right 2nd row to compare
-     * @return true if rows are not null and have equal contents
-     */
-    public static boolean areRowsEqualInternal(SearchRow left, SearchRow right) {
-        if (right == null)
-            return false;
-
-        if (left.getColumnCount() != right.getColumnCount())
-            return false;
-
-        Value[] leftValues = getRowValues(left);
-        Value[] rightValues = getRowValues(right);
-
-        return Arrays.equals(leftValues, rightValues);
+            return true;
+        }
     }
 
     /**

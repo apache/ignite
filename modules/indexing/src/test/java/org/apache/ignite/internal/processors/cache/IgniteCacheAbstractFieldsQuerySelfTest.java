@@ -663,8 +663,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
         Collection<List<?>> res = qry.getAll();
 
-        assert res != null;
-        assert res.isEmpty();
+        assertNotNull(res);
+        assertTrue(res.isEmpty());
     }
 
     /**
@@ -674,12 +674,14 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
      */
     public void testSingleResultUsesFindOne() throws Exception {
         QueryCursor<List<?>> qry =
-            personCache.query(sqlFieldsQuery("select name from Person where age = 25"));
+            personCache.query(sqlFieldsQuery("select name from Person where _key = 25"));
 
-        Collection<List<?>> res = qry.getAll();
+        List<List<?>> res = qry.getAll();
 
-        assert res != null;
-        assert res.size() == 1;
+        assertNotNull(res);
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertEquals("John White", res.get(0).get(0));
     }
 
     /** @throws Exception If failed. */

@@ -101,21 +101,4 @@ public abstract class GridH2SearchRowAdapter implements Row {
     @Override public Value[] getValueList() {
         throw new UnsupportedOperationException();
     }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return H2Utils.rowHashCode(this);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * NOTE: the current implementation uses instanceof to compare rows: equality question should be
-     * carefully considered in the subclasses.
-     */
-    @Override public boolean equals(Object obj) {
-        return obj != null
-            && obj instanceof SearchRow
-            && H2Utils.areRowsEqualInternal(this, (Row) obj);
-    }
 }
