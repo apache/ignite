@@ -91,22 +91,35 @@ public class SqlParserUtils {
     }
 
     /**
-     * Parse integer value.
+     * Parse integer value (positive or negative).
      *
      * @param lex Lexer.
      * @return Integer value.
      */
     public static int parseInt(SqlLexer lex) {
+        int sign = 1;
+
+        if (lex.lookAhead().tokenType() == SqlLexerTokenType.MINUS) {
+            sign = -1;
+
+            lex.shift();
+        }
+
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             try {
-                return Integer.parseInt(lex.token());
+                long val = sign * Long.parseLong(lex.token());
+
+                if (val >= Integer.MIN_VALUE && val <= Integer.MAX_VALUE)
+                    return (int)val;
+
+                // Fall through.
             }
             catch (NumberFormatException e) {
-                // No-op.
+                // Fall through.
             }
         }
 
-        throw errorUnexpectedToken(lex, "[number]");
+        throw errorUnexpectedToken(lex, "[integer]");
     }
 
     /**
@@ -136,9 +149,9 @@ public class SqlParserUtils {
 
             String first = lex.token();
 
-            SqlLexerToken nextToken = lex.lookAhead();
+            SqlLexerToken nextTok = lex.lookAhead();
 
-            if (nextToken.tokenType() == SqlLexerTokenType.DOT) {
+            if (nextTok.tokenType() == SqlLexerTokenType.DOT) {
                 lex.shift();
 
                 String second = parseIdentifier(lex);
@@ -163,14 +176,7 @@ public class SqlParserUtils {
             case DEFAULT:
                 char c = token.tokenFirstChar();
 
-                if ((c >= 'A' && c <= 'Z') || c == '_') {
-                    if (SqlKeyword.isKeyword(token.token()))
-                        throw errorUnexpectedToken(token, "[identifier]");
-
-                    return true;
-                }
-
-                throw error(token, "Illegal identifier name: " + token.token());
+                return ((c >= 'A' && c <= 'Z') || c == '_') && !SqlKeyword.isKeyword(token.token());
 
             case QUOTED:
                 return true;

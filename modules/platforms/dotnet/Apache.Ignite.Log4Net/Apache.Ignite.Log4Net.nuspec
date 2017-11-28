@@ -47,4 +47,8 @@ Creating NuGet package:
             <dependency id="log4net" version="[2.0.0, 3.0.0)" />
         </dependencies>    
     </metadata>
+    <files>
+	    <file src="bin\$configuration$\Apache.Ignite.Log4Net.dll" target="lib\net40" />
+		<file src="bin\$configuration$\Apache.Ignite.Log4Net.xml" target="lib\net40" />
+    </files>
 </package>

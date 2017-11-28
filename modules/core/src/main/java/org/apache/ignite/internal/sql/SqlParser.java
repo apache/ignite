@@ -19,6 +19,7 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
@@ -27,10 +28,8 @@ import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
-import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
-import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupported;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 
@@ -139,9 +138,6 @@ public class SqlParser {
 
                     break;
 
-                case TABLE:
-                    throw errorUnsupported(lex);
-
                 case SPATIAL:
                     if (lex.shift() && matchesKeyword(lex, INDEX))
                         cmd = new SqlCreateIndexCommand().spatial(true);
@@ -157,7 +153,7 @@ public class SqlParser {
             errorUnsupportedIfMatchesKeyword(lex, HASH, PRIMARY, UNIQUE);
         }
 
-        throw errorUnexpectedToken(lex, INDEX, TABLE, SPATIAL);
+        throw errorUnexpectedToken(lex, INDEX, SPATIAL);
     }
 
     /**
@@ -166,9 +162,20 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processDrop() {
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT)
-            throw errorUnsupported(lex);
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+            SqlCommand cmd = null;
 
-        throw errorUnexpectedToken(lex, INDEX, TABLE);
+            switch (lex.token()) {
+                case INDEX:
+                    cmd = new SqlDropIndexCommand();
+
+                    break;
+            }
+
+            if (cmd != null)
+                return cmd.parse(lex);
+        }
+
+        throw errorUnexpectedToken(lex, INDEX);
     }
 }
