@@ -18,25 +18,10 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
 
     public static partial class TestUtils
     {
-        /** */
-        private static readonly IList<string> JvmOpts =
-            new List<string>
-            {
-                "-Duser.timezone=UTC"
-
-                // Uncomment to debug Java
-                //"-Xdebug",
-                //"-Xnoagent",
-                //"-Djava.compiler=NONE",
-                //"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-            };
-
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
@@ -46,7 +31,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
-                JvmOptions = JvmOpts,
+                JvmOptions = TestJavaOptions(),
                 IgniteInstanceName = name
             };
         }
