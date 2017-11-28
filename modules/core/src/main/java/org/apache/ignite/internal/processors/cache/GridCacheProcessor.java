@@ -1750,6 +1750,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Called during exchange rollback in order to stop the given cache
+     * even if it's not fully initialized (e.g. fail on cache init stage).
+     *
+     * @param req Stop request.
+     */
+     public void forceCloseCache(DynamicCacheChangeRequest req) {
+        assert req.stop() : req;
+
+        stopGateway(req);
+
+        prepareCacheStop(req);
+    }
+
+    /**
      * @param req Request.
      */
     private void stopGateway(DynamicCacheChangeRequest req) {
@@ -1809,42 +1823,45 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!F.isEmpty(reqs) && err == null) {
+        if (!F.isEmpty(reqs)) {
             for (DynamicCacheChangeRequest req : reqs) {
-                String masked = maskNull(req.cacheName());
+                if (err == null) {
+                    String masked = maskNull(req.cacheName());
 
-                if (req.stop()) {
-                    stopGateway(req);
+                    if (req.stop()) {
+                        stopGateway(req);
 
                     prepareCacheStop(req);
                 }
                 else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId())) {
                     IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
 
-                    if (proxy != null) {
-                        if (proxy.context().affinityNode()) {
-                            GridCacheAdapter<?, ?> cache = caches.get(masked);
+                        if (proxy != null) {
+                            if (proxy.context().affinityNode()) {
+                                GridCacheAdapter<?, ?> cache = caches.get(masked);
 
-                            if (cache != null)
-                                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
-                        }
-                        else {
-                            proxy.context().gate().onStopped();
+                                if (cache != null)
+                                    jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
+                            }
+                            else {
+                                proxy.context().gate().onStopped();
 
-                            prepareCacheStop(req);
+                                prepareCacheStop(req);
+                            }
                         }
                     }
                 }
 
-                completeStartFuture(req);
+                completeStartFuture(req, err);
             }
         }
     }
 
     /**
      * @param req Request to complete future for.
+     * @param err Error to be passed to futures.
      */
-    public void completeStartFuture(DynamicCacheChangeRequest req) {
+    public void completeStartFuture(DynamicCacheChangeRequest req, @Nullable Throwable err) {
         DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
 
         assert req.deploymentId() != null;
@@ -1852,7 +1869,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (fut != null && fut.deploymentId().equals(req.deploymentId()) &&
             F.eq(req.initiatingNodeId(), ctx.localNodeId()))
-            fut.onDone();
+            fut.onDone(err);
     }
 
     /**
@@ -2581,8 +2598,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion topVer) {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
+        else if (msg instanceof DynamicCacheChangeFailureMessage)
+            return onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg);
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+    }
+
+    /**
+     * @param failMsg Dynamic change change request fail message.
+     * @return {@code True} if minor topology version should be increased.
+     */
+    private boolean onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg) {
+        for (String cacheName : failMsg.cacheNames()) {
+            registeredCaches.remove(maskNull(cacheName));
+
+            ctx.discovery().removeCacheFilter(cacheName);
+        }
+
+        return false;
     }
 
     /**

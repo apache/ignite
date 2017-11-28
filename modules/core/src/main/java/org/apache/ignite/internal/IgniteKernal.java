@@ -200,6 +200,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_EXCHANGE_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -1462,6 +1463,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getConnectorConfiguration() != null)
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
+
+        // Exchange rollback is supported
+        add(ATTR_EXCHANGE_ROLLBACK_SUPPORTED, Boolean.TRUE);
 
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());
