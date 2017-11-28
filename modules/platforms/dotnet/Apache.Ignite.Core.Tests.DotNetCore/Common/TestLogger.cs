@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.DotNetCore.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using Apache.Ignite.Core.Log;
@@ -31,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         public static readonly TestLogger Instance = new TestLogger();
 
         /** */
-        private readonly string _file;
+        private readonly StreamWriter _file;
 
         /// <summary>
         /// Prevents a default instance of the <see cref="TestLogger"/> class from being created.
@@ -39,9 +40,8 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
         private TestLogger()
         {
             var binDir = Path.GetDirectoryName(GetType().Assembly.Location);
-            _file = Path.Combine(binDir, "dotnet-test.log");
-
-            File.WriteAllText(_file, $"{DateTime.Now}: Starting tests.");
+            var file = Path.Combine(binDir, "dotnet-test.log");
+            _file = File.AppendText(file);
         }
 
         /** <inheritdoc /> */
@@ -54,10 +54,8 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
                     ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
                     : message;
 
-                using (var writer = File.AppendText(_file))
-                {
-                    writer.WriteLine(text);
-                }
+                _file.WriteLine(text);
+                _file.Flush();
             }
         }
 
