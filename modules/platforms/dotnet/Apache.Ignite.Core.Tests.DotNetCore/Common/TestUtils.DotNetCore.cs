@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.DotNetCore.Common;
 
     public static partial class TestUtils
@@ -28,6 +30,8 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static IgniteConfiguration GetTestConfiguration(string name = null)
         {
+            TestLogger.Instance.Info("GetTestConfiguration: " + GetTestName());
+
             return new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
@@ -36,6 +40,27 @@ namespace Apache.Ignite.Core.Tests
                 IgniteInstanceName = name,
                 Logger = TestLogger.Instance
             };
+        }
+
+        /// <summary>
+        /// Gets the name of the test.
+        /// </summary>
+        private static string GetTestName()
+        {
+            var st = new StackTrace();
+
+            for (var i = 0; i < st.FrameCount; i++)
+            {
+                var frame = st.GetFrame(i);
+                var method = frame.GetMethod();
+
+                if (method.DeclaringType != typeof(TestUtils) && method.DeclaringType != typeof(TestBase))
+                {
+                    return $"{method.DeclaringType.Name}.{method.Name}";
+                }
+            }
+
+            return "unknown";
         }
 
         /// <summary>
