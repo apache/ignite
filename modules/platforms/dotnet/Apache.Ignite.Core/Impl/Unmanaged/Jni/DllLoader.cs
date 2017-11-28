@@ -192,16 +192,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         internal static class NativeMethodsMacOs
         {
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("libSystem.dylib", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+            [DllImport("libSystem.dylib", CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlopen(string filename, int flags);
 
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("libSystem.dylib", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
+            [DllImport("libSystem.dylib", CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlerror();
 
-            [DllImport("libSystem.dylib")]
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libSystem.dylib", CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlsym(IntPtr handle, string symbol);
         }
     }
