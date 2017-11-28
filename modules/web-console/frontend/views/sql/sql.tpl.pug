@@ -32,7 +32,7 @@ mixin result-toolbar
 
 mixin chart-settings
     .total.row
-        .col-xs-4
+        .col-xs-7
             .chart-settings-link(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
                 a(title='Click to show chart settings dialog' ng-click='$event.stopPropagation()' bs-popover data-template-url='{{ $ctrl.chartSettingsTemplateUrl }}' data-placement='bottom' data-auto-close='1' data-trigger='click')
                     i.fa.fa-bars
@@ -41,7 +41,11 @@ mixin chart-settings
                     label Show
                     button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' ng-change='applyChartSettings(paragraph)' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
                     label min
-        .col-xs-4
+
+                div
+                    label Duration: #[b {{paragraph.duration | duration}}]
+                    label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
+        .col-xs-2
             +result-toolbar
 
 mixin notebook-rename
@@ -114,44 +118,117 @@ mixin query-settings
                     indexes are not selected in optimal order.' data-trigger='hover')
                     input(type='checkbox' ng-model='paragraph.enforceJoinOrder')
                     span Enforce join order
+            .row(ng-if='lazyQueryAvailable(paragraph)')
+                label.tipLabel(bs-tooltip data-placement='bottom' data-title='By default Ignite attempts to fetch the whole query result set to memory and send it to the client.<br/>\
+                    For small and medium result sets this provides optimal performance and minimize duration of internal database locks, thus increasing concurrency.<br/>\
+                    If result set is too big to fit in available memory this could lead to excessive GC pauses and even OutOfMemoryError.<br/>\
+                    Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory consumption at the cost of moderate performance hit.' data-trigger='hover')
+                    input(type='checkbox' ng-model='paragraph.lazy')
+                    span Lazy result set
 
 mixin query-actions
-    button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='execute(paragraph)') Execute
-    button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='execute(paragraph, true)') Execute on selected node
+    button.btn.btn-primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph)')
+        div
+            i.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(false)')
+            i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(false)')
+            span.tipLabelExecute Execute
+    button.btn.btn-primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph, true)')
+        div
+            i.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(true)')
+            i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(true)')
+            span.tipLabelExecute Execute on selected node
 
-    a.btn.btn-default(ng-disabled='!actionAvailable(paragraph, true)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{actionTooltip(paragraph, "explain", true)}}') Explain
+
+    a.btn.btn-default(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}') Explain
 
 mixin table-result-heading-query
     .total.row
-        .col-xs-4
+        .col-xs-7
             grid-column-selector(grid-api='paragraph.gridOptions.api')
                 .fa.fa-bars.icon
             label Page: #[b {{paragraph.page}}]
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
-        .col-xs-4
+            label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
+        .col-xs-2
             div(ng-if='paragraph.qryType === "query"')
                 +result-toolbar
-        .col-xs-4
+        .col-xs-3
             .pull-right
-                -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
-                +btn-group('paragraph.loading', options, '{{ actionTooltip(paragraph, "export", false) }}')
+                .btn-group.panel-tip-container
+                    button.btn.btn-primary.btn--with-icon(
+                        ng-click='exportCsv(paragraph)'
+
+                        ng-disabled='paragraph.loading'
+
+                        bs-tooltip=''
+                        ng-attr-title='{{ queryTooltip(paragraph, "export query results") }}'
+
+                        data-trigger='hover'
+                        data-placement='bottom'
+                    )
+                        svg(ignite-icon='csv' ng-if='!paragraph.csvIsPreparing')
+                        i.fa.fa-fw.fa-refresh.fa-spin(ng-if='paragraph.csvIsPreparing')
+                        span Export
+
+                    -var options = [{ text: 'Export', click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }, { divider: true }, { text: '<span title="Copy current result page to clipboard">Copy to clipboard</span>', click: 'exportCsvToClipBoard(paragraph)' }]
+                    button.btn.dropdown-toggle.btn-primary(
+                        ng-disabled='paragraph.loading'
+
+                        bs-dropdown=`${JSON.stringify(options)}`
+
+                        data-toggle='dropdown'
+                        data-container='body'
+                        data-placement='bottom-right'
+                        data-html='true'
+                    )
+                        span.caret
+
+
 
 mixin table-result-heading-scan
     .total.row
-        .col-xs-4
+        .col-xs-7
             grid-column-selector(grid-api='paragraph.gridOptions.api')
                 .fa.fa-bars.icon
             label Page: #[b {{paragraph.page}}]
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
-        .col-xs-4
+            label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
+        .col-xs-2
             div(ng-if='paragraph.qryType === "query"')
                 +result-toolbar
-        .col-xs-4
+        .col-xs-3
             .pull-right
-                -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
-                +btn-group('paragraph.loading', options, '{{ actionTooltip(paragraph, "export", false) }}')
+                .btn-group.panel-tip-container
+                    // TODO: replace this logic for exporting under one component
+                    button.btn.btn-primary.btn--with-icon(
+                        ng-click='exportCsv(paragraph)'
+
+                        ng-disabled='paragraph.loading || paragraph.csvIsPreparing'
+
+                        bs-tooltip=''
+                        ng-attr-title='{{ scanTooltip(paragraph) }}'
+
+                        data-trigger='hover'
+                        data-placement='bottom'
+                    )
+                        svg(ignite-icon='csv' ng-if='!paragraph.csvIsPreparing')
+                        i.fa.fa-fw.fa-refresh.fa-spin(ng-if='paragraph.csvIsPreparing')
+                        span Export
+
+                    -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }, { divider: true }, { text: '<span title="Copy current result page to clipboard">Copy to clipboard</span>', click: 'exportCsvToClipBoard(paragraph)' }]
+                    button.btn.dropdown-toggle.btn-primary(
+                        ng-disabled='paragraph.loading || paragraph.csvIsPreparing'
+
+                        bs-dropdown=`${JSON.stringify(options)}`
+
+                        data-toggle='dropdown'
+                        data-container='body'
+                        data-placement='bottom-right'
+                        data-html='true'
+                    )
+                        span.caret
 
 mixin table-result-body
     .grid(ui-grid='paragraph.gridOptions' ui-grid-resize-columns ui-grid-exporter)
@@ -189,14 +266,20 @@ mixin paragraph-scan
                 button.btn.btn-default.select-toggle.tipLabel(ng-model='paragraph.pageSize' bs-select bs-options='item for item in pageSizes')
 
         .col-sm-12.sql-controls
-            button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' ng-click='scan(paragraph)')
-                | Scan
-            button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' ng-click='scan(paragraph, true)')
-                | Scan on selected node
+            button.btn.btn-primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph)')
+                div
+                    i.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(false)')
+                    i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(false)')
+                    span.tipLabelExecute Scan
+
+            button.btn.btn-primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph, true)')
+                    i.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(true)')
+                    i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
+                    span.tipLabelExecute Scan on selected node
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
             .error(ng-switch-when='error') Error: {{paragraph.error.message}}
-            .empty(ng-switch-when='empty') Result set is empty
+            .empty(ng-switch-when='empty') Result set is empty. Duration: #[b {{paragraph.duration | duration}}]
             .table(ng-switch-when='table')
                 +table-result-heading-scan
                 +table-result-body
@@ -233,6 +316,16 @@ mixin paragraph-query
                                 td(style='width: 100%')
                                     input.labelField(id='cache_{{ [paragraph.id, $index].join("_") }}' type='radio' value='{{cache.name}}' ng-model='paragraph.cacheName')
                                     label(for='cache_{{ [paragraph.id, $index].join("_") }} ' ng-bind-html='cache.label')
+                    .settings-row
+                        .row(ng-if='ddlAvailable(paragraph)')
+                            label.tipLabel.use-cache(bs-tooltip data-placement='bottom'
+                                data-title=
+                                    'Use selected cache as default schema name.<br/>\
+                                    This will allow to execute query on specified cache without specify schema name.<br/>\
+                                    <b>NOTE:</b> In future version of Ignite this feature will be removed.'
+                                data-trigger='hover')
+                                input(type='checkbox' ng-model='paragraph.useAsDefaultSchema')
+                                span Use selected cache as default schema name
                 .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                     label Wrong caches filter
                 .empty-caches(ng-show='caches.length == 0')
@@ -247,7 +340,7 @@ mixin paragraph-query
                 label Error: {{paragraph.error.message}}
                 br
                 a(ng-show='paragraph.resultType() === "error"' ng-click='showStackTrace(paragraph)') Show more
-            .empty(ng-switch-when='empty') Result set is empty
+            .empty(ng-switch-when='empty') Result set is empty. Duration: #[b {{paragraph.duration | duration}}]
             .table(ng-switch-when='table')
                 +table-result-heading-query
                 +table-result-body

@@ -71,11 +71,32 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean replicatedOnly;
 
+    /** */
+    private boolean lazy;
+
     /** Partitions for query */
     private int[] parts;
 
     /** Schema. */
     private String schema;
+
+    /**
+     * Copy constructs SQL fields query.
+     *
+     * @param qry SQL query.
+     */
+    public SqlFieldsQuery(SqlFieldsQuery qry) {
+        sql = qry.sql;
+        args = qry.args;
+        collocated = qry.collocated;
+        timeout = qry.timeout;
+        enforceJoinOrder = qry.enforceJoinOrder;
+        distributedJoins = qry.distributedJoins;
+        replicatedOnly = qry.replicatedOnly;
+        lazy = qry.lazy;
+        parts = qry.parts;
+        schema = qry.schema;
+    }
 
     /**
      * Constructs SQL fields query.
@@ -230,7 +251,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
@@ -266,6 +287,39 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public boolean isReplicatedOnly() {
         return replicatedOnly;
+    }
+
+    /**
+     * Sets lazy query execution flag.
+     * <p>
+     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small
+     * and medium result sets this provides optimal performance and minimize duration of internal database locks, thus
+     * increasing concurrency.
+     * <p>
+     * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+     * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+     * consumption at the cost of moderate performance hit.
+     * <p>
+     * Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
+     *
+     * @param lazy Lazy query execution flag.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setLazy(boolean lazy) {
+        this.lazy = lazy;
+
+        return this;
+    }
+
+    /**
+     * Gets lazy query execution flag.
+     * <p>
+     * See {@link #setLazy(boolean)} for more information.
+     *
+     * @return Lazy flag.
+     */
+    public boolean isLazy() {
+        return lazy;
     }
 
     /**
@@ -313,6 +367,13 @@ public class SqlFieldsQuery extends Query<List<?>> {
         this.schema = schema;
 
         return this;
+    }
+
+    /**
+     * @return Copy of this query.
+     */
+    public SqlFieldsQuery copy() {
+        return new SqlFieldsQuery(this);
     }
 
     /** {@inheritDoc} */

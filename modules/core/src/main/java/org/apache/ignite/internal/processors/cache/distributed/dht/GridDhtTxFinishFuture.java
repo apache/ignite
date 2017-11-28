@@ -225,7 +225,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
                 try {
-                    this.tx.tmFinish(err == null);
+                    boolean nodeStop = err != null && X.hasCause(err, NodeStoppingException.class);
+
+                    this.tx.tmFinish(err == null, nodeStop, false);
                 }
                 catch (IgniteCheckedException finishErr) {
                     U.error(log, "Failed to finish tx: " + tx, e);

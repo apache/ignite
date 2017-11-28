@@ -20,7 +20,7 @@ include /app/helpers/jade/mixins
 -var model = 'backupItem.persistenceStoreConfiguration'
 -var enabled = model + '.enabled'
 
-.panel.panel-default(ng-show='$ctrl.available("2.1.0")' ng-form=form novalidate)
+.panel.panel-default(ng-show='$ctrl.available(["2.1.0", "2.3.0"])' ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
         label Persistence store
@@ -29,7 +29,7 @@ include /app/helpers/jade/mixins
         //- TODO IGNITE-5415 Add link to documentation.
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`$ctrl.available("2.1.0") && ui.isPanelLoaded('${form}')`)
+        .panel-body(ng-if=`$ctrl.available(["2.1.0", "2.3.0"]) && ui.isPanelLoaded('${form}')`)
             .col-sm-6
                 .settings-row
                     +checkbox('Enabled', enabled, '"PersistenceEnabled"', 'Flag indicating whether to configure persistent configuration')
@@ -62,7 +62,7 @@ include /app/helpers/jade/mixins
                     +number('WAL flush frequency:', `${model}.walFlushFrequency`, '"PersistenceWalFlushFrequency"', enabled, '2000', '1',
                     'How often will be fsync, in milliseconds. In background mode, exist thread which do fsync by timeout')
                 .settings-row
-                    +number('WAL fsync delay:', `${model}.walFsyncDelay`, '"PersistenceWalFsyncDelay"', enabled, '1', '1', 'WAL fsync delay, in nanoseconds')
+                    +number('WAL fsync delay:', `${model}.walFsyncDelayNanos`, '"PersistenceWalFsyncDelay"', enabled, '1000', '1', 'WAL fsync delay, in nanoseconds')
                 .settings-row
                     +number('WAL record iterator buffer size:', `${model}.walRecordIteratorBufferSize`, '"PersistenceWalRecordIteratorBufferSize"', enabled, '67108864', '1',
                     'How many bytes iterator read from disk(for one reading), during go ahead WAL')

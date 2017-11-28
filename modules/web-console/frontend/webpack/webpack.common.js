@@ -37,7 +37,6 @@ const app = path.resolve('app');
 const IgniteModules = process.env.IGNITE_MODULES ? path.join(process.env.IGNITE_MODULES, 'frontend') : path.resolve('ignite_modules');
 
 export default {
-    cache: true,
     node: {
         fs: 'empty'
     },
@@ -138,7 +137,7 @@ export default {
             },
             {
                 test: /\.(jpe?g|png|gif)$/i,
-                loader: 'file?name=assets/images/[name]_[hash].[ext]'
+                loader: 'file?name=assets/images/[name].[hash].[ext]'
             },
             {
                 test: require.resolve('jquery'),
@@ -178,7 +177,7 @@ export default {
         new HtmlWebpackPlugin({
             template: './views/index.pug'
         }),
-        new ExtractTextPlugin({filename: 'assets/css/[name].css', allChunks: true}),
+        new ExtractTextPlugin({filename: 'assets/css/[name].[hash].css', allChunks: true}),
         new CopyWebpackPlugin([
             { context: 'public', from: '**/*.png' },
             { context: 'public', from: '**/*.svg' },

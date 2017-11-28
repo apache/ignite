@@ -24,49 +24,56 @@
  */
 module.exports = {
     implements: 'settings',
-    inject: ['nconf', 'require(fs)']
-};
+    inject: ['nconf', 'require(fs)'],
+    factory(nconf, fs) {
+        /**
+         * Normalize a port into a number, string, or false.
+         */
+        const _normalizePort = function(val) {
+            const port = parseInt(val, 10);
 
-module.exports.factory = function(nconf, fs) {
-    /**
-     * Normalize a port into a number, string, or false.
-     */
-    const _normalizePort = function(val) {
-        const port = parseInt(val, 10);
+            // named pipe
+            if (isNaN(port))
+                return val;
 
-        // named pipe
-        if (isNaN(port))
-            return val;
+            // port number
+            if (port >= 0)
+                return port;
 
-        // port number
-        if (port >= 0)
-            return port;
+            return false;
+        };
 
-        return false;
-    };
+        const mail = nconf.get('mail') || {};
 
-    const mail = nconf.get('mail') || {};
+        mail.address = (username, email) => username ? '"' + username + '" <' + email + '>' : email;
 
-    mail.address = (username, email) => username ? '"' + username + '" <' + email + '>' : email;
+        const packaged = __dirname.startsWith('/snapshot/') || __dirname.startsWith('C:\\snapshot\\');
 
-    return {
-        agent: {
-            dists: 'agent_dists'
-        },
-        server: {
-            port: _normalizePort(nconf.get('server:port') || 3000),
-            SSLOptions: nconf.get('server:ssl') && {
-                enable301Redirects: true,
-                trustXFPHeader: true,
-                key: fs.readFileSync(nconf.get('server:key')),
-                cert: fs.readFileSync(nconf.get('server:cert')),
-                passphrase: nconf.get('server:keyPassphrase')
-            }
-        },
-        mail,
-        mongoUrl: nconf.get('mongodb:url') || 'mongodb://localhost/console',
-        cookieTTL: 3600000 * 24 * 30,
-        sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',
-        tokenLength: 20
-    };
+        const dfltAgentDists = packaged ? 'libs/agent_dists' : 'agent_dists';
+        const dfltHost = packaged ? '0.0.0.0' : '127.0.0.1';
+        const dfltPort = packaged ? 80 : 3000;
+
+        return {
+            agent: {
+                dists: nconf.get('agent:dists') || dfltAgentDists
+            },
+            packaged,
+            server: {
+                host: nconf.get('server:host') || dfltHost,
+                port: _normalizePort(nconf.get('server:port') || dfltPort),
+                SSLOptions: nconf.get('server:ssl') && {
+                    enable301Redirects: true,
+                    trustXFPHeader: true,
+                    key: fs.readFileSync(nconf.get('server:key')),
+                    cert: fs.readFileSync(nconf.get('server:cert')),
+                    passphrase: nconf.get('server:keyPassphrase')
+                }
+            },
+            mail,
+            mongoUrl: nconf.get('mongodb:url') || 'mongodb://127.0.0.1/console',
+            cookieTTL: 3600000 * 24 * 30,
+            sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',
+            tokenLength: 20
+        };
+    }
 };

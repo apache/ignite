@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Fix leftmost child.
@@ -30,12 +31,12 @@ public class FixLeftmostChildRecord extends PageDeltaRecord {
     private long rightId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param rightId Right ID.
      */
-    public FixLeftmostChildRecord(int cacheId, long pageId, long rightId) {
-        super(cacheId, pageId);
+    public FixLeftmostChildRecord(int grpId, long pageId, long rightId) {
+        super(grpId, pageId);
 
         this.rightId = rightId;
     }
@@ -52,7 +53,15 @@ public class FixLeftmostChildRecord extends PageDeltaRecord {
         return RecordType.BTREE_FIX_LEFTMOST_CHILD;
     }
 
+    /**
+     *
+     */
     public long rightId() {
         return rightId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(FixLeftmostChildRecord.class, this, "super", super.toString());
     }
 }

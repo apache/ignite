@@ -43,6 +43,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -74,6 +75,7 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
@@ -191,6 +193,7 @@ public class IgniteConfiguration {
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
     /** Default value for late affinity assignment flag. */
+    @Deprecated
     public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
 
     /** Default value for active on start flag. */
@@ -373,6 +376,7 @@ public class IgniteConfiguration {
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
 
     /** Discovery startup delay. */
+    @Deprecated
     private long discoStartupDelay = DFLT_DISCOVERY_STARTUP_DELAY;
 
     /** Tasks classes sharing mode. */
@@ -452,14 +456,16 @@ public class IgniteConfiguration {
     /** Custom executor configurations. */
     private ExecutorConfiguration[] execCfgs;
 
-    /** */
-    private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
-
     /** Page memory configuration. */
+    @Deprecated
     private MemoryConfiguration memCfg;
 
     /** Persistence store configuration. */
+    @Deprecated
     private PersistentStoreConfiguration pstCfg;
+
+    /** Page memory configuration. */
+    private DataStorageConfiguration dsCfg;
 
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -468,7 +474,11 @@ public class IgniteConfiguration {
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /** SQL connector configuration. */
-    private SqlConnectorConfiguration sqlConnCfg = new SqlConnectorConfiguration();
+    @Deprecated
+    private SqlConnectorConfiguration sqlConnCfg;
+
+    /** Client connector configuration. */
+    private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -505,6 +515,7 @@ public class IgniteConfiguration {
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
+        dsCfg = cfg.getDataStorageConfiguration();
         memCfg = cfg.getMemoryConfiguration();
         pstCfg = cfg.getPersistentStoreConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
@@ -514,6 +525,7 @@ public class IgniteConfiguration {
         classLdr = cfg.getClassLoader();
         clientFailureDetectionTimeout = cfg.getClientFailureDetectionTimeout();
         clientMode = cfg.isClientMode();
+        cliConnCfg = cfg.getClientConnectorConfiguration();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
         daemon = cfg.isDaemon();
@@ -530,7 +542,6 @@ public class IgniteConfiguration {
         igniteWorkDir = cfg.getWorkDirectory();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
-        lateAffAssignment = cfg.isLateAffinityAssignment();
         lifecycleBeans = cfg.getLifecycleBeans();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
@@ -1935,7 +1946,9 @@ public class IgniteConfiguration {
      * delay, you should increase this value.
      *
      * @return Time in milliseconds for when nodes can be out-of-sync.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public long getDiscoveryStartupDelay() {
         return discoStartupDelay;
     }
@@ -1947,7 +1960,9 @@ public class IgniteConfiguration {
      * @param discoStartupDelay Time in milliseconds for when nodes
      *      can be out-of-sync during startup.
      * @return {@code this} for chaining.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public IgniteConfiguration setDiscoveryStartupDelay(long discoStartupDelay) {
         this.discoStartupDelay = discoStartupDelay;
 
@@ -2148,6 +2163,29 @@ public class IgniteConfiguration {
      *
      * @return Memory configuration.
      */
+    public DataStorageConfiguration getDataStorageConfiguration() {
+        return dsCfg;
+    }
+
+    /**
+     * Sets durable memory configuration.
+     *
+     * @param dsCfg Data storage configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDataStorageConfiguration(DataStorageConfiguration dsCfg) {
+        this.dsCfg = dsCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets page memory configuration.
+     *
+     * @return Memory configuration.
+     * @deprecated Use {@link DataStorageConfiguration} instead.
+     */
+    @Deprecated
     public MemoryConfiguration getMemoryConfiguration() {
         return memCfg;
     }
@@ -2157,7 +2195,9 @@ public class IgniteConfiguration {
      *
      * @param memCfg Memory configuration.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link DataStorageConfiguration} instead.
      */
+    @Deprecated
     public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
         this.memCfg = memCfg;
 
@@ -2168,14 +2208,20 @@ public class IgniteConfiguration {
      * Gets persistence configuration used by Apache Ignite Persistent Store.
      *
      * @return Persistence configuration.
+     *
+     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
+    @Deprecated
     public PersistentStoreConfiguration getPersistentStoreConfiguration() {
         return pstCfg;
     }
 
     /**
-     * @return Flag {@code true} if persistent enable, {@code false} if disable.
+     * @return Flag {@code true} if persistence is enabled, {@code false} if disabled.
+     *
+     * @deprecated Part of legacy configuration API. Doesn't work if new configuration API is used.
      */
+    @Deprecated
     public boolean isPersistentStoreEnabled() {
         return pstCfg != null;
     }
@@ -2185,7 +2231,10 @@ public class IgniteConfiguration {
      *
      * @param pstCfg Persistence configuration.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
+    @Deprecated
     public IgniteConfiguration setPersistentStoreConfiguration(PersistentStoreConfiguration pstCfg) {
         this.pstCfg = pstCfg;
 
@@ -2198,6 +2247,9 @@ public class IgniteConfiguration {
      * significantly speed up large topology startup time.
      * <p>
      * Default value is {@link #DFLT_ACTIVE_ON_START}.
+     * <p>
+     * This flag is ignored when {@link DataStorageConfiguration} is present:
+     * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @return Active on start flag value.
      */
@@ -2208,6 +2260,9 @@ public class IgniteConfiguration {
     /**
      * Sets flag indicating whether the cluster will be active on start. This value should be the same on all
      * nodes in the cluster.
+     * <p>
+     * This flag is ignored when {@link DataStorageConfiguration} is present:
+     * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @param activeOnStart Active on start flag value.
      * @return {@code this} instance.
@@ -2481,7 +2536,7 @@ public class IgniteConfiguration {
      * Gets configuration for ODBC.
      *
      * @return ODBC configuration.
-     * @deprecated Use {@link #getSqlConnectorConfiguration()} instead.
+     * @deprecated Use {@link #getClientConnectorConfiguration()} ()} instead.
      */
     @Deprecated
     public OdbcConfiguration getOdbcConfiguration() {
@@ -2493,7 +2548,7 @@ public class IgniteConfiguration {
      *
      * @param odbcCfg ODBC configuration.
      * @return {@code this} for chaining.
-     * @deprecated Use {@link #setSqlConnectorConfiguration(SqlConnectorConfiguration)} instead.
+     * @deprecated Use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
      */
     @Deprecated
     public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
@@ -2721,14 +2776,14 @@ public class IgniteConfiguration {
      * from assignment calculated by {@link AffinityFunction#assignPartitions}.
      * <p>
      * This property should have the same value for all nodes in cluster.
-     * <p>
-     * If not provided, default value is {@link #DFLT_LATE_AFF_ASSIGNMENT}.
      *
      * @return Late affinity assignment flag.
      * @see AffinityFunction
+     * @deprecated Starting from Ignite 2.1 late affinity assignment is always enabled.
      */
+    @Deprecated
     public boolean isLateAffinityAssignment() {
-        return lateAffAssignment;
+        return true;
     }
 
     /**
@@ -2736,10 +2791,10 @@ public class IgniteConfiguration {
      *
      * @param lateAffAssignment Late affinity assignment flag.
      * @return {@code this} for chaining.
+     * @deprecated Starting from Ignite 2.1 late affinity assignment is always enabled.
      */
+    @Deprecated
     public IgniteConfiguration setLateAffinityAssignment(boolean lateAffAssignment) {
-        this.lateAffAssignment = lateAffAssignment;
-
         return this;
     }
 
@@ -2794,7 +2849,9 @@ public class IgniteConfiguration {
      *
      * @param sqlConnCfg SQL connector configuration.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setSqlConnectorConfiguration(SqlConnectorConfiguration sqlConnCfg) {
         this.sqlConnCfg = sqlConnCfg;
 
@@ -2805,9 +2862,32 @@ public class IgniteConfiguration {
      * Gets SQL connector configuration.
      *
      * @return SQL connector configuration.
+     * @deprecated Use {@link #getClientConnectorConfiguration()} instead.
      */
+    @Deprecated
     public SqlConnectorConfiguration getSqlConnectorConfiguration() {
         return sqlConnCfg;
+    }
+
+    /**
+     * Sets client connector configuration.
+     *
+     * @param cliConnCfg Client connector configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setClientConnectorConfiguration(@Nullable ClientConnectorConfiguration cliConnCfg) {
+        this.cliConnCfg = cliConnCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets client connector configuration.
+     *
+     * @return Client connector configuration.
+     */
+    @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
+        return cliConnCfg;
     }
 
     /** {@inheritDoc} */

@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Split forward page record.
@@ -45,7 +46,7 @@ public class SplitForwardPageRecord extends PageDeltaRecord {
     private int cnt;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Real forward page ID.
      * @param fwdId Virtual forward page ID.
      * @param ioType IO Type.
@@ -55,7 +56,7 @@ public class SplitForwardPageRecord extends PageDeltaRecord {
      * @param cnt Initial elements count in the page being split.
      */
     public SplitForwardPageRecord(
-        int cacheId,
+        int grpId,
         long pageId,
         long fwdId,
         int ioType,
@@ -64,7 +65,7 @@ public class SplitForwardPageRecord extends PageDeltaRecord {
         int mid,
         int cnt
     ) {
-        super(cacheId, pageId);
+        super(grpId, pageId);
 
         this.fwdId = fwdId;
 
@@ -89,27 +90,50 @@ public class SplitForwardPageRecord extends PageDeltaRecord {
         return RecordType.BTREE_FORWARD_PAGE_SPLIT;
     }
 
+    /**
+     *
+     */
     public long forwardId() {
         return fwdId;
     }
 
+    /**
+     *
+     */
     public int ioType() {
         return ioType;
     }
 
+    /**
+     *
+     */
     public int ioVersion() {
         return ioVer;
     }
 
+    /**
+     *
+     */
     public long sourcePageId() {
         return srcPageId;
     }
 
+    /**
+     *
+     */
     public int middleIndex() {
         return mid;
     }
 
+    /**
+     *
+     */
     public int count() {
         return cnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SplitForwardPageRecord.class, this, "super", super.toString());
     }
 }

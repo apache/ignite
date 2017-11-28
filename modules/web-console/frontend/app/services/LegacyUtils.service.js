@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import saver from 'file-saver';
+
 // TODO: Refactor this service for legacy tables with more than one input field.
 export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
     function isDefined(v) {
@@ -50,6 +52,7 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
         'boolean',
         'Boolean',
         'byte',
+        'byte[]',
         'Byte',
         'Date',
         'double',
@@ -88,13 +91,15 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
 
     /**
      * @param clsName Class name to check.
+     * @param additionalClasses List of classes to check as builtin.
      * @returns {Boolean} 'true' if given class name is a java build-in type.
      */
-    function isJavaBuiltInClass(clsName) {
+    function isJavaBuiltInClass(clsName, additionalClasses) {
         if (isEmptyString(clsName))
             return false;
 
-        return _.includes(javaBuiltInClasses, clsName) || _.includes(javaBuiltInFullNameClasses, clsName);
+        return _.includes(javaBuiltInClasses, clsName) || _.includes(javaBuiltInFullNameClasses, clsName)
+            || (_.isArray(additionalClasses) && _.includes(additionalClasses, clsName));
     }
 
     const SUPPORTED_JDBC_TYPES = [
@@ -323,8 +328,13 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
             if (!allowBuiltInClass && isJavaBuiltInClass(ident))
                 return !stopEdit && ErrorPopover.show(elemId, msg + ' should not be the Java build-in class!', panels, panelId);
 
-            if (len < 2 && !isJavaBuiltInClass(ident) && !packageOnly)
-                return !stopEdit && ErrorPopover.show(elemId, msg + ' does not have package specified!', panels, panelId);
+            if (len < 2) {
+                if (isJavaBuiltInClass(ident, allowBuiltInClass))
+                    return true;
+
+                if (!packageOnly)
+                    return !stopEdit && ErrorPopover.show(elemId, msg + ' does not have package specified!', panels, panelId);
+            }
 
             for (let i = 0; i < parts.length; i++) {
                 const part = parts[i];
@@ -343,20 +353,10 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
             return !isEmpty;
         },
         domainForStoreConfigured,
-        download(type, name, data) {
-            const file = document.createElement('a');
+        download(type = 'application/octet-stream', name = 'file.txt', data = '') {
+            const file = new Blob([data], { type: `${type};charset=utf-8`});
 
-            file.setAttribute('href', 'data:' + type + ';charset=utf-8,' + data);
-            file.setAttribute('download', name);
-            file.setAttribute('target', '_self');
-
-            file.style.display = 'none';
-
-            document.body.appendChild(file);
-
-            file.click();
-
-            document.body.removeChild(file);
+            saver.saveAs(file, name, false);
         },
         getQueryVariable(name) {
             const attrs = window.location.search.substring(1).split('&');

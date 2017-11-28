@@ -20,17 +20,16 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -43,7 +42,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -53,6 +52,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -68,7 +69,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
     private final String cacheName = "cache";
 
     /** Policy name. */
-    private final String policyName = "dfltMemPlc";
+    private final String policyName = "dfltDataRegion";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -81,24 +82,17 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         cfg.setCacheConfiguration(ccfg);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setMaxSize(1024 * 1024 * 1024)
+                    .setPersistenceEnabled(true)
+                    .setName(policyName))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setCheckpointFrequency(500)
+            .setAlwaysWriteFullPages(true);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName(policyName);
-        memPlcCfg.setInitialSize(1024 * 1024 * 1024);
-        memPlcCfg.setMaxSize(1024 * 1024 * 1024);
-
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName(policyName);
-
-        cfg.setMemoryConfiguration(dbCfg);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setCheckpointingFrequency(500)
-                .setAlwaysWriteFullPages(true)
-        );
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setDiscoverySpi(
             new TcpDiscoverySpi()
@@ -146,7 +140,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         // Disable integrated checkpoint thread.
         psMgr.enableCheckpoints(false).get();
 
-        PageMemory mem = sharedCtx.database().memoryPolicy(policyName).pageMemory();
+        PageMemory mem = sharedCtx.database().dataRegion(policyName).pageMemory();
 
         int cacheId = sharedCtx.cache().cache(cacheName).context().cacheId();
 
@@ -191,13 +185,13 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         FilePageStore filePageStore = (FilePageStore)store;
 
-        FileChannel ch = U.field(filePageStore, "ch");
+        FileIO fileIO = U.field(filePageStore, "fileIO");
 
-        long size = ch.size();
+        long size = fileIO.size();
 
-        ch.write(ByteBuffer.allocate((int)size - FilePageStore.HEADER_SIZE), FilePageStore.HEADER_SIZE);
+        fileIO.write(ByteBuffer.allocate((int)size - filePageStore.headerSize()), filePageStore.headerSize());
 
-        ch.force(false);
+        fileIO.force();
     }
 
     /**
@@ -211,21 +205,21 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         dbMgr.enableCheckpoints(false).get();
 
-        PageMemory mem = shared.database().memoryPolicy(null).pageMemory();
+        PageMemory mem = shared.database().dataRegion(null).pageMemory();
 
         for (FullPageId fullId : pages) {
-            long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
             try {
-                long pageAddr = mem.readLock(fullId.cacheId(), fullId.pageId(), page);
+                long pageAddr = mem.readLock(fullId.groupId(), fullId.pageId(), page);
 
                 for (int j = PageIO.COMMON_HEADER_END; j < mem.pageSize(); j += 4)
                     assertEquals(j + (int)fullId.pageId(), PageUtils.getInt(pageAddr, j));
 
-                mem.readUnlock(fullId.cacheId(), fullId.pageId(), page);
+                mem.readUnlock(fullId.groupId(), fullId.pageId(), page);
             }
             finally {
-                mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                mem.releasePage(fullId.groupId(), fullId.pageId(), page);
             }
         }
     }
@@ -253,10 +247,10 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         for (int i = 0; i < totalPages; i++) {
             FullPageId fullId = pages[i];
 
-            long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
             try {
-                long pageAddr = mem.writeLock(fullId.cacheId(), fullId.pageId(), page);
+                long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
                 PageIO.setPageId(pageAddr, fullId.pageId());
 
@@ -265,11 +259,11 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                         PageUtils.putInt(pageAddr, j, j + (int)fullId.pageId());
                 }
                 finally {
-                    mem.writeUnlock(fullId.cacheId(), fullId.pageId(), page, null, true);
+                    mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
                 }
             }
             finally {
-                mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                mem.releasePage(fullId.groupId(), fullId.pageId(), page);
             }
         }
 
@@ -341,17 +335,17 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         wal.fsync(wal.log(new CheckpointRecord(null)));
 
         for (FullPageId fullId : pages) {
-            long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
             try {
                 assertFalse("Page has a temp heap copy after the last checkpoint: [cacheId=" +
-                    fullId.cacheId() + ", pageId=" + fullId.pageId() + "]", mem.hasTempCopy(page));
+                    fullId.groupId() + ", pageId=" + fullId.pageId() + "]", mem.hasTempCopy(page));
 
                 assertFalse("Page is dirty after the last checkpoint: [cacheId=" +
-                    fullId.cacheId() + ", pageId=" + fullId.pageId() + "]", mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
+                    fullId.groupId() + ", pageId=" + fullId.pageId() + "]", mem.isDirty(fullId.groupId(), fullId.pageId(), page));
             }
             finally {
-                mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                mem.releasePage(fullId.groupId(), fullId.pageId(), page);
             }
         }
     }
@@ -360,6 +354,6 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
      *
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

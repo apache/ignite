@@ -27,7 +27,7 @@
       outline: none;
     }
 
-    sup {
+    sup, sub {
         color: $ignite-brand-success;
     }
 
@@ -122,7 +122,6 @@
                             z-index: 1;
                             position: fixed;
 
-                            width: calc(100% - 40px);
                             width: 100px;
                             height: 20px;
                             margin-top: -20px;
@@ -314,7 +313,7 @@
     .ui-grid-header,
     .ui-grid-viewport {
         .ui-grid-icon-cancel {
-            right: 20px;
+            right: 10px;
         }
 
         .ui-grid-tree-base-row-header-buttons {
@@ -377,6 +376,12 @@
         }
     }
 
+    .ui-grid-header--subcategories {
+        .ui-grid-icon-cancel {
+            right: 20px;
+        }
+    }
+
     .ui-grid-pinned-container {
         .ui-grid-header {
             .ui-grid-header-cell-row {
@@ -396,6 +401,7 @@
                             .ui-grid-column-resizer {
                                 right: -1px;
                                 opacity: 0;
+                                z-index: 1000;
                             }
                         }
                     }
@@ -495,6 +501,10 @@
         &:before {
             content: '';
         }
+    }
+
+    .ui-grid-selection-row-header-buttons::before {
+        opacity: 1;
     }
 }
 

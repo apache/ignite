@@ -61,7 +61,30 @@ namespace ignite
                 ON_START = 49,
                 ON_STOP = 50,
                 COMPUTE_TASK_LOCAL_JOB_RESULT = 60,
-                COMPUTE_JOB_EXECUTE_LOCAL = 61
+                COMPUTE_JOB_EXECUTE_LOCAL = 61,
+            };
+        };
+
+        /*
+        * PlatformProcessor op codes.
+        */
+        struct ProcessorOp
+        {
+            enum Type
+            {
+                GET_BINARY_PROCESSOR = 21,
+                RELEASE_START = 22
+            };
+        };
+
+        /*
+         * PlatformClusterGroup op codes.
+         */
+        struct ClusterGroupOp
+        {
+            enum Type
+            {
+                GET_COMPUTE = 31
             };
         };
 
@@ -298,7 +321,10 @@ namespace ignite
         {
             latch.CountDown();
 
-            jobject binaryProc = Context()->ProcessorBinaryProcessor(proc.Get());
+            JniErrorInfo jniErr;
+
+            jobject binaryProc = Context()->TargetOutObject(proc.Get(), ProcessorOp::GET_BINARY_PROCESSOR, &jniErr);
+
             metaUpdater = new BinaryTypeUpdaterImpl(*this, binaryProc);
 
             metaMgr->SetUpdater(metaUpdater);
@@ -375,7 +401,7 @@ namespace ignite
         {
             JniErrorInfo jniErr;
 
-            jobject res = ctx.Get()->ProcessorCompute(proc.Get(), proj, &jniErr);
+            jobject res = ctx.Get()->TargetOutObject(proj, ClusterGroupOp::GET_COMPUTE, &jniErr);
 
             IgniteError err;
 
@@ -557,7 +583,10 @@ namespace ignite
         void IgniteEnvironment::ProcessorReleaseStart()
         {
             if (proc.Get())
-                ctx.Get()->ProcessorReleaseStart(proc.Get());
+            {
+                JniErrorInfo jniErr;
+                ctx.Get()->TargetInLongOutLong(proc.Get(), ProcessorOp::RELEASE_START, 0, &jniErr);
+            }
         }
 
         HandleRegistry& IgniteEnvironment::GetHandleRegistry()

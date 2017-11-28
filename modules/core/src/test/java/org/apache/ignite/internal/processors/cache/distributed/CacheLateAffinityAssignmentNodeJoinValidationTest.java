@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -77,7 +75,8 @@ public class CacheLateAffinityAssignmentNodeJoinValidationTest extends GridCommo
      * @param firstEnabled Flag value for first started node.
      * @throws Exception If failed.
      */
-    public void checkNodeJoinValidation(boolean firstEnabled) throws Exception {
+    private void checkNodeJoinValidation(boolean firstEnabled) throws Exception {
+        // LateAffinity should be always enabled, setLateAffinityAssignment should be ignored.
         lateAff = firstEnabled;
 
         Ignite ignite = startGrid(0);
@@ -86,49 +85,12 @@ public class CacheLateAffinityAssignmentNodeJoinValidationTest extends GridCommo
 
         lateAff = !firstEnabled;
 
-        try {
-            startGrid(1);
-
-            fail();
-        }
-        catch (Exception e) {
-            checkError(e);
-        }
-
-        client = true;
-
-        try {
-            startGrid(1);
-
-            fail();
-        }
-        catch (Exception e) {
-            checkError(e);
-        }
-
-        assertEquals(1, ignite.cluster().nodes().size());
-
-        lateAff = firstEnabled;
-
-        client = false;
-
         startGrid(1);
 
         client = true;
 
-        Ignite client = startGrid(2);
+        startGrid(2);
 
-        assertTrue(client.configuration().isClientMode());
-    }
-
-    /**
-     * @param e Error.
-     */
-    private void checkError(Exception e) {
-        IgniteSpiException err = X.cause(e, IgniteSpiException.class);
-
-        assertNotNull(err);
-        assertTrue(err.getMessage().contains("Local node's cache affinity assignment mode differs " +
-            "from the same property on remote node"));
+        assertEquals(3, ignite.cluster().nodes().size());
     }
 }

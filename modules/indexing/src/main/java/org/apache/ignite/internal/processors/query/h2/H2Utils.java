@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -29,6 +30,8 @@ import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
+import org.h2.value.DataType;
+import org.h2.value.Value;
 
 import java.lang.reflect.Constructor;
 import java.sql.Connection;
@@ -233,6 +236,29 @@ public class H2Utils {
 
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
+    }
+
+    /**
+     * Convert value to column's expected type by means of H2.
+     *
+     * @param val Source value.
+     * @param desc Row descriptor.
+     * @param type Expected column type to convert to.
+     * @return Converted object.
+     * @throws IgniteCheckedException if failed.
+     */
+    public static Object convert(Object val, GridH2RowDescriptor desc, int type) throws IgniteCheckedException {
+        if (val == null)
+            return null;
+
+        int objType = DataType.getTypeFromClass(val.getClass());
+
+        if (objType == type)
+            return val;
+
+        Value h2Val = desc.wrap(val, objType);
+
+        return h2Val.convertTo(type).getObject();
     }
 
     /**

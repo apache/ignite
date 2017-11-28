@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener query close request.
+ * JDBC query close request.
  */
 public class JdbcQueryCloseRequest extends JdbcRequest {
     /** Query ID. */
@@ -31,7 +31,7 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
 
     /**
      */
-    public JdbcQueryCloseRequest() {
+    JdbcQueryCloseRequest() {
         super(QRY_CLOSE);
     }
 

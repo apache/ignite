@@ -25,8 +25,10 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterNodeFilterImpl;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetService;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
+import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
@@ -36,7 +38,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -45,7 +49,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Interop services.
@@ -95,6 +98,12 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_CANCEL_ALL_ASYNC = 14;
 
     /** */
+    private static final int OP_DOTNET_DEPLOY_ALL = 15;
+
+    /** */
+    private static final int OP_DOTNET_DEPLOY_ALL_ASYNC = 16;
+
+    /** */
     private static final byte PLATFORM_JAVA = 0;
 
     /** */
@@ -103,6 +112,9 @@ public class PlatformServices extends PlatformAbstractTarget {
     /** */
     private static final CopyOnWriteConcurrentMap<T3<Class, String, Integer>, Method> SVC_METHODS
         = new CopyOnWriteConcurrentMap<>();
+
+    /** Future result writer. */
+    private static final PlatformFutureUtils.Writer RESULT_WRITER = new ServiceDeploymentResultWriter();
 
     /** */
     private final IgniteServices services;
@@ -144,26 +156,14 @@ public class PlatformServices extends PlatformAbstractTarget {
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
-            case OP_DOTNET_DEPLOY: {
-                dotnetDeploy(reader, services);
-
-                return TRUE;
-            }
-
             case OP_DOTNET_DEPLOY_ASYNC: {
-                readAndListenFuture(reader, dotnetDeployAsync(reader, services));
-
-                return TRUE;
-            }
-
-            case OP_DOTNET_DEPLOY_MULTIPLE: {
-                dotnetDeployMultiple(reader);
+                readAndListenFuture(reader, dotnetDeployAsync(reader, services), RESULT_WRITER);
 
                 return TRUE;
             }
 
             case OP_DOTNET_DEPLOY_MULTIPLE_ASYNC: {
-                readAndListenFuture(reader, dotnetDeployMultipleAsync(reader));
+                readAndListenFuture(reader, dotnetDeployMultipleAsync(reader), RESULT_WRITER);
 
                 return TRUE;
             }
@@ -182,6 +182,12 @@ public class PlatformServices extends PlatformAbstractTarget {
 
             case OP_CANCEL_ALL_ASYNC: {
                 readAndListenFuture(reader, services.cancelAllAsync());
+
+                return TRUE;
+            }
+
+            case OP_DOTNET_DEPLOY_ALL_ASYNC: {
+                readAndListenFuture(reader, dotnetDeployAllAsync(reader, services), RESULT_WRITER);
 
                 return TRUE;
             }
@@ -210,6 +216,44 @@ public class PlatformServices extends PlatformAbstractTarget {
                         }
                     }
                 );
+
+                return;
+            }
+
+            case OP_DOTNET_DEPLOY: {
+                try {
+                    dotnetDeploy(reader, services);
+                    writeDeploymentResult(writer, null);
+                }
+                catch (Exception e) {
+                    writeDeploymentResult(writer, e);
+                }
+
+                return;
+            }
+
+            case OP_DOTNET_DEPLOY_MULTIPLE: {
+                try {
+                    dotnetDeployMultiple(reader);
+
+                    writeDeploymentResult(writer, null);
+                }
+                catch (Exception e) {
+                    writeDeploymentResult(writer, e);
+                }
+
+                return;
+            }
+
+            case OP_DOTNET_DEPLOY_ALL: {
+                try {
+                    dotnetDeployAll(reader, services);
+
+                    writeDeploymentResult(writer, null);
+                }
+                catch (Exception e) {
+                    writeDeploymentResult(writer, e);
+                }
 
                 return;
             }
@@ -403,6 +447,31 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /**
+     * Deploys a collection of dotnet services.
+     *
+     * @param reader Binary reader.
+     * @param services Services.
+     */
+    private void dotnetDeployAll(BinaryRawReaderEx reader, IgniteServices services) {
+        Collection<ServiceConfiguration> cfgs = dotnetConfigurations(reader);
+
+        services.deployAll(cfgs);
+    }
+
+    /**
+     * Deploys a collection of dotnet services asynchronously.
+     *
+     * @param reader Binary reader.
+     * @param services Services.
+     * @return Future of the operation.
+     */
+    private IgniteFuture<Void> dotnetDeployAllAsync(BinaryRawReaderEx reader, IgniteServices services) {
+        Collection<ServiceConfiguration> cfgs = dotnetConfigurations(reader);
+
+        return services.deployAllAsync(cfgs);
+    }
+
+    /**
      * Read the dotnet service configuration.
      *
      * @param reader Binary reader,
@@ -424,6 +493,24 @@ public class PlatformServices extends PlatformAbstractTarget {
             cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
 
         return cfg;
+    }
+
+    /**
+     * Reads the collection of dotnet service configurations.
+     *
+     * @param reader Binary reader,
+     * @return Service configuration.
+     */
+    @NotNull private Collection<ServiceConfiguration> dotnetConfigurations(BinaryRawReaderEx reader) {
+        int numServices = reader.readInt();
+
+        List<ServiceConfiguration> cfgs = new ArrayList<>(numServices);
+
+        for (int i = 0; i < numServices; i++) {
+            cfgs.add(dotnetConfiguration(reader));
+        }
+
+        return cfgs;
     }
 
     /**
@@ -620,5 +707,66 @@ public class PlatformServices extends PlatformAbstractTarget {
                 map = map0;
             }
         }
+    }
+
+    /**
+     * Writes an EventBase.
+     */
+    private static class ServiceDeploymentResultWriter implements PlatformFutureUtils.Writer {
+        /** <inheritDoc /> */
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
+            writeDeploymentResult(writer, err);
+        }
+
+        /** <inheritDoc /> */
+        @Override public boolean canWrite(Object obj, Throwable err) {
+            return true;
+        }
+    }
+
+    /**
+     * Writes a service deployment result for dotnet code.
+     *
+     * @param writer Writer.
+     * @param err Error.
+      */
+    private static void writeDeploymentResult(BinaryRawWriterEx writer, Throwable err) {
+        PlatformUtils.writeInvocationResult(writer, null, err);
+
+        Collection<ServiceConfiguration> failedCfgs = null;
+
+        if (err instanceof ServiceDeploymentException)
+            failedCfgs = ((ServiceDeploymentException)err).getFailedConfigurations();
+
+        // write a collection of failed service configurations
+        PlatformUtils.writeNullableCollection(writer, failedCfgs, new PlatformWriterClosure<ServiceConfiguration>() {
+            @Override public void write(BinaryRawWriterEx writer, ServiceConfiguration svcCfg) {
+                writeFailedConfiguration(writer, svcCfg);
+            }
+        });
+    }
+
+    /**
+     * Writes a failed service configuration for dotnet code.
+     *
+     * @param w Writer
+     * @param svcCfg Service configuration
+     */
+    private static void writeFailedConfiguration(BinaryRawWriterEx w, ServiceConfiguration svcCfg) {
+        Object dotnetSvc = null;
+        Object dotnetFilter = null;
+        w.writeString(svcCfg.getName());
+        if (svcCfg.getService() instanceof PlatformDotNetServiceImpl)
+            dotnetSvc = ((PlatformDotNetServiceImpl)svcCfg.getService()).getInternalService();
+
+        w.writeObjectDetached(dotnetSvc);
+        w.writeInt(svcCfg.getTotalCount());
+        w.writeInt(svcCfg.getMaxPerNodeCount());
+        w.writeString(svcCfg.getCacheName());
+        w.writeObjectDetached(svcCfg.getAffinityKey());
+
+        if (svcCfg.getNodeFilter() instanceof PlatformClusterNodeFilterImpl)
+            dotnetFilter = ((PlatformClusterNodeFilterImpl)svcCfg.getNodeFilter()).getInternalPredicate();
+        w.writeObjectDetached(dotnetFilter);
     }
 }

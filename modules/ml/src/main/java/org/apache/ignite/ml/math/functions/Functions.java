@@ -17,9 +17,10 @@
 
 package org.apache.ignite.ml.math.functions;
 
-import org.apache.ignite.lang.IgniteBiTuple;
-
+import java.util.Comparator;
 import java.util.List;
+import java.util.function.BiFunction;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Compatibility with Apache Mahout.
@@ -76,6 +77,32 @@ public final class Functions {
     /** Function that returns {@code max(abs(a), abs(b))}. */
     public static final IgniteBiFunction<Double, Double, Double> MAX_ABS = (a, b) -> Math.max(Math.abs(a), Math.abs(b));
 
+    /**
+     * Generic 'max' function.
+     *
+     * @param a First object to compare.
+     * @param b Second object to compare.
+     * @param f Comparator.
+     * @param <T> Type of objects to compare.
+     * @return Maximum between {@code a} and {@code b} in terms of comparator {@code f}.
+     */
+    public static <T> T MAX_GENERIC(T a, T b, Comparator<T> f) {
+        return f.compare(a, b) > 0 ? a : b;
+    }
+
+    /**
+     * Generic 'min' function.
+     *
+     * @param a First object to compare.
+     * @param b Second object to compare.
+     * @param f Comparator.
+     * @param <T> Type of objects to compare.
+     * @return Minimum between {@code a} and {@code b} in terms of comparator {@code f}.
+     */
+    public static <T> T MIN_GENERIC(T a, T b, Comparator<T> f) {
+        return f.compare(a, b) > 0 ? a : b;
+    }
+
     /** Function that returns {@code min(abs(a), abs(b))}. */
     public static final IgniteBiFunction<Double, Double, Double> MIN_ABS = (a, b) -> Math.min(Math.abs(a), Math.abs(b));
 
@@ -87,11 +114,6 @@ public final class Functions {
 
     /** Function that returns {@code a &lt; b ? -1 : a &gt; b ? 1 : 0}. */
     public static final IgniteBiFunction<Double, Double, Double> COMPARE = (a, b) -> a < b ? -1.0 : a > b ? 1.0 : 0.0;
-
-    /** */
-    public  static <A, B, C> IgniteFunction<B, C> curry(IgniteBiFunction<A, B, C> f, A a) {
-        return (IgniteFunction<B, C>)b -> f.apply(a, b);
-    }
 
     /** */
     public static <A, B extends Comparable<B>> IgniteBiTuple<Integer, A> argmin(List<A> args, IgniteFunction<A, B> f) {
@@ -190,5 +212,18 @@ public final class Functions {
             else
                 return Math.pow(a, b);
         };
+    }
+
+    /**
+     * Curry bifunction.
+     *
+     * @param f Bifunction to curry.
+     * @param <A> Type of first argument of {@code f}.
+     * @param <B> Type of second argument of {@code f}.
+     * @param <C> Return type of {@code f}.
+     * @return Curried bifunction.
+     */
+    public static <A, B, C> IgniteCurriedBiFunction<A, B, C> curry(BiFunction<A, B, C> f) {
+        return a -> b -> f.apply(a, b);
     }
 }

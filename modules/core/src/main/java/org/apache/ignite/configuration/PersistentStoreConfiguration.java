@@ -16,13 +16,18 @@
  */
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.Serializable;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Configures Apache Ignite Persistent store.
+ * @deprecated Use {@link DataStorageConfiguration} instead.
  */
+@Deprecated
 public class PersistentStoreConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -42,12 +47,11 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default length of interval over which rate-based metric is calculated. */
     public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
 
-    /** */
-    @SuppressWarnings("UnnecessaryBoxing")
-    public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = new Long(256L * 1024 * 1024);
-
     /** Default number of checkpointing threads. */
-    public static final int DFLT_CHECKPOINTING_THREADS = 1;
+    public static final int DFLT_CHECKPOINTING_THREADS = 4;
+
+    /** Default checkpoint write order. */
+    public static final CheckpointWriteOrder DFLT_CHECKPOINT_WRITE_ORDER = CheckpointWriteOrder.SEQUENTIAL;
 
     /** Default number of checkpoints to be kept in WAL after checkpoint is finished */
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
@@ -68,7 +72,7 @@ public class PersistentStoreConfiguration implements Serializable {
     public static final int DFLT_WAL_FLUSH_FREQ = 2000;
 
     /** Default wal fsync delay. */
-    public static final int DFLT_WAL_FSYNC_DELAY = 1;
+    public static final int DFLT_WAL_FSYNC_DELAY = 1000;
 
     /** Default wal record iterator buffer size. */
     public static final int DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE = 64 * 1024 * 1024;
@@ -82,20 +86,26 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
+    /** Default write throttling enabled. */
+    public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
+
     /** */
     private String persistenceStorePath;
 
     /** Checkpointing frequency. */
     private long checkpointingFreq = DFLT_CHECKPOINTING_FREQ;
 
-    /** Lock wait time. */
-    private int lockWaitTime = DFLT_LOCK_WAIT_TIME;
+    /** Lock wait time, in milliseconds. */
+    private long lockWaitTime = DFLT_LOCK_WAIT_TIME;
 
     /** */
-    private Long checkpointingPageBufSize = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
+    private long checkpointingPageBufSize;
 
     /** */
     private int checkpointingThreads = DFLT_CHECKPOINTING_THREADS;
+
+    /** Checkpoint write order. */
+    private CheckpointWriteOrder checkpointWriteOrder = DFLT_CHECKPOINT_WRITE_ORDER;
 
     /** Number of checkpoints to keep */
     private int walHistSize = DFLT_WAL_HISTORY_SIZE;
@@ -122,16 +132,21 @@ public class PersistentStoreConfiguration implements Serializable {
     private int tlbSize = DFLT_TLB_SIZE;
 
     /** Wal flush frequency in milliseconds. */
-    private int walFlushFreq = DFLT_WAL_FLUSH_FREQ;
+    private long walFlushFreq = DFLT_WAL_FLUSH_FREQ;
 
     /** Wal fsync delay. */
-    private int walFsyncDelay = DFLT_WAL_FSYNC_DELAY;
+    private long walFsyncDelay = DFLT_WAL_FSYNC_DELAY;
 
     /** Wal record iterator buffer size. */
     private int walRecordIterBuffSize = DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE;
 
     /** Always write full pages. */
     private boolean alwaysWriteFullPages = DFLT_WAL_ALWAYS_WRITE_FULL_PAGES;
+
+    /** Factory to provide I/O interface for files */
+    private FileIOFactory fileIOFactory =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, false) ?
+            new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**
      * Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
@@ -150,6 +165,11 @@ public class PersistentStoreConfiguration implements Serializable {
      *  Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
      */
     private long walAutoArchiveAfterInactivity = -1;
+
+    /**
+     * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
+     */
+    private boolean writeThrottlingEnabled = DFLT_WRITE_THROTTLING_ENABLED;
 
     /**
      * Returns a path the root directory where the Persistent Store will persist data and indexes.
@@ -195,9 +215,10 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Gets amount of memory allocated for a checkpointing temporary buffer.
      *
-     * @return checkpointing page buffer size in bytes.
+     * @return Checkpointing page buffer size in bytes or {@code 0} for Ignite
+     *      to choose the buffer size automatically.
      */
-    public Long getCheckpointingPageBufferSize() {
+    public long getCheckpointingPageBufferSize() {
         return checkpointingPageBufSize;
     }
 
@@ -206,7 +227,8 @@ public class PersistentStoreConfiguration implements Serializable {
      * copies of pages that are being written to disk and being update in parallel while the checkpointing is in
      * progress.
      *
-     * @param checkpointingPageBufSize checkpointing page buffer size in bytes.
+     * @param checkpointingPageBufSize Checkpointing page buffer size in bytes or {@code 0} for Ignite to
+     *      choose the buffer size automatically.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setCheckpointingPageBufferSize(long checkpointingPageBufSize) {
@@ -228,7 +250,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Sets a number of threads to use for the checkpointing purposes.
      *
-     * @param checkpointingThreads Number of checkpointing threads. One thread is used by default.
+     * @param checkpointingThreads Number of checkpointing threads. Four threads are used by default.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setCheckpointingThreads(int checkpointingThreads) {
@@ -238,21 +260,23 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Time out in second, while wait and try get file lock for start persist manager.
+     * Time out in milliseonds to wait when acquiring persistence store lock file before failing the
+     * local node.
      *
-     * @return Time for wait.
+     * @return Lock wait time in milliseconds.
      */
-    public int getLockWaitTime() {
+    public long getLockWaitTime() {
         return lockWaitTime;
     }
 
     /**
-     * Time out in milliseconds, while wait and try get file lock for start persist manager.
+     * Time out in milliseconds  to wait when acquiring persistence store lock file before failing the
+     * local node.
      *
-     * @param lockWaitTime Lock wait time.
+     * @param lockWaitTime Lock wait time in milliseconds.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setLockWaitTime(int lockWaitTime) {
+    public PersistentStoreConfiguration setLockWaitTime(long lockWaitTime) {
         this.lockWaitTime = lockWaitTime;
 
         return this;
@@ -388,6 +412,24 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
+     * Gets flag indicating whether write throttling is enabled.
+     */
+    public boolean isWriteThrottlingEnabled() {
+        return writeThrottlingEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether write throttling is enabled.
+     *
+     * @param writeThrottlingEnabled Write throttling enabled flag.
+     */
+    public PersistentStoreConfiguration setWriteThrottlingEnabled(boolean writeThrottlingEnabled) {
+        this.writeThrottlingEnabled = writeThrottlingEnabled;
+
+        return this;
+    }
+
+    /**
      * Gets the length of the time interval for rate-based metrics. This interval defines a window over which
      * hits will be tracked. Default value is {@link #DFLT_RATE_TIME_INTERVAL_MILLIS}.
      *
@@ -469,19 +511,22 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     *  Property define how often will be fsync, in milliseconds.
-     *  In background mode, exist thread which do fsync by timeout.
+     *  This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
+     *  all other WAL modes.
      *
-     * @return Flush frequency.
+     * @return WAL flush frequency, in milliseconds.
      */
-    public int getWalFlushFrequency() {
+    public long getWalFlushFrequency() {
         return walFlushFreq;
     }
 
     /**
-     * @param walFlushFreq Wal flush frequency, in milliseconds.
+     *  This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
+     *  all other WAL modes.
+     *
+     * @param walFlushFreq WAL flush frequency, in milliseconds.
      */
-    public PersistentStoreConfiguration setWalFlushFrequency(int walFlushFreq) {
+    public PersistentStoreConfiguration setWalFlushFrequency(long walFlushFreq) {
         this.walFlushFreq = walFlushFreq;
 
         return this;
@@ -490,15 +535,15 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Gets the fsync delay, in nanoseconds.
      */
-    public int getWalFsyncDelay() {
+    public long getWalFsyncDelayNanos() {
         return walFsyncDelay <= 0 ? DFLT_WAL_FSYNC_DELAY : walFsyncDelay;
     }
 
     /**
-     * @param walFsyncDelay Wal fsync delay, in nanoseconds.
+     * @param walFsyncDelayNanos Wal fsync delay, in nanoseconds.
      */
-    public PersistentStoreConfiguration setWalFsyncDelay(int walFsyncDelay) {
-        this.walFsyncDelay = walFsyncDelay;
+    public PersistentStoreConfiguration setWalFsyncDelayNanos(long walFsyncDelayNanos) {
+        walFsyncDelay = walFsyncDelayNanos;
 
         return this;
     }
@@ -539,6 +584,25 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
+     * Factory to provide implementation of FileIO interface
+     * which is used for any file read/write operations
+     *
+     * @return File I/O factory
+     */
+    public FileIOFactory getFileIOFactory() {
+        return fileIOFactory;
+    }
+
+    /**
+     * @param fileIOFactory File I/O factory
+     */
+    public PersistentStoreConfiguration setFileIOFactory(FileIOFactory fileIOFactory) {
+        this.fileIOFactory = fileIOFactory;
+
+        return this;
+    }
+
+    /**
      * <b>Note:</b> setting this value with {@link WALMode#DEFAULT} may generate file size overhead for WAL segments in case
      * grid is used rarely.
      *
@@ -558,6 +622,26 @@ public class PersistentStoreConfiguration implements Serializable {
      */
     public long getWalAutoArchiveAfterInactivity() {
         return walAutoArchiveAfterInactivity;
+    }
+
+    /**
+     * This property defines order of writing pages to disk storage during checkpoint.
+     *
+     * @return Checkpoint write order.
+     */
+    public CheckpointWriteOrder getCheckpointWriteOrder() {
+        return checkpointWriteOrder;
+    }
+
+    /**
+     * This property defines order of writing pages to disk storage during checkpoint.
+     *
+     * @param checkpointWriteOrder Checkpoint write order.
+     */
+    public PersistentStoreConfiguration setCheckpointWriteOrder(CheckpointWriteOrder checkpointWriteOrder) {
+        this.checkpointWriteOrder = checkpointWriteOrder;
+
+        return this;
     }
 
     /** {@inheritDoc} */

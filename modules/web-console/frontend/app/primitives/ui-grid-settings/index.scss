@@ -186,30 +186,33 @@
 
                 .input-tip {
                     overflow: visible;
-                }
 
-                button {
-                    overflow: visible;
+                    & > button {
+                        overflow: visible;
 
-                    width: auto;
-                    height: $height;
-                    min-width: 70px;
-                    max-width: 70px;
-                    padding: 0;
-                    padding-left: 5px;
+                        width: auto;
+                        height: $height;
+                        min-width: 70px;
+                        max-width: 70px;
+                        padding: 0 0 0 5px;
 
-                    cursor: pointer;
-                    color: transparent;
-                    font-size: inherit;
-                    line-height: $height;
-                    text-align: left;
-                    text-shadow: 0 0 0 #ee2b27;
+                        cursor: pointer;
+                        color: transparent;
+                        font-size: inherit;
+                        line-height: $height;
+                        text-align: left;
+                        text-shadow: 0 0 0 #ee2b27;
 
-                    border: none;
-                    box-shadow: none;
+                        border: none;
+                        box-shadow: none;
 
-                    &:hover, &:focus {
-                        text-shadow: 0 0 0 #a8110f;
+                        &:hover, &:focus {
+                            text-shadow: 0 0 0 #a8110f;
+                        }
+
+                        button {
+                            color: $text-color;
+                        }
                     }
                 }
 

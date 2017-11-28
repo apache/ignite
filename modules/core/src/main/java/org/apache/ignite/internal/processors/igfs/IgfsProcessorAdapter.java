@@ -25,13 +25,14 @@ import org.apache.ignite.igfs.mapreduce.IgfsJob;
 import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite file system processor adapter.
  */
-public abstract class IgfsProcessorAdapter extends GridProcessorAdapter {
+public abstract class IgfsProcessorAdapter extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /**
      * Constructor.
      *

@@ -45,13 +45,13 @@ public class FullPageIdTable {
     private static final long EMPTY_PAGE_ID = EMPTY_FULL_PAGE_ID.pageId();
 
     /** */
-    private static final int EMPTY_CACHE_ID = EMPTY_FULL_PAGE_ID.cacheId();
+    private static final int EMPTY_CACHE_GRP_ID = EMPTY_FULL_PAGE_ID.groupId();
 
     /** */
     private static final long REMOVED_PAGE_ID = 0x8000000000000000L;
 
     /** */
-    private static final int REMOVED_CACHE_ID = 0;
+    private static final int REMOVED_CACHE_GRP_ID = 0;
 
     /** */
     private static final int EQUAL = 0;
@@ -178,13 +178,13 @@ public class FullPageIdTable {
     /**
      * Removes key-value association for the given key.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      */
-    public void remove(int cacheId, long pageId, int tag) {
-        assert assertKey(cacheId, pageId);
+    public void remove(int grpId, long pageId, int tag) {
+        assert assertKey(grpId, pageId);
 
-        int index = removeKey(cacheId, pageId, tag);
+        int index = removeKey(grpId, pageId, tag);
 
         if (index >= 0)
             setValueAt(index, 0);
@@ -225,18 +225,18 @@ public class FullPageIdTable {
     public long clearAt(int idx, GridPredicate3<Integer, Long, Integer> pred, long absent) {
         long base = entryBase(idx);
 
-        int cacheId = GridUnsafe.getInt(base);
+        int grpId = GridUnsafe.getInt(base);
         int tag = GridUnsafe.getInt(base + 4);
         long pageId = GridUnsafe.getLong(base + 8);
 
-        if ((pageId == REMOVED_PAGE_ID && cacheId == REMOVED_CACHE_ID)
-            || (pageId == EMPTY_PAGE_ID && cacheId == EMPTY_CACHE_ID))
+        if ((pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID)
+            || (pageId == EMPTY_PAGE_ID && grpId == EMPTY_CACHE_GRP_ID))
             return absent;
 
-        if (pred.apply(cacheId, pageId, tag)) {
+        if (pred.apply(grpId, pageId, tag)) {
             long res = valueAt(idx);
 
-            setKeyAt(idx, REMOVED_CACHE_ID, REMOVED_PAGE_ID);
+            setKeyAt(idx, REMOVED_CACHE_GRP_ID, REMOVED_PAGE_ID);
             setValueAt(idx, 0);
 
             return res;
@@ -367,7 +367,7 @@ public class FullPageIdTable {
         while (++step <= maxSteps);
 
         if (foundIndex != -1) {
-            setKeyAt(foundIndex, REMOVED_CACHE_ID, REMOVED_PAGE_ID);
+            setKeyAt(foundIndex, REMOVED_CACHE_GRP_ID, REMOVED_PAGE_ID);
 
             decrementSize();
         }
@@ -382,17 +382,17 @@ public class FullPageIdTable {
     private int testKeyAt(int index, int testCacheId, long testPageId, int testTag) {
         long base = entryBase(index);
 
-        int cacheId = GridUnsafe.getInt(base);
+        int grpId = GridUnsafe.getInt(base);
         int tag = GridUnsafe.getInt(base + 4);
         long pageId = GridUnsafe.getLong(base + 8);
 
-        if (pageId == REMOVED_PAGE_ID && cacheId == REMOVED_CACHE_ID)
+        if (pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID)
             return REMOVED;
-        else if (pageId == testPageId && cacheId == testCacheId && tag >= testTag)
+        else if (pageId == testPageId && grpId == testCacheId && tag >= testTag)
             return EQUAL;
-        else if (pageId == testPageId && cacheId == testCacheId && tag < testTag)
+        else if (pageId == testPageId && grpId == testCacheId && tag < testTag)
             return OUTDATED;
-        else if (pageId == EMPTY_PAGE_ID && cacheId == EMPTY_CACHE_ID)
+        else if (pageId == EMPTY_PAGE_ID && grpId == EMPTY_CACHE_GRP_ID)
             return EMPTY;
         else
             return NOT_EQUAL;
@@ -405,34 +405,34 @@ public class FullPageIdTable {
     private boolean isValuePresentAt(final int idx) {
         long base = entryBase(idx);
 
-        int cacheId = GridUnsafe.getInt(base);
+        int grpId = GridUnsafe.getInt(base);
         long pageId = GridUnsafe.getLong(base + 8);
 
-        return !((pageId == REMOVED_PAGE_ID && cacheId == REMOVED_CACHE_ID)
-            || (pageId == EMPTY_PAGE_ID && cacheId == EMPTY_CACHE_ID));
+        return !((pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID)
+            || (pageId == EMPTY_PAGE_ID && grpId == EMPTY_CACHE_GRP_ID));
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @return {@code True} if checks succeeded.
      */
-    private boolean assertKey(int cacheId, long pageId) {
-        assert cacheId != EMPTY_CACHE_ID && PageIdUtils.isEffectivePageId(pageId):
-            "cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId);
+    private boolean assertKey(int grpId, long pageId) {
+        assert grpId != EMPTY_CACHE_GRP_ID && PageIdUtils.isEffectivePageId(pageId):
+            "grpId=" + grpId + ", pageId=" + U.hexLong(pageId);
 
         return true;
     }
 
     /**
      * @param index Entry index.
-     * @param cacheId Cache ID to write.
+     * @param grpId Cache group ID to write.
      * @param pageId Page ID to write.
      */
-    private void setKeyAt(int index, int cacheId, long pageId) {
+    private void setKeyAt(int index, int grpId, long pageId) {
         long base = entryBase(index);
 
-        GridUnsafe.putInt(base, cacheId);
+        GridUnsafe.putInt(base, grpId);
         GridUnsafe.putLong(base + 8, pageId);
     }
 

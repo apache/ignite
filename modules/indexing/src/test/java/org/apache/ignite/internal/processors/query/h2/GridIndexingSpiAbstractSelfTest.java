@@ -104,13 +104,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     }
 
     /** */
-    private static TypeDesc typeAA = new TypeDesc("A", "A", Collections.<String, Class<?>>emptyMap(), null);
+    private static TypeDesc typeAA = new TypeDesc("A", "A", "A", Collections.<String, Class<?>>emptyMap(), null);
 
     /** */
-    private static TypeDesc typeAB = new TypeDesc("A", "B", Collections.<String, Class<?>>emptyMap(), textIdx);
+    private static TypeDesc typeAB = new TypeDesc("A", "A", "B", Collections.<String, Class<?>>emptyMap(), textIdx);
 
     /** */
-    private static TypeDesc typeBA = new TypeDesc("B", "A", Collections.<String, Class<?>>emptyMap(), null);
+    private static TypeDesc typeBA = new TypeDesc("B", "B", "A", Collections.<String, Class<?>>emptyMap(), null);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -251,20 +251,21 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         IgniteCache<Integer, BinaryObject> cacheB = ignite0.createCache(cacheBCfg());
 
-        assertFalse(spi.queryLocalSql(spi.schema(typeAA.cacheName()), "select * from A.A", null, Collections.emptySet(),
-            typeAA.name(), null, null).hasNext());
+        assertFalse(spi.queryLocalSql(spi.schema(typeAA.cacheName()), typeAA.cacheName(), "select * from A.A", null,
+            Collections.emptySet(), typeAA.name(), null, null).hasNext());
 
-        assertFalse(spi.queryLocalSql(spi.schema(typeAB.cacheName()), "select * from A.B", null, Collections.emptySet(),
-            typeAB.name(), null, null).hasNext());
+        assertFalse(spi.queryLocalSql(spi.schema(typeAB.cacheName()), typeAB.cacheName(), "select * from A.B", null,
+            Collections.emptySet(), typeAB.name(), null, null).hasNext());
 
-        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select * from B.A", null, Collections.emptySet(),
-            typeBA.name(), null, null).hasNext());
-
-        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select * from B.A, A.B, A.A", null,
+        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), typeBA.cacheName(), "select * from B.A", null,
             Collections.emptySet(), typeBA.name(), null, null).hasNext());
 
+        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), typeBA.cacheName(),
+            "select * from B.A, A.B, A.A", null, Collections.emptySet(), typeBA.name(), null, null).hasNext());
+
         try {
-            spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select aa.*, ab.*, ba.* from A.A aa, A.B ab, B.A ba",
+            spi.queryLocalSql(spi.schema(typeBA.cacheName()), typeBA.cacheName(),
+                "select aa.*, ab.*, ba.* from A.A aa, A.B ab, B.A ba",
                 null, Collections.emptySet(), typeBA.name(), null, null).hasNext();
 
             fail("Enumerations of aliases in select block must be prohibited");
@@ -273,11 +274,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             // all fine
         }
 
-        assertFalse(spi.queryLocalSql(spi.schema(typeAB.cacheName()), "select ab.* from A.B ab", null,
-            Collections.emptySet(), typeAB.name(), null, null).hasNext());
+        assertFalse(spi.queryLocalSql(spi.schema(typeAB.cacheName()), typeAB.cacheName(), "select ab.* from A.B ab",
+            null, Collections.emptySet(), typeAB.name(), null, null).hasNext());
 
-        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select   ba.*   from B.A  as ba", null,
-            Collections.emptySet(), typeBA.name(), null, null).hasNext());
+        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), typeBA.cacheName(),
+            "select   ba.*   from B.A  as ba", null, Collections.emptySet(), typeBA.name(), null, null).hasNext());
 
         cacheA.put(1, aa("A", 1, "Vasya", 10).build());
         cacheA.put(1, ab(1, "Vasya", 20, "Some text about Vasya goes here.").build());
@@ -289,7 +290,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         // Query data.
         Iterator<IgniteBiTuple<Integer, BinaryObjectImpl>> res = spi.queryLocalSql(spi.schema(typeAA.cacheName()),
-            "from a order by age", null, Collections.emptySet(), typeAA.name(), null, null);
+            typeAA.cacheName(), "from a order by age", null, Collections.emptySet(), typeAA.name(), null, null);
 
         assertTrue(res.hasNext());
         assertEquals(aa("A", 3, "Borya", 18).build(), value(res.next()));
@@ -297,8 +298,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(aa("A", 2, "Valera", 19).build(), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.queryLocalSql(spi.schema(typeAA.cacheName()), "select aa.* from a aa order by aa.age", null,
-            Collections.emptySet(), typeAA.name(), null, null);
+        res = spi.queryLocalSql(spi.schema(typeAA.cacheName()), typeAA.cacheName(),
+            "select aa.* from a aa order by aa.age", null, Collections.emptySet(), typeAA.name(), null, null);
 
         assertTrue(res.hasNext());
         assertEquals(aa("A", 3, "Borya", 18).build(), value(res.next()));
@@ -306,16 +307,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(aa("A", 2, "Valera", 19).build(), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.queryLocalSql(spi.schema(typeAB.cacheName()), "from b order by name", null, Collections.emptySet(),
-            typeAB.name(), null, null);
-
-        assertTrue(res.hasNext());
-        assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here.").build(), value(res.next()));
-        assertTrue(res.hasNext());
-        assertEquals(ab(4, "Vitalya", 20, "Very Good guy").build(), value(res.next()));
-        assertFalse(res.hasNext());
-
-        res = spi.queryLocalSql(spi.schema(typeAB.cacheName()), "select bb.* from b as bb order by bb.name", null,
+        res = spi.queryLocalSql(spi.schema(typeAB.cacheName()), typeAB.cacheName(), "from b order by name", null,
             Collections.emptySet(), typeAB.name(), null, null);
 
         assertTrue(res.hasNext());
@@ -324,8 +316,17 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(ab(4, "Vitalya", 20, "Very Good guy").build(), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.queryLocalSql(spi.schema(typeBA.cacheName()), "from a", null, Collections.emptySet(), typeBA.name(),
-            null, null);
+        res = spi.queryLocalSql(spi.schema(typeAB.cacheName()), typeAB.cacheName(),
+            "select bb.* from b as bb order by bb.name", null, Collections.emptySet(), typeAB.name(), null, null);
+
+        assertTrue(res.hasNext());
+        assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here.").build(), value(res.next()));
+        assertTrue(res.hasNext());
+        assertEquals(ab(4, "Vitalya", 20, "Very Good guy").build(), value(res.next()));
+        assertFalse(res.hasNext());
+
+        res = spi.queryLocalSql(spi.schema(typeBA.cacheName()), typeBA.cacheName(), "from a", null,
+            Collections.emptySet(), typeBA.name(), null, null);
 
         assertTrue(res.hasNext());
         assertEquals(ba(2, "Kolya", 25, true).build(), value(res.next()));
@@ -333,7 +334,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         // Text queries
         Iterator<IgniteBiTuple<Integer, BinaryObjectImpl>> txtRes = spi.queryLocalText(spi.schema(typeAB.cacheName()),
-            "good", typeAB.name(), null);
+            typeAB.cacheName(), "good", typeAB.name(), null);
 
         assertTrue(txtRes.hasNext());
         assertEquals(ab(4, "Vitalya", 20, "Very Good guy").build(), value(txtRes.next()));
@@ -467,6 +468,9 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         private final String cacheName;
 
         /** */
+        private final String schemaName;
+
+        /** */
         private final Map<String, Class<?>> valFields;
 
         /** */
@@ -474,13 +478,15 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /**
          * @param cacheName Cache name.
+         * @param schemaName Schema name.
          * @param name Type name.
          * @param valFields Fields.
          * @param textIdx Fulltext index.
          */
-        private TypeDesc(String cacheName, String name, Map<String, Class<?>> valFields, GridQueryIndexDescriptor textIdx) {
+        private TypeDesc(String cacheName, String schemaName, String name, Map<String, Class<?>> valFields, GridQueryIndexDescriptor textIdx) {
             this.name = name;
             this.cacheName = cacheName;
+            this.schemaName = schemaName;
             this.valFields = Collections.unmodifiableMap(valFields);
             this.textIdx = textIdx;
         }
@@ -493,6 +499,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Override public String name() {
             return name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String schemaName() {
+            return schemaName;
         }
 
         /** {@inheritDoc} */
@@ -543,6 +554,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 /** */
                 @Override public GridQueryProperty parent() {
                     return null;
+                }
+
+                /** */
+                @Override public boolean notNull() {
+                    return false;
                 }
             };
         }
@@ -632,6 +648,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Nullable @Override public String valueFieldAlias() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void validateKeyAndValue(Object key, Object value) throws IgniteCheckedException {
+            // No-op.
         }
     }
 

@@ -18,6 +18,7 @@ include /app/helpers/jade/mixins
 
 -var form = 'query'
 -var model = 'backupItem'
+-var queryKeyFields = `${model}.queryKeyFields`
 -var queryFields = `${model}.fields`
 -var queryAliases = `${model}.aliases`
 -var queryIndexes = `${model}.indexes`
@@ -67,6 +68,15 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
                 div(ng-if=`${model}.queryMetadata === 'Configuration'`)
                     .settings-row
                         +text('Table name:', `${model}.tableName`, '"tableName"', 'false', 'Enter table name', 'Table name for this query entity')
+                    div(ng-if='$ctrl.available("2.0.0")')
+                        .settings-row
+                            +text('Key field name:', `${model}.keyFieldName`, '"keyFieldName"', 'false', 'Enter key field name',
+                                'Key name.<br/>' +
+                                'Can be used in field list to denote the key as a whole')
+                        .settings-row
+                            +text('Value field name:', `${model}.valueFieldName`, '"valueFieldName"', 'false', 'Enter value field name',
+                                'Value name.<br/>' +
+                                'Can be used in field list to denote the entire value')
                     .settings-row
                         +ignite-form-group(ng-model=queryFields ng-form=queryFieldsForm)
                             ignite-form-field-label(id='queryFields')
@@ -85,11 +95,17 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
                                                 a.labelFormField(ng-click='tableStartEdit(backupItem, queryFieldsTbl, $index)') {{item.name}}  / {{item.className}}
                                                 +btn-remove('tableRemove(backupItem, queryFieldsTbl, $index)', '"Remove path"')
                                             td.col-sm-12(ng-show='tableEditing(queryFieldsTbl, $index)')
-                                                +table-pair-edit('queryFieldsTbl', 'cur', 'Field name', 'Field full class name', false, true, '{{::queryFieldsTbl.focusId + $index}}', '$index', '/')
+                                                +table-pair-edit('queryFieldsTbl', 'cur', 'Field name', 'Field full class name', true, '{{::queryFieldsTbl.focusId + $index}}', '$index', '/')
                                     tfoot(ng-show='tableNewItemActive(queryFieldsTbl)')
                                         tr
                                             td.col-sm-12
-                                                +table-pair-edit('queryFieldsTbl', 'new', 'Field name', 'Field full class name', false, true, '{{::queryFieldsTbl.focusId + $index}}', '-1', '/')
+                                                +table-pair-edit('queryFieldsTbl', 'new', 'Field name', 'Field full class name', true, '{{::queryFieldsTbl.focusId + $index}}', '-1', '/')
+                    .settings-row
+                        +ignite-form-field-dropdown('Key fields:', queryKeyFields, '"queryKeyFields"', false, false, true,
+                            'Select key fields', 'Configure available fields', 'fields(\'cur\', ' + queryKeyFields + ')',
+                            'Query fields that belongs to the key.<br/>\
+                             Used to build / modify keys and values during SQL DML operations when no key - value classes are present on cluster nodes.'
+                        )
                     .settings-row
                         +ignite-form-group(ng-model=queryAliases ng-form=queryAliasesForm)
                             ignite-form-field-label
@@ -109,11 +125,11 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
                                                 a.labelFormField(ng-click='tableStartEdit(backupItem, aliasesTbl, $index)') {{item.field}} &rarr; {{item.alias}}
                                                 +btn-remove('tableRemove(backupItem, aliasesTbl, $index)', '"Remove alias"')
                                             td.col-sm-12(ng-show='tableEditing(aliasesTbl, $index)')
-                                                +table-pair-edit('aliasesTbl', 'cur', 'Field name', 'Field Alias', false, false, '{{::aliasesTbl.focusId + $index}}', '$index', '&rarr;')
+                                                +table-pair-edit('aliasesTbl', 'cur', 'Field name', 'Field Alias', false, '{{::aliasesTbl.focusId + $index}}', '$index', '&rarr;')
                                     tfoot(ng-show='tableNewItemActive(aliasesTbl)')
                                         tr
                                             td.col-sm-12
-                                                +table-pair-edit('aliasesTbl', 'new', 'Field name', 'Field Alias', false, false, '{{::aliasesTbl.focusId + $index}}', '-1', '&rarr;')
+                                                +table-pair-edit('aliasesTbl', 'new', 'Field name', 'Field Alias', false, '{{::aliasesTbl.focusId + $index}}', '-1', '&rarr;')
                     .settings-row(ng-init='indexesTbl={type: "table-indexes", model: "indexes", focusId: "IndexName", ui: "table-indexes"}')
                         +ignite-form-group(ng-model=queryIndexes ng-form=queryIndexesForm)
                             ignite-form-field-label

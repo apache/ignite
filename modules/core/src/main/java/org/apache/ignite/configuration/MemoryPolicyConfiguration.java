@@ -19,7 +19,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
+import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 
@@ -60,7 +60,10 @@ import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_D
  *              </property>
  *     }
  * </pre>
+ *
+ * @deprecated Use {@link DataRegionConfiguration} instead.
  */
+@Deprecated
 public final class MemoryPolicyConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -78,7 +81,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     private String name = DFLT_MEM_PLC_DEFAULT_NAME;
 
     /** Memory policy start size. */
-    private Long initialSize = MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE;
+    private long initialSize;
 
     /** Memory policy maximum size. */
     private long maxSize = MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
@@ -172,7 +175,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      *
      * @return Memory policy start size.
      */
-    public Long getInitialSize() {
+    public long getInitialSize() {
         return initialSize;
     }
 
@@ -290,7 +293,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
-     * at runtime via memory metrics {@link MemoryMetricsMXBean MX bean}.
+     * at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
      *
      * @return Metrics enabled flag.
      */
@@ -300,7 +303,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
-     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link MemoryMetricsMXBean MX bean}.
+     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.

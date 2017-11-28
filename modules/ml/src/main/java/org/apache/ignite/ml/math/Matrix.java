@@ -18,8 +18,7 @@
 package org.apache.ignite.ml.math;
 
 import java.io.Externalizable;
-import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
+import java.util.Spliterator;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.IndexException;
@@ -27,6 +26,7 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
 
 /**
@@ -187,6 +187,27 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     public Matrix map(Matrix mtx, IgniteBiFunction<Double, Double, Double> fun);
+
+    /**
+     * Gets number of non-zero elements in this matrix.
+     *
+     * @return Number of non-zero elements in this matrix.
+     */
+    public int nonZeroElements();
+
+    /**
+     * Gets spliterator for all values in this matrix.
+     *
+     * @return Spliterator for all values.
+     */
+    public Spliterator<Double> allSpliterator();
+
+    /**
+     * Gets spliterator for all non-zero values in this matrix.
+     *
+     * @return Spliterator for all non-zero values.
+     */
+    public Spliterator<Double> nonZeroSpliterator();
 
     /**
      * Assigns values from given vector to the specified column in this matrix.
@@ -393,6 +414,14 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     public Matrix setRow(int row, double[] data);
 
     /**
+     * Get a specific row from matrix.
+     *
+     * @param row Row index.
+     * @return row.
+     */
+    public Vector getRow(int row);
+
+    /**
      * Sets values for given column.
      *
      * @param col Column index.
@@ -402,6 +431,14 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     public Matrix setColumn(int col, double[] data);
+
+    /**
+     * Get a specific row from matrix.
+     *
+     * @param col Col index.
+     * @return Col.
+     */
+    public Vector getCol(int col);
 
     /**
      * Sets given value without checking for index bounds. This method is marginally faster
@@ -517,4 +554,13 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     public default void destroy() {
         // No-op.
     }
+
+    /**
+     * Replace matrix entry with value oldVal at (row, col) with result of computing f(row, col, oldVal).
+     *
+     * @param row Row.
+     * @param col Column.
+     * @param f Function used for replacing.
+     */
+    public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f);
 }

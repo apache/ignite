@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.io.Serializable;
-import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -60,6 +60,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -84,7 +85,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     private IgniteClusterImpl cluster;
 
     /** */
-    private final AtomicBoolean notifyEnabled = new AtomicBoolean(false);
+    private final AtomicBoolean notifyEnabled = new AtomicBoolean();
 
     /** */
     @GridToStringExclude
@@ -106,6 +107,8 @@ public class ClusterProcessor extends GridProcessorAdapter {
      */
     public ClusterProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true));
 
         cluster = new IgniteClusterImpl(ctx);
     }
@@ -297,12 +300,13 @@ public class ClusterProcessor extends GridProcessorAdapter {
     /**
      * @param vals collection to seek through.
      */
+    @SuppressWarnings("unchecked")
     private Boolean findLastFlag(Collection<Serializable> vals) {
         Boolean flag = null;
 
         for (Serializable ser : vals) {
             if (ser != null) {
-                Map<String, Object> map = (Map<String, Object>) ser;
+                Map<String, Object> map = (Map<String, Object>)ser;
 
                 if (map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
                     flag = (Boolean) map.get(ATTR_UPDATE_NOTIFIER_STATUS);
@@ -316,11 +320,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         if (notifyEnabled.get()) {
             try {
-                verChecker = new GridUpdateNotifier(ctx.igniteInstanceName(),
-                    VER_STR,
-                    ctx.gateway(),
-                    ctx.plugins().allProviders(),
-                    false);
+                verChecker = new GridUpdateNotifier(ctx.igniteInstanceName(), VER_STR, false);
 
                 updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
 
@@ -473,9 +473,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
      * Update notifier timer task.
      */
     private static class UpdateNotifierTimerTask extends GridTimerTask {
-        /** Reference to kernal. */
-        private final WeakReference<IgniteKernal> kernalRef;
-
         /** Logger. */
         private final IgniteLogger log;
 
@@ -494,10 +491,11 @@ public class ClusterProcessor extends GridProcessorAdapter {
          * @param kernal Kernal.
          * @param verChecker Version checker.
          */
-        private UpdateNotifierTimerTask(IgniteKernal kernal, GridUpdateNotifier verChecker,
-            AtomicBoolean notifyEnabled) {
-            kernalRef = new WeakReference<>(kernal);
-
+        private UpdateNotifierTimerTask(
+            IgniteKernal kernal,
+            GridUpdateNotifier verChecker,
+            AtomicBoolean notifyEnabled
+        ) {
             log = kernal.context().log(UpdateNotifierTimerTask.class);
 
             this.verChecker = verChecker;
@@ -509,14 +507,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
             if (!notifyEnabled.get())
                 return;
 
-            if (!first) {
-                IgniteKernal kernal = kernalRef.get();
-
-                if (kernal != null)
-                    verChecker.topologySize(kernal.cluster().nodes().size());
-            }
-
-            verChecker.checkForNewVersion(log);
+            verChecker.checkForNewVersion(log, first);
 
             // Just wait for 10 secs.
             Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
@@ -530,7 +521,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
             // No-op if status is NOT available.
             verChecker.reportStatus(log);
 
-            if (first) {
+            if (first && verChecker.error() == null) {
                 first = false;
 
                 verChecker.reportOnlyNew(true);

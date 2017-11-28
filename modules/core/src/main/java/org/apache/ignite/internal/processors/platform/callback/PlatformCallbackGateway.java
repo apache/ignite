@@ -748,6 +748,21 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * @param memPtr Memory pointer.
+     * @return Result.
+     */
+    public long eventLocalListenerApply(long memPtr) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.EventLocalListenerApply, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * @param ptr Pointer.
      */
     public void eventFilterDestroy(long ptr) {

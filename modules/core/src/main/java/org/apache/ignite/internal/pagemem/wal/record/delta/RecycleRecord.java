@@ -20,21 +20,25 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Recycle index page.
  */
 public class RecycleRecord extends PageDeltaRecord {
     /** */
+    @GridToStringExclude
     private long newPageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param newPageId New page ID.
      */
-    public RecycleRecord(int cacheId, long pageId, long newPageId) {
-        super(cacheId, pageId);
+    public RecycleRecord(int grpId, long pageId, long newPageId) {
+        super(grpId, pageId);
 
         this.newPageId = newPageId;
     }
@@ -49,7 +53,18 @@ public class RecycleRecord extends PageDeltaRecord {
         return RecordType.BTREE_PAGE_RECYCLE;
     }
 
+    /**
+     *
+     */
     public long newPageId() {
         return newPageId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RecycleRecord.class, this,
+            "newPageId", U.hexLong(newPageId),
+            "super", super.toString()
+        );
     }
 }

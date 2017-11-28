@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -647,7 +648,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     if (dhtVer == null)
                                         dhtVer = explicitVer != null ? explicitVer : writeVersion();
 
-                                    if (cctx.wal() != null && !writeEntries().isEmpty()
+                                    if (cacheCtx.group().persistenceEnabled() && !writeEntries().isEmpty()
                                         && op != NOOP && op != RELOAD && op != READ)
                                         ptr = cctx.wal().log(new DataRecord(new DataEntry(
                                             cacheCtx.cacheId(),
@@ -898,17 +899,21 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
      *
      * @param commit If {@code true} commits transaction, otherwise rollbacks.
+     * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
+     * @param nodeStop If {@code true} tx is cancelled on node stop.
      * @throws IgniteCheckedException If failed.
      */
-    public void tmFinish(boolean commit) throws IgniteCheckedException {
+    public void tmFinish(boolean commit, boolean nodeStop, boolean clearThreadMap) throws IgniteCheckedException {
         assert onePhaseCommit();
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            // Unlock all locks.
-            if (commit)
-                cctx.tm().commitTx(this);
-            else
-                cctx.tm().rollbackTx(this);
+            if (!nodeStop) {
+                // Unlock all locks.
+                if (commit)
+                    cctx.tm().commitTx(this);
+                else
+                    cctx.tm().rollbackTx(this, clearThreadMap);
+            }
 
             state(commit ? COMMITTED : ROLLED_BACK);
 
@@ -954,7 +959,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void userRollback() throws IgniteCheckedException {
+    @Override public void userRollback(boolean clearThreadMap) throws IgniteCheckedException {
         TransactionState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
@@ -972,7 +977,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            cctx.tm().rollbackTx(this);
+            cctx.tm().rollbackTx(this, clearThreadMap);
 
             if (!internal()) {
                 Collection<CacheStoreManager> stores = txState.stores(cctx);
@@ -1199,6 +1204,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 key0 = invokeEntry.key();
             }
+
+            ctx.validateKeyAndValue(txEntry.key(), ctx.toCacheObject(val0));
 
             if (res != null)
                 ret.addEntryProcessResult(ctx, txEntry.key(), key0, res, null, txEntry.keepBinary());

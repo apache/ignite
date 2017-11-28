@@ -1302,8 +1302,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
 
-            Assert.IsFalse(newOuter == newOuter.Inner.Outer);
-            Assert.IsFalse(newOuter == newOuter.Inner.RawOuter);
             Assert.IsFalse(newOuter == newOuter.RawInner.RawOuter);
             Assert.IsFalse(newOuter == newOuter.RawInner.RawOuter);
 
@@ -1313,7 +1311,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(newOuter.RawInner.Outer == newOuter.RawInner.RawOuter);
 
             Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.Inner);
-            Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.RawInner);
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.Inner);
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.RawInner);
         }
@@ -1535,47 +1532,55 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Writes objects of various sizes to test schema compaction 
-        /// (where field offsets can be stored as 1, 2 or 4 bytes).
+        /// Tests the jagged arrays.
         /// </summary>
         [Test]
-        public void TestCompactSchema()
+        public void TestJaggedArrays()
         {
-            var marsh = new Marshaller(new BinaryConfiguration
-            {
-                TypeConfigurations = new List<BinaryTypeConfiguration>
-                {
-                    new BinaryTypeConfiguration(typeof (SpecialArray)),
-                    new BinaryTypeConfiguration(typeof (SpecialArrayMarshalAware))
-                }
-            });
+            int[][] ints = {new[] {1, 2, 3}, new[] {4, 5, 6}};
+            Assert.AreEqual(ints, TestUtils.SerializeDeserialize(ints));
 
-            var dt = new SpecialArrayMarshalAware();
+            uint[][][] uints = {new[] {new uint[] {1, 2, 3}, new uint[] {4, 5}}};
+            Assert.AreEqual(uints, TestUtils.SerializeDeserialize(uints));
 
-            foreach (var i in new[] {1, 5, 10, 13, 14, 15, 100, 200, 1000, 5000, 15000, 30000})
-            {
-                dt.NGuidArr = Enumerable.Range(1, i).Select(x => (Guid?) Guid.NewGuid()).ToArray();
-                dt.NDateArr = Enumerable.Range(1, i).Select(x => (DateTime?) DateTime.Now.AddDays(x)).ToArray();
+            PropertyType[][][] objs = {new[] {new[] {new PropertyType {Field1 = 42}}}};
+            Assert.AreEqual(42, TestUtils.SerializeDeserialize(objs)[0][0][0].Field1);
 
-                var bytes = marsh.Marshal(dt);
+            var obj = new MultidimArrays { JaggedInt = ints, JaggedUInt = uints };
+            var resObj = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj.JaggedInt, resObj.JaggedInt);
+            Assert.AreEqual(obj.JaggedUInt, resObj.JaggedUInt);
 
-                var res = marsh.Unmarshal<SpecialArrayMarshalAware>(bytes);
-
-                CollectionAssert.AreEquivalent(dt.NGuidArr, res.NGuidArr);
-                CollectionAssert.AreEquivalent(dt.NDateArr, res.NDateArr);
-            }
+            var obj2 = new MultidimArraysBinarizable { JaggedInt = ints, JaggedUInt = uints };
+            var resObj2 = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj2.JaggedInt, resObj2.JaggedInt);
+            Assert.AreEqual(obj2.JaggedUInt, resObj2.JaggedUInt);
         }
 
+        /// <summary>
+        /// Tests the multidimensional arrays.
+        /// </summary>
         [Test]
-        public void TestBinaryConfigurationValidation()
+        public void TestMultidimensionalArrays()
         {
-            var cfg = new BinaryConfiguration(typeof (PropertyType))
-            {
-                Types = new[] {typeof(PropertyType).AssemblyQualifiedName}
-            };
+            int[,] ints = {{1, 2, 3}, {4, 5, 6}};
+            Assert.AreEqual(ints, TestUtils.SerializeDeserialize(ints));
 
-            // ReSharper disable once ObjectCreationAsStatement
-            Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
+            uint[,,] uints = {{{1, 2, 3}, {4, 5, 6}}, {{7, 8, 9}, {10, 11, 12}}};
+            Assert.AreEqual(uints, TestUtils.SerializeDeserialize(uints));
+
+            PropertyType[,] objs = {{new PropertyType {Field1 = 123}}};
+            Assert.AreEqual(123, TestUtils.SerializeDeserialize(objs)[0, 0].Field1);
+            
+            var obj = new MultidimArrays { MultidimInt = ints, MultidimUInt = uints };
+            var resObj = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj.MultidimInt, resObj.MultidimInt);
+            Assert.AreEqual(obj.MultidimUInt, resObj.MultidimUInt);
+
+            var obj2 = new MultidimArraysBinarizable { MultidimInt = ints, MultidimUInt = uints };
+            var resObj2 = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj2.MultidimInt, resObj2.MultidimInt);
+            Assert.AreEqual(obj2.MultidimUInt, resObj2.MultidimUInt);
         }
 
         /// <summary>
@@ -2385,7 +2390,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 writer.WriteString("before", Before);
 
-                writer0.WithDetach(w => w.WriteObject("inner", Inner));
+                writer0.WriteObject("inner", Inner);
                 
                 writer.WriteString("after", After);
 
@@ -2393,7 +2398,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 rawWriter.WriteString(RawBefore);
 
-                writer0.WithDetach(w => w.WriteObject(RawInner));
+                writer0.WriteObjectDetached(RawInner);
 
                 rawWriter.WriteString(RawAfter);
             }
@@ -2649,6 +2654,42 @@ namespace Apache.Ignite.Core.Tests.Binary
             public static bool operator !=(ReflectiveStruct left, ReflectiveStruct right)
             {
                 return !left.Equals(right);
+            }
+        }
+
+        private class MultidimArrays
+        {
+            public int[][] JaggedInt { get; set; }
+            public uint[][][] JaggedUInt { get; set; }
+
+            public int[,] MultidimInt { get; set; }
+            public uint[,,] MultidimUInt { get; set; }
+        }
+
+        private class MultidimArraysBinarizable : IBinarizable
+        {
+            public int[][] JaggedInt { get; set; }
+            public uint[][][] JaggedUInt { get; set; }
+
+            public int[,] MultidimInt { get; set; }
+            public uint[,,] MultidimUInt { get; set; }
+            
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteObject("JaggedInt", JaggedInt);
+                writer.WriteObject("JaggedUInt", JaggedUInt);
+
+                writer.WriteObject("MultidimInt", MultidimInt);
+                writer.WriteObject("MultidimUInt", MultidimUInt);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                JaggedInt = reader.ReadObject<int[][]>("JaggedInt");
+                JaggedUInt = reader.ReadObject<uint[][][]>("JaggedUInt");
+
+                MultidimInt = reader.ReadObject<int[,]>("MultidimInt");
+                MultidimUInt = reader.ReadObject<uint[,,]>("MultidimUInt");
             }
         }
     }

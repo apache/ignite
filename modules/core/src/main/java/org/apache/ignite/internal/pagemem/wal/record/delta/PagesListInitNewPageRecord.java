@@ -38,13 +38,13 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
     private final long addDataPageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param prevPageId Previous page ID.
      * @param addDataPageId Optional page ID to add.
      */
     public PagesListInitNewPageRecord(
-        int cacheId,
+        int grpId,
         long pageId,
         int ioType,
         int ioVer,
@@ -52,7 +52,7 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
         long prevPageId,
         long addDataPageId
     ) {
-        super(cacheId, pageId, ioType, ioVer, newPageId);
+        super(grpId, pageId, ioType, ioVer, newPageId);
 
         this.prevPageId = prevPageId;
         this.addDataPageId = addDataPageId;
@@ -95,6 +95,8 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
     @Override public String toString() {
         return S.toString(PagesListInitNewPageRecord.class, this,
             "prevPageId", U.hexLong(prevPageId),
-            "addDataPageId", U.hexLong(addDataPageId));
+            "addDataPageId", U.hexLong(addDataPageId),
+            "super", super.toString()
+        );
     }
 }

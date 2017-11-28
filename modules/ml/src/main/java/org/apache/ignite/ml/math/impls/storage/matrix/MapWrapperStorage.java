@@ -17,24 +17,23 @@
 
 package org.apache.ignite.ml.math.impls.storage.matrix;
 
-import org.apache.ignite.internal.util.GridArgumentCheck;
-import org.apache.ignite.ml.math.VectorStorage;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.util.GridArgumentCheck;
+import org.apache.ignite.ml.math.VectorStorage;
 
 /**
  * Storage for wrapping given map.
  */
 public class MapWrapperStorage implements VectorStorage {
     /** Underlying map. */
-    Map<Integer, Double> data;
+    private Map<Integer, Double> data;
 
     /** Vector size. */
-    int size;
+    private int size;
 
     /**
      * Construct a wrapper around given map.
@@ -42,6 +41,8 @@ public class MapWrapperStorage implements VectorStorage {
      * @param map Map to wrap.
      */
     public MapWrapperStorage(Map<Integer, Double> map) {
+        data = map;
+
         Set<Integer> keys = map.keySet();
 
         GridArgumentCheck.notEmpty(keys, "map");
@@ -51,8 +52,14 @@ public class MapWrapperStorage implements VectorStorage {
 
         assert min >= 0;
 
-        data = map;
         size = (max - min) + 1;
+    }
+
+    /**
+     * No-op constructor for serialization.
+     */
+    public MapWrapperStorage() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -76,11 +83,14 @@ public class MapWrapperStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(data);
+        out.writeInt(size);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        data = (Map<Integer, Double>) in.readObject();
+        data = (Map<Integer, Double>)in.readObject();
+        size = in.readInt();
     }
 
     /** {@inheritDoc} */

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.ml.math.MatrixStorage;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IntIntDoubleToVoidFunction;
 import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
@@ -149,6 +150,16 @@ public class FunctionMatrixStorage implements MatrixStorage {
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return StorageConstants.UNKNOWN_STORAGE_MODE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return StorageConstants.RANDOM_ACCESS_MODE;
     }
 
     /** {@inheritDoc} */

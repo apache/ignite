@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Initialize new root page.
@@ -41,7 +42,7 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
     private long rightChildId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param io IO.
      * @param leftChildId Left child ID.
@@ -49,7 +50,7 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
      * @param rightChildId Right child ID.
      */
     public NewRootInitRecord(
-        int cacheId,
+        int grpId,
         long pageId,
         long newRootId,
         BPlusInnerIO<L> io,
@@ -57,7 +58,7 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
         byte[] rowBytes,
         long rightChildId
     ) {
-        super(cacheId, pageId);
+        super(grpId, pageId);
 
         assert io != null;
 
@@ -111,5 +112,10 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
      */
     public byte[] rowBytes() {
         return rowBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NewRootInitRecord.class, this, "super", super.toString());
     }
 }

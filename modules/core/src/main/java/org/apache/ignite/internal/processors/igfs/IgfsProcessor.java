@@ -178,7 +178,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+        if (!active || ctx.config().isDaemon())
             return;
 
         if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
@@ -189,6 +189,16 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         for (IgfsContext igfsCtx : igfsCache.values())
             for (IgfsManager mgr : igfsCtx.managers())
                 mgr.onKernalStart();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        onKernalStart(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        onKernalStop(true);
     }
 
     /** {@inheritDoc} */

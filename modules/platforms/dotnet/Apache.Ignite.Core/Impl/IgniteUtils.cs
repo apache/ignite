@@ -19,14 +19,13 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -46,17 +45,28 @@ namespace Apache.Ignite.Core.Impl
         private const string EnvJavaHome = "JAVA_HOME";
 
         /** Lookup paths. */
-        private static readonly string[] JvmDllLookupPaths =
-        {
-            // JRE paths
-            @"bin\server",
-            @"bin\client",
+        private static readonly string[] JvmDllLookupPaths = Os.IsWindows
+            ? new[]
+            {
+                // JRE paths
+                @"bin\server",
+                @"bin\client",
 
-            // JDK paths
-            @"jre\bin\server",
-            @"jre\bin\client",
-            @"jre\bin\default"
-        };
+                // JDK paths
+                @"jre\bin\server",
+                @"jre\bin\client",
+                @"jre\bin\default"
+            }
+            : new[]
+            {
+                // JRE paths
+                "lib/amd64/server",
+                "lib/amd64/client",
+
+                // JDK paths
+                "jre/lib/amd64/server",
+                "jre/lib/amd64/client"
+            };
 
         /** Registry lookup paths. */
         private static readonly string[] JreRegistryKeys =
@@ -65,12 +75,9 @@ namespace Apache.Ignite.Core.Impl
             @"Software\Wow6432Node\JavaSoft\Java Runtime Environment"
         };
 
-        /** File: jvm.dll. */
-        internal const string FileJvmDll = "jvm.dll";
+        /** Jvm dll file name. */
+        internal static readonly string FileJvmDll = Os.IsWindows ? "jvm.dll" : "libjvm.so";
 
-        /** File: Ignite.Jni.dll. */
-        internal const string FileIgniteJniDll = "ignite.jni.dll";
-        
         /** Prefix for temp directory names. */
         private const string DirIgniteTmp = "Ignite_";
         
@@ -80,16 +87,6 @@ namespace Apache.Ignite.Core.Impl
         /** Thread-local random. */
         [ThreadStatic]
         private static Random _rnd;
-
-        /// <summary>
-        /// Initializes the <see cref="IgniteUtils"/> class.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
-            Justification = "Readability.")]
-        static IgniteUtils()
-        {
-            TryCleanTempDirectories();
-        }
 
         /// <summary>
         /// Gets thread local random.
@@ -144,9 +141,6 @@ namespace Apache.Ignite.Core.Impl
 
             // 1. Load JNI dll.
             LoadJvmDll(configJvmDllPath, log);
-
-            // 2. Load GG JNI dll.
-            UnmanagedUtils.Initialize();
 
             _loaded = true;
         }
@@ -211,15 +205,15 @@ namespace Apache.Ignite.Core.Impl
             {
                 log.Debug("Trying to load JVM dll from [option={0}, path={1}]...", dllPath.Key, dllPath.Value);
 
-                var errCode = LoadDll(dllPath.Value, FileJvmDll);
-                if (errCode == 0)
+                var errInfo = LoadDll(dllPath.Value, FileJvmDll);
+                if (errInfo == null)
                 {
                     log.Debug("jvm.dll successfully loaded from [option={0}, path={1}]", dllPath.Key, dllPath.Value);
                     return;
                 }
 
                 var message = string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]",
-                                                  dllPath.Key, dllPath.Value, FormatWin32Error(errCode));
+                                                  dllPath.Key, dllPath.Value, errInfo);
                 messages.Add(message);
 
                 log.Debug("Failed to load jvm.dll: " + message);
@@ -244,64 +238,32 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Formats the Win32 error.
-        /// </summary>
-        [ExcludeFromCodeCoverage]
-        public static string FormatWin32Error(int errorCode)
-        {
-            if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)
-            {
-                var mode = Environment.Is64BitProcess ? "x64" : "x86";
-
-                return string.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
-                                     "This is often caused by x64/x86 mismatch. " +
-                                     "Current process runs in {0} mode, and DLL is not {0}.", mode);
-            }
-
-            if (errorCode == NativeMethods.ERROR_MOD_NOT_FOUND)
-            {
-                return "DLL could not be loaded (126: ERROR_MOD_NOT_FOUND). " +
-                       "This can be caused by missing dependencies. " +
-                       "Make sure that Microsoft Visual C++ 2010 Redistributable Package is installed " +
-                       "(https://www.microsoft.com/en-us/download/details.aspx?id=14632).";
-            }
-
-            return string.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
-        }
-
-        /// <summary>
         /// Try loading DLLs first using file path, then using it's simple name.
         /// </summary>
         /// <param name="filePath"></param>
         /// <param name="simpleName"></param>
-        /// <returns>Zero in case of success, error code in case of failure.</returns>
-        private static int LoadDll(string filePath, string simpleName)
+        /// <returns>Null in case of success, error info in case of failure.</returns>
+        private static string LoadDll(string filePath, string simpleName)
         {
-            int res = 0;
-
-            IntPtr ptr;
+            string res = null;
 
             if (filePath != null)
             {
-                ptr = NativeMethods.LoadLibrary(filePath);
+                res = DllLoader.Load(filePath);
 
-                if (ptr == IntPtr.Zero)
-                    res = Marshal.GetLastWin32Error();
-                else
-                    return res;
+                if (res == null)
+                {
+                    return null;  // Success.
+                }
             }
 
             // Failed to load using file path, fallback to simple name.
-            ptr = NativeMethods.LoadLibrary(simpleName);
+            var res2 = DllLoader.Load(simpleName);
 
-            if (ptr == IntPtr.Zero)
+            if (res2 == null)
             {
-                // Preserve the first error code, if any.
-                if (res == 0)
-                    res = Marshal.GetLastWin32Error();
+                return null;  // Success.
             }
-            else
-                res = 0;
 
             return res;
         }
@@ -312,16 +274,37 @@ namespace Apache.Ignite.Core.Impl
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPaths(string configJvmDllPath)
         {
             if (!string.IsNullOrEmpty(configJvmDllPath))
+            {
                 yield return new KeyValuePair<string, string>("IgniteConfiguration.JvmDllPath", configJvmDllPath);
+            }
 
             var javaHomeDir = Environment.GetEnvironmentVariable(EnvJavaHome);
 
             if (!string.IsNullOrEmpty(javaHomeDir))
+            {
                 foreach (var path in JvmDllLookupPaths)
+                {
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
+                }
+            }
 
-            // Get paths from the Windows Registry
+            foreach (var keyValuePair in GetJvmDllPathsFromRegistry().Concat(GetJvmDllPathsFromSymlink()))
+            {
+                yield return keyValuePair;
+            }
+        }
+
+        /// <summary>
+        /// Gets Jvm dll paths from Windows registry.
+        /// </summary>
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromRegistry()
+        {
+            if (!Os.IsWindows)
+            {
+                yield break;
+            }
+
             foreach (var regPath in JreRegistryKeys)
             {
                 using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
@@ -349,61 +332,46 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Unpacks an embedded resource into a temporary folder and returns the full path of resulting file.
+        /// Gets the Jvm dll paths from symlink.
         /// </summary>
-        /// <param name="resourceName">Resource name.</param>
-        /// <param name="fileName">Name of the resulting file.</param>
-        /// <returns>
-        /// Path to a temp file with an unpacked resource.
-        /// </returns>
-        public static string UnpackEmbeddedResource(string resourceName, string fileName)
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsFromSymlink()
         {
-            var dllRes = Assembly.GetExecutingAssembly().GetManifestResourceNames()
-                .Single(x => x.EndsWith(resourceName, StringComparison.OrdinalIgnoreCase));
-
-            return WriteResourceToTempFile(dllRes, fileName);
-        }
-
-        /// <summary>
-        /// Writes the resource to temporary file.
-        /// </summary>
-        /// <param name="resource">The resource.</param>
-        /// <param name="name">File name prefix</param>
-        /// <returns>Path to the resulting temp file.</returns>
-        private static string WriteResourceToTempFile(string resource, string name)
-        {
-            // Dll file name should not be changed, so we create a temp folder with random name instead.
-            var file = Path.Combine(GetTempDirectoryName(), name);
-
-            using (var src = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource))
-            using (var dest = File.OpenWrite(file))
+            if (Os.IsWindows)
             {
-                // ReSharper disable once PossibleNullReferenceException
-                src.CopyTo(dest);
-
-                return file;
+                yield break;
             }
-        }
 
-        /// <summary>
-        /// Tries to clean temporary directories created with <see cref="GetTempDirectoryName"/>.
-        /// </summary>
-        private static void TryCleanTempDirectories()
-        {
-            foreach (var dir in Directory.GetDirectories(Path.GetTempPath(), DirIgniteTmp + "*"))
+            const string javaExec = "/usr/bin/java";
+            if (!File.Exists(javaExec))
             {
-                try
-                {
-                    Directory.Delete(dir, true);
-                }
-                catch (IOException)
-                {
-                    // Expected
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // Expected
-                }
+                yield break;
+            }
+
+            var file = Shell.BashExecute("readlink -f /usr/bin/java");
+            // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+
+            var dir = Path.GetDirectoryName(file);
+            // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin
+
+            if (dir == null)
+            {
+                yield break;
+            }
+
+            var libFolder = Path.GetFullPath(Path.Combine(dir, "../lib/"));
+            if (!Directory.Exists(libFolder))
+            {
+                yield break;
+            }
+
+            // Predefined path: /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so
+            yield return new KeyValuePair<string, string>(javaExec,
+                Path.Combine(libFolder, "amd64", "server", FileJvmDll));
+
+            // Last resort - custom paths:
+            foreach (var f in Directory.GetFiles(libFolder, FileJvmDll, SearchOption.AllDirectories))
+            {
+                yield return new KeyValuePair<string, string>(javaExec, f);
             }
         }
 
@@ -413,13 +381,13 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>The full path of the temporary directory.</returns>
         internal static string GetTempDirectoryName()
         {
+            var baseDir = Path.Combine(Path.GetTempPath(), DirIgniteTmp);
+
             while (true)
             {
-                var dir = Path.Combine(Path.GetTempPath(), DirIgniteTmp + Path.GetRandomFileName());
-
                 try
                 {
-                    return Directory.CreateDirectory(dir).FullName;
+                    return Directory.CreateDirectory(baseDir + Path.GetRandomFileName()).FullName;
                 }
                 catch (IOException)
                 {
@@ -506,6 +474,26 @@ namespace Apache.Ignite.Core.Impl
                     if (pred(node))
                         res.Add(node);
                 }
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Encodes the peek modes into a single int value.
+        /// </summary>
+        public static int EncodePeekModes(CachePeekMode[] modes)
+        {
+            var res = 0;
+
+            if (modes == null)
+            {
+                return res;
+            }
+
+            foreach (var mode in modes)
+            {
+                res |= (int)mode;
             }
 
             return res;

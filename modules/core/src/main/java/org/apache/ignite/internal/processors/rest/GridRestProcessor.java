@@ -809,6 +809,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case ATOMIC_DECREMENT:
             case NAME:
             case LOG:
+            case CLUSTER_CURRENT_STATE:
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
                 break;
 
             default:

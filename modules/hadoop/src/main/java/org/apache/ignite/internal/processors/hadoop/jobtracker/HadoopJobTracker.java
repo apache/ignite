@@ -803,25 +803,27 @@ public class HadoopJobTracker extends HadoopComponent {
      */
     @SuppressWarnings({"unused", "ConstantConditions" })
     private void printPlan(HadoopJobId jobId, HadoopMapReducePlan plan) {
-        log.info("Plan for " + jobId);
+        if (log.isInfoEnabled()) {
+            log.info("Plan for " + jobId);
 
-        SB b = new SB();
+            SB b = new SB();
 
-        b.a("   Map: ");
+            b.a("   Map: ");
 
-        for (UUID nodeId : plan.mapperNodeIds())
-            b.a(nodeId).a("=").a(plan.mappers(nodeId).size()).a(' ');
+            for (UUID nodeId : plan.mapperNodeIds())
+                b.a(nodeId).a("=").a(plan.mappers(nodeId).size()).a(' ');
 
-        log.info(b.toString());
+            log.info(b.toString());
 
-        b = new SB();
+            b = new SB();
 
-        b.a("   Reduce: ");
+            b.a("   Reduce: ");
 
-        for (UUID nodeId : plan.reducerNodeIds())
-            b.a(nodeId).a("=").a(Arrays.toString(plan.reducers(nodeId))).a(' ');
+            for (UUID nodeId : plan.reducerNodeIds())
+                b.a(nodeId).a("=").a(Arrays.toString(plan.reducers(nodeId))).a(' ');
 
-        log.info(b.toString());
+            log.info(b.toString());
+        }
     }
 
     /**

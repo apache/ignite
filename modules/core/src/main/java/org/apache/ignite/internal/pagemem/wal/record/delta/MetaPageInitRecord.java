@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -36,14 +37,14 @@ public class MetaPageInitRecord extends InitNewPageRecord {
     private int ioType;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param ioType IO type.
      * @param treeRoot Tree root.
      * @param reuseListRoot Reuse list root.
      */
-    public MetaPageInitRecord(int cacheId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
-        super(cacheId, pageId, ioType, ioVer, pageId);
+    public MetaPageInitRecord(int grpId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
+        super(grpId, pageId, ioType, ioVer, pageId);
 
         assert ioType == PageIO.T_META || ioType == PageIO.T_PART_META;
 
@@ -84,5 +85,10 @@ public class MetaPageInitRecord extends InitNewPageRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.META_PAGE_INIT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageInitRecord.class, this, "super", super.toString());
     }
 }

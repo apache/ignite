@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+-var clusterName = 'Cluster {{ ctrl.cluster.id | id8 }}'
+
 ul.nav
     li.disabled(ng-if='ctrl.clusters.length === 0')
         a(ng-if='!ctrl.cluster')
@@ -21,24 +23,24 @@ ul.nav
             label.padding-left-dflt(bs-tooltip='' data-placement='bottom' data-title='Check that Web Agent(s) started and connected to cluster(s)') No clusters available
         a(ng-if='ctrl.cluster')
             i.icon-danger
-            label.padding-left-dflt(bs-tooltip='' data-placement='bottom' data-title='Connection to cluster was lost') {{ctrl.cluster.name}}
+            label.padding-left-dflt(bs-tooltip='' data-placement='bottom' data-title='Connection to cluster was lost') #{clusterName}
 
     li(ng-if='ctrl.clusters.length === 1 && ctrl.cluster.connected')
         a
             i.icon-cluster
-            label.padding-left-dflt {{ctrl.cluster.name}}
+            label.padding-left-dflt #{clusterName}
 
     li(ng-if='ctrl.clusters.length > 1 || ctrl.clusters.length === 1 && !ctrl.cluster.connected')
         a.dropdown-toggle(bs-dropdown='' data-placement='bottom-left' data-trigger='hover focus' data-container='self' ng-click='$event.stopPropagation()' aria-haspopup='true' aria-expanded='expanded')
             i(ng-class='{"icon-cluster": ctrl.cluster.connected, "icon-danger": !ctrl.cluster.connected}')
-            label.padding-left-dflt {{ctrl.cluster.name}}
+            label.padding-left-dflt #{clusterName}
             span.caret
             
         ul.dropdown-menu(role='menu')
             li(ng-repeat='item in ctrl.clusters' ng-class='{active: ctrl.cluster === item}')
                 div(ng-click='item.click()')
                     i.icon-cluster.pull-left(style='margin: 0; padding-left: 10px;')
-                    div: a {{item.name}}
+                    div: a Cluster {{ item.id | id8 }}
 
 i.icon-help(bs-tooltip='' data-placement='bottom' data-html=true
     data-title='Multi-Cluster Support<br/>\

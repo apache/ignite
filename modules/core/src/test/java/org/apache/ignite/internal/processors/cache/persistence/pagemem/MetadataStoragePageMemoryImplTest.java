@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.database.MetadataStorageSelfTest;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.CIX3;
@@ -97,6 +97,8 @@ public class MetadataStoragePageMemoryImplTest extends MetadataStorageSelfTest{
                     return true;
                 }
             },
-            new MemoryMetricsImpl(new MemoryPolicyConfiguration()));
+            new DataRegionMetricsImpl(new DataRegionConfiguration()),
+            false
+        );
     }
 }

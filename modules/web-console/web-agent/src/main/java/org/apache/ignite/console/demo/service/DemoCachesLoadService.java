@@ -194,7 +194,6 @@ public class DemoCachesLoadService implements Service {
         }, 10, 3, TimeUnit.SECONDS);
     }
 
-
     /**
      * Create base cache configuration.
      *
@@ -208,6 +207,7 @@ public class DemoCachesLoadService implements Service {
         ccfg.setQueryDetailMetricsSize(10);
         ccfg.setStatisticsEnabled(true);
         ccfg.setSqlFunctionClasses(SQLFunctions.class);
+        ccfg.setDataRegionName("demo");
 
         return ccfg;
     }

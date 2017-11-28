@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Boolean value.</param>
         public void WriteBoolean(string fieldName, bool val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeBool);
+            WriteFieldId(fieldName, BinaryTypeId.Bool);
             WriteBooleanField(val);
         }
 
@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">if set to <c>true</c> [value].</param>
         internal void WriteBooleanField(bool val)
         {
-            _stream.WriteByte(BinaryUtils.TypeBool);
+            _stream.WriteByte(BinaryTypeId.Bool);
             _stream.WriteBool(val);
         }
 
@@ -105,13 +105,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Boolean array.</param>
         public void WriteBooleanArray(string fieldName, bool[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayBool);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayBool);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayBool);
+                _stream.WriteByte(BinaryTypeId.ArrayBool);
                 BinaryUtils.WriteBooleanArray(val, _stream);
             }
         }
@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayBool);
+                _stream.WriteByte(BinaryTypeId.ArrayBool);
                 BinaryUtils.WriteBooleanArray(val, _stream);
             }
         }
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Byte value.</param>
         public void WriteByte(string fieldName, byte val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeByte);
+            WriteFieldId(fieldName, BinaryTypeId.Byte);
             WriteByteField(val);
         }
 
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Byte value.</param>
         internal void WriteByteField(byte val)
         {
-            _stream.WriteByte(BinaryUtils.TypeByte);
+            _stream.WriteByte(BinaryTypeId.Byte);
             _stream.WriteByte(val);
         }
 
@@ -168,13 +168,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Byte array.</param>
         public void WriteByteArray(string fieldName, byte[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayByte);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayByte);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayByte);
+                _stream.WriteByte(BinaryTypeId.ArrayByte);
                 BinaryUtils.WriteByteArray(val, _stream);
             }
         }
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayByte);
+                _stream.WriteByte(BinaryTypeId.ArrayByte);
                 BinaryUtils.WriteByteArray(val, _stream);
             }
         }
@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Short value.</param>
         public void WriteShort(string fieldName, short val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeShort);
+            WriteFieldId(fieldName, BinaryTypeId.Short);
             WriteShortField(val);
         }
 
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Short value.</param>
         internal void WriteShortField(short val)
         {
-            _stream.WriteByte(BinaryUtils.TypeShort);
+            _stream.WriteByte(BinaryTypeId.Short);
             _stream.WriteShort(val);
         }
 
@@ -231,13 +231,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Short array.</param>
         public void WriteShortArray(string fieldName, short[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayShort);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayShort);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayShort);
+                _stream.WriteByte(BinaryTypeId.ArrayShort);
                 BinaryUtils.WriteShortArray(val, _stream);
             }
         }
@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayShort);
+                _stream.WriteByte(BinaryTypeId.ArrayShort);
                 BinaryUtils.WriteShortArray(val, _stream);
             }
         }
@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Char value.</param>
         public void WriteChar(string fieldName, char val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeChar);
+            WriteFieldId(fieldName, BinaryTypeId.Char);
             WriteCharField(val);
         }
 
@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Char value.</param>
         internal void WriteCharField(char val)
         {
-            _stream.WriteByte(BinaryUtils.TypeChar);
+            _stream.WriteByte(BinaryTypeId.Char);
             _stream.WriteChar(val);
         }
 
@@ -294,13 +294,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Char array.</param>
         public void WriteCharArray(string fieldName, char[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayChar);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayChar);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayChar);
+                _stream.WriteByte(BinaryTypeId.ArrayChar);
                 BinaryUtils.WriteCharArray(val, _stream);
             }
         }
@@ -315,7 +315,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayChar);
+                _stream.WriteByte(BinaryTypeId.ArrayChar);
                 BinaryUtils.WriteCharArray(val, _stream);
             }
         }
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Int value.</param>
         public void WriteInt(string fieldName, int val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeInt);
+            WriteFieldId(fieldName, BinaryTypeId.Int);
             WriteIntField(val);
         }
 
@@ -337,7 +337,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">The value.</param>
         internal void WriteIntField(int val)
         {
-            _stream.WriteByte(BinaryUtils.TypeInt);
+            _stream.WriteByte(BinaryTypeId.Int);
             _stream.WriteInt(val);
         }
 
@@ -357,13 +357,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Int array.</param>
         public void WriteIntArray(string fieldName, int[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayInt);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayInt);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayInt);
+                _stream.WriteByte(BinaryTypeId.ArrayInt);
                 BinaryUtils.WriteIntArray(val, _stream);
             }
         }
@@ -378,7 +378,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayInt);
+                _stream.WriteByte(BinaryTypeId.ArrayInt);
                 BinaryUtils.WriteIntArray(val, _stream);
             }
         }
@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Long value.</param>
         public void WriteLong(string fieldName, long val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeLong);
+            WriteFieldId(fieldName, BinaryTypeId.Long);
             WriteLongField(val);
         }
 
@@ -400,7 +400,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">The value.</param>
         internal void WriteLongField(long val)
         {
-            _stream.WriteByte(BinaryUtils.TypeLong);
+            _stream.WriteByte(BinaryTypeId.Long);
             _stream.WriteLong(val);
         }
 
@@ -420,13 +420,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Long array.</param>
         public void WriteLongArray(string fieldName, long[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayLong);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayLong);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayLong);
+                _stream.WriteByte(BinaryTypeId.ArrayLong);
                 BinaryUtils.WriteLongArray(val, _stream);
             }
         }
@@ -441,7 +441,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayLong);
+                _stream.WriteByte(BinaryTypeId.ArrayLong);
                 BinaryUtils.WriteLongArray(val, _stream);
             }
         }
@@ -453,7 +453,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Float value.</param>
         public void WriteFloat(string fieldName, float val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeFloat);
+            WriteFieldId(fieldName, BinaryTypeId.Float);
             WriteFloatField(val);
         }
 
@@ -463,7 +463,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">The value.</param>
         internal void WriteFloatField(float val)
         {
-            _stream.WriteByte(BinaryUtils.TypeFloat);
+            _stream.WriteByte(BinaryTypeId.Float);
             _stream.WriteFloat(val);
         }
 
@@ -483,13 +483,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Float array.</param>
         public void WriteFloatArray(string fieldName, float[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayFloat);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayFloat);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayFloat);
+                _stream.WriteByte(BinaryTypeId.ArrayFloat);
                 BinaryUtils.WriteFloatArray(val, _stream);
             }
         }
@@ -504,7 +504,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayFloat);
+                _stream.WriteByte(BinaryTypeId.ArrayFloat);
                 BinaryUtils.WriteFloatArray(val, _stream);
             }
         }
@@ -516,7 +516,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Double value.</param>
         public void WriteDouble(string fieldName, double val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeDouble);
+            WriteFieldId(fieldName, BinaryTypeId.Double);
             WriteDoubleField(val);
         }
 
@@ -526,7 +526,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">The value.</param>
         internal void WriteDoubleField(double val)
         {
-            _stream.WriteByte(BinaryUtils.TypeDouble);
+            _stream.WriteByte(BinaryTypeId.Double);
             _stream.WriteDouble(val);
         }
 
@@ -546,13 +546,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Double array.</param>
         public void WriteDoubleArray(string fieldName, double[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayDouble);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayDouble);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayDouble);
+                _stream.WriteByte(BinaryTypeId.ArrayDouble);
                 BinaryUtils.WriteDoubleArray(val, _stream);
             }
         }
@@ -567,7 +567,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayDouble);
+                _stream.WriteByte(BinaryTypeId.ArrayDouble);
                 BinaryUtils.WriteDoubleArray(val, _stream);
             }
         }
@@ -579,13 +579,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Decimal value.</param>
         public void WriteDecimal(string fieldName, decimal? val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeDecimal);
+            WriteFieldId(fieldName, BinaryTypeId.Decimal);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeDecimal);
+                _stream.WriteByte(BinaryTypeId.Decimal);
                 BinaryUtils.WriteDecimal(val.Value, _stream);
             }
         }
@@ -600,7 +600,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeDecimal);
+                _stream.WriteByte(BinaryTypeId.Decimal);
                 BinaryUtils.WriteDecimal(val.Value, _stream);
             }
         }
@@ -612,13 +612,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Decimal array.</param>
         public void WriteDecimalArray(string fieldName, decimal?[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayDecimal);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayDecimal);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayDecimal);
+                _stream.WriteByte(BinaryTypeId.ArrayDecimal);
                 BinaryUtils.WriteDecimalArray(val, _stream);
             }
         }
@@ -633,7 +633,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayDecimal);
+                _stream.WriteByte(BinaryTypeId.ArrayDecimal);
                 BinaryUtils.WriteDecimalArray(val, _stream);
             }
         }
@@ -645,13 +645,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Date value.</param>
         public void WriteTimestamp(string fieldName, DateTime? val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeTimestamp);
+            WriteFieldId(fieldName, BinaryTypeId.Timestamp);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeTimestamp);
+                _stream.WriteByte(BinaryTypeId.Timestamp);
                 BinaryUtils.WriteTimestamp(val.Value, _stream);
             }
         }
@@ -666,7 +666,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeTimestamp);
+                _stream.WriteByte(BinaryTypeId.Timestamp);
                 BinaryUtils.WriteTimestamp(val.Value, _stream);
             }
         }
@@ -678,13 +678,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Date array.</param>
         public void WriteTimestampArray(string fieldName, DateTime?[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeTimestamp);
+            WriteFieldId(fieldName, BinaryTypeId.Timestamp);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayTimestamp);
+                _stream.WriteByte(BinaryTypeId.ArrayTimestamp);
                 BinaryUtils.WriteTimestampArray(val, _stream);
             }
         }
@@ -699,7 +699,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayTimestamp);
+                _stream.WriteByte(BinaryTypeId.ArrayTimestamp);
                 BinaryUtils.WriteTimestampArray(val, _stream);
             }
         }
@@ -711,13 +711,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">String value.</param>
         public void WriteString(string fieldName, string val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeString);
+            WriteFieldId(fieldName, BinaryTypeId.String);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeString);
+                _stream.WriteByte(BinaryTypeId.String);
                 BinaryUtils.WriteString(val, _stream);
             }
         }
@@ -732,7 +732,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeString);
+                _stream.WriteByte(BinaryTypeId.String);
                 BinaryUtils.WriteString(val, _stream);
             }
         }
@@ -744,13 +744,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">String array.</param>
         public void WriteStringArray(string fieldName, string[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayString);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayString);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayString);
+                _stream.WriteByte(BinaryTypeId.ArrayString);
                 BinaryUtils.WriteStringArray(val, _stream);
             }
         }
@@ -765,7 +765,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayString);
+                _stream.WriteByte(BinaryTypeId.ArrayString);
                 BinaryUtils.WriteStringArray(val, _stream);
             }
         }
@@ -777,13 +777,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">GUID value.</param>
         public void WriteGuid(string fieldName, Guid? val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeGuid);
+            WriteFieldId(fieldName, BinaryTypeId.Guid);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeGuid);
+                _stream.WriteByte(BinaryTypeId.Guid);
                 BinaryUtils.WriteGuid(val.Value, _stream);
             }
         }
@@ -798,7 +798,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeGuid);
+                _stream.WriteByte(BinaryTypeId.Guid);
                 BinaryUtils.WriteGuid(val.Value, _stream);
             }
         }
@@ -810,13 +810,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">GUID array.</param>
         public void WriteGuidArray(string fieldName, Guid?[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayGuid);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayGuid);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayGuid);
+                _stream.WriteByte(BinaryTypeId.ArrayGuid);
                 BinaryUtils.WriteGuidArray(val, _stream);
             }
         }
@@ -831,7 +831,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayGuid);
+                _stream.WriteByte(BinaryTypeId.ArrayGuid);
                 BinaryUtils.WriteGuidArray(val, _stream);
             }
         }
@@ -844,7 +844,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Enum value.</param>
         public void WriteEnum<T>(string fieldName, T val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeEnum);
+            WriteFieldId(fieldName, BinaryTypeId.Enum);
 
             WriteEnum(val);
         }
@@ -895,7 +895,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var desc = _marsh.GetDescriptor(type);
 
-            _stream.WriteByte(BinaryUtils.TypeEnum);
+            _stream.WriteByte(BinaryTypeId.Enum);
             _stream.WriteInt(desc.TypeId);
             _stream.WriteInt(val);
 
@@ -911,7 +911,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Enum array.</param>
         public void WriteEnumArray<T>(string fieldName, T[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArrayEnum);
+            WriteFieldId(fieldName, BinaryTypeId.ArrayEnum);
 
             WriteEnumArray(val);
         }
@@ -937,7 +937,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
-                _stream.WriteByte(BinaryUtils.TypeArrayEnum);
+                _stream.WriteByte(BinaryTypeId.ArrayEnum);
 
                 BinaryUtils.WriteArray(val, this, elementTypeId);
             }
@@ -951,7 +951,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Object value.</param>
         public void WriteObject<T>(string fieldName, T val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeObject);
+            WriteFieldId(fieldName, BinaryTypeId.Object);
 
             // ReSharper disable once CompareNonConstrainedGenericWithNull
             if (val == null)
@@ -978,7 +978,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Object array.</param>
         public void WriteArray<T>(string fieldName, T[] val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeArray);
+            WriteFieldId(fieldName, BinaryTypeId.Array);
 
             WriteArray(val);
         }
@@ -1006,7 +1006,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (WriteHandle(_stream.Position, val))
                     return;
 
-                _stream.WriteByte(BinaryUtils.TypeArray);
+                _stream.WriteByte(BinaryTypeId.Array);
                 BinaryUtils.WriteArray(val, this);
             }
         }
@@ -1018,7 +1018,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Collection.</param>
         public void WriteCollection(string fieldName, ICollection val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeCollection);
+            WriteFieldId(fieldName, BinaryTypeId.Collection);
 
             WriteCollection(val);
         }
@@ -1036,7 +1036,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (WriteHandle(_stream.Position, val))
                     return;
 
-                WriteByte(BinaryUtils.TypeCollection);
+                WriteByte(BinaryTypeId.Collection);
                 BinaryUtils.WriteCollection(val, this);
             }
         }
@@ -1048,7 +1048,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(string fieldName, IDictionary val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeDictionary);
+            WriteFieldId(fieldName, BinaryTypeId.Dictionary);
 
             WriteDictionary(val);
         }
@@ -1066,7 +1066,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (WriteHandle(_stream.Position, val))
                     return;
 
-                WriteByte(BinaryUtils.TypeDictionary);
+                WriteByte(BinaryTypeId.Dictionary);
                 BinaryUtils.WriteDictionary(val, this);
             }
         }
@@ -1264,7 +1264,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     var hashCode = BinaryArrayEqualityComparer.GetHashCode(Stream, pos + BinaryObjectHeader.Size,
                             dataEnd - pos - BinaryObjectHeader.Size);
 
-                    var header = new BinaryObjectHeader(desc.IsRegistered ? desc.TypeId : BinaryUtils.TypeUnregistered,
+                    var header = new BinaryObjectHeader(desc.IsRegistered ? desc.TypeId : BinaryTypeId.Unregistered,
                         hashCode, len, schemaId, schemaOffset, flags);
 
                 BinaryObjectHeader.Write(header, _stream, pos);
@@ -1413,11 +1413,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Perform action with detached semantics.
         /// </summary>
-        /// <param name="a"></param>
-        internal void WithDetach(Action<BinaryWriter> a)
+        internal void WriteObjectDetached<T>(T o)
         {
             if (_detaching)
-                a(this);
+            {
+                Write(o);
+            }
             else
             {
                 _detaching = true;
@@ -1427,7 +1428,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 try
                 {
-                    a(this);
+                    Write(o);
                 }
                 finally
                 {
@@ -1491,6 +1492,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         internal void SaveMetadata(IBinaryTypeDescriptor desc, IDictionary<string, BinaryField> fields)
         {
             Debug.Assert(desc != null);
+
+            if (!desc.UserType && (fields == null || fields.Count == 0))
+            {
+                // System types with no fields (most of them) do not need to be sent.
+                // AffinityKey is an example of system type with metadata.
+                return;
+            }
 
             if (_metas == null)
             {

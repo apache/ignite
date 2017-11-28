@@ -18,23 +18,24 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
 public class PartitionDestroyRecord extends WALRecord {
     /** */
-    private int cacheId;
+    private int grpId;
 
     /** */
     private int partId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param partId Partition ID.
      */
-    public PartitionDestroyRecord(int cacheId, int partId) {
-        this.cacheId = cacheId;
+    public PartitionDestroyRecord(int grpId, int partId) {
+        this.grpId = grpId;
         this.partId = partId;
     }
 
@@ -44,17 +45,17 @@ public class PartitionDestroyRecord extends WALRecord {
     }
 
     /**
-     * @return Cache ID.
+     * @return Cache group ID.
      */
-    public int cacheId() {
-        return cacheId;
+    public int groupId() {
+        return grpId;
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
+    public void groupId(int grpId) {
+        this.grpId = grpId;
     }
 
     /**
@@ -69,5 +70,10 @@ public class PartitionDestroyRecord extends WALRecord {
      */
     public void partitionId(int partId) {
         this.partId = partId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionDestroyRecord.class, this, "super", super.toString());
     }
 }

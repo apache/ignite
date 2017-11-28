@@ -27,7 +27,7 @@ public class MathIllegalStateException extends MathRuntimeException {
     private static final long serialVersionUID = -6024911025449780478L;
 
     /** */
-    private static final String ILLEGAL_STATE= "Illegal state.";
+    private static final String ILLEGAL_STATE = "Illegal state.";
 
     /**
      * Simple constructor.
@@ -35,7 +35,7 @@ public class MathIllegalStateException extends MathRuntimeException {
      * @param msg Message pattern explaining the cause of the error.
      * @param args Arguments.
      */
-    public MathIllegalStateException(String msg, Object ... args) {
+    public MathIllegalStateException(String msg, Object... args) {
         super(msg, args);
     }
 

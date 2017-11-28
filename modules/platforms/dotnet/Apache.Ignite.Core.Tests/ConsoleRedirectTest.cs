@@ -52,10 +52,10 @@ namespace Apache.Ignite.Core.Tests
             _stdErr = Console.Error;
 
             _outSb = new StringBuilder();
-            Console.SetOut(new StringWriter(_outSb));
+            Console.SetOut(new MyStringWriter(_outSb));
 
             _errSb = new StringBuilder();
-            Console.SetError(new StringWriter(_errSb));
+            Console.SetError(new MyStringWriter(_errSb));
         }
 
         /// <summary>
@@ -64,8 +64,12 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
+            MyStringWriter.Throw = false;
+
             Console.SetOut(_stdOut);
             Console.SetError(_stdErr);
+
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -78,6 +82,18 @@ namespace Apache.Ignite.Core.Tests
             {
                 Assert.IsTrue(_outSb.ToString().Contains("[ver=1, servers=1, clients=0,"));
             }
+        }
+
+        /// <summary>
+        /// Tests the exception in console writer.
+        /// </summary>
+        [Test]
+        public void TestExceptionInWriterPropagatesToJavaAndBack()
+        {
+            MyStringWriter.Throw = true;
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(TestUtils.GetTestConfiguration()));
+            Assert.AreEqual("foo", ex.Message);
         }
 
         /// <summary>
@@ -97,6 +113,35 @@ namespace Apache.Ignite.Core.Tests
                 }));
 
             Assert.IsTrue(_errSb.ToString().Contains("SPI parameter failed condition check: idleConnTimeout > 0"));
+        }
+
+        /// <summary>
+        /// Tests the disabled redirect.
+        /// </summary>
+        [Test]
+        public void TestDisabledRedirect()
+        {
+            // Run test in new process because JVM is initialized only once.
+            const string envVar = "ConsoleRedirectTest.TestDisabledRedirect";
+
+            if (Environment.GetEnvironmentVariable(envVar) == "true")
+            {
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(false));
+                Assert.IsTrue(cfg.RedirectJavaConsoleOutput);
+
+                cfg.RedirectJavaConsoleOutput = false;
+
+                using (Ignition.Start(cfg))
+                {
+                    Assert.AreEqual("", _errSb.ToString());
+                    Assert.AreEqual("", _outSb.ToString());
+                }
+            }
+            else
+            {
+                Environment.SetEnvironmentVariable(envVar, "true");
+                TestUtils.RunTestInNewProcess(GetType().FullName, "TestDisabledRedirect");
+            }
         }
 
         /// <summary>
@@ -145,8 +190,11 @@ namespace Apache.Ignite.Core.Tests
                     LoaderOptimization = LoaderOptimization.MultiDomainHost
                 });
 
+                var type = typeof(IgniteRunner);
+                Assert.IsNotNull(type.FullName);
+
                 var runner = (IIgniteRunner)childDomain.CreateInstanceAndUnwrap(
-                    typeof(IgniteRunner).Assembly.FullName, typeof(IgniteRunner).FullName);
+                    type.Assembly.FullName, type.FullName);
 
                 runner.Run();
             }
@@ -172,6 +220,26 @@ namespace Apache.Ignite.Core.Tests
                 });
 
                 // Will be stopped automatically on domain unload.
+            }
+        }
+
+        private class MyStringWriter : StringWriter
+        {
+            public static bool Throw { get; set; }
+
+            public MyStringWriter(StringBuilder sb) : base(sb)
+            {
+                // No-op.
+            }
+
+            public override void Write(string value)
+            {
+                if (Throw)
+                {
+                    throw new Exception("foo");
+                }
+
+                base.Write(value);
             }
         }
     }

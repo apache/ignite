@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Fix remove ID record.
@@ -30,12 +31,12 @@ public class FixRemoveId extends PageDeltaRecord {
     private long rmvId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param rmvId Remove ID.
      */
-    public FixRemoveId(int cacheId, long pageId, long rmvId) {
-        super(cacheId, pageId);
+    public FixRemoveId(int grpId, long pageId, long rmvId) {
+        super(grpId, pageId);
 
         this.rmvId = rmvId;
     }
@@ -58,5 +59,10 @@ public class FixRemoveId extends PageDeltaRecord {
      */
     public long removeId() {
         return rmvId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(FixRemoveId.class, this, "super", super.toString());
     }
 }

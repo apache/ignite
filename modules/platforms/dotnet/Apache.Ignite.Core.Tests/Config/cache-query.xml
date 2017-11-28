@@ -28,7 +28,6 @@
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
-        <property name="lateAffinityAssignment" value="false"/>
 
         <property name="platformConfiguration">
             <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
@@ -67,6 +66,11 @@
                                         <entry key="name" value="java.lang.String" />
                                     </util:map>
                                 </property>
+                                <property name="notNullFields">
+                                    <list>
+                                        <value>name</value>
+                                    </list>
+                                </property>
                                 <property name="indexes">
                                     <list>
                                         <bean class="org.apache.ignite.cache.QueryIndex">
@@ -84,6 +88,7 @@
                                                 </map>
                                             </property>
                                             <property name="indexType" value="SORTED"/>
+                                            <property name="inlineSize" value="2345"/>
                                         </bean>
                                     </list>
                                 </property>

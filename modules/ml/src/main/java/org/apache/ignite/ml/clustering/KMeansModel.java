@@ -18,18 +18,21 @@
 package org.apache.ignite.ml.clustering;
 
 import java.util.Arrays;
+import org.apache.ignite.ml.Exportable;
+import org.apache.ignite.ml.Exporter;
+import org.apache.ignite.ml.KMeansModelFormat;
 import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
 
 /**
  * This class encapsulates result of clusterization.
  */
-public class KMeansModel implements ClusterizationModel<Vector, Integer> {
+public class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat> {
     /** Centers of clusters. */
-    private Vector[] centers;
+    private final Vector[] centers;
 
     /** Distance measure. */
-    private DistanceMeasure distance;
+    private final DistanceMeasure distance;
 
     /**
      * Construct KMeans model with given centers and distance measure.
@@ -37,7 +40,7 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer> {
      * @param centers Centers.
      * @param distance Distance measure.
      */
-    KMeansModel(Vector[] centers, DistanceMeasure distance) {
+    public KMeansModel(Vector[] centers, DistanceMeasure distance) {
         this.centers = centers;
         this.distance = distance;
     }
@@ -76,4 +79,35 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer> {
 
         return res;
     }
+
+    /** {@inheritDoc} */
+    @Override public <P> void saveModel(Exporter<KMeansModelFormat, P> exporter, P path) {
+        KMeansModelFormat mdlData = new KMeansModelFormat(centers, distance);
+
+        exporter.save(mdlData, path);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + distance.hashCode();
+        res = res * 37 + Arrays.hashCode(centers);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        KMeansModel that = (KMeansModel)obj;
+
+        return distance.equals(that.distance) && Arrays.deepEquals(centers, that.centers);
+    }
+
 }

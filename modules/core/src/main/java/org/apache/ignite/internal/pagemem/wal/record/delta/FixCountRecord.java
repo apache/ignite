@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Fix elements count record.
@@ -30,11 +31,11 @@ public class FixCountRecord extends PageDeltaRecord {
     private int cnt;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      */
-    public FixCountRecord(int cacheId, long pageId, int cnt) {
-        super(cacheId, pageId);
+    public FixCountRecord(int grpId, long pageId, int cnt) {
+        super(grpId, pageId);
 
         this.cnt = cnt;
     }
@@ -51,7 +52,15 @@ public class FixCountRecord extends PageDeltaRecord {
         return RecordType.BTREE_FIX_COUNT;
     }
 
+    /**
+     *
+     */
     public int count() {
         return cnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(FixCountRecord.class, this, "super", super.toString());
     }
 }

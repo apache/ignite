@@ -75,8 +75,6 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setLateAffinityAssignment(true);
-
         final CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         assertNotNull(interceptor);

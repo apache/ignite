@@ -44,15 +44,15 @@ public class MergeRecord<L> extends PageDeltaRecord {
     private boolean emptyBranch;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param prntId Parent ID.
      * @param prntIdx Index in parent page.
      * @param rightId Right ID.
      * @param emptyBranch We are merging empty branch.
      */
-    public MergeRecord(int cacheId, long pageId, long prntId, int prntIdx, long rightId, boolean emptyBranch) {
-        super(cacheId, pageId);
+    public MergeRecord(int grpId, long pageId, long prntId, int prntIdx, long rightId, boolean emptyBranch) {
+        super(grpId, pageId);
 
         this.prntId = prntId;
         this.rightId = rightId;
@@ -92,6 +92,6 @@ public class MergeRecord<L> extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MergeRecord.class, this, "prntId", U.hexLong(prntId), "rightId", U.hexLong(rightId),
-            "parent", super.toString());
+            "super", super.toString());
     }
 }

@@ -106,6 +106,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     private boolean writeThrough;
 
     /** */
+    private boolean readThrough;
+
+    /** */
     private Collection<CacheStoreSessionListener> sesLsnrs;
 
     /** */
@@ -121,6 +124,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         CacheConfiguration cfg = cacheConfiguration();
 
         writeThrough = cfg.isWriteThrough();
+
+        readThrough = cfg.isReadThrough();
 
         this.cfgStore = cfgStore;
 
@@ -306,7 +311,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 log.debug(S.toString("Loading value from store for key",
                     "key", storeKey, true));
 
-            sessionInit0(tx);
+            sessionInit0(tx, StoreOperation.READ, false);
 
             boolean threwEx = true;
 
@@ -327,7 +332,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
             finally {
-                sessionEnd0(tx, threwEx);
+                IgniteInternalTx tx0 = tx;
+
+                if (tx0 != null && (tx0.dht() && tx0.local()))
+                    tx0 = null;
+
+                sessionEnd0(tx0, threwEx);
             }
 
             if (log.isDebugEnabled())
@@ -437,7 +447,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (log.isDebugEnabled())
                 log.debug("Loading values from store for keys: " + keys0);
 
-            sessionInit0(tx);
+            sessionInit0(tx, StoreOperation.READ, false);
 
             boolean threwEx = true;
 
@@ -496,7 +506,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (log.isDebugEnabled())
                 log.debug("Loading all values from store.");
 
-            sessionInit0(null);
+            sessionInit0(null, StoreOperation.READ, false);
 
             boolean threwEx = true;
 
@@ -562,7 +572,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     "val", val0, true));
             }
 
-            sessionInit0(tx);
+            sessionInit0(tx, StoreOperation.WRITE, false);
 
             boolean threwEx = true;
 
@@ -617,7 +627,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 if (log.isDebugEnabled())
                     log.debug("Storing values in cache store [entries=" + entries + ']');
 
-                sessionInit0(tx);
+                sessionInit0(tx, StoreOperation.WRITE, false);
 
                 boolean threwEx = true;
 
@@ -670,7 +680,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (log.isDebugEnabled())
                 log.debug(S.toString("Removing value from cache store", "key", key0, true));
 
-            sessionInit0(tx);
+            sessionInit0(tx, StoreOperation.WRITE, false);
 
             boolean threwEx = true;
 
@@ -722,7 +732,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 log.debug(S.toString("Removing values from cache store",
                     "keys", keys0, true));
 
-            sessionInit0(tx);
+            sessionInit0(tx, StoreOperation.WRITE, false);
 
             boolean threwEx = true;
 
@@ -769,18 +779,19 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public final void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last) throws IgniteCheckedException {
+    @Override public final void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last,
+        boolean storeSessionEnded) throws IgniteCheckedException {
         assert store != null;
 
-        sessionInit0(tx);
+        sessionInit0(tx, commit? StoreOperation.COMMIT: StoreOperation.ROLLBACK, false);
 
         try {
-            if (sesLsnrs != null) {
+            if (sesLsnrs != null && sesHolder.get().contains(store)) {
                 for (CacheStoreSessionListener lsnr : sesLsnrs)
                     lsnr.onSessionEnd(locSes, commit);
             }
 
-            if (!sesHolder.get().ended(store))
+            if (!sesHolder.get().ended(store) && !storeSessionEnded)
                 store.sessionEnd(commit);
         }
         catch (Throwable e) {
@@ -814,7 +825,14 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
     /** {@inheritDoc} */
     @Override public void writeBehindSessionInit() throws IgniteCheckedException {
-        sessionInit0(null);
+        sessionInit0(null, null, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBehindCacheStoreSessionListenerStart()  throws IgniteCheckedException {
+        assert sesHolder.get() != null;
+
+        notifyCacheStoreSessionListeners(sesHolder.get(), null, true);
     }
 
     /** {@inheritDoc} */
@@ -824,9 +842,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
     /**
      * @param tx Current transaction.
+     * @param op Store operation.
+     * @param writeBehindStoreInitiator {@code true} if method call is initiated by {@link GridCacheWriteBehindStore}.
      * @throws IgniteCheckedException If failed.
      */
-    private void sessionInit0(@Nullable IgniteInternalTx tx) throws IgniteCheckedException {
+    private void sessionInit0(@Nullable IgniteInternalTx tx, @Nullable StoreOperation op,
+        boolean writeBehindStoreInitiator) throws IgniteCheckedException {
         assert sesHolder != null;
 
         SessionData ses;
@@ -848,8 +869,45 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         sesHolder.set(ses);
 
+        notifyCacheStoreSessionListeners(ses, op, writeBehindStoreInitiator);
+    }
+
+    /**
+     * @param ses Current session.
+     * @param op Store operation.
+     * @param writeBehindStoreInitiator {@code True} if method call is initiated by {@link GridCacheWriteBehindStore}.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void notifyCacheStoreSessionListeners(SessionData ses, @Nullable StoreOperation op,
+        boolean writeBehindStoreInitiator) throws IgniteCheckedException {
         try {
-            if (sesLsnrs != null && !ses.started(this)) {
+            boolean notifyLsnrs = false;
+
+            if (writeBehindStoreInitiator)
+                notifyLsnrs = !ses.started(store) && sesLsnrs != null;
+            else {
+                assert op != null;
+
+                switch (op) {
+                    case READ:
+                        notifyLsnrs = readThrough && !ses.started(store) && sesLsnrs != null;
+                        break;
+
+                    case WRITE:
+                        notifyLsnrs = !cacheConfiguration().isWriteBehindEnabled() && writeThrough
+                            && !ses.started(store) && sesLsnrs != null;
+                        break;
+
+                    case COMMIT:
+                    case ROLLBACK:
+                        // No needs to start the session (if not started yet) and notify listeners.
+                        break;
+
+                    default:
+                        assert false : "Unexpected operation: " + op.toString();
+                }
+            }
+            if (notifyLsnrs) {
                 for (CacheStoreSessionListener lsnr : sesLsnrs)
                     lsnr.onSessionStart(locSes);
             }
@@ -865,14 +923,13 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     private void sessionEnd0(@Nullable IgniteInternalTx tx, boolean threwEx) throws IgniteCheckedException {
         try {
             if (tx == null) {
-                if (sesLsnrs != null) {
+                if (sesLsnrs != null && sesHolder.get().contains(store)) {
                     for (CacheStoreSessionListener lsnr : sesLsnrs)
                         lsnr.onSessionEnd(locSes, !threwEx);
                 }
 
-                assert !sesHolder.get().ended(store);
-
-                store.sessionEnd(!threwEx);
+                if (!sesHolder.get().ended(store))
+                    store.sessionEnd(!threwEx);
             }
         }
         catch (Exception e) {
@@ -914,11 +971,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         private Object attach;
 
         /** */
-        private final Set<CacheStoreManager> started =
-            new GridSetWrapper<>(new IdentityHashMap<CacheStoreManager, Object>());
-
-        /** */
-        private final Set<CacheStore> ended = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
+        private final Set<CacheStore> started =
+            new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
 
         /**
          * @param tx Current transaction.
@@ -981,8 +1035,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /**
          * @return If session is started.
          */
-        private boolean started(CacheStoreManager mgr) {
-            return !started.add(mgr);
+        private boolean started(CacheStore store) {
+            return !started.add(store);
         }
 
         /**
@@ -990,7 +1044,15 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
          * @return Whether session already ended on this store instance.
          */
         private boolean ended(CacheStore store) {
-            return !ended.add(store);
+            return !started.remove(store);
+        }
+
+        /**
+         * @param store Cache store.
+         * @return {@code True} if session started.
+         */
+        private boolean contains(CacheStore store) {
+            return started.contains(store);
         }
 
         /** {@inheritDoc} */
@@ -1358,6 +1420,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
+        @Override public void suspend() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public long timeout() {
             return tx.timeout();
         }
@@ -1403,6 +1470,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
+        @Override public void resume() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public IgniteAsyncSupport withAsync() {
             throw new UnsupportedOperationException();
         }
@@ -1416,5 +1488,20 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         @Override public <R> IgniteFuture<R> future() {
             throw new UnsupportedOperationException();
         }
+    }
+
+    /** Enumeration that represents possible operations on the underlying store. */
+    private enum StoreOperation {
+        /** Read key-value pair from the underlying store. */
+        READ,
+
+        /** Update or remove key from the underlying store. */
+        WRITE,
+
+        /** Commit changes to the underlying store. */
+        COMMIT,
+
+        /** Rollback changes to the underlying store. */
+        ROLLBACK
     }
 }

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -33,7 +33,7 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Unique name of MemoryPolicy. */
+    /** Unique name of DataRegion. */
     private String name;
 
     /** Maximum memory region size defined by this memory policy. */
@@ -69,20 +69,20 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
      *
      * @param plc Memory policy configuration.
      */
-    public VisorMemoryPolicyConfiguration(MemoryPolicyConfiguration plc) {
+    public VisorMemoryPolicyConfiguration(DataRegionConfiguration plc) {
         assert plc != null;
 
         name = plc.getName();
         maxSize = plc.getMaxSize();
         initSize = plc.getInitialSize();
-        swapFilePath = plc.getSwapFilePath();
+        swapFilePath = plc.getSwapPath();
         pageEvictionMode = plc.getPageEvictionMode();
         evictionThreshold = plc.getEvictionThreshold();
         emptyPagesPoolSize = plc.getEmptyPagesPoolSize();
     }
 
     /**
-     * Unique name of MemoryPolicy.
+     * Unique name of DataRegion.
      */
     public String getName() {
         return name;
@@ -131,32 +131,25 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
+        out.writeLong(initSize);
         out.writeLong(maxSize);
         U.writeString(out, swapFilePath);
         U.writeEnum(out, pageEvictionMode);
         out.writeDouble(evictionThreshold);
         out.writeInt(emptyPagesPoolSize);
-        out.writeLong(initSize);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
+        initSize = in.readLong();
         maxSize = in.readLong();
         swapFilePath = U.readString(in);
         pageEvictionMode = DataPageEvictionMode.fromOrdinal(in.readByte());
         evictionThreshold = in.readDouble();
         emptyPagesPoolSize = in.readInt();
-
-        if (protoVer >= V2)
-            initSize = in.readLong();
     }
 
     /** {@inheritDoc} */

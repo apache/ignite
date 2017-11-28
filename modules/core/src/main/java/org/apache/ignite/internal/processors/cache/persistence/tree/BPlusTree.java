@@ -377,7 +377,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             byte[] newRowBytes = io.store(pageAddr, idx, newRow, null, needWal);
 
             if (needWal)
-                wal.log(new ReplaceRecord<>(cacheId, pageId, io, newRowBytes, idx));
+                wal.log(new ReplaceRecord<>(grpId, pageId, io, newRowBytes, idx));
 
             return FOUND;
         }
@@ -928,23 +928,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IllegalStateException("Tree is being concurrently destroyed: " + getName());
     }
 
-    /**
-     * @param lower Lower bound inclusive or {@code null} if unbounded.
-     * @param upper Upper bound inclusive or {@code null} if unbounded.
-     * @return Cursor.
-     * @throws IgniteCheckedException If failed.
-     */
+    /** {@inheritDoc} */
     @Override public GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
         return find(lower, upper, null);
     }
 
-    /**
-     * @param lower Lower bound inclusive or {@code null} if unbounded.
-     * @param upper Upper bound inclusive or {@code null} if unbounded.
-     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
-     * @return Cursor.
-     * @throws IgniteCheckedException If failed.
-     */
+    /** {@inheritDoc} */
     public final GridCursor<T> find(L lower, L upper, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
@@ -2200,7 +2189,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         io.splitExistingPage(pageAddr, mid, fwdId);
 
         if (needWalDeltaRecord(pageId, page, null))
-            wal.log(new SplitExistingPageRecord(cacheId, pageId, mid, fwdId));
+            wal.log(new SplitExistingPageRecord(grpId, pageId, mid, fwdId));
 
         return res;
     }
@@ -2685,7 +2674,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             byte[] rowBytes = io.insert(pageAddr, idx, row, null, rightId, needWal);
 
             if (needWal)
-                wal.log(new InsertRecord<>(cacheId, pageId, io, idx, rowBytes, rightId));
+                wal.log(new InsertRecord<>(grpId, pageId, io, idx, rowBytes, rightId));
         }
 
         /**
@@ -2728,7 +2717,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             inner(io).setLeft(fwdPageAddr, 0, rightId);
 
                             if (needWalDeltaRecord(fwdId, fwdPage, fwdPageWalPlc)) // Rare case, we can afford separate WAL record to avoid complexity.
-                                wal.log(new FixLeftmostChildRecord(cacheId, fwdId, rightId));
+                                wal.log(new FixLeftmostChildRecord(grpId, fwdId, rightId));
                         }
                     }
                     else // Insert into newly allocated forward page.
@@ -2744,7 +2733,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         io.setCount(pageAddr, cnt - 1);
 
                         if (needWalDeltaRecord(pageId, page, null)) // Rare case, we can afford separate WAL record to avoid complexity.
-                            wal.log(new FixCountRecord(cacheId, pageId, cnt - 1));
+                            wal.log(new FixCountRecord(grpId, pageId, cnt - 1));
                     }
 
                     if (!hadFwd && lvl == getRootLevel()) { // We are splitting root.
@@ -2775,7 +2764,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                                     needWal);
 
                                 if (needWal)
-                                    wal.log(new NewRootInitRecord<>(cacheId, newRootId, newRootId,
+                                    wal.log(new NewRootInitRecord<>(grpId, newRootId, newRootId,
                                         inner(io), pageId, moveUpRowBytes, fwdId));
                             }
                             finally {
@@ -3656,7 +3645,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             io.remove(pageAddr, idx, cnt);
 
             if (needWalDeltaRecord(pageId, page, walPlc))
-                wal.log(new RemoveRecord(cacheId, pageId, idx, cnt));
+                wal.log(new RemoveRecord(grpId, pageId, idx, cnt));
         }
 
         /**
@@ -3909,7 +3898,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             leaf.io.setRemoveId(leaf.buf, rmvId);
 
             if (needWalDeltaRecord(leaf.pageId, leaf.page, leaf.walPlc))
-                wal.log(new FixRemoveId(cacheId, leaf.pageId, rmvId));
+                wal.log(new FixRemoveId(grpId, leaf.pageId, rmvId));
         }
 
         /**
@@ -4544,13 +4533,22 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (rows == EMPTY)
                 rows = (T[])new Object[cnt];
 
+            int foundCnt = 0;
+
             for (int i = 0; i < cnt; i++) {
                 T r = getRow(io, pageAddr, startIdx + i, x);
 
-                rows = GridArrays.set(rows, i, r);
+                if (r != null)
+                    rows = GridArrays.set(rows, foundCnt++, r);
             }
 
-            GridArrays.clearTail(rows, cnt);
+            if (foundCnt == 0) {
+                rows = (T[])EMPTY;
+
+                return false;
+            }
+
+            GridArrays.clearTail(rows, foundCnt);
 
             return true;
         }

@@ -42,7 +42,7 @@ public class InsertRecord<L> extends PageDeltaRecord {
     private BPlusIO<L> io;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param io IO.
      * @param idx Index.
@@ -50,14 +50,14 @@ public class InsertRecord<L> extends PageDeltaRecord {
      * @param rightId Right ID.
      */
     public InsertRecord(
-        int cacheId,
+        int grpId,
         long pageId,
         BPlusIO<L> io,
         int idx,
         byte[] rowBytes,
         long rightId
     ) {
-        super(cacheId, pageId);
+        super(grpId, pageId);
 
         this.io = io;
         this.idx = idx;
@@ -105,6 +105,6 @@ public class InsertRecord<L> extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(InsertRecord.class, this, "rightId", U.hexLong(rightId), "parent", super.toString());
+        return S.toString(InsertRecord.class, this, "rightId", U.hexLong(rightId), "super", super.toString());
     }
 }

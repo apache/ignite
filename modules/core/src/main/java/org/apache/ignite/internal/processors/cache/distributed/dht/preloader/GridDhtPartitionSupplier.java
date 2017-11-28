@@ -134,7 +134,7 @@ class GridDhtPartitionSupplier {
      * @param topVer Topology version.
      */
     @SuppressWarnings("ConstantConditions")
-    public void onTopologyChanged(AffinityTopologyVersion topVer) {
+    void onTopologyChanged(AffinityTopologyVersion topVer) {
         synchronized (scMap) {
             Iterator<T3<UUID, Integer, AffinityTopologyVersion>> it = scMap.keySet().iterator();
 
@@ -304,12 +304,12 @@ class GridDhtPartitionSupplier {
                                 d.isHistorical(part) ? d.partitionCounter(part) : null);
 
                             if (!iter.historical()) {
-                                assert !grp.shared().database().persistenceEnabled() || !d.isHistorical(part);
+                                assert !grp.persistenceEnabled() || !d.isHistorical(part);
 
                                 s.clean(part);
                             }
                             else
-                                assert grp.shared().database().persistenceEnabled() && d.isHistorical(part);
+                                assert grp.persistenceEnabled() && d.isHistorical(part);
                         }
                         else
                             iter = (IgniteRebalanceIterator)sctx.entryIt;
@@ -414,7 +414,7 @@ class GridDhtPartitionSupplier {
                     }
 
                     // Mark as last supply message.
-                    s.last(part);
+                    s.last(part, loc.updateCounter());
 
                     phase = SupplyContextPhase.NEW;
 

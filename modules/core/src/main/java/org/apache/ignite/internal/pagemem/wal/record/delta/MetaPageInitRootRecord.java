@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Initialize new meta page.
@@ -31,8 +32,8 @@ public class MetaPageInitRootRecord extends PageDeltaRecord {
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageInitRootRecord(int cacheId, long pageId, long rootId) {
-        super(cacheId, pageId);
+    public MetaPageInitRootRecord(int grpId, long pageId, long rootId) {
+        super(grpId, pageId);
 
         assert pageId != rootId;
 
@@ -57,5 +58,10 @@ public class MetaPageInitRootRecord extends PageDeltaRecord {
      */
     public long rootId() {
         return rootId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageInitRootRecord.class, this, "super", super.toString());
     }
 }

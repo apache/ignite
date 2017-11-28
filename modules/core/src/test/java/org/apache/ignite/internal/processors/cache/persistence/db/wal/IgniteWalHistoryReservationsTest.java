@@ -22,15 +22,17 @@ import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -40,6 +42,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -54,14 +57,12 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY);
 
-        memCfg.setMemoryPolicies(new MemoryPolicyConfiguration().setInitialSize(200 * 1024 * 1024)
-            .setMaxSize(200 * 1024 * 1024).setName("dfltMemPlc"));
-
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
@@ -72,8 +73,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
 
         return cfg;
     }
@@ -109,24 +108,59 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         ig0.active(true);
 
-        IgniteCache<Object, Object> cache = ig0.cache("cache1");
+        long start = U.currentTimeMillis();
 
-        for (int k = 0; k < entryCnt; k++)
-            cache.put(k, k);
+        log.warning("Start loading");
+
+        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")){
+            for (int k = 0; k < entryCnt; k++){
+                st.addData(k, k);
+
+                printProgress(k);
+            }
+        }
+
+        log.warning("Finish loading time:" + (U.currentTimeMillis() - start));
 
         forceCheckpoint();
 
-        for (int k = 0; k < entryCnt; k++)
-            cache.put(k, k * 2);
+        start = U.currentTimeMillis();
+
+        log.warning("Start loading");
+
+        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")) {
+            st.allowOverwrite(true);
+
+            for (int k = 0; k < entryCnt; k++) {
+                st.addData(k, k * 2);
+
+                printProgress(k);
+            }
+        }
+
+        log.warning("Finish loading time:" + (U.currentTimeMillis() - start));
 
         forceCheckpoint();
 
-        for (int k = 0; k < entryCnt; k++)
-            cache.put(k, k);
+        start = U.currentTimeMillis();
+
+        log.warning("Start loading");
+
+        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")){
+            st.allowOverwrite(true);
+
+            for (int k = 0; k < entryCnt; k++){
+                st.addData(k, k);
+
+                printProgress(k);
+            }
+        }
+
+        log.warning("Finish loading time:" + (U.currentTimeMillis() - start));
 
         forceCheckpoint();
 
-        Lock lock = cache.lock(0);
+        Lock lock = ig0.cache("cache1").lock(0);
 
         lock.lock();
 
@@ -194,6 +228,14 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    private void printProgress(int k){
+        if (k % 1000 == 0)
+            log.warning("Keys -> " + k);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
@@ -201,7 +243,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         int entryCnt = 10_000;
 
-        Ignite ig0 = startGrids(2);
+        IgniteEx ig0 = (IgniteEx) startGrids(2);
 
         ig0.active(true);
 
@@ -219,7 +261,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        Ignite ig1 = startGrid(1);
+        IgniteEx ig1 = startGrid(1);
 
         IgniteCache<Integer, Integer> cache1 = ig1.cache("cache1");
 
@@ -236,6 +278,16 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 assertEquals("k=" + k, k, cache1.get(k));
             }
         }
+
+        cache.rebalance().get();
+
+        for (int p = 0; p < ig1.affinity("cache1").partitions(); p++) {
+            GridDhtLocalPartition p0 = ig0.context().cache().cache("cache1").context().topology().localPartition(p);
+            GridDhtLocalPartition p1 = ig1.context().cache().cache("cache1").context().topology().localPartition(p);
+
+            assertTrue(p0.updateCounter() > 0);
+            assertEquals(p0.updateCounter(), p1.updateCounter());
+        }
     }
 
     /**
@@ -244,7 +296,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     public void testNodeIsClearedIfHistoryIsUnavailable() throws Exception {
         int entryCnt = 10_000;
 
-        Ignite ig0 = startGrids(2);
+        IgniteEx ig0 = (IgniteEx) startGrids(2);
 
         ig0.active(true);
 
@@ -269,7 +321,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 assertEquals("k=" + k, k, cache.get(k));
         }
 
-        Ignite ig1 = startGrid(1);
+        IgniteEx ig1 = startGrid(1);
 
         IgniteCache<Integer, Integer> cache1 = ig1.cache("cache1");
 
@@ -285,6 +337,16 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 assertEquals("k=" + k, k, cache.get(k));
                 assertEquals("k=" + k, k, cache1.get(k));
             }
+        }
+
+        cache.rebalance().get();
+
+        for (int p = 0; p < ig1.affinity("cache1").partitions(); p++) {
+            GridDhtLocalPartition p0 = ig0.context().cache().cache("cache1").context().topology().localPartition(p);
+            GridDhtLocalPartition p1 = ig1.context().cache().cache("cache1").context().topology().localPartition(p);
+
+            assertTrue(p0.updateCounter() > 0);
+            assertEquals(p0.updateCounter(), p1.updateCounter());
         }
     }
 
@@ -383,7 +445,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

@@ -70,6 +70,8 @@ public interface PageStore {
      *
      * @param pageId Page ID.
      * @param pageBuf Page buffer to write.
+     * @param tag Partition file version, 1-based incrementing counter. For outdated pages {@code tag} has lower value,
+     * and write does nothing
      * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
     public void write(long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException;
@@ -93,4 +95,9 @@ public interface PageStore {
      * @throws IgniteCheckedException If sync failed (IO error occurred).
      */
     public void ensure() throws IgniteCheckedException;
+
+    /**
+     * @return Page store version.
+     */
+    public int version();
 }

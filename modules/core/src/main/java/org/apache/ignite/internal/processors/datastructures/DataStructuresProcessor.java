@@ -55,6 +55,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -326,12 +327,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return {@code True} if cache with such name is used to store data structures.
      */
     public static boolean isDataStructureCache(String cacheName) {
-        assert cacheName != null;
-
-        return cacheName.startsWith(ATOMICS_CACHE_NAME) ||
+        return cacheName != null && (cacheName.startsWith(ATOMICS_CACHE_NAME) ||
             cacheName.startsWith(DS_CACHE_NAME_PREFIX) ||
             cacheName.equals(DEFAULT_DS_GROUP_NAME) ||
-            cacheName.equals(DEFAULT_VOLATILE_DS_GROUP_NAME);
+            cacheName.equals(DEFAULT_VOLATILE_DS_GROUP_NAME));
     }
 
     /**
@@ -954,6 +953,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         assert name != null;
         assert type.isCollection() : type;
+        assert !create || cfg != null;
 
         if (grpName == null) {
             if (cfg != null && cfg.getGroupName() != null)
@@ -962,17 +962,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 grpName = DEFAULT_DS_GROUP_NAME;
         }
 
-        assert !create || cfg != null;
-
         final String metaCacheName = ATOMICS_CACHE_NAME + "@" + grpName;
 
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache0 = ctx.cache().cache(metaCacheName);
 
         if (metaCache0 == null) {
-            if (!create)
-                return null;
+            CacheConfiguration ccfg = null;
 
-            ctx.cache().dynamicStartCache(metaCacheConfiguration(cfg, metaCacheName, grpName),
+            if (!create) {
+                DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(metaCacheName);
+
+                if (desc == null)
+                    return null;
+            }
+            else
+                ccfg = metaCacheConfiguration(cfg, metaCacheName, grpName);
+
+            ctx.cache().dynamicStartCache(ccfg,
                 metaCacheName,
                 null,
                 CacheType.DATA_STRUCTURES,
@@ -1033,7 +1039,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             }
         }
 
-        return c.applyx(cache.context());
+        return retryTopologySafe(new IgniteOutClosureX<T>() {
+            @Override public T applyx() throws IgniteCheckedException {
+                return c.applyx(cache.context());
+            }
+        });
     }
 
     /**

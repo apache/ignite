@@ -31,8 +31,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -80,7 +81,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private final PageHandler<CacheDataRow, Boolean> updateRow = new UpdateRowHandler();
 
     /** */
-    private final MemoryMetricsImpl memMetrics;
+    private final DataRegionMetricsImpl memMetrics;
 
     /** */
     private final PageEvictionTracker evictionTracker;
@@ -190,10 +191,10 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             CacheDataRow row,
             int rowSize
         ) throws IgniteCheckedException {
-            io.addRow(pageAddr, row, rowSize, pageSize());
+            io.addRow(pageId, pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[rowSize];
 
                 DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
@@ -203,7 +204,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
 
                 wal.log(new DataPageInsertRecord(
-                    cacheId,
+                    grpId,
                     pageId,
                     payload));
             }
@@ -239,14 +240,14 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             assert payloadSize > 0 : payloadSize;
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[payloadSize];
 
                 DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
 
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
 
-                wal.log(new DataPageInsertFragmentRecord(cacheId, pageId, payload, lastLink));
+                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payload, lastLink));
             }
 
             return written + payloadSize;
@@ -255,12 +256,20 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
 
     /** */
-    private final PageHandler<Void, Long> rmvRow = new RemoveRowHandler();
+    private final PageHandler<Void, Long> rmvRow;
 
     /**
      *
      */
     private final class RemoveRowHandler extends PageHandler<Void, Long> {
+        /** Indicates whether partition ID should be masked from page ID. */
+        private final boolean maskPartId;
+
+        /** */
+        RemoveRowHandler(boolean maskPartId) {
+            this.maskPartId = maskPartId;
+        }
+
         @Override public Long run(
             int cacheId,
             long pageId,
@@ -292,6 +301,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
+                        pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
                         if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
                             put(null, pageId, page, pageAddr, newBucket);
                     }
@@ -312,7 +322,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @param cacheId Cache ID.
      * @param name Name (for debug purpose).
      * @param memMetrics Memory metrics.
-     * @param memPlc Memory policy.
+     * @param memPlc Data region.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
@@ -322,13 +332,16 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     public FreeListImpl(
         int cacheId,
         String name,
-        MemoryMetricsImpl memMetrics,
-        MemoryPolicy memPlc,
+        DataRegionMetricsImpl memMetrics,
+        DataRegion memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew) throws IgniteCheckedException {
         super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+
+        rmvRow = new RemoveRowHandler(cacheId == 0);
+
         this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
@@ -359,8 +372,10 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /**
      * Calculates average fill factor over FreeListImpl instance.
+     *
+     * @return Tuple (numenator, denominator).
      */
-    public float fillFactor() {
+    public T2<Long, Long> fillFactor() {
         long pageSize = pageSize();
 
         long totalSize = 0;
@@ -376,7 +391,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             totalSize += pages * pageSize;
         }
 
-        return totalSize == 0 ? -1L : ((float) loadSize / totalSize);
+        return totalSize == 0 ? new T2<>(0L, 0L) : new T2<>(loadSize, totalSize);
     }
 
     /** {@inheritDoc} */
@@ -406,18 +421,20 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     }
                 }
 
-                log.info("Bucket [b=" + b +
-                    ", size=" + size +
-                    ", stripes=" + (stripes != null ? stripes.length : 0) +
-                    ", stripesEmpty=" + empty + ']');
+                if (log.isInfoEnabled())
+                    log.info("Bucket [b=" + b +
+                        ", size=" + size +
+                        ", stripes=" + (stripes != null ? stripes.length : 0) +
+                        ", stripesEmpty=" + empty + ']');
             }
         }
 
         if (dataPages > 0) {
-            log.info("FreeList [name=" + name +
-                ", buckets=" + BUCKETS +
-                ", dataPages=" + dataPages +
-                ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
+            if (log.isInfoEnabled())
+                log.info("FreeList [name=" + name +
+                    ", buckets=" + BUCKETS +
+                    ", dataPages=" + dataPages +
+                    ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
         }
     }
 
@@ -448,7 +465,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         assert part <= PageIdAllocator.MAX_PARTITION_ID;
         assert part != PageIdAllocator.INDEX_PARTITION;
 
-        return pageMem.allocatePage(cacheId, part, PageIdAllocator.FLAG_DATA);
+        return pageMem.allocatePage(grpId, part, PageIdAllocator.FLAG_DATA);
     }
 
     /** {@inheritDoc} */
@@ -487,6 +504,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             if (allocated)
                 pageId = allocateDataPage(row.partition());
+            else
+                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
             DataPageIO init = reuseBucket || allocated ? DataPageIO.VERSIONS.latest() : null;
 

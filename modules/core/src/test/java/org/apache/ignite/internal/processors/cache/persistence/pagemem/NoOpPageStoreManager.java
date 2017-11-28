@@ -74,7 +74,7 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
+    @Override public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
 
     }
 
@@ -84,35 +84,35 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void readHeader(int cacheId, int partId, ByteBuffer buf) throws IgniteCheckedException {
+    @Override public void readHeader(int grpId, int partId, ByteBuffer buf) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void write(int cacheId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+    @Override public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void sync(int cacheId, int partId) throws IgniteCheckedException {
+    @Override public void sync(int grpId, int partId) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void ensure(int cacheId, int partId) throws IgniteCheckedException {
+    @Override public void ensure(int grpId, int partId) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public long pageOffset(int cacheId, long pageId) throws IgniteCheckedException {
+    @Override public long pageOffset(int grpId, long pageId) throws IgniteCheckedException {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException {
+    @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException {
         long root = PageIdUtils.pageId(partId, flags, 0);
 
-        FullPageId fullId = new FullPageId(root, cacheId);
+        FullPageId fullId = new FullPageId(root, grpId);
 
         AtomicInteger allocator = allocators.get(fullId);
 
@@ -123,10 +123,10 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public int pages(int cacheId, int partId) throws IgniteCheckedException {
+    @Override public int pages(int grpId, int partId) throws IgniteCheckedException {
         long root = PageIdUtils.pageId(partId, (byte)0, 0);
 
-        FullPageId fullId = new FullPageId(root, cacheId);
+        FullPageId fullId = new FullPageId(root, grpId);
 
         AtomicInteger allocator = allocators.get(fullId);
 
@@ -137,7 +137,7 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public long metaPageId(int cacheId) {
+    @Override public long metaPageId(int grpId) {
         return 1;
     }
 
@@ -172,7 +172,7 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void storeCacheData(StoredCacheData cacheData) throws IgniteCheckedException {
+    @Override public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
         // No-op.
     }
 

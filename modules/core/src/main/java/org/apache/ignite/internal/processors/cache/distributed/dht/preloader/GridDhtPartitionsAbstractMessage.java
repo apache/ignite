@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.Map;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -34,7 +32,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     /** */
-    protected static final byte COMPRESSED_FLAG_MASK = 1;
+    private static final byte COMPRESSED_FLAG_MASK = 0x01;
+
+    /** */
+    private static final byte RESTORE_STATE_FLAG_MASK = 0x02;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -46,7 +47,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     private GridCacheVersion lastVer;
 
     /** */
-    private byte flags;
+    protected byte flags;
 
     /**
      * Required by {@link Externalizable}.
@@ -62,6 +63,15 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     GridDhtPartitionsAbstractMessage(GridDhtPartitionExchangeId exchId, @Nullable GridCacheVersion lastVer) {
         this.exchId = exchId;
         this.lastVer = lastVer;
+    }
+
+    /**
+     * @param msg Message.
+     */
+    void copyStateTo(GridDhtPartitionsAbstractMessage msg) {
+        msg.exchId = exchId;
+        msg.lastVer = lastVer;
+        msg.flags = flags;
     }
 
     /** {@inheritDoc} */
@@ -92,10 +102,11 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /**
-     * @param grpId Cache group ID.
-     * @return Parition update counters.
+     * @param exchId Exchange ID.
      */
-    public abstract Map<Integer, T2<Long, Long>> partitionUpdateCounters(int grpId);
+    public void exchangeId(GridDhtPartitionExchangeId exchId) {
+        this.exchId = exchId;
+    }
 
     /**
      * @return Last used version among all nodes.
@@ -116,6 +127,20 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
      */
     protected final void compressed(boolean compressed) {
         flags = compressed ? (byte)(flags | COMPRESSED_FLAG_MASK) : (byte)(flags & ~COMPRESSED_FLAG_MASK);
+    }
+
+    /**
+     * @param restoreState Restore exchange state flag.
+     */
+    void restoreState(boolean restoreState) {
+        flags = restoreState ? (byte)(flags | RESTORE_STATE_FLAG_MASK) : (byte)(flags & ~RESTORE_STATE_FLAG_MASK);
+    }
+
+    /**
+     * @return Restore exchange state flag.
+     */
+    public boolean restoreState() {
+        return (flags & RESTORE_STATE_FLAG_MASK) != 0;
     }
 
     /** {@inheritDoc} */

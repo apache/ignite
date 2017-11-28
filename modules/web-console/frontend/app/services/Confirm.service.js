@@ -46,7 +46,7 @@ export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', ($ro
     scope.confirmCancel = () => {
         _hide();
 
-        deferred.reject('cancelled');
+        deferred.reject({cancelled: true});
     };
 
     /**

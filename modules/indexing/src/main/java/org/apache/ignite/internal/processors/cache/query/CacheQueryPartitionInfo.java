@@ -39,22 +39,35 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class CacheQueryPartitionInfo {
     /** */
-    private int partId;
+    private final int partId;
 
     /** */
-    private String cacheName;
+    private final String cacheName;
 
     /** */
-    private int paramIdx;
+    private final String tableName;
+
+    /** */
+    private final int dataType;
+
+    /** */
+    private final int paramIdx;
 
     /**
      * @param partId Partition id, or -1 if parameter binding required.
      * @param cacheName Cache name required for partition calculation.
+     * @param tableName Table name required for proper type conversion.
+     * @param dataType Required data type id for the query parameter.
      * @param paramIdx Query parameter index required for partition calculation.
      */
-    public CacheQueryPartitionInfo(int partId, String cacheName, int paramIdx) {
+    public CacheQueryPartitionInfo(int partId, String cacheName, String tableName, int dataType, int paramIdx) {
+        // In case partition is not known, both cacheName and tableName must be provided.
+        assert (partId >= 0) ^ ((cacheName != null) && (tableName != null));
+
         this.partId = partId;
         this.cacheName = cacheName;
+        this.tableName = tableName;
+        this.dataType = dataType;
         this.paramIdx = paramIdx;
     }
 
@@ -73,6 +86,20 @@ public class CacheQueryPartitionInfo {
     }
 
     /**
+     * @return Table name.
+     */
+    public String tableName() {
+        return tableName;
+    }
+
+    /**
+     * @return Required data type for the query parameter.
+     */
+    public int dataType() {
+        return dataType;
+    }
+
+    /**
      * @return Query parameter index required for partition calculation.
      */
     public int paramIdx() {
@@ -81,10 +108,13 @@ public class CacheQueryPartitionInfo {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return partId ^ paramIdx ^ (cacheName == null ? 0 : cacheName.hashCode());
+        return partId ^ dataType ^ paramIdx ^
+            (cacheName == null ? 0 : cacheName.hashCode()) ^
+            (tableName == null ? 0 : tableName.hashCode());
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;
@@ -97,10 +127,13 @@ public class CacheQueryPartitionInfo {
         if (partId >= 0)
             return partId == other.partId;
 
-        if (other.cacheName == null)
+        if (other.cacheName == null || other.tableName == null)
             return false;
 
-        return other.cacheName.equals(cacheName) && other.paramIdx == paramIdx;
+        return other.cacheName.equals(cacheName) &&
+            other.tableName.equals(tableName) &&
+            other.dataType == dataType &&
+            other.paramIdx == paramIdx;
     }
 
     /** {@inheritDoc} */

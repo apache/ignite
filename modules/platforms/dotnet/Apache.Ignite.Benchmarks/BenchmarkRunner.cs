@@ -20,7 +20,6 @@ namespace Apache.Ignite.Benchmarks
     using System;
     using System.Diagnostics;
     using System.Text;
-    using Apache.Ignite.Benchmarks.Binary;
     using Apache.Ignite.Benchmarks.Interop;
 
     /// <summary>

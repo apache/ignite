@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Replace.
@@ -35,14 +36,14 @@ public class ReplaceRecord<L> extends PageDeltaRecord {
     private int idx;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param io IO.
      * @param rowBytes Row bytes.
      * @param idx Index.
      */
-    public ReplaceRecord(int cacheId, long pageId, BPlusIO<L> io, byte[] rowBytes, int idx) {
-        super(cacheId, pageId);
+    public ReplaceRecord(int grpId, long pageId, BPlusIO<L> io, byte[] rowBytes, int idx) {
+        super(grpId, pageId);
 
         this.io = io;
         this.rowBytes = rowBytes;
@@ -82,5 +83,10 @@ public class ReplaceRecord<L> extends PageDeltaRecord {
      */
     public byte[] rowBytes() {
         return rowBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ReplaceRecord.class, this, "super", super.toString());
     }
 }

@@ -23,10 +23,11 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -39,6 +40,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test for page evictions.
@@ -66,9 +69,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
-
-        cfg.setMemoryConfiguration(createDbConfig());
+        cfg.setDataStorageConfiguration(createDbConfig());
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(cacheName));
 
@@ -78,22 +79,23 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
     /**
      * @return DB config.
      */
-    private MemoryConfiguration createDbConfig() {
-        final MemoryConfiguration memCfg = new MemoryConfiguration();
+    private DataStorageConfiguration createDbConfig() {
+        final DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
         memPlcCfg.setInitialSize(MEMORY_LIMIT);
         memPlcCfg.setMaxSize(MEMORY_LIMIT);
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
+        memPlcCfg.setName("dfltDataRegion");
+        memPlcCfg.setPersistenceEnabled(true);
 
         memCfg.setPageSize(PAGE_SIZE);
         memCfg.setConcurrencyLevel(NUMBER_OF_SEGMENTS);
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
+        memCfg.setWalMode(WALMode.LOG_ONLY);
 
         return memCfg;
     }
-
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -203,10 +205,10 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
                     try {
                         FullPageId fullId = pageIds.get(i);
 
-                        long page = memory.acquirePage(fullId.cacheId(), fullId.pageId());
+                        long page = memory.acquirePage(fullId.groupId(), fullId.pageId());
 
                         try {
-                            final long pageAddr = memory.writeLock(fullId.cacheId(), fullId.pageId(), page);
+                            final long pageAddr = memory.writeLock(fullId.groupId(), fullId.pageId(), page);
 
                             try {
                                 PageIO.setPageId(pageAddr, fullId.pageId());
@@ -214,11 +216,11 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
                                 PageUtils.putLong(pageAddr, PageIO.COMMON_HEADER_END, i * 2);
                             }
                             finally {
-                                memory.writeUnlock(fullId.cacheId(), fullId.pageId(), page, null, true);
+                                memory.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
                             }
                         }
                         finally {
-                            memory.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                            memory.releasePage(fullId.groupId(), fullId.pageId(), page);
                         }
                     }
                     finally {
@@ -252,19 +254,19 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
                     try {
                         final FullPageId fullId = pageIds.get(i);
 
-                        long page = memory.acquirePage(fullId.cacheId(), fullId.pageId());
+                        long page = memory.acquirePage(fullId.groupId(), fullId.pageId());
                         try {
-                            final long pageAddr = memory.readLock(fullId.cacheId(), fullId.pageId(), page);
+                            final long pageAddr = memory.readLock(fullId.groupId(), fullId.pageId(), page);
 
                             try {
                                 assertEquals(i * 2, PageUtils.getLong(pageAddr, PageIO.COMMON_HEADER_END));
                             }
                             finally {
-                                memory.readUnlock(fullId.cacheId(), fullId.pageId(), page);
+                                memory.readUnlock(fullId.groupId(), fullId.pageId(), page);
                             }
                         }
                         finally {
-                            memory.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                            memory.releasePage(fullId.groupId(), fullId.pageId(), page);
                         }
                     }
                     finally {
@@ -287,13 +289,13 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
 
         final IgniteCacheDatabaseSharedManager db = sharedCtx.database();
 
-        return db.memoryPolicy(null).pageMemory();
+        return db.dataRegion(null).pageMemory();
     }
 
     /**
      * @throws IgniteCheckedException If fail.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

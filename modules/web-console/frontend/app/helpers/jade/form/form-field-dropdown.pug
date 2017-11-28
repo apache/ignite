@@ -23,9 +23,8 @@ mixin ignite-form-field-dropdown(label, model, name, disabled, required, multipl
             data-placeholder=placeholderEmpty ? `{{ ${options}.length > 0 ? '${placeholder}' : '${placeholderEmpty}' }}` : placeholder
             
             data-ng-model=model
-
+            data-ng-disabled=disabled && `${disabled}`
             data-ng-required=required && `${required}`
-            data-ng-disabled=disabled && `${disabled}` || `!${options}.length`
 
             bs-select
             bs-options=`item.value as item.label for item in ${options}`

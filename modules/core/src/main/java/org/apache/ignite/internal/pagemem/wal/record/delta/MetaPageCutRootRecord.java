@@ -20,17 +20,18 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
 public class MetaPageCutRootRecord extends PageDeltaRecord {
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      */
-    public MetaPageCutRootRecord(int cacheId, long pageId) {
-        super(cacheId, pageId);
+    public MetaPageCutRootRecord(int grpId, long pageId) {
+        super(grpId, pageId);
     }
 
     /** {@inheritDoc} */
@@ -43,5 +44,10 @@ public class MetaPageCutRootRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.BTREE_META_PAGE_CUT_ROOT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageCutRootRecord.class, this, "super", super.toString());
     }
 }

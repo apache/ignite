@@ -26,6 +26,7 @@ import java.util.Optional;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.nio.file.Files.createTempFile;
@@ -108,6 +109,7 @@ public class TracerTest {
      *
      */
     @Test
+    @Ignore("Can not run on TeamCity yet, see IGNITE-5725")
     public void testHtmlVectorTracer() throws IOException {
         Vector vec1 = makeRandomVector(1000);
 
@@ -125,6 +127,7 @@ public class TracerTest {
      *
      */
     @Test
+    @Ignore("Can not run on TeamCity yet, see IGNITE-5725")
     public void testHtmlMatrixTracer() throws IOException {
         Matrix mtx1 = makeRandomMatrix(100, 100);
 

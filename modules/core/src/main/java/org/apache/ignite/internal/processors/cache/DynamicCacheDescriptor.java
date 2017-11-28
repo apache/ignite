@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -56,9 +55,6 @@ public class DynamicCacheDescriptor {
 
     /** Template configuration flag. */
     private boolean template;
-
-    /** Cache plugin manager. */
-    private final CachePluginManager pluginMgr;
 
     /** */
     private boolean updatesAllowed = true;
@@ -137,8 +133,6 @@ public class DynamicCacheDescriptor {
         this.staticCfg = staticCfg;
         this.sql = sql;
         this.deploymentId = deploymentId;
-
-        pluginMgr = new CachePluginManager(ctx, cacheCfg);
 
         cacheId = CU.cacheId(cacheCfg.getName());
 
@@ -239,13 +233,6 @@ public class DynamicCacheDescriptor {
         }
 
         return objCtx;
-    }
-
-    /**
-     * @return Cache plugin manager.
-     */
-    public CachePluginManager pluginManager() {
-        return pluginMgr;
     }
 
     /**

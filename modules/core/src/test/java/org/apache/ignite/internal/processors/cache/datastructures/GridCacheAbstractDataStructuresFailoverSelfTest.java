@@ -767,7 +767,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                             return null;
                         }
-                    });
+                    }, "lock-thread");
 
                     // Wait until l.lock() has been called.
                     while(!l.hasQueuedThreads() && !done.get()){
@@ -777,6 +777,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     return null;
                 }
             });
+
+            long endTime = System.currentTimeMillis() + getTestTimeout();
 
             while (!fut.isDone()) {
                 try {
@@ -797,6 +799,9 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                         assertFalse(lock.isHeldByCurrentThread());
                     }
                 }
+
+                if (System.currentTimeMillis() > endTime)
+                    fail("Failed to wait for topology change threads.");
             }
 
             fut.get();

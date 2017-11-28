@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.ExternalizeTest;
 import org.apache.ignite.ml.math.IdentityValueMapper;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.MatrixKeyMapper;
+import org.apache.ignite.ml.math.distributed.MatrixKeyMapper;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;

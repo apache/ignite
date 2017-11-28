@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -94,7 +95,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<VisorCach
         @Override protected Collection<VisorCacheMetrics> run(final VisorCacheMetricsCollectorTaskArg arg) {
             assert arg != null;
 
-            Boolean showSysCaches = arg.isShowSystemCaches();
+            boolean showSysCaches = arg.isShowSystemCaches();
 
             Collection<String> cacheNames = arg.getCacheNames();
 
@@ -109,7 +110,9 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<VisorCach
             boolean allCaches = cacheNames.isEmpty();
 
             for (IgniteCacheProxy ca : caches) {
-                if (ca.context().started()) {
+                GridCacheContext ctx = ca.context();
+
+                if (ctx.started() && (ctx.affinityNode() || ctx.isNear())) {
                     String cacheName = ca.getName();
 
                     VisorCacheMetrics cm = new VisorCacheMetrics(ignite, cacheName);
