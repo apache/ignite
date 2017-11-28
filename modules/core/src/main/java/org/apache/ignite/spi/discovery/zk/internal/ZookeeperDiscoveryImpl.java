@@ -768,7 +768,7 @@ public class ZookeeperDiscoveryImpl {
 
         evtData.addRemainingAck(joinedNode); // Topology for joined node does not contain joined node.
 
-        byte[] dataForJoinedBytes = marshal(dataForJoined);
+        byte[] dataForJoinedBytes = U.zip(marshal(dataForJoined));
 
         long start = System.currentTimeMillis();
 
@@ -1129,7 +1129,7 @@ public class ZookeeperDiscoveryImpl {
 
         String path = zkPaths.joinEventDataPathForJoined(evtData.eventId());
 
-        ZkJoinEventDataForJoined dataForJoined = unmarshal(state.zkClient.getData(path));
+        ZkJoinEventDataForJoined dataForJoined = unmarshalZip(state.zkClient.getData(path));
 
         state.gridStartTime = evtsData.gridStartTime;
 
@@ -1518,6 +1518,12 @@ public class ZookeeperDiscoveryImpl {
         assert bytes != null && bytes.length > 0;
 
         return marsh.unmarshal(bytes, null);
+    }
+
+    private <T> T unmarshalZip(byte[] bytes) throws IgniteCheckedException {
+        assert bytes != null && bytes.length > 0;
+
+        return U.unmarshalZip(marsh, bytes, null);
     }
 
     /**
