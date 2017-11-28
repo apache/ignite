@@ -40,64 +40,25 @@ public class MavenUtils {
     private static String locRepPath = null;
 
     /**
-     * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId=ignite-core.
-     *
+     * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactName}.
+     * <br>
      * At first, artifact is looked for in the Maven local repository, if it isn't exists there, it will be downloaded
      * and stored via Maven.
-     *
-     * @param ver Version of ignite-core artifact.
-     * @return Path to the artifact.
-     * @throws Exception In case of an error.
-     * @see #getPathToArtifact(String)
-     */
-    public static String getPathToIgniteCoreArtifact(@NotNull String ver) throws Exception {
-        return getPathToIgniteCoreArtifact(ver, null);
-    }
-
-    /**
-     * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId=ignite-core.
-     *
-     * At first, artifact is looked for in the Maven local repository, if it isn't exists there, it will be downloaded
-     * and stored via Maven.
-     *
+     * <br>
      * @param ver Version of ignite-core artifact.
      * @param classifier Artifact classifier.
      * @return Path to the artifact.
      * @throws Exception In case of an error.
      * @see #getPathToArtifact(String)
      */
-    public static String getPathToIgniteCoreArtifact(@NotNull String ver,
+    public static String getPathToIgniteArtifact(@NotNull String artifactName, @NotNull String ver,
         @Nullable String classifier) throws Exception {
-        return getPathToIgniteArtifact("ignite-core", ver, classifier);
-    }
-
-    private static String getPathToIgniteArtifact(@NotNull String artifactName, @NotNull String ver,
-        @Nullable String classifier) throws Exception {
-        String artifact = "org.apache.ignite:" +
-            artifactName +
-            ":" + ver;
+        String artifact = "org.apache.ignite:" + artifactName + ":" + ver;
 
         if (classifier != null)
             artifact += ":jar:" + classifier;
 
         return getPathToArtifact(artifact);
-    }
-
-    /**
-     * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId=ignite-core.
-     *
-     * At first, artifact is looked for in the Maven local repository, if it isn't exists there, it will be downloaded
-     * and stored via Maven.
-     *
-     * @param ver Version of ignite-core artifact.
-     * @param classifier Artifact classifier.
-     * @return Path to the artifact.
-     * @throws Exception In case of an error.
-     * @see #getPathToArtifact(String)
-     */
-    public static String getPathToIgniteIndexingArtifact(@NotNull String ver,
-        @Nullable String classifier) throws Exception {
-        return getPathToIgniteArtifact("ignite-indexing", ver, classifier);
     }
 
     /**

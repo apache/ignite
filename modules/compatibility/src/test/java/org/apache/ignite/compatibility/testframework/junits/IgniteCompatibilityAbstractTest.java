@@ -34,9 +34,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -166,50 +166,38 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
                 URLClassLoader ldr = (URLClassLoader)CLASS_LOADER;
 
+                final Collection<Dependency> dependencies = getDependencies();
+
                 StringBuilder pathBuilder = new StringBuilder();
-
-                String corePathTemplate = "modules/core/target/classes";
-                String coreTestsPathTemplate = "modules/core/target/test-classes";
-
-                //todo extract set of modules to replace
-                String indexingPathTemplate = "modules/indexing/target/classes";
-                String indexingTestsPathTemplate = "modules/indexing/target/test-classes";
-
                 for (URL url : ldr.getURLs()) {
                     String path = url.getPath();
 
-                    if (!path.contains(corePathTemplate) && !path.contains(coreTestsPathTemplate))
-                        if (!path.contains(indexingPathTemplate) && !path.contains(indexingTestsPathTemplate))
-                            pathBuilder.append(path).append(File.pathSeparator);
+                    boolean excluded = false;
+                    for (Dependency next : dependencies) {
+                        if (path.contains(next.localPathTemplate())) {
+                            excluded = true;
+                            break;
+                        }
+                    }
+                    if (!excluded)
+                        pathBuilder.append(path).append(File.pathSeparator);
                 }
 
-                String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);
+                for (Dependency next : dependencies) {
+                    String pathToArtifact = MavenUtils.getPathToIgniteArtifact(next.artifactName(), ver,
+                        next.classifier());
 
-                pathBuilder.append(pathToArtifact).append(File.pathSeparator);
-
-                String pathToTestsArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver, "tests");
-
-                pathBuilder.append(pathToTestsArtifact).append(File.pathSeparator);
-
-
-                String pathToIgniteIndexingArtifact = MavenUtils.getPathToIgniteIndexingArtifact(ver, null);
-
-                pathBuilder.append(pathToIgniteIndexingArtifact).append(File.pathSeparator);
-
-                String pathToIgniteIndexingTestsArtifact = MavenUtils.getPathToIgniteIndexingArtifact(ver, "tests");
-
-                pathBuilder.append(pathToIgniteIndexingTestsArtifact).append(File.pathSeparator);
+                    pathBuilder.append(pathToArtifact).append(File.pathSeparator);
+                }
 
                 filteredJvmArgs.add("-cp");
                 filteredJvmArgs.add(pathBuilder.toString());
 
-                final IgniteOutClosure<Collection<String>> provider = getJvmParmsProvider();
-                if (provider != null) {
-                    final Collection<String> parms = provider.apply();
+                final Collection<String> jvmParms = getJvmParms();
 
-                    if (parms != null)
-                        filteredJvmArgs.addAll(parms);
-                }
+                if (jvmParms != null)
+                    filteredJvmArgs.addAll(jvmParms);
+
                 return filteredJvmArgs;
             }
         };
@@ -235,11 +223,24 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     }
 
     /**
-     * Allows to setup JVM arguments for standalone JVM
-     * @return  supplier of additional JVM arguments
+     * @return list of actual module dependencies from pom.xml
      */
-    protected IgniteOutClosure<Collection<String>> getJvmParmsProvider() {
-        return null;
+    @NotNull protected Collection<Dependency> getDependencies() {
+        final Collection<Dependency> dependencies = new ArrayList<>();
+
+        dependencies.add(new Dependency("core", "ignite-core"));
+        dependencies.add(new Dependency("core", "ignite-core", true));
+
+        return dependencies;
+    }
+
+    /**
+     * Allows to setup JVM arguments for standalone JVM
+     *
+     * @return additional JVM arguments
+     */
+    protected Collection<String> getJvmParms() {
+        return new ArrayList<>();
     }
 
     /** {@inheritDoc} */
