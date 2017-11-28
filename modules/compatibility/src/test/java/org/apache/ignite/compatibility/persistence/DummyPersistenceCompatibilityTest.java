@@ -99,7 +99,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
      * @param ver 3-digits version of ignite
      * @throws Exception If failed.
      */
-    private void doTestStartupWithOldVersion(String ver) throws Exception {
+    protected void doTestStartupWithOldVersion(String ver) throws Exception {
         try {
             startGrid(1, ver, new ConfigurationClosure(), new PostStartupClosure());
 
@@ -135,7 +135,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
     }
 
     /** */
-    private static class PostStartupClosure implements IgniteInClosure<Ignite> {
+    public static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
             ignite.active(true);
@@ -166,7 +166,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
     }
 
     /** */
-    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+    public static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
             cfg.setLocalHost("127.0.0.1");
