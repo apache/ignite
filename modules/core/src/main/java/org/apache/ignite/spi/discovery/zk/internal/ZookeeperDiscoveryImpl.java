@@ -658,9 +658,9 @@ public class ZookeeperDiscoveryImpl {
     private void saveAndProcessNewEvents() throws Exception {
         long start = System.currentTimeMillis();
 
-        byte [] evtsBytes = marsh.marshal(state.evtsData);
+        byte[] evtsBytes = U.zip(marshal(state.evtsData));
 
-        state.zkClient.setData(zkPaths.evtsPath, marsh.marshal(state.evtsData), -1);
+        state.zkClient.setData(zkPaths.evtsPath, evtsBytes, -1);
 
         long time = System.currentTimeMillis() - start;
 
