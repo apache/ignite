@@ -554,6 +554,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
+    public static volatile boolean print = false;
+
     /** {@inheritDoc} */
     @SuppressWarnings("TooBroadScope")
     @Override public WALPointer log(WALRecord record) throws IgniteCheckedException, StorageException {
@@ -567,7 +569,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return null;
 
         // Need to calculate record size first.
-        record.size(serializer.size(record));
+        int size = serializer.size(record);
+
+        if (print)
+            System.out.println("RECORD " + size + ": " + record.getClass().getSimpleName());
+
+        record.size(size);
 
         for (; ; currWrHandle = rollOver(currWrHandle)) {
             WALPointer ptr = currWrHandle.addRecord(record);
