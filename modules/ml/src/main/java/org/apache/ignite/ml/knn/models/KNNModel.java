@@ -205,10 +205,4 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
         else
             return 1.0; // strategy.SIMPLE
     }
-
-    // can be default method in model interface or in abstract class
-    public void normalizeWith(Normalization normalization) {
-        // TODO : https://ru.wikipedia.org/wiki/%D0%9C%D0%B5%D1%82%D0%BE%D0%B4_k-%D0%B1%D0%BB%D0%B8%D0%B6%D0%B0%D0%B9%D1%88%D0%B8%D1%85_%D1%81%D0%BE%D1%81%D0%B5%D0%B4%D0%B5%D0%B9
-    }
-
 }

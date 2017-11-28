@@ -106,4 +106,21 @@ public class LabeledDatasetTest extends BaseKNNTest {
         assertEquals(training.features(2).get(1), 0.0);
 
     }
+
+
+    public void testMinMaxNormalization() {
+        // TODO:
+    }
+
+
+    public void testGivenFeatureNames() {
+        // TODO:
+    }
+
+    public void testGeneratedFeatureNames() {
+        // TODO:
+    }
+
+
+
 }

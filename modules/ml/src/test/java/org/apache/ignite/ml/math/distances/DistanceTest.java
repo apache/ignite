@@ -24,8 +24,8 @@ public class DistanceTest {
         v2 = new DenseLocalOnHeapVector(new double[] {2.0, 1.0, 0.0});
     }
 
-
     @Test
+    /** */
     public void euclideanDistance() throws Exception {
 
         double expectedResult = Math.pow(5, 0.5);
@@ -36,6 +36,7 @@ public class DistanceTest {
     }
 
     @Test
+    /** */
     public void manhattanDistance() throws Exception {
         double expectedResult = 3;
 
@@ -45,6 +46,7 @@ public class DistanceTest {
     }
 
     @Test
+    /** */
     public void hammingDistance() throws Exception {
         double expectedResult = 2;
 

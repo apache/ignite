@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.knn.models.FillMissingValueWith;
+import org.apache.ignite.ml.knn.models.Normalization;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
@@ -334,5 +335,51 @@ public class LabeledDataset {
         String[] rowData = list.get(0).split(separator, -1); // assume that all observation has the same length as a first row
 
         return rowData.length;
+    }
+
+    /**
+     * Scales features in dataset
+     * @param normalization
+     * @return
+     */
+    public LabeledDataset normalizeWith(Normalization normalization) {
+        // TODO : https://ru.wikipedia.org/wiki/%D0%9C%D0%B5%D1%82%D0%BE%D0%B4_k-%D0%B1%D0%BB%D0%B8%D0%B6%D0%B0%D0%B9%D1%88%D0%B8%D1%85_%D1%81%D0%BE%D1%81%D0%B5%D0%B4%D0%B5%D0%B9
+        switch (normalization){
+            case MINIMAX: minMaxFeatures();
+                break;
+            case Z_NORMALIZATION: throw new UnsupportedOperationException("Z-normalization is not supported yet");
+        }
+
+        return this;
+    }
+
+    /**
+     * Complexity 2*N^2. Try to optimize.
+     */
+    private void minMaxFeatures() {
+        double[] mins = new double[colSize];
+        double[] maxs = new double[colSize];
+
+        for (int j = 0; j < colSize; j++) {
+            double maxInCurrentColumn = Double.MIN_VALUE;
+            double minInCurrentColumn = Double.MAX_VALUE;
+            for (int i = 0; i < rowSize; i++) {
+                double e = data[i].features().get(j);
+                maxInCurrentColumn = Math.max(e, maxInCurrentColumn);
+                minInCurrentColumn = Math.min(e, minInCurrentColumn);
+            }
+            mins[j] = minInCurrentColumn;
+            maxs[j] = maxInCurrentColumn;
+        }
+
+        for (int j = 0; j < colSize; j++) {
+            double div = maxs[j] - mins[j];
+            for (int i = 0; i < rowSize; i++) {
+                double oldVal = data[i].features().get(j);
+                double newVal = (oldVal - mins[j])/div;
+                // x'=(x-MIN[X])/(MAX[X]-MIN[X])
+                data[i].features().set(j, newVal);
+            }
+        }
     }
 }

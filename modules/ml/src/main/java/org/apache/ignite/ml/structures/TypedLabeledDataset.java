@@ -35,6 +35,7 @@ import java.util.stream.Stream;
  * @param <M> Some class extending {@link Vector}.
  * @param <L> Type of label.
  */
+@Deprecated
 public class TypedLabeledDataset<M extends Matrix, L extends Vector> {
     /** Vector. */
     private final M matrix;

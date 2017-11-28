@@ -19,6 +19,7 @@ package org.apache.ignite.ml.knn;
 
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
+import org.apache.ignite.ml.knn.models.Normalization;
 import org.apache.ignite.ml.knn.regression.KNNMultipleLinearRegression;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
@@ -97,7 +98,34 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
     /** */
     public void testLonglyWithNormalization() {
+        y = new double[] {60323, 61122, 60171, 61187, 63221, 63639, 64989, 63761, 66019, 68169, 66513, 68655, 69564, 69331, 70551};
+        x = new double[15][];
+        x[0] = new double[] {83.0, 234289, 2356, 1590, 107608, 1947};
+        x[1] = new double[] {88.5, 259426, 2325, 1456, 108632, 1948};
+        x[2] = new double[] {88.2, 258054, 3682, 1616, 109773, 1949};
+        x[3] = new double[] {89.5, 284599, 3351, 1650, 110929, 1950};
+        x[4] = new double[] {96.2, 328975, 2099, 3099, 112075, 1951};
+        x[5] = new double[] {98.1, 346999, 1932, 3594, 113270, 1952};
+        x[6] = new double[] {99.0, 365385, 1870, 3547, 115094, 1953};
+        x[7] = new double[] {100.0, 363112, 3578, 3350, 116219, 1954};
+        x[8] = new double[] {101.2, 397469, 2904, 3048, 117388, 1955};
+        x[9] = new double[] {108.4, 442769, 2936, 2798, 120445, 1957};
+        x[10] = new double[] {110.8, 444546, 4681, 2637, 121950, 1958};
+        x[11] = new double[] {112.6, 482704, 3813, 2552, 123366, 1959};
+        x[12] = new double[] {114.2, 502601, 3931, 2514, 125368, 1960};
+        x[13] = new double[] {115.7, 518173, 4806, 2572, 127852, 1961};
+        x[14] = new double[] {116.9, 554894, 4007, 2827, 130081, 1962};
 
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        LabeledDataset training = new LabeledDataset(x, y);
+
+        training.normalizeWith(Normalization.MINIMAX);
+
+        KNNMultipleLinearRegression knnModel = new KNNMultipleLinearRegression(5, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+        Vector vector = new SparseBlockDistributedVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
+        System.out.println(knnModel.predict(vector));
+        Assert.assertEquals(67857, knnModel.predict(vector), 2000);
     }
 
     /** */
@@ -123,6 +151,7 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
         Assert.assertEquals(900, knnModel.predict(vector), 100);
 
     }
+
 
     /** */
     public void testCalculateAverageErrorOnMachineDatasetWithSimpleStrategy() {

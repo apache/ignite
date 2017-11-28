@@ -28,7 +28,6 @@ import org.apache.ignite.ml.structures.LabeledDataset;
 
 /** Tests behaviour of KNNClassificationTest. */
 public class KNNClassificationTest extends BaseKNNTest {
-
     /** */
     public void testBinaryClassificationTest() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -177,6 +176,9 @@ public class KNNClassificationTest extends BaseKNNTest {
             System.out.println("Absolute amount of errors " + amountOfErrors);
             System.out.println("Percentage of errors " + amountOfErrors / (double)training.rowSize());
         }
+
+
+        // add to sample normalization, column names and etc
 
     }
     // add test with a few points with equal distance
