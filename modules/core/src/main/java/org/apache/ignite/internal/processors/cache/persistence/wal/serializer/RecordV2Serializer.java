@@ -234,16 +234,16 @@ public class RecordV2Serializer implements RecordSerializer {
     }
 
     /**
-     * Writes record file position to given {@code buf}.
+     * Writes rec file position to given {@code buf}.
      *
-     * @param buf Buffer to write record file position.
-     * @param record WAL record.
+     * @param buf Buffer to write rec file position.
+     * @param rec WAL rec.
      */
-    private static void putPositionOfRecord(ByteBuffer buf, WALRecord record) {
-        FileWALPointer p = (FileWALPointer)record.position();
+    private static void putPositionOfRecord(ByteBuffer buf, WALRecord rec) {
+        FileWALPointer p = (FileWALPointer)rec.position();
 
         buf.putLong(p.index());
         buf.putInt(p.fileOffset());
-        buf.putInt(record.size());
+        buf.putInt(rec.size());
     }
 }

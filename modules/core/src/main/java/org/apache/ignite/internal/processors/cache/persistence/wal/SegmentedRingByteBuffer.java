@@ -24,7 +24,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * Segmented ring byte buffer that represents multi producer/single consumer queue that can be used by multiple writer
@@ -33,6 +35,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class SegmentedRingByteBuffer {
     /** Capacity. */
     private final int cap;
+
+    /** Direct. */
+    private final boolean direct;
 
     /** Buffer. */
     private final ByteBuffer buf;
@@ -66,9 +71,20 @@ public class SegmentedRingByteBuffer {
      */
     public SegmentedRingByteBuffer(int cap, long maxSegmentSize, boolean direct) {
         this.cap = cap;
+        this.direct = direct;
         this.buf = direct ? ByteBuffer.allocateDirect(cap) : ByteBuffer.allocate(cap);
         this.buf.order(ByteOrder.nativeOrder());
         this.maxSegmentSize = maxSegmentSize;
+    }
+
+    /**
+     * Performs initialization of ring buffer state.
+     *
+     * @param pos Position.
+     */
+    public void init(long pos) {
+        head.set(pos);
+        tail.set(pos);
     }
 
     /**
@@ -151,6 +167,30 @@ public class SegmentedRingByteBuffer {
         }
     }
 
+    public WriteSegment offerAndOpen(int size) {
+        if (size > cap)
+            throw new IllegalArgumentException("Record is too long [capacity=" + cap + ", size=" + size + ']');
+
+        for (;;) {
+            int cur = producersCnt.get();
+
+            if (cur >= 0 && producersCnt.compareAndSet(cur, cur + 1))
+                break;
+        }
+
+        long currTail = tail.get();
+
+        head.set(0);
+
+        boolean init = tail.compareAndSet(currTail, size);
+
+        assert init;
+
+        ByteBuffer slice = slice(0, size, false);
+
+        return new WriteSegment(slice, size);
+    }
+
     /**
      * Retrieves list of {@link ReadSegment} instances that point to {@link ByteBuffer} that contains all data available
      * for reading from {@link SegmentedRingByteBuffer} or {@code null} if there are no available data for reading.
@@ -224,6 +264,15 @@ public class SegmentedRingByteBuffer {
             return Collections.singletonList(new ReadSegment(slice(headIdx, (int)(tail - head), true), head, tail));
     }
 
+    public void free() {
+        if (direct)
+            ((DirectBuffer)buf).cleaner().clean();
+/*
+        if (direct)
+            GridUnsafe.freeBuffer(buf);
+*/
+    }
+
     /**
      * @param off Offset.
      * @param len Length.
@@ -237,16 +286,6 @@ public class SegmentedRingByteBuffer {
         bb.position(off);
 
         return bb;
-    }
-
-    /**
-     * Performs initialization of ring buffer state.
-     *
-     * @param pos Position.
-     */
-    public void init(long pos) {
-        head.set(pos);
-        tail.set(pos);
     }
 
     /**
