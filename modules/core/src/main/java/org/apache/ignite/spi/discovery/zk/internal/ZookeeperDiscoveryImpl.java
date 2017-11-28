@@ -967,7 +967,7 @@ public class ZookeeperDiscoveryImpl {
 
         assert !state.crd;
 
-        ZkDiscoveryEventsData newEvts = unmarshal(data);
+        ZkDiscoveryEventsData newEvts = unmarshalZip(data);
 
         // Need keep processed custom events since they contains message object.
         if (state.evtsData != null) {
@@ -982,8 +982,6 @@ public class ZookeeperDiscoveryImpl {
                         evtData0.msg = ((ZkDiscoveryCustomEventData)evtData).msg;
                 }
             }
-
-            newEvts.evts.putAll(state.evtsData.evts);
         }
 
         processNewEvents(newEvts);
