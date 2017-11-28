@@ -31,6 +31,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import javax.cache.Cache;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
@@ -120,6 +124,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
     /** Ordered topic prefix. */
     private String topicPrefix;
+    
+    /** ReadWriteLock to control setup of listener */
+    private final ReadWriteLock listenerLock = new ReentrantReadWriteLock() ;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -165,6 +172,16 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     log.debug("Failed to stop JCache entry listener: " + e.getMessage());
             }
         }
+    }
+
+    /**
+     * Obtain the listener read lock, which must be held if you need to read when you
+     * call updateListener and use the result afterwards
+     *
+     * @return Read lock for the listener update
+     */
+    public Lock getListenerReadLock() {
+        return listenerLock.readLock();
     }
 
     /**
@@ -828,7 +845,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 intLsnrCnt.incrementAndGet();
         }
         else {
-            synchronized (this) {
+        	listenerLock.writeLock().lock();
+        	try {        		
                 if (lsnrCnt.get() == 0) {
                     if (cctx.group().sharedGroup() && !cctx.isLocal())
                         cctx.group().addCacheWithContinuousQuery(cctx);
@@ -838,6 +856,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
                 if (added)
                     lsnrCnt.incrementAndGet();
+            } finally {
+            	listenerLock.writeLock().unlock();
             }
 
             if (added)
@@ -863,13 +883,16 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             }
         }
         else {
-            synchronized (this) {
+        	listenerLock.writeLock().lock();
+        	try {
                 if ((lsnr = lsnrs.remove(id)) != null) {
                     int cnt = lsnrCnt.decrementAndGet();
 
                     if (cctx.group().sharedGroup() && cnt == 0 && !cctx.isLocal())
                         cctx.group().removeCacheWithContinuousQuery(cctx);
                 }
+            } finally {
+            	listenerLock.writeLock().unlock();
             }
 
             if (lsnr != null)

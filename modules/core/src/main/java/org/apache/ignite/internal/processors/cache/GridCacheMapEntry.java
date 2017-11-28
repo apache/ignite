@@ -910,134 +910,137 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         ensureFreeSpace();
 
-        synchronized (this) {
-            checkObsolete();
+        cctx.continuousQueries().getListenerReadLock().lock();
+        try {
+            synchronized (this) {
+                checkObsolete();
 
-            if (isNear()) {
-                assert dhtVer != null;
+                if (isNear()) {
+                    assert dhtVer != null;
 
-                // It is possible that 'get' could load more recent value.
-                if (!((GridNearCacheEntry)this).recordDhtVersion(dhtVer))
-                    return new GridCacheUpdateTxResult(false, null);
-            }
-
-            assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
-                "Transaction does not own lock for update [entry=" + this + ", tx=" + tx + ']';
-
-            // Load and remove from swap if it is new.
-            boolean startVer = isStartVersion();
-
-            boolean internal = isInternal() || !context().userCache();
-
-            Map<UUID, CacheContinuousQueryListener> lsnrCol =
-                notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
-
-            if (startVer && (retval || intercept || lsnrCol != null))
-                unswap(retval);
-
-            newVer = explicitVer != null ? explicitVer : tx == null ?
-                nextVersion() : tx.writeVersion();
-
-            assert newVer != null : "Failed to get write version for tx: " + tx;
-
-            old = oldValPresent ? oldVal : this.val;
-
-            if (intercept) {
-                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
-
-                CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
-
-                Object interceptorVal = cctx.config().getInterceptor().onBeforePut(
-                    new CacheLazyEntry(cctx, key, old, keepBinary),
-                    val0);
-
-                key0 = e.key();
-
-                if (interceptorVal == null)
-                    return new GridCacheUpdateTxResult(false, (CacheObject)cctx.unwrapTemporary(old));
-                else if (interceptorVal != val0)
-                    val0 = cctx.unwrapTemporary(interceptorVal);
-
-                val = cctx.toCacheObject(val0);
-            }
-
-            // Determine new ttl and expire time.
-            long expireTime;
-
-            if (drExpireTime >= 0) {
-                assert ttl >= 0 : ttl;
-
-                expireTime = drExpireTime;
-            }
-            else {
-                if (ttl == -1L) {
-                    ttl = ttlExtras();
-                    expireTime = expireTimeExtras();
+                    // It is possible that 'get' could load more recent value.
+                    if (!((GridNearCacheEntry) this).recordDhtVersion(dhtVer))
+                        return new GridCacheUpdateTxResult(false, null);
                 }
-                else
-                    expireTime = CU.toExpireTime(ttl);
+
+                assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
+                        "Transaction does not own lock for update [entry=" + this + ", tx=" + tx + ']';
+
+                // Load and remove from swap if it is new.
+                boolean startVer = isStartVersion();
+
+                boolean internal = isInternal() || !context().userCache();
+
+                Map<UUID, CacheContinuousQueryListener> lsnrCol =
+                        notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
+
+                if (startVer && (retval || intercept || lsnrCol != null))
+                    unswap(retval);
+
+                newVer = explicitVer != null ? explicitVer : tx == null ?
+                        nextVersion() : tx.writeVersion();
+
+                assert newVer != null : "Failed to get write version for tx: " + tx;
+
+                old = oldValPresent ? oldVal : this.val;
+
+                if (intercept) {
+                    val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
+
+                    CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
+
+                    Object interceptorVal = cctx.config().getInterceptor().onBeforePut(
+                            new CacheLazyEntry(cctx, key, old, keepBinary),
+                            val0);
+
+                    key0 = e.key();
+
+                    if (interceptorVal == null)
+                        return new GridCacheUpdateTxResult(false, (CacheObject) cctx.unwrapTemporary(old));
+                    else if (interceptorVal != val0)
+                        val0 = cctx.unwrapTemporary(interceptorVal);
+
+                    val = cctx.toCacheObject(val0);
+                }
+
+                // Determine new ttl and expire time.
+                long expireTime;
+
+                if (drExpireTime >= 0) {
+                    assert ttl >= 0 : ttl;
+
+                    expireTime = drExpireTime;
+                } else {
+                    if (ttl == -1L) {
+                        ttl = ttlExtras();
+                        expireTime = expireTimeExtras();
+                    } else
+                        expireTime = CU.toExpireTime(ttl);
+                }
+
+                assert ttl >= 0 : ttl;
+                assert expireTime >= 0 : expireTime;
+
+                // Detach value before index update.
+                val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
+
+                assert val != null;
+
+                storeValue(val, expireTime, newVer, null);
+
+                if (cctx.deferredDelete() && deletedUnlocked() && !isInternal() && !detached())
+                    deletedUnlocked(false);
+
+                updateCntr0 = nextPartitionCounter(topVer, tx == null || tx.local(), updateCntr);
+
+                if (updateCntr != null && updateCntr != 0)
+                    updateCntr0 = updateCntr;
+
+                update(val, expireTime, ttl, newVer, true);
+
+                drReplicate(drType, val, newVer, topVer);
+
+                recordNodeId(affNodeId, topVer);
+
+                if (metrics && cctx.cache().configuration().isStatisticsEnabled())
+                    cctx.cache().metrics0().onWrite();
+
+                if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT)) {
+                    CacheObject evtOld = cctx.unwrapTemporary(old);
+
+                    cctx.events().addEvent(partition(),
+                            key,
+                            evtNodeId,
+                            tx == null ? null : tx.xid(),
+                            newVer,
+                            EVT_CACHE_OBJECT_PUT,
+                            val,
+                            val != null,
+                            evtOld,
+                            evtOld != null || hasValueUnlocked(),
+                            subjId, null, taskName,
+                            keepBinary);
+                }
+
+                if (lsnrCol != null) {
+                    cctx.continuousQueries().onEntryUpdated(
+                            lsnrCol,
+                            key,
+                            val,
+                            old,
+                            internal,
+                            partition(),
+                            tx.local(),
+                            false,
+                            updateCntr0,
+                            null,
+                            topVer);
+                }
+
+                cctx.dataStructures().onEntryUpdated(key, false, keepBinary);
             }
-
-            assert ttl >= 0 : ttl;
-            assert expireTime >= 0 : expireTime;
-
-            // Detach value before index update.
-            val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
-            assert val != null;
-
-            storeValue(val, expireTime, newVer, null);
-
-            if (cctx.deferredDelete() && deletedUnlocked() && !isInternal() && !detached())
-                deletedUnlocked(false);
-
-            updateCntr0 = nextPartitionCounter(topVer, tx == null || tx.local(), updateCntr);
-
-            if (updateCntr != null && updateCntr != 0)
-                updateCntr0 = updateCntr;
-
-            update(val, expireTime, ttl, newVer, true);
-
-            drReplicate(drType, val, newVer, topVer);
-
-            recordNodeId(affNodeId, topVer);
-
-            if (metrics && cctx.cache().configuration().isStatisticsEnabled())
-                cctx.cache().metrics0().onWrite();
-
-            if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT)) {
-                CacheObject evtOld = cctx.unwrapTemporary(old);
-
-                cctx.events().addEvent(partition(),
-                    key,
-                    evtNodeId,
-                    tx == null ? null : tx.xid(),
-                    newVer,
-                    EVT_CACHE_OBJECT_PUT,
-                    val,
-                    val != null,
-                    evtOld,
-                    evtOld != null || hasValueUnlocked(),
-                    subjId, null, taskName,
-                    keepBinary);
-            }
-
-            if (lsnrCol != null) {
-                cctx.continuousQueries().onEntryUpdated(
-                    lsnrCol,
-                    key,
-                    val,
-                    old,
-                    internal,
-                    partition(),
-                    tx.local(),
-                    false,
-                    updateCntr0,
-                    null,
-                    topVer);
-            }
-
-            cctx.dataStructures().onEntryUpdated(key, false, keepBinary);
+        } finally {
+            cctx.continuousQueries().getListenerReadLock().unlock();
         }
 
         onUpdateFinished(updateCntr0);
@@ -1111,140 +1114,144 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         boolean marked = false;
 
-        synchronized (this) {
-            checkObsolete();
+        cctx.continuousQueries().getListenerReadLock().lock();
+        try {
+            synchronized (this) {
+                checkObsolete();
 
-            if (isNear()) {
-                assert dhtVer != null;
+                if (isNear()) {
+                    assert dhtVer != null;
 
-                // It is possible that 'get' could load more recent value.
-                if (!((GridNearCacheEntry)this).recordDhtVersion(dhtVer))
-                    return new GridCacheUpdateTxResult(false, null);
-            }
-
-            assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
-                "Transaction does not own lock for remove[entry=" + this + ", tx=" + tx + ']';
-
-            boolean startVer = isStartVersion();
-
-            newVer = explicitVer != null ? explicitVer : tx == null ? nextVersion() : tx.writeVersion();
-
-            boolean internal = isInternal() || !context().userCache();
-
-            Map<UUID, CacheContinuousQueryListener> lsnrCol =
-                notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
-
-            if (startVer && (retval || intercept || lsnrCol != null))
-                unswap();
-
-            old = oldValPresent ? oldVal : val;
-
-            if (intercept) {
-                entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
-
-                interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
-
-                if (cctx.cancelRemove(interceptRes)) {
-                    CacheObject ret = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
-
-                    return new GridCacheUpdateTxResult(false, ret);
+                    // It is possible that 'get' could load more recent value.
+                    if (!((GridNearCacheEntry) this).recordDhtVersion(dhtVer))
+                        return new GridCacheUpdateTxResult(false, null);
                 }
-            }
 
-            removeValue();
+                assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
+                        "Transaction does not own lock for remove[entry=" + this + ", tx=" + tx + ']';
 
-            update(null, 0, 0, newVer, true);
+                boolean startVer = isStartVersion();
 
-            if (cctx.deferredDelete() && !detached() && !isInternal()) {
-                if (!deletedUnlocked()) {
-                    deletedUnlocked(true);
+                newVer = explicitVer != null ? explicitVer : tx == null ? nextVersion() : tx.writeVersion();
 
-                    if (tx != null) {
-                        GridCacheMvcc mvcc = mvccExtras();
+                boolean internal = isInternal() || !context().userCache();
 
-                        if (mvcc == null || mvcc.isEmpty(tx.xidVersion()))
-                            clearReaders();
-                        else
-                            clearReader(tx.originatingNodeId());
+                Map<UUID, CacheContinuousQueryListener> lsnrCol =
+                        notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
+
+                if (startVer && (retval || intercept || lsnrCol != null))
+                    unswap();
+
+                old = oldValPresent ? oldVal : val;
+
+                if (intercept) {
+                    entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
+
+                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
+
+                    if (cctx.cancelRemove(interceptRes)) {
+                        CacheObject ret = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
+
+                        return new GridCacheUpdateTxResult(false, ret);
+                    }
+                }
+
+                removeValue();
+
+                update(null, 0, 0, newVer, true);
+
+                if (cctx.deferredDelete() && !detached() && !isInternal()) {
+                    if (!deletedUnlocked()) {
+                        deletedUnlocked(true);
+
+                        if (tx != null) {
+                            GridCacheMvcc mvcc = mvccExtras();
+
+                            if (mvcc == null || mvcc.isEmpty(tx.xidVersion()))
+                                clearReaders();
+                            else
+                                clearReader(tx.originatingNodeId());
+                        }
+                    }
+                }
+
+                updateCntr0 = nextPartitionCounter(topVer, tx == null || tx.local(), updateCntr);
+
+                if (updateCntr != null && updateCntr != 0)
+                    updateCntr0 = updateCntr;
+
+                drReplicate(drType, null, newVer, topVer);
+
+                if (metrics && cctx.cache().configuration().isStatisticsEnabled())
+                    cctx.cache().metrics0().onRemove();
+
+                if (tx == null)
+                    obsoleteVer = newVer;
+                else {
+                    // Only delete entry if the lock is not explicit.
+                    if (lockedBy(tx.xidVersion()))
+                        obsoleteVer = tx.xidVersion();
+                    else if (log.isDebugEnabled())
+                        log.debug("Obsolete version was not set because lock was explicit: " + this);
+                }
+
+                if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED)) {
+                    CacheObject evtOld = cctx.unwrapTemporary(old);
+
+                    cctx.events().addEvent(partition(),
+                            key,
+                            evtNodeId,
+                            tx == null ? null : tx.xid(), newVer,
+                            EVT_CACHE_OBJECT_REMOVED,
+                            null,
+                            false,
+                            evtOld,
+                            evtOld != null || hasValueUnlocked(),
+                            subjId,
+                            null,
+                            taskName,
+                            keepBinary);
+                }
+
+                if (lsnrCol != null) {
+                    cctx.continuousQueries().onEntryUpdated(
+                            lsnrCol,
+                            key,
+                            null,
+                            old,
+                            internal,
+                            partition(),
+                            tx.local(),
+                            false,
+                            updateCntr0,
+                            null,
+                            topVer);
+                }
+
+                cctx.dataStructures().onEntryUpdated(key, true, keepBinary);
+
+                deferred = cctx.deferredDelete() && !detached() && !isInternal();
+
+                if (intercept)
+                    entry0.updateCounter(updateCntr0);
+
+                if (!deferred) {
+                    // If entry is still removed.
+                    assert newVer == ver;
+
+                    if (obsoleteVer == null || !(marked = markObsolete0(obsoleteVer, true, null))) {
+                        if (log.isDebugEnabled())
+                            log.debug("Entry could not be marked obsolete (it is still used): " + this);
+                    } else {
+                        recordNodeId(affNodeId, topVer);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Entry was marked obsolete: " + this);
                     }
                 }
             }
-
-            updateCntr0 = nextPartitionCounter(topVer, tx == null || tx.local(), updateCntr);
-
-            if (updateCntr != null && updateCntr != 0)
-                updateCntr0 = updateCntr;
-
-            drReplicate(drType, null, newVer, topVer);
-
-            if (metrics && cctx.cache().configuration().isStatisticsEnabled())
-                cctx.cache().metrics0().onRemove();
-
-            if (tx == null)
-                obsoleteVer = newVer;
-            else {
-                // Only delete entry if the lock is not explicit.
-                if (lockedBy(tx.xidVersion()))
-                    obsoleteVer = tx.xidVersion();
-                else if (log.isDebugEnabled())
-                    log.debug("Obsolete version was not set because lock was explicit: " + this);
-            }
-
-            if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED)) {
-                CacheObject evtOld = cctx.unwrapTemporary(old);
-
-                cctx.events().addEvent(partition(),
-                    key,
-                    evtNodeId,
-                    tx == null ? null : tx.xid(), newVer,
-                    EVT_CACHE_OBJECT_REMOVED,
-                    null,
-                    false,
-                    evtOld,
-                    evtOld != null || hasValueUnlocked(),
-                    subjId,
-                    null,
-                    taskName,
-                    keepBinary);
-            }
-
-            if (lsnrCol != null) {
-                cctx.continuousQueries().onEntryUpdated(
-                    lsnrCol,
-                    key,
-                    null,
-                    old,
-                    internal,
-                    partition(),
-                    tx.local(),
-                    false,
-                    updateCntr0,
-                    null,
-                    topVer);
-            }
-
-            cctx.dataStructures().onEntryUpdated(key, true, keepBinary);
-
-            deferred = cctx.deferredDelete() && !detached() && !isInternal();
-
-            if (intercept)
-                entry0.updateCounter(updateCntr0);
-
-            if (!deferred) {
-                // If entry is still removed.
-                assert newVer == ver;
-
-                if (obsoleteVer == null || !(marked = markObsolete0(obsoleteVer, true, null))) {
-                    if (log.isDebugEnabled())
-                        log.debug("Entry could not be marked obsolete (it is still used): " + this);
-                }
-                else {
-                    recordNodeId(affNodeId, topVer);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Entry was marked obsolete: " + this);
-                }
-            }
+        } finally {
+            cctx.continuousQueries().getListenerReadLock().unlock();
         }
 
         if (deferred)
@@ -1313,294 +1320,300 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         IgniteBiTuple<Boolean, ?> interceptorRes = null;
 
         EntryProcessorResult<Object> invokeRes = null;
-
-        synchronized (this) {
-            boolean internal = isInternal() || !context().userCache();
-
-            Map<UUID, CacheContinuousQueryListener> lsnrCol =
-                cctx.continuousQueries().updateListeners(internal, false);
-
-            boolean needVal = retval ||
-                intercept ||
-                op == GridCacheOperation.TRANSFORM ||
-                !F.isEmpty(filter) ||
-                lsnrCol != null;
-
-            checkObsolete();
-
-            CacheDataRow oldRow = null;
-
-            // Load and remove from swap if it is new.
-            if (isNew())
-                oldRow = unswap(null, false);
-
-            old = val;
-
-            boolean readFromStore = false;
-
-            Object old0 = null;
-
-            if (readThrough && needVal && old == null &&
-                (cctx.readThrough() && (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
-                    old0 = readThrough(null, key, false, subjId, taskName);
-
-                old = cctx.toCacheObject(old0);
-
-                long ttl = CU.TTL_ETERNAL;
-                long expireTime = CU.EXPIRE_TIME_ETERNAL;
-
-                if (expiryPlc != null && old != null) {
-                    ttl = CU.toTtl(expiryPlc.getExpiryForCreation());
-
-                    if (ttl == CU.TTL_ZERO) {
-                        ttl = CU.TTL_MINIMUM;
-                        expireTime = CU.expireTimeInPast();
-                    }
-                    else if (ttl == CU.TTL_NOT_CHANGED)
-                        ttl = CU.TTL_ETERNAL;
-                    else
-                        expireTime = CU.toExpireTime(ttl);
-                }
-
-                // Detach value before index update.
-                old = cctx.kernalContext().cacheObjects().prepareForCache(old, cctx);
-
-                if (old != null)
-                    storeValue(old, expireTime, ver, oldRow);
-                else
-                    removeValue();
-
-                update(old, expireTime, ttl, ver, true);
-            }
-
-            // Apply metrics.
-            if (metrics && cctx.cache().configuration().isStatisticsEnabled() && needVal) {
-                // PutIfAbsent methods mustn't update hit/miss statistics
-                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || !cctx.putIfAbsentFilter(filter))
-                    cctx.cache().metrics0().onRead(old != null);
-            }
-
-            // Check filter inside of synchronization.
-            if (!F.isEmpty(filter)) {
-                boolean pass = cctx.isAllLocked(this, filter);
-
-                if (!pass) {
-                    if (expiryPlc != null && !readFromStore && !cctx.putIfAbsentFilter(filter) && hasValueUnlocked())
-                        updateTtl(expiryPlc);
-
-                    Object val = retval ?
-                        cctx.cacheObjectContext().unwrapBinaryIfNeeded(CU.value(old, cctx, false), keepBinary, false)
-                        : null;
-
-                    return new T3<>(false, val, null);
-                }
-            }
-
-            String transformCloClsName = null;
-
-            CacheObject updated;
-
-            Object key0 = null;
-            Object updated0 = null;
-
-            // Calculate new value.
-            if (op == GridCacheOperation.TRANSFORM) {
-                transformCloClsName = EntryProcessorResourceInjectorProxy.unwrap(writeObj).getClass().getName();
-
-                EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
-
-                assert entryProcessor != null;
-
-                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(key, old, version(), keepBinary, this);
-
-                try {
-                    Object computed = entryProcessor.process(entry, invokeArgs);
-
-                    if (entry.modified()) {
-                        updated0 = cctx.unwrapTemporary(entry.getValue());
-
-                        updated = cctx.toCacheObject(updated0);
-
-                        if (updated != null) // no validation for remove case
-                            cctx.validateKeyAndValue(key, updated);
-                    }
-                    else
-                        updated = old;
-
-                    key0 = entry.key();
-
-                    invokeRes = computed != null ? CacheInvokeResult.fromResult(cctx.unwrapTemporary(computed)) : null;
-                }
-                catch (Exception e) {
-                    updated = old;
-
-                    invokeRes = CacheInvokeResult.fromError(e);
-                }
-
-                if (!entry.modified()) {
-                    if (expiryPlc != null && !readFromStore && hasValueUnlocked())
-                        updateTtl(expiryPlc);
-
-                    return new GridTuple3<>(false, null, invokeRes);
-                }
-            }
-            else
-                updated = (CacheObject)writeObj;
-
-            op = updated == null ? GridCacheOperation.DELETE : GridCacheOperation.UPDATE;
-
-            if (intercept) {
-                CacheLazyEntry e;
-
-                if (op == GridCacheOperation.UPDATE) {
-                    updated0 = value(updated0, updated, keepBinary, false);
-
-                    e = new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary);
-
-                    Object interceptorVal = cctx.config().getInterceptor().onBeforePut(e, updated0);
-
-                    if (interceptorVal == null)
-                        return new GridTuple3<>(false, cctx.unwrapTemporary(value(old0, old, keepBinary, false)), invokeRes);
-                    else {
-                        updated0 = cctx.unwrapTemporary(interceptorVal);
-
-                        updated = cctx.toCacheObject(updated0);
-                    }
-                }
-                else {
-                    e = new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary);
-
-                    interceptorRes = cctx.config().getInterceptor().onBeforeRemove(e);
-
-                    if (cctx.cancelRemove(interceptorRes))
-                        return new GridTuple3<>(false, cctx.unwrapTemporary(interceptorRes.get2()), invokeRes);
-                }
-
-                key0 = e.key();
-                old0 = e.value();
-            }
-
-            boolean hadVal = hasValueUnlocked();
-
-            long ttl = CU.TTL_ETERNAL;
-            long expireTime = CU.EXPIRE_TIME_ETERNAL;
-
-            if (op == GridCacheOperation.UPDATE) {
-                if (expiryPlc != null) {
-                    ttl = CU.toTtl(hadVal ? expiryPlc.getExpiryForUpdate() : expiryPlc.getExpiryForCreation());
-
-                    if (ttl == CU.TTL_NOT_CHANGED) {
-                        ttl = ttlExtras();
-                        expireTime = expireTimeExtras();
-                    }
-                    else if (ttl != CU.TTL_ZERO)
-                        expireTime = CU.toExpireTime(ttl);
-                }
-                else {
-                    ttl = ttlExtras();
-                    expireTime = expireTimeExtras();
-                }
-            }
-
-            if (ttl == CU.TTL_ZERO)
-                op = GridCacheOperation.DELETE;
-
-            // Try write-through.
-            if (op == GridCacheOperation.UPDATE) {
-                // Detach value before index update.
-                updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
-
-                if (writeThrough)
-                    // Must persist inside synchronization in non-tx mode.
-                    cctx.store().put(null, key, updated, ver);
-
-                storeValue(updated, expireTime, ver, oldRow);
-
-                assert ttl != CU.TTL_ZERO;
-
-                update(updated, expireTime, ttl, ver, true);
-
-                if (evt) {
-                    CacheObject evtOld = null;
-
-                    if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
-                        evtOld = cctx.unwrapTemporary(old);
-
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
-                            (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
-                            evtOld != null || hadVal, subjId, transformCloClsName, taskName, keepBinary);
-                    }
-
-                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT)) {
-                        if (evtOld == null)
-                            evtOld = cctx.unwrapTemporary(old);
-
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
-                            (GridCacheVersion)null, EVT_CACHE_OBJECT_PUT, updated, updated != null, evtOld,
-                            evtOld != null || hadVal, subjId, null, taskName, keepBinary);
-                    }
-                }
-            }
-            else {
-                if (writeThrough)
-                    // Must persist inside synchronization in non-tx mode.
-                    cctx.store().remove(null, key);
-
-                removeValue();
-
-                update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver, true);
-
-                if (evt) {
-                    CacheObject evtOld = null;
-
-                    if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
-                            (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
-                            evtOld != null || hadVal, subjId, transformCloClsName, taskName, keepBinary);
-
-                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED)) {
-                        if (evtOld == null)
-                            evtOld = cctx.unwrapTemporary(old);
-
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion)null,
-                            EVT_CACHE_OBJECT_REMOVED, null, false, evtOld, evtOld != null || hadVal, subjId, null,
-                            taskName, keepBinary);
-                    }
-                }
-
-                res = hadVal;
-            }
-
-            if (res)
-                updateMetrics(op, metrics);
-
-            if (lsnrCol != null) {
-                long updateCntr = nextPartitionCounter(AffinityTopologyVersion.NONE, true, null);
-
-                cctx.continuousQueries().onEntryUpdated(
-                    lsnrCol,
-                    key,
-                    val,
-                    old,
-                    internal,
-                    partition(),
-                    true,
-                    false,
-                    updateCntr,
-                    null,
-                    AffinityTopologyVersion.NONE);
-
-                onUpdateFinished(updateCntr);
-            }
-
-            cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE, keepBinary);
-
-            if (intercept) {
-                if (op == GridCacheOperation.UPDATE)
-                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, updated, updated0, keepBinary, 0L));
-                else
-                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary, 0L));
-            }
+        
+        cctx.continuousQueries().getListenerReadLock().lock();
+        try {
+
+	        synchronized (this) {
+	            boolean internal = isInternal() || !context().userCache();
+	
+	            Map<UUID, CacheContinuousQueryListener> lsnrCol =
+	                cctx.continuousQueries().updateListeners(internal, false);
+	
+	            boolean needVal = retval ||
+	                intercept ||
+	                op == GridCacheOperation.TRANSFORM ||
+	                !F.isEmpty(filter) ||
+	                lsnrCol != null;
+	
+	            checkObsolete();
+	
+	            CacheDataRow oldRow = null;
+	
+	            // Load and remove from swap if it is new.
+	            if (isNew())
+	                oldRow = unswap(null, false);
+	
+	            old = val;
+	
+	            boolean readFromStore = false;
+	
+	            Object old0 = null;
+	
+	            if (readThrough && needVal && old == null &&
+	                (cctx.readThrough() && (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
+	                    old0 = readThrough(null, key, false, subjId, taskName);
+	
+	                old = cctx.toCacheObject(old0);
+	
+	                long ttl = CU.TTL_ETERNAL;
+	                long expireTime = CU.EXPIRE_TIME_ETERNAL;
+	
+	                if (expiryPlc != null && old != null) {
+	                    ttl = CU.toTtl(expiryPlc.getExpiryForCreation());
+	
+	                    if (ttl == CU.TTL_ZERO) {
+	                        ttl = CU.TTL_MINIMUM;
+	                        expireTime = CU.expireTimeInPast();
+	                    }
+	                    else if (ttl == CU.TTL_NOT_CHANGED)
+	                        ttl = CU.TTL_ETERNAL;
+	                    else
+	                        expireTime = CU.toExpireTime(ttl);
+	                }
+	
+	                // Detach value before index update.
+	                old = cctx.kernalContext().cacheObjects().prepareForCache(old, cctx);
+	
+	                if (old != null)
+	                    storeValue(old, expireTime, ver, oldRow);
+	                else
+	                    removeValue();
+	
+	                update(old, expireTime, ttl, ver, true);
+	            }
+	
+	            // Apply metrics.
+	            if (metrics && cctx.cache().configuration().isStatisticsEnabled() && needVal) {
+	                // PutIfAbsent methods mustn't update hit/miss statistics
+	                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || !cctx.putIfAbsentFilter(filter))
+	                    cctx.cache().metrics0().onRead(old != null);
+	            }
+	
+	            // Check filter inside of synchronization.
+	            if (!F.isEmpty(filter)) {
+	                boolean pass = cctx.isAllLocked(this, filter);
+	
+	                if (!pass) {
+	                    if (expiryPlc != null && !readFromStore && !cctx.putIfAbsentFilter(filter) && hasValueUnlocked())
+	                        updateTtl(expiryPlc);
+	
+	                    Object val = retval ?
+	                        cctx.cacheObjectContext().unwrapBinaryIfNeeded(CU.value(old, cctx, false), keepBinary, false)
+	                        : null;
+	
+	                    return new T3<>(false, val, null);
+	                }
+	            }
+	
+	            String transformCloClsName = null;
+	
+	            CacheObject updated;
+	
+	            Object key0 = null;
+	            Object updated0 = null;
+	
+	            // Calculate new value.
+	            if (op == GridCacheOperation.TRANSFORM) {
+	                transformCloClsName = EntryProcessorResourceInjectorProxy.unwrap(writeObj).getClass().getName();
+	
+	                EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
+	
+	                assert entryProcessor != null;
+	
+	                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(key, old, version(), keepBinary, this);
+	
+	                try {
+	                    Object computed = entryProcessor.process(entry, invokeArgs);
+	
+	                    if (entry.modified()) {
+	                        updated0 = cctx.unwrapTemporary(entry.getValue());
+	
+	                        updated = cctx.toCacheObject(updated0);
+	
+	                        if (updated != null) // no validation for remove case
+	                            cctx.validateKeyAndValue(key, updated);
+	                    }
+	                    else
+	                        updated = old;
+	
+	                    key0 = entry.key();
+	
+	                    invokeRes = computed != null ? CacheInvokeResult.fromResult(cctx.unwrapTemporary(computed)) : null;
+	                }
+	                catch (Exception e) {
+	                    updated = old;
+	
+	                    invokeRes = CacheInvokeResult.fromError(e);
+	                }
+	
+	                if (!entry.modified()) {
+	                    if (expiryPlc != null && !readFromStore && hasValueUnlocked())
+	                        updateTtl(expiryPlc);
+	
+	                    return new GridTuple3<>(false, null, invokeRes);
+	                }
+	            }
+	            else
+	                updated = (CacheObject)writeObj;
+	
+	            op = updated == null ? GridCacheOperation.DELETE : GridCacheOperation.UPDATE;
+	
+	            if (intercept) {
+	                CacheLazyEntry e;
+	
+	                if (op == GridCacheOperation.UPDATE) {
+	                    updated0 = value(updated0, updated, keepBinary, false);
+	
+	                    e = new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary);
+	
+	                    Object interceptorVal = cctx.config().getInterceptor().onBeforePut(e, updated0);
+	
+	                    if (interceptorVal == null)
+	                        return new GridTuple3<>(false, cctx.unwrapTemporary(value(old0, old, keepBinary, false)), invokeRes);
+	                    else {
+	                        updated0 = cctx.unwrapTemporary(interceptorVal);
+	
+	                        updated = cctx.toCacheObject(updated0);
+	                    }
+	                }
+	                else {
+	                    e = new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary);
+	
+	                    interceptorRes = cctx.config().getInterceptor().onBeforeRemove(e);
+	
+	                    if (cctx.cancelRemove(interceptorRes))
+	                        return new GridTuple3<>(false, cctx.unwrapTemporary(interceptorRes.get2()), invokeRes);
+	                }
+	
+	                key0 = e.key();
+	                old0 = e.value();
+	            }
+	
+	            boolean hadVal = hasValueUnlocked();
+	
+	            long ttl = CU.TTL_ETERNAL;
+	            long expireTime = CU.EXPIRE_TIME_ETERNAL;
+	
+	            if (op == GridCacheOperation.UPDATE) {
+	                if (expiryPlc != null) {
+	                    ttl = CU.toTtl(hadVal ? expiryPlc.getExpiryForUpdate() : expiryPlc.getExpiryForCreation());
+	
+	                    if (ttl == CU.TTL_NOT_CHANGED) {
+	                        ttl = ttlExtras();
+	                        expireTime = expireTimeExtras();
+	                    }
+	                    else if (ttl != CU.TTL_ZERO)
+	                        expireTime = CU.toExpireTime(ttl);
+	                }
+	                else {
+	                    ttl = ttlExtras();
+	                    expireTime = expireTimeExtras();
+	                }
+	            }
+	
+	            if (ttl == CU.TTL_ZERO)
+	                op = GridCacheOperation.DELETE;
+	
+	            // Try write-through.
+	            if (op == GridCacheOperation.UPDATE) {
+	                // Detach value before index update.
+	                updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
+	
+	                if (writeThrough)
+	                    // Must persist inside synchronization in non-tx mode.
+	                    cctx.store().put(null, key, updated, ver);
+	
+	                storeValue(updated, expireTime, ver, oldRow);
+	
+	                assert ttl != CU.TTL_ZERO;
+	
+	                update(updated, expireTime, ttl, ver, true);
+	
+	                if (evt) {
+	                    CacheObject evtOld = null;
+	
+	                    if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+	                        evtOld = cctx.unwrapTemporary(old);
+	
+	                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+	                            (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
+	                            evtOld != null || hadVal, subjId, transformCloClsName, taskName, keepBinary);
+	                    }
+	
+	                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT)) {
+	                        if (evtOld == null)
+	                            evtOld = cctx.unwrapTemporary(old);
+	
+	                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+	                            (GridCacheVersion)null, EVT_CACHE_OBJECT_PUT, updated, updated != null, evtOld,
+	                            evtOld != null || hadVal, subjId, null, taskName, keepBinary);
+	                    }
+	                }
+	            }
+	            else {
+	                if (writeThrough)
+	                    // Must persist inside synchronization in non-tx mode.
+	                    cctx.store().remove(null, key);
+	
+	                removeValue();
+	
+	                update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver, true);
+	
+	                if (evt) {
+	                    CacheObject evtOld = null;
+	
+	                    if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
+	                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+	                            (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
+	                            evtOld != null || hadVal, subjId, transformCloClsName, taskName, keepBinary);
+	
+	                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED)) {
+	                        if (evtOld == null)
+	                            evtOld = cctx.unwrapTemporary(old);
+	
+	                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion)null,
+	                            EVT_CACHE_OBJECT_REMOVED, null, false, evtOld, evtOld != null || hadVal, subjId, null,
+	                            taskName, keepBinary);
+	                    }
+	                }
+	
+	                res = hadVal;
+	            }
+	
+	            if (res)
+	                updateMetrics(op, metrics);
+	
+	            if (lsnrCol != null) {
+	                long updateCntr = nextPartitionCounter(AffinityTopologyVersion.NONE, true, null);
+	
+	                cctx.continuousQueries().onEntryUpdated(
+	                    lsnrCol,
+	                    key,
+	                    val,
+	                    old,
+	                    internal,
+	                    partition(),
+	                    true,
+	                    false,
+	                    updateCntr,
+	                    null,
+	                    AffinityTopologyVersion.NONE);
+	
+	                onUpdateFinished(updateCntr);
+	            }
+	
+	            cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE, keepBinary);
+	
+	            if (intercept) {
+	                if (op == GridCacheOperation.UPDATE)
+	                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, updated, updated0, keepBinary, 0L));
+	                else
+	                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary, 0L));
+	            }
+	        } 
+        } finally {
+        	cctx.continuousQueries().getListenerReadLock().unlock();
         }
 
         return new GridTuple3<>(res,
@@ -1649,251 +1662,258 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (!primary && !isNear())
             ensureFreeSpace();
 
-        synchronized (this) {
-            checkObsolete();
-
-            boolean internal = isInternal() || !context().userCache();
-
-            Map<UUID, CacheContinuousQueryListener> lsnrs = cctx.continuousQueries().updateListeners(internal, false);
-
-            boolean needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM
-                || !F.isEmptyOrNulls(filter);
-
-            // Possibly read value from store.
-            boolean readFromStore = readThrough && needVal && (cctx.readThrough() &&
-                (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()));
-
-            c = new AtomicCacheUpdateClosure(this,
-                topVer,
-                newVer,
-                op,
-                writeObj,
-                invokeArgs,
-                readFromStore,
-                writeThrough,
-                keepBinary,
-                expiryPlc,
-                primary,
-                verCheck,
-                filter,
-                explicitTtl,
-                explicitExpireTime,
-                conflictVer,
-                conflictResolve,
-                intercept,
-                updateCntr);
-
-            key.valueBytes(cctx.cacheObjectContext());
-
-            if (isNear()) {
-                CacheDataRow dataRow = val != null ? new CacheDataRowAdapter(key, val, ver, expireTimeExtras()) : null;
-
-                c.call(dataRow);
-            }
-            else
-                cctx.offheap().invoke(cctx, key, localPartition(), c);
-
-            GridCacheUpdateAtomicResult updateRes = c.updateRes;
-
-            assert updateRes != null : c;
-
-            CacheObject oldVal = c.oldRow != null ? c.oldRow.value() : null;
-            CacheObject updateVal = null;
-            GridCacheVersion updateVer = c.newVer;
-
-            // Apply metrics.
-            if (metrics &&
-                updateRes.outcome().updateReadMetrics() &&
-                cctx.cache().configuration().isStatisticsEnabled() &&
-                needVal) {
-                // PutIfAbsent methods must not update hit/miss statistics.
-                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || !cctx.putIfAbsentFilter(filter))
-                    cctx.cache().metrics0().onRead(oldVal != null);
-            }
-
-            switch (updateRes.outcome()) {
-                case VERSION_CHECK_FAILED: {
-                    if (!cctx.isNear()) {
-                        CacheObject evtVal;
-
-                        if (op == GridCacheOperation.TRANSFORM) {
-                            EntryProcessor<Object, Object, ?> entryProcessor =
-                                (EntryProcessor<Object, Object, ?>)writeObj;
-
-                            CacheInvokeEntry<Object, Object> entry =
-                                new CacheInvokeEntry<>(key, prevVal, version(), keepBinary, this);
-
-                            try {
-                                entryProcessor.process(entry, invokeArgs);
-
-                                evtVal = entry.modified() ?
-                                    cctx.toCacheObject(cctx.unwrapTemporary(entry.getValue())) : prevVal;
-                            }
-                            catch (Exception ignore) {
-                                evtVal = prevVal;
-                            }
-                        }
-                        else
-                            evtVal = (CacheObject)writeObj;
-
-                        long updateCntr0 = nextPartitionCounter(topVer, primary, updateCntr);
-
-                        if (updateCntr != null)
-                            updateCntr0 = updateCntr;
-
-                        onUpdateFinished(updateCntr0);
-
-                        cctx.continuousQueries().onEntryUpdated(
-                            key,
-                            evtVal,
-                            prevVal,
-                            isInternal() || !context().userCache(),
-                            partition(),
-                            primary,
-                            false,
-                            updateCntr0,
-                            null,
-                            topVer);
-                    }
-
-                    return updateRes;
-                }
-
-                case CONFLICT_USE_OLD:
-                case FILTER_FAILED:
-                case INVOKE_NO_OP:
-                case INTERCEPTOR_CANCEL:
-                    return updateRes;
-            }
-
-            assert updateRes.outcome() == UpdateOutcome.SUCCESS || updateRes.outcome() == UpdateOutcome.REMOVE_NO_VAL;
-
-            CacheObject evtOld = null;
-
-            if (evt && op == TRANSFORM && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
-                assert writeObj instanceof EntryProcessor : writeObj;
-
-                evtOld = cctx.unwrapTemporary(oldVal);
-
-                Object transformClo = EntryProcessorResourceInjectorProxy.unwrap(writeObj);
-
-                cctx.events().addEvent(partition(),
-                    key,
-                    evtNodeId,
-                    null,
-                    newVer,
-                    EVT_CACHE_OBJECT_READ,
-                    evtOld, evtOld != null,
-                    evtOld, evtOld != null,
-                    subjId,
-                    transformClo.getClass().getName(),
-                    taskName,
-                    keepBinary);
-            }
-
-            if (c.op == GridCacheOperation.UPDATE) {
-                updateVal = val;
-
-                assert updateVal != null : c;
-
-                drReplicate(drType, updateVal, updateVer, topVer);
-
-                recordNodeId(affNodeId, topVer);
-
-                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT)) {
-                    if (evtOld == null)
-                        evtOld = cctx.unwrapTemporary(oldVal);
-
-                    cctx.events().addEvent(partition(),
-                        key,
-                        evtNodeId,
-                        null,
-                        newVer,
-                        EVT_CACHE_OBJECT_PUT,
-                        updateVal,
-                        true,
-                        evtOld,
-                        evtOld != null,
-                        subjId,
-                        null,
-                        taskName,
-                        keepBinary);
-                }
-            }
-            else {
-                assert c.op == GridCacheOperation.DELETE : c.op;
-
-                clearReaders();
-
-                drReplicate(drType, null, newVer, topVer);
-
-                recordNodeId(affNodeId, topVer);
-
-                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED)) {
-                    if (evtOld == null)
-                        evtOld = cctx.unwrapTemporary(oldVal);
-
-                    cctx.events().addEvent(partition(),
-                        key,
-                        evtNodeId,
-                        null, newVer,
-                        EVT_CACHE_OBJECT_REMOVED,
-                        null, false,
-                        evtOld, evtOld != null,
-                        subjId,
-                        null,
-                        taskName,
-                        keepBinary);
-                }
-            }
-
-            if (updateRes.success())
-                updateMetrics(c.op, metrics);
-
-            // Continuous query filter should be perform under lock.
-            if (lsnrs != null) {
-                CacheObject evtVal = cctx.unwrapTemporary(updateVal);
-                CacheObject evtOldVal = cctx.unwrapTemporary(oldVal);
-
-                cctx.continuousQueries().onEntryUpdated(lsnrs,
-                    key,
-                    evtVal,
-                    evtOldVal,
-                    internal,
-                    partition(),
-                    primary,
-                    false,
-                    c.updateRes.updateCounter(),
-                    fut,
-                    topVer);
-            }
-
-            cctx.dataStructures().onEntryUpdated(key, c.op == GridCacheOperation.DELETE, keepBinary);
-
-            if (intercept) {
-                if (c.op == GridCacheOperation.UPDATE) {
-                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
-                        cctx,
-                        key,
-                        null,
-                        updateVal,
-                        null,
-                        keepBinary,
-                        c.updateRes.updateCounter()));
-                }
-                else {
-                    assert c.op == GridCacheOperation.DELETE : c.op;
-
-                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(
-                        cctx,
-                        key,
-                        null,
-                        oldVal,
-                        null,
-                        keepBinary,
-                        c.updateRes.updateCounter()));
-                }
-            }
+        cctx.continuousQueries().getListenerReadLock().lock();
+	    try {
+	        synchronized (this) {
+	            checkObsolete();
+	
+	            boolean internal = isInternal() || !context().userCache();
+	
+	            Map<UUID, CacheContinuousQueryListener> lsnrs = cctx.continuousQueries().updateListeners(internal, false);
+	
+	            boolean needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM
+	                || !F.isEmptyOrNulls(filter);
+	
+	            // Possibly read value from store.
+	            boolean readFromStore = readThrough && needVal && (cctx.readThrough() &&
+	                (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()));
+	
+	            c = new AtomicCacheUpdateClosure(this,
+	                topVer,
+	                newVer,
+	                op,
+	                writeObj,
+	                invokeArgs,
+	                readFromStore,
+	                writeThrough,
+	                keepBinary,
+	                expiryPlc,
+	                primary,
+	                verCheck,
+	                filter,
+	                explicitTtl,
+	                explicitExpireTime,
+	                conflictVer,
+	                conflictResolve,
+	                intercept,
+	                updateCntr);
+	
+	            key.valueBytes(cctx.cacheObjectContext());
+	
+	            if (isNear()) {
+	                CacheDataRow dataRow = val != null ? new CacheDataRowAdapter(key, val, ver, expireTimeExtras()) : null;
+	
+	                c.call(dataRow);
+	            }
+	            else
+	                cctx.offheap().invoke(cctx, key, localPartition(), c);
+	
+	            GridCacheUpdateAtomicResult updateRes = c.updateRes;
+	
+	            assert updateRes != null : c;
+	
+	            CacheObject oldVal = c.oldRow != null ? c.oldRow.value() : null;
+	            CacheObject updateVal = null;
+	            GridCacheVersion updateVer = c.newVer;
+	
+	            // Apply metrics.
+	            if (metrics &&
+	                updateRes.outcome().updateReadMetrics() &&
+	                cctx.cache().configuration().isStatisticsEnabled() &&
+	                needVal) {
+	                // PutIfAbsent methods must not update hit/miss statistics.
+	                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || !cctx.putIfAbsentFilter(filter))
+	                    cctx.cache().metrics0().onRead(oldVal != null);
+	            }
+	
+	            switch (updateRes.outcome()) {
+	                case VERSION_CHECK_FAILED: {
+	                    if (!cctx.isNear()) {
+	                        CacheObject evtVal;
+	
+	                        if (op == GridCacheOperation.TRANSFORM) {
+	                            EntryProcessor<Object, Object, ?> entryProcessor =
+	                                (EntryProcessor<Object, Object, ?>)writeObj;
+	
+	                            CacheInvokeEntry<Object, Object> entry =
+	                                new CacheInvokeEntry<>(key, prevVal, version(), keepBinary, this);
+	
+	                            try {
+	                                entryProcessor.process(entry, invokeArgs);
+	
+	                                evtVal = entry.modified() ?
+	                                    cctx.toCacheObject(cctx.unwrapTemporary(entry.getValue())) : prevVal;
+	                            }
+	                            catch (Exception ignore) {
+	                                evtVal = prevVal;
+	                            }
+	                        }
+	                        else
+	                            evtVal = (CacheObject)writeObj;
+	
+	                        long updateCntr0 = nextPartitionCounter(topVer, primary, updateCntr);
+	
+	                        if (updateCntr != null)
+	                            updateCntr0 = updateCntr;
+	
+	                        onUpdateFinished(updateCntr0);
+	
+	                        cctx.continuousQueries().onEntryUpdated(
+	                            key,
+	                            evtVal,
+	                            prevVal,
+	                            isInternal() || !context().userCache(),
+	                            partition(),
+	                            primary,
+	                            false,
+	                            updateCntr0,
+	                            null,
+	                            topVer);
+	                    }
+	
+	                    return updateRes;
+	                }
+	
+	                case CONFLICT_USE_OLD:
+	                case FILTER_FAILED:
+	                case INVOKE_NO_OP:
+	                case INTERCEPTOR_CANCEL:
+	                    return updateRes;
+	            }
+	
+	            assert updateRes.outcome() == UpdateOutcome.SUCCESS || updateRes.outcome() == UpdateOutcome.REMOVE_NO_VAL;
+	
+	            CacheObject evtOld = null;
+	
+	            if (evt && op == TRANSFORM && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+	                assert writeObj instanceof EntryProcessor : writeObj;
+	
+	                evtOld = cctx.unwrapTemporary(oldVal);
+	
+	                Object transformClo = EntryProcessorResourceInjectorProxy.unwrap(writeObj);
+	
+	                cctx.events().addEvent(partition(),
+	                    key,
+	                    evtNodeId,
+	                    null,
+	                    newVer,
+	                    EVT_CACHE_OBJECT_READ,
+	                    evtOld, evtOld != null,
+	                    evtOld, evtOld != null,
+	                    subjId,
+	                    transformClo.getClass().getName(),
+	                    taskName,
+	                    keepBinary);
+	            }
+	
+	            if (c.op == GridCacheOperation.UPDATE) {
+	                updateVal = val;
+	
+	                assert updateVal != null : c;
+	
+	                drReplicate(drType, updateVal, updateVer, topVer);
+	
+	                recordNodeId(affNodeId, topVer);
+	
+	                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT)) {
+	                    if (evtOld == null)
+	                        evtOld = cctx.unwrapTemporary(oldVal);
+	
+	                    cctx.events().addEvent(partition(),
+	                        key,
+	                        evtNodeId,
+	                        null,
+	                        newVer,
+	                        EVT_CACHE_OBJECT_PUT,
+	                        updateVal,
+	                        true,
+	                        evtOld,
+	                        evtOld != null,
+	                        subjId,
+	                        null,
+	                        taskName,
+	                        keepBinary);
+	                }
+	            }
+	            else {
+	                assert c.op == GridCacheOperation.DELETE : c.op;
+	
+	                clearReaders();
+	
+	                drReplicate(drType, null, newVer, topVer);
+	
+	                recordNodeId(affNodeId, topVer);
+	
+	                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED)) {
+	                    if (evtOld == null)
+	                        evtOld = cctx.unwrapTemporary(oldVal);
+	
+	                    cctx.events().addEvent(partition(),
+	                        key,
+	                        evtNodeId,
+	                        null, newVer,
+	                        EVT_CACHE_OBJECT_REMOVED,
+	                        null, false,
+	                        evtOld, evtOld != null,
+	                        subjId,
+	                        null,
+	                        taskName,
+	                        keepBinary);
+	                }
+	            }
+	
+	            if (updateRes.success())
+	                updateMetrics(c.op, metrics);
+	
+	            Map<UUID, CacheContinuousQueryListener> curLsnrs;
+	
+	            // Continuous query filter should be perform under lock.
+	            if (lsnrs != null) {
+	                CacheObject evtVal = cctx.unwrapTemporary(updateVal);
+	                CacheObject evtOldVal = cctx.unwrapTemporary(oldVal);
+	
+	                cctx.continuousQueries().onEntryUpdated(lsnrs,
+	                    key,
+	                    evtVal,
+	                    evtOldVal,
+	                    internal,
+	                    partition(),
+	                    primary,
+	                    false,
+	                    c.updateRes.updateCounter(),
+	                    fut,
+	                    topVer);
+	            }
+	
+	            cctx.dataStructures().onEntryUpdated(key, c.op == GridCacheOperation.DELETE, keepBinary);
+	
+	            if (intercept) {
+	                if (c.op == GridCacheOperation.UPDATE) {
+	                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
+	                        cctx,
+	                        key,
+	                        null,
+	                        updateVal,
+	                        null,
+	                        keepBinary,
+	                        c.updateRes.updateCounter()));
+	                }
+	                else {
+	                    assert c.op == GridCacheOperation.DELETE : c.op;
+	
+	                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(
+	                        cctx,
+	                        key,
+	                        null,
+	                        oldVal,
+	                        null,
+	                        keepBinary,
+	                        c.updateRes.updateCounter()));
+	                }
+	            }
+	        }
+	    } finally {
+            cctx.continuousQueries().getListenerReadLock().unlock();
         }
 
         onUpdateFinished(c.updateRes.updateCounter());
