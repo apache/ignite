@@ -498,8 +498,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final String name,
         final DataStructureType type,
         final boolean create,
-        final Class<? extends T> cls)
-        throws IgniteCheckedException {
+        Class<? extends T> cls)
+        throws IgniteCheckedException
+    {
         A.notNull(name, "name");
 
         awaitInitialization();
