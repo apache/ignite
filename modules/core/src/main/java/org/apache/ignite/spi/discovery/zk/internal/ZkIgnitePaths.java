@@ -266,6 +266,10 @@ class ZkIgnitePaths {
         return evtsPath + "/joined-" + evtId;
     }
 
+    String ackEventDataPath(long evtId) {
+        return customEventDataPath(true, String.valueOf(evtId));
+    }
+
     /**
      * @param ack Ack event flag.
      * @param child Event child path.

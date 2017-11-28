@@ -49,8 +49,9 @@ class ZkDiscoveryNodeFailEventData extends ZkDiscoveryEventData {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ZkDiscoveryNodeFailEventData [topVer=" + topologyVersion() +
-            ", evtId=" + eventId() +
+        return "ZkDiscoveryNodeFailEventData [" +
+            "evtId=" + eventId() +
+            ", topVer=" + topologyVersion() +
             ", nodeId=" + failedNodeInternalId + ']';
     }
 }

@@ -62,6 +62,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
 import org.jetbrains.annotations.Nullable;
@@ -79,6 +80,9 @@ import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
  *
  */
 public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
+    /** */
+    private static final String IGNITE_ZK_ROOT = "/apacheIgnite/default";
+
     /** */
     private static final int ZK_SRVS = 3;
 
@@ -658,7 +662,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     try {
-                        List<String> c = zkClient.getChildren("/apacheIgnite/default/alive");
+                        List<String> c = zkClient.getChildren(IGNITE_ZK_ROOT + "/alive");
 
                         for (String failedZkNode : failedZkNodes) {
                             if (c.contains(failedZkNode))
@@ -1027,6 +1031,17 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      */
     public void testRandomTopologyChanges() throws Exception {
         randomTopologyChanges(false, false);
+
+//        ZookeeperClient zkClient = new ZookeeperClient(new JavaLogger(), zkCluster.getConnectString(), 10_000, null);
+//
+//        List<String> children = ZKUtil.listSubTreeBFS(zkClient.zk(), IGNITE_ZK_ROOT);
+//
+//        info("Children after test:");
+//
+//        for (String s : children)
+//            info(s);
+//
+//        zkClient.close();
     }
 
     /**

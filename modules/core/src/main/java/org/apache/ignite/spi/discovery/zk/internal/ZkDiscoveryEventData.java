@@ -20,7 +20,9 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Set;
+import java.util.TreeMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -62,14 +64,18 @@ abstract class ZkDiscoveryEventData implements Serializable {
     }
 
     /**
+     * @param alives Optional alives nodes for additional filtering.
      * @param nodes Current nodes in topology.
      */
-    void initRemainingAcks(Collection<ZookeeperClusterNode> nodes) {
+    void initRemainingAcks(Collection<ZookeeperClusterNode> nodes, @Nullable TreeMap<Integer, String> alives) {
         assert remainingAcks == null : this;
 
         remainingAcks = U.newHashSet(nodes.size());
 
         for (ZookeeperClusterNode node : nodes) {
+            if (alives != null && !alives.containsKey(node.internalId()))
+                continue;
+
             if (!node.isLocal() && node.order() <= topVer) {
                 boolean add = remainingAcks.add(node.internalId());
 
@@ -94,6 +100,13 @@ abstract class ZkDiscoveryEventData implements Serializable {
      */
     boolean allAcksReceived() {
         return remainingAcks.isEmpty();
+    }
+
+    /**
+     * @return Remaining acks.
+     */
+    Set<Integer> remainingAcks() {
+        return remainingAcks;
     }
 
     /**

@@ -30,7 +30,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final int CUSTOM_MSG_ACK_FLAG = 1;
+    private static final int CUSTOM_MSG_ACK_FLAG = 0x01;
 
     /** */
     final UUID sndNodeId;
@@ -52,7 +52,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         super(evtId, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT, topVer);
 
         assert sndNodeId != null;
-        assert !F.isEmpty(evtPath);
+        assert ack || !F.isEmpty(evtPath);
 
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
@@ -70,6 +70,11 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ZkDiscoveryCustomEventData [topVer=" + topologyVersion() + ", evtId=" + eventId() + ", sndNode=" + sndNodeId + ']';
+        return "ZkDiscoveryCustomEventData [" +
+            "evtId=" + eventId() +
+            ", topVer=" + topologyVersion() +
+            ", sndNode=" + sndNodeId +
+            ", ack=" + ackEvent() +
+            ']';
     }
 }

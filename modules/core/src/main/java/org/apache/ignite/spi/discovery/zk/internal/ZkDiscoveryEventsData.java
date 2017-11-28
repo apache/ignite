@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.TreeMap;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -57,12 +58,16 @@ class ZkDiscoveryEventsData implements Serializable {
     /**
      * @param nodes Current nodes in topology (these nodes should ack that event processed).
      * @param evt Event.
+     * @param alives Optional alives nodes for additional filtering.
      */
-    void addEvent(Collection<ZookeeperClusterNode> nodes, ZkDiscoveryEventData evt) {
+    void addEvent(Collection<ZookeeperClusterNode> nodes,
+        ZkDiscoveryEventData evt,
+        @Nullable TreeMap<Integer, String> alives)
+    {
         Object old = evts.put(evt.eventId(), evt);
 
         assert old == null : old;
 
-        evt.initRemainingAcks(nodes);
+        evt.initRemainingAcks(nodes, alives);
     }
 }

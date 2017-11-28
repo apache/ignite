@@ -130,6 +130,13 @@ public class ZookeeperClient implements Watcher {
         scheduleConnectionCheck();
     }
 
+    /**
+     * @return Zookeeper client.
+     */
+    ZooKeeper zk() {
+        return zk;
+    }
+
     /** {@inheritDoc} */
     @Override public void process(WatchedEvent evt) {
         if (closing)

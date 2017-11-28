@@ -51,8 +51,9 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ZkDiscoveryNodeJoinEventData [topVer=" + topologyVersion() +
-            ", evtId=" + eventId() +
+        return "ZkDiscoveryNodeJoinEventData [" +
+            "evtId=" + eventId() +
+            ", topVer=" + topologyVersion() +
             ", node=" + nodeId + ']';
     }
 }
