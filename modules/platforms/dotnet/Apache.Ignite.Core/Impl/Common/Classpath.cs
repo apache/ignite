@@ -68,7 +68,9 @@ namespace Apache.Ignite.Core.Impl.Common
                 AppendHomeClasspath(ggHome, forceTestClasspath, cpStr);
 
             if (log != null)
-                log.Debug("Classpath resolved to: " + cpStr);
+            {
+                log.Debug("Classpath resolved to: {0}", cpStr);
+            }
 
             var res = cpStr.ToString();
             res = res.StartsWith(ClasspathPrefix) ? res : ClasspathPrefix + res;

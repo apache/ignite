@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import com.google.common.collect.ImmutableList;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -940,7 +941,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testWriteReplace() throws Exception {
+    public void testWriteReplacePrivate() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Collections.singleton(
             new BinaryTypeConfiguration(TestObject.class.getName())
         ));
@@ -952,6 +953,23 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj, po.deserialize());
 
         assertEquals(obj.val, ((BinaryObject)po.field("val")).deserialize());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWriteReplaceInheritable() throws Exception {
+        ImmutableList<String> obj = ImmutableList.of("This is a test");
+
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singleton(
+            new BinaryTypeConfiguration(obj.getClass().getName())
+        ));
+
+        BinaryObject po = marshal(obj, marsh);
+
+        Object des = po.deserialize();
+
+        assertEquals(obj, des);
     }
 
     /**

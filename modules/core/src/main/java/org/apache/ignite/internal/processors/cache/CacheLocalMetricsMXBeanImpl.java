@@ -402,4 +402,14 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     @Override public long getRebalancingStartTime() {
         return cache.metrics0().getRebalancingStartTime();
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForReading() {
+        return cache.metrics0().isValidForReading();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForWriting() {
+        return cache.metrics0().isValidForWriting();
+    }
 }
