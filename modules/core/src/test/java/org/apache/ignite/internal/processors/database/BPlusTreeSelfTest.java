@@ -1637,12 +1637,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                         throws IgniteCheckedException {
 
                         treeContents.add(io.getLookupRow(tree, pageAddr, idx));
-                        try {
-                            Thread.sleep(10);
-                        }
-                        catch (InterruptedException e) {
-                            // ignore
-                        }
+
+                        final long endMs = System.currentTimeMillis() + 10;
+                        final long endPutKey = curPutKey.get() + MAX_PER_PAGE;
+
+                        while (System.currentTimeMillis() < endMs && curPutKey.get() < endPutKey)
+                            Thread.yield();
+
                         return true;
                     }
                 };
