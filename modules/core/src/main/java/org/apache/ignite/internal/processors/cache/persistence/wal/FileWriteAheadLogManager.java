@@ -69,6 +69,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -328,9 +329,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             archiver = new FileArchiver(tup == null ? -1 : tup.get2());
 
-            int hdrSize = serializer.size(new HeaderRecord(serializerVer));
-
-            ringBuf = new SegmentedRingByteBuffer(dsCfg.getWalBufferSize(), maxWalSegmentSize - hdrSize, true);
+            ringBuf = new SegmentedRingByteBuffer(dsCfg.getWalBufferSize(), maxWalSegmentSize, true);
 
             walWriteWorker = new WALWriteWorker();
 
@@ -402,6 +401,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (decompressor != null)
                 decompressor.shutdown();
+
+            ringBuf.free();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd.fileIO, e);
@@ -458,6 +459,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileWALPointer filePtr = (FileWALPointer)lastPtr;
 
             currHnd = restoreWriteHandle(filePtr);
+
+            // For new handle write serializer version to it.
+            if (filePtr == null)
+                currHnd.writeHeader();
+            else
+                ringBuf.init(filePtr.fileOffset() + filePtr.length());
 
             walWriterThread = new IgniteThread(walWriteWorker);
 
@@ -587,7 +594,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 log.info("!!! Add record page snapshot ptr=" + ptr + ", pageFullId=" + page.fullPageId() + ", state=" + (page.pageData()[40] & 0xFF));
             }
 */
-
 
             if (ptr != null) {
                 metrics.onWalRecordLogged();
@@ -906,6 +912,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             assert swapped : "Concurrent updates on rollover are not allowed";
 
+            next.writeHeader();
+
             if (walAutoArchiveAfterInactivity > 0)
                 lastRecordLoggedMs.set(0);
 
@@ -962,18 +970,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     off + len,
                     ser);
 
-                // For new handle write serializer version to it.
-                if (lastReadPtr == null) {
-                    hnd.writeSerializerVersion();
-
-                    ringBuf.init(0);
-                }
-                else {
-                    log.info("!!! Strange init: off=" + off + ", len=" + len);
-
-                    ringBuf.init(off + len - 29);
-                }
-
                 archiver.currentWalIndex(absIdx);
 
                 return hnd;
@@ -1016,10 +1012,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 cctx.igniteInstanceName(),
                 0,
                 serializer);
-
-            hnd.writeSerializerVersion();
-
-            ringBuf.init(0);
 
             return hnd;
         }
@@ -1678,7 +1670,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
                 zos.putNextEntry(new ZipEntry(""));
 
-                zos.write(prepareSerializerVersionBuffer(nextSegment, segmentSerializerVer, true).array());
+                ByteBuffer buf = ByteBuffer.allocate(RecordV1Serializer.HEADER_RECORD_SIZE);
+                buf.order(ByteOrder.nativeOrder());
+
+                zos.write(prepareSerializerVersionBuffer(nextSegment, segmentSerializerVer, true, buf).array());
 
                 final CIX1<WALRecord> appendToZipC = new CIX1<WALRecord>() {
                     @Override public void applyx(WALRecord record) throws IgniteCheckedException {
@@ -1904,38 +1899,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Writes record serializer version to provided {@code io}.
-     * NOTE: Method mutates position of {@code io}.
+     * Needs only for WAL compaction.
      *
-     * @param io I/O interface for file.
-     * @param idx Segment index.
-     * @param ver Serializer version.
-     * @return I/O position after write version.
-     * @throws IOException If failed to write serializer version.
-     */
-    public static long writeSerializerVersion(FileIO io, long idx, int ver) throws IOException {
-        ByteBuffer buf = prepareSerializerVersionBuffer(idx, ver, false);
-
-        do {
-            io.write(buf);
-        }
-        while (buf.hasRemaining());
-
-        // Flush
-        io.force();
-
-        return io.position();
-    }
-
-    /**
      * @param idx Index.
      * @param ver Version.
      * @param compacted Compacted flag.
      */
-    @NotNull private static ByteBuffer prepareSerializerVersionBuffer(long idx, int ver, boolean compacted) {
-        ByteBuffer buf = ByteBuffer.allocate(RecordV1Serializer.HEADER_RECORD_SIZE);
-        buf.order(ByteOrder.nativeOrder());
-
+    @NotNull private static ByteBuffer prepareSerializerVersionBuffer(long idx, int ver, boolean compacted, ByteBuffer buf) {
         // Write record type.
         buf.put((byte) (WALRecord.RecordType.HEADER_RECORD.ordinal() + 1));
 
@@ -2189,25 +2159,29 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lastFsyncPos = pos;
         }
 
+
         /**
          * Write serializer version to current handle.
-         * NOTE: Method mutates {@code fileIO} position, written and lastFsyncPos fields.
          *
          * @throws IgniteCheckedException If fail to write serializer version.
          */
-        public void writeSerializerVersion() throws IgniteCheckedException {
+        public void writeHeader() throws IgniteCheckedException {
             try {
                 assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file. " +
                     "Current file position: " + fileIO.position();
-
-                long updatedPos = FileWriteAheadLogManager.writeSerializerVersion(fileIO, idx, serializer.version());
-
-                written = updatedPos;
-                lastFsyncPos = updatedPos;
             }
             catch (IOException e) {
                 throw new IgniteCheckedException("Unable to write serializer version for segment " + idx, e);
             }
+
+            // TODO: check that it doesn't lead to race on inited buffer.
+            SegmentedRingByteBuffer.WriteSegment seg = ringBuf.offerAndOpen(RecordV1Serializer.HEADER_RECORD_SIZE);
+
+            assert seg != null && seg.position() > 0;
+
+            prepareSerializerVersionBuffer(idx, serializerVersion(), false, seg.buffer());
+
+            seg.release();
         }
 
         /**
@@ -2248,7 +2222,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             return null; // Can not write to this segment, need to switch to the next one.
                         }
 
-                        ptr = new FileWALPointer(idx, pos + 29, rec.size());
+                        ptr = new FileWALPointer(idx, pos, rec.size());
 
                         rec.position(ptr);
 
@@ -2294,9 +2268,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private boolean flush(FileWALPointer ptr) throws IgniteCheckedException, StorageException {
             // DEBUG LOG
-/*
-            log.info("!!! Flush ptr=" + ptr);
+            //log.info("!!! Flush ptr=" + ptr);
 
+/*
             if (ptr == null)
                 U.dumpStack(log, "!!! FLUSH");
 */
@@ -2306,7 +2280,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             assert ptr.index() == idx;
 
-            return walWriteWorker.flushBuffer(ptr.fileOffset() - 29);
+            return walWriteWorker.flushBuffer(ptr.fileOffset());
         }
 
         /**
@@ -2895,7 +2869,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @SuppressWarnings("ForLoopReplaceableByForEach")
         public boolean flushBuffer(long expPos) throws StorageException, IgniteCheckedException {
             if (expPos == -1) {
-                expPos = (ringBuf.tail.get() & 0x7FFFFFFFFFFFFFFFL) + 29;
+                expPos = (ringBuf.tail.get() & 0x7FFFFFFFFFFFFFFFL);
 
                 // DEBUG LOG
                 //log.info("!!! Remap tail expPos=" + expPos);
@@ -2935,8 +2909,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         @SuppressWarnings("TooBroadScope")
         private void writeBuffer(long pos, ByteBuffer buf) throws StorageException, IgniteCheckedException {
-            pos += 29;
-
             boolean interrupted = false;
 
             FileWriteHandle hdl = currentHandle();

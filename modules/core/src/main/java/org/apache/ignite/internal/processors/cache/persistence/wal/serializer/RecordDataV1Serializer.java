@@ -92,8 +92,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
-
 /**
  * Record data V1 serializer.
  */
@@ -905,13 +903,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 for (DataEntry dataEntry : dataRec.writeEntries())
                     putDataEntry(buf, dataEntry);
-
-                break;
-
-            case HEADER_RECORD:
-                buf.putLong(HeaderRecord.REGULAR_MAGIC);
-
-                buf.putInt(((HeaderRecord)rec).version());
 
                 break;
 

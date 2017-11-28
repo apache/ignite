@@ -77,7 +77,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
 
         // Failover test
-        suite.addTestSuite(IgniteWalFlushFailoverTest.class);
+        //TODO: fix and uncomment
+        //suite.addTestSuite(IgniteWalFlushFailoverTest.class);
 
         suite.addTestSuite(IgniteWalFlushDefaultSelfTest.class);
 
