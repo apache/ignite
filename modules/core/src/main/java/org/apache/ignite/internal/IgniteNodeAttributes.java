@@ -166,6 +166,9 @@ public final class IgniteNodeAttributes {
     /** Ignite security compatibility mode. */
     public static final String ATTR_SECURITY_COMPATIBILITY_MODE = ATTR_PREFIX + ".security.compatibility.enabled";
 
+    /** Internal attribute name constant. */
+    public static final String ATTR_EXCHANGE_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".exchange.rollback.supported";
+
     /**
      * Enforces singleton.
      */

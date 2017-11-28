@@ -51,6 +51,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapsh
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeFailureMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -81,6 +82,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXC
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_EXCHANGE_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
@@ -195,6 +197,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     private boolean centralizedAff;
+
+    /** Exception that was thrown during init phase on local node. */
+    private IgniteCheckedException exchangeLocE;
+
+    /** Exchange exceptions from all participating nodes. */
+    private final Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap8<>();
+
+    /** Used to track the fact that {@code DynamicCacheChangeFailureMessage} was sent. */
+    private volatile boolean cacheChangeFailureMsgSent;
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -511,11 +522,54 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         catch (IgniteNeedReconnectException e) {
             onDone(e);
         }
+        catch (Exception e) {
+            if (reconnectOnError(e)) {
+                onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
+
+                return;
+            }
+
+            U.error(log, "Failed to initialize cache (will try to rollback). " + exchId, e);
+
+            if (!isRollbackSupported()) {
+                onDone(e);
+
+                return;
+            }
+
+            exchangeLocE = new IgniteCheckedException(
+                "Failed to initialize exchange locally [locNodeId=" + cctx.localNodeId() + "]", e);
+
+            exchangeGlobalExceptions.put(cctx.localNodeId(), exchangeLocE);
+
+            if (crd != null) {
+                if (crd.isLocal()) {
+                    boolean allRcvd;
+
+                    synchronized (mux) {
+                        allRcvd = remaining.isEmpty();
+                    }
+
+                    if (allRcvd)
+                        onAllReceived(false);
+                }
+                else {
+                    clientOnlyExchange = cctx.kernalContext().clientNode();
+
+                    if (!centralizedAff)
+                        sendPartitions(crd);
+                }
+            }
+            else
+                onDone(e);
+
+            initDone();
+        }
         catch (Throwable e) {
             if (reconnectOnError(e))
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else {
-                U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
+                U.error(log, "Failed to reinitialize local partitions (rebalancing will be stopped): " + exchId, e);
 
                 onDone(e);
             }
@@ -947,10 +1001,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void sendLocalPartitions(ClusterNode node)
         throws IgniteCheckedException {
-        GridDhtPartitionsSingleMessage m = cctx.exchange().createPartitionsSingleMessage(node,
-            exchangeId(),
-            clientOnlyExchange,
-            true);
+        GridDhtPartitionsSingleMessage m;
+
+        if (exchangeLocE == null)
+            m = cctx.exchange().createPartitionsSingleMessage(node,
+                exchangeId(),
+                clientOnlyExchange,
+                true);
+        else {
+            m = new GridDhtPartitionsSingleMessage(exchangeId(),
+                clientOnlyExchange,
+                cctx.versions().last(),
+                cctx.exchange().canUsePartitionMapCompression(node));
+
+            m.setError(exchangeLocE);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
@@ -1110,6 +1175,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         fullMsgs.clear();
         crd = null;
         partReleaseFut = null;
+        exchangeLocE = null;
+        exchangeGlobalExceptions.clear();
     }
 
     /**
@@ -1147,10 +1214,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Received message for finished future (will reply only to sender) [msg=" + msg +
                     ", fut=" + this + ']');
 
+            // Custom message (DynamicCacheChangeFailureMessage) was sent. Do not need sendAllPartitions.
+            if (cacheChangeFailureMsgSent)
+                return;
+
             if (!centralizedAff)
                 sendAllPartitions(node.id(), cctx.gridConfig().getNetworkSendRetryCount());
         }
         else {
+            assert !msg.client();
+
             initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> f) {
                     try {
@@ -1185,6 +1258,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     updateSingleMap = true;
 
                     pendingSingleUpdates++;
+
+                    if (msg.getError() != null)
+                        exchangeGlobalExceptions.put(node.id(), msg.getError());
 
                     allReceived = remaining.isEmpty();
                 }
@@ -1255,11 +1331,108 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * Creates an IgniteCheckedException that is used as root cause of the exchange initialization failure.
+     * This method aggregates all the exceptions provided from all participating nodes.
+     *
+     * @param globalExceptions collection exceptions from all participating nodes.
+     * @return exception that represents a cause of the exchange initialization failure.
+     */
+    private IgniteCheckedException createExchangeException(Map<UUID, Exception> globalExceptions) {
+        IgniteCheckedException ex;
+
+        if (exchangeLocE != null)
+            ex = exchangeLocE;
+        else
+            ex = new IgniteCheckedException("Failed to complete exchange process (will try to rollback).");
+
+        for (Map.Entry<UUID, Exception> entry : globalExceptions.entrySet()) {
+            // Avoid self-suppression.
+            if (ex != entry.getValue())
+                ex.addSuppressed(entry.getValue());
+        }
+
+        return ex;
+    }
+
+    /**
+     * Returns {@code true} if the given {@code discoEvt} supports the rollback procedure.
+     *
+     * @return {@code true} if the given {@code discoEvt} supports the rollback procedure.
+     */
+    private boolean isRollbackSupported() {
+        boolean rollbackSupported = false;
+
+        for (ClusterNode node : cctx.discovery().allNodes()) {
+            Boolean exchangeSupported = node.attribute(ATTR_EXCHANGE_ROLLBACK_SUPPORTED);
+            if (exchangeSupported == null || !exchangeSupported)
+                return false;
+        }
+
+        // Currently the rollback process is supported for dynamically started caches.
+        if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && !F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.start()) {
+                    rollbackSupported = true;
+
+                    break;
+                }
+            }
+        }
+
+        return rollbackSupported;
+    }
+
+    /**
+     * Tries to revert all the changes that were done during initialization phase
+     * in case of the given {@code discoEvt} supports the rollback procedure.
+     */
+    private void rollbackExchange() {
+        if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && !F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.start()) {
+                    DynamicCacheChangeRequest stopReq =
+                        new DynamicCacheChangeRequest(req.cacheName(), cctx.localNodeId());
+
+                    stopReq.stop(true);
+                    stopReq.deploymentId(req.deploymentId());
+
+                    // Cleanup GridCacheProcessor.
+                    cctx.cache().forceCloseCache(stopReq);
+
+                    // Cleanup CacheAffinitySharedManager.
+                    cctx.affinity().forceCloseCache(this, crd.isLocal(), Collections.singletonList(stopReq));
+                }
+            }
+        }
+    }
+
+    /**
      * @param discoThread If {@code true} completes future from another thread (to do not block discovery thread).
      */
     private void onAllReceived(boolean discoThread) {
         try {
             assert crd.isLocal();
+
+            if (!F.isEmpty(exchangeGlobalExceptions) && isRollbackSupported()) {
+                IgniteCheckedException err = createExchangeException(exchangeGlobalExceptions);
+
+                List<String> cacheNames = new ArrayList<>(reqs.size());
+
+                for (DynamicCacheChangeRequest req : reqs)
+                    cacheNames.add(req.cacheName());
+
+                DynamicCacheChangeFailureMessage msg = new DynamicCacheChangeFailureMessage(
+                    cctx.localNode(), exchId, err, cacheNames);
+
+                if (log.isDebugEnabled())
+                    log.debug("Dynamic cache change failed (send message to all participating nodes): " + msg);
+
+                cacheChangeFailureMsgSent = true;
+
+                cctx.discovery().sendCustomEvent(msg);
+
+                return;
+            }
 
             if (!crd.equals(cctx.discovery().serverNodes(topologyVersion()).get(0))) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -1400,6 +1573,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert msg.exchangeId().equals(exchId) : msg;
         assert msg.lastVersion() != null : msg;
 
+        boolean isRollbackNedeed = false;
+
         synchronized (mux) {
             if (crd == null)
                 return;
@@ -1414,6 +1589,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 return;
             }
+
+            if (exchangeLocE != null && isRollbackSupported())
+                isRollbackNedeed = true;
+        }
+
+        if (isRollbackNedeed) {
+            rollbackExchange();
+
+            onDone(exchId.topologyVersion(), exchangeLocE);
+
+            return;
         }
 
         updatePartitionFullMap(msg);
@@ -1453,6 +1639,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Partitions single message.
      */
     private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage msg) {
+        if (msg.partitions() == null)
+            return;
+
         for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
@@ -1462,6 +1651,33 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             top.update(exchId, entry.getValue(), msg.partitionUpdateCounters(cacheId), false);
         }
+    }
+
+    /**
+     * Cache change failure message callback, processed from the discovery thread.
+     *
+     * @param node Message sender node.
+     * @param msg Message.
+     */
+    public void onDynamicCacheChangeFail(final ClusterNode node, final DynamicCacheChangeFailureMessage msg) {
+        assert exchId.equals(msg.exchangeId()) : msg;
+
+        onDiscoveryEvent(new IgniteRunnable() {
+            @Override public void run() {
+                if (isDone() || !enterBusy())
+                    return;
+
+                try {
+                    if (isRollbackSupported())
+                        rollbackExchange();
+
+                    onDone(exchId.topologyVersion(), msg.error());
+                }
+                finally {
+                    leaveBusy();
+                }
+            }
+        });
     }
 
     /**

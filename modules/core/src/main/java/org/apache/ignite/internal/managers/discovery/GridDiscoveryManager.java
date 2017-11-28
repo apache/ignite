@@ -257,7 +257,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         new ConcurrentHashMap8<>();
 
     /** Map of dynamic cache filters. */
-    private Map<String, CachePredicate> registeredCaches = new HashMap<>();
+    private Map<String, CachePredicate> registeredCachesPreds = new HashMap<>();
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -315,8 +315,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         boolean nearEnabled,
         CacheMode cacheMode
     ) {
-        if (!registeredCaches.containsKey(cacheName))
-            registeredCaches.put(cacheName, new CachePredicate(filter, nearEnabled, cacheMode));
+        if (!registeredCachesPreds.containsKey(cacheName))
+            registeredCachesPreds.put(cacheName, new CachePredicate(filter, nearEnabled, cacheMode));
     }
 
     /**
@@ -325,7 +325,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param cacheName Cache name.
      */
     public void removeCacheFilter(String cacheName) {
-        CachePredicate p = registeredCaches.remove(cacheName);
+        CachePredicate p = registeredCachesPreds.remove(cacheName);
 
         assert p != null : cacheName;
     }
@@ -339,7 +339,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if new node ID was added.
      */
     public boolean addClientNode(String cacheName, UUID clientNodeId, boolean nearEnabled) {
-        CachePredicate p = registeredCaches.get(cacheName);
+        CachePredicate p = registeredCachesPreds.get(cacheName);
 
         assert p != null : cacheName;
 
@@ -354,7 +354,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if existing node ID was removed.
      */
     public boolean onClientCacheClose(String cacheName, UUID clientNodeId) {
-        CachePredicate p = registeredCaches.get(cacheName);
+        CachePredicate p = registeredCachesPreds.get(cacheName);
 
         assert p != null : cacheName;
 
@@ -367,12 +367,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public Map<String, Map<UUID, Boolean>> clientNodesMap() {
         Map<String, Map<UUID, Boolean>> res = null;
 
-        for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
+        for (Map.Entry<String, CachePredicate> entry : registeredCachesPreds.entrySet()) {
             CachePredicate pred = entry.getValue();
 
             if (!F.isEmpty(pred.clientNodes)) {
                 if (res == null)
-                    res = U.newHashMap(registeredCaches.size());
+                    res = U.newHashMap(registeredCachesPreds.size());
 
                 res.put(entry.getKey(), new HashMap<>(pred.clientNodes));
             }
@@ -385,7 +385,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param leftNodeId Left node ID.
      */
     private void updateClientNodes(UUID leftNodeId) {
-        for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
+        for (Map.Entry<String, CachePredicate> entry : registeredCachesPreds.entrySet()) {
             CachePredicate pred = entry.getValue();
 
             pred.onNodeLeft(leftNodeId);
@@ -605,7 +605,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     locJoinEvt = new GridFutureAdapter<>();
 
-                    registeredCaches.clear();
+                    registeredCachesPreds.clear();
 
                     for (AffinityTopologyVersion histVer : discoCacheHist.keySet()) {
                         Object rmvd = discoCacheHist.remove(histVer);
@@ -1723,7 +1723,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node is a cache data node.
      */
     public boolean cacheAffinityNode(ClusterNode node, String cacheName) {
-        CachePredicate pred = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCachesPreds.get(cacheName);
 
         return pred != null && pred.dataNode(node);
     }
@@ -1734,7 +1734,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node has near cache enabled.
      */
     public boolean cacheNearNode(ClusterNode node, String cacheName) {
-        CachePredicate pred = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCachesPreds.get(cacheName);
 
         return pred != null && pred.nearNode(node);
     }
@@ -1745,7 +1745,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node has client cache (without near cache).
      */
     public boolean cacheClientNode(ClusterNode node, String cacheName) {
-        CachePredicate pred = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCachesPreds.get(cacheName);
 
         return pred != null && pred.clientNode(node);
     }
@@ -1756,7 +1756,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return If cache with the given name is accessible on the given node.
      */
     public boolean cacheNode(ClusterNode node, String cacheName) {
-        CachePredicate pred = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCachesPreds.get(cacheName);
 
         return pred != null && pred.cacheNode(node);
     }
@@ -1766,9 +1766,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Public cache names accessible on the given node.
      */
     public Map<String, CacheMode> nodeCaches(ClusterNode node) {
-        Map<String, CacheMode> caches = U.newHashMap(registeredCaches.size());
+        Map<String, CacheMode> caches = U.newHashMap(registeredCachesPreds.size());
 
-        for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
+        for (Map.Entry<String, CachePredicate> entry : registeredCachesPreds.entrySet()) {
             String cacheName = entry.getKey();
 
             CachePredicate pred = entry.getValue();
@@ -2670,7 +2670,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 boolean hasCaches = false;
 
-                for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
+                for (Map.Entry<String, CachePredicate> entry : registeredCachesPreds.entrySet()) {
                     String cacheName = entry.getKey();
 
                     CachePredicate filter = entry.getValue();
@@ -2909,7 +2909,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param exclNode Node to exclude.
          */
         private void filterNodeMap(ConcurrentMap<String, Collection<ClusterNode>> map, final ClusterNode exclNode) {
-            for (String cacheName : registeredCaches.keySet()) {
+            for (String cacheName : registeredCachesPreds.keySet()) {
                 String maskedName = maskNull(cacheName);
 
                 while (true) {

@@ -242,11 +242,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     fut = affinityReadyFuture(req.cacheFutureTopologyVersion());
 
                                 if (fut == null || fut.isDone())
-                                    cctx.cache().completeStartFuture(req);
+                                    cctx.cache().completeStartFuture(req, null);
                                 else {
                                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                                         @Override public void apply(IgniteInternalFuture<?> fut) {
-                                            cctx.cache().completeStartFuture(req);
+                                            cctx.cache().completeStartFuture(req, null);
                                         }
                                     });
                                 }
@@ -269,9 +269,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 exchFut = exchangeFuture(exchId, e, null, msg);
                             }
                         }
-                        else if (msg.exchangeId().topologyVersion().topologyVersion() >= affinityTopologyVersion(cctx.discovery().localJoinEvent()).topologyVersion())
+                        else if (msg.exchangeId().topologyVersion().topologyVersion() >=
+                            affinityTopologyVersion(cctx.discovery().localJoinEvent()).topologyVersion())
                             exchangeFuture(msg.exchangeId(), null, null, null)
                                 .onAffinityChangeMessage(customEvt.eventNode(), msg);
+                    }
+                    else if (customEvt.customMessage() instanceof DynamicCacheChangeFailureMessage) {
+                        DynamicCacheChangeFailureMessage msg =
+                            (DynamicCacheChangeFailureMessage)customEvt.customMessage();
+
+                        if (msg.exchangeId().topologyVersion().topologyVersion() >=
+                            affinityTopologyVersion(cctx.discovery().localJoinEvent()).topologyVersion())
+                            exchangeFuture(msg.exchangeId(), null, null, null)
+                                .onDynamicCacheChangeFail(customEvt.eventNode(), msg);
                     }
                 }
 
@@ -1256,6 +1266,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     log.debug("Received local partition update [nodeId=" + node.id() + ", parts=" +
                         msg + ']');
 
+                if (msg.partitions() == null)
+                    return;
+
                 boolean updated = false;
 
                 for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
@@ -1569,7 +1582,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return {@code True} if can use compression for partition map messages.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    private boolean canUsePartitionMapCompression(ClusterNode node) {
+    public boolean canUsePartitionMapCompression(ClusterNode node) {
         IgniteProductVersion ver = node.version();
 
         if (ver.compareToIgnoreTimestamp(GridDhtPartitionsAbstractMessage.PART_MAP_COMPRESS_SINCE) >= 0) {
