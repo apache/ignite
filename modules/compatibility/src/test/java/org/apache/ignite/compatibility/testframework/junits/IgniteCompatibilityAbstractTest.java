@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.Nullable;
@@ -202,7 +203,13 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 filteredJvmArgs.add("-cp");
                 filteredJvmArgs.add(pathBuilder.toString());
 
-                setupJvmArgs(filteredJvmArgs);
+                final IgniteOutClosure<Collection<String>> provider = getJvmParmsProvider();
+                if (provider != null) {
+                    final Collection<String> parms = provider.apply();
+
+                    if (parms != null)
+                        filteredJvmArgs.addAll(parms);
+                }
                 return filteredJvmArgs;
             }
         };
@@ -229,10 +236,10 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
     /**
      * Allows to setup JVM arguments for standalone JVM
-     * @param filteredJvmArgs in/out collection with JVM arguments
+     * @return  supplier of additional JVM arguments
      */
-    protected void setupJvmArgs(Collection<String> filteredJvmArgs) {
-        //noop, hook for tests
+    protected IgniteOutClosure<Collection<String>> getJvmParmsProvider() {
+        return null;
     }
 
     /** {@inheritDoc} */
