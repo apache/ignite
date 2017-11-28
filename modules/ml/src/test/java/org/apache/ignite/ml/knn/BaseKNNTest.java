@@ -17,9 +17,13 @@
 
 package org.apache.ignite.ml.knn;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.structures.LabeledVectorDouble;
+import org.apache.ignite.ml.knn.models.FillMissingValueWith;
+import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Arrays;
@@ -30,6 +34,9 @@ import java.util.Arrays;
 public class BaseKNNTest extends GridCommonAbstractTest {
     /** Count of nodes. */
     private static final int NODE_COUNT = 4;
+
+    /** Separator */
+    private static final String SEPARATOR = "\t";
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -60,12 +67,25 @@ public class BaseKNNTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Convert double array to  {@link LabeledVectorDouble}
-     *
-     * @param arr Array for conversion.
-     * @return LabeledVectorDouble.
+     * Loads labeled dataset from file with .txt extension
+     * @return null if path is incorrect
+     * @param resourcePath
      */
-    protected static LabeledVectorDouble<DenseLocalOnHeapVector> asLabeledVector(double arr[]) {
-        return new LabeledVectorDouble<>(new DenseLocalOnHeapVector(Arrays.copyOf(arr, arr.length - 1)), arr[arr.length - 1]);
+    protected LabeledDataset loadIrisDataset(String resourcePath, boolean isFallOnBadData) {
+        try {
+            Path path = Paths.get(this.getClass().getClassLoader().getResource(resourcePath).toURI());
+            try {
+                return LabeledDataset.loadTxt(path, SEPARATOR, false, isFallOnBadData, FillMissingValueWith.ZERO);
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        catch (URISyntaxException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return null;
     }
+
 }

@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.ml.knn.regression;
 
-import org.apache.ignite.ml.knn.models.KNNModel;
+import org.apache.ignite.ml.knn.models.KNNModelForMatrix;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
@@ -25,7 +25,7 @@ import org.apache.ignite.ml.structures.TypedLabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 
-public class KNNMultipleLinearRegression extends KNNModel {
+public class KNNMultipleLinearRegression extends KNNModelForMatrix {
 
     /**
      * @param k               amount of nearest neighbors

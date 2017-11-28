@@ -15,27 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.math.exceptions.knn;
 
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.knn.KNNTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 
 /**
- * Test suite for all module tests.
+ * Indicates a small training dataset size in ML algorithms.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class,
-    KNNTestSuite.class
-})
-public class IgniteMLTestSuite {
-    // No-op.
+public class SmallTrainingDatasetSizeException extends MathIllegalArgumentException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * Creates new small training dataset size exception.
+     *
+     * @param exp Expected dataset size.
+     * @param act Actual dataset size.
+     */
+    public SmallTrainingDatasetSizeException(int exp, int act) {
+        super("Small training dataset size [expected=%d, actual=%d]", exp, act);
+    }
 }

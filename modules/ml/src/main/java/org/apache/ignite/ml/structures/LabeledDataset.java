@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.ml.knn.models.FillMissingValueWith;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
@@ -90,7 +91,7 @@ public class LabeledDataset {
     }
 
     /**
-     * Creates new Labeled Dataset and initialized with empty data structure
+     * Creates new local Labeled Dataset and initialized with empty data structure
      * @param rowSize Amount of instances. Should be > 0
      * @param colSize Amount of attributes. Should be > 0
      */
@@ -118,6 +119,46 @@ public class LabeledDataset {
 
     }
 
+
+    /**
+     * Creates new local Labeled Dataset by matrix and vector of labels
+     * @param mtx Given matrix with rows as observations
+     * @param lbs Labels of observations
+     */
+    public LabeledDataset(double[][] mtx, double[] lbs) {
+       this(mtx, lbs, null, false);
+    }
+
+    /**
+     * Creates new Labeled Dataset by matrix and vector of labels
+     * @param mtx Given matrix with rows as observations
+     * @param lbs Labels of observations
+     * @param featureNames Column names
+     * @param isDistributed Use distributed data structures to keep data
+     */
+    public LabeledDataset(double[][] mtx, double[] lbs, String[] featureNames, boolean isDistributed) {
+        assert mtx != null;
+        assert lbs != null;
+        if(mtx.length != lbs.length)
+            throw new CardinalityException(lbs.length, mtx.length);
+        if(mtx[0] == null)
+            throw new NoDataException("Pass filled array, the first vector is empty");
+
+        this.rowSize = lbs.length;
+        this.colSize = mtx[0].length;
+
+        data = new LabeledVector[rowSize];
+        for (int i = 0; i < rowSize; i++){
+            data[i] = new LabeledVector(getVector(colSize, isDistributed), lbs[i]);
+            for (int j = 0; j < colSize; j++) {
+                try {
+                    data[i].features().set(j, mtx[i][j]);
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    throw new NoDataException("No data in given matrix by coordinates (" + i + "," + j + ")");
+                }
+            }
+        }
+    }
 
     private void generateFeatureNames() {
         featureNames = new String[colSize];
@@ -214,49 +255,64 @@ public class LabeledDataset {
 
         final int rowSize = list.size();
 
-        LabeledVector[] data = new LabeledVector[rowSize];
+        List<Double> labels = new ArrayList<>();
+        List<Vector> vectors = new ArrayList<>();
 
         if (rowSize > 0) {
             final int columnSize = getColumnSize(separator, list) - 1;
-            for (int i = 0; i < rowSize; i++) {
-                Double clsLb;
-                final Vector vec = getVector(columnSize, isDistributed);
+            if (columnSize > 0) {
+                for (int i = 0; i < rowSize; i++) {
+                    Double clsLb;
 
-                String[] rowData = list.get(i).split(separator);
+                    String[] rowData = list.get(i).split(separator);
 
-                try {
-                    clsLb = Double.parseDouble(rowData[0]);
-
-                    for (int j = 0; j < columnSize; j++) {
-
-                        if (rowData.length == columnSize + 1) {
-                            double val = fillMissedData(fillingStrategy);
-                            try {
-                                val = Double.parseDouble(rowData[j + 1]);
-                                vec.set(j, val);
-                            }
-                            catch (NumberFormatException e) {
-                                if(isFallOnBadData)
-                                    throw new FileParsingException(rowData[j + 1], i, pathToFile);
-                                else
-                                    vec.set(j,val);
-                            }
-                        }
-                        else throw new CardinalityException(columnSize + 1, rowData.length);
+                    try {
+                        clsLb = Double.parseDouble(rowData[0]);
+                        Vector vec = parseFeatures(pathToFile, isDistributed, isFallOnBadData, fillingStrategy, columnSize, i, rowData);
+                        labels.add(clsLb);
+                        vectors.add(vec);
                     }
-                    data[i] = new LabeledVectorDouble(vec, clsLb);
+                    catch (NumberFormatException e) {
+                        if(isFallOnBadData)
+                            throw new FileParsingException(rowData[0], i, pathToFile);
+                    }
                 }
-                catch (NumberFormatException e) {
-                    if(isFallOnBadData)
-                        throw new FileParsingException(rowData[0], i, pathToFile);
-                    else
-                        clsLb = null;
-                }
+
+                LabeledVector[] data = new LabeledVector[vectors.size()];
+                for (int i = 0; i < vectors.size(); i++)
+                    data[i] = new LabeledVector(vectors.get(i), labels.get(i));
+
+                return new LabeledDataset(data, columnSize);
             }
-            return new LabeledDataset(data, columnSize);
+            else
+                throw new NoDataException("File should contain first row with data");
         }
         else
             throw new EmptyFileException(pathToFile.toString());
+    }
+
+    @NotNull private static Vector parseFeatures(Path pathToFile, boolean isDistributed, boolean isFallOnBadData,
+        FillMissingValueWith fillingStrategy, int columnSize, int rowIndex, String[] rowData) {
+        final Vector vec = getVector(columnSize, isDistributed);
+
+        for (int j = 0; j < columnSize; j++) {
+
+            if (rowData.length == columnSize + 1) {
+                double val = fillMissedData(fillingStrategy);
+                try {
+                    val = Double.parseDouble(rowData[j + 1]);
+                    vec.set(j, val);
+                }
+                catch (NumberFormatException e) {
+                    if(isFallOnBadData)
+                        throw new FileParsingException(rowData[j + 1], rowIndex, pathToFile);
+                    else
+                        vec.set(j,val);
+                }
+            }
+            else throw new CardinalityException(columnSize + 1, rowData.length);
+        }
+        return vec;
     }
 
     // TODO: add filling with mean, mode, ignoring and so on

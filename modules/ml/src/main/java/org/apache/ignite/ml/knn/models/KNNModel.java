@@ -17,19 +17,25 @@
 
 package org.apache.ignite.ml.knn.models;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.distances.DistanceMeasure;
-import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.structures.TypedLabeledDataset;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.exceptions.knn.SmallTrainingDatasetSizeException;
+import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
-
-import java.util.*;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Model for kNN.
+ * Model for kNN algorithm.
  */
 public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelFormat> {
     /** Amount of nearest neighbors */
@@ -39,38 +45,42 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
     protected final DistanceMeasure distanceMeasure;
 
     /** Training dataset */
-    protected final TypedLabeledDataset<Matrix, Vector> training;
+    protected final LabeledDataset training;
 
     /** kNN strategy */
     protected final KNNStrategy strategy;
 
+    /** Cached distances for k-nearest neighbors */
+    private double[] cachedDistances;
+
     /**
+     * Creates the kNN model with the given parameters
      *
      * @param k amount of nearest neighbors
-     * @param training
+     * @param distanceMeasure distance measure
+     * @param strategy strategy of calculations
+     * @param training training dataset
      */
-    public KNNModel(int k, DistanceMeasure distanceMeasure, KNNStrategy strategy, TypedLabeledDataset<Matrix, Vector> training) {
+    public KNNModel(int k, DistanceMeasure distanceMeasure, KNNStrategy strategy, LabeledDataset training) {
+
+        assert training != null;
+
+        if (training.rowSize() < k)
+            throw new SmallTrainingDatasetSizeException(k, training.rowSize());
+
         this.k = k;
         this.distanceMeasure = distanceMeasure;
         this.training = training;
         this.strategy = strategy;
-
-        // TODO: throw small training size if k > training size
     }
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector v) {
 
         LabeledVector[] neighbors = findKNearestNeighbors(v);
-        double classLabel = classify(neighbors, v,  strategy);
+        double classLabel = classify(neighbors, v, strategy);
 
         return classLabel;
-    }
-
-
-    // can be default method in model interface or in abstract class
-    public void normalizeWith(Normalization normalization){
-        // TODO : https://ru.wikipedia.org/wiki/%D0%9C%D0%B5%D1%82%D0%BE%D0%B4_k-%D0%B1%D0%BB%D0%B8%D0%B6%D0%B0%D0%B9%D1%88%D0%B8%D1%85_%D1%81%D0%BE%D1%81%D0%B5%D0%B4%D0%B5%D0%B9
     }
 
     @Override
@@ -78,60 +88,104 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
 
     }
 
-    protected LabeledVector[] findKNearestNeighbors(Vector v){
-        LabeledVector[] res = new LabeledVector[k];
-        Matrix trainingData = training.data();
+    /**
+     * The main idea is calculation all distance pairs between given vector and all vectors in training set, sorting
+     * them and finding k vectors with min distance with the given vector
+     *
+     * @param v the given vector
+     * @return k nearest neighbors
+     */
+    protected LabeledVector[] findKNearestNeighbors(Vector v) {
 
-        // key - distanceMeasure from given vector before vector with idx stored in value
-        // value is presented with Set because there can be a few vectors with the same distance
-        Map<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
+        LabeledVector[] trainingData = training.data();
 
-        for (int i = 0; i < trainingData.rowSize(); i++) {
+        TreeMap<Double, Set<Integer>> distanceIdxPairs = getDistances(v, trainingData);
 
-            double distance = distanceMeasure.compute(v, trainingData.getRow(i));
-            putDistanceIdxPair(distanceIdxPairs, i, distance);
-
-        }
-
-        int i = 0;
-        final Iterator<Double> iterator = distanceIdxPairs.keySet().iterator();
-        while(i < k) {
-            double key = iterator.next();
-            Set<Integer> idxs = distanceIdxPairs.get(key);
-            for (Integer idx : idxs){
-                res[i] = new LabeledVector(trainingData.getRow(idx), training.labels().get(idx));  // TODO: refactor LV and LD communication
-                i++;
-                if(i >= k) break; // go to next while-loop iteration
-            }
-        }
+        LabeledVector[] res = getKClosestVectors(trainingData, distanceIdxPairs, true);
 
         return res;
     }
 
+    /**
+     * Iterates along entries in distance map and fill the resulting k-element array
+     *
+     * @param trainingData the training data
+     * @param distanceIdxPairs the distance map
+     * @param isCashedDistances cache distances if true
+     * @return k nearest neighbors
+     */
+    @NotNull private LabeledVector[] getKClosestVectors(LabeledVector[] trainingData,
+        TreeMap<Double, Set<Integer>> distanceIdxPairs, boolean isCashedDistances) {
+        LabeledVector[] res = new LabeledVector[k];
+        int i = 0;
+        final Iterator<Double> iterator = distanceIdxPairs.keySet().iterator();
+        while (i < k) {
+            double key = iterator.next();
+            Set<Integer> idxs = distanceIdxPairs.get(key);
+            for (Integer idx : idxs) {
+                res[i] = trainingData[idx];
+                if (isCashedDistances) {
+                    if (cachedDistances == null)
+                        cachedDistances = new double[k];
+                    cachedDistances[i] = key;
+                }
+                i++;
+                if (i >= k)
+                    break; // go to next while-loop iteration
+            }
+        }
+        return res;
+    }
+
+    /**
+     * Computes distances between given vector and each vector in training dataset
+     *
+     * @param v The given vector
+     * @param trainingData The training dataset
+     * @return key - distanceMeasure from given features before features with idx stored in value. Value is presented
+     * with Set because there can be a few vectors with the same distance
+     */
+    @NotNull private TreeMap<Double, Set<Integer>> getDistances(Vector v, LabeledVector[] trainingData) {
+        TreeMap<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
+
+        for (int i = 0; i < trainingData.length; i++) {
+
+            LabeledVector labeledVector = trainingData[i];
+            if (labeledVector != null) {
+                double distance = distanceMeasure.compute(v, labeledVector.features());
+                putDistanceIdxPair(distanceIdxPairs, i, distance);
+            }
+        }
+        return distanceIdxPairs;
+    }
+
     private void putDistanceIdxPair(Map<Double, Set<Integer>> distanceIdxPairs, int i, double distance) {
-        if(distanceIdxPairs.containsKey(distance)){
+        if (distanceIdxPairs.containsKey(distance)) {
             Set<Integer> idxs = distanceIdxPairs.get(distance);
             idxs.add(i);
-        } else {
+        }
+        else {
             Set<Integer> idxs = new HashSet<>();
             idxs.add(i);
             distanceIdxPairs.put(distance, idxs);
         }
     }
 
-    private double classify(LabeledVector[] neighbors, Vector v, KNNStrategy strategy){
+    private double classify(LabeledVector[] neighbors, Vector v, KNNStrategy strategy) {
 
         Map<Double, Double> classVotes = new HashMap<>();
         for (int i = 0; i < neighbors.length; i++) {
             LabeledVector neighbor = neighbors[i];
-            double classLabel = (double) neighbor.label(); // TODO: handle casting correctly and for different types
+            double classLabel = (double)neighbor.label(); // TODO: handle different types, not double only
 
-            double distance = distanceMeasure.compute(v, neighbor.features()); // TODO: repeated calculation
-            if(classVotes.containsKey(classLabel)){
+            double distance = cachedDistances != null ? cachedDistances[i] : distanceMeasure.compute(v, neighbor.features());
+
+            if (classVotes.containsKey(classLabel)) {
                 double classVote = classVotes.get(classLabel);
                 classVote += getClassVoteForVector(strategy, distance);
                 classVotes.put(classLabel, classVote);
-            } else {
+            }
+            else {
                 final double value = getClassVoteForVector(strategy, distance);
                 classVotes.put(classLabel, value);
             }
@@ -144,13 +198,17 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
         return Collections.max(classVotes.entrySet(), Map.Entry.comparingByValue()).getKey();
     }
 
-
-    // TODO: handle different strategies
     private double getClassVoteForVector(KNNStrategy strategy, double distance) {
 
         if (strategy.equals(strategy.WEIGHTED))
-            return 1/distance;
-        else  return 1.0; // strategy.SIMPLE
-
+            return 1 / distance; // strategy.WEIGHTED
+        else
+            return 1.0; // strategy.SIMPLE
     }
+
+    // can be default method in model interface or in abstract class
+    public void normalizeWith(Normalization normalization) {
+        // TODO : https://ru.wikipedia.org/wiki/%D0%9C%D0%B5%D1%82%D0%BE%D0%B4_k-%D0%B1%D0%BB%D0%B8%D0%B6%D0%B0%D0%B9%D1%88%D0%B8%D1%85_%D1%81%D0%BE%D1%81%D0%B5%D0%B4%D0%B5%D0%B9
+    }
+
 }

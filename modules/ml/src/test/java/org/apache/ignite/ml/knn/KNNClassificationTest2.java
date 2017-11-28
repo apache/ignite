@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.knn.models.FillMissingValueWith;
-import org.apache.ignite.ml.knn.models.KNNModel2;
+import org.apache.ignite.ml.knn.models.KNNModel;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.structures.LabeledDataset;
@@ -43,7 +43,7 @@ public class KNNClassificationTest2 extends BaseKNNTest {
         for (int amountOfNeighbours = 1; amountOfNeighbours < 20; amountOfNeighbours += 2) {
             System.out.println("Model initialized with k = " + amountOfNeighbours);
 
-            KNNModel2 knnModel = new KNNModel2(amountOfNeighbours, new EuclideanDistance(), KNNStrategy.SIMPLE, trainDataset);
+            KNNModel knnModel = new KNNModel(amountOfNeighbours, new EuclideanDistance(), KNNStrategy.SIMPLE, trainDataset);
 
             int amountOfErrors = 0;
             for (int i = 0; i < trainDataset.rowSize(); i++) {
@@ -78,17 +78,4 @@ public class KNNClassificationTest2 extends BaseKNNTest {
         }
         return null;
     }
-
-    // add test with a few points with equal distance
-
-    /*
-            try {
-            Vector thirdVector = new SparseBlockDistributedVector(new double[]{0.0, 0.0});
-            knnModel.predict(thirdVector);
-            fail("UnresolvedClassException expected");
-        } catch (UnresolvedClassException e) {
-
-        }
-     */
-
 }

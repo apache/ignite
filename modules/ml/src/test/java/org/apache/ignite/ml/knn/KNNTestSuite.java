@@ -28,9 +28,9 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    ColumnDecisionTreeTrainerTest.class,
-    GiniSplitCalculatorTest.class,
-    VarianceSplitCalculatorTest.class
+    KNNClassificationTest.class,
+    KNNMultipleLinearRegressionTest.class,
+    LabeledDatasetTest.class
 })
 public class KNNTestSuite {
 }
