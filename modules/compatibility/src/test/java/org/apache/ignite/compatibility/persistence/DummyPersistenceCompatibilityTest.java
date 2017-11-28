@@ -96,12 +96,12 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
     /**
      * Tests opportunity to read data from previous Ignite DB version.
      *
-     * @param ver 3-digits version of ignite
+     * @param igniteVer 3-digits version of ignite
      * @throws Exception If failed.
      */
-    protected void doTestStartupWithOldVersion(String ver) throws Exception {
+    protected void doTestStartupWithOldVersion(String igniteVer) throws Exception {
         try {
-            startGrid(1, ver, new ConfigurationClosure(), new PostStartupClosure());
+            startGrid(1, igniteVer, new ConfigurationClosure(), new PostStartupClosure());
 
             stopAllGrids();
 

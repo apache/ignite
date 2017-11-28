@@ -76,6 +76,8 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
                     " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [optional/path/to/closure/file]");
             }
 
+            final Thread watchdog = delayedDumpClasspath();
+
             IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
 
             IgniteInClosure<IgniteConfiguration> cfgClo = readClosureFromFileAndDelete(args[0]);
@@ -104,18 +106,54 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
             }
 
             X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE + nodeId);
+            watchdog.interrupt();
         }
         catch (Throwable e) {
             X.println("Dumping classpath, error occurred: " + e);
-            final ClassLoader clsLdr = IgniteCompatibilityNodeRunner.class.getClassLoader();
-            if (clsLdr instanceof URLClassLoader) {
-                URLClassLoader ldr = (URLClassLoader)clsLdr;
-
-                for (URL url : ldr.getURLs()) {
-                    X.println("Classpath url: [" + url.getPath() + "]");
-                }
-            }
+            dumpClasspath();
             throw e;
+        }
+    }
+
+    private static Thread delayedDumpClasspath() {
+        final Thread mainThread = Thread.currentThread();
+        final Runnable target = new Runnable() {
+            @Override public void run() {
+                try {
+                    Thread.sleep(IgniteCompatibilityAbstractTest.NODE_JOIN_TIMEOUT);
+                }
+                catch (InterruptedException ignored) {
+                    //interrupt is correct behaviour
+                    return;
+                }
+
+                X.println("Init/post configuration closure is probably hanging at");
+
+                for (StackTraceElement ste : mainThread.getStackTrace()) {
+                    X.println(ste.toString());
+                }
+                X.println(" dumping classpath");
+                dumpClasspath();
+
+            }
+        };
+        final Thread thread = new Thread(target);
+        thread.setDaemon(true);
+        thread.start();
+        return thread;
+    }
+
+    /**
+     * Dumps classpath to
+     */
+    private static void dumpClasspath() {
+        final ClassLoader clsLdr = IgniteCompatibilityNodeRunner.class.getClassLoader();
+        if (clsLdr instanceof URLClassLoader) {
+            URLClassLoader ldr = (URLClassLoader)clsLdr;
+
+            for (URL url : ldr.getURLs()) {
+                X.println("Classpath url: [" + url.getPath() + "]");
+            }
         }
     }
 

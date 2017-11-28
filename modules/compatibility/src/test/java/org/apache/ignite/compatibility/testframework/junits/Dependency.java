@@ -26,8 +26,16 @@ public class Dependency {
     /** Local module name. Folder name where module is located. */
     private String locModuleName;
 
+    /** Group name. Null means ignite default group name */
+    @Nullable
+    private String groupName;
+
     /** Artifact name (artifact ID) without group name. */
     private String artifactName;
+
+    /** Version. */
+    @Nullable
+    private String version;
 
     /** Test flag. Test jar should have {@code true} value. Default is {@code false}. */
     private boolean test;
@@ -57,6 +65,19 @@ public class Dependency {
     }
 
     /**
+     * @param locModuleName Local module name. Folder name where module is located.
+     * @param grpName
+     * @param artifactName Artifact name (artifact ID) without group na
+     * @param version
+     */
+    public Dependency(String locModuleName, String grpName, String artifactName, String version) {
+        this.locModuleName = locModuleName;
+        this.groupName = grpName;
+        this.artifactName = artifactName;
+        this.version = version;
+    }
+
+    /**
      * @return path based on local module name to exclude from classpath
      */
     String localPathTemplate() {
@@ -78,5 +99,19 @@ public class Dependency {
      */
     @Nullable public String classifier() {
         return test ? "tests" : null;
+    }
+
+    /**
+     * @return {@link #version}
+     */
+    @Nullable public String version() {
+        return version;
+    }
+
+    /**
+     * @return {@link #groupName}
+     */
+    @Nullable public String groupName() {
+        return groupName;
     }
 }

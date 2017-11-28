@@ -121,7 +121,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      * stored via Maven.
      *
      * @param igniteInstanceName Instance name.
-     * @param ver Ignite version.
+     * @param ver Ignite version. Dots separated, 3-digit version.
      * @param cfgClo IgniteInClosure for post-configuration.
      * @param clo IgniteInClosure for actions on started Ignite.
      * @return Started grid.
@@ -166,7 +166,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
                 URLClassLoader ldr = (URLClassLoader)CLASS_LOADER;
 
-                final Collection<Dependency> dependencies = getDependencies();
+                final Collection<Dependency> dependencies = getDependencies(ver);
 
                 StringBuilder pathBuilder = new StringBuilder();
                 for (URL url : ldr.getURLs()) {
@@ -184,8 +184,10 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 }
 
                 for (Dependency next : dependencies) {
-                    String pathToArtifact = MavenUtils.getPathToIgniteArtifact(next.artifactName(), ver,
-                        next.classifier());
+                    final String artifactVer = next.version() != null ? next.version() : ver;
+                    final String grpName = next.groupName() != null ? next.groupName() : "org.apache.ignite";
+                    String pathToArtifact = MavenUtils.getPathToIgniteArtifact(grpName, next.artifactName(),
+                        artifactVer,  next.classifier());
 
                     pathBuilder.append(pathToArtifact).append(File.pathSeparator);
                 }
@@ -211,7 +213,11 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
             log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
 
-            assert nodeJoinedLatch.await(NODE_JOIN_TIMEOUT, TimeUnit.MILLISECONDS) : "Node has not joined [id=" + nodeId + "]";
+            final long nodeJoinTimeout = getNodeJoinTimeout();
+            final boolean joined = nodeJoinedLatch.await(nodeJoinTimeout, TimeUnit.MILLISECONDS);
+
+            assertTrue("Node has not joined [id=" + nodeId + "]/" +
+                "or does not completed its startup during timeout: " + nodeJoinTimeout + " ms.", joined);
 
             log.removeListener(nodeId);
         }
@@ -223,9 +229,18 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     }
 
     /**
+     * Total amount of milliseconds.
+     *
+     * @return timeout in ms.
+     */
+    protected long getNodeJoinTimeout() {
+        return NODE_JOIN_TIMEOUT;
+    }
+
+    /**
      * @return list of actual module dependencies from pom.xml
      */
-    @NotNull protected Collection<Dependency> getDependencies() {
+    @NotNull protected Collection<Dependency> getDependencies(String igniteVer) {
         final Collection<Dependency> dependencies = new ArrayList<>();
 
         dependencies.add(new Dependency("core", "ignite-core"));
