@@ -67,7 +67,7 @@ public enum DataStructureType {
     private static final DataStructureType[] VALS = values();
 
     /** */
-    private final String name;
+    private String name;
 
     /**
      * @param name Name.
