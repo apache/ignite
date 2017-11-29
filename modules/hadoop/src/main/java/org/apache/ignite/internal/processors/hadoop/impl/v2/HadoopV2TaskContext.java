@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCountersImpl;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLazyConcurrentMap;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1CleanupTask;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1MapTask;
@@ -548,41 +549,57 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
 
     /** {@inheritDoc} */
     @Override public <T> T runAsJobOwner(final Callable<T> c) throws IgniteCheckedException {
-        String user = job.info().user();
+        if (job.info().credentials() == null) {
 
-        user = IgfsUtils.fixUserName(user);
+            String user = job.info().user();
 
-        assert user != null;
+            user = IgfsUtils.fixUserName(user);
 
-        String ugiUser;
+            assert user != null;
 
-        try {
-            UserGroupInformation currUser = UserGroupInformation.getCurrentUser();
+            String ugiUser;
 
-            assert currUser != null;
+            try {
+                UserGroupInformation currUser = UserGroupInformation.getCurrentUser();
 
-            ugiUser = currUser.getShortUserName();
-        }
-        catch (IOException ioe) {
-            throw new IgniteCheckedException(ioe);
-        }
+                assert currUser != null;
 
-        try {
-            if (F.eq(user, ugiUser))
-                // if current UGI context user is the same, do direct call:
-                return c.call();
-            else {
-                UserGroupInformation ugi = UserGroupInformation.getBestUGI(null, user);
+                ugiUser = currUser.getShortUserName();
+            }
+            catch (IOException ioe) {
+                throw new IgniteCheckedException(ioe);
+            }
+
+            try {
+                if (F.eq(user, ugiUser))
+                    // if current UGI context user is the same, do direct call:
+                    return c.call();
+                else {
+                    UserGroupInformation ugi = UserGroupInformation.getBestUGI(null, user);
+
+                    return ugi.doAs(new PrivilegedExceptionAction<T>() {
+                        @Override public T run() throws Exception {
+                            return c.call();
+                        }
+                    });
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(e);
+            }
+        } else {
+            try {
+                UserGroupInformation ugi = HadoopUtils.createUGI(job.info().user(), job.info().credentials());
 
                 return ugi.doAs(new PrivilegedExceptionAction<T>() {
-                    @Override public T run() throws Exception {
+                    @Override
+                    public T run() throws Exception {
                         return c.call();
                     }
                 });
+            } catch (Exception e) {
+                throw new IgniteCheckedException(e);
             }
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException(e);
         }
     }
 
