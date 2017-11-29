@@ -766,10 +766,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         readyLocks();
 
-        if (tx != null)
+        if (tx != null) {
             tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                    if(tx.isRollbackOnly()) {
+                    if (tx.isRollbackOnly()) {
                         if (log.isInfoEnabled())
                             log.info("Forcibly cancelling DHT lock future: " + GridDhtLockFuture.this);
 
@@ -777,6 +777,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     }
                 }
             });
+
+            if (isDone())
+                return;
+        }
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();

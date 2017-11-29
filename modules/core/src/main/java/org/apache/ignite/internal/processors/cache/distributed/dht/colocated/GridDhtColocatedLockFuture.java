@@ -721,6 +721,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     }
                 }
             });
+
+            if (isDone())
+                return;
         }
 
         if (timeout > 0) {

@@ -812,6 +812,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                     }
                 }
             });
+
+            if (isDone())
+                return;
         }
 
         if (timeout > 0) {
@@ -820,6 +823,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             cctx.time().addTimeoutObject(timeoutObj);
         }
 
+        // TODO possible race between mapping the future and LockTimeoutObject.onTimeout()
         boolean added = cctx.mvcc().addFuture(this);
 
         assert added : this;
