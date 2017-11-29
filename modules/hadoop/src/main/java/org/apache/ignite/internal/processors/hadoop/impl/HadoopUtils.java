@@ -399,18 +399,33 @@ public class HadoopUtils {
         return len1 - len2;
     }
 
+    /**
+     * Deserialization of Hadoop Writable object.
+     *
+     * @param writable Writable object to deserialize to.
+     * @param bytes byte array to deserialize.
+     */
     public static void deserialize(Writable writable, byte[] bytes) throws IOException {
-        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-        DataInputStream dataIn = new DataInputStream(in);
+        DataInputStream dataIn = new DataInputStream(new ByteArrayInputStream(bytes));
+
         writable.readFields(dataIn);
+
         dataIn.close();
     }
 
+    /**
+     * Create UserGroupInformation for specified user and credentials.
+     *
+     * @param user User.
+     * @param credentialsBytes Credentials byte array.
+     */
     public static UserGroupInformation createUGI(String user, byte[] credentialsBytes) throws IOException {
         Credentials credentials = new Credentials();
+
         HadoopUtils.deserialize(credentials, credentialsBytes);
 
         UserGroupInformation ugi = UserGroupInformation.createRemoteUser(user);
+
         ugi.addCredentials(credentials);
 
         if (credentials.numberOfTokens() > 0)

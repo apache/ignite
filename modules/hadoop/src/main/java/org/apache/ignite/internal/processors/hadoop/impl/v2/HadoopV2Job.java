@@ -328,16 +328,17 @@ public class HadoopV2Job extends HadoopJobEx {
         ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
 
         try {
-            if (jobInfo.credentials() == null) {
+            if (jobInfo.credentials() == null)
                 rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
-            } else {
+            else {
                 UserGroupInformation ugi = HadoopUtils.createUGI(jobInfo.user(), jobInfo.credentials());
 
                 try {
                     ugi.doAs(new PrivilegedExceptionAction<Void>() {
                         @Override
                         public Void run() throws Exception {
-                            rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
+                            rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId,
+                                jobId));
 
                             return null;
                         }
@@ -349,8 +350,8 @@ public class HadoopV2Job extends HadoopJobEx {
             }
 
             if (HadoopJobProperty.get(jobInfo, JOB_SHARED_CLASSLOADER, true)) {
-                U.warn(log, JOB_SHARED_CLASSLOADER.propertyName() + " job property is set to true; please disable " +
-                    "it if job tasks rely on mutable static state.");
+                U.warn(log, JOB_SHARED_CLASSLOADER.propertyName() +
+                    " job property is set to true; please disable " + "it if job tasks rely on mutable static state.");
 
                 sharedClsLdr = createClassLoader(HadoopClassLoader.nameForJob(jobId));
             }

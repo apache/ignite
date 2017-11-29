@@ -57,9 +57,8 @@ public class HadoopFileSystemCacheUtils {
                     cfg.setBoolean(prop, true);
 
                     if (UserGroupInformation.getCurrentUser().getAuthenticationMethod() ==
-                        UserGroupInformation.AuthenticationMethod.TOKEN) {
+                        UserGroupInformation.AuthenticationMethod.TOKEN)
                         return FileSystem.get(uri, cfg);
-                    }
                     else {
                         try {
                             return FileSystem.get(uri, cfg, key.user());
