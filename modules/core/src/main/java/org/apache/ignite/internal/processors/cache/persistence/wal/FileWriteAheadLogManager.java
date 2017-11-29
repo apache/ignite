@@ -213,7 +213,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final int serializerVersion =
         IgniteSystemProperties.getInteger(IGNITE_WAL_SERIALIZER_VERSION, LATEST_SERIALIZER_VERSION);
 
-    /** Latest segment cleared by {@link #truncate(WALPointer)}. */
+    /** Latest segment cleared by {@link #truncate(WALPointer, WALPointer)}. */
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
