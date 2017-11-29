@@ -90,6 +90,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
@@ -968,6 +969,21 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
+
+        DiscoverySpi discoverySpi = locNode.configuration().getDiscoverySpi();
+
+        if (!(discoverySpi instanceof TcpDiscoverySpi)) {
+            try {
+                Method m = discoverySpi.getClass().getMethod("clone");
+
+                cfg.setDiscoverySpi((DiscoverySpi)m.invoke(discoverySpi));
+
+                resetDiscovery = false;
+            }
+            catch (NoSuchMethodException e) {
+                // Ignore.
+            }
+        }
 
         return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery);
     }

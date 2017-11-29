@@ -162,6 +162,8 @@ public class IgniteNodeRunner {
                 cfg.setDiscoverySpi(disco);
             }
 
+            X.println("Configured discovery: " + cfg.getDiscoverySpi().getClass().getName());
+
             return cfg;
         }
         finally {

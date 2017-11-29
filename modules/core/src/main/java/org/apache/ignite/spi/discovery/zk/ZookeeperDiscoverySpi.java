@@ -164,7 +164,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void reconnect() {
-        // TODO ZK
+        impl.reconnect();
     }
 
     /** {@inheritDoc} */
@@ -174,6 +174,14 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Nullable @Override public Serializable consistentId() throws IgniteSpiException {
+        if (consistentId == null) {
+            consistentId = ignite.configuration().getConsistentId();
+
+            // TODO ZK
+            if (consistentId == null)
+                consistentId = ignite.configuration().getNodeId();
+        }
+
         return consistentId;
     }
 
@@ -306,21 +314,27 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         }
     }
 
+    /** {@inheritDoc} */
+    public Object clone() {
+        ZookeeperDiscoverySpi spi = new ZookeeperDiscoverySpi();
+
+        spi.setZkConnectionString(zkConnectionString);
+        spi.setSessionTimeout(sesTimeout);
+        spi.setClientReconnectDisabled(clientReconnectDisabled);
+
+        return spi;
+    }
+
     /**
      * @return Local node instance.
      */
     private ZookeeperClusterNode initLocalNode() {
         assert ignite != null;
 
-        consistentId = ignite.configuration().getConsistentId();
+        consistentId = consistentId();
 
-        UUID nodeId = ignite.configuration().getNodeId();
-
-        // TODO ZK
-        if (consistentId == null)
-            consistentId = nodeId;
-
-        ZookeeperClusterNode locNode = new ZookeeperClusterNode(nodeId,
+        ZookeeperClusterNode locNode = new ZookeeperClusterNode(
+            ignite.configuration().getNodeId(),
             locNodeVer,
             locNodeAttrs,
             consistentId,

@@ -170,6 +170,8 @@ public class IgnitionEx {
 
             try {
                 zkCluster.start();
+
+                System.out.println("ZK cluster started: " + zkCluster.getConnectString());
             }
             catch (Exception e) {
                 e.printStackTrace();

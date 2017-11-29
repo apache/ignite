@@ -45,9 +45,9 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiThread;
@@ -157,6 +157,8 @@ public class ZookeeperDiscoveryImpl {
         boolean clientReconnectEnabled) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
 
+        MarshallerUtils.setNodeName(marsh, igniteInstanceName);
+
         ZkIgnitePaths.validatePath(zkRootPath);
 
         zkPaths = new ZkIgnitePaths(zkRootPath);
@@ -215,6 +217,15 @@ public class ZookeeperDiscoveryImpl {
 
         // TODO ZK
         return node(nodeId) != null;
+    }
+
+    /**
+     *
+     */
+    public void reconnect() {
+        assert clientReconnectEnabled;
+
+        evtWorker.onReconnectRequest();
     }
 
     /**
@@ -1595,7 +1606,14 @@ public class ZookeeperDiscoveryImpl {
         /**
          *
          */
-        void processReconnect() {
+        void onReconnectRequest() {
+            evtsQ.add(RECONNECT);
+        }
+
+        /**
+         *
+         */
+        private void processReconnect() {
             assert locNode.isClient() : locNode;
 
             if (connState == ConnectionState.DISCONNECTED)
