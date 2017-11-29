@@ -46,7 +46,6 @@ namespace Apache.Ignite.Core.Tests
         private const int DfltBusywaitSleepInterval = 200;
 
         /** */
-
         private static readonly IList<string> TestJvmOpts = Environment.Is64BitProcess
             ? new List<string>
             {
@@ -229,8 +228,6 @@ namespace Apache.Ignite.Core.Tests
 
             return false;
         }
-
-
 
         /// <summary>
         /// Waits for condition, polling in busy wait loop.

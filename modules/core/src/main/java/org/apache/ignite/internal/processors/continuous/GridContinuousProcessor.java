@@ -190,8 +190,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     StartRoutineDiscoveryMessage msg) {
                     assert discoProtoVer == 1 : discoProtoVer;
 
-                    if (!snd.id().equals(ctx.localNodeId()) && !ctx.isStopping())
-                        processStartRequest(snd, msg);
+                    if (ctx.isStopping())
+                        return;
+
+                    processStartRequest(snd, msg);
                 }
             });
 
@@ -214,39 +216,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StartRoutineAckDiscoveryMessage msg) {
-                    StartFuture fut = startFuts.remove(msg.routineId());
+                    if (ctx.isStopping())
+                        return;
 
-                    if (fut != null) {
-                        if (msg.errs().isEmpty()) {
-                            LocalRoutineInfo routine = locInfos.get(msg.routineId());
-
-                            // Update partition counters.
-                            if (routine != null && routine.handler().isQuery()) {
-                                Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode = msg.updateCountersPerNode();
-                                Map<Integer, T2<Long, Long>> cntrs = msg.updateCounters();
-
-                                GridCacheAdapter<Object, Object> interCache =
-                                    ctx.cache().internalCache(routine.handler().cacheName());
-
-                                GridCacheContext cctx = interCache != null ? interCache.context() : null;
-
-                                if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
-                                    cntrsPerNode.put(ctx.localNodeId(),
-                                        toCountersMap(cctx.topology().localUpdateCounters(false)));
-
-                                routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
-                            }
-
-                            fut.onRemoteRegistered();
-                        }
-                        else {
-                            IgniteCheckedException firstEx = F.first(msg.errs().values());
-
-                            fut.onDone(firstEx);
-
-                            stopRoutine(msg.routineId());
-                        }
-                    }
+                    processStartAckRequest(topVer, msg);
                 }
             });
 
@@ -258,16 +231,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     if (discoProtoVer == 2)
                         routinesInfo.removeRoutine(msg.routineId);
 
-                    if (!snd.id().equals(ctx.localNodeId())) {
-                        UUID routineId = msg.routineId();
+                    if (ctx.isStopping())
+                        return;
 
-                        unregisterRemote(routineId);
-                    }
-
-                    for (Map<UUID, LocalRoutineInfo> clientInfo : clientInfos.values()) {
-                        if (clientInfo.remove(msg.routineId()) != null)
-                            break;
-                    }
+                    processStopRequest(snd, msg);
                 }
             });
 
@@ -276,10 +243,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StopRoutineAckDiscoveryMessage msg) {
-                    StopFuture fut = stopFuts.remove(msg.routineId());
+                    if (ctx.isStopping())
+                        return;
 
-                    if (fut != null)
-                        fut.onDone();
+                    processStopAckRequest(msg);
                 }
             });
 
@@ -502,7 +469,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         if (log.isDebugEnabled()) {
-            log.info("onJoiningNodeDataReceived [joining=" + data.joiningNodeId() +
+            log.debug("onJoiningNodeDataReceived [joining=" + data.joiningNodeId() +
                 ", loc=" + ctx.localNodeId() +
                 ", data=" + data.joiningNodeData() +
                 ']');
@@ -1136,94 +1103,69 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param snd Sender.
-     * @param msg Start request.
+     * @param msg Message.
      */
-    private void processStartRequestV2(ClusterNode snd, StartRoutineDiscoveryMessageV2 msg) {
-        StartRequestDataV2 reqData = msg.startRequestData();
+    private void processStopAckRequest(StopRoutineAckDiscoveryMessage msg) {
+        StopFuture fut = stopFuts.remove(msg.routineId());
 
-        ContinuousRoutineInfo routineInfo = new ContinuousRoutineInfo(snd.id(),
-            msg.routineId(),
-            reqData.handlerBytes(),
-            reqData.nodeFilterBytes(),
-            reqData.bufferSize(),
-            reqData.interval(),
-            reqData.autoUnsubscribe());
+        if (fut != null)
+            fut.onDone();
+    }
 
-        routinesInfo.addRoutineInfo(routineInfo);
+    /**
+     * @param snd Sender node.
+     * @param msg Message/
+     */
+    private void processStopRequest(ClusterNode snd, StopRoutineDiscoveryMessage msg) {
+        if (!snd.id().equals(ctx.localNodeId())) {
+            UUID routineId = msg.routineId();
 
-        Exception err = null;
-
-        IgnitePredicate<ClusterNode> nodeFilter = null;
-
-        if (reqData.nodeFilterBytes() != null) {
-            try {
-                if (ctx.config().isPeerClassLoadingEnabled() && reqData.className() != null) {
-                    String clsName = reqData.className();
-                    GridDeploymentInfo depInfo = reqData.deploymentInfo();
-
-                    GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(),
-                        clsName,
-                        clsName,
-                        depInfo.userVersion(),
-                        snd.id(),
-                        depInfo.classLoaderId(),
-                        depInfo.participants(),
-                        null);
-
-                    if (dep == null)
-                        throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
-
-                    nodeFilter = U.unmarshal(marsh, reqData.nodeFilterBytes(), U.resolveClassLoader(dep.classLoader(), ctx.config()));
-                }
-                else
-                    nodeFilter = U.unmarshal(marsh, reqData.nodeFilterBytes(), U.resolveClassLoader(ctx.config()));
-
-                if (nodeFilter != null)
-                    ctx.resource().injectGeneric(nodeFilter);
-            }
-            catch (Exception e) {
-                err = e;
-
-                U.error(log, "Failed to unmarshal continuous routine filter [" +
-                        "routineId=" + routineInfo.routineId +
-                        ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
-            }
+            unregisterRemote(routineId);
         }
 
-        boolean register = err == null && (nodeFilter == null || nodeFilter.apply(ctx.discovery().localNode()));
+        for (Map<UUID, LocalRoutineInfo> clientInfo : clientInfos.values()) {
+            if (clientInfo.remove(msg.routineId()) != null)
+                break;
+        }
+    }
 
-        if (register) {
-            try {
-                GridContinuousHandler hnd = U.unmarshal(marsh, reqData.handlerBytes(), U.resolveClassLoader(ctx.config()));
+    /**
+     * @param topVer Topology version.
+     * @param msg Message.
+     */
+    private void processStartAckRequest(AffinityTopologyVersion topVer,
+        StartRoutineAckDiscoveryMessage msg) {
+        StartFuture fut = startFuts.remove(msg.routineId());
 
-                if (ctx.config().isPeerClassLoadingEnabled())
-                    hnd.p2pUnmarshal(snd.id(), ctx);
+        if (fut != null) {
+            if (msg.errs().isEmpty()) {
+                LocalRoutineInfo routine = locInfos.get(msg.routineId());
 
-                if (msg.keepBinary()) {
-                    assert hnd instanceof CacheContinuousQueryHandler : hnd;
+                // Update partition counters.
+                if (routine != null && routine.handler().isQuery()) {
+                    Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode = msg.updateCountersPerNode();
+                    Map<Integer, T2<Long, Long>> cntrs = msg.updateCounters();
 
-                    ((CacheContinuousQueryHandler)hnd).keepBinary(true);
+                    GridCacheAdapter<Object, Object> interCache =
+                        ctx.cache().internalCache(routine.handler().cacheName());
+
+                    GridCacheContext cctx = interCache != null ? interCache.context() : null;
+
+                    if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
+                        cntrsPerNode.put(ctx.localNodeId(),
+                            toCountersMap(cctx.topology().localUpdateCounters(false)));
+
+                    routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
                 }
 
-                GridContinuousHandler hnd0 = hnd instanceof GridMessageListenHandler ?
-                    new GridMessageListenHandler((GridMessageListenHandler)hnd) :
-                    hnd;
-
-                registerHandler(snd.id(),
-                    msg.routineId,
-                    hnd0,
-                    reqData.bufferSize(),
-                    reqData.interval(),
-                    reqData.autoUnsubscribe(),
-                    false);
+                fut.onRemoteRegistered();
             }
-            catch (Exception e) {
-                err = e;
+            else {
+                IgniteCheckedException firstEx = F.first(msg.errs().values());
 
-                U.error(log, "Failed to register continuous routine handler [" +
-                    "routineId=" + routineInfo.routineId +
-                    ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
+                fut.onDone(firstEx);
+
+                stopRoutine(msg.routineId());
             }
         }
     }
@@ -1234,6 +1176,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     private void processStartRequest(ClusterNode node, StartRoutineDiscoveryMessage req) {
         UUID routineId = req.routineId();
+        if (node.id().equals(ctx.localNodeId()))
+            return;
+
         StartRequestData data = req.startRequestData();
 
         GridContinuousHandler hnd = data.handler();
@@ -1332,6 +1277,99 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (err != null)
             req.addError(ctx.localNodeId(), err);
+    }
+
+    /**
+     * @param snd Sender.
+     * @param msg Start request.
+     */
+    private void processStartRequestV2(ClusterNode snd, StartRoutineDiscoveryMessageV2 msg) {
+        StartRequestDataV2 reqData = msg.startRequestData();
+
+        ContinuousRoutineInfo routineInfo = new ContinuousRoutineInfo(snd.id(),
+            msg.routineId(),
+            reqData.handlerBytes(),
+            reqData.nodeFilterBytes(),
+            reqData.bufferSize(),
+            reqData.interval(),
+            reqData.autoUnsubscribe());
+
+        routinesInfo.addRoutineInfo(routineInfo);
+
+        Exception err = null;
+
+        IgnitePredicate<ClusterNode> nodeFilter = null;
+
+        if (reqData.nodeFilterBytes() != null) {
+            try {
+                if (ctx.config().isPeerClassLoadingEnabled() && reqData.className() != null) {
+                    String clsName = reqData.className();
+                    GridDeploymentInfo depInfo = reqData.deploymentInfo();
+
+                    GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(),
+                        clsName,
+                        clsName,
+                        depInfo.userVersion(),
+                        snd.id(),
+                        depInfo.classLoaderId(),
+                        depInfo.participants(),
+                        null);
+
+                    if (dep == null)
+                        throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
+
+                    nodeFilter = U.unmarshal(marsh, reqData.nodeFilterBytes(), U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                }
+                else
+                    nodeFilter = U.unmarshal(marsh, reqData.nodeFilterBytes(), U.resolveClassLoader(ctx.config()));
+
+                if (nodeFilter != null)
+                    ctx.resource().injectGeneric(nodeFilter);
+            }
+            catch (Exception e) {
+                err = e;
+
+                U.error(log, "Failed to unmarshal continuous routine filter [" +
+                    "routineId=" + routineInfo.routineId +
+                    ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
+            }
+        }
+
+        boolean register = err == null && (nodeFilter == null || nodeFilter.apply(ctx.discovery().localNode()));
+
+        if (register) {
+            try {
+                GridContinuousHandler hnd = U.unmarshal(marsh, reqData.handlerBytes(), U.resolveClassLoader(ctx.config()));
+
+                if (ctx.config().isPeerClassLoadingEnabled())
+                    hnd.p2pUnmarshal(snd.id(), ctx);
+
+                if (msg.keepBinary()) {
+                    assert hnd instanceof CacheContinuousQueryHandler : hnd;
+
+                    ((CacheContinuousQueryHandler)hnd).keepBinary(true);
+                }
+
+                GridContinuousHandler hnd0 = hnd instanceof GridMessageListenHandler ?
+                    new GridMessageListenHandler((GridMessageListenHandler)hnd) :
+                    hnd;
+
+                registerHandler(snd.id(),
+                    msg.routineId,
+                    hnd0,
+                    reqData.bufferSize(),
+                    reqData.interval(),
+                    reqData.autoUnsubscribe(),
+                    false);
+            }
+            catch (Exception e) {
+                err = e;
+
+                U.error(log, "Failed to register continuous routine handler [" +
+                    "routineId=" + routineInfo.routineId +
+                    ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
+            }
+        }
     }
 
     /**

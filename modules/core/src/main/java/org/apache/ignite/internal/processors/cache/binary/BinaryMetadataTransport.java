@@ -535,12 +535,16 @@ final class BinaryMetadataTransport {
             this.ver = ver;
         }
 
-        /** */
+        /**
+         * @return Type ID.
+         */
         int typeId() {
             return typeId;
         }
 
-        /** */
+        /**
+         * @return Version.
+         */
         int version() {
             return ver;
         }
@@ -622,7 +626,6 @@ final class BinaryMetadataTransport {
      * Listener is registered on each client node and listens for metadata responses from cluster.
      */
     private final class MetadataResponseListener implements GridMessageListener {
-
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MetadataResponseMessage : msg;
@@ -669,8 +672,6 @@ final class BinaryMetadataTransport {
                 fut.onDone(MetadataUpdateResult.createFailureResult(new BinaryObjectException(e)));
             }
         }
-
-
     }
 
     /**
