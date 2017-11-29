@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
@@ -1042,10 +1043,15 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (Boolean.FALSE.equals(prev)) // Tx can be rolled back.
             return;
 
-        assert prev instanceof GridCacheReturnCompletableWrapper:
-            prev + " instead of GridCacheReturnCompletableWrapper";
+        if (!(prev instanceof GridCacheReturnCompletableWrapper))
+            LT.warn(log(), prev + " instead of GridCacheReturnCompletableWrapper for " + xidVer.toString() +
+                ", size=" + completedVersHashMap.sizex());
 
-        boolean res = completedVersHashMap.replace(xidVer, prev, true);
+        boolean res;
+        if (prev == null)
+            res = (null == completedVersHashMap.putIfAbsent(xidVer, true));
+        else
+            res = completedVersHashMap.replace(xidVer, prev, true);
 
         assert res;
     }

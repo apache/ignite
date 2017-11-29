@@ -17,15 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAbstractSelfTest;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -34,6 +41,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_C
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  *
@@ -45,23 +53,16 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
     /** */
     private String maxCompletedTxCnt;
 
-    /**
-     */
-    public GridCacheMissingCommitVersionSelfTest() {
-        super(true);
-    }
+    /** IP finder. */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        maxCompletedTxCnt = System.getProperty(IGNITE_MAX_COMPLETED_TX_COUNT);
-
-        System.setProperty(IGNITE_MAX_COMPLETED_TX_COUNT, String.valueOf(5));
-
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+        discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -70,6 +71,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setBackups(1);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -77,17 +79,30 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        maxCompletedTxCnt = System.getProperty(IGNITE_MAX_COMPLETED_TX_COUNT);
+
+        System.setProperty(IGNITE_MAX_COMPLETED_TX_COUNT, String.valueOf(5));
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         System.setProperty(IGNITE_MAX_COMPLETED_TX_COUNT, maxCompletedTxCnt != null ? maxCompletedTxCnt : "");
 
-        super.afterTest();
+        stopAllGrids();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMissingCommitVersion() throws Exception {
-        final IgniteCache<Integer, Integer> cache = jcache();
+        startGrid(0);
+
+        final IgniteCache<Integer, Integer> cache = jcache(0);
 
         final int KEYS_PER_THREAD = 10_000;
 
@@ -132,5 +147,99 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
                 fail("Put failed to finish in 5s: " + key);
             }
         }
+    }
+
+    /**
+     * OnePhaseCommitAckRequest may come with missing version. It could be removed by completedVersHashMap itself if
+     * reaches the maximum size under heavy load. This tests verifies IGNITE-7047 fix
+     * @throws Exception If failed.
+     */
+    public void testMissingVersionForOnePhaseCommitAckRequest() throws Exception {
+        final int GRID_SIZE = 2;
+        final AtomicBoolean finished = new AtomicBoolean();
+        final AtomicInteger uncaughtCnt = new AtomicInteger();
+
+        // catch possible asserts from removeTxReturn
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            public void uncaughtException(Thread t, Throwable e) {
+                log().error("uncaughtException " + e.getMessage());
+                uncaughtCnt.getAndIncrement();
+            }
+        });
+
+        startGridsMultiThreaded(GRID_SIZE);
+
+        IgniteInternalFuture<Object> restarterFut = runRestarts(finished);
+
+        IgniteInternalFuture<Object> updaterFut = runUpdates(finished);
+
+        try {
+            U.sleep(10_000);
+        }
+        finally {
+            finished.set(true);
+
+            restarterFut.get();
+            updaterFut.get();
+        }
+
+        assertEquals(0, uncaughtCnt.get());
+
+        checkOnePhaseCommitReturnValuesCleaned(GRID_SIZE);
+    }
+
+
+    /**
+     * Creates and run a thread that restarts Node-0 every 300 ms.
+     * @param finished Boolean atomic that stops thread infinite loop by True value.
+     * @return future.
+     */
+    private IgniteInternalFuture<Object> runRestarts(final AtomicBoolean finished) {
+        return runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                while (!finished.get()) {
+                    stopGrid(0);
+
+                    U.sleep(300);
+
+                    startGrid(0);
+
+                    awaitPartitionMapExchange();
+                }
+
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Creates and run a thread that executes Cache getAndPut operations (at Node-1) in infinite loop.
+     * @param finished Boolean atomic that stops thread infinite loop by True value.
+     * @return future.
+     */
+    private IgniteInternalFuture<Object> runUpdates(final AtomicBoolean finished) {
+        final int keysCnt = 10_000;
+
+        return runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int iter = 0;
+
+                while (!finished.get()) {
+                    try {
+                        IgniteCache<Integer, Integer> cache = ignite(1).cache(DEFAULT_CACHE_NAME);
+
+                        Integer val = ++iter;
+
+                        for (int i = 0; i < keysCnt; i++)
+                            cache.getAndPut(i, val);
+                    }
+                    catch (Exception ignored) {
+                        // No-op.
+                    }
+                }
+
+                return null;
+            }
+        });
     }
 }

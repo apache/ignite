@@ -28,6 +28,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+import static org.apache.ignite.internal.managers.communication.GridIoMessage.STRIPE_DISABLED_PART;
+
 /**
  * One Phase Commit Near transaction ack request.
  */
@@ -130,6 +132,11 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
         }
 
         return reader.afterMessageRead(GridDhtTxOnePhaseCommitAckRequest.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return STRIPE_DISABLED_PART;
     }
 
     /** {@inheritDoc} */
