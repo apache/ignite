@@ -790,12 +790,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
-<<<<<<< HEAD
-
-        info = new OutputAckInformation(log, cfg, ctx);
-=======
-        IgniteAckGenerator info = new IgniteAckGenerator(log, cfg);
->>>>>>> code style changes
+        IgniteAckGenerator info = new IgniteAckGenerator(log, cfg, ctx);
 
         // Ack various information.
         info.ackAsciiLogo();
@@ -808,7 +803,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         info.ackClassPaths(rtBean);
         info.ackSystemProperties();
         info.ackEnvironmentVariables();
-        info.ackMemoryConfiguration();
         info.ackCacheConfiguration();
         info.ackP2pConfiguration();
         info.ackRebalanceConfiguration();

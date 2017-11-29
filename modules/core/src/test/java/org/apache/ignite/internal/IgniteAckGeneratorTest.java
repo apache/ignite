@@ -25,8 +25,8 @@ import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -73,7 +73,7 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
 
         cfg.setUserAttributes(userAttr);
 
-        cfg.setMemoryConfiguration(new MemoryConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         cfg.setGridLogger(log);
 
@@ -184,13 +184,13 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testAckMemoryConfiguration() throws Exception {
-        MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
+    public void testAckDataStorageConfiguration() throws Exception {
+        DataStorageConfiguration dataStorageCfg = cfg.getDataStorageConfiguration();
 
         assert
-            memCfg != null;
+            dataStorageCfg != null;
 
-        assertTrue(logStr.contains(String.valueOf(memCfg.getSystemCacheInitialSize() / (1024 * 1024))));
+        assertTrue(logStr.contains(String.valueOf(dataStorageCfg.getSystemRegionInitialSize() / (1024 * 1024))));
     }
 
     /**

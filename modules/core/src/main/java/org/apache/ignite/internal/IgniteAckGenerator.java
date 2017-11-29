@@ -54,11 +54,7 @@ class IgniteAckGenerator {
     /**
      * @param log Logger.
      */
-<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/OutputAckInformation.java
-    OutputAckInformation(GridLoggerProxy log, IgniteConfiguration cfg, GridKernalContextImpl ctx) {
-=======
-    IgniteAckGenerator(IgniteLogger log, IgniteConfiguration cfg) {
->>>>>>> code style changes:modules/core/src/main/java/org/apache/ignite/internal/IgniteAckGenerator.java
+    IgniteAckGenerator(GridLoggerProxy log, IgniteConfiguration cfg, GridKernalContextImpl ctx) {
         this.cfg = cfg;
 
         this.log = log;
@@ -309,7 +305,13 @@ class IgniteAckGenerator {
     void ackMemoryConfiguration() {
         DataStorageConfiguration memCfg = cfg.getDataStorageConfiguration();
 
-        if (memCfg == null)
+        DataStorageConfiguration dataStorageCfg = cfg.getDataStorageConfiguration();
+
+        if (memCfg != null)
+            U.warn(log, "Deprecated class MemoryConfiguration is used. Use DataStorageConfiguration class " +
+                "instead via IgniteConfiguration#setDataStorageConfiguration");
+
+        if(dataStorageCfg == null)
             return;
 
         U.log(log, "System cache's DataRegion size is configured to " +
@@ -443,14 +445,10 @@ class IgniteAckGenerator {
      *
      * @param rtBean Java runtime bean.
      */
-<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/OutputAckInformation.java
-    void ackStart(RuntimeMXBean rtBean) {
-=======
-    void ackStart(RuntimeMXBean rtBean, GridKernalContextImpl ctx) {
-        String igniteInstanceName = cfg.getIgniteInstanceName();
-
->>>>>>> code style changes:modules/core/src/main/java/org/apache/ignite/internal/IgniteAckGenerator.java
+    private void ackStart(RuntimeMXBean rtBean) {
         ClusterNode locNode = ctx.cluster().get().localNode();
+
+        String igniteInstanceName = cfg.getIgniteInstanceName();
 
         if (log.isQuiet()) {
             U.quiet(false, "");
@@ -490,6 +488,7 @@ class IgniteAckGenerator {
             log.info(str);
         }
     }
+
 
     /**
      * Gets "on" or "off" string for given boolean value.
