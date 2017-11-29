@@ -253,7 +253,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         ioMgr.addMessageListener(TOPIC_JOB_CANCEL, cancelLsnr);
         ioMgr.addMessageListener(TOPIC_JOB, jobExecLsnr);
 
-        ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_METRICS_UPDATED);
+        ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_METRICS_UPDATED);
 
         if (log.isDebugEnabled())
             log.debug("Job processor started.");
@@ -1947,6 +1947,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
             // without cancellation).
             switch (evt.type()) {
                 case EVT_NODE_JOINED:
+                    handleCollisions=true;
+
+                    break;
+
                 case EVT_NODE_LEFT:
                 case EVT_NODE_FAILED:
                     if (!jobAlwaysActivate) {

@@ -57,6 +57,9 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
     private Ignite ignite;
 
     /** */
+    private static volatile CountDownLatch jobExecutedLatch;
+
+    /** */
     public GridMultithreadedJobStealingSelfTest() {
         super(false /* don't start grid*/);
     }
@@ -142,7 +145,9 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         int threadsNum = 10;
 
-        final CountDownLatch latch = new CountDownLatch(threadsNum);
+        final int jobsPerTask = 4;
+
+        jobExecutedLatch = new CountDownLatch(threadsNum);
 
         final IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             /** */
@@ -150,9 +155,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
                 try {
                     final IgniteCompute compute = ignite.compute().withAsync();
 
-                    compute.execute(new JobStealingTask(3), null);
-
-                    latch.countDown();
+                    compute.execute(new JobStealingTask(jobsPerTask), null);
 
                     JobStealingResult res = (JobStealingResult)compute.future().get();
 
@@ -170,7 +173,8 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             }
         }, threadsNum, "JobStealingThread");
 
-        latch.await();
+        //Wait for first job begin execution.
+        jobExecutedLatch.await();
 
         startGrid(2);
 
@@ -183,7 +187,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         assertNull("Test failed with exception: ",fail.get());
 
         // Total jobs number is threadsNum * 3
-        assertEquals("Incorrect processed jobs number",threadsNum * 3, stolen.get() + noneStolen.get());
+        assertEquals("Incorrect processed jobs number",threadsNum * jobsPerTask, stolen.get() + noneStolen.get());
 
         assertFalse( "No jobs were stolen.",stolen.get() == 0);
 
@@ -191,7 +195,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             assertTrue("Node get no jobs.", nodes.contains(g.name()));
 
         assertTrue( "Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
-            Math.abs(stolen.get() - 2 * noneStolen.get()) <= 4);
+            Math.abs(stolen.get() - 2 * noneStolen.get()) <= 6);
     }
 
 
@@ -293,6 +297,8 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @Override public Serializable execute() {
             try {
+                jobExecutedLatch.countDown();
+
                 Long sleep = argument(0);
 
                 assert sleep != null;
