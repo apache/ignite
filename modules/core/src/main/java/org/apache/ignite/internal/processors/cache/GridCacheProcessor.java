@@ -1770,9 +1770,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ccfg.setNearConfiguration(null);
         }
-        else if (CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter()))
-            affNode = true;
-        else {
+        else if (CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter())) {
+            if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
+                affNode = true;
+            else {
+                if (CU.baselineNode(ctx.discovery().localNode(), ctx.state().clusterState()))
+                    affNode = true;
+                else
+                    affNode = false;
+            }
+        } else {
             affNode = false;
 
             ccfg.setNearConfiguration(reqNearCfg);
