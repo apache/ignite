@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -1127,9 +1128,14 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             clear();
         }
 
-        boolean releaseLocks = !(inTx() && (cctx.tm().deadlockDetectionEnabled() || tx.isRollbackOnly()));
+        if (tx != null && tx.isRollbackOnly())
+            onError(new IgniteFutureCancelledCheckedException("Failed to acquire lock, " +
+                "transaction was rolled back [tx=" + tx + ']'));
+        else {
+            boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
 
-        onComplete(false, false, releaseLocks);
+            onComplete(false, false, releaseLocks);
+        }
     }
 
     /**
