@@ -391,7 +391,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (currHnd != null)
                 currHnd.close(false);
 
-            walWriteWorker.cancel();
+            walWriteWorker.shutdown();
 
             if (archiver != null)
                 archiver.shutdown();
@@ -2801,8 +2801,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             //TODO: check stop flag
             while (!isCancelled()) {
-                while (waiters.isEmpty())
-                    LockSupport.park();
+                while (waiters.isEmpty()) {
+                    if (!isCancelled())
+                        LockSupport.park();
+                    else {
+                        unparkWaiters(Long.MAX_VALUE);
+
+                        log.info("!!! TERMINATED");
+
+                        return;
+                    }
+                }
+
 
                 //Long pos = F.first(waiters.values());
 
@@ -2843,9 +2853,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 }
             }
-
-            /*unparkWaiters(Long.MAX_VALUE);*/
         }
+
+        public void shutdown() throws IgniteInterruptedCheckedException {
+            cancel();
+
+            LockSupport.unpark(walWriterThread);
+
+            U.join(this);
+        }
+
 
         private void unparkWaiters(long pos) {
             assert pos > Long.MIN_VALUE : pos;
