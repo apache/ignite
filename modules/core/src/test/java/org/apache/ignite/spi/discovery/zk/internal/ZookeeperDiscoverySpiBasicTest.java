@@ -81,7 +81,7 @@ import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
  */
 public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
-    private static final String IGNITE_ZK_ROOT = "/apacheIgnite";
+    private static final String IGNITE_ZK_ROOT = ZookeeperDiscoverySpi.DFLT_ROOT_PATH;
 
     /** */
     private static final int ZK_SRVS = 3;
@@ -672,7 +672,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     try {
-                        List<String> c = zkClient.getChildren(IGNITE_ZK_ROOT + "/alive");
+                        List<String> c = zkClient.getChildren(IGNITE_ZK_ROOT + "/n");
 
                         for (String failedZkNode : failedZkNodes) {
                             if (c.contains(failedZkNode)) {
@@ -685,6 +685,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                         return true;
                     }
                     catch (Exception e) {
+                        e.printStackTrace();
+
                         fail();
 
                         return true;

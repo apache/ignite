@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.logger.java.JavaLogger;
@@ -94,7 +95,7 @@ public class ZkTestClientCnxnSocketNIO extends ClientCnxnSocketNIO {
             try {
                 log.info("ZkTestClientCnxnSocketNIO block connect");
 
-                blockConnect.await();
+                blockConnect.await(60, TimeUnit.SECONDS);
 
                 log.info("ZkTestClientCnxnSocketNIO finish block connect");
             }

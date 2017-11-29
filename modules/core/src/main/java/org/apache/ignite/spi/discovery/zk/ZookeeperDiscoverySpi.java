@@ -54,6 +54,9 @@ import org.jetbrains.annotations.Nullable;
 @DiscoverySpiHistorySupport(true)
 public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, IgniteDiscoverySpi {
     /** */
+    public static final String DFLT_ROOT_PATH = "/apacheIgnite";
+
+    /** */
     @GridToStringInclude
     private String zkConnectionString;
 
@@ -63,7 +66,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** */
     @GridToStringInclude
-    private String zkRootPath = "/apacheIgnite";
+    private String zkRootPath = DFLT_ROOT_PATH;
 
     /** */
     @GridToStringExclude
