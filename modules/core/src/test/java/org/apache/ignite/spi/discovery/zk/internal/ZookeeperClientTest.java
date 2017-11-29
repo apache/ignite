@@ -34,6 +34,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Op;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 /**
@@ -49,6 +53,37 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
 
         super.afterTest();
     }
+
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testSaveLargeValue() throws Exception {
+//        startZK(1);
+//
+//        final ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, null);
+//
+//        ZooKeeper zk = client.zk();
+//
+//        int s = 1048526 + 1;
+//        // 1048517 11 1048528
+//        // 1048519 9 1048528
+//        // 1048520 8 1048528
+//
+//        String path = "/aaaaaaa";
+//
+//        while (true) {
+//            try {
+//                zk.create(path, new byte[s], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+//
+//                info("Created: " + s + " " + path.length() + " " + (s + path.length()));
+//
+//                break;
+//            }
+//            catch (KeeperException.ConnectionLossException e) {
+//                s -= 1;
+//            }
+//        }
+//    }
 
     /**
      * @throws Exception If failed.

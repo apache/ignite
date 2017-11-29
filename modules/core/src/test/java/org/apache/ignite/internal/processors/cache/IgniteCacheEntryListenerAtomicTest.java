@@ -30,7 +30,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 public class IgniteCacheEntryListenerAtomicTest extends IgniteCacheEntryListenerAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 3;
+        return 1;
     }
 
     /** {@inheritDoc} */

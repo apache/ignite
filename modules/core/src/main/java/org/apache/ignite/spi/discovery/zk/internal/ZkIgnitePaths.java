@@ -27,19 +27,19 @@ class ZkIgnitePaths {
     private static final int UUID_LEN = 36;
 
     /** */
-    private static final String JOIN_DATA_DIR = "joinData";
+    private static final String JOIN_DATA_DIR = "jd";
 
     /** */
-    private static final String CUSTOM_EVTS_DIR = "customEvts";
+    private static final String CUSTOM_EVTS_DIR = "c";
 
     /** */
-    private static final String CUSTOM_EVTS_ACKS_DIR = "customEvtsAcks";
+    private static final String CUSTOM_EVTS_ACKS_DIR = "ca";
 
     /** */
-    private static final String ALIVE_NODES_DIR = "alive";
+    private static final String ALIVE_NODES_DIR = "n";
 
     /** */
-    private static final String DISCO_EVENTS_PATH = "events";
+    private static final String DISCO_EVENTS_PATH = "e";
 
     /** */
     final String basePath;

@@ -33,30 +33,51 @@ class ContinuousRoutinesInfo {
     /** */
     private Map<UUID, ContinuousRoutineInfo> startedRoutines = new HashMap<>();
 
+    /**
+     * @param dataBag Discovery data bag.
+     */
     void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (!dataBag.commonDataCollectedFor(CONTINUOUS_PROC.ordinal()))
             dataBag.addGridCommonData(CONTINUOUS_PROC.ordinal(),
                 new ContinuousRoutinesCommonDiscoveryData(new ArrayList<>(startedRoutines.values())));
     }
 
+    /**
+     * @param dataBag Discovery data bag.
+     */
     void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         dataBag.addJoiningNodeData(CONTINUOUS_PROC.ordinal(),
             new ContinuousRoutinesJoiningNodeDiscoveryData(new ArrayList<>(startedRoutines.values())));
     }
 
+    /**
+     * @param info Routine info.
+     */
     void addRoutineInfo(ContinuousRoutineInfo info) {
         startedRoutines.put(info.routineId, info);
     }
 
+    /**
+     * @param routineId Routine ID.
+     * @return {@code True} if routine exists.
+     */
     boolean routineExists(UUID routineId) {
         return startedRoutines.containsKey(routineId);
     }
 
+    /**
+     * @param routineId Routine ID.
+     */
     void removeRoutine(UUID routineId) {
         startedRoutines.remove(routineId);
     }
 
-    void removeNodeRoutines(UUID nodeId) {
+    /**
+     * Removes all routines with autoUnsubscribe=false started by given node.
+     *
+     * @param nodeId Node ID.
+     */
+    void onNodeFail(UUID nodeId) {
         for (Iterator<Map.Entry<UUID, ContinuousRoutineInfo>> it = startedRoutines.entrySet().iterator(); it.hasNext();) {
             Map.Entry<UUID, ContinuousRoutineInfo> e = it.next();
 
@@ -65,5 +86,12 @@ class ContinuousRoutinesInfo {
             if (info.autoUnsubscribe && info.srcNodeId.equals(nodeId))
                 it.remove();
         }
+    }
+
+    /**
+     *
+     */
+    void clear() {
+        startedRoutines.clear();
     }
 }

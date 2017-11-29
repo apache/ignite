@@ -188,26 +188,24 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StartRoutineDiscoveryMessage msg) {
-                    // TODO ZK
-                    if (discoProtoVer == 2) {
-                        StartRequestData reqData = msg.startRequestData();
-
-                        try {
-                            routinesInfo.addRoutineInfo(createRoutineInfo(snd.id(),
-                                msg.routineId(),
-                                reqData.handler(),
-                                reqData.projectionPredicate(),
-                                reqData.bufferSize(),
-                                reqData.interval(),
-                                reqData.autoUnsubscribe()));
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to register continuous handler information: " + e);
-                        }
-                    }
+                    assert discoProtoVer == 1 : discoProtoVer;
 
                     if (!snd.id().equals(ctx.localNodeId()) && !ctx.isStopping())
                         processStartRequest(snd, msg);
+                }
+            });
+
+        ctx.discovery().setCustomEventListener(StartRoutineDiscoveryMessageV2.class,
+            new CustomEventListener<StartRoutineDiscoveryMessageV2>() {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer,
+                    ClusterNode snd,
+                    StartRoutineDiscoveryMessageV2 msg) {
+                    assert discoProtoVer == 2 : discoProtoVer;
+
+                    if (ctx.isStopping())
+                        return;
+
+                    processStartRequestV2(snd, msg);
                 }
             });
 
@@ -505,9 +503,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         if (log.isDebugEnabled()) {
             log.info("onJoiningNodeDataReceived [joining=" + data.joiningNodeId() +
-                    ", loc=" + ctx.localNodeId() +
-                    ", data=" + data.joiningNodeData() +
-                    ']');
+                ", loc=" + ctx.localNodeId() +
+                ", data=" + data.joiningNodeData() +
+                ']');
         }
 
         if (discoProtoVer == 2) {
@@ -569,9 +567,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to unmarshal continuous routine filter, ignore routine [routineId=" + routineInfo.routineId +
-                    ", srcNodeId=" + routineInfo.srcNodeId + ']',
-                e);
+            U.error(log, "Failed to unmarshal continuous routine filter, ignore routine [" +
+                "routineId=" + routineInfo.routineId +
+                ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
 
             return;
         }
@@ -584,9 +582,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal continuous routine handler, ignore routine [" +
-                        "routineId=" + routineInfo.routineId +
-                        ", srcNodeId=" + routineInfo.srcNodeId + ']',
-                    e);
+                    "routineId=" + routineInfo.routineId +
+                    ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
 
                 return;
             }
@@ -597,13 +594,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     hnd,
                     routineInfo.bufSize,
                     routineInfo.interval,
-                    routineInfo.autoUnsubscribe, false);
+                    routineInfo.autoUnsubscribe,
+                    false);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to register continuous routine handler, ignore routine [" +
-                        "routineId=" + routineInfo.routineId +
-                        ", srcNodeId=" + routineInfo.srcNodeId + ']',
-                    e);
+                    "routineId=" + routineInfo.routineId +
+                    ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
             }
         }
     }
@@ -1139,6 +1136,99 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param snd Sender.
+     * @param msg Start request.
+     */
+    private void processStartRequestV2(ClusterNode snd, StartRoutineDiscoveryMessageV2 msg) {
+        StartRequestDataV2 reqData = msg.startRequestData();
+
+        ContinuousRoutineInfo routineInfo = new ContinuousRoutineInfo(snd.id(),
+            msg.routineId(),
+            reqData.handlerBytes(),
+            reqData.nodeFilterBytes(),
+            reqData.bufferSize(),
+            reqData.interval(),
+            reqData.autoUnsubscribe());
+
+        routinesInfo.addRoutineInfo(routineInfo);
+
+        Exception err = null;
+
+        IgnitePredicate<ClusterNode> nodeFilter = null;
+
+        if (reqData.nodeFilterBytes() != null) {
+            try {
+                if (ctx.config().isPeerClassLoadingEnabled() && reqData.className() != null) {
+                    String clsName = reqData.className();
+                    GridDeploymentInfo depInfo = reqData.deploymentInfo();
+
+                    GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(),
+                        clsName,
+                        clsName,
+                        depInfo.userVersion(),
+                        snd.id(),
+                        depInfo.classLoaderId(),
+                        depInfo.participants(),
+                        null);
+
+                    if (dep == null)
+                        throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
+
+                    nodeFilter = U.unmarshal(marsh, reqData.nodeFilterBytes(), U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                }
+                else
+                    nodeFilter = U.unmarshal(marsh, reqData.nodeFilterBytes(), U.resolveClassLoader(ctx.config()));
+
+                if (nodeFilter != null)
+                    ctx.resource().injectGeneric(nodeFilter);
+            }
+            catch (Exception e) {
+                err = e;
+
+                U.error(log, "Failed to unmarshal continuous routine filter [" +
+                        "routineId=" + routineInfo.routineId +
+                        ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
+            }
+        }
+
+        boolean register = err == null && (nodeFilter == null || nodeFilter.apply(ctx.discovery().localNode()));
+
+        if (register) {
+            try {
+                GridContinuousHandler hnd = U.unmarshal(marsh, reqData.handlerBytes(), U.resolveClassLoader(ctx.config()));
+
+                if (ctx.config().isPeerClassLoadingEnabled())
+                    hnd.p2pUnmarshal(snd.id(), ctx);
+
+                if (msg.keepBinary()) {
+                    assert hnd instanceof CacheContinuousQueryHandler : hnd;
+
+                    ((CacheContinuousQueryHandler)hnd).keepBinary(true);
+                }
+
+                GridContinuousHandler hnd0 = hnd instanceof GridMessageListenHandler ?
+                    new GridMessageListenHandler((GridMessageListenHandler)hnd) :
+                    hnd;
+
+                registerHandler(snd.id(),
+                    msg.routineId,
+                    hnd0,
+                    reqData.bufferSize(),
+                    reqData.interval(),
+                    reqData.autoUnsubscribe(),
+                    false);
+            }
+            catch (Exception e) {
+                err = e;
+
+                U.error(log, "Failed to register continuous routine handler [" +
+                    "routineId=" + routineInfo.routineId +
+                    ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
+            }
+        }
+    }
+
+    /**
      * @param node Sender.
      * @param req Start request.
      */
@@ -1563,7 +1653,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
             if (discoProtoVer == 2)
-                routinesInfo.removeNodeRoutines(nodeId);
+                routinesInfo.onNodeFail(nodeId);
 
             clientInfos.remove(nodeId);
 

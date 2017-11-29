@@ -110,6 +110,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
     private ConcurrentHashMap<String, ZookeeperDiscoverySpi> spis = new ConcurrentHashMap<>();
 
+    /** */
+    private Map<String, Object> userAttrs;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         if (testSockNio)
@@ -144,6 +147,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         // cfg.setMarshaller(new JdkMarshaller());
 
         cfg.setClientMode(client);
+
+        if (userAttrs != null)
+            cfg.setUserAttributes(userAttrs);
 
         Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
 
@@ -1102,6 +1108,22 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         startGrid(1);
 
         grid(0).services(grid(0).cluster()).deployNodeSingleton("test", new GridCacheAbstractFullApiSelfTest.DummyServiceImpl());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLargeUserAttribute() throws Exception {
+        userAttrs = new HashMap<>();
+
+        int[] attr = new int[1024 * 1024];
+
+        for (int i = 0; i < attr.length; i++)
+            attr[i] = i;
+
+        userAttrs.put("testAttr", attr);
+
+        startGrid(0);
     }
 
     /**
