@@ -2842,6 +2842,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     continue;
                 }
 
+                Throwable err = null;
+
                 for (int i = 0; i < segs.size(); i++) {
                     SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
 
@@ -2853,11 +2855,22 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     catch (Exception e) {
                         // TODO: handle
                         log.error("Exception in WAL writer thread segs.size=" + segs.size(), e);
+
+                        cancel();
+
+                        err = e;
+
+                        throw new RuntimeException(e);
                     }
                     finally {
                         seg.release();
 
-                        unparkWaiters(pos <= -1 ? Long.MAX_VALUE : currentHandle().written);
+                        if (err != null) {
+                            while (!waiters.isEmpty())
+                                unparkWaiters(Long.MAX_VALUE);
+                        }
+                        else
+                            unparkWaiters(pos <= -1 ? Long.MAX_VALUE : currentHandle().written);
                     }
                 }
             }
@@ -2893,6 +2906,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         //TODO: return real result: whether data were flushed or not
         @SuppressWarnings("ForLoopReplaceableByForEach")
         public boolean flushBuffer(long expPos) throws StorageException, IgniteCheckedException {
+
+            //TODO: Exception ?
+            if (isCancelled())
+                return false;
+
             if (expPos == -1) {
                 expPos = (ringBuf.tail.get() & 0x7FFFFFFFFFFFFFFFL);
 
