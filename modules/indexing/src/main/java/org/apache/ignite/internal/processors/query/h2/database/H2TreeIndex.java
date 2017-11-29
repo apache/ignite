@@ -176,7 +176,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            if (indexType.isPrimaryKey() && lower != null && tree.compareRows(lower, upper) == 0) {
+            if (indexType.isPrimaryKey() && lower != null && upper != null && tree.compareRows(lower, upper) == 0) {
 
                 GridH2Row row = tree.findOne(lower, cacheFilter);
 
