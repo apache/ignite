@@ -131,8 +131,6 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
 
         checkDistributedQueryWithSegmentedIndex();
 
-        checkDistributedSizeQueryWithSegmentedIndex();
-
         checkLocalQueryWithSegmentedIndex();
 
         checkLocalSizeQueryWithSegmentedIndex();
@@ -247,8 +245,6 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
 
         checkDistributedQueryWithSegmentedIndex();
 
-        checkDistributedSizeQueryWithSegmentedIndex();
-
         checkLocalQueryWithSegmentedIndex();
 
         checkLocalSizeQueryWithSegmentedIndex();
@@ -278,33 +274,6 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
             List<List<?>> res = c1.query(new SqlFieldsQuery(select0).setDistributedJoins(true)).getAll();
 
             assertEquals(expPersons, res.size());
-        }
-    }
-
-    /**
-     * Checks count(*) on distributed joins.
-     *
-     * @throws Exception If failed.
-     */
-    public void checkDistributedSizeQueryWithSegmentedIndex() throws Exception {
-        for (int i = 0; i < nodesCount(); i++) {
-            IgniteCache<Integer, Person> c1 = ignite(i).cache(PERSON_CAHE_NAME);
-
-            long expPersons = 0;
-
-            for (Cache.Entry<Integer, Person> e : c1) {
-                final Integer orgId = e.getValue().orgId;
-
-                // We have as orphan ORG rows as orphan PERSON rows.
-                if (ORPHAN_ROWS <= orgId && orgId < 500)
-                    expPersons++;
-            }
-
-            String select0 = "select count(*) from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
-
-            List<List<?>> res = c1.query(new SqlFieldsQuery(select0).setLocal(true)).getAll();
-
-            assertEquals(expPersons, res.get(0).get(0));
         }
     }
 
