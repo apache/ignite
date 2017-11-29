@@ -808,7 +808,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                         onError(new IgniteFutureCancelledCheckedException("Failed to acquire lock, " +
                             "transaction was rolled back [tx=" + tx + ']'));
 
-                        onComplete(false, false, false);
+                        onComplete(false, true, false);
                     }
                 }
             });

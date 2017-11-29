@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVe
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
@@ -763,6 +765,18 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         readyLocks();
 
+        if (tx != null)
+            tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
+                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                    if(tx.isRollbackOnly()) {
+                        if (log.isInfoEnabled())
+                            log.info("Forcibly cancelling DHT lock future: " + GridDhtLockFuture.this);
+
+                        onTimeout();
+                    }
+                }
+            });
+
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
 
@@ -1102,6 +1116,22 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
     }
 
+    /**  */
+    private void onTimeout() {
+        synchronized (this) {
+            timedOut = true;
+
+            // Stop locks and responses processing.
+            pendingLocks.clear();
+
+            clear();
+        }
+
+        boolean releaseLocks = !(inTx() && (cctx.tm().deadlockDetectionEnabled() || tx.isRollbackOnly()));
+
+        onComplete(false, false, releaseLocks);
+    }
+
     /**
      * Lock request timeout object.
      */
@@ -1119,18 +1149,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            synchronized (GridDhtLockFuture.this) {
-                timedOut = true;
-
-                // Stop locks and responses processing.
-                pendingLocks.clear();
-
-                clear();
-            }
-
-            boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
-
-            onComplete(false, false, releaseLocks);
+            GridDhtLockFuture.this.onTimeout();
         }
 
         /** {@inheritDoc} */
