@@ -30,7 +30,7 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -237,10 +237,10 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         assertEquals(arrayToAllocationMap(assignmentMapArr), mxBean0Grp1.getOwningPartitionsAllocationMap());
         assertEquals(arrayToAllocationMap(new int[10][]), mxBean0Grp1.getMovingPartitionsAllocationMap());
 
-        IgniteCache cache = grid(0).cache("cache1");
-
-        for (int i = 0; i < 50_000; i++)
-            cache.put(i, i);
+        try (IgniteDataStreamer<Integer, Integer> st = grid(0).dataStreamer("cache1")) {
+            for (int i = 0; i < 50_000; i++)
+                st.addData(i, i);
+        }
 
         stopGrid(2);
 
