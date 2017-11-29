@@ -103,6 +103,14 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public int truncate(WALPointer low, WALPointer high);
 
     /**
+     * Gives a hint to WAL manager to compact WAL until given pointer (exclusively).
+     * Compaction implies filtering out physical records and ZIP compression.
+     *
+     * @param ptr Pointer for which it is safe to compact the log.
+     */
+    public void allowCompressionUntil(WALPointer ptr);
+
+    /**
      * @return Total number of segments in the WAL archive.
      */
     public int walArchiveSegments();

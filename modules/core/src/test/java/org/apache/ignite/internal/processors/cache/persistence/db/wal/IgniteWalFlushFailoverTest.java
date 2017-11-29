@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.nio.file.OpenOption;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -42,7 +43,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import java.nio.file.OpenOption;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -124,18 +124,19 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      */
     private void flushingErrorTest() throws Exception {
         final IgniteEx grid = startGrid(0);
-        grid.active(true);
-
-        IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
-
-        final int iterations = 100;
-
-        canFail.set(true);
 
         try {
+            grid.active(true);
+
+            IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
+
+            final int iterations = 100;
+
+            canFail.set(true);
+
             for (int i = 0; i < iterations; i++) {
                 Transaction tx = grid.transactions().txStart(
-                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
+                    TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
 
                 cache.put(i, "testValue" + i);
 
@@ -150,8 +151,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         // We should await successful stop of node.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return grid.context().gateway().getState() == GridKernalState.STOPPED;
             }
         }, getTestTimeout());

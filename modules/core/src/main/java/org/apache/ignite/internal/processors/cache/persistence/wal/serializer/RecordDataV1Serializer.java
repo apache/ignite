@@ -88,7 +88,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -290,8 +289,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return /*cacheId*/ 4 + /*pageId*/ 8;
 
             case SWITCH_SEGMENT_RECORD:
-                // CRC is not loaded for switch segment.
-                return -CRC_SIZE;
+                return 0;
 
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)record);
@@ -423,9 +421,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case HEADER_RECORD:
                 long magic = in.readLong();
 
-                if (magic != HeaderRecord.MAGIC)
-                    throw new EOFException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.MAGIC) +
-                            ", actual=" + U.hexLong(magic) + ']');
+                if (magic != HeaderRecord.REGULAR_MAGIC && magic != HeaderRecord.COMPACTED_MAGIC)
+                    throw new EOFException("Magic is corrupted [actual=" + U.hexLong(magic) + ']');
 
                 int ver = in.readInt();
 
@@ -963,7 +960,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case HEADER_RECORD:
-                buf.putLong(HeaderRecord.MAGIC);
+                buf.putLong(HeaderRecord.REGULAR_MAGIC);
 
                 buf.putInt(((HeaderRecord)record).version());
 
