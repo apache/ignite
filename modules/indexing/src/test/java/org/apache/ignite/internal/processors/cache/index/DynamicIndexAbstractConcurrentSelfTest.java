@@ -37,7 +37,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,14 +44,11 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 
@@ -68,9 +64,6 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
     /** Large cache size. */
     private static final int LARGE_CACHE_SIZE = 100_000;
-
-    /** Dummy ints cache name. */
-    private final static String INTS_CACHE_NAME = "ints";
 
     /** Latches to block certain index operations. */
     private static final ConcurrentHashMap<UUID, T3<CountDownLatch, AtomicBoolean, CountDownLatch>> BLOCKS =
@@ -165,7 +158,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        IgniteInternalFuture<?> idxFut1 =  dynamicIndexCreateAsync(cli, CACHE_NAME, TBL_NAME, idx1, false);
+        IgniteInternalFuture<?> idxFut1 = queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME,
+            idx1, false);
 
         idxLatch.countDown();
 
@@ -185,7 +179,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         QueryIndex idx2 = index(IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
 
-        IgniteInternalFuture<?> idxFut2 = dynamicIndexCreateAsync(cli, CACHE_NAME, TBL_NAME, idx2, false);
+        IgniteInternalFuture<?> idxFut2 =
+            queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx2, false);
 
         idxLatch.countDown();
 
@@ -199,47 +194,6 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, QueryIndex.DFLT_INLINE_SIZE, field(aliasUnescaped(FIELD_NAME_2)));
         assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_1);
         assertSqlSimpleData(SQL_SIMPLE_FIELD_2, KEY_AFTER - SQL_ARG_1);
-    }
-
-    /**
-     * Asynchronously create index.
-     *
-     * @param node Ignite node.
-     * @param cacheName Cache name.
-     * @param tblName Table name.
-     * @param idx Index.
-     * @param ifNotExists When set to true operation will fail if index already exists.
-     * @throws Exception If failed.
-     */
-    private IgniteInternalFuture<?> dynamicIndexCreateAsync(final Ignite node, final String cacheName,
-        final String tblName, final QueryIndex idx, final boolean ifNotExists) throws Exception {
-        return multithreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                dynamicIndexCreate(node, cacheName, tblName, idx, ifNotExists);
-
-                return null;
-            }
-        }, 1);
-    }
-
-    /**
-     * Asynchronously drop index.
-     *
-     * @param node Ignite node.
-     * @param cacheName Cache name.
-     * @param idxName Index name.
-     * @param ifExists When set to true operation fill fail if index doesn't exists.
-     * @throws Exception if failed.
-     */
-    private IgniteInternalFuture<?> dynamicIndexDropAsync(final Ignite node, final String cacheName,
-        final String idxName, final boolean ifExists) throws Exception {
-        return multithreadedAsync(new Callable<Object>() {
-            @Override public Void call() throws Exception {
-                dynamicIndexDrop(node, cacheName, idxName, ifExists);
-
-                return null;
-            }
-        }, 1);
     }
 
     /**
@@ -261,9 +215,11 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1));
         QueryIndex idx2 = index(IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
 
-        IgniteInternalFuture<?> idxFut1 = dynamicIndexCreateAsync(srv1, CACHE_NAME, TBL_NAME, idx1, false);
+        IgniteInternalFuture<?> idxFut1 =
+            queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx1, false);
 
-        IgniteInternalFuture<?> idxFut2 = dynamicIndexCreateAsync(srv1, CACHE_NAME, TBL_NAME, idx2, false);
+        IgniteInternalFuture<?> idxFut2 =
+            queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx2, false);
 
         // Start even more nodes of different flavors
         ignitionStart(serverConfiguration(5));
@@ -306,7 +262,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        IgniteInternalFuture<?> idxFut = dynamicIndexCreateAsync(srv1, CACHE_NAME, TBL_NAME, idx, false);
+        IgniteInternalFuture<?> idxFut =
+            queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false);
 
         ignitionStart(serverConfiguration(2));
         ignitionStart(serverConfiguration(3, true));
@@ -376,7 +333,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Create index.
         QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        dynamicIndexCreate(srv1, CACHE_NAME, TBL_NAME, idx, false);
+        queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false).get();
 
         // Stop updates once index is ready.
         stopped.set(true);
@@ -447,7 +404,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        final IgniteInternalFuture<?> idxFut = dynamicIndexCreateAsync(srv1, CACHE_NAME, TBL_NAME, idx, false);
+        final IgniteInternalFuture<?> idxFut =
+            queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false);
 
         idxLatch1.countDown();
         idxLatch2.countDown();
@@ -490,14 +448,13 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         put(cli, KEY_AFTER);
 
-        createDynamicIntsCache(cli);
-
         // Start index operation and block it on coordinator.
         CountDownLatch idxLatch = blockIndexing(srv1);
 
         QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        final IgniteInternalFuture<?> idxFut = dynamicIndexCreateAsync(srv1, INTS_CACHE_NAME, TBL_NAME, idx, false);
+        final IgniteInternalFuture<?> idxFut =
+            queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false);
 
         idxLatch.countDown();
 
@@ -509,9 +466,11 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         try {
             idxFut.get();
+
+            fail("Exception has not been thrown.");
         }
-        catch (Exception e) {
-            assertTrue("Unexpected exception: " + e, X.hasCause(e, IgniteSQLException.class));
+        catch (SchemaOperationException e) {
+            // No-op.
         }
     }
 
@@ -545,12 +504,12 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                     IgniteInternalFuture fut;
 
                     if (exists) {
-                        fut = dynamicIndexDropAsync(node, CACHE_NAME, IDX_NAME_1, true);
+                        fut = queryProcessor(node).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true);
 
                         exists = false;
                     }
                     else {
-                        fut = dynamicIndexCreateAsync(node, CACHE_NAME, TBL_NAME, idx, true);
+                        fut = queryProcessor(node).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true);
 
                         exists = true;
                     }
@@ -577,8 +536,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Make sure nothing hanged.
         idxFut.get();
 
-        dynamicIndexDrop(cli, CACHE_NAME, IDX_NAME_1, true);
-        dynamicIndexCreate(cli, CACHE_NAME, TBL_NAME, idx, true);
+        queryProcessor(cli).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true).get();
+        queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true).get();
 
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1));
 
@@ -621,12 +580,12 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                     IgniteInternalFuture fut;
 
                     if (exists) {
-                        fut = dynamicIndexDropAsync(node, CACHE_NAME, IDX_NAME_1, true);
+                        fut = queryProcessor(node).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true);
 
                         exists = false;
                     }
                     else {
-                        fut = dynamicIndexCreateAsync(node, CACHE_NAME, TBL_NAME, idx, true);
+                        fut = queryProcessor(node).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true);
 
                         exists = true;
                     }
@@ -707,7 +666,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
             @Override public void run() throws Exception {
                 final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-                dynamicIndexCreate(srv, CACHE_NAME, TBL_NAME, idx, false);
+                queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false).get();
             }
         });
 
@@ -719,7 +678,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         reconnectClientNode(srv, cli, restartCache, new RunnableX() {
             @Override public void run() throws Exception {
                 if (!restartCache)
-                    dynamicIndexDrop(srv, CACHE_NAME, IDX_NAME_1, false);
+                    queryProcessor(srv).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, false).get();
             }
         });
 
@@ -729,7 +688,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Update existing index.
         QueryIndex idx = index(IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
 
-        dynamicIndexCreate(srv, CACHE_NAME, TBL_NAME, idx, false);
+        queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false).get();
 
         assertIndex(cli, CACHE_NAME, TBL_NAME, IDX_NAME_2, QueryIndex.DFLT_INLINE_SIZE,
             field(aliasUnescaped(FIELD_NAME_2)));
@@ -739,11 +698,11 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         reconnectClientNode(srv, cli, restartCache, new RunnableX() {
             @Override public void run() throws Exception {
                 if (!restartCache)
-                    dynamicIndexDrop(srv, CACHE_NAME, IDX_NAME_2, false);
+                    queryProcessor(srv).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_2, false).get();
 
                 final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1), field(aliasUnescaped(FIELD_NAME_2)));
 
-                dynamicIndexCreate(srv, CACHE_NAME, TBL_NAME, idx, false);
+                queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false).get();
             }
         });
 
@@ -867,12 +826,12 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                     IgniteInternalFuture fut;
 
                     if (exists) {
-                        fut = dynamicIndexDropAsync(node, CACHE_NAME, IDX_NAME_1, true);
+                        fut = queryProcessor(node).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true);
 
                         exists = false;
                     }
                     else {
-                        fut = dynamicIndexCreateAsync(node, CACHE_NAME, TBL_NAME, idx, true);
+                        fut = queryProcessor(node).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true);
 
                         exists = true;
                     }
@@ -903,8 +862,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Make sure cache is operational at this point.
         createSqlCache(cli);
 
-        dynamicIndexDrop(cli, CACHE_NAME, IDX_NAME_1, true);
-        dynamicIndexCreate(cli, CACHE_NAME, TBL_NAME, idx, true);
+        queryProcessor(cli).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true).get();
+        queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true).get();
 
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1));
 
@@ -927,16 +886,12 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         Ignite cli = ignitionStart(clientConfiguration(4));
 
-        createSqlCache(cli);
-
-        createDynamicIntsCache(cli);
-
         final AtomicBoolean stopped = new AtomicBoolean();
 
         // Start cache create/destroy worker.
         IgniteInternalFuture startStopFut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                boolean exists = true;
+                boolean exists = false;
 
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
@@ -972,12 +927,12 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                     IgniteInternalFuture fut;
 
                     if (exists) {
-                        fut = dynamicIndexDropAsync(node, INTS_CACHE_NAME, IDX_NAME_1, true);
+                        fut = queryProcessor(node).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true);
 
                         exists = false;
                     }
                     else {
-                        fut = dynamicIndexCreateAsync(node, INTS_CACHE_NAME, TBL_NAME, idx, true);
+                        fut = queryProcessor(node).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true);
 
                         exists = true;
                     }
@@ -985,8 +940,11 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                     try {
                         fut.get();
                     }
+                    catch (SchemaOperationException e) {
+                        // No-op.
+                    }
                     catch (Exception e) {
-                        assertTrue("Unexpected exception: " + e, X.hasCause(e, IgniteSQLException.class));
+                        fail("Unexpected exception: " + e);
                     }
                 }
 
@@ -1005,8 +963,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Make sure cache is operational at this point.
         createSqlCache(cli);
 
-        dynamicIndexDrop(cli, CACHE_NAME, IDX_NAME_1, true);
-        dynamicIndexCreate(cli, CACHE_NAME, TBL_NAME, idx, true);
+        queryProcessor(cli).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true).get();
+        queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true).get();
 
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1));
 
@@ -1014,15 +972,6 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
         assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
-    }
-
-    /**
-     * Create dummy ints key on given node.
-     * @param node Node.
-     */
-    private static void createDynamicIntsCache(Ignite node) {
-        node.cache(CACHE_NAME).query(new SqlFieldsQuery("CREATE TABLE INTS(k int primary key, v int) WITH " +
-            "\"cache_name=" + INTS_CACHE_NAME + ",wrap_value=false\"").setSchema(QueryUtils.DFLT_SCHEMA)).getAll();
     }
 
     /**

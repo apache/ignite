@@ -296,7 +296,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateIndexNoCachePartitionedAtomic() throws Exception {
-        checkCreateCacheAbsent(PARTITIONED, ATOMIC, false);
+        checkCreateNoCache(PARTITIONED, ATOMIC, false);
     }
 
     /**
@@ -305,7 +305,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateIndexNoCachePartitionedAtomicNear() throws Exception {
-        checkCreateCacheAbsent(PARTITIONED, ATOMIC, true);
+        checkCreateNoCache(PARTITIONED, ATOMIC, true);
     }
 
     /**
@@ -314,7 +314,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateIndexNoCachePartitionedTransactional() throws Exception {
-        checkCreateCacheAbsent(PARTITIONED, TRANSACTIONAL, false);
+        checkCreateNoCache(PARTITIONED, TRANSACTIONAL, false);
     }
 
     /**
@@ -323,7 +323,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateIndexNoCachePartitionedTransactionalNear() throws Exception {
-        checkCreateCacheAbsent(PARTITIONED, TRANSACTIONAL, true);
+        checkCreateNoCache(PARTITIONED, TRANSACTIONAL, true);
     }
 
     /**
@@ -332,7 +332,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateIndexNoCacheReplicatedAtomic() throws Exception {
-        checkCreateCacheAbsent(REPLICATED, ATOMIC, false);
+        checkCreateNoCache(REPLICATED, ATOMIC, false);
     }
 
     /**
@@ -341,7 +341,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateIndexNoCacheReplicatedTransactional() throws Exception {
-        checkCreateCacheAbsent(REPLICATED, TRANSACTIONAL, false);
+        checkCreateNoCache(REPLICATED, TRANSACTIONAL, false);
     }
 
     /**
@@ -352,7 +352,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param near Near flag.
      * @throws Exception If failed.
      */
-    private void checkCreateCacheAbsent(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
+    private void checkCreateNoCache(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near)
+        throws Exception {
         initialize(mode, atomicityMode, near);
 
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
@@ -360,7 +361,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         try {
             String cacheName = randomString();
 
-            dynamicIndexCreate(node(), cacheName, TBL_NAME, idx, false);
+            queryProcessor(node()).dynamicIndexCreate(cacheName, cacheName, TBL_NAME, idx, false).get();
         }
         catch (SchemaOperationException e) {
             assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());
@@ -984,7 +985,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         try {
             String cacheName = randomString();
 
-            dynamicIndexDrop(node(), cacheName, "my_idx", false);
+            queryProcessor(node()).dynamicIndexDrop(cacheName, cacheName, "my_idx", false).get();
         }
         catch (SchemaOperationException e) {
             assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());
