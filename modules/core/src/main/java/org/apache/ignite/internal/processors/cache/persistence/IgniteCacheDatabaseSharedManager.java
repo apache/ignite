@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -676,6 +677,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     cfg.getIgniteInstanceName(),
                     "DataRegionMetrics", name
                     ));
+        }
+        catch (InstanceNotFoundException ignored) {
+            // We tried to unregister a non-existing MBean, not a big deal.
         }
         catch (Throwable e) {
             U.error(log, "Failed to unregister MBean for memory metrics: " +

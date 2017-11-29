@@ -820,10 +820,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (!cctx.kernalContext().clientNode()) {
                         List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
 
-                    for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests()){
-                        DynamicCacheDescriptor desc =startReq.descriptor();if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
-                            startDescs.add(desc);
-                    }
+                        for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests()) {
+                            DynamicCacheDescriptor desc = startReq.descriptor();
+
+                            if (CU.isPersistentCache(desc.cacheConfiguration(),
+                                cctx.gridConfig().getDataStorageConfiguration()))
+                                startDescs.add(desc);
+                        }
 
                         cctx.database().readCheckpointAndRestoreMemory(startDescs);
                     }
@@ -2470,8 +2473,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     ChangeGlobalStateFinishMessage stateFinishMsg = new ChangeGlobalStateFinishMessage(
                         req.requestId(),
-                        active,
-                        stateChangeErr ? null : req.baselineTopology());
+                        active);
 
                     cctx.discovery().sendCustomEvent(stateFinishMsg);
                 }

@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -71,11 +69,13 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param transitionNodes Nodes participating in state change exchange.
      * @return State instance.
      */
-    static DiscoveryDataClusterState createTransitionState(boolean active,
+    static DiscoveryDataClusterState createTransitionState(
+        boolean active,
         @Nullable BaselineTopology baselineTopology,
         UUID transitionReqId,
         AffinityTopologyVersion transitionTopVer,
-        Set<UUID> transitionNodes) {
+        Set<UUID> transitionNodes
+    ) {
         assert transitionReqId != null;
         assert transitionTopVer != null;
         assert !F.isEmpty(transitionNodes) : transitionNodes;
@@ -89,11 +89,13 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param transitionTopVer State change topology version.
      * @param transitionNodes Nodes participating in state change exchange.
      */
-    private DiscoveryDataClusterState(boolean active,
+    private DiscoveryDataClusterState(
+        boolean active,
         @Nullable BaselineTopology baselineTopology,
         @Nullable UUID transitionReqId,
         @Nullable AffinityTopologyVersion transitionTopVer,
-        @Nullable Set<UUID> transitionNodes) {
+        @Nullable Set<UUID> transitionNodes
+    ) {
         this.active = active;
         this.baselineTopology = baselineTopology;
         this.transitionReqId = transitionReqId;
@@ -160,6 +162,19 @@ public class DiscoveryDataClusterState implements Serializable {
      */
     public Set<UUID> transitionNodes() {
         return transitionNodes;
+    }
+
+    /**
+     * @return Cluster state that finished transition.
+     */
+    public DiscoveryDataClusterState finish() {
+        return new DiscoveryDataClusterState(
+            active,
+            baselineTopology,
+            null,
+            null,
+            null
+        );
     }
 
     /** {@inheritDoc} */

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -785,7 +786,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         startWithCaches1(SRVS, CLIENTS);
 
         final Ignite srv = ignite(0);
-        Ignite client = ignite(SRVS);
+        IgniteEx client = grid(SRVS);
 
         if (persistenceEnabled())
             ignite(0).active(true);
@@ -826,7 +827,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         if (transition) {
             assertFalse(stateFut.get().isDone());
 
-            assertFalse(client.active());
+            // Public API method would block forever because we blocked the exchange message.
+            assertFalse(client.context().state().publicApiActiveState(false));
 
             spi1.waitForBlocked();
 
@@ -1207,7 +1209,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param node Node.
      * @param exp {@code True} if expect that cache is started on node.
      */
-    void checkCache(Ignite node, String cacheName, boolean exp) {
+    void checkCache(Ignite node, String cacheName, boolean exp) throws IgniteCheckedException {
+        ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture().get();
+
         ((IgniteEx)node).context().state().publicApiActiveState(true);
 
         GridCacheAdapter cache = ((IgniteKernal)node).context().cache().internalCache(cacheName);

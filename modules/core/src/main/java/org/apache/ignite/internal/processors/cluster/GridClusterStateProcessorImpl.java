@@ -309,7 +309,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
                     "Switching to inactive state.");
 
                 ChangeGlobalStateFinishMessage msg =
-                    new ChangeGlobalStateFinishMessage(globalState.transitionRequestId(), false, null);
+                    new ChangeGlobalStateFinishMessage(globalState.transitionRequestId(), false);
 
                 onStateFinishMessage(msg);
 
@@ -327,7 +327,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         if (msg.requestId().equals(state.transitionRequestId())) {
             log.info("Received state change finish message: " + msg.clusterActive());
 
-            globalState = DiscoveryDataClusterState.createState(msg.clusterActive(), msg.baselineTopology());
+            globalState = globalState.finish();
 
             ctx.cache().onStateChangeFinish(msg);
 
@@ -417,12 +417,14 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
                 if (log.isInfoEnabled())
                     log.info("Started state transition: " + msg.activate());
 
-                BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(globalState.baselineTopology());
+                BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(
+                    globalState.baselineTopology());
 
                 transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
 
-                globalState = DiscoveryDataClusterState.createTransitionState(msg.activate(),
-                    msg.baselineTopology(),
+                globalState = DiscoveryDataClusterState.createTransitionState(
+                    msg.activate(),
+                    msg.activate() ? msg.baselineTopology() : globalState.baselineTopology(),
                     msg.requestId(),
                     topVer,
                     nodeIds);
@@ -604,14 +606,11 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> changeGlobalState(final boolean activate) {
-        return changeGlobalState(activate, null, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> changeGlobalState(final boolean activate,
+    @Override public IgniteInternalFuture<?> changeGlobalState(
+        final boolean activate,
         Collection<BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology) {
+        boolean forceChangeBaselineTopology
+    ) {
         if (inMemoryMode)
             return changeGlobalState0(activate, null, false);
 
@@ -626,18 +625,20 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
         if (forceChangeBaselineTopology)
             newBlt = BaselineTopology.build(baselineNodes, newBltId);
-        else if (activate
-            && baselineNodes != null
-            && currentBlt != null)
-        {
-            newBlt = currentBlt;
+        else if (activate) {
+            if (baselineNodes == null)
+                baselineNodes = baselineNodes();
 
-            newBlt.updateHistory(baselineNodes);
+            if (currentBlt == null)
+                newBlt = BaselineTopology.build(baselineNodes, newBltId);
+            else {
+                newBlt = currentBlt;
+
+                newBlt.updateHistory(baselineNodes);
+            }
         }
-        else if (activate && baselineNodes == null && globalState.baselineTopology() == null)
-            newBlt = BaselineTopology.build(baselineNodes(), newBltId);
         else
-            newBlt = BaselineTopology.build(baselineNodes, newBltId);
+            newBlt = null;
 
         return changeGlobalState0(activate, newBlt, forceChangeBaselineTopology);
     }
@@ -796,7 +797,12 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
      * @param activate New cluster state.
      * @param resFut State change future.
      */
-    private void sendComputeChangeGlobalState(boolean activate, BaselineTopology blt, boolean forceBlt, final GridFutureAdapter<Void> resFut) {
+    private void sendComputeChangeGlobalState(
+        boolean activate,
+        BaselineTopology blt,
+        boolean forceBlt,
+        final GridFutureAdapter<Void> resFut
+    ) {
         AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
         if (log.isInfoEnabled()) {

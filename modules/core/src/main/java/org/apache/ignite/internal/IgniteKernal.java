@@ -3529,17 +3529,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
-        guard();
-
-        try {
-            context().state().changeGlobalState(active, baselineNodes(), false).get();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            unguard();
-        }
+        cluster().active(active);
     }
 
     /** */
