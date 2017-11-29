@@ -1239,16 +1239,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         synchronized (this) {
                             while (locked.containsKey(toArchive) && !stopped)
                                 wait();
+                        }
 
-                            // Firstly, format working file
-                            if (!stopped)
-                                formatFile(res.getOrigWorkFile());
+                        // Firstly, format working file
+                        if (!stopped)
+                            formatFile(res.getOrigWorkFile());
 
+                        synchronized (this) {
                             // Then increase counter to allow rollover on clean working file
                             lastAbsArchivedIdx = toArchive;
 
                             notifyAll();
                         }
+
                         if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVED))
                             evt.record(new WalSegmentArchivedEvent(cctx.discovery().localNode(),
                                 res.getAbsIdx(), res.getDstArchiveFile()));
@@ -1500,7 +1503,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return I/O position after write version.
      * @throws IOException If failed to write serializer version.
      */
-    public static long writeSerializerVersion(FileIO io, long idx, int version) throws IOException {
+    public static long writeSerializerVersion(FileIO io, long idx, int version, WALMode mode) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(RecordV1Serializer.HEADER_RECORD_SIZE);
         buffer.order(ByteOrder.nativeOrder());
 
@@ -1539,7 +1542,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         while (buffer.hasRemaining());
 
         // Flush
-        io.force();
+        if (mode == WALMode.DEFAULT)
+            io.force();
 
         return io.position();
     }
@@ -1807,9 +1811,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         public void writeSerializerVersion() throws IgniteCheckedException {
             try {
-                assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file " + fileIO.position();
+                assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file " +
+                    fileIO.position();
 
-                long updatedPosition = FileWriteAheadLogManager.writeSerializerVersion(fileIO, idx, serializer.version());
+                long updatedPosition = FileWriteAheadLogManager.writeSerializerVersion(fileIO, idx,
+                    serializer.version(), mode);
 
                 written = updatedPosition;
                 lastFsyncPos = updatedPosition;
