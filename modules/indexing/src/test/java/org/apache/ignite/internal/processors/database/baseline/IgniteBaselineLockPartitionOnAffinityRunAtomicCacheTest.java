@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.database.baseline;
 
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,6 +42,14 @@ public class IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest extends Ign
         );
 
         return cfg;
+    }
+
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
+
+        ccfg.setBackups(2);
+
+        return ccfg;
     }
 
     /** {@inheritDoc} */
