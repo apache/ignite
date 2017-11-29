@@ -290,7 +290,7 @@ public class CacheGroupContext {
             drEnabled = true;
 
         this.caches = caches;
-    }
+   }
 
     /**
      * @param cctx Cache context.
@@ -299,7 +299,7 @@ public class CacheGroupContext {
         ArrayList<GridCacheContext> caches = new ArrayList<>(this.caches);
 
         // It is possible cache was not added in case of errors on cache start.
-        for (Iterator<GridCacheContext> it = caches.iterator(); it.hasNext(); ) {
+        for (Iterator<GridCacheContext> it = caches.iterator(); it.hasNext();) {
             GridCacheContext next = it.next();
 
             if (next == cctx) {
@@ -350,7 +350,7 @@ public class CacheGroupContext {
 
         assert !sharedGroup() && caches.size() == 1 :
             "stopping=" + ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
-                ", caches=" + caches;
+            ", caches=" + caches;
 
         return caches.get(0);
     }
@@ -411,7 +411,6 @@ public class CacheGroupContext {
             }
         }
     }
-
     /**
      * Adds partition unload event.
      *
