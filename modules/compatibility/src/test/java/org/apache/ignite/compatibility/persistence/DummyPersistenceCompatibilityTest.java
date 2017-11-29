@@ -22,10 +22,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -99,9 +101,9 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
      * @param igniteVer 3-digits version of ignite
      * @throws Exception If failed.
      */
-    protected void doTestStartupWithOldVersion(String igniteVer) throws Exception {
+    protected void doTestStartupWithOldVersion(String igniteVer, boolean compactFooter) throws Exception {
         try {
-            startGrid(1, igniteVer, new ConfigurationClosure(), new PostStartupClosure());
+            startGrid(1, igniteVer, new ConfigurationClosure(compactFooter), new PostStartupClosure());
 
             stopAllGrids();
 
@@ -111,27 +113,63 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
             ignite.active(true);
 
-            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(TEST_CACHE_NAME);
-
-            for (int i = 0; i < 10; i++)
-                assertEquals("data" + i, cache.get(i));
-
-            assertEquals(cache.get("1"), "2");
-            assertEquals(cache.get(12), 2);
-            assertEquals(cache.get(13L), 2L);
-            assertEquals(cache.get(TestEnum.A), "Enum_As_Key");
-            assertEquals(cache.get("Enum_As_Value"), TestEnum.B);
-            assertEquals(cache.get(TestEnum.C), TestEnum.C);
-            assertEquals(cache.get("Serializable"), new TestSerializable(42));
-            assertEquals(cache.get(new TestSerializable(42)), "Serializable_As_Key");
-            assertEquals(cache.get("Externalizable"), new TestExternalizable(42));
-            assertEquals(cache.get(new TestExternalizable(42)), "Externalizable_As_Key");
-            assertEquals(cache.get("testStringContainer"),
-                new TestStringContainerToBePrinted("testStringContainer"));
+            validateResultingCacheData(ignite.getOrCreateCache(TEST_CACHE_NAME));
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * Tests opportunity to read data from previous Ignite DB version.
+     *
+     * @param igniteVer 3-digits version of ignite
+     * @throws Exception If failed.
+     */
+    protected void doTestStartupWithOldVersion(String igniteVer) throws Exception {
+        doTestStartupWithOldVersion(igniteVer, true);
+    }
+
+    /**
+     * @param cache to be filled by different keys and values. Results may be validated in {@link
+     * #validateResultingCacheData(Cache)}.
+     */
+    public static void saveCacheData(Cache<Object, Object> cache) {
+        for (int i = 0; i < 10; i++)
+            cache.put(i, "data" + i);
+
+        cache.put("1", "2");
+        cache.put(12, 2);
+        cache.put(13L, 2L);
+        cache.put(TestEnum.A, "Enum_As_Key");
+        cache.put("Enum_As_Value", TestEnum.B);
+        cache.put(TestEnum.C, TestEnum.C);
+        cache.put("Serializable", new TestSerializable(42));
+        cache.put(new TestSerializable(42), "Serializable_As_Key");
+        cache.put("Externalizable", new TestExternalizable(42));
+        cache.put(new TestExternalizable(42), "Externalizable_As_Key");
+        cache.put("testStringContainer", new TestStringContainerToBePrinted("testStringContainer"));
+    }
+
+    /**
+     * Asserts cache contained all expected values as it was saved before.
+     * @param cache cache should be filled using {@link #saveCacheData(Cache)}.
+     */
+    public static void validateResultingCacheData(Cache<Object, Object> cache) {
+        for (int i = 0; i < 10; i++)
+            assertEquals(cache.get(i), "data" + i);
+
+        assertEquals("2", cache.get("1"));
+        assertEquals(2, cache.get(12));
+        assertEquals(2L, cache.get(13L));
+        assertEquals("Enum_As_Key", cache.get(TestEnum.A));
+        assertEquals(TestEnum.B, cache.get("Enum_As_Value"));
+        assertEquals(TestEnum.C, cache.get(TestEnum.C));
+        assertEquals(new TestSerializable(42), cache.get("Serializable"));
+        assertEquals("Serializable_As_Key", cache.get(new TestSerializable(42)));
+        assertEquals(new TestExternalizable(42), cache.get("Externalizable"));
+        assertEquals("Externalizable_As_Key", cache.get(new TestExternalizable(42)));
+        assertEquals(new TestStringContainerToBePrinted("testStringContainer"), cache.get("testStringContainer"));
     }
 
     /** */
@@ -148,25 +186,18 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
             IgniteCache<Object, Object> cache = ignite.createCache(cacheCfg);
 
-            for (int i = 0; i < 10; i++)
-                cache.put(i, "data" + i);
-
-            cache.put("1", "2");
-            cache.put(12, 2);
-            cache.put(13L, 2L);
-            cache.put(TestEnum.A, "Enum_As_Key");
-            cache.put("Enum_As_Value", TestEnum.B);
-            cache.put(TestEnum.C, TestEnum.C);
-            cache.put("Serializable", new TestSerializable(42));
-            cache.put(new TestSerializable(42), "Serializable_As_Key");
-            cache.put("Externalizable", new TestExternalizable(42));
-            cache.put(new TestExternalizable(42), "Externalizable_As_Key");
-            cache.put("testStringContainer", new TestStringContainerToBePrinted("testStringContainer"));
+            saveCacheData(cache);
         }
     }
 
     /** */
     public static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+        private boolean compactFooter;
+
+        public ConfigurationClosure(boolean compactFooter) {
+            this.compactFooter = compactFooter;
+        }
+
         /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
             cfg.setLocalHost("127.0.0.1");
@@ -179,6 +210,9 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
             cfg.setPeerClassLoadingEnabled(false);
 
             cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+
+            if (!compactFooter)
+                cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(compactFooter));
         }
     }
 
@@ -275,7 +309,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestExternalizable that = ( TestExternalizable)o;
+            TestExternalizable that = (TestExternalizable)o;
 
             return iVal == that.iVal;
         }
