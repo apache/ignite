@@ -210,7 +210,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Runs <code>select count(*)</code>tests on single-node grid.
+     * Verifies that <code>select count(*)</code> return valid result on a single-node grid.
      *
      * @throws Exception If failed.
      */
@@ -312,7 +312,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test local <code>select count(*)</code> query.
+     * Verifies that local <code>select count(*)</code> query returns a correct result.
      *
      * @throws Exception If failed.
      */

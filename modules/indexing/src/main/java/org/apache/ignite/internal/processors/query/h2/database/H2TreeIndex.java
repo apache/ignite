@@ -291,7 +291,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     private static class PartitionFilterTreeRowClosure implements BPlusTree.TreeRowClosure<SearchRow, GridH2Row> {
         private final IndexingQueryCacheFilter filter;
 
-        /** Creates the adapter based on the partition filter.
+        /**
+         * Creates a {@link BPlusTree.TreeRowClosure} adapter based on the given partition filter.
          *
          * @param filter The partition filter.
          */
@@ -314,7 +315,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /**
      * Returns a filter to apply to rows in the current index to obtain only the
-     * rows owned by the this cache.
+     * ones owned by the this cache.
      *
      * @return The filter, which returns true for rows owned by this cache.
      */
@@ -399,12 +400,12 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /**
-     * Filter which returns true for entries belonging to particular partition.
+     * Filter which returns true for entries belonging to a particular partition.
      *
      * @param qryFilter Factory that creates a predicate for filtering entries for a particular cache.
      * @return The filter or null if the filter is not needed (e.g., if the cache is not partitioned).
      */
-    @Nullable private IndexingQueryCacheFilter partitionFilter(IndexingQueryFilter qryFilter) {
+    @Nullable private IndexingQueryCacheFilter partitionFilter(@Nullable IndexingQueryFilter qryFilter) {
         if (qryFilter == null)
             return null;
 

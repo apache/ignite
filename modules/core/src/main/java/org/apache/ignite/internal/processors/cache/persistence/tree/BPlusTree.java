@@ -62,6 +62,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Bool.DONE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Bool.FALSE;
@@ -1918,15 +1919,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * Returns number of elements that match filter in the tree by scanning pages of the bottom (leaf) level.
+     * Returns number of elements in the tree that match the filter by scanning through the pages of the leaf level.
      * Since a concurrent access to the tree is permitted, there is no guarantee about
-     * momentary consistency: the method may miss updates made in already scanned pages.
+     * momentary consistency: the method may not see updates made in already scanned pages.
      *
-     * @param filter The filter to use or null to count all elements
-     * @return Number of elements in the tree.
+     * @param filter The filter to use or null to count all elements.
+     * @return Number of either all elements in the tree or the elements that match the filter.
      * @throws IgniteCheckedException If failed.
      */
-    public long size(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
+    public long size(@Nullable TreeRowClosure<L, T> filter) throws IgniteCheckedException {
         checkDestroyed();
 
         for (;;) {
