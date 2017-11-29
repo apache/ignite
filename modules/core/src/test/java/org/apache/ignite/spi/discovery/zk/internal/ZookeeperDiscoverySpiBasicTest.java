@@ -81,7 +81,7 @@ import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
  */
 public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
-    private static final String IGNITE_ZK_ROOT = "/apacheIgnite/default";
+    private static final String IGNITE_ZK_ROOT = "/apacheIgnite";
 
     /** */
     private static final int ZK_SRVS = 3;

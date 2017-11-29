@@ -59,15 +59,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** */
     @GridToStringInclude
-    private int sesTimeout = 5000;
+    private int sesTimeout = 10_000;
 
     /** */
     @GridToStringInclude
-    private String basePath = "/apacheIgnite";
-
-    /** */
-    @GridToStringInclude
-    private String clusterName = "default";
+    private String zkRootPath = "/apacheIgnite";
 
     /** */
     @GridToStringExclude
@@ -109,22 +105,12 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** */
     private boolean clientReconnectDisabled;
 
-    public String getBasePath() {
-        return basePath;
+    public String getZkRootPath() {
+        return zkRootPath;
     }
 
-    public ZookeeperDiscoverySpi setBasePath(String basePath) {
-        this.basePath = basePath;
-
-        return this;
-    }
-
-    public String getClusterName() {
-        return clusterName;
-    }
-
-    public ZookeeperDiscoverySpi setClusterName(String clusterName) {
-        this.clusterName = clusterName;
+    public ZookeeperDiscoverySpi setZkRootPath(String zkRootPath) {
+        this.zkRootPath = zkRootPath;
 
         return this;
     }
@@ -280,16 +266,14 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
         log.info("Start Zookeeper discovery [zkConnectionString=" + zkConnectionString +
             ", sesTimeout=" + sesTimeout +
-            ", basePath=" + basePath +
-            ", clusterName=" + clusterName + ']');
+            ", rootPath=" + zkRootPath + ']');
 
         impl = new ZookeeperDiscoveryImpl(
             igniteInstanceName,
             zkConnectionString,
             sesTimeout,
             log,
-            basePath,
-            clusterName,
+            zkRootPath,
             locNode,
             lsnr,
             exchange,

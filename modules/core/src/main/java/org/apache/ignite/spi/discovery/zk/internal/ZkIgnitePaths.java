@@ -42,12 +42,6 @@ class ZkIgnitePaths {
     private static final String DISCO_EVENTS_PATH = "e";
 
     /** */
-    final String basePath;
-
-    /** */
-    private final String clusterName;
-
-    /** */
     final String clusterDir;
 
     /** */
@@ -66,14 +60,10 @@ class ZkIgnitePaths {
     final String customEvtsAcksDir;
 
     /**
-     * @param basePath Base directory.
-     * @param clusterName Cluster name.
+     * @param zkRootPath Base Zookeeper directory for all Ignite nodes.
      */
-    ZkIgnitePaths(String basePath, String clusterName) {
-        this.basePath = basePath;
-        this.clusterName = clusterName;
-
-        clusterDir = basePath + "/" + clusterName;
+    ZkIgnitePaths(String zkRootPath) {
+        clusterDir = zkRootPath;
 
         aliveNodesDir = zkPath(ALIVE_NODES_DIR);
         joinDataDir = zkPath(JOIN_DATA_DIR);
@@ -172,7 +162,7 @@ class ZkIgnitePaths {
      * @return Full path.
      */
     private String zkPath(String path) {
-        return basePath + "/" + clusterName + "/" + path;
+        return clusterDir + "/" + path;
     }
 
     String joiningNodeDataPath(UUID nodeId, String aliveNodePath) {

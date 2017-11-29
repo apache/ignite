@@ -136,8 +136,7 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param log Logger.
-     * @param basePath Zookeeper base path node all nodes.
-     * @param clusterName Cluster name.
+     * @param zkRootPath Zookeeper base path node all nodes.
      * @param locNode Local node instance.
      * @param lsnr Discovery events listener.
      * @param exchange Discovery data exchange.
@@ -147,20 +146,16 @@ public class ZookeeperDiscoveryImpl {
         String connectString,
         int sesTimeout,
         IgniteLogger log,
-        String basePath,
-        String clusterName,
+        String zkRootPath,
         ZookeeperClusterNode locNode,
         DiscoverySpiListener lsnr,
         DiscoverySpiDataExchange exchange,
         boolean clientReconnectEnabled) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
 
-        if (F.isEmpty(clusterName))
-            throw new IllegalArgumentException("Cluster name is empty.");
+        ZkIgnitePaths.validatePath(zkRootPath);
 
-        ZkIgnitePaths.validatePath(basePath);
-
-        zkPaths = new ZkIgnitePaths(basePath, clusterName);
+        zkPaths = new ZkIgnitePaths(zkRootPath);
 
         this.igniteInstanceName = igniteInstanceName;
         this.connectString = connectString;
@@ -405,7 +400,8 @@ public class ZookeeperDiscoveryImpl {
 
             List<String> dirs = new ArrayList<>();
 
-            dirs.add(zkPaths.basePath);
+            // TODO ZK: test create all parents?
+
             dirs.add(zkPaths.clusterDir);
             dirs.add(zkPaths.evtsPath);
             dirs.add(zkPaths.joinDataDir);
