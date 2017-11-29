@@ -134,7 +134,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        //deleteWorkFiles();
     }
 
     /**
@@ -675,6 +675,9 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     PageSnapshot page = (PageSnapshot)rec;
 
                     replay.put(page.fullPageId(), page.pageData());
+
+                    // DEBUG LOG
+                    //log.info("!!! Replay page ptr=" + tup.get1() + ", fullPageId=" + page.fullPageId() + ", state=" + (page.pageData()[40] & 0xFF));
                 }
             }
         }
