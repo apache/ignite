@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -133,6 +134,9 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     private ZkEventWorker evtWorker;
+
+    /** */
+    private final AtomicBoolean stop = new AtomicBoolean();
 
     /**
      * @param log Logger.
@@ -468,9 +472,9 @@ public class ZookeeperDiscoveryImpl {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
         }
         finally {
-            connStartLatch.countDown();
-
             busyLock.leaveBusy();
+
+            connStartLatch.countDown();
         }
     }
 
@@ -1452,6 +1456,9 @@ public class ZookeeperDiscoveryImpl {
      * @throws InterruptedException If interrupted.
      */
     private void stop0(Throwable e) throws InterruptedException {
+        if (!stop.compareAndSet(false, true))
+            return;
+
         log.info("Stop ZookeeperDiscovery [nodeId=" + locNode.id() + ", err=" + e + ']');
 
         connState = ConnectionState.STOPPED;
@@ -1813,12 +1820,12 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
-            assert state.crd;
-
             if (!busyLock.enterBusy())
                 return;
 
             try {
+                assert state.crd;
+
                 processResult0(rc, path, data);
 
                 busyLock.leaveBusy();
