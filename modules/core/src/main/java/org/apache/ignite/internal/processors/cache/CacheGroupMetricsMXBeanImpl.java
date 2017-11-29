@@ -44,8 +44,11 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     private interface IntBiPredicate {
         /**
          * Predicate body.
+         *
+         * @param targetVal Target value.
+         * @param nextVal Next comparable value.
          */
-        boolean apply(int a, int b);
+        boolean apply(int targetVal, int nextVal);
     }
 
     /**
@@ -91,32 +94,32 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
      * @param pred Predicate.
      */
     private int numberOfPartitionCopies(IntBiPredicate pred) {
-        int partitions = ctx.topology().partitions();
+        int parts = ctx.topology().partitions();
 
-        GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(true);
+        GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(false);
 
-        int resNumOfCopies = 0;
+        int res = -1;
 
-        for (int part = 0; part < partitions; part++) {
-            int partNumOfCopies = 0;
+        for (int part = 0; part < parts; part++) {
+            int cnt = 0;
 
             for (Map.Entry<UUID, GridDhtPartitionMap> entry : partFullMap.entrySet()) {
                 if (entry.getValue().get(part) == GridDhtPartitionState.OWNING)
-                    partNumOfCopies++;
+                    cnt++;
             }
 
-            if (part == 0 || pred.apply(resNumOfCopies, partNumOfCopies))
-                resNumOfCopies = partNumOfCopies;
+            if (part == 0 || pred.apply(res, cnt))
+                res = cnt;
         }
 
-        return resNumOfCopies;
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public int getMinimumNumberOfPartitionCopies() {
         return numberOfPartitionCopies(new IntBiPredicate() {
-            @Override public boolean apply(int a, int b) {
-                return b < a;
+            @Override public boolean apply(int targetVal, int nextVal) {
+                return nextVal < targetVal;
             }
         });
     }
@@ -124,8 +127,8 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getMaximumNumberOfPartitionCopies() {
         return numberOfPartitionCopies(new IntBiPredicate() {
-            @Override public boolean apply(int a, int b) {
-                return b > a;
+            @Override public boolean apply(int targetVal, int nextVal) {
+                return nextVal > targetVal;
             }
         });
     }
@@ -137,13 +140,13 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
      * @param state State.
      */
     private int nodePartitionsCountByState(UUID nodeId, GridDhtPartitionState state) {
-        int partitions = ctx.topology().partitions();
+        int parts = ctx.topology().partitions();
 
-        GridDhtPartitionMap partMap = ctx.topology().partitionMap(true).get(nodeId);
+        GridDhtPartitionMap partMap = ctx.topology().partitionMap(false).get(nodeId);
 
         int cnt = 0;
 
-        for (int part = 0; part < partitions; part++)
+        for (int part = 0; part < parts; part++)
             if (partMap.get(part) == state)
                 cnt++;
 
@@ -193,13 +196,13 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
      * @return Partitions allocation map.
      */
     private Map<Integer, Set<String>> clusterPartitionsMapByState(GridDhtPartitionState state) {
-        int partitions = ctx.topology().partitions();
+        int parts = ctx.topology().partitions();
 
-        GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(true);
+        GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(false);
 
-        Map<Integer, Set<String>> partitionsMap = new LinkedHashMap<>();
+        Map<Integer, Set<String>> partsMap = new LinkedHashMap<>();
 
-        for (int part = 0; part < partitions; part++) {
+        for (int part = 0; part < parts; part++) {
             Set<String> partNodesSet = new HashSet<>();
 
             for (Map.Entry<UUID, GridDhtPartitionMap> entry : partFullMap.entrySet()) {
@@ -207,10 +210,10 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
                     partNodesSet.add(entry.getKey().toString());
             }
 
-            partitionsMap.put(part, partNodesSet);
+            partsMap.put(part, partNodesSet);
         }
 
-        return partitionsMap;
+        return partsMap;
     }
 
     /** {@inheritDoc} */
