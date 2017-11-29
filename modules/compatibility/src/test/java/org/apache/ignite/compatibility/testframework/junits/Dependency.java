@@ -26,14 +26,14 @@ public class Dependency {
     /** Local module name. Folder name where module is located. */
     private String locModuleName;
 
-    /** Group name. Null means ignite default group name */
+    /** Group name. Null means ignite default group name. */
     @Nullable
     private String groupName;
 
     /** Artifact name (artifact ID) without group name. */
     private String artifactName;
 
-    /** Version. */
+    /** Version. Null means default Ignite version is to be used. May be used for 3rd party dependencies. */
     @Nullable
     private String version;
 
@@ -66,11 +66,11 @@ public class Dependency {
 
     /**
      * @param locModuleName Local module name. Folder name where module is located.
-     * @param grpName
+     * @param grpName Group name. Null means ignite default group name.
      * @param artifactName Artifact name (artifact ID) without group na
-     * @param version
+     * @param version Version. Null means default Ignite version is to be used. M
      */
-    public Dependency(String locModuleName, String grpName, String artifactName, String version) {
+    public Dependency(String locModuleName, @Nullable String grpName, String artifactName, @Nullable String version) {
         this.locModuleName = locModuleName;
         this.groupName = grpName;
         this.artifactName = artifactName;
