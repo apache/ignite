@@ -2313,11 +2313,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
                                     }
 
-                                    if (rollbackEnabled) {
-                                        cctx.mvcc().cancelOnTopologyChange(exchFut.initialVersion());
-
+                                    if (rollbackEnabled)
                                         cctx.tm().rollbackOnTopologyChange(exchFut.initialVersion());
-                                    }
                                 }
                                 catch (Exception e) {
                                     if (exchFut.reconnectOnError(e))

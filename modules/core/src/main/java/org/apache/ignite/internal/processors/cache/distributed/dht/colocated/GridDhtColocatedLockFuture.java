@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -694,8 +695,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * part. Note that if primary node leaves grid, the future will fail and transaction will be rolled back.
      */
     void map() {
-        if (tx != null && tx.trackTimeout()) {
-            if (!tx.removeTimeoutHandler()) {
+        if (tx != null) {
+            if (tx.trackTimeout() && !tx.removeTimeoutHandler()) {
                 tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
                     @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
                         IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Failed to " +
@@ -710,6 +711,16 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
                 return;
             }
+            tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
+                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                    assert tx.isRollbackOnly() : "Transaction is expected to be rolled back: " + tx;
+
+                    onError(new IgniteFutureCancelledCheckedException("Failed to acquire lock, " +
+                        "transaction was rolled back [tx=" + tx + ']'));
+
+                    onComplete(false, false, false);
+                }
+            });
         }
 
         if (timeout > 0) {
@@ -1472,7 +1483,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(LockTimeoutObject.class, this);
+            return S.toString(LockTimeoutObject.class, this, "fut", GridDhtColocatedLockFuture.this);
         }
     }
 

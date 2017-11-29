@@ -301,11 +301,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void rollbackOnTopologyChange(AffinityTopologyVersion topVer) {
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (needWaitTransaction(tx, topVer) && tx.near()) {
+            if (tx.near() && needWaitTransaction(tx, topVer)) {
                 if (log.isInfoEnabled())
                     log.info("Forcibly rolling back near transaction: " + tx);
 
-                tx.rollbackAsync();
+                ((GridNearTxLocal) tx).onTimeout();
             }
         }
     }

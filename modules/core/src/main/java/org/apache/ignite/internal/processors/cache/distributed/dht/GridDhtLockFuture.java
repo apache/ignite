@@ -1135,7 +1135,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(LockTimeoutObject.class, this);
+            return S.toString(LockTimeoutObject.class, this, "fut", GridDhtLockFuture.this);
         }
     }
 

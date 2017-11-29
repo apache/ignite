@@ -1065,38 +1065,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Complete active futures blocking partition map exchange.
-     *
-     * @param topVer Initial exchange version.
-     */
-    public void cancelOnTopologyChange(AffinityTopologyVersion topVer) {
-        for (GridCacheFuture<?> fut: activeFutures()) {
-            if (fut instanceof GridCacheVersionedFuture) {
-                GridCacheVersionedFuture f = (GridCacheVersionedFuture)fut;
-
-                // TODO how to relate GridCacheVersion to AffinityTopologyVersion?
-                IgniteInternalTx tx = cctx.tm().tx(f.version());
-
-                if (tx != null && tx.near()) {
-                    AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
-
-                    if(txTopVer != null && txTopVer.compareTo(topVer) < 0) {
-                        if (log.isInfoEnabled())
-                            log.info("Forcibly canceling future: " + f);
-
-                        try {
-                            f.cancel();
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to cancel the future: " + f, e);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * @param topVer Topology version to finish.
      *
      * @return Finish update future.

@@ -3274,7 +3274,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
-        if (!onTimeout && trackTimeout)
+        if (trackTimeout)
             removeTimeoutHandler();
 
         NearTxFinishFuture fut = finishFut;
@@ -4106,7 +4106,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     public boolean addTimeoutHandler() {
         assert trackTimeout;
 
-        return cctx.time().addTimeoutObject(this);
+        return isRollbackOnly() || cctx.time().addTimeoutObject(this);
     }
 
     /** {@inheritDoc} */

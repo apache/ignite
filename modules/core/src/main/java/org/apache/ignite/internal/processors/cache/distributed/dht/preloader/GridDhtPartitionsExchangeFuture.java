@@ -1109,11 +1109,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
                 }
 
-                if (rollbackEnabled) {
-                    cctx.mvcc().cancelOnTopologyChange(initialVersion());
-
+                if (rollbackEnabled)
                     cctx.tm().rollbackOnTopologyChange(initialVersion());
-                }
             }
         }
 

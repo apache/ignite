@@ -52,6 +52,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -65,7 +67,7 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
     private static final long ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT = 500;
 
     /**  */
-    private static final long TX_TIMEOUT = 5000;
+    private static final long TX_TIMEOUT = 1000;
 
     /**  */
     private static final int MAX_BACKUPS = 3;
@@ -222,6 +224,25 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
                             exp = null;
                     }
 
+                    if (exp == null) {
+                        exp = X.cause(e, TransactionRollbackException.class);
+
+                        if (exp != null && !(exp.getMessage() != null && exp.getMessage().startsWith(
+                            "Cache transaction is marked as rollback-only (will be rolled back automatically)")))
+                            exp = null;
+                    }
+
+                    if (exp == null && tx.timeout() > 0) {
+                        exp = X.cause(e, TransactionTimeoutException.class);
+
+                        if (exp != null) {
+                            String msg = exp.getMessage();
+                            if (!(msg != null && (msg.startsWith("Cache transaction timed out") ||
+                                msg.startsWith("Failed to acquire lock within provided timeout for transaction"))))
+                            exp = null;
+                        }
+                    }
+
                     if (exp != null) {
                         if (grid.log().isInfoEnabled())
                             grid.log().info("Expected transaction error: " + exp);
@@ -265,7 +286,7 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
                 Ignite grid = F.rand(G.allGrids());
 
                 if (grid.log().isInfoEnabled())
-                    grid.log().info(">>> Deactivate cluster");
+                    grid.log().info(">>>> Deactivate cluster");
 
                 grid.active(false);
 
@@ -278,7 +299,7 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
                 Ignite grid = F.rand(G.allGrids());
 
                 if (grid.log().isInfoEnabled())
-                    grid.log().info(">>> Create cache");
+                    grid.log().info(">>>> Create cache");
 
                 CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -295,7 +316,7 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
                 Ignite grid = F.rand(G.allGrids());
 
                 if (grid.log().isInfoEnabled())
-                    grid.log().info(">>> Register binary type");
+                    grid.log().info(">>>> Register binary type");
 
                 String typeName = TxRollbackOnTopologyChangeTimeoutTest.class.getSimpleName() +
                     binaryTypeIdx.getAndIncrement();
@@ -321,7 +342,7 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
                 Ignite grid = F.rand(G.allGrids());
 
                 if (grid.log().isInfoEnabled())
-                    grid.log().info(">>> Destroy cache");
+                    grid.log().info(">>>> Destroy cache");
 
                 grid.cache(TMP_CACHE).destroy();
 
@@ -343,7 +364,7 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
 
             if (!grid.active()) {
                 if (grid.log().isInfoEnabled())
-                    grid.log().info(">>> Restore active state");
+                    grid.log().info(">>>> Restore active state");
 
                 grid.active(true);
             }
@@ -351,26 +372,10 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
     }
 
     /**  */
-    private List<Runnable> createMajorTopologyChangeOps() {
-        List<Runnable> ops = new ArrayList<>();
-
-        ops.add(new RX() {
-            @Override public void runX() throws Exception {
-                startGrid(0);
-            }
-        });
-
-        ops.add(new RX() {
-            @Override public void runX() throws Exception {
-                startGrid(CLIENT_IDX);
-            }
-        });
-
-        return ops;
-    }
-
-    /**  */
     private void startStopServers() throws Exception {
+        if (log.isInfoEnabled())
+            log.info(">>>> Start server node");
+
         startGrid(0);
 
         doMinorTopologyChanges();
@@ -379,6 +384,9 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
 
         for (int i = 1; i < MAX_SRV_NODES; ++i) {
             startTx();
+
+            if (log.isInfoEnabled())
+                log.info(">>>> Start server node");
 
             startGrid(i);
 
@@ -390,6 +398,9 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
         }
         for (int i = 0; i < MAX_SRV_NODES; ++i) {
             startTx();
+
+            if (log.isInfoEnabled())
+                log.info(">>>> Stop server node");
 
             stopGrid(i);
 
@@ -406,12 +417,18 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
     /**  */
     private void startStopClients() throws Exception {
         for (int i = 0; i < MAX_CLNT_NODES; ++i) {
+            if (log.isInfoEnabled())
+                log.info(">>>> Start client node");
+
             startGrid(CLIENT_IDX + i);
 
             doMinorTopologyChanges();
         }
         for (int i = 0; i < MAX_CLNT_NODES; ++i) {
             startTx();
+
+            if (log.isInfoEnabled())
+                log.info(">>>> Stop client node");
 
             stopGrid(CLIENT_IDX + i);
 
@@ -481,32 +498,16 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
     private static class GetBinaryObjectType implements IgniteCallable<String> {
 
         /**  */
-        private BinaryObject binaryObject;
+        private BinaryObject binObj;
 
         /**  */
-        public GetBinaryObjectType(BinaryObject binaryObject) {
-            this.binaryObject = binaryObject;
+        public GetBinaryObjectType(BinaryObject binObj) {
+            this.binObj = binObj;
         }
 
         /** {@inheritDoc} */
         @Override public String call() throws Exception {
-            return binaryObject.type().typeName();
+            return binObj.type().typeName();
         }
-    }
-
-    private abstract static class RX implements Runnable {
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                runX();
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        /**  */
-        protected abstract void runX() throws Exception;
     }
 }
