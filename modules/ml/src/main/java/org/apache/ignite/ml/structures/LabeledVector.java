@@ -61,7 +61,12 @@ public class LabeledVector<V extends Vector, T> {
         return lb;
     }
 
-    public void setLabel(T label) {
-        this.lb = label;
+    /**
+     * Set the label
+     *
+     * @param lb
+     */
+    public void setLabel(T lb) {
+        this.lb = lb;
     }
 }

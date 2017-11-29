@@ -23,19 +23,72 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.knn.models.FillMissingValueWith;
+import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.structures.LabeledDataset;
 
+
 /** Tests behaviour of KNNClassificationTest. */
 public class LabeledDatasetTest extends BaseKNNTest {
-
+    /** */
     private static final String KNN_IRIS_TXT = "knn/iris.txt";
+
+    /** */
     private static final String NO_DATA_TXT = "knn/no_data.txt";
+
+    /** */
     private static final String EMPTY_TXT = "knn/empty.txt";
+
+    /** */
     private static final String IRIS_INCORRECT_TXT = "knn/iris_incorrect.txt";
+
+    /** */
     private static final String IRIS_MISSED_DATA = "knn/missed_data.txt";
+
+
+    /** */
+    public void testFailOnYNull() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        double[][] mtx =
+            new double[][] {
+                {1.0, 1.0},
+                {1.0, 2.0},
+                {2.0, 1.0},
+                {-1.0, -1.0},
+                {-1.0, -2.0},
+                {-2.0, -1.0}};
+        double[] lbs = new double[] {};
+
+        try {
+            LabeledDataset training = new LabeledDataset(mtx, lbs);
+            fail("CardinalityException");
+        }
+        catch (CardinalityException e) {
+            return;
+        }
+        fail("CardinalityException");
+    }
+
+    /** */
+    public void testFailOnXNull() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        double[][] mtx =
+            new double[][] {};
+        double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
+
+        try {
+            LabeledDataset training = new LabeledDataset(mtx, lbs);
+            fail("CardinalityException");
+        }
+        catch (CardinalityException e) {
+            return;
+        }
+        fail("CardinalityException");
+    }
 
     /** */
     public void testLoadingCorrectTxtFile() {

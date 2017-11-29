@@ -27,6 +27,7 @@ public class UnresolvedClassException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     public UnresolvedClassException(Vector v, double[] classes) {
         super("Unresolved class from list of classes: " + classes.toString() + " for vector " + v.toString());
     }

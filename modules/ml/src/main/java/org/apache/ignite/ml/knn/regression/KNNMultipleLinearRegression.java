@@ -17,42 +17,72 @@
 package org.apache.ignite.ml.knn.regression;
 
 import org.apache.ignite.ml.knn.models.KNNModel;
-import org.apache.ignite.ml.knn.models.KNNModelForMatrix;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
-import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.structures.LabeledDataset;
-import org.apache.ignite.ml.structures.TypedLabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 
-
+/**
+ * This class provides kNN Multiple Linear Regression or Locally [weighted] regression (Simple and Weighted versions).
+ * <p> This is an instance-based learning method. </p>
+ * <ul>
+ *     <li>Local means using nearby points (i.e. a nearest neighbors approach).</li>
+ *     <li>Weighted means we value points based upon how far away they are.</li>
+ *     <li>Regression means approximating a function.</li>
+ * </ul>
+ */
 public class KNNMultipleLinearRegression extends KNNModel {
-
     /**
-     * @param k               amount of nearest neighbors
+     * @param k amount of nearest neighbors
      * @param distanceMeasure
-     * @param strategy
+     * @param stgy
      * @param training
      */
-    public KNNMultipleLinearRegression(int k, DistanceMeasure distanceMeasure, KNNStrategy strategy, LabeledDataset training) {
-        super(k, distanceMeasure, strategy, training);
+    public KNNMultipleLinearRegression(int k, DistanceMeasure distanceMeasure, KNNStrategy stgy,
+        LabeledDataset training) {
+        super(k, distanceMeasure, stgy, training);
     }
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector v) {
 
-        LabeledVector[] neighbors = findKNearestNeighbors(v);
-        double classLabel = predictYBasedOn(neighbors, v,  strategy);
+        LabeledVector[] neighbors = findKNearestNeighbors(v, true);
+        double clsLb = predictYBasedOn(neighbors, v);
 
-        return classLabel;
+        return clsLb;
     }
 
-    private double predictYBasedOn(LabeledVector<Vector, Double>[] neighbors, Vector v, KNNStrategy strategy) {
-        double sum = 0.0;
-        for (LabeledVector<Vector, Double> neighbor : neighbors) sum += neighbor.label();
+    /** */
+    private double predictYBasedOn(LabeledVector<Vector, Double>[] neighbors, Vector v) {
+        switch (stgy) {
+            case SIMPLE:
+                return simpleRegression(neighbors, v);
+            case WEIGHTED:
+                return weightedRegression(neighbors, v);
+            default:
+                throw new UnsupportedOperationException("Strategy " + stgy.name() + " is not supported");
+        }
+    }
 
-        // TODO: add different strategy support with correct calculation and normalization
-        return sum/(double)k;
+    /** */
+    private double weightedRegression(LabeledVector<Vector, Double>[] neighbors, Vector v) {
+        double sum = 0.0;
+        double div = 0.0;
+        for (int i = 0; i < neighbors.length; i++) {
+            double distance = cachedDistances != null ? cachedDistances[i] : distanceMeasure.compute(v, neighbors[i].features());
+            sum += neighbors[i].label() * distance;
+            div += distance;
+        }
+        return sum / div;
+    }
+
+    /** */
+    private double simpleRegression(LabeledVector<Vector, Double>[] neighbors, Vector v) {
+        double sum = 0.0;
+        for (LabeledVector<Vector, Double> neighbor : neighbors)
+            sum += neighbor.label();
+        return sum / (double)k;
     }
 }

@@ -6,15 +6,15 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /** */
 public class DistanceTest {
     /** Precision. */
     private static final double PRECISION = 0.0;
 
+    /** */
     private Vector v1;
 
+    /** */
     private Vector v2;
 
     /** */
@@ -24,35 +24,35 @@ public class DistanceTest {
         v2 = new DenseLocalOnHeapVector(new double[] {2.0, 1.0, 0.0});
     }
 
-    @Test
     /** */
+    @Test
     public void euclideanDistance() throws Exception {
 
-        double expectedResult = Math.pow(5, 0.5);
+        double expRes = Math.pow(5, 0.5);
 
         DistanceMeasure distanceMeasure = new EuclideanDistance();
 
-        Assert.assertEquals(expectedResult, distanceMeasure.compute(v1, v2), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
-    @Test
     /** */
+    @Test
     public void manhattanDistance() throws Exception {
-        double expectedResult = 3;
+        double expRes = 3;
 
         DistanceMeasure distanceMeasure = new ManhattanDistance();
 
-        Assert.assertEquals(expectedResult, distanceMeasure.compute(v1, v2), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
-    @Test
     /** */
+    @Test
     public void hammingDistance() throws Exception {
-        double expectedResult = 2;
+        double expRes = 2;
 
         DistanceMeasure distanceMeasure = new HammingDistance();
 
-        Assert.assertEquals(expectedResult, distanceMeasure.compute(v1, v2), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
 }

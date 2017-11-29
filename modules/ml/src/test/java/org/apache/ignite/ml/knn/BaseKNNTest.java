@@ -26,8 +26,6 @@ import org.apache.ignite.ml.knn.models.FillMissingValueWith;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.Arrays;
-
 /**
  * Base class for decision trees test.
  */
@@ -72,12 +70,12 @@ public class BaseKNNTest extends GridCommonAbstractTest {
     /**
      * Loads labeled dataset from file with .txt extension
      *
-     * @param resourcePath
+     * @param rsrcPath
      * @return null if path is incorrect
      */
-    protected LabeledDataset loadDatasetFromTxt(String resourcePath, boolean isFallOnBadData) {
+    protected LabeledDataset loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
         try {
-            Path path = Paths.get(this.getClass().getClassLoader().getResource(resourcePath).toURI());
+            Path path = Paths.get(this.getClass().getClassLoader().getResource(rsrcPath).toURI());
             try {
                 return LabeledDataset.loadTxt(path, SEPARATOR, false, isFallOnBadData, FillMissingValueWith.ZERO);
             }

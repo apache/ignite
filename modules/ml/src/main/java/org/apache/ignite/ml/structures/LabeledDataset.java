@@ -161,6 +161,7 @@ public class LabeledDataset {
         }
     }
 
+    /** */
     private void generateFeatureNames() {
         featureNames = new String[colSize];
         for (int i = 0; i < colSize; i++)
@@ -231,12 +232,12 @@ public class LabeledDataset {
     /**
      * Fill the label with given value
      * @param idx index of observation
-     * @param label given label
+     * @param lb given label
      */
-    public void setLabel(int idx, double label) {
+    public void setLabel(int idx, double lb) {
         LabeledVector labeledVector = data[idx];
         if(labeledVector != null)
-            labeledVector.setLabel(label);
+            labeledVector.setLabel(lb);
         else
             throw new NoLabelVectorException(idx);
     }
@@ -249,7 +250,7 @@ public class LabeledDataset {
      * @param isFallOnBadData Fall on incorrect data if true
      * @return Labeled Dataset parsed from file
      */
-    public static LabeledDataset loadTxt(Path pathToFile, String separator, boolean isDistributed, boolean isFallOnBadData, FillMissingValueWith fillingStrategy) throws IOException {
+    public static LabeledDataset loadTxt(Path pathToFile, String separator, boolean isDistributed, boolean isFallOnBadData, FillMissingValueWith fillingStgy) throws IOException {
         Stream<String> stream = Files.lines(pathToFile);
         List<String> list = new ArrayList<>();
         stream.forEach(list::add);
@@ -260,8 +261,8 @@ public class LabeledDataset {
         List<Vector> vectors = new ArrayList<>();
 
         if (rowSize > 0) {
-            final int columnSize = getColumnSize(separator, list) - 1;
-            if (columnSize > 0) {
+            final int colSize = getColumnSize(separator, list) - 1;
+            if (colSize > 0) {
                 for (int i = 0; i < rowSize; i++) {
                     Double clsLb;
 
@@ -269,7 +270,7 @@ public class LabeledDataset {
 
                     try {
                         clsLb = Double.parseDouble(rowData[0]);
-                        Vector vec = parseFeatures(pathToFile, isDistributed, isFallOnBadData, fillingStrategy, columnSize, i, rowData);
+                        Vector vec = parseFeatures(pathToFile, isDistributed, isFallOnBadData, fillingStgy, colSize, i, rowData);
                         labels.add(clsLb);
                         vectors.add(vec);
                     }
@@ -283,7 +284,7 @@ public class LabeledDataset {
                 for (int i = 0; i < vectors.size(); i++)
                     data[i] = new LabeledVector(vectors.get(i), labels.get(i));
 
-                return new LabeledDataset(data, columnSize);
+                return new LabeledDataset(data, colSize);
             }
             else
                 throw new NoDataException("File should contain first row with data");
@@ -292,45 +293,49 @@ public class LabeledDataset {
             throw new EmptyFileException(pathToFile.toString());
     }
 
+    /** */
     @NotNull private static Vector parseFeatures(Path pathToFile, boolean isDistributed, boolean isFallOnBadData,
-        FillMissingValueWith fillingStrategy, int columnSize, int rowIndex, String[] rowData) {
-        final Vector vec = getVector(columnSize, isDistributed);
+        FillMissingValueWith fillingStgy, int colSize, int rowIdx, String[] rowData) {
+        final Vector vec = getVector(colSize, isDistributed);
 
-        for (int j = 0; j < columnSize; j++) {
+        for (int j = 0; j < colSize; j++) {
 
-            if (rowData.length == columnSize + 1) {
-                double val = fillMissedData(fillingStrategy);
+            if (rowData.length == colSize + 1) {
+                double val = fillMissedData(fillingStgy);
                 try {
                     val = Double.parseDouble(rowData[j + 1]);
                     vec.set(j, val);
                 }
                 catch (NumberFormatException e) {
                     if(isFallOnBadData)
-                        throw new FileParsingException(rowData[j + 1], rowIndex, pathToFile);
+                        throw new FileParsingException(rowData[j + 1], rowIdx, pathToFile);
                     else
                         vec.set(j,val);
                 }
             }
-            else throw new CardinalityException(columnSize + 1, rowData.length);
+            else throw new CardinalityException(colSize + 1, rowData.length);
         }
         return vec;
     }
 
-    // TODO: add filling with mean, mode, ignoring and so on
-    private static double fillMissedData(FillMissingValueWith fillingStrategy) {
-        switch (fillingStrategy){
+    // TODO: IGNITE-7025 add filling with mean, mode, ignoring and so on
+    /** */
+    private static double fillMissedData(FillMissingValueWith fillingStgy) {
+        switch (fillingStgy){
             case ZERO: return 0.0;
-            default: throw new UnsupportedOperationException("Filling missing data is not supported for strategy " + fillingStrategy.name());
+            default: throw new UnsupportedOperationException("Filling missing data is not supported for strategy " + fillingStgy.name());
         }
 
     }
 
+    /** */
     @NotNull private static Vector getVector(int size, boolean isDistributed) {
 
         if(isDistributed) return new SparseBlockDistributedVector(size);
         else return new DenseLocalOnHeapVector(size);
     }
 
+    /** */
     private static int getColumnSize(String separator, List<String> list) {
         String[] rowData = list.get(0).split(separator, -1); // assume that all observation has the same length as a first row
 
@@ -339,11 +344,10 @@ public class LabeledDataset {
 
     /**
      * Scales features in dataset
-     * @param normalization
-     * @return
+     * @param normalization normalization approach
+     * @return Labeled dataset
      */
     public LabeledDataset normalizeWith(Normalization normalization) {
-        // TODO : https://ru.wikipedia.org/wiki/%D0%9C%D0%B5%D1%82%D0%BE%D0%B4_k-%D0%B1%D0%BB%D0%B8%D0%B6%D0%B0%D0%B9%D1%88%D0%B8%D1%85_%D1%81%D0%BE%D1%81%D0%B5%D0%B4%D0%B5%D0%B9
         switch (normalization){
             case MINIMAX: minMaxFeatures();
                 break;
@@ -361,15 +365,15 @@ public class LabeledDataset {
         double[] maxs = new double[colSize];
 
         for (int j = 0; j < colSize; j++) {
-            double maxInCurrentColumn = Double.MIN_VALUE;
-            double minInCurrentColumn = Double.MAX_VALUE;
+            double maxInCurrCol = Double.MIN_VALUE;
+            double minInCurrCol = Double.MAX_VALUE;
             for (int i = 0; i < rowSize; i++) {
                 double e = data[i].features().get(j);
-                maxInCurrentColumn = Math.max(e, maxInCurrentColumn);
-                minInCurrentColumn = Math.min(e, minInCurrentColumn);
+                maxInCurrCol = Math.max(e, maxInCurrCol);
+                minInCurrCol = Math.min(e, minInCurrCol);
             }
-            mins[j] = minInCurrentColumn;
-            maxs[j] = maxInCurrentColumn;
+            mins[j] = minInCurrCol;
+            maxs[j] = maxInCurrCol;
         }
 
         for (int j = 0; j < colSize; j++) {

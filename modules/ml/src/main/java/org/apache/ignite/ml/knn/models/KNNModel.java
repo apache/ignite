@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.knn.models;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,7 +36,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Model for kNN algorithm.
+ * kNN algorithm is a classification algorithm.
  */
 public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelFormat> {
     /** Amount of nearest neighbors */
@@ -48,20 +49,20 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
     protected final LabeledDataset training;
 
     /** kNN strategy */
-    protected final KNNStrategy strategy;
+    protected final KNNStrategy stgy;
 
     /** Cached distances for k-nearest neighbors */
-    private double[] cachedDistances;
+    protected double[] cachedDistances;
 
     /**
      * Creates the kNN model with the given parameters
      *
      * @param k amount of nearest neighbors
      * @param distanceMeasure distance measure
-     * @param strategy strategy of calculations
+     * @param stgy strategy of calculations
      * @param training training dataset
      */
-    public KNNModel(int k, DistanceMeasure distanceMeasure, KNNStrategy strategy, LabeledDataset training) {
+    public KNNModel(int k, DistanceMeasure distanceMeasure, KNNStrategy stgy, LabeledDataset training) {
 
         assert training != null;
 
@@ -71,21 +72,23 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
         this.k = k;
         this.distanceMeasure = distanceMeasure;
         this.training = training;
-        this.strategy = strategy;
+        this.stgy = stgy;
     }
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector v) {
 
-        LabeledVector[] neighbors = findKNearestNeighbors(v);
-        double classLabel = classify(neighbors, v, strategy);
+        LabeledVector[] neighbors = findKNearestNeighbors(v, true);
+        double classLabel = classify(neighbors, v, stgy);
 
         return classLabel;
     }
 
-    @Override
-    public <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path) {
+    /** */
+    @Override public <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path) {
+        KNNModelFormat mdlData = new KNNModelFormat(k, distanceMeasure, training, stgy);
 
+        exporter.save(mdlData, path);
     }
 
     /**
@@ -95,13 +98,13 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
      * @param v the given vector
      * @return k nearest neighbors
      */
-    protected LabeledVector[] findKNearestNeighbors(Vector v) {
+    protected LabeledVector[] findKNearestNeighbors(Vector v, boolean isCashedDistance) {
 
         LabeledVector[] trainingData = training.data();
 
         TreeMap<Double, Set<Integer>> distanceIdxPairs = getDistances(v, trainingData);
 
-        LabeledVector[] res = getKClosestVectors(trainingData, distanceIdxPairs, true);
+        LabeledVector[] res = getKClosestVectors(trainingData, distanceIdxPairs, isCashedDistance);
 
         return res;
     }
@@ -159,6 +162,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
         return distanceIdxPairs;
     }
 
+    /** */
     private void putDistanceIdxPair(Map<Double, Set<Integer>> distanceIdxPairs, int i, double distance) {
         if (distanceIdxPairs.containsKey(distance)) {
             Set<Integer> idxs = distanceIdxPairs.get(distance);
@@ -171,38 +175,67 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
         }
     }
 
-    private double classify(LabeledVector[] neighbors, Vector v, KNNStrategy strategy) {
+    /** */
+    private double classify(LabeledVector[] neighbors, Vector v, KNNStrategy stgy) {
 
-        Map<Double, Double> classVotes = new HashMap<>();
+        Map<Double, Double> clsVotes = new HashMap<>();
         for (int i = 0; i < neighbors.length; i++) {
             LabeledVector neighbor = neighbors[i];
-            double classLabel = (double)neighbor.label(); // TODO: handle different types, not double only
+            double clsLb = (double)neighbor.label(); // TODO: handle different types, not double only
 
             double distance = cachedDistances != null ? cachedDistances[i] : distanceMeasure.compute(v, neighbor.features());
 
-            if (classVotes.containsKey(classLabel)) {
-                double classVote = classVotes.get(classLabel);
-                classVote += getClassVoteForVector(strategy, distance);
-                classVotes.put(classLabel, classVote);
+            if (clsVotes.containsKey(clsLb)) {
+                double clsVote = clsVotes.get(clsLb);
+                clsVote += getClassVoteForVector(stgy, distance);
+                clsVotes.put(clsLb, clsVote);
             }
             else {
-                final double value = getClassVoteForVector(strategy, distance);
-                classVotes.put(classLabel, value);
+                final double val = getClassVoteForVector(stgy, distance);
+                clsVotes.put(clsLb, val);
             }
         }
 
-        return getClassWithMaxVotes(classVotes);
+        return getClassWithMaxVotes(clsVotes);
     }
 
-    private double getClassWithMaxVotes(Map<Double, Double> classVotes) {
-        return Collections.max(classVotes.entrySet(), Map.Entry.comparingByValue()).getKey();
+    /** */
+    private double getClassWithMaxVotes(Map<Double, Double> clsVotes) {
+        return Collections.max(clsVotes.entrySet(), Map.Entry.comparingByValue()).getKey();
     }
 
-    private double getClassVoteForVector(KNNStrategy strategy, double distance) {
+    /** */
+    private double getClassVoteForVector(KNNStrategy stgy, double distance) {
 
-        if (strategy.equals(strategy.WEIGHTED))
+        if (stgy.equals(stgy.WEIGHTED))
             return 1 / distance; // strategy.WEIGHTED
         else
             return 1.0; // strategy.SIMPLE
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + k;
+        res = res * 37 + distanceMeasure.hashCode();
+        res = res * 37 + stgy.hashCode();
+        res = res * 37 + Arrays.hashCode(training.data());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        KNNModel that = (KNNModel)obj;
+
+        return k == that.k && distanceMeasure.equals(that.distanceMeasure) && stgy.equals(that.stgy)
+            && Arrays.deepEquals(training.data(), that.training.data());
     }
 }

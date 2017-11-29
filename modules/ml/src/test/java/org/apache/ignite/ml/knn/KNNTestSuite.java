@@ -17,9 +17,6 @@
 
 package org.apache.ignite.ml.knn;
 
-import org.apache.ignite.ml.trees.ColumnDecisionTreeTrainerTest;
-import org.apache.ignite.ml.trees.GiniSplitCalculatorTest;
-import org.apache.ignite.ml.trees.VarianceSplitCalculatorTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 

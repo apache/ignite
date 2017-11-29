@@ -44,11 +44,11 @@ public class KNNClassificationTest extends BaseKNNTest {
 
         LabeledDataset training = new LabeledDataset(mtx, lbs);
 
-        KNNModel knnModel = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+        KNNModel knnMdl = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector firstVector = new DenseLocalOnHeapVector(new double[] {2.0, 2.0});
-        assertEquals(knnModel.predict(firstVector), 1.0);
+        assertEquals(knnMdl.predict(firstVector), 1.0);
         Vector secondVector = new DenseLocalOnHeapVector(new double[] {-2.0, -2.0});
-        assertEquals(knnModel.predict(secondVector), 2.0);
+        assertEquals(knnMdl.predict(secondVector), 2.0);
 
     }
 
@@ -68,11 +68,11 @@ public class KNNClassificationTest extends BaseKNNTest {
 
         LabeledDataset training = new LabeledDataset(mtx, lbs);
 
-        KNNModel knnModel = new KNNModel(1, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+        KNNModel knnMdl = new KNNModel(1, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector firstVector = new DenseLocalOnHeapVector(new double[] {2.0, 2.0});
-        assertEquals(knnModel.predict(firstVector), 1.0);
+        assertEquals(knnMdl.predict(firstVector), 1.0);
         Vector secondVector = new DenseLocalOnHeapVector(new double[] {-2.0, -2.0});
-        assertEquals(knnModel.predict(secondVector), 2.0);
+        assertEquals(knnMdl.predict(secondVector), 2.0);
 
     }
 
@@ -91,9 +91,9 @@ public class KNNClassificationTest extends BaseKNNTest {
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
         LabeledDataset training = new LabeledDataset(mtx, lbs);
 
-        KNNModel knnModel = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+        KNNModel knnMdl = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new DenseLocalOnHeapVector(new double[] {-1.01, -1.01});
-        assertEquals(knnModel.predict(vector), 2.0);
+        assertEquals(knnMdl.predict(vector), 2.0);
 
     }
 
@@ -113,9 +113,9 @@ public class KNNClassificationTest extends BaseKNNTest {
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
         LabeledDataset training = new LabeledDataset(mtx, lbs);
 
-        KNNModel knnModel = new KNNModel(3, new EuclideanDistance(), KNNStrategy.WEIGHTED, training);
+        KNNModel knnMdl = new KNNModel(3, new EuclideanDistance(), KNNStrategy.WEIGHTED, training);
         Vector vector = new DenseLocalOnHeapVector(new double[] {-1.01, -1.01});
-        assertEquals(knnModel.predict(vector), 1.0);
+        assertEquals(knnMdl.predict(vector), 1.0);
 
     }
 
@@ -124,9 +124,9 @@ public class KNNClassificationTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         LabeledDataset training = loadDatasetFromTxt(KNN_IRIS_TXT, false);
 
-        KNNModel knnModel = new KNNModel(7, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+        KNNModel knnMdl = new KNNModel(7, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new DenseLocalOnHeapVector(new double[] {5.15, 3.55, 1.45, 0.25});
-        assertEquals(knnModel.predict(vector), 1.0);
+        assertEquals(knnMdl.predict(vector), 1.0);
     }
 
     /** */
@@ -146,7 +146,7 @@ public class KNNClassificationTest extends BaseKNNTest {
         LabeledDataset training = new LabeledDataset(mtx, lbs);
 
         try {
-            KNNModel knnModel = new KNNModel(7, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+            new KNNModel(7, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
             fail("SmallTrainingDatasetSizeException");
         }
         catch (SmallTrainingDatasetSizeException e) {
@@ -155,42 +155,4 @@ public class KNNClassificationTest extends BaseKNNTest {
         fail("SmallTrainingDatasetSizeException");
 
     }
-
-    // TODO: good idea for example http://www.rpubs.com/Drmadhu/IRISclassification
-    // with splitting on test and train data
-    public void testCalculateAverageErrorOnIrisDatasetWithSimpleStrategy() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset training = loadDatasetFromTxt(KNN_IRIS_TXT, false);
-
-        for (int amountOfNeighbours = 1; amountOfNeighbours < 20; amountOfNeighbours += 2) {
-            System.out.println("Model initialized with k = " + amountOfNeighbours);
-
-            KNNModel knnModel = new KNNModel(amountOfNeighbours, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
-
-            int amountOfErrors = 0;
-            for (int i = 0; i < training.rowSize(); i++) {
-                if (knnModel.predict(training.getRow(i).features()) != training.label(i))
-                    amountOfErrors++;
-            }
-
-            System.out.println("Absolute amount of errors " + amountOfErrors);
-            System.out.println("Percentage of errors " + amountOfErrors / (double)training.rowSize());
-        }
-
-
-        // add to sample normalization, column names and etc
-
-    }
-    // add test with a few points with equal distance
-
-    /*
-            try {
-            Vector thirdVector = new SparseBlockDistributedVector(new double[]{0.0, 0.0});
-            knnModel.predict(thirdVector);
-            fail("UnresolvedClassException expected");
-        } catch (UnresolvedClassException e) {
-
-        }
-     */
-
 }
