@@ -80,7 +80,7 @@ public class HadoopV2JobSelfTest extends HadoopAbstractSelfTest {
         cfg.setMapOutputValueClass(Text.class);
         cfg.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
-        HadoopDefaultJobInfo info = createJobInfo(cfg);
+        HadoopDefaultJobInfo info = createJobInfo(cfg, null);
 
         final UUID uuid = UUID.randomUUID();
 
