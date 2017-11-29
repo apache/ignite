@@ -876,13 +876,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 52: {
-                if (log.isDebugEnabled())
-                    log.debug("Ignore unhandled GridNearLockResponse");
-            }
-
-            break;
-
             case 55: {
                 GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 

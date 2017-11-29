@@ -1119,6 +1119,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                             assert !t.empty();
 
+                            if(e != null)
+                                return new GridFinishedFuture<>(e);
+
                             // Create response while holding locks.
                             final GridNearLockResponse resp = createLockReply(nearNode,
                                 entries,

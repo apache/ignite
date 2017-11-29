@@ -1132,9 +1132,16 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             clear();
         }
 
-        if (tx != null && tx.isRollbackOnly())
-            onError(new IgniteFutureCancelledCheckedException("Failed to acquire lock, " +
-                "transaction was rolled back [tx=" + tx + ']'));
+        if (tx != null && tx.isRollbackOnly()) {
+            synchronized (this) {
+                if (err != null)
+                    return;
+
+                err = new IgniteFutureCancelledCheckedException("Failed to acquire lock, " +
+                    "transaction was rolled back [tx=" + tx + ']');
+            }
+            onComplete(false, false, false);
+        }
         else {
             boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
 
