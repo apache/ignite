@@ -45,6 +45,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongValue;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -668,7 +669,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     }
 
     /**
-     * FIXME
+     * Verifies that exactly one record is found when we have equality comparison in where clause (which is supposed
+     * to use {@link BPlusTree#findOne(Object, Object)} instead of {@link BPlusTree#find(Object, Object, Object)}.
      *
      * @throws Exception If failed.
      */
@@ -684,19 +686,13 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         assertEquals(25, res.get(0).get(0));
     }
 
-    public void testIncompatibleTypesInWhereClause_FAILING() throws Exception {
-        try {
-            QueryCursor<List<?>> qry =
-                personCache.query(sqlFieldsQuery("select name from Person where _key = 25"));
-
-            List<List<?>> res = qry.getAll();
-
-        // FIXME: Replace with correct exception handling
-        } catch (Exception e) {
-            throw e;
-        }
-    }
-
+    /**
+     * Verifies that zero records are found when we have equality comparison in where clause (which is supposed
+     * to use {@link BPlusTree#findOne(Object, Object)} instead of {@link BPlusTree#find(Object, Object, Object)}
+     * and the key is not in the cache.
+     *
+     * @throws Exception If failed.
+     */
     public void testEmptyResultUsesFindOne() throws Exception {
         QueryCursor<List<?>> qry =
             intCache.query(sqlFieldsQuery("select _val from Integer where _key = -10"));
