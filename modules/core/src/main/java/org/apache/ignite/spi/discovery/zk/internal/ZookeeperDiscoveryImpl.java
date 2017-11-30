@@ -1542,6 +1542,9 @@ public class ZookeeperDiscoveryImpl {
     private void onFatalError(GridSpinBusyLock busyLock, Throwable err) {
         busyLock.leaveBusy();
 
+        if (err instanceof ZookeeperClientFailedException)
+            return;
+
         if (connState == ConnectionState.STOPPED)
             return;
 

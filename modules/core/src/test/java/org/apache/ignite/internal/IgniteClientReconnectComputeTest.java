@@ -49,7 +49,7 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         IgniteCache<Integer, Integer> cache = client.getOrCreateCache("test-cache");
 

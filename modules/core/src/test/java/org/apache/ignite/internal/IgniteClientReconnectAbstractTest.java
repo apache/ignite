@@ -185,16 +185,28 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
      * @return Server node client connected to.
      */
     protected Ignite clientRouter(Ignite client) {
-        TcpDiscoveryNode node = (TcpDiscoveryNode)client.cluster().localNode();
+        if (tcpDiscovery()) {
+            TcpDiscoveryNode node = (TcpDiscoveryNode)client.cluster().localNode();
 
-        assertTrue(node.isClient());
-        assertNotNull(node.clientRouterNodeId());
+            assertTrue(node.isClient());
+            assertNotNull(node.clientRouterNodeId());
 
-        Ignite srv = G.ignite(node.clientRouterNodeId());
+            Ignite srv = G.ignite(node.clientRouterNodeId());
 
-        assertNotNull(srv);
+            assertNotNull(srv);
 
-        return srv;
+            return srv;
+        }
+        else {
+            for (Ignite node : G.allGrids()) {
+                if (!node.cluster().localNode().isClient())
+                    return node;
+            }
+
+            fail();
+
+            return null;
+        }
     }
 
     /**
@@ -251,6 +263,12 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         List<Ignite> clients, Ignite srv,
         @Nullable Runnable disconnectedC)
         throws Exception {
+        if (!tcpDiscovery()) {
+            reconnectClients(log, clients);
+
+            return;
+        }
+
         final TestTcpDiscoverySpi srvSpi = spi(srv);
 
         final CountDownLatch disconnectLatch = new CountDownLatch(clients.size());

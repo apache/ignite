@@ -1673,7 +1673,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             return getSpi().pingNode(nodeId);
         }
         catch (IgniteException e) {
-            if (e.hasCause(IgniteClientDisconnectedCheckedException.class)) {
+            if (e.hasCause(IgniteClientDisconnectedCheckedException.class, IgniteClientDisconnectedException.class)) {
                 IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
 
                 throw new IgniteClientDisconnectedCheckedException(reconnectFut, e.getMessage());

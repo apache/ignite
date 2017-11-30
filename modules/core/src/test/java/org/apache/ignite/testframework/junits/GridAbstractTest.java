@@ -2206,12 +2206,21 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected static void reconnectClient(IgniteLogger log, Ignite client) throws Exception {
+        reconnectClients(log, Collections.singletonList(client));
+    }
+
+    /**
+     * @param log Log.
+     * @param clients Nodes to reconnect.
+     * @throws Exception If failed.
+     */
+    protected static void reconnectClients(IgniteLogger log, List<Ignite> clients) throws Exception {
         List<Ignite> nodes = G.allGrids();
 
         assertFalse("There are no nodes", nodes.isEmpty());
 
         if (nodes.get(0).configuration().getDiscoverySpi().getClass().getName().equals(ZK_DISCOVERY))
-            ZookeeperDiscoverySpiBasicTest.reconnectClientNodes(log, Collections.singletonList(client), null, true);
+            ZookeeperDiscoverySpiBasicTest.reconnectClientNodes(log, clients, null, true);
         else
             fail("Reconnect is not supported");
     }
