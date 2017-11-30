@@ -47,6 +47,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Binary processor. */
         private readonly IBinaryProcessor _binProc;
 
+        /** Binary. */
+        private readonly IBinary _binary;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClient"/> class.
         /// </summary>
@@ -63,6 +66,8 @@ namespace Apache.Ignite.Core.Impl.Client
             };
 
             _binProc = clientConfiguration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
+
+            _binary = new Binary(_marsh);
         }
 
         /// <summary>
@@ -154,7 +159,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public IBinary GetBinary()
         {
-            throw GetClientNotSupportedException();
+            return _binary;
         }
 
         /** <inheritDoc /> */

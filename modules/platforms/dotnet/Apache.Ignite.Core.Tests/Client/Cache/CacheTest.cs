@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests the Replace overload with additional argument.
         /// </summary>
         [Test]
-        public void TestReplace2()
+        public void TestReplaceIfEquals()
         {
             using (var client = GetClient())
             {

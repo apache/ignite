@@ -55,14 +55,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private readonly Marshaller _marsh;
 
         /** Keep binary flag. */
-        private readonly bool _keepBinary = false;
+        private readonly bool _keepBinary;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClient{TK, TV}" /> class.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
         /// <param name="name">Cache name.</param>
-        public CacheClient(IgniteClient ignite, string name)
+        /// <param name="keepBinary">Binary mode flag.</param>
+        public CacheClient(IgniteClient ignite, string name, bool keepBinary = false)
         {
             Debug.Assert(ignite != null);
             Debug.Assert(name != null);
@@ -71,6 +72,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             _ignite = ignite;
             _marsh = _ignite.Marshaller;
             _id = BinaryUtils.GetCacheId(name);
+            _keepBinary = keepBinary;
         }
 
         /** <inheritDoc /> */
@@ -358,6 +360,26 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             return DoOutInOp(ClientOp.CacheGetConfiguration, null, s => new CacheClientConfiguration(s));
         }
 
+        /** <inheritDoc /> */
+        public ICacheClient<TK1, TV1> WithKeepBinary<TK1, TV1>()
+        {
+            if (_keepBinary)
+            {
+                var result = this as ICacheClient<TK1, TV1>;
+
+                if (result == null)
+                {
+                    throw new InvalidOperationException(
+                        "Can't change type of binary cache. WithKeepBinary has been called on an instance of " +
+                        "binary cache with incompatible generic arguments.");
+                }
+
+                return result;
+            }
+
+            return new CacheClient<TK1, TV1>(_ignite, _name, true);
+        }
+
         /// <summary>
         /// Does the out in op.
         /// </summary>
@@ -402,7 +424,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             stream.Seek(-1, SeekOrigin.Current);
 
-            return _marsh.Unmarshal<T>(stream);
+            return _marsh.Unmarshal<T>(stream, _keepBinary);
         }
 
         /// <summary>
@@ -419,7 +441,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             stream.Seek(-1, SeekOrigin.Current);
 
-            return new CacheResult<T>(_marsh.Unmarshal<T>(stream));
+            return new CacheResult<T>(_marsh.Unmarshal<T>(stream, _keepBinary));
         }
 
         /// <summary>

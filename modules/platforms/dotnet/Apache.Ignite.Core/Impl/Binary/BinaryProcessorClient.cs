@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
@@ -53,13 +52,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         public BinaryType GetBinaryType(int typeId)
         {
             return _socket.DoOutInOp(ClientOp.BinaryTypeGet, s => s.WriteInt(typeId),
-                s => new BinaryType(_marsh.StartUnmarshal(s), true));
+                s => s.ReadBool() ? new BinaryType(_marsh.StartUnmarshal(s), true) : null);
         }
 
         /** <inheritdoc /> */
         public List<IBinaryType> GetBinaryTypes()
         {
-            throw new NotSupportedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritdoc /> */
@@ -96,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public BinaryType RegisterEnum(string typeName, IEnumerable<KeyValuePair<string, int>> values)
         {
-            throw new NotSupportedException();
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /** <inheritdoc /> */
