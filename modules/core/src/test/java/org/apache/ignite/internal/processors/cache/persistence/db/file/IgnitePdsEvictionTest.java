@@ -35,7 +35,9 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -138,12 +140,30 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
 
         IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
 
+        PageIO pageIO = new DummyPageIO();
+
         // Allocate.
         for (int i = 0; i < size; i++) {
             db.checkpointReadLock();
             try {
                 final FullPageId fullId = new FullPageId(memory.allocatePage(cacheId, i % 256, PageMemory.FLAG_DATA),
                     cacheId);
+
+                long page = memory.acquirePage(fullId.groupId(), fullId.pageId());
+
+                try {
+                    final long pageAddr = memory.writeLock(fullId.groupId(), fullId.pageId(), page);
+
+                    try {
+                        pageIO.initNewPage(pageAddr, fullId.pageId(), memory.pageSize());
+                    }
+                    finally {
+                        memory.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
+                    }
+                }
+                finally {
+                    memory.releasePage(fullId.groupId(), fullId.pageId(), page);
+                }
 
                 pageIds.add(fullId);
             }
@@ -297,5 +317,22 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+    }
+
+    /** */
+    private static class DummyPageIO extends PageIO {
+        /** */
+        public DummyPageIO() {
+            super(2 * Short.MAX_VALUE, 1);
+        }
+
+        /** */
+        @Override
+        protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+            sb.a("DummyPageIO [\n");
+            sb.a("addr=").a(addr).a(", ");
+            sb.a("pageSize=").a(addr);
+            sb.a("\n]");
+        }
     }
 }

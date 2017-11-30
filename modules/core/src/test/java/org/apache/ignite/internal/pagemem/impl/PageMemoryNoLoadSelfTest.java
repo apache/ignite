@@ -33,7 +33,9 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -46,6 +48,9 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final int MAX_MEMORY_SIZE = 10 * 1024 * 1024;
+
+    /** */
+    private static final PageIO PAGE_IO = new DummyPageIO();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -226,6 +231,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
                     assertNotNull(pageAddr);
 
                     try {
+                        PAGE_IO.initNewPage(pageAddr, id.pageId(), mem.pageSize());
+
                         long updId = PageIdUtils.rotatePageId(id.pageId());
 
                         PageIO.setPageId(pageAddr, updId);
@@ -334,7 +341,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         long pageAddr = mem.writeLock(-1, pageId, page);
 
         try {
-            PageIO.setPageId(pageAddr, pageId);
+            PAGE_IO.initNewPage(pageAddr, pageId, mem.pageSize());
 
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++)
                 PageUtils.putByte(pageAddr, i, (byte)val);
@@ -355,7 +362,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
         long pageAddr = mem.readLock(-1, pageId, page);
 
-        assert(pageAddr != 0);
+        assert (pageAddr != 0);
 
         try {
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++) {
@@ -376,5 +383,22 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      */
     public static FullPageId allocatePage(PageIdAllocator mem) throws IgniteCheckedException {
         return new FullPageId(mem.allocatePage(-1, 1, PageIdAllocator.FLAG_DATA), -1);
+    }
+
+    /** */
+    private static class DummyPageIO extends PageIO {
+        /** */
+        public DummyPageIO() {
+            super(2*Short.MAX_VALUE, 1);
+        }
+
+        /** */
+        @Override
+        protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+            sb.a("DummyPageIO [\n");
+            sb.a("addr=").a(addr).a(", ");
+            sb.a("pageSize=").a(addr);
+            sb.a("\n]");
+        }
     }
 }
