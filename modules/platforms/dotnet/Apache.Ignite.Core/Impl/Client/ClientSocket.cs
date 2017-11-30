@@ -213,10 +213,18 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     var socket = new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
                     {
-                        SendBufferSize = cfg.SocketSendBufferSize,
-                        ReceiveBufferSize = cfg.SocketReceiveBufferSize,
                         NoDelay = cfg.TcpNoDelay
                     };
+
+                    if (cfg.SocketSendBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
+                    {
+                        socket.SendBufferSize = cfg.SocketSendBufferSize;
+                    }
+
+                    if (cfg.SocketReceiveBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
+                    {
+                        socket.ReceiveBufferSize = cfg.SocketReceiveBufferSize;
+                    }
 
                     socket.Connect(ipEndPoint);
 
