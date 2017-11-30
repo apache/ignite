@@ -18,37 +18,51 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.DotNetCore.Common;
 
     public static partial class TestUtils
     {
-        /** */
-        private static readonly IList<string> JvmOpts =
-            new List<string>
-            {
-                "-Duser.timezone=UTC"
-
-                // Uncomment to debug Java
-                //"-Xdebug",
-                //"-Xnoagent",
-                //"-Djava.compiler=NONE",
-                //"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-            };
-
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
         public static IgniteConfiguration GetTestConfiguration(string name = null)
         {
+            TestLogger.Instance.Info("GetTestConfiguration: " + GetTestName());
+
             return new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
-                JvmOptions = JvmOpts,
-                IgniteInstanceName = name
+                JvmOptions = TestJavaOptions(),
+                IgniteInstanceName = name,
+                Logger = TestLogger.Instance
             };
+        }
+
+        /// <summary>
+        /// Gets the name of the test.
+        /// </summary>
+        private static string GetTestName()
+        {
+            var st = new StackTrace();
+
+            for (var i = 0; i < st.FrameCount; i++)
+            {
+                var frame = st.GetFrame(i);
+                var method = frame.GetMethod();
+
+                if (method.DeclaringType != typeof(TestUtils) 
+                    && method.DeclaringType != typeof(TestBase))
+                {
+                    return $"{method.DeclaringType.Name}.{method.Name}";
+                }
+            }
+
+            return st.GetFrames().Skip(2).Select(x => x.ToString()).FirstOrDefault() ?? "unknown";
         }
 
         /// <summary>

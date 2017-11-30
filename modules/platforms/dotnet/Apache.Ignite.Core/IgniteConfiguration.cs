@@ -847,10 +847,9 @@ namespace Apache.Ignite.Core
         public string SpringConfigUrl { get; set; }
 
         /// <summary>
-        /// Path jvm.dll file. If not set, it's location will be determined
-        /// using JAVA_HOME environment variable.
-        /// If path is neither set nor determined automatically, an exception
-        /// will be thrown.
+        /// Path to jvm.dll (libjvm.so on Linux, libjvm.dylib on Mac) file.
+        /// If not set, it's location will be determined using JAVA_HOME environment variable.
+        /// If path is neither set nor determined automatically, an exception will be thrown.
         /// </summary>
         public string JvmDllPath { get; set; }
 
