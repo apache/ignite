@@ -66,9 +66,9 @@ class IgniteContext(
     def this(
         sc: SparkContext,
         springUrl: String,
-        client: Boolean
+        standalone: Boolean
         ) {
-        this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1(), client)
+        this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1(), standalone)
     }
 
     /**
@@ -137,7 +137,7 @@ class IgniteContext(
         val igniteCfg = cfgClo()
 
         // check if called from driver
-        if (sparkContext != null) igniteCfg.setClientMode(true)
+        if (standalone || sparkContext != null) igniteCfg.setClientMode(true)
 
         try {
             Ignition.getOrStart(igniteCfg)
