@@ -521,6 +521,13 @@ public class ZookeeperClient implements Watcher {
 
     /**
      * @param path Path.
+     */
+    void deleteIfExistsAsync(String path) {
+        new DeleteIfExistsOperation(path).execute();
+    }
+
+    /**
+     * @param path Path.
      * @param watcher Watcher.
      * @param cb Callback.
      */
@@ -836,6 +843,43 @@ public class ZookeeperClient implements Watcher {
         /** {@inheritDoc} */
         @Override public void execute() {
             createAsync(path, data, createMode, cb);
+        }
+    }
+
+    /**
+     *
+     */
+    class DeleteIfExistsOperation implements AsyncCallback.VoidCallback, ZkAsyncOperation {
+        /** */
+        private final String path;
+
+        /**
+         * @param path Path.
+         */
+        DeleteIfExistsOperation(String path) {
+            this.path = path;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute() {
+            zk.delete(path, -1, this, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void processResult(int rc, String path, Object ctx) {
+            if (rc == KeeperException.Code.NONODE.intValue())
+                return;
+
+            if (needRetry(rc)) {
+                U.warn(log, "Failed to execute async operation, connection lost. Will retry after connection restore [" +
+                    "path=" + path + ']');
+
+                retryQ.add(this);
+            }
+            else if (rc == KeeperException.Code.SESSIONEXPIRED.intValue())
+                U.warn(log, "Failed to execute async operation, connection lost [path=" + path + ']');
+            else
+                assert rc == 0 : rc;
         }
     }
 

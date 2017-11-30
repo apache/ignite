@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -301,6 +302,22 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }
 
         clearAckEveryEventSystemProperty();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetadataUpdate() throws Exception {
+        startGrid(0);
+
+        GridTestUtils.runMultiThreaded(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite(0).configuration().getMarshaller().marshal(new C1());
+                ignite(0).configuration().getMarshaller().marshal(new C2());
+
+                return null;
+            }
+        }, 64, "marshal");
     }
 
     /**
@@ -1660,5 +1677,19 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         @Override public Object call() throws Exception {
             return data;
         }
+    }
+
+    /**
+     *
+     */
+    private static class C1 implements Serializable {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    private static class C2 implements Serializable {
+        // No-op.
     }
 }
