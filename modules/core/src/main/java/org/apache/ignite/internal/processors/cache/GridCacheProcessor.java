@@ -3072,6 +3072,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);
 
+        if (msg instanceof CacheConfigurationChangeMessage)
+            cachesInfo.onCacheConfigurationChange((CacheConfigurationChangeMessage)msg);
+
         return false;
     }
 

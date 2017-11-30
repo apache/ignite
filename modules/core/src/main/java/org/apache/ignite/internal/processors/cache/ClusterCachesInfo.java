@@ -386,6 +386,17 @@ class ClusterCachesInfo {
     }
 
     /**
+     * @param msg Message.
+     */
+    public void onCacheConfigurationChange(CacheConfigurationChangeMessage msg) {
+        String cacheName = msg.cacheName();
+
+        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
+
+        cache.configuration().setStatisticsEnabled(msg.statisticEnabled());
+    }
+
+    /**
      * @param batch Cache change request.
      * @param topVer Topology version.
      * @return {@code True} if minor topology version should be increased.

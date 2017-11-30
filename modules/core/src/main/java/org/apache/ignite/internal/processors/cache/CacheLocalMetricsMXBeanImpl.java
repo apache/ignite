@@ -412,4 +412,14 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     @Override public boolean isValidForWriting() {
         return cache.metrics0().isValidForWriting();
     }
+
+    /** {@inheritDoc} */
+    @Override public void enableStatistics() {
+        cache.configuration().setStatisticsEnabled(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableStatistics() {
+        cache.configuration().setStatisticsEnabled(false);
+    }
 }

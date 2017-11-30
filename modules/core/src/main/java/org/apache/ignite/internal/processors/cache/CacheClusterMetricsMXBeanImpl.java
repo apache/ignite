@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 
 /**
@@ -26,6 +29,9 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** Cache. */
     private GridCacheAdapter<?, ?> cache;
+
+    /** Grid logger. */
+    private final IgniteLogger log;
 
     /**
      * Creates MBean;
@@ -36,6 +42,8 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
         assert cache != null;
 
         this.cache = cache;
+
+        log = cache.context().logger(getClass());
     }
 
     /** {@inheritDoc} */
@@ -411,5 +419,34 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public boolean isValidForWriting() {
         return cache.clusterMetrics().isValidForWriting();
+    }
+
+    /**
+     * Send discovery message to all nodes to enable or disable statistics collection for the cache.
+     *
+     * @param statisticsEnabled Statistics enabled.
+     */
+    private void sendStatisticsFlagChangeMessage(boolean statisticsEnabled) {
+        try {
+            CacheConfigurationChangeMessage msg = new CacheConfigurationChangeMessage(cache.name());
+
+            msg.statisticEnabled(statisticsEnabled);
+
+            cache.ctx.grid().context().discovery().sendCustomEvent(msg);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send discovery message to change statistics collection flag [cache="
+                + cache.name() + ']', e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableStatistics() {
+        sendStatisticsFlagChangeMessage(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableStatistics() {
+        sendStatisticsFlagChangeMessage(false);
     }
 }
