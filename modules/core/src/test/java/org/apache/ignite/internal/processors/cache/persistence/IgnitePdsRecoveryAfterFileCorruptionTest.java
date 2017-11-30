@@ -146,8 +146,16 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         FullPageId[] pages = new FullPageId[totalPages];
 
-        for (int i = 0; i < totalPages; i++)
-            pages[i] = new FullPageId(mem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_DATA), cacheId);
+        // Get lock to prevent assertion. A new page should be allocated under checkpoint lock.
+        psMgr.checkpointReadLock();
+
+        try {
+            for (int i = 0; i < totalPages; i++)
+                pages[i] = new FullPageId(mem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_DATA), cacheId);
+        }
+        finally {
+            psMgr.checkpointReadUnlock();
+        }
 
         generateWal(
             (PageMemoryImpl)mem,
