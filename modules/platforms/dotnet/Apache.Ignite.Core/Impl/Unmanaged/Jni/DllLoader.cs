@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
+namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
@@ -48,35 +49,47 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Loads specified DLL.
         /// </summary>
-        /// <returns>Null when successful; error message otherwise.</returns>
-        public static string Load(string dllPath)
+        /// <returns>Library handle and error message.</returns>
+        public static KeyValuePair<IntPtr, string> Load(string dllPath)
         {
             if (Os.IsWindows)
             {
-                return NativeMethodsWindows.LoadLibrary(dllPath) == IntPtr.Zero 
+                var ptr = NativeMethodsWindows.LoadLibrary(dllPath);
+                return new KeyValuePair<IntPtr, string>(ptr, ptr == IntPtr.Zero
                     ? FormatWin32Error(Marshal.GetLastWin32Error()) ?? "Unknown error"
-                    : null;
+                    : null);
+            }
+
+            if (Os.IsMacOs)
+            {
+                var ptr = NativeMethodsMacOs.dlopen(dllPath, RtldGlobal | RtldLazy);
+                return new KeyValuePair<IntPtr, string>(ptr, ptr == IntPtr.Zero
+                    ? GetErrorText(NativeMethodsMacOs.dlerror())
+                    : null);
             }
 
             if (Os.IsLinux)
             {
                 if (Os.IsMono)
                 {
-                    return NativeMethodsMono.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
+                    var ptr = NativeMethodsMono.dlopen(dllPath, RtldGlobal | RtldLazy);
+                    return new KeyValuePair<IntPtr, string>(ptr, ptr == IntPtr.Zero
                         ? GetErrorText(NativeMethodsMono.dlerror())
-                        : null;
+                        : null);
                 }
 
                 if (Os.IsNetCore)
                 {
-                    return NativeMethodsCore.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
+                    var ptr = NativeMethodsCore.dlopen(dllPath, RtldGlobal | RtldLazy);
+                    return new KeyValuePair<IntPtr, string>(ptr, ptr == IntPtr.Zero
                         ? GetErrorText(NativeMethodsCore.dlerror())
-                        : null;
+                        : null);
                 }
 
-                return NativeMethodsLinux.dlopen(dllPath, RtldGlobal | RtldLazy) == IntPtr.Zero
+                var lptr = NativeMethodsLinux.dlopen(dllPath, RtldGlobal | RtldLazy);
+                return new KeyValuePair<IntPtr, string>(lptr, lptr == IntPtr.Zero
                     ? GetErrorText(NativeMethodsLinux.dlerror())
-                    : null;
+                    : null);
             }
 
             throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
@@ -171,6 +184,27 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             [DllImport("libcoreclr.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
                 ThrowOnUnmappableChar = true)]
             internal static extern IntPtr dlerror();
+        }
+
+        /// <summary>
+        /// macOs uses "libSystem.dylib".
+        /// </summary>
+        internal static class NativeMethodsMacOs
+        {
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libSystem.dylib", CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
+            internal static extern IntPtr dlopen(string filename, int flags);
+
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libSystem.dylib", CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
+            internal static extern IntPtr dlerror();
+
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libSystem.dylib", CharSet = CharSet.Ansi, BestFitMapping = false,
+                ThrowOnUnmappableChar = true)]
+            internal static extern IntPtr dlsym(IntPtr handle, string symbol);
         }
     }
 }

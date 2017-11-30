@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Client.Cache
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
@@ -239,5 +240,15 @@ namespace Apache.Ignite.Core.Client.Cache
         /// Gets the cache configuration.
         /// </summary>
         CacheClientConfiguration GetConfiguration();
+
+        /// <summary>
+        /// Gets cache with KeepBinary mode enabled, changing key and/or value types if necessary.
+        /// You can only change key/value types when transitioning from non-binary to binary cache;
+        /// Changing type of binary cache is not allowed and will throw an <see cref="InvalidOperationException"/>.
+        /// </summary>
+        /// <typeparam name="TK1">Key type in binary mode.</typeparam>
+        /// <typeparam name="TV1">Value type in binary mode.</typeparam>
+        /// <returns>Cache instance with binary mode enabled.</returns>
+        ICacheClient<TK1, TV1> WithKeepBinary<TK1, TV1>();
     }
 }

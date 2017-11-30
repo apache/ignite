@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheValidatorMetricsTest;
@@ -63,6 +64,7 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
 
         suite.addTestSuite(CacheGroupsMetricsRebalanceTest.class);
 
+        suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
         suite.addTestSuite(CacheValidatorMetricsTest.class);
 
         // Cluster wide metrics.
