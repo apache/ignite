@@ -484,7 +484,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (grp.sharedGroup())
             idxName = Integer.toString(cacheId) + "_" + idxName;
 
-        return metaStore.getOrAllocateForTree(idxName);
+        IgniteCacheDatabaseSharedManager db = ctx.database();
+
+        db.checkpointReadLock();
+
+        try {
+            return metaStore.getOrAllocateForTree(idxName);
+        }
+        finally {
+            db.checkpointReadUnlock();
+        }
     }
 
     /** {@inheritDoc} */
