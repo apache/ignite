@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -41,6 +42,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,6 +69,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for {@code IgniteDataStreamerImpl}.
  */
 public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
+    /** Test timeout. */
+    private long testTimeout = 3_000L;
+
+    /** Data amount. */
+    private final static int DATA_AMOUNT = 4096;
+
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -108,6 +117,235 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         cnt++;
 
         return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSameFuturePerBatch() throws Exception {
+        cnt = 0;
+
+        int bufSize = IgniteDataStreamer.DFLT_PER_THREAD_BUFFER_SIZE;
+
+        startGrids(2);
+
+        IgniteDataStreamer<Integer, Integer> dataLdr = grid(0).dataStreamer(DEFAULT_CACHE_NAME);
+
+        IgniteFuture fut = dataLdr.addData(0, 0);
+
+        for (int i = 1; i < bufSize; i++) {
+            IgniteFuture curFut = dataLdr.addData(i, i);
+
+            assertTrue(curFut == fut);
+        }
+
+        IgniteFuture nextFut = dataLdr.addData(bufSize + 1, bufSize + 1);
+
+        assertTrue(fut != nextFut);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFuturesAmountMultiThread() throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        IgniteDataStreamer<Integer, Integer> dataLdr = grid(0).dataStreamer(DEFAULT_CACHE_NAME);
+
+        int threadsNum = 3;
+
+        final CountDownLatch l1 = new CountDownLatch(threadsNum);
+
+        Set<IgniteFuture> uniFut = new GridConcurrentHashSet<>();
+
+        multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 1; i <= DATA_AMOUNT; i++)
+                    uniFut.add(dataLdr.addData(i, i));
+
+                l1.countDown();
+
+                return null;
+            }
+        }, threadsNum);
+
+        l1.await(testTimeout, TimeUnit.MILLISECONDS);
+
+        final int futAmount = (DATA_AMOUNT / IgniteDataStreamer.DFLT_PER_THREAD_BUFFER_SIZE) * threadsNum;
+
+        assertTrue(uniFut.size() == futAmount);
+    }
+
+    /**
+     *@throws Exception If failed.
+     */
+    public void testStreamingAfterFillingBatch() throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        int threadsNum = 3;
+
+        final CountDownLatch l1 = new CountDownLatch(threadsNum);
+
+        final CountDownLatch l2 = new CountDownLatch(1);
+
+        IgniteDataStreamer<Integer, Integer> dataLdr = grid(0).dataStreamer(DEFAULT_CACHE_NAME);
+
+        dataLdr.perThreadBufferSize(DATA_AMOUNT);
+
+        multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 1; i < DATA_AMOUNT; i++)
+                    dataLdr.addData(i, i);
+
+                l1.countDown();
+
+                l2.await(testTimeout, TimeUnit.MILLISECONDS);
+
+                dataLdr.addData(DATA_AMOUNT, DATA_AMOUNT);
+
+                return null;
+            }
+        }, threadsNum);
+
+        l1.await(testTimeout, TimeUnit.MILLISECONDS);
+
+        final IgniteCache<Integer, Integer> cache = grid(1).cache(DEFAULT_CACHE_NAME);
+
+        assertNull(cache.get(1)); //There are no data in cache because thread buffer is not fill at all.
+
+        l2.countDown();
+
+        boolean dataInCache = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache.get(1) != null;
+            }
+        }, 3_000L);
+
+        assertTrue(dataInCache);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStreamingAfterFlush() throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        IgniteDataStreamer<Integer, Integer> dataLdr = grid(0).dataStreamer(DEFAULT_CACHE_NAME);
+
+        int threadsNum = 3;
+
+        final CountDownLatch l1 = new CountDownLatch(threadsNum);
+
+        int bufSize = IgniteDataStreamer.DFLT_PER_THREAD_BUFFER_SIZE;
+
+        multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 1; i < bufSize; i++)
+                    dataLdr.addData(i, i);
+
+                l1.countDown();
+
+                return null;
+            }
+        }, threadsNum);
+
+        l1.await(testTimeout, TimeUnit.MILLISECONDS);
+
+        final IgniteCache<Integer, Integer> cache = grid(1).cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 1; i < bufSize; i++)
+            assertNull(cache.get(i));
+
+        dataLdr.flush();
+
+        for (int i = 1; i < bufSize; i++)
+            assertTrue(cache.get(i) == i);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCloseFromAnotherThread() throws Exception{
+        cnt = 0;
+
+        startGrids(2);
+
+        IgniteDataStreamer<Integer, Integer> dataLdr = grid(0).dataStreamer(DEFAULT_CACHE_NAME);
+
+        final CountDownLatch l1 = new CountDownLatch(1);
+
+        multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                dataLdr.addData(1, 1);
+
+                l1.countDown();
+
+                return null;
+            }
+        }, 1);
+
+        l1.await(testTimeout, TimeUnit.MILLISECONDS);
+
+        final IgniteCache<Integer, Integer> cache = grid(1).cache(DEFAULT_CACHE_NAME);
+
+        assertNull(cache.get(1));
+
+        final CountDownLatch l2 = new CountDownLatch(1);
+
+        multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                dataLdr.close();
+
+                l2.countDown();
+
+                return null;
+            }
+        }, 1);
+
+        l2.await(testTimeout, TimeUnit.MILLISECONDS);
+
+        assertNotNull(cache.get(1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAddDataUponDataStreamerClosing() throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        final IgniteDataStreamer<Integer, Integer> dataLdr = grid(0).dataStreamer(DEFAULT_CACHE_NAME);
+
+        dataLdr.addData(0, 0);
+
+        final CountDownLatch l1 = new CountDownLatch(1);
+
+        multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                dataLdr.close();
+
+                l1.countDown();
+
+                return null;
+            }
+        }, 1);
+
+        l1.await(testTimeout, TimeUnit.MILLISECONDS);
+
+        GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                dataLdr.addData(1, 1);
+
+                return null;
+            }
+        }, IllegalStateException.class);
     }
 
     /**
@@ -238,6 +476,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             IgniteFuture fut = null;
 
             try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+                streamer.perThreadBufferSize(1);
+
                 fut = streamer.addData(1, "1");
 
                 streamer.flush();
@@ -466,6 +706,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        streamer.perThreadBufferSize(1);
 
         ((DataStreamerImpl)streamer).maxRemapCount(0);
 
