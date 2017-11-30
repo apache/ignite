@@ -22,14 +22,11 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,11 +35,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -61,14 +55,11 @@ import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jsr166.LongAdder8;
 
-import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Tests an ability to eagerly rollback timed out transactions.
@@ -397,22 +388,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests timeout on DHT primary node for all tx configurations.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTimeoutOnPrimaryDHTNode() throws Exception {
-        final ClusterNode n0 = grid(0).affinity(CACHE_NAME).mapKeyToNode(0);
-
-        final Ignite prim = G.ignite(n0.id());
-
-        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-            for (TransactionIsolation isolation : TransactionIsolation.values())
-                testTimeoutOnPrimaryDhtNode0(prim, concurrency, isolation);
-        }
-    }
-
-    /**
      * Test timeouts with random values and different tx configurations.
      */
     public void testRandomMixedTxConfigurations() throws Exception {
@@ -498,6 +473,22 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             ", timedOut=" + cntr2.sum());
 
         assertEquals("Expected finished count same as started count", cntr0.sum(), cntr1.sum() + cntr2.sum() + cntr3.sum());
+    }
+
+    /**
+     * Tests timeout on DHT primary node for all tx configurations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTimeoutOnPrimaryDHTNode() throws Exception {
+        final ClusterNode n0 = grid(0).affinity(CACHE_NAME).mapKeyToNode(0);
+
+        final Ignite prim = G.ignite(n0.id());
+
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values())
+                testTimeoutOnPrimaryDhtNode0(prim, concurrency, isolation);
+        }
     }
 
     /**
