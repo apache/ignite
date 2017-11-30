@@ -37,6 +37,10 @@
     <url>http://ignite.apache.org</url>
 
     <dependencies>
+        <!-- Note: when adding new Ignite module dependency please register it in
+        org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest.getDependencies()
+        method. This will allow to use original version dependency instead current code base. -->
+
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
@@ -90,6 +94,10 @@
             <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Note: when adding new Ignite module dependency please register it in
+        org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest.getDependencies()
+        method. This will allow to use original version dependency instead current code base. -->
     </dependencies>
 
     <build>
