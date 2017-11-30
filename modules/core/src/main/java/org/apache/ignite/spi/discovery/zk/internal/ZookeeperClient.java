@@ -111,7 +111,9 @@ public class ZookeeperClient implements Watcher {
 
         connLossTimeout = sesTimeout;
 
-        connStartTime = System.currentTimeMillis();
+        long connStartTime = this.connStartTime = System.currentTimeMillis();
+
+        connTimer = new Timer("zk-client-timer-" + igniteInstanceName);
 
         String threadName = Thread.currentThread().getName();
 
@@ -125,9 +127,10 @@ public class ZookeeperClient implements Watcher {
             Thread.currentThread().setName(threadName);
         }
 
-        connTimer = new Timer("zk-client-timer-" + igniteInstanceName);
-
-        scheduleConnectionCheck();
+        synchronized (stateMux) {
+            if (connStartTime == this.connStartTime && state == ConnectionState.Disconnected)
+                scheduleConnectionCheck();
+        }
     }
 
     /**
