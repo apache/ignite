@@ -211,10 +211,9 @@ public class ZookeeperDiscoveryImpl {
      * @return Ping result.
      */
     public boolean pingNode(UUID nodeId) {
-        while (!busyLock.enterBusy())
-            checkState();
-
         // TODO ZK
+        checkState();
+
         return node(nodeId) != null;
     }
 
@@ -312,8 +311,7 @@ public class ZookeeperDiscoveryImpl {
      * @return Remote nodes.
      */
     public Collection<ClusterNode> remoteNodes() {
-        while (!busyLock.enterBusy())
-            checkState();
+        checkState();
 
         return state.top.remoteNodes();
     }
