@@ -3502,8 +3502,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         buf = compressHnd.decode(buf);
                     }
                 }
-                else
+                else {
                     buf = handBuff;
+
+                    if (isNetworkCompressingEnabled()) {
+                        compressHnd = new BlockingCompressHandler(compressMeta.compressEngine(), directBuf, ByteOrder.nativeOrder(), log);
+                        buf = compressHnd.decode(buf);
+                    }
+                }
             }
             else if (isNetworkCompressingEnabled()) {
                 compressHnd = new BlockingCompressHandler(compressMeta.compressEngine(), directBuf, ByteOrder.nativeOrder(), log);
@@ -3665,7 +3671,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (isNetworkCompressingEnabled()) {
                             assert compressHnd != null;
 
-                            ByteBuffer decode0 = sslHnd.decode(compressHnd.decode(buf));
+                            ByteBuffer decode0 = compressHnd.decode(sslHnd.decode(buf));
 
                             i += decode0.remaining();
 
