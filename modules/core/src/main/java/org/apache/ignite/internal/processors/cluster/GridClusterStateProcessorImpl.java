@@ -900,6 +900,8 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
      * @param req State change request.
      */
     private void onFinalActivate(final StateChangeRequest req) {
+        ctx.dataStructures().onBeforeActivate();
+
         ctx.closure().runLocalSafe(new Runnable() {
             @Override public void run() {
                 boolean client = ctx.clientNode();

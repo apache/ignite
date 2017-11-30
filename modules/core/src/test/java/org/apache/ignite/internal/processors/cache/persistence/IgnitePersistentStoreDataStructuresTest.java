@@ -56,6 +56,8 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         cfg.setDataStorageConfiguration(memCfg);
 
+        cfg.setAutoActivationEnabled(false);
+
         return cfg;
     }
 
