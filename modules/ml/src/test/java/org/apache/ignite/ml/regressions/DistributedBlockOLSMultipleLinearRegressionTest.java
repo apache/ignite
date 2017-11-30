@@ -840,7 +840,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
             return;
         }
         fail("SingularMatrixException");
-
     }
 
     /** */

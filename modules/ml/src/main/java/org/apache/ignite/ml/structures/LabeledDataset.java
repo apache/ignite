@@ -18,9 +18,11 @@
 package org.apache.ignite.ml.structures;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.knn.models.FillMissingValueWith;
@@ -32,6 +34,7 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
+import org.apache.ignite.ml.math.impls.vector.AbstractVector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Class for set of labeled vectors
  */
-public class LabeledDataset {
+public class LabeledDataset implements Serializable {
     /** Data to keep */
     private final LabeledVector<Vector, Double>[] data;
 
@@ -385,5 +388,32 @@ public class LabeledDataset {
                 data[i].features().set(j, newVal);
             }
         }
+    }
+
+    /** */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        LabeledDataset that = (LabeledDataset)o;
+
+        if (rowSize != that.rowSize)
+            return false;
+        if (colSize != that.colSize)
+            return false;
+        if (!Arrays.equals(data, that.data))
+            return false;
+        return Arrays.equals(featureNames, that.featureNames);
+    }
+
+    /** */
+    @Override public int hashCode() {
+        int result = Arrays.hashCode(data);
+        result = 31 * result + Arrays.hashCode(featureNames);
+        result = 31 * result + rowSize;
+        result = 31 * result + colSize;
+        return result;
     }
 }

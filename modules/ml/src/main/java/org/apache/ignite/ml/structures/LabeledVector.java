@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.structures;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.math.Vector;
 
 /**
@@ -25,7 +26,7 @@ import org.apache.ignite.ml.math.Vector;
  * @param <V> Some class extending {@link Vector}.
  * @param <T> Type of label.
  */
-public class LabeledVector<V extends Vector, T> {
+public class LabeledVector<V extends Vector, T> implements Serializable {
     /** Vector. */
     private final V vector;
 
@@ -68,5 +69,26 @@ public class LabeledVector<V extends Vector, T> {
      */
     public void setLabel(T lb) {
         this.lb = lb;
+    }
+
+    /** */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        LabeledVector vector1 = (LabeledVector)o;
+
+        if (vector != null ? !vector.equals(vector1.vector) : vector1.vector != null)
+            return false;
+        return lb != null ? lb.equals(vector1.lb) : vector1.lb == null;
+    }
+
+    /** */
+    @Override public int hashCode() {
+        int result = vector != null ? vector.hashCode() : 0;
+        result = 31 * result + (lb != null ? lb.hashCode() : 0);
+        return result;
     }
 }

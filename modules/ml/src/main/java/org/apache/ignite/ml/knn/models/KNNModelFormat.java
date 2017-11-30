@@ -37,6 +37,26 @@ public class KNNModelFormat implements Serializable {
     private KNNStrategy stgy;
 
     /** */
+    public int getK() {
+        return k;
+    }
+
+    /** */
+    public DistanceMeasure getDistanceMeasure() {
+        return distanceMeasure;
+    }
+
+    /** */
+    public LabeledDataset getTraining() {
+        return training;
+    }
+
+    /** */
+    public KNNStrategy getStgy() {
+        return stgy;
+    }
+
+    /** */
     public KNNModelFormat(int k, DistanceMeasure measure, LabeledDataset training, KNNStrategy stgy) {
         this.k = k;
         this.distanceMeasure = measure;

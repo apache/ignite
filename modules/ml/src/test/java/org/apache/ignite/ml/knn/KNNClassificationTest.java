@@ -49,7 +49,6 @@ public class KNNClassificationTest extends BaseKNNTest {
         assertEquals(knnMdl.predict(firstVector), 1.0);
         Vector secondVector = new DenseLocalOnHeapVector(new double[] {-2.0, -2.0});
         assertEquals(knnMdl.predict(secondVector), 2.0);
-
     }
 
     /** */
@@ -73,7 +72,6 @@ public class KNNClassificationTest extends BaseKNNTest {
         assertEquals(knnMdl.predict(firstVector), 1.0);
         Vector secondVector = new DenseLocalOnHeapVector(new double[] {-2.0, -2.0});
         assertEquals(knnMdl.predict(secondVector), 2.0);
-
     }
 
     /** */
@@ -94,7 +92,6 @@ public class KNNClassificationTest extends BaseKNNTest {
         KNNModel knnMdl = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new DenseLocalOnHeapVector(new double[] {-1.01, -1.01});
         assertEquals(knnMdl.predict(vector), 2.0);
-
     }
 
     /** */
@@ -116,7 +113,6 @@ public class KNNClassificationTest extends BaseKNNTest {
         KNNModel knnMdl = new KNNModel(3, new EuclideanDistance(), KNNStrategy.WEIGHTED, training);
         Vector vector = new DenseLocalOnHeapVector(new double[] {-1.01, -1.01});
         assertEquals(knnMdl.predict(vector), 1.0);
-
     }
 
     /** */
@@ -153,6 +149,5 @@ public class KNNClassificationTest extends BaseKNNTest {
             return;
         }
         fail("SmallTrainingDatasetSizeException");
-
     }
 }

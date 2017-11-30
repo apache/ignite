@@ -23,8 +23,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
 import org.apache.ignite.ml.clustering.KMeansModel;
+import org.apache.ignite.ml.knn.models.KNNModel;
+import org.apache.ignite.ml.knn.models.KNNModelFormat;
+import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.structures.LabeledDataset;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -76,5 +80,37 @@ public class LocalModelsTest {
         DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {v1, v2});
 
         return clusterer.cluster(points, 1);
+    }
+
+
+    /**
+     *
+     */
+    @Test
+    public void importExportKNNModelTest() {
+        Path mdlPath = Paths.get("modelKnn.mlmod");
+
+        double[][] mtx =
+            new double[][] {
+                {1.0, 1.0},
+                {1.0, 2.0},
+                {2.0, 1.0},
+                {-1.0, -1.0},
+                {-1.0, -2.0},
+                {-2.0, -1.0}};
+        double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
+
+        LabeledDataset training = new LabeledDataset(mtx, lbs);
+
+        KNNModel mdl = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+
+        Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
+        mdl.saveModel(exporter, "modelKnn.mlmod");
+
+        Assert.assertTrue(String.format("File %s not found.", mdlPath.toString()), Files.exists(mdlPath));
+        KNNModelFormat load = exporter.load("modelKnn.mlmod");
+        KNNModel importedMdl = new KNNModel(load.getK(), load.getDistanceMeasure(), load.getStgy(), load.getTraining());
+
+        Assert.assertTrue("", mdl.equals(importedMdl));
     }
 }
