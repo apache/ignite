@@ -106,7 +106,9 @@
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
+    <Compile Include="Client\Cache\BinaryBuilderTest.cs" />
     <Compile Include="Client\Cache\CacheTest.cs" />
+    <Compile Include="Client\Cache\CacheTestKeepBinary.cs" />
     <Compile Include="Client\Cache\CacheTestNoMeta.cs" />
     <Compile Include="Client\Cache\ClientCacheConfigurationTest.cs" />
     <Compile Include="Client\Cache\EmptyObject.cs" />
