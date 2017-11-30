@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -551,15 +552,15 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                 double[] values = ctx.values(fIdx, ign);
                 double[] labels = ctx.labels();
 
-                IgniteBiTuple<Integer, Double> max = toCompare.entrySet().stream().
+                Optional<IgniteBiTuple<Integer, Double>> max = toCompare.entrySet().stream().
                     map(ent -> {
                         SplitInfo bestSplit = ctx.featureProcessor(fIdx).findBestSplit(ent.getValue(), values, labels, ent.getKey());
                         return new IgniteBiTuple<>(ent.getKey(), bestSplit != null ? bestSplit.infoGain() : Double.NEGATIVE_INFINITY);
                     }).
-                    max(Comparator.comparingDouble(IgniteBiTuple::get2)).
-                    get();
+                    max(Comparator.comparingDouble(IgniteBiTuple::get2));
 
-                return Stream.of(new CacheEntryImpl<>(e.getKey(), max));
+                return max.<Stream<Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>>>>
+                    map(objects -> Stream.of(new CacheEntryImpl<>(e.getKey(), objects))).orElseGet(Stream::empty);
             },
             () -> IntStream.range(0, featuresCnt).mapToObj(fIdx -> SplitCache.key(fIdx, affinity.apply(ignite).apply(fIdx), trainingUUID)).collect(Collectors.toSet())
         );

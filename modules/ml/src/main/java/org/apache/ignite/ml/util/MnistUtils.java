@@ -48,7 +48,7 @@ public class MnistUtils {
         FileInputStream isImages = new FileInputStream(imagesPath);
         FileInputStream isLabels = new FileInputStream(labelsPath);
 
-        int magic = read4Bytes(isImages); // Skip magic number.
+        read4Bytes(isImages); // Skip magic number.
         int numOfImages = read4Bytes(isImages);
         int imgHeight = read4Bytes(isImages);
         int imgWidth = read4Bytes(isImages);
@@ -57,10 +57,6 @@ public class MnistUtils {
         read4Bytes(isLabels); // Skip number of labels.
 
         int numOfPixels = imgHeight * imgWidth;
-
-        System.out.println("Magic: " + magic);
-        System.out.println("Num of images: " + numOfImages);
-        System.out.println("Num of pixels: " + numOfPixels);
 
         double[][] vecs = new double[numOfImages][numOfPixels + 1];
 
