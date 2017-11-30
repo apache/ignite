@@ -666,8 +666,9 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         U.writeString(out, name);
         U.writeEnum(out, mode);
         out.writeBoolean(sys);
-        // Calculate size and keySize from long versions.
+        out.writeInt(size);
         out.writeLong(sizeLong);
+        out.writeInt(keySize);
         out.writeLong(keySizeLong);
         out.writeLong(reads);
         out.writeFloat(avgReadTime);
@@ -724,12 +725,10 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         name = U.readString(in);
         mode = CacheMode.fromOrdinal(in.readByte());
         sys = in.readBoolean();
+        size = in.readInt();
         sizeLong = in.readLong();
+        keySize = in.readInt();
         keySizeLong = in.readLong();
-
-        size = U.convertToInt(sizeLong);
-        keySizeLong = U.convertToInt(keySizeLong);
-
         reads = in.readLong();
         avgReadTime = in.readFloat();
         writes = in.readLong();
