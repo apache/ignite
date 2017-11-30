@@ -53,7 +53,11 @@ public class FileDownloader {
     /** */
     private ServerSocketChannel serverChannel;
 
-    private volatile GridFutureAdapter<?> fut;
+    /** */
+    private volatile GridFutureAdapter<?> finishFut;
+
+    /** */
+    private final GridFutureAdapter<?> initFut = new GridFutureAdapter<>();
 
     /**
      *
@@ -85,7 +89,7 @@ public class FileDownloader {
      *
      */
     public void download(GridFutureAdapter<?> fut){
-        this.fut = fut;
+        this.finishFut = fut;
 
         final ServerSocketChannel ch = serverChannel;
 
@@ -117,6 +121,8 @@ public class FileDownloader {
 
             writeChannel = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
 
+            initFut.onDone();
+
             readChannel = serverChannel.accept();
 
             long pos = 0;
@@ -131,6 +137,8 @@ public class FileDownloader {
             }
         }
         catch (IOException ex) {
+            initFut.onDone(ex);
+
             fut.onDone(ex);
         }
         finally {
@@ -152,10 +160,20 @@ public class FileDownloader {
         }
     }
 
+    /**
+     *
+     */
     public void download(long size) {
-        if (!this.size.compareAndSet(-1, size))
-            fut.onDone(new IgniteException("Size mismatch: " + this.size.get() + " != " + size));
-        else
-            fut.onDone();
+        try {
+            initFut.get();
+
+            if (!this.size.compareAndSet(-1, size))
+                finishFut.onDone(new IgniteException("Size mismatch: " + this.size.get() + " != " + size));
+            else
+                finishFut.onDone();
+        }
+        catch (IgniteCheckedException e) {
+            finishFut.onDone(e);
+        }
     }
 }
