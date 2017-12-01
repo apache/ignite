@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import javax.cache.CacheException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
@@ -422,4 +423,38 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /** {@inheritDoc} */
     @Deprecated
     @Override public IgniteCluster withAsync();
+
+    /**
+     * Enables Write Ahead Log for specified caches.
+     *
+     * @param cacheNames Collection of cache names.
+     * @throws CacheException If error occurs.
+     */
+    public void enableWal(Collection<String> cacheNames) throws IgniteException;
+
+    /**
+     * Enables Write Ahead Log for specified caches.
+     *
+     * @param cacheNames Collection of cache names.
+     *      * @param explicit Checks caches's cache groups contains only one cache
+     * @throws CacheException If error occurs.
+     */
+    public void enableWal(Collection<String> cacheNames, boolean explicit) throws IgniteException;
+
+    /**
+     * Disables Write Ahead Log for specified caches.
+     *
+     * @param cacheNames Collection of cache names.
+     * @throws CacheException If error occurs.
+     */
+    public void disableWal(Collection<String> cacheNames) throws IgniteException;
+
+    /**
+     * Disables Write Ahead Log for specified caches.
+     *
+     * @param cacheNames Collection of cache names.
+     * @param explicit Checks caches's cache groups contains only one cache
+     * @throws CacheException If error occurs.
+     */
+    public void disableWal(Collection<String> cacheNames, boolean explicit) throws IgniteException;
 }

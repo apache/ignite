@@ -19,6 +19,7 @@ package org.apache.ignite.yardstick.cache.load;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -33,7 +34,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.load.model.HeavyValue;
-import org.jsr166.LongAdder8;
 import org.yardstickframework.BenchmarkUtils;
 
 /**
@@ -42,7 +42,7 @@ import org.yardstickframework.BenchmarkUtils;
 public class IgniteWALModesLoadBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        load(cache());
+        load(cache(), false);
 
         return false; // Cause benchmark stop.
     }
@@ -50,12 +50,12 @@ public class IgniteWALModesLoadBenchmark extends IgniteCacheAbstractBenchmark<In
     /**
      * @param c Closure.
      */
-    private void load(IgniteCache c) throws Exception {
+    protected void load(IgniteCache c, boolean disableWal) throws Exception {
         if (c.size() != 0)
             throw new RuntimeException("Cache is not empty!");
 
         System.out.println("Loading ... " +
-            ignite().configuration().getPersistentStoreConfiguration().getWalMode() + " " + new Date().toString());
+            ignite().configuration().getDataStorageConfiguration().getWalMode() + " " + new Date().toString());
 
         long start = System.currentTimeMillis();
 
@@ -63,6 +63,9 @@ public class IgniteWALModesLoadBenchmark extends IgniteCacheAbstractBenchmark<In
 
         final List<Thread> ths = new ArrayList<>();
         final int thCnt = 16;
+
+        if (disableWal)
+            ignite().cluster().disableWal(Collections.singleton(c.getName()));
 
         for (int j = 0; j < thCnt; j++) {
             final int finalJ = j;
@@ -111,14 +114,17 @@ public class IgniteWALModesLoadBenchmark extends IgniteCacheAbstractBenchmark<In
 
         dataLdr.future().get();
 
+        if (c.size() != args.range())
+            throw new RuntimeException("Loading failed. actual size =" + c.size() + ", expected =" + args.range());
+
+        if (disableWal)
+            ignite().cluster().enableWal(Collections.singleton(c.getName()));
+
         System.out.println("Loaded ... " + new Date().toString());
 
         long time = System.currentTimeMillis() - start;
 
         BenchmarkUtils.println("IgniteStreamerBenchmark finished load cache [totalSeconds=" + time / 1000 + ']');
-
-        if (c.size() != args.range())
-            throw new RuntimeException("Loading failed. actual size =" + c.size() + ", expected =" + args.range());
     }
 
     /**

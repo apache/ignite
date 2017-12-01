@@ -3187,34 +3187,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void enableWal(Collection<String> cacheNames) throws CacheException {
-        CU.validateCacheNames(cacheNames);
-
-        IgniteInternalFuture enableFut = enableWalAsync(cacheNames);
-
-        try {
-            enableFut.get();
-        }
-        catch (IgniteCheckedException e) {
-            throw CU.convertToCacheException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void disableWal(Collection<String> cacheNames) throws CacheException {
-        CU.validateCacheNames(cacheNames);
-
-        IgniteInternalFuture disableFut = disableWalAsync(cacheNames);
-
-        try {
-            disableFut.get();
-        }
-        catch (IgniteCheckedException e) {
-            throw CU.convertToCacheException(e);
-        }
-    }
-
     /**
      * @param cacheName Cache name.
      * @param sql If the cache needs to be destroyed only if it was created by SQL {@code CREATE TABLE} command.
@@ -3230,44 +3202,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             checkClusterState();
 
             return ctx.cache().dynamicDestroyCache(cacheName, sql, checkThreadTx, false);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /**
-     * @param cacheNames Collection of cache names.
-     * @return Ignite future.
-     */
-    public IgniteInternalFuture<?> enableWalAsync(Collection<String> cacheNames) {
-        CU.validateCacheNames(cacheNames);
-
-        guard();
-
-        try {
-            checkClusterState();
-
-            return ctx.cache().changeWalMode(cacheNames, false);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /**
-     * @param cacheNames Collection of cache names.
-     * @return Ignite future.
-     */
-    public IgniteInternalFuture<?> disableWalAsync(Collection<String> cacheNames) {
-        CU.validateCacheNames(cacheNames);
-
-        guard();
-
-        try {
-            checkClusterState();
-
-            return ctx.cache().changeWalMode(cacheNames, true);
         }
         finally {
             unguard();

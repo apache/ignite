@@ -17,23 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.UUID;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * WAL activate/deactivate request.
  */
-public class WalModeDynamicChangeRequest implements DiscoveryCustomMessage {
+public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
+    /** */
+    private static final byte DISABLE = 0x01;
+
+    /** */
+    private static final byte PREPARE = 0x02;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,40 +45,29 @@ public class WalModeDynamicChangeRequest implements DiscoveryCustomMessage {
     /** */
     private UUID uid;
 
-    /** Activate/deactivate flag. */
-    private boolean disableWal;
+    /** Flags */
+    private byte flags;
 
     /** Cache group ids. */
-    @GridToStringExclude
     private GridIntList grpIds;
-
-    /** Cache updates to be executed on exchange. */
-    private transient ExchangeActions exchangeActions;
 
     /** Near node ID in case if near cache is being started. */
     private UUID initiatingNodeId;
 
-    /**
-     * @param uid Uid.
-     * @param disableWal Disable WAL.
-     * @param cacheNames Cache names.
-     */
-    public WalModeDynamicChangeRequest(UUID uid, boolean disableWal, Collection<String> cacheNames,
-        GridKernalContext ctx) {
+    public WalModeDynamicChangeMessage(UUID uid,
+        boolean disable,
+        boolean prepare,
+        GridIntList grpIds,
+        UUID nodeId) {
         this.uid = uid;
-        this.disableWal = disableWal;
+        this.grpIds = grpIds;
+        this.initiatingNodeId = nodeId;
 
-        Collection<Integer> grpSet = new HashSet<>();
+        if (disable)
+            flags |= DISABLE;
 
-        for (String cacheName : cacheNames)
-            grpSet.add(ctx.cache().cacheDescriptor(cacheName).groupId());
-
-        this.grpIds = new GridIntList(grpSet.size());
-
-        for (Integer grp : grpSet)
-            this.grpIds.add(grp);
-
-        this.initiatingNodeId = ctx.localNodeId();
+        if (prepare)
+            flags |= PREPARE;
     }
 
     /**
@@ -93,8 +84,18 @@ public class WalModeDynamicChangeRequest implements DiscoveryCustomMessage {
         return grpIds;
     }
 
-    public boolean disableWal() {
-        return disableWal;
+    /**
+     *
+     */
+    public boolean disable() {
+        return (flags & DISABLE) != 0;
+    }
+
+    /**
+     *
+     */
+    public boolean prepare() {
+        return (flags & PREPARE) != 0;
     }
 
     /** {@inheritDoc} */
@@ -109,20 +110,11 @@ public class WalModeDynamicChangeRequest implements DiscoveryCustomMessage {
         return uid;
     }
 
-    /**
-     * @return Cache updates to be executed on exchange.
-     */
-    public ExchangeActions exchangeActions() {
-        if (exchangeActions == null)
-            exchangeActions = new ExchangeActions();
-
-        exchangeActions.changeWalMode(this);
-
-        return exchangeActions;
-    }
-
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        if (disable() || (!disable() && !prepare()))
+            return new WalModeDynamicChangeMessageAck(uid, prepare());
+
         return null;
     }
 
@@ -131,6 +123,7 @@ public class WalModeDynamicChangeRequest implements DiscoveryCustomMessage {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
         return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
@@ -138,10 +131,12 @@ public class WalModeDynamicChangeRequest implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "WalModeDynamicChangeRequest{" +
-            "uid=" + uid +
-            ", activate=" + disableWal +
+        return "WalModeDynamicChangeMessage{" +
+            "id=" + id +
+            ", uid=" + uid +
+            ", flags=" + flags +
             ", grpIds=" + grpIds +
+            ", initiatingNodeId=" + initiatingNodeId +
             '}';
     }
 }

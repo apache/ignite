@@ -345,7 +345,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(0, WalModeDynamicChangeFinishedMessage.class,
             new MessageHandler<WalModeDynamicChangeFinishedMessage>() {
                 @Override protected void onMessage(ClusterNode node, WalModeDynamicChangeFinishedMessage msg) {
-                    cctx.cache().completeEnablingWalFuture(node, msg);
+                    cctx.cache().onWalModeDynamicChangeFinishedMessage(node, msg);
                 }
             });
 
@@ -451,12 +451,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     exchFut = exchangeFuture(exchId, evt, cache, exchActions, null);
                 }
             }
-            else if (customMsg instanceof WalModeDynamicChangeRequest) {
-                WalModeDynamicChangeRequest req = (WalModeDynamicChangeRequest)customMsg;
+            else if (customMsg instanceof WalModeDynamicChangeMessage) {
+                WalModeDynamicChangeMessage msg = (WalModeDynamicChangeMessage)customMsg;
 
-                exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
+                cctx.cache().onWalModeDynamicChangeMessage(msg);
 
-                exchFut = exchangeFuture(exchId, evt, cache, req.exchangeActions(), null);
+                if (!msg.disable() && msg.prepare()) {
+                    exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
+
+                    exchFut = exchangeFuture(exchId, evt, cache, null, null);
+                }
+            }
+            else if (customMsg instanceof WalModeDynamicChangeMessageAck) {
+                WalModeDynamicChangeMessageAck msg =
+                    (WalModeDynamicChangeMessageAck)customMsg;
+
+                cctx.cache().onWalModeDynamicChangeMessageAck(msg);
             }
             else if (customMsg instanceof CacheAffinityChangeMessage) {
                 CacheAffinityChangeMessage msg = (CacheAffinityChangeMessage)customMsg;

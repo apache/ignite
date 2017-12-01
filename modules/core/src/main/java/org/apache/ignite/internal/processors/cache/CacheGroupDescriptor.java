@@ -61,6 +61,9 @@ public class CacheGroupDescriptor {
     /** Persistence enabled flag. */
     private final boolean persistenceEnabled;
 
+    /** Wal disabled flag. */
+    private volatile boolean walDisabled;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param grpName Group name.
@@ -79,7 +82,8 @@ public class CacheGroupDescriptor {
         @Nullable AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
         Map<String, Integer> caches,
-        boolean persistenceEnabled) {
+        boolean persistenceEnabled,
+        boolean walDisabled) {
         assert cacheCfg != null;
         assert grpId != 0;
 
@@ -91,6 +95,7 @@ public class CacheGroupDescriptor {
         this.cacheCfg = new CacheConfiguration<>(cacheCfg);
         this.caches = caches;
         this.persistenceEnabled = persistenceEnabled;
+        this.walDisabled = walDisabled;
     }
 
     /**
@@ -105,6 +110,22 @@ public class CacheGroupDescriptor {
      */
     public IgniteUuid deploymentId() {
         return deploymentId;
+    }
+
+    /**
+     *
+     */
+    public boolean walDisabled() {
+        return walDisabled;
+    }
+
+    /**
+     *
+     */
+    public void walDisabled(boolean disabled) {
+        assert walDisabled != disabled;
+
+        walDisabled = disabled;
     }
 
     /**

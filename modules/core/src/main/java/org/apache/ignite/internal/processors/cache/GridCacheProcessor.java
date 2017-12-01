@@ -119,6 +119,8 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeD
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridIntIterator;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1971,6 +1973,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param cacheName Cache name.
+     */
+    public void disableGateway(String cacheName) {
+       IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(cacheName);
+
+       proxy.disableProxy();
+    }
+
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public void enableGateway(String cacheName) {
+        IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(cacheName);
+
+        proxy.enableProxy();
+    }
+
+    /**
      * @param req Request.
      */
     private void stopGateway(DynamicCacheChangeRequest req) {
@@ -2242,27 +2263,81 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
-     /**
-     * @param req Request.
+    /**
+     * @param msg Request.
      */
-    void completeDisablingWalFuture(WalModeDynamicChangeRequest req) {
-        if (ctx.localNodeId().equals(req.initiatingNodeId())) {
-            WalModeChangeFuture fut = walModeChangeFuts.get(req.uid());
+    void onWalModeDynamicChangeMessage(WalModeDynamicChangeMessage msg) {
+        boolean disable = msg.disable();
+        boolean prepare = msg.prepare();
 
-            if (fut != null)
-                fut.onDone(null, null);
+        if (prepare) {
+            WalModeChangeFuture fut = new WalModeChangeFuture(msg.uid(), msg.grpIds(), msg.disable());
+
+            walModeChangeFuts.putIfAbsent(msg.uid(), fut);
+        }
+
+        if ((disable && prepare) || (!disable && !prepare)) {
+            GridIntIterator it = msg.grpIds().iterator();
+
+            while (it.hasNext()) {
+                int grpId = it.next();
+
+                CacheGroupDescriptor desc = sharedCtx.affinity().cacheGroups().get(grpId);
+
+                desc.walDisabled(disable);
+
+                if (sharedCtx.wal() != null)
+                    sharedCtx.wal().disabled(grpId, disable);
+            }
         }
     }
 
     /**
-     * @param node Node.
-     * @param req Request.
+     * @param msg Message.
      */
-    void completeEnablingWalFuture(ClusterNode node, WalModeDynamicChangeFinishedMessage req) {
-        WalModeChangeFuture fut = walModeChangeFuts.get(req.uid());
+    void onWalModeDynamicChangeMessageAck(WalModeDynamicChangeMessageAck msg) {
+        WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
 
-        if (fut != null)
-            fut.onDone(node, req.error());
+        boolean disable = fut.disable;
+        boolean prepare = msg.prepare();
+
+        assert disable || !prepare;
+
+        if (!disable){
+            GridIntIterator it = fut.grpIds.iterator();
+
+            while (it.hasNext()) {
+                int grpId = it.next();
+
+                for (GridCacheContext ctx : sharedCtx.cache().cacheGroup(grpId).caches())
+                    sharedCtx.cache().enableGateway(ctx.name());
+            }
+        }
+
+        fut.onDone();
+    }
+
+    /**
+     * @param node Node.
+     * @param msg Message.
+     */
+    public void onWalModeDynamicChangeFinishedMessage(ClusterNode node, WalModeDynamicChangeFinishedMessage msg) {
+        WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
+
+        assert !fut.disable;
+
+        fut.confirmCheckpointFinished(node);
+    }
+
+    /**
+     * @param uid Uid.
+     */
+    public void initWalEnablingFuture(UUID uid){
+        WalModeChangeFuture fut = walModeChangeFuts.get(uid);
+
+        assert !fut.disable;
+
+        fut.initNodes();
     }
 
     /**
@@ -2820,40 +2895,47 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return compoundFut;
     }
 
-
     /**
      * @param cacheNames Cache names.
      * @param disable Disable.
+     * @param explicit Explicit.
      */
-    public IgniteInternalFuture<?> changeWalMode(Collection<String> cacheNames, boolean disable) {
+    public IgniteInternalFuture<?> changeWalMode(
+        Collection<String> cacheNames,
+        boolean disable,
+        boolean explicit) throws IgniteException {
+        Set<Integer> grpSet = new HashSet<>();
+
+        boolean already = true;
+
+        for (String cacheName : cacheNames) {
+            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
+
+            if (!grpSet.add(desc.groupId()) && explicit)
+                throw new IgniteException("Cache group contains more than one cache. " +
+                    "Set explicit flag to false to allow such operation.");
+
+            if (desc.groupDescriptor().walDisabled() != disable)
+                already = false;
+        }
+
+        if (already)
+            return new GridFinishedFuture<>();
+
+        GridIntList grpIds = new GridIntList(grpSet.size());
+
+        for (Integer grp : grpSet)
+            grpIds.add(grp);
+
         UUID uid = UUID.randomUUID();
 
-        WalModeDynamicChangeRequest req = new WalModeDynamicChangeRequest(uid, disable, cacheNames, ctx);
-
-        List<ClusterNode> nodes =
-            disable ?
-                null :
-                new LinkedList<>(ctx.cache().context().discovery().serverNodes(AffinityTopologyVersion.NONE));
-
-        WalModeChangeFuture fut = new WalModeChangeFuture(uid, nodes);
+        WalModeChangeFuture fut = new WalModeChangeFuture(uid, grpIds, disable);
 
         WalModeChangeFuture old = walModeChangeFuts.put(uid, fut);
 
         assert old == null : old;
 
-        Exception err;
-
-        try {
-            ctx.discovery().sendCustomEvent(req);
-
-            err = checkNodeState();
-        }
-        catch (IgniteCheckedException e) {
-            err = e;
-        }
-
-        if (err != null)
-            fut.onDone(err);
+        fut.init();
 
         return fut;
     }
@@ -3081,8 +3163,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof DynamicCacheChangeBatch)
             return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
 
-        if (msg instanceof WalModeDynamicChangeRequest)
-            return true;
+        if (msg instanceof WalModeDynamicChangeMessage) {
+            WalModeDynamicChangeMessage msg0 = (WalModeDynamicChangeMessage)msg;
+
+            return !msg0.disable() && msg0.prepare();
+        }
 
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);
@@ -4032,51 +4117,102 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private class WalModeChangeFuture extends GridFutureAdapter<ClusterNode> {
+    private class WalModeChangeFuture extends GridFutureAdapter<Void> {
         /** */
-        private UUID uid;
+        private final UUID uid;
 
-        /** Nodes. */
-        private List<ClusterNode> nodes;
+        /** Group ids. */
+        private final GridIntList grpIds;
+
+       /** Disabling. */
+        private final boolean disable;
+
+        /** Nodes where checkpoint started. */
+        private final List<ClusterNode> nodes = new LinkedList<>();
 
         /**
          * @param uid Uid.
-         * @param nodes Nodes.
+         * @param grpIds Groups.
+         * @param disable Disable.
          */
-        public WalModeChangeFuture(UUID uid, List<ClusterNode> nodes) {
+        private WalModeChangeFuture(UUID uid, GridIntList grpIds, boolean disable) {
             this.uid = uid;
-            this.nodes = nodes;
+            this.grpIds = grpIds;
+            this.disable = disable;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable ClusterNode node, @Nullable Throwable err) {
-            if (node == null) {
-                assert this.nodes == null;
-
-                walModeChangeFuts.remove(uid);
-
-                return super.onDone(null, err);
-            }
-            else {
-                synchronized (this) {
-                    boolean res = nodes.remove(node);
-
-                    assert res : node;
-
-                    if (nodes.isEmpty() || err != null) {
-                        walModeChangeFuts.remove(uid);
-
-                        return super.onDone(null, err);
-                    }
-                    else
-                        return false;
-                }
+        /**
+         *
+         */
+        private void initNodes() {
+            synchronized (nodes) {
+                nodes.addAll(sharedCtx.discovery().serverNodes(AffinityTopologyVersion.NONE));
             }
         }
 
+        /**
+         *
+         */
+        private void confirmCheckpointFinished(ClusterNode node) {
+            synchronized (nodes) {
+                boolean res = nodes.remove(node);
+
+                assert res;
+
+                if (nodes.isEmpty())
+                    finish();
+            }
+        }
+
+        /**
+         * @param disable Disable.
+         * @param prepare Prepare.
+         */
+        private void sendMessage(
+            boolean disable,
+            boolean prepare) {
+            WalModeDynamicChangeMessage msg = new WalModeDynamicChangeMessage(
+                uid,
+                disable,
+                prepare,
+                grpIds,
+                ctx.localNodeId());
+
+            Exception err;
+
+            try {
+                ctx.discovery().sendCustomEvent(msg);
+
+                err = checkNodeState();
+            }
+            catch (IgniteCheckedException e) {
+                err = e;
+            }
+
+            if (err != null)
+                onDone(err);
+        }
+
+        /**
+         *
+         */
+        public void init() {
+            sendMessage(disable, true);
+        }
+
+        /**
+         *
+         */
+        public void finish() {
+            sendMessage(disable, false);
+        }
+
         /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(WalModeChangeFuture.class, this);
+        @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
+            // Make sure to remove future before completion.
+            walModeChangeFuts.remove(uid, this);
+
+            return super.onDone(res, err);
         }
     }
 

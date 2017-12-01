@@ -470,7 +470,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (PageIO.getType(pageAddr) == 0) {
                     trackingIO.initNewPage(pageAddr, pageId, pageSize());
 
-                    if (sharedCtx.wal().enabled(fullId.groupId()))
+                    if (!sharedCtx.wal().disabled(fullId.groupId()))
                         if (!sharedCtx.wal().isAlwaysWriteFullPages())
                             sharedCtx.wal().log(
                                 new InitNewPageRecord(
@@ -1410,7 +1410,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      *
      */
     void beforeReleaseWrite(FullPageId pageId, long ptr, boolean pageWalRec) {
-        if (walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages()) && walMgr.enabled(pageId.groupId())) {
+        if (walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages()) && !walMgr.disabled(pageId.groupId())) {
             try {
                 walMgr.log(new PageSnapshot(pageId, ptr, pageSize()));
             }

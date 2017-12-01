@@ -32,10 +32,8 @@ import java.nio.file.Files;
 import java.sql.Time;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -87,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -259,7 +256,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile Throwable envFailed;
 
     /** Disabled grps. */
-    private volatile GridIntList disabledGrps = new GridIntList();
+    private final GridIntList disabledGrps = new GridIntList();
 
     /**
      * Positive (non-0) value indicates WAL can be archived even if not complete<br>
@@ -784,36 +781,22 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void changeMode(int grpId, boolean disabled) {
-        Set<Integer> grps = new HashSet<>();
-
-        GridIntIterator it = disabledGrps.iterator();
-
-        while (it.hasNext())
-            grps.add(it.next());
-
-        if (disabled) {
-            boolean res = grps.add(grpId);
-
-            assert res; // TODO guaranties
+    @Override public void disabled(int grpId, boolean disabled) {
+        synchronized (disabledGrps) {
+            if (!disabled)
+                disabledGrps.removeValue(0, grpId);
+            else {
+                if (!disabledGrps.contains(grpId))
+                    disabledGrps.add(grpId);
+            }
         }
-        else {
-            boolean res = grps.remove(grpId);
-
-            assert res; // TODO guaranties
-        }
-
-        GridIntList res = new GridIntList(grps.size());
-
-        for (Integer grp : grps)
-            res.add(grp);
-
-        disabledGrps = res;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enabled(int grpId) {
-        return !disabledGrps.contains(grpId);
+    @Override public boolean disabled(int grpId) {
+        synchronized (disabledGrps) {
+            return disabledGrps.contains(grpId);
+        }
     }
 
     /**

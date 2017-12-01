@@ -126,6 +126,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** Flag indicates that proxy is closed. */
     private volatile boolean closed;
 
+    /** Flag indicates that proxy is disabled. */
+    private volatile boolean disabled;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -1683,11 +1686,30 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         return closed;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isProxyDisabled() {
+        return disabled;
+    }
+
     /**
      * Closes this proxy instance.
      */
     @Override public void closeProxy() {
         closed = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableProxy() {
+        assert !disabled : ctx.name();
+
+        disabled = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableProxy() {
+        assert disabled;
+
+        disabled = false;
     }
 
     /** {@inheritDoc} */

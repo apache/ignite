@@ -17,24 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.File;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Checks stop and destroy methods behavior.
@@ -53,6 +57,9 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
     /** Cache 3. */
     private static final String CACHE3 = "cache3";
 
+    /** Region. */
+    private static String REGION = "region";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
@@ -61,50 +68,80 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
             iCfg.setClientMode(true);
 
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
 
-        CacheConfiguration cache1 = new CacheConfiguration(CACHE1);
-        CacheConfiguration cache2 = new CacheConfiguration(CACHE2).setGroupName("group");
-        CacheConfiguration cache3 = new CacheConfiguration(CACHE3).setGroupName("group");
+        DataRegionConfiguration reg = new DataRegionConfiguration().setName(REGION).setPersistenceEnabled(true);
+        DataRegionConfiguration dfltReg = new DataRegionConfiguration().setName("dflt").setPersistenceEnabled(true);
+
+        iCfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
+                .setDataRegionConfigurations(reg)
+                .setDefaultDataRegionConfiguration(dfltReg)
+        );
+
+        CacheConfiguration cache1 = new CacheConfiguration(CACHE1).setDataRegionName(REGION);
+        CacheConfiguration cache2 = new CacheConfiguration(CACHE2).setGroupName("group").setDataRegionName(REGION);
+        CacheConfiguration cache3 = new CacheConfiguration(CACHE3).setGroupName("group").setDataRegionName(REGION);
 
         iCfg.setCacheConfiguration(cache1, cache2, cache3);
 
-        iCfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
-
         return iCfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        // Removing persistence data
+        U.delete(Paths.get(U.defaultWorkDirectory()).toFile());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /**
      *
      */
-    public void testWalEnablingDisabling() throws Exception {
-        // Removing persistence data
-        U.delete(Paths.get(U.defaultWorkDirectory() + File.separator + DFLT_STORE_DIR).toFile());
+    public void testDataStreaming() throws Exception {
+        final Ignite ignite1 = startGrid(1);
+        final Ignite ignite2 = startGrid(2);
+        final Ignite client3 = startGrid(3);
 
-        Ignite ignite1 = startGrid(1);
-        Ignite ignite2 = startGrid(2);
-        Ignite client = startGrid(3);
-
-        client.active(true);
+        client3.active(true);
 
         GridCacheSharedContext ctx1 = ((IgniteKernal)ignite1).context().cache().context();
         GridCacheSharedContext ctx2 = ((IgniteKernal)ignite2).context().cache().context();
+        GridCacheSharedContext ctxClient = ((IgniteKernal)client3).context().cache().context();
 
         final int g1 = ctx1.cache().cacheDescriptor(CACHE1).groupId();
         final int g2 = ctx1.cache().cacheDescriptor(CACHE2).groupId();
         final int g3 = ctx1.cache().cacheDescriptor(CACHE3).groupId();
 
-        assertTrue(ctx1.wal().enabled(g1));
-        assertTrue(ctx1.wal().enabled(g2));
-        assertTrue(ctx1.wal().enabled(g3));
+        assertFalse(ctx1.wal().disabled(g1));
+        assertFalse(ctx1.wal().disabled(g2));
+        assertFalse(ctx1.wal().disabled(g3));
 
-        client.disableWal(Collections.singleton(CACHE1));
+        client3.cluster().disableWal(Collections.singleton(CACHE1));
 
-        assertFalse(ctx1.wal().enabled(g1));
-        assertTrue(ctx1.wal().enabled(g2));
-        assertTrue(ctx1.wal().enabled(g3));
+        // Checking newcomer know that wal disabled
+        Ignite ignite4 = startGrid(4);
 
-        IgniteCache cache1 = client.getOrCreateCache(CACHE1);
+        GridCacheSharedContext ctx4 = ((IgniteKernal)ignite4).context().cache().context();
+
+        assertTrue(ctx4.wal().disabled(g1));
+        assertFalse(ctx4.wal().disabled(g2));
+        assertFalse(ctx4.wal().disabled(g3));
+
+        // Checking old node
+        assertTrue(ctx1.wal().disabled(g1));
+        assertFalse(ctx1.wal().disabled(g2));
+        assertFalse(ctx1.wal().disabled(g3));
+
+        // Streaming
+        final IgniteCache cache1 = client3.getOrCreateCache(CACHE1);
 
         int size = 100_000;
 
@@ -113,20 +150,180 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         assertEquals(size, cache1.size());
 
-        client.enableWal(Collections.singleton(CACHE1));
+        final CountDownLatch opsRestricted = new CountDownLatch(2);
 
-        // Making sure there is no dirty pages after WAL enabling
-        // TODO check only cache's region
-        for (DataRegion memPlc : ctx1.database().dataRegions())
-            assertTrue(((PageMemoryEx)memPlc.pageMemory()).beginCheckpoint().isEmpty());
+        // Checking caches disabled during checkpointing on wal enabling
+        AffinityTopologyVersion top = ctx1.discovery().topologyVersionEx();
 
-        for (DataRegion memPlc : ctx2.database().dataRegions())
-            assertTrue(((PageMemoryEx)memPlc.pageMemory()).beginCheckpoint().isEmpty());
+        ctx1.exchange().affinityReadyFuture(
+            new AffinityTopologyVersion(top.topologyVersion(), top.minorTopologyVersion() + 1))
+            .listen(new CI1<Object>() {
+                @Override public void apply(Object o) {
+                    IgniteCache cache = ignite1.getOrCreateCache(CACHE1);
 
-        client.disableWal(Collections.singleton(CACHE2));
+                    try {
+                        cache.put(-1, -1);
 
-        assertTrue(ctx1.wal().enabled(g1));
-        assertFalse(ctx1.wal().enabled(g2));
-        assertFalse(ctx1.wal().enabled(g3));
+                        fail("Should be restricted. This test can te flaky in case of super fast checkpointing.");
+                    }
+                    catch (Exception e) {
+                        assertTrue(e.getMessage(), e.getMessage().contains("disabled"));
+
+                        opsRestricted.countDown();
+                    }
+                }
+            });
+
+        ctxClient.exchange().affinityReadyFuture(
+            new AffinityTopologyVersion(top.topologyVersion(), top.minorTopologyVersion() + 1))
+            .listen(new CI1<Object>() {
+                @Override public void apply(Object o) {
+                    IgniteCache cache = client3.getOrCreateCache(CACHE1);
+
+                    try {
+                        cache.put(-2, -2);
+
+                        fail("Should be restricted. This test can te flaky in case of super fast checkpointing.");
+                    }
+                    catch (Exception e) {
+                        assertTrue(e.getMessage(), e.getMessage().contains("disabled"));
+
+                        opsRestricted.countDown();
+                    }
+                }
+            });
+
+        client3.cluster().enableWal(Collections.singleton(CACHE1));
+
+        assert opsRestricted.await(5, TimeUnit.SECONDS);
+
+        // Make sure everything persisted on WAL enabling
+        stopAllGrids(true);
+
+        final Ignite newIgnite1 = startGrid(1);
+        final Ignite newIgnite2 = startGrid(2);
+        final Ignite newClient3 = startGrid(3);
+        final Ignite newIgnite4 = startGrid(4);
+
+        newClient3.active(true);
+
+        final IgniteCache cache = newClient3.getOrCreateCache(CACHE1);
+
+        assertEquals(size, cache.size());
+    }
+
+    /**
+     *
+     */
+    public void testCacheGroups() throws Exception {
+        final Ignite ignite1 = startGrid(1);
+        final Ignite ignite2 = startGrid(2);
+        final Ignite client3 = startGrid(3);
+
+        assertTrue(client3.configuration().isClientMode());
+
+        client3.active(true);
+
+        GridCacheSharedContext ctx1 = ((IgniteKernal)ignite1).context().cache().context();
+        GridCacheSharedContext ctx2 = ((IgniteKernal)ignite2).context().cache().context();
+        GridCacheSharedContext ctx3 = ((IgniteKernal)client3).context().cache().context();
+
+        Collection<GridCacheSharedContext> ctxs = new HashSet<>();
+
+        ctxs.add(ctx1);
+        ctxs.add(ctx2);
+        ctxs.add(ctx3);
+
+        Collection<Ignite> ignites = new HashSet<>();
+
+        ignites.add(ignite1);
+        ignites.add(ignite2);
+        ignites.add(client3);
+
+        for (Ignite ignite : ignites) {
+            checkWal(ctxs, false, false, false);
+
+            ignite.cluster().disableWal(Collections.singleton(CACHE1));
+
+            checkWal(ctxs, true, false, false);
+
+            ignite.cluster().enableWal(Collections.singleton(CACHE1));
+
+            checkWal(ctxs, false, false, false);
+
+            ignite.cluster().disableWal(Collections.singleton(CACHE2), false);
+
+            checkWal(ctxs, false, true, true);
+
+            ignite.cluster().disableWal(Collections.singleton(CACHE1));
+
+            checkWal(ctxs, true, true, true);
+
+            ignite.cluster().enableWal(Collections.singleton(CACHE1));
+            ignite.cluster().enableWal(Collections.singleton(CACHE2), false);
+
+            checkWal(ctxs, false, false, false);
+
+            final Set<String> both = new HashSet<>();
+
+            both.add(CACHE1);
+            both.add(CACHE2);
+
+            ignite.cluster().disableWal(both, false);
+
+            checkWal(ctxs, true, true, true);
+
+            final Set<String> all = new HashSet<>();
+
+            all.add(CACHE1);
+            all.add(CACHE2);
+            all.add(CACHE3);
+
+            ignite.cluster().enableWal(all, false);
+
+            checkWal(ctxs, false, false, false);
+        }
+    }
+
+    /**
+     * @param ctxs Ctxs.
+     * @param disabled1 Disabled 1.
+     * @param disabled2 Disabled 2.
+     * @param disabled3 Disabled 3.
+     */
+    private void checkWal(Collection<GridCacheSharedContext> ctxs,
+        boolean disabled1,
+        boolean disabled2,
+        boolean disabled3) throws Exception {
+        GridCacheSharedContext ctx0 = ctxs.iterator().next();
+
+        int cnt = ctx0.cache().getOrStartCache(CACHE1).size();
+
+        final int g1 = ctx0.cache().cacheDescriptor(CACHE1).groupId();
+        final int g2 = ctx0.cache().cacheDescriptor(CACHE2).groupId();
+        final int g3 = ctx0.cache().cacheDescriptor(CACHE3).groupId();
+
+        assertEquals(g2, g3);
+
+        for (GridCacheSharedContext ctx : ctxs) {
+            if (ctx.wal() != null) {
+                assertEquals(disabled1, ctx.wal().disabled(g1));
+                assertEquals(disabled2, ctx.wal().disabled(g2));
+                assertEquals(disabled3, ctx.wal().disabled(g3));
+            }
+        }
+
+        // Make sure writes allowed
+        for (GridCacheSharedContext ctx : ctxs) {
+            ctx.cache().getOrStartCache(CACHE1).put(++cnt, cnt);
+            ctx.cache().getOrStartCache(CACHE2).put(++cnt, cnt);
+            ctx.cache().getOrStartCache(CACHE3).put(++cnt, cnt);
+        }
+
+        for (GridCacheSharedContext ctx : ctxs) {
+            Map futs = U.field(ctx.cache(), "walModeChangeFuts");
+
+            assertTrue(futs.isEmpty());
+        }
     }
 }

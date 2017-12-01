@@ -39,7 +39,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -47,7 +46,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -72,8 +70,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
-import org.apache.ignite.internal.processors.cache.WalModeDynamicChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalModeDynamicChangeFinishedMessage;
+import org.apache.ignite.internal.processors.cache.WalModeDynamicChangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -597,8 +595,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         onClientNodeEvent(crdNode) :
                         onServerNodeEvent(crdNode);
                 }
-                else if (msg instanceof WalModeDynamicChangeRequest)
-                    exchange = onWalModeChangeRequest(crdNode);
+                else if (msg instanceof WalModeDynamicChangeMessage)
+                    exchange = onWalModeChangeRequest(crdNode, (WalModeDynamicChangeMessage)msg);
                 else {
                     assert affChangeMsg != null : this;
 
@@ -904,36 +902,45 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return Exchange type.
      * @throws IgniteCheckedException If failed.
      */
-    private ExchangeType onWalModeChangeRequest(boolean crd) throws IgniteCheckedException {
+    private ExchangeType onWalModeChangeRequest(boolean crd, final WalModeDynamicChangeMessage msg)
+        throws IgniteCheckedException {
+        boolean disable = msg.disable();
+        boolean prepare = msg.prepare();
+
+        assert !disable && prepare;
+
+        cctx.cache().initWalEnablingFuture(msg.uid());
+
+        GridIntIterator it = msg.grpIds().iterator();
+
+        while (it.hasNext()) {
+            int grpId = it.next();
+
+            for (GridCacheContext ctx : cctx.cache().cacheGroup(grpId).caches())
+                cctx.cache().disableGateway(ctx.name()); // todo newcomers proxies should be disabled too
+        }
+
         if (cctx.wal() != null) {
-            assert exchActions != null && !exchActions.empty() : this;
-
-            assert !exchActions.clientOnlyExchange() : exchActions;
-
-            final WalModeDynamicChangeRequest req = exchActions.walModeChangeRequest();
-
-            GridIntIterator it = req.grpIds().iterator();
-
-            while (it.hasNext())
-                cctx.wal().changeMode(it.next(), req.disableWal());
-
-            IgniteInternalFuture cpFut = ((IgniteEx)Ignition.localIgnite()).context().cache().context().database()
-                .checkpoint("wal-mode-change");
+            IgniteInternalFuture cpFut = cctx.cache().context().database().checkpoint("wal-mode-change");
 
             cpFut.listen(new CI1<Object>() {
                 @Override public void apply(Object o) {
-                    if (!req.disableWal())
+                    if (!cctx.localNodeId().equals(msg.initiatingNodeId())) {
                         try {
-                            cctx.io().send(req.initiatingNodeId(),
-                                new WalModeDynamicChangeFinishedMessage(req.uid()), SYSTEM_POOL);
+                            cctx.io().send(msg.initiatingNodeId(),
+                                new WalModeDynamicChangeFinishedMessage(msg.uid()), SYSTEM_POOL);
                         }
                         catch (ClusterTopologyCheckedException e) {
                             if (log.isDebugEnabled())
-                                log.debug("Failed to send partitions, node failed: " + req.initiatingNodeId());
+                                log.debug("Failed to send message, node failed: " + msg.initiatingNodeId());
                         }
                         catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to send partitions [node=" + req.initiatingNodeId() + ']', e);
+                            U.error(log, "Failed to send message [node=" + msg.initiatingNodeId() + ']', e);
                         }
+                    }
+                    else
+                        cctx.cache().onWalModeDynamicChangeFinishedMessage(cctx.localNode(),
+                            new WalModeDynamicChangeFinishedMessage(msg.uid()));
                 }
             });
         }

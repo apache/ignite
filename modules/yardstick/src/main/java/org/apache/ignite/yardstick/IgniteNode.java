@@ -175,6 +175,8 @@ public class IgniteNode implements BenchmarkServer {
         if (args.persistentStoreEnabled() || args.walMode() != null) {
             DataStorageConfiguration pcCfg = new DataStorageConfiguration();
 
+            pcCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+
             if (args.walMode() != null)
                 pcCfg.setWalMode(args.walMode());
 

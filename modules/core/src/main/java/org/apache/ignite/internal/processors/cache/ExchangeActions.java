@@ -52,9 +52,6 @@ public class ExchangeActions {
     /** */
     private StateChangeRequest stateChangeReq;
 
-    /** */
-    private WalModeDynamicChangeRequest walModeDynamicChangeReq;
-
     /**
      * @param grpId Group ID.
      * @return Always {@code true}, fails with assert error if inconsistent.
@@ -86,8 +83,7 @@ public class ExchangeActions {
             F.isEmpty(cachesToStop) &&
             F.isEmpty(cacheGrpsToStart) &&
             F.isEmpty(cacheGrpsToStop) &&
-            F.isEmpty(cachesToResetLostParts) &&
-            walModeDynamicChangeReq == null;
+            F.isEmpty(cachesToResetLostParts);
     }
 
     /**
@@ -105,20 +101,12 @@ public class ExchangeActions {
     }
 
     /**
-     * @return WAL mode change request.
-     */
-    public WalModeDynamicChangeRequest walModeChangeRequest() {
-        return walModeDynamicChangeReq;
-    }
-
-    /**
      * @param ctx Context.
      */
     public void completeRequestFutures(GridCacheSharedContext ctx) {
         completeRequestFutures(cachesToStart, ctx);
         completeRequestFutures(cachesToStop, ctx);
         completeRequestFutures(cachesToResetLostParts, ctx);
-        completeWalModeChangeFuture(ctx);
     }
 
     /**
@@ -144,14 +132,6 @@ public class ExchangeActions {
             for (CacheActionData req : map.values())
                 ctx.cache().completeCacheStartFuture(req.req, true, null);
         }
-    }
-
-    /**
-     * @param ctx Context.
-     */
-    private void completeWalModeChangeFuture(GridCacheSharedContext ctx) {
-        if (walModeDynamicChangeReq != null && walModeDynamicChangeReq.disableWal())
-            ctx.cache().completeDisablingWalFuture(walModeDynamicChangeReq);
     }
 
     /**
@@ -296,13 +276,6 @@ public class ExchangeActions {
     }
 
     /**
-     * @param req Request.
-     */
-    void changeWalMode(WalModeDynamicChangeRequest req) {
-        this.walModeDynamicChangeReq = req;
-    }
-
-    /**
      * @return Cache groups to start.
      */
     public List<CacheGroupActionData> cacheGroupsToStart() {
@@ -368,7 +341,6 @@ public class ExchangeActions {
             F.isEmpty(cacheGrpsToStart) &&
             F.isEmpty(cacheGrpsToStop) &&
             F.isEmpty(cachesToResetLostParts) &&
-            walModeDynamicChangeReq == null &&
             stateChangeReq == null;
     }
 
@@ -470,7 +442,6 @@ public class ExchangeActions {
             ", startGrps=" + startGrps +
             ", stopGrps=" + stopGrps +
             ", resetParts=" + (cachesToResetLostParts != null ? cachesToResetLostParts.keySet() : null) +
-            ", stateChangeRequest=" + stateChangeReq +
-            ", walModeDynamicChangeReq=" + walModeDynamicChangeReq + ']';
+            ", stateChangeRequest=" + stateChangeReq + ']';
     }
 }

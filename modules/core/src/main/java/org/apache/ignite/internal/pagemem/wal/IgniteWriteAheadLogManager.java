@@ -125,10 +125,10 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param grpId Group id.
      * @param disabled Disabled.
      */
-    public void changeMode(int grpId, boolean disabled);
+    public void disabled(int grpId, boolean disabled);
 
     /**
      * @param grpId Group id.
      */
-    public boolean enabled(int grpId);
+    public boolean disabled(int grpId);
 }

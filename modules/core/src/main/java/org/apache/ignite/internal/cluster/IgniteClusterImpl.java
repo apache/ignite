@@ -289,6 +289,46 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
+    @Override public void enableWal(Collection<String> cacheNames) throws IgniteException {
+        enableWal(cacheNames, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableWal(Collection<String> cacheNames, boolean explicit) throws IgniteException {
+        guard();
+
+        try {
+            ctx.cache().changeWalMode(cacheNames, false, explicit).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableWal(Collection<String> cacheNames) throws IgniteException {
+        disableWal(cacheNames, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableWal(Collection<String> cacheNames, boolean explicit) throws IgniteException {
+        guard();
+
+        try {
+            ctx.cache().changeWalMode(cacheNames, true, explicit).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isAsync() {
         return false;
     }

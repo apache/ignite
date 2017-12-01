@@ -301,16 +301,6 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public void enableWal(Collection<String> cacheNames) throws CacheException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void disableWal(Collection<String> cacheNames) throws CacheException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
         return null;
     }
