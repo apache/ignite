@@ -21,6 +21,7 @@ import org.apache.ignite._
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.ignite.spark.IgniteContext.setIgniteHome
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.SparkContext
 import org.apache.log4j.Logger
@@ -37,6 +38,8 @@ class IgniteContext(
     standalone: Boolean = true
     ) extends Serializable {
     private val cfgClo = new Once(cfgF)
+
+    private val igniteHome = IgniteUtils.getIgniteHome
 
     if (!standalone) {
         // Get required number of executors with default equals to number of available executors.
@@ -55,14 +58,11 @@ class IgniteContext(
     // Make sure to start Ignite on context creation.
     ignite()
 
-    def ignite(): Ignite = IgniteContext.ignite(cfgF(), sparkContext)
-
     /**
      * Creates an instance of IgniteContext with the given spring configuration.
      *
      * @param sc Spark context.
      * @param springUrl Spring configuration path.
-     * @param standalone If true
      */
     def this(
         sc: SparkContext,
@@ -121,6 +121,29 @@ class IgniteContext(
     }
 
     /**
+     * Get or start Ignite instance it it's not started yet.
+     * @return
+     */
+    def ignite(): Ignite = {
+        setIgniteHome(igniteHome)
+
+        val igniteCfg = cfgClo()
+
+        // check if called from driver
+        if (standalone || sparkContext != null) igniteCfg.setClientMode(true)
+
+        try {
+            Ignition.getOrStart(igniteCfg)
+        }
+        catch {
+            case e: IgniteException ⇒
+                Logging.log.error("Failed to start Ignite.", e)
+
+                throw e
+        }
+    }
+
+    /**
      * Stops supporting ignite instance. If ignite instance has been already stopped, this operation will be
      * a no-op.
      */
@@ -156,7 +179,6 @@ object IgniteContext {
 
     def setIgniteHome(igniteHome: String): Unit = {
         val home = IgniteUtils.getIgniteHome
-        Logging.log.info("IgniteHome: " + igniteHome + " home: " + home)
 
         if (home == null && igniteHome != null) {
             Logging.log.info("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
@@ -164,28 +186,6 @@ object IgniteContext {
             IgniteUtils.nullifyHomeDirectory()
 
             System.setProperty(IgniteSystemProperties.IGNITE_HOME, igniteHome)
-        }
-    }
-
-    /**
-      * Get or start Ignite instance it it's not started yet.
-      * @return
-      */
-    def ignite(igniteCfg: IgniteConfiguration, sparkContext: SparkContext, standalone: Boolean = true): Ignite = {
-        setIgniteHome(IgniteUtils.getIgniteHome)
-
-        // check if called from driver
-        if (standalone || sparkContext != null)
-            igniteCfg.setClientMode(true)
-
-        try {
-            Ignition.getOrStart(igniteCfg)
-        }
-        catch {
-            case e: IgniteException ⇒
-                Logging.log.error("Failed to start Ignite.", e)
-
-                throw e
         }
     }
 }
