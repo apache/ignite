@@ -2117,9 +2117,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /** {@inheritDoc} */
         @Override public void cancel() {
-            synchronized (interruptLock) {
-                super.cancel();
-            }
+            super.cancel();
         }
 
         /**
