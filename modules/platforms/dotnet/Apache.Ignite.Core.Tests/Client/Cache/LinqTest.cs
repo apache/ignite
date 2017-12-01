@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cache2 = Client.GetCache<int, Person>(CacheName2);
 
             // Non-distributed join returns incomplete results.
-            var persons1 = cache1.AsCacheQueryable();
+            var persons1 = cache1.AsCacheQueryable(false);
             var persons2 = cache2.AsCacheQueryable();
 
             var qry = persons1

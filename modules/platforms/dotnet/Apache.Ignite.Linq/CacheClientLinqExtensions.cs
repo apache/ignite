@@ -57,8 +57,7 @@ namespace Apache.Ignite.Linq
         /// Gets an <see cref="IQueryable{T}"/> instance over this cache.
         /// <para />
         /// Resulting query will be translated to cache SQL query and executed over the cache instance 
-        /// via either <see cref="ICache{TK,TV}.Query"/> or <see cref="ICache{TK,TV}.QueryFields"/>,
-        /// depending on requested result. 
+        /// via either <see cref="ICacheClient{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable"/> for introspection.
         /// </summary>
@@ -79,9 +78,8 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
         /// <para />
-        /// Resulting query will be translated to cache SQL query and executed over the cache instance
-        /// via either <see cref="ICache{TK,TV}.Query" /> or <see cref="ICache{TK,TV}.QueryFields" />,
-        /// depending on requested result.
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance 
+        /// via either <see cref="ICacheClient{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable" /> for introspection.
         /// </summary>
@@ -109,9 +107,8 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
         /// <para />
-        /// Resulting query will be translated to cache SQL query and executed over the cache instance
-        /// via either <see cref="ICache{TK,TV}.Query" /> or <see cref="ICache{TK,TV}.QueryFields" />,
-        /// depending on requested result.
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance 
+        /// via either <see cref="ICacheClient{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable" /> for introspection.
         /// </summary>
@@ -128,7 +125,7 @@ namespace Apache.Ignite.Linq
             IgniteArgumentCheck.NotNull(cache, "cache");
             IgniteArgumentCheck.NotNull(queryOptions, "queryOptions");
 
-            return new CacheQueryable<TKey, TValue>((ICacheInternal)cache, queryOptions);
+            return new CacheQueryable<TKey, TValue>((ICacheInternal) cache, queryOptions);
         }
     }
 }
