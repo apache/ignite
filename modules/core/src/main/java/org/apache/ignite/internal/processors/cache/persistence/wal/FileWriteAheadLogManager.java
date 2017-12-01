@@ -344,6 +344,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 compressor = new FileCompressor();
 
                 decompressor = new FileDecompressor();
+
+                if (!cctx.kernalContext().clientNode())
+                    decompressor.start();
             }
 
             if (mode != WALMode.NONE) {
@@ -420,9 +423,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (compressor != null)
                 compressor.start();
-
-            if (decompressor != null)
-                decompressor.start();
         }
     }
 

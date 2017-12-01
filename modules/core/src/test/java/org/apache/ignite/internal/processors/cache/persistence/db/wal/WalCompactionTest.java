@@ -254,7 +254,13 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         File[] cpMarkers = cpMarkersDir.listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
-                return !(name.equals(cpMarkersToSave[0].getName()) || name.equals(cpMarkersToSave[1].getName()));
+                return !(
+                    name.equals(cpMarkersToSave[0].getName()) ||
+                    name.equals(cpMarkersToSave[1].getName()) ||
+                    name.equals(cpMarkersToSave[2].getName()) ||
+                    name.equals(cpMarkersToSave[3].getName()) ||
+                    name.equals(cpMarkersToSave[4].getName())
+                );
             }
         });
 
