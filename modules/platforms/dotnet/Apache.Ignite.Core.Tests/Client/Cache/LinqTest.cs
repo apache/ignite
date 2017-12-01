@@ -39,14 +39,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var qry = cache.AsCacheQueryable();
             Assert.AreEqual(Count, qry.Count());
 
-            // All items local.
-            qry = cache.AsCacheQueryable(true);
-            Assert.Greater(Count, qry.Count());
-
             // Filter.
             qry = cache.AsCacheQueryable().Where(x => x.Value.Name.EndsWith("7"));
             Assert.AreEqual(7, qry.Single().Key);
-            Assert.AreEqual("TODO", qry.ToCacheQueryable().GetFieldsQuery().Sql);
+            Assert.AreEqual("select _T0._KEY, _T0._VAL from \"cache\".PERSON as _T0 where (_T0.NAME like '%' || ?) ",
+                qry.ToCacheQueryable().GetFieldsQuery().Sql);
 
             // DateTime.
             var arg = DateTime.UtcNow.AddDays(Count - 1);
