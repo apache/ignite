@@ -419,7 +419,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                 while (!stop.get()) {
                     int nodeId = r.nextInt(GRID_CNT + 1);
 
-                    Ignite node = nodeId == GRID_CNT ? client : grid(nodeId);
+                    Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
                     TransactionConcurrency conc = TC_VALS[r.nextInt(TC_VALS.length)];
                     TransactionIsolation isolation = TI_VALS[r.nextInt(TI_VALS.length)];
