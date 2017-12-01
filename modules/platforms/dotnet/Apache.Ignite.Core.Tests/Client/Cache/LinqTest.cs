@@ -17,10 +17,41 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
+    using System.Linq;
+    using Apache.Ignite.Linq;
+    using NUnit.Framework;
+
     /// <summary>
     /// Tests LINQ in thin client.
     /// </summary>
-    public class LinqTest : ClientTestBase
+    public class LinqTest : SqlQueryTestBase
     {
+        /// <summary>
+        /// Tests basic queries.
+        /// </summary>
+        [Test]
+        public void TestBasicQueries()
+        {
+            var cache = GetClientCache<Person>();
+
+            // All items.
+            var qry = cache.AsCacheQueryable();
+            Assert.AreEqual(Count, qry.Count());
+
+            // All items local.
+            qry = cache.AsCacheQueryable(true);
+            Assert.Greater(Count, qry.Count());
+
+            // Filter.
+            qry = cache.AsCacheQueryable().Where(x => x.Value.Name.EndsWith("7"));
+            Assert.AreEqual(7, qry.Single().Key);
+            Assert.AreEqual("TODO", qry.ToCacheQueryable().GetFieldsQuery().Sql);
+
+            // DateTime.
+            var arg = DateTime.UtcNow.AddDays(Count - 1);
+            qry = cache.AsCacheQueryable().Where(x => x.Value.DateTime > arg);
+            Assert.AreEqual(Count, qry.Single().Key);
+        }
     }
 }
