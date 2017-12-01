@@ -20,12 +20,11 @@ package org.apache.ignite.yardstick.ml;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ml.clustering.KMeansDistributedClusterer;
 import org.apache.ignite.ml.math.EuclideanDistance;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkUtils;
@@ -38,6 +37,10 @@ public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBen
     /** */
     private static AtomicBoolean startLogged = new AtomicBoolean(false);
 
+    /** */
+    @IgniteInstanceResource
+    Ignite ignite;
+
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         if (!startLogged.getAndSet(true))
@@ -45,36 +48,34 @@ public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBen
 
         final DataChanger.Scale scale = new DataChanger.Scale();
 
-        try (Ignite ignite = Ignition.getOrStart(new IgniteConfiguration())) {
-            // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
-            // because we create ignite cache internally.
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                this.getClass().getSimpleName(), new Runnable() {
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    // IMPL NOTE originally taken from KMeansDistributedClustererTest
-                    KMeansDistributedClusterer clusterer = new KMeansDistributedClusterer(
-                        new EuclideanDistance(), 1, 1, 1L);
+        // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
+        // because we create ignite cache internally.
+        IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
+            this.getClass().getSimpleName(), new Runnable() {
+            /** {@inheritDoc} */
+            @Override public void run() {
+                // IMPL NOTE originally taken from KMeansDistributedClustererTest
+                KMeansDistributedClusterer clusterer = new KMeansDistributedClusterer(
+                    new EuclideanDistance(), 1, 1, 1L);
 
-                    double[] v1 = scale.mutate(new double[] {1959, 325100});
-                    double[] v2 = scale.mutate(new double[] {1960, 373200});
+                double[] v1 = scale.mutate(new double[] {1959, 325100});
+                double[] v2 = scale.mutate(new double[] {1960, 373200});
 
-                    SparseDistributedMatrix points = new SparseDistributedMatrix(
-                        2, 2, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+                SparseDistributedMatrix points = new SparseDistributedMatrix(
+                    2, 2, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
-                    points.setRow(0, v1);
-                    points.setRow(1, v2);
+                points.setRow(0, v1);
+                points.setRow(1, v2);
 
-                    clusterer.cluster(points, 1);
+                clusterer.cluster(points, 1);
 
-                    points.destroy();
-                }
-            });
+                points.destroy();
+            }
+        });
 
-            igniteThread.start();
+        igniteThread.start();
 
-            igniteThread.join();
-        }
+        igniteThread.join();
 
         return false;
     }

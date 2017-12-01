@@ -20,12 +20,10 @@ package org.apache.ignite.yardstick.ml;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
 /**
@@ -39,22 +37,17 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
     private static final AtomicBoolean startLogged = new AtomicBoolean(false);
 
     /** */
-    private double[][] dataSquare;
+    private double[][] dataSquare = createAndFill(SIZE, SIZE);
 
     /** */
-    private double[][] dataRect1;
+    private double[][] dataRect1 = createAndFill(SIZE / 2, SIZE);
 
     /** */
-    private double[][] dataRect2;
+    private double[][] dataRect2 = createAndFill(SIZE, SIZE / 2);
 
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        dataSquare = createAndFill(SIZE, SIZE);
-        dataRect1 = createAndFill(SIZE / 2, SIZE);
-        dataRect2 = createAndFill(SIZE, SIZE / 2);
-    }
+    /** */
+    @IgniteInstanceResource
+    Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
@@ -63,32 +56,33 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
 
         final double scale = DataChanger.next();
 
-        try (Ignite ignite = Ignition.getOrStart(new IgniteConfiguration())) {
-            // Create IgniteThread, we may want to work with SparseDistributedMatrix inside IgniteThread
-            // because we create ignite cache internally.
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                this.getClass().getSimpleName(), new Runnable() {
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    Matrix m1, m2, m3, m4, m5, m6;
+        // Create IgniteThread, we may want to work with SparseDistributedMatrix inside IgniteThread
+        // because we create ignite cache internally.
+        IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
+            this.getClass().getSimpleName(), new Runnable() {
+            /** {@inheritDoc} */
+            @Override public void run() {
+                Matrix m1, m2, m3, m4, m5, m6;
 
-                    (m1 = createAndFill(dataSquare, scale)).times((m2 = createAndFill(dataSquare, scale)));
-                    (m3 = createAndFill(dataRect1, scale)).times((m4 = createAndFill(dataRect2, scale)));
-                    (m5 = createAndFill(dataRect2, scale)).times((m6 = createAndFill(dataRect1, scale)));
+                Matrix m7 = (m1 = createAndFill(dataSquare, scale)).times((m2 = createAndFill(dataSquare, scale)));
+                Matrix m8 = (m3 = createAndFill(dataRect1, scale)).times((m4 = createAndFill(dataRect2, scale)));
+                Matrix m9 = (m5 = createAndFill(dataRect2, scale)).times((m6 = createAndFill(dataRect1, scale)));
 
-                    m1.destroy();
-                    m2.destroy();
-                    m3.destroy();
-                    m4.destroy();
-                    m5.destroy();
-                    m6.destroy();
-                }
-            });
+                m1.destroy();
+                m2.destroy();
+                m3.destroy();
+                m4.destroy();
+                m5.destroy();
+                m6.destroy();
+                m7.destroy();
+                m8.destroy();
+                m9.destroy();
+            }
+        });
 
-            igniteThread.start();
+        igniteThread.start();
 
-            igniteThread.join();
-        }
+        igniteThread.join();
 
         return false;
     }
@@ -101,7 +95,7 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
         Matrix res = newMatrix(data.length, data[0].length).assign(data);
 
         for (int i = 0; i < data.length && i < data[0].length; i++)
-            res.set(i, i, res.get(i, i) * scale);
+            res.set(i, i, data[i][i] * scale);
 
         return res;
     }
