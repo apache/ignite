@@ -38,6 +38,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -139,6 +140,14 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
      */
     protected static TestTcpDiscoverySpi spi(Ignite ignite) {
         return ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
+    }
+
+    /**
+     * @param ignite Node.
+     * @return Discovery SPI.
+     */
+    protected static IgniteDiscoverySpi spi0(Ignite ignite) {
+        return ((IgniteDiscoverySpi)ignite.configuration().getDiscoverySpi());
     }
 
     /**

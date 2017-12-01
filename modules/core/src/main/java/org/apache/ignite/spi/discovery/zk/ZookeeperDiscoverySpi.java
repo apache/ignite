@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -297,6 +298,16 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
             throw new IgniteSpiException("Failed to join cluster, thread was interrupted", e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
+        impl.internalLsnr = lsnr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void simulateNodeFailure() {
+        impl.simulateNodeFailure();
     }
 
     /** {@inheritDoc} */

@@ -50,6 +50,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -772,7 +773,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
         Ignite srv = clientRouter(client);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        DiscoverySpi srvSpi = spi(srv);
 
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
 

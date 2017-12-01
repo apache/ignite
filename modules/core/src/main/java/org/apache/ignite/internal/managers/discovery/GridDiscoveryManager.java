@@ -1990,7 +1990,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Map<Long, Collection<ClusterNode>> snapshots = topHist;
 
-        return snapshots.get(topVer);
+        Collection<ClusterNode> nodes = snapshots.get(topVer);
+
+        if (nodes == null) {
+            DiscoCache cache = discoCacheHist.get(new AffinityTopologyVersion(topVer, 0));
+
+            if (cache != null)
+                nodes = cache.allNodes();
+        }
+
+        return nodes;
     }
 
     /**

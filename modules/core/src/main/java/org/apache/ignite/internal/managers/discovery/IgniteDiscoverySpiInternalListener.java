@@ -17,39 +17,14 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.util.UUID;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.IgniteLogger;
 
 /**
- * TODO ZK
+ *
  */
-public interface IgniteDiscoverySpi extends DiscoverySpi {
+public interface IgniteDiscoverySpiInternalListener {
     /**
-     * @param nodeId Node ID.
-     * @return {@code True} if node joining or already joined topology.
+     * @param log Log.
      */
-    public boolean knownNode(UUID nodeId);
-
-    /**
-     *
-     * @return
-     */
-    public boolean reconnectSupported();
-
-    /**
-     *
-     */
-    public void reconnect();
-
-    /**
-     *
-     */
-    public void simulateNodeFailure();
-
-    /**
-     * For TESTING only.
-     *
-     * @param lsnr Listener.
-     */
-    public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr);
+    void beforeJoin(IgniteLogger log);
 }

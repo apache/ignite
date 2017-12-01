@@ -49,6 +49,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
@@ -67,6 +68,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -155,11 +157,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         IgniteEx client = startGrid(SRV_CNT);
 
-        final TestTcpDiscoverySpi clientSpi = spi(client);
+        final IgniteDiscoverySpi clientSpi = spi0(client);
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        DiscoverySpi srvSpi = ignite(0).configuration().getDiscoverySpi();
 
         final IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
@@ -188,7 +190,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         log.info("Block reconnect.");
 
-        clientSpi.writeLatch = new CountDownLatch(1);
+        DiscoverySpiBlockJoinListener lsnr = new DiscoverySpiBlockJoinListener();
+
+        clientSpi.setInternalListener(lsnr);
+
+        lsnr.startBlock();
 
         final AtomicReference<IgniteInternalFuture> blockPutRef = new AtomicReference<>();
 
@@ -254,7 +260,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         log.info("Allow reconnect.");
 
-        clientSpi.writeLatch.countDown();
+        lsnr.stopBlock();
 
         assertTrue(reconnectLatch.await(5000, MILLISECONDS));
 
@@ -319,7 +325,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         IgniteEx client = startGrid(SRV_CNT);
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 

@@ -42,6 +42,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -137,6 +138,9 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     private final Object stateMux = new Object();
+
+    /** */
+    public volatile IgniteDiscoverySpiInternalListener internalLsnr;
 
     /**
      * @param log Logger.
@@ -466,6 +470,11 @@ public class ZookeeperDiscoveryImpl {
      * @throws InterruptedException If interrupted.
      */
     private void joinTopology0(boolean prevJoined) throws InterruptedException {
+        IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
+
+        if (internalLsnr != null)
+            internalLsnr.beforeJoin(log);
+
         state = new ZkRuntimeState(prevJoined);
 
         DiscoveryDataBag discoDataBag = new DiscoveryDataBag(locNode.id());
@@ -1366,6 +1375,17 @@ public class ZookeeperDiscoveryImpl {
 
             processNodeFail(node.internalId(), evtData.topologyVersion());
         }
+    }
+
+    /**
+     *
+     */
+    public void simulateNodeFailure() {
+        zkClient().deleteIfExistsAsync(zkPaths.aliveNodesDir);
+
+        zkClient().onCloseStart();
+
+        zkClient().close();
     }
 
     /**

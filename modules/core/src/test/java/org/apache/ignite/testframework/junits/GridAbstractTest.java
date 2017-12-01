@@ -2159,6 +2159,35 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
     }
+    /**
+     * @param expSize Expected nodes number.
+     * @throws Exception If failed.
+     */
+    protected final void waitForTopology(final int expSize) throws Exception {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                List<Ignite> nodes = G.allGrids();
+
+                if (nodes.size() != expSize) {
+                    info("Wait all nodes [size=" + nodes.size() + ", exp=" + expSize + ']');
+
+                    return false;
+                }
+
+                for (Ignite node: nodes) {
+                    int sizeOnNode = node.cluster().nodes().size();
+
+                    if (sizeOnNode != expSize) {
+                        info("Wait for size on node [node=" + node.name() + ", size=" + sizeOnNode + ", exp=" + expSize + ']');
+
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }, 15_000));
+    }
 
     /**
      * @param millis Time to sleep.

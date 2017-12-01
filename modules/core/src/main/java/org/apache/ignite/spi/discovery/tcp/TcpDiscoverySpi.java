@@ -56,6 +56,7 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -103,6 +104,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessag
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
@@ -402,6 +404,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     protected IgniteSpiContext spiCtx;
+
+    /** */
+    private IgniteDiscoverySpiInternalListener internalLsnr;
 
     /**
      * Gets current SPI state.
@@ -1517,6 +1522,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         OutputStream out,
         TcpDiscoveryAbstractMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
+        if (internalLsnr != null && msg instanceof TcpDiscoveryJoinRequestMessage)
+            internalLsnr.beforeJoin(log);
+
         assert sock != null;
         assert msg != null;
         assert out != null;
@@ -2113,6 +2121,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         sndMsgLsnrs.add(lsnr);
     }
 
+    /** {@inheritDoc} */
+    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
+        this.internalLsnr = lsnr;
+    }
+
     /**
      * <strong>FOR TEST ONLY!!!</strong>
      */
@@ -2150,7 +2163,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * <p>
      * This method is intended for test purposes only.
      */
-    protected void simulateNodeFailure() {
+    public void simulateNodeFailure() {
         impl.simulateNodeFailure();
     }
 
