@@ -17,12 +17,13 @@
 
 package org.apache.ignite.examples.spark
 
+import java.lang.{Long ⇒ JLong}
+
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.{Ignite, Ignition}
-import org.apache.spark.sql.ignite.IgniteSparkSession
-import java.lang.{Long ⇒ JLong}
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.ignite.IgniteSparkSession
 
 /**
   * Example application to show use-case for Ignite implementation of Spark SQL {@link org.apache.spark.sql.catalog.Catalog}.

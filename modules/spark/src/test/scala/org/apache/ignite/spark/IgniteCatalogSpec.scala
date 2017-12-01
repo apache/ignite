@@ -17,19 +17,19 @@
 
 package org.apache.ignite.spark
 
+import java.lang.{Long ⇒ JLong}
+
+import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.spark.AbstractDataFrameSpec.INT_STR_CACHE_NAME
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder
 import org.apache.spark.sql.ignite.IgniteSparkSession
+import org.apache.spark.sql.types.{LongType, StringType}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 import scala.collection.JavaConversions._
-import java.lang.{Long ⇒ JLong}
-
-import org.apache.ignite.cache.query.SqlFieldsQuery
-import org.apache.spark.sql.types.{LongType, StringType}
 
 /**
   * Tests to check Spark Catalog implementation.

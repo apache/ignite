@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.IgniteContext
+import org.apache.spark.SparkConf
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession.Builder
@@ -33,7 +34,6 @@ import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.{DataStreamReader, StreamingQueryManager}
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.sql.util.ExecutionListenerManager
-import org.apache.spark.SparkConf
 
 import scala.reflect.runtime.universe
 
