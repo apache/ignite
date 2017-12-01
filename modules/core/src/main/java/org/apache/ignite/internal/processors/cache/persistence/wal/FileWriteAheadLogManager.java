@@ -877,10 +877,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return Handle that will fit the entry.
      */
     private FileWriteHandle rollOver(FileWriteHandle cur) throws StorageException, IgniteCheckedException {
-        //todo remove
-        log.warning("Rollover called for " + cur.idx,
-            new Throwable("debug"));
-
         FileWriteHandle hnd = currentHandle();
 
         if (hnd != cur)
@@ -1392,9 +1388,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
             synchronized (this) {
                 if (lastAbsArchivedIdx >= absIdx) {
-                    //todo remove code before commit
-                    log.warning("Not needed to reserve work segment: absIdx=" + absIdx + "; lastAbsArchivedIdx=" + lastAbsArchivedIdx ,
-                        new Throwable("debug"));
+                    if (log.isDebugEnabled())
+                        log.debug("Not needed to reserve WAL segment: absIdx=" + absIdx + ";" +
+                            " lastAbsArchivedIdx=" + lastAbsArchivedIdx);
+
                     return true;
                 }
 
@@ -1404,10 +1401,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 locked.put(absIdx, cur);
 
-                //todo return debug
-                //if (log.isDebugEnabled())
-                    log.warning("Reserved work segment [absIdx=" + absIdx + ", pins=" + cur + ']' ,
-                        new Throwable("debug"));
+                if (log.isDebugEnabled())
+                    log.debug("Reserved work segment [absIdx=" + absIdx + ", pins=" + cur + ']');
 
                 return false;
             }
@@ -1421,24 +1416,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             synchronized (this) {
                 Integer cur = locked.get(absIdx);
 
-                assert cur != null && cur > 0 : "Index " + absIdx + " is not locked; " +
+                assert cur != null && cur > 0 : "WAL Segment with Index " + absIdx + " is not locked;" +
                     " lastAbsArchivedIdx = " + lastAbsArchivedIdx;
 
                 if (cur == 1) {
                     locked.remove(absIdx);
 
-                    //todo return debug and remove exception
-                    //if (log.isDebugEnabled())
-                        log.warning("Fully released work segment (ready to archive) [absIdx=" + absIdx + ']',
-                            new Throwable("debug"));
+                    if (log.isDebugEnabled())
+                        log.debug("Fully released work segment (ready to archive) [absIdx=" + absIdx + ']');
                 }
                 else {
                     locked.put(absIdx, cur - 1);
 
-                    //todo return debug and remove exception
-                    //if (log.isDebugEnabled())
-                        log.warning("Partially released work segment [absIdx=" + absIdx + ", pins=" + (cur - 1) + ']',
-                            new Throwable("debug"));
+                    if (log.isDebugEnabled())
+                        log.debug("Partially released work segment [absIdx=" + absIdx + ", pins=" + (cur - 1) + ']');
                 }
 
                 notifyAll();
