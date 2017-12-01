@@ -42,6 +42,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.db.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -142,6 +143,8 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         PageMemory mem = sharedCtx.database().dataRegion(policyName).pageMemory();
 
+        DummyPageIO pageIO = new DummyPageIO();
+
         int cacheId = sharedCtx.cache().cache(cacheName).context().cacheId();
 
         FullPageId[] pages = new FullPageId[totalPages];
@@ -150,20 +153,23 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         psMgr.checkpointReadLock();
 
         try {
-            for (int i = 0; i < totalPages; i++)
+            for (int i = 0; i < totalPages; i++) {
                 pages[i] = new FullPageId(mem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_DATA), cacheId);
+
+                initPage(mem, pageIO, pages[i]);
+            }
+
+            generateWal(
+                (PageMemoryImpl)mem,
+                sharedCtx.pageStore(),
+                sharedCtx.wal(),
+                cacheId,
+                pages
+            );
         }
         finally {
             psMgr.checkpointReadUnlock();
         }
-
-        generateWal(
-            (PageMemoryImpl)mem,
-            sharedCtx.pageStore(),
-            sharedCtx.wal(),
-            cacheId,
-            pages
-        );
 
         eraseDataFromDisk(pageStore, cacheId, pages[0]);
 
@@ -174,6 +180,31 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         ig.active(true);
 
         checkRestore(ig, pages);
+    }
+
+    /**
+     * Initializes page.
+     * @param mem page memory implementation.
+     * @param pageIO page io implementation.
+     * @param fullId full page id.
+     * @throws IgniteCheckedException if error occurs.
+     */
+    private void initPage(PageMemory mem, PageIO pageIO, FullPageId fullId) throws IgniteCheckedException {
+        long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
+
+        try {
+            final long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
+
+            try {
+                pageIO.initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
+            }
+            finally {
+                mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
+            }
+        }
+        finally {
+            mem.releasePage(fullId.groupId(), fullId.pageId(), page);
+        }
     }
 
     /**
@@ -215,20 +246,27 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         PageMemory mem = shared.database().dataRegion(null).pageMemory();
 
-        for (FullPageId fullId : pages) {
-            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
+        dbMgr.checkpointReadLock();
 
-            try {
-                long pageAddr = mem.readLock(fullId.groupId(), fullId.pageId(), page);
+        try {
+            for (FullPageId fullId : pages) {
+                long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
-                for (int j = PageIO.COMMON_HEADER_END; j < mem.pageSize(); j += 4)
-                    assertEquals(j + (int)fullId.pageId(), PageUtils.getInt(pageAddr, j));
+                try {
+                    long pageAddr = mem.readLock(fullId.groupId(), fullId.pageId(), page);
 
-                mem.readUnlock(fullId.groupId(), fullId.pageId(), page);
+                    for (int j = PageIO.COMMON_HEADER_END; j < mem.pageSize(); j += 4)
+                        assertEquals(j + (int)fullId.pageId(), PageUtils.getInt(pageAddr, j));
+
+                    mem.readUnlock(fullId.groupId(), fullId.pageId(), page);
+                }
+                finally {
+                    mem.releasePage(fullId.groupId(), fullId.pageId(), page);
+                }
             }
-            finally {
-                mem.releasePage(fullId.groupId(), fullId.pageId(), page);
-            }
+        }
+        finally {
+            dbMgr.checkpointReadUnlock();
         }
     }
 
