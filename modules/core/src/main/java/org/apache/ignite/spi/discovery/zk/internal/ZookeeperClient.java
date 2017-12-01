@@ -870,6 +870,9 @@ public class ZookeeperClient implements Watcher {
 
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx) {
+            if (closing)
+                return;
+
             if (rc == KeeperException.Code.NONODE.intValue())
                 return;
 
@@ -901,6 +904,9 @@ public class ZookeeperClient implements Watcher {
         }
 
         @Override public void processResult(int rc, String path, Object ctx, String name) {
+            if (closing)
+                return;
+
             if (rc == KeeperException.Code.NODEEXISTS.intValue())
                 return;
 
@@ -934,6 +940,9 @@ public class ZookeeperClient implements Watcher {
 
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
+            if (closing)
+                return;
+
             if (needRetry(rc)) {
                 U.warn(log, "Failed to execute async operation, connection lost. Will retry after connection restore [path=" + path + ']');
 
@@ -962,6 +971,9 @@ public class ZookeeperClient implements Watcher {
 
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
+            if (closing)
+                return;
+
             if (needRetry(rc)) {
                 U.warn(log, "Failed to execute async operation, connection lost. Will retry after connection restore [path=" + path + ']');
 
@@ -990,6 +1002,9 @@ public class ZookeeperClient implements Watcher {
 
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, Stat stat) {
+            if (closing)
+                return;
+
             if (needRetry(rc)) {
                 U.warn(log, "Failed to execute async operation, connection lost. Will retry after connection restore [path=" + path + ']');
 
@@ -1021,6 +1036,9 @@ public class ZookeeperClient implements Watcher {
             boolean connLoss = false;
 
             synchronized (stateMux) {
+                if (closing)
+                    return;
+
                 if (state == ConnectionState.Disconnected &&
                     ZookeeperClient.this.connStartTime == connectStartTime) {
 

@@ -64,18 +64,14 @@ abstract class ZkDiscoveryEventData implements Serializable {
     }
 
     /**
-     * @param alives Optional alives nodes for additional filtering.
      * @param nodes Current nodes in topology.
      */
-    void initRemainingAcks(Collection<ZookeeperClusterNode> nodes, @Nullable TreeMap<Integer, String> alives) {
+    void initRemainingAcks(Collection<ZookeeperClusterNode> nodes) {
         assert remainingAcks == null : this;
 
         remainingAcks = U.newHashSet(nodes.size());
 
         for (ZookeeperClusterNode node : nodes) {
-            if (alives != null && !alives.containsKey(node.internalId()))
-                continue;
-
             if (!node.isLocal() && node.order() <= topVer) {
                 boolean add = remainingAcks.add(node.internalId());
 

@@ -648,9 +648,9 @@ public class ZookeeperDiscoveryImpl {
             assert state.evtsData != null;
 
             for (ZkDiscoveryEventData evtData : state.evtsData.evts.values())
-                evtData.initRemainingAcks(state.top.nodesByOrder.values(), null);
+                evtData.initRemainingAcks(state.top.nodesByOrder.values());
 
-            handleProcessedEvents("crd", null);
+            handleProcessedEvents("crd");
         }
         else {
             if (log.isInfoEnabled())
@@ -710,11 +710,16 @@ public class ZookeeperDiscoveryImpl {
             }
         }
 
+        List<ZookeeperClusterNode> failedNodes = null;
+
         for (Map.Entry<Integer, ZookeeperClusterNode> e : state.top.nodesByInternalId.entrySet()) {
             if (!alives.containsKey(e.getKey())) {
                 ZookeeperClusterNode failedNode = e.getValue();
 
-                handleProcessedEventsOnNodeFail(failedNode, alives);
+                if (failedNodes == null)
+                    failedNodes = new ArrayList<>();
+
+                failedNodes.add(failedNode);
 
                 generateNodeFail(curTop, failedNode);
 
@@ -724,6 +729,9 @@ public class ZookeeperDiscoveryImpl {
 
         if (newEvts)
             saveAndProcessNewEvents();
+
+        if (failedNodes != null)
+            handleProcessedEventsOnNodesFail(failedNodes);
     }
 
     /**
@@ -766,7 +774,7 @@ public class ZookeeperDiscoveryImpl {
             state.evtsData.topVer,
             failedNode.internalId());
 
-        state.evtsData.addEvent(curTop.values(), evtData, null);
+        state.evtsData.addEvent(curTop.values(), evtData);
 
         if (log.isInfoEnabled())
             log.info("Generated NODE_FAILED event [evt=" + evtData + ']');
@@ -838,7 +846,7 @@ public class ZookeeperDiscoveryImpl {
 
         evtData.joiningNodeData = joiningNodeData;
 
-        state.evtsData.addEvent(dataForJoined.topology(), evtData, null);
+        state.evtsData.addEvent(dataForJoined.topology(), evtData);
 
         evtData.addRemainingAck(joinedNode); // Topology for joined node does not contain joined node.
 
@@ -1013,7 +1021,7 @@ public class ZookeeperDiscoveryImpl {
 
                         evtData.msg = msg;
 
-                        state.evtsData.addEvent(state.top.nodesByOrder.values(), evtData, null);
+                        state.evtsData.addEvent(state.top.nodesByOrder.values(), evtData);
 
                         if (log.isDebugEnabled())
                             log.debug("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
@@ -1180,7 +1188,7 @@ public class ZookeeperDiscoveryImpl {
         }
 
         if (state.crd)
-            handleProcessedEvents("procEvt", null);
+            handleProcessedEvents("procEvt");
         else if (updateNodeInfo) {
             assert state.locNodeZkPath != null;
 
@@ -1332,10 +1340,9 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param ctx Context for logging.
-     * @param alives Optional alives nodes for additional filtering.
      * @throws Exception If failed.
      */
-    private void handleProcessedEvents(String ctx, @Nullable TreeMap<Integer, String> alives) throws Exception {
+    private void handleProcessedEvents(String ctx) throws Exception {
         Iterator<ZkDiscoveryEventData> it = state.evtsData.evts.values().iterator();
 
         List<ZkDiscoveryCustomEventData> newEvts = null;
@@ -1428,17 +1435,17 @@ public class ZookeeperDiscoveryImpl {
             Collection<ZookeeperClusterNode> nodes = state.top.nodesByOrder.values();
 
             for (int i = 0; i < newEvts.size(); i++)
-                state.evtsData.addEvent(nodes, newEvts.get(i), alives);
+                state.evtsData.addEvent(nodes, newEvts.get(i));
 
             saveAndProcessNewEvents();
         }
     }
 
     /**
-     * @param failedNode Failed node.
+     * @param failedNodes Failed nodes.
      * @throws Exception If failed.
      */
-    private void handleProcessedEventsOnNodeFail(ZookeeperClusterNode failedNode, TreeMap<Integer, String> alives) throws Exception {
+    private void handleProcessedEventsOnNodesFail(List<ZookeeperClusterNode> failedNodes) throws Exception {
         boolean processed = false;
 
         for (Iterator<Map.Entry<Long, ZkDiscoveryEventData>> it = state.evtsData.evts.entrySet().iterator(); it.hasNext();) {
@@ -1446,12 +1453,16 @@ public class ZookeeperDiscoveryImpl {
 
             ZkDiscoveryEventData evtData = e.getValue();
 
-            if (evtData.onNodeFail(failedNode))
-                processed = true;
+            for (int i = 0; i < failedNodes.size(); i++) {
+                ZookeeperClusterNode failedNode = failedNodes.get(i);
+
+                if (evtData.onNodeFail(failedNode))
+                    processed = true;
+            }
         }
 
         if (processed)
-            handleProcessedEvents("fail-" + failedNode.id(), alives);
+            handleProcessedEvents("fail-" + U.nodeIds(failedNodes));
     }
 
     /**
@@ -1459,14 +1470,14 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void handleProcessedJoinEvent(ZkDiscoveryNodeJoinEventData evtData) throws Exception {
-        if (log.isInfoEnabled())
-            log.info("All nodes processed node join [evtData=" + evtData + ']');
+        if (log.isDebugEnabled())
+            log.debug("All nodes processed node join [evtData=" + evtData + ']');
 
         String evtDataPath = zkPaths.joinEventDataPath(evtData.eventId());
         String dataForJoinedPath = zkPaths.joinEventDataPathForJoined(evtData.eventId());
 
-        if (log.isInfoEnabled())
-            log.info("Delete processed event data [path1=" + evtDataPath + ", path2=" + dataForJoinedPath + ']');
+        if (log.isDebugEnabled())
+            log.debug("Delete processed event data [path1=" + evtDataPath + ", path2=" + dataForJoinedPath + ']');
 
         state.zkClient.deleteIfExistsAsync(evtDataPath);
         state.zkClient.deleteIfExistsAsync(dataForJoinedPath);
@@ -1821,7 +1832,7 @@ public class ZookeeperDiscoveryImpl {
                 }
 
                 if (processed)
-                    handleProcessedEvents("ack-" + nodeInternalId, null);
+                    handleProcessedEvents("ack-" + nodeInternalId);
             }
         }
     }

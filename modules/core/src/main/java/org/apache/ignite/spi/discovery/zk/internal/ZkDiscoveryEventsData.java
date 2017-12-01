@@ -58,16 +58,13 @@ class ZkDiscoveryEventsData implements Serializable {
     /**
      * @param nodes Current nodes in topology (these nodes should ack that event processed).
      * @param evt Event.
-     * @param alives Optional alives nodes for additional filtering.
      */
-    void addEvent(Collection<ZookeeperClusterNode> nodes,
-        ZkDiscoveryEventData evt,
-        @Nullable TreeMap<Integer, String> alives)
+    void addEvent(Collection<ZookeeperClusterNode> nodes, ZkDiscoveryEventData evt)
     {
         Object old = evts.put(evt.eventId(), evt);
 
         assert old == null : old;
 
-        evt.initRemainingAcks(nodes, alives);
+        evt.initRemainingAcks(nodes);
     }
 }
