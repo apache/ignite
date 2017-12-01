@@ -33,14 +33,14 @@ public class DiscoverySpiBlockJoinListener implements IgniteDiscoverySpiInternal
     /**
      *
      */
-    void startBlock() {
+    public void startBlock() {
         writeLatch = new CountDownLatch(1);
     }
 
     /**
      *
      */
-    void stopBlock() {
+    public void stopBlock() {
         writeLatch.countDown();
     }
 

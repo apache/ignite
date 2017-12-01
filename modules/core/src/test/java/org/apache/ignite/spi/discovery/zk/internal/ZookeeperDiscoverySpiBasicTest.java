@@ -46,6 +46,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.DiscoverySpiBlockJoinListener;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -1750,10 +1751,20 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         List<String> zkNodes = new ArrayList<>();
 
+        List<DiscoverySpiBlockJoinListener> lsnrs = new ArrayList<>();
+
         for (Ignite client : clients) {
             client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
 
             zkNodes.add(aliveZkNodePath(client));
+
+            if (disconnectedC != null) {
+                DiscoverySpiBlockJoinListener lsnr = new DiscoverySpiBlockJoinListener();
+
+                lsnr.startBlock();
+
+                lsnrs.add(lsnr);
+            }
         }
 
         long timeout = 10_000;
@@ -1807,8 +1818,12 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         waitReconnectEvent(log, disconnectLatch);
 
-        if (disconnectedC != null)
+        if (disconnectedC != null) {
             disconnectedC.run();
+
+            for (DiscoverySpiBlockJoinListener lsnr : lsnrs)
+                lsnr.stopBlock();
+        }
 
         waitReconnectEvent(log, reconnectLatch);
 

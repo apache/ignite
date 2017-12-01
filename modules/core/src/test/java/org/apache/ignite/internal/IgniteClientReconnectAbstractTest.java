@@ -273,7 +273,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         @Nullable Runnable disconnectedC)
         throws Exception {
         if (!tcpDiscovery()) {
-            reconnectClients(log, clients);
+            reconnectClients(log, clients, disconnectedC);
 
             return;
         }

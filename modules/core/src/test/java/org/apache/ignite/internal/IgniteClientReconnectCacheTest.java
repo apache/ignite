@@ -418,17 +418,21 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         final TransactionConcurrency txConcurrency,
         final IgniteCache<Object, Object> cache)
         throws Exception {
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        final TestTcpDiscoverySpi clientSpi = spi(client);
-        final TestTcpDiscoverySpi srvSpi = spi(srv);
+        final IgniteDiscoverySpi clientSpi = spi0(client);
+        final DiscoverySpi srvSpi = spi0(srv);
 
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
         final CountDownLatch reconnectLatch = new CountDownLatch(1);
 
         log.info("Block reconnect.");
 
-        clientSpi.writeLatch = new CountDownLatch(1);
+        DiscoverySpiBlockJoinListener lsnr = new DiscoverySpiBlockJoinListener();
+
+        clientSpi.setInternalListener(lsnr);
+
+        lsnr.startBlock();
 
         client.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -536,7 +540,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertTrue(putFailed.await(5000, MILLISECONDS));
 
-        clientSpi.writeLatch.countDown();
+        lsnr.stopBlock();
 
         waitReconnectEvent(reconnectLatch);
 
@@ -610,9 +614,9 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         IgniteEx client = startGrid(SRV_CNT);
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        DiscoverySpi srvSpi = spi0(srv);
 
         TestCommunicationSpi coordCommSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
@@ -728,7 +732,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
         });
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        DiscoverySpi srvSpi = spi0(srv);
 
         try {
             if (!joinLatch.await(10_000, MILLISECONDS)) {
@@ -956,6 +960,10 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      * @throws Exception If failed.
      */
     public void testReconnectClusterRestart() throws Exception {
+        // TODO ZK
+        if (!tcpDiscovery())
+            return;
+
         clientMode = true;
 
         final Ignite client = startGrid(SRV_CNT);
@@ -1020,6 +1028,10 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      * @throws Exception If failed.
      */
     public void testReconnectClusterRestartMultinode() throws Exception {
+        // TODO ZK
+        if (!tcpDiscovery())
+            return;
+
         clientMode = true;
 
         final int CLIENTS = 5;
@@ -1296,11 +1308,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         Class<?> msgToBlock,
         final IgniteInClosure<IgniteCache<Object, Object>> c)
         throws Exception {
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final UUID id = client.localNode().id();
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        DiscoverySpi srvSpi = spi0(srv);
 
         final IgniteCache<Object, Object> cache = client.getOrCreateCache(ccfg);
 
