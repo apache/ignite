@@ -20,7 +20,7 @@ package org.apache.spark.sql.ignite
 import org.apache.ignite.cache.affinity.Affinity
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.spark.IgniteRelationProvider._
-import org.apache.ignite.spark.{IgniteContext, IgniteSQLRelation}
+import org.apache.ignite.spark.{IgniteContext, IgniteSQLRelation, ignite, _}
 import org.apache.ignite.{Ignite, Ignition}
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -31,7 +31,6 @@ import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.types.StructType
 
 import scala.collection.JavaConversions._
-import org.apache.ignite.spark._
 
 /**
   */
