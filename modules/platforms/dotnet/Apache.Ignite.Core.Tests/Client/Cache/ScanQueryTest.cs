@@ -203,9 +203,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 // MaxCursors = 3
                 var ex = Assert.Throws<IgniteClientException>(() => clientCache.Query(qry));
                 Assert.AreEqual("Too many open cursors", ex.Message.Substring(0, 21));
-#if !NETCOREAPP2_0
-                Assert.AreEqual((int) Impl.Client.ClientStatus.TooManyCursors, ex.ErrorCode);
-#endif
+                Assert.AreEqual(ClientStatusCode.TooManyCursors, ex.StatusCode);
 
                 var count = 0;
 
