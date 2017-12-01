@@ -85,7 +85,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
 
     /** */
-    protected Map<String, DataRegion> dataRegionMap;
+    protected volatile Map<String, DataRegion> dataRegionMap;
 
     /** */
     private volatile boolean dataRegionsInitialized;
