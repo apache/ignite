@@ -145,7 +145,6 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-unsafe_2.10</artifactId>
             <version>${spark.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -249,14 +248,12 @@
             <groupId>org.apache.parquet</groupId>
             <artifactId>parquet-hadoop</artifactId>
             <version>1.9.0</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-mapreduce-client-core</artifactId>
             <version>${hadoop.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -322,7 +319,7 @@
                 <configuration>
                     <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                     <junitxml>.</junitxml>
-                    <filereports>Scala TestSuite.txt</filereports>
+                    <filereports>WDS TestSuite.txt</filereports>
                 </configuration>
                 <executions>
                     <execution>
