@@ -1385,7 +1385,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param absIdx Segment absolute index.
-         * @return {@code True} if can read, {@code false} if work segment, need release segment later
+         * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need
+         * release segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
          */
         @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
         private boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
@@ -3099,8 +3100,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param absIdx Absolute index to check.
-         * @return {@code True} if we can safely read the archive, {@code false} if the segment has not been archived
-         * yet. In this case the corresponding work segment is reserved (will not be deleted until release).
+         * @return <ul><li> {@code True} if we can safely read the archive,  </li> <li>{@code false} if the segment has
+         * not been archived yet. In this case the corresponding work segment is reserved (will not be deleted until
+         * release). Use {@link #releaseWorkSegment} for unlock </li></ul>
          */
         private boolean canReadArchiveOrReserveWork(long absIdx) {
             return archiver != null && archiver.checkCanReadArchiveOrReserveWorkSegment(absIdx);
