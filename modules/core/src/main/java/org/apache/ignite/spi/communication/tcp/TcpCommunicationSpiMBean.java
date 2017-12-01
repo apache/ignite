@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
@@ -161,7 +162,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * @return Map containing sender nodes and respective counts.
      */
     @MXBeanDescription("Received messages count grouped by sender node.")
-    public Map<String, Long> getReceivedMessagesByNode();
+    public Map<UUID, Long> getReceivedMessagesByNode();
 
     /**
      * Gets sent messages counts (grouped by type).
@@ -177,7 +178,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * @return Map containing receiver nodes and respective counts.
      */
     @MXBeanDescription("Sent messages count grouped by receiver node.")
-    public Map<String, Long> getSentMessagesByNode();
+    public Map<UUID, Long> getSentMessagesByNode();
 
     /**
      * Gets outbound messages queue size.

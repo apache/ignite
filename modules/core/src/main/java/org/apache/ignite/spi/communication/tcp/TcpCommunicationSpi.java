@@ -1817,42 +1817,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return metricsLsnr.receivedBytesCount();
     }
 
-    /**
-     * Gets received messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getReceivedMessagesByType() {
-        return metricsLsnr.receivedMessagesByType();
-    }
-
-    /**
-     * Gets received messages counts (grouped by node).
-     *
-     * @return Map containing sender nodes and respective counts.
-     */
-    public Map<String, Long> getReceivedMessagesByNode() {
-        return metricsLsnr.receivedMessagesByNode();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getSentMessagesByType() {
-        return metricsLsnr.sentMessagesByType();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by node).
-     *
-     * @return Map containing receiver nodes and respective counts.
-     */
-    public Map<String, Long> getSentMessagesByNode() {
-        return metricsLsnr.receivedMessagesByNode();
-    }
-
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
         GridNioServer<Message> srv = nioSrvr;
@@ -5160,7 +5124,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Long> getReceivedMessagesByNode() {
+        @Override public Map<UUID, Long> getReceivedMessagesByNode() {
             return TcpCommunicationSpi.this.metricsLsnr.receivedMessagesByNode();
         }
 
@@ -5170,7 +5134,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Long> getSentMessagesByNode() {
+        @Override public Map<UUID, Long> getSentMessagesByNode() {
             return TcpCommunicationSpi.this.metricsLsnr.sentMessagesByNode();
         }
 
