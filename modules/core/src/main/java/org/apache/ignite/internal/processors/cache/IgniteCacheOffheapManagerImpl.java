@@ -1192,7 +1192,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-                dataTree.invoke(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY, c);
+                ctx.database().checkpointReadLock();
+
+                try {
+                    dataTree.invoke(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY, c);
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
 
                 switch (c.operationType()) {
                     case PUT: {
