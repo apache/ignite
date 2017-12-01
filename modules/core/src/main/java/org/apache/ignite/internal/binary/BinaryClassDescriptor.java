@@ -741,7 +741,7 @@ public class BinaryClassDescriptor {
                         postWrite(writer);
 
                         // Check whether we need to update metadata.
-                        if (obj.getClass() != BinaryMetadata.class) {
+                        if (obj.getClass() != BinaryMetadata.class && obj.getClass() != BinaryTreeMap.class) {
                             int schemaId = writer.schemaId();
 
                             if (schemaReg.schema(schemaId) == null) {
