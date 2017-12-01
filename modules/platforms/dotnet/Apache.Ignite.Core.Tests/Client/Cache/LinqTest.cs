@@ -47,7 +47,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             // DateTime.
             var arg = DateTime.UtcNow.AddDays(Count - 1);
-            var qry2 = cache.AsCacheQueryable().Where(x => x.Value.DateTime > arg).Select(x => x.Key);
+            var qry2 = cache.AsCacheQueryable(false, "Person")
+                .Where(x => x.Value.DateTime > arg).Select(x => x.Key);
             Assert.AreEqual(Count, qry2.Single());
         }
 
@@ -57,8 +58,29 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestJoins()
         {
-            // TODO: both syntax, distributed and not
-            
+            var cache1 = Client.GetCache<int, Person>(CacheName);
+            var cache2 = Client.GetCache<int, Person>(CacheName2);
+
+            // Non-distributed join returns incomplete results.
+            var persons1 = cache1.AsCacheQueryable();
+            var persons2 = cache2.AsCacheQueryable();
+
+            var qry = persons1
+                .Join(persons2, p1 => p1.Value.Id, p2 => Count + 1 - p2.Value.Id, (p1, p2) => p2.Value.Name);
+
+            Assert.Greater(Count, qry.ToArray().Length);
+
+
+            // Distributed join fixes the problem.
+            persons1 = cache1.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});
+            persons2 = cache2.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});
+
+            var qry2 =
+                from p1 in persons1
+                join p2 in persons2 on p1.Value.Id equals Count + 1 - p2.Value.Id
+                select p2.Value.DateTime;
+
+            Assert.AreEqual(Count, qry2.ToArray().Length);
         }
     }
 }
