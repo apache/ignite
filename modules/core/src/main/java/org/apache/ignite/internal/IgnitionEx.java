@@ -169,6 +169,7 @@ public class IgnitionEx {
             zkCluster = createTestingCluster(1);
 
             try {
+                System.setProperty("zookeeper.forceSync", "false");
                 zkCluster.start();
 
                 System.out.println("ZK cluster started: " + zkCluster.getConnectString());
