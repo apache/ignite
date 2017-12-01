@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
+    using System.Runtime.InteropServices;
+
     /// <summary>
-    /// Client status codes.
+    /// JavaVMInitArgs.
     /// </summary>
-    internal enum ClientStatus
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    internal unsafe struct JvmInitArgs
     {
-        Success = 0,
-        Fail = 1,
-        InvalidOpCode = 2,
-        CacheDoesNotExist = 1000,
-        CacheExists = 1001,
-        TooManyCursors = 1010
+        public int version;
+        public int nOptions;
+        public JvmOption* options;
+        private readonly byte ignoreUnrecognized;
     }
 }

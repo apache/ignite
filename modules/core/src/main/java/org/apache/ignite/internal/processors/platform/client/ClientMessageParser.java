@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
@@ -69,122 +70,127 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSq
  * Thin client message parser.
  */
 public class ClientMessageParser implements ClientListenerMessageParser {
+    /* General-purpose operations. */
     /** */
-    private static final short OP_CACHE_GET = 1;
+    private static final short OP_RESOURCE_CLOSE = 0;
+
+    /* Cache operations */
+    /** */
+    private static final short OP_CACHE_GET = 1000;
 
     /** */
-    private static final short OP_GET_BINARY_TYPE_NAME = 2;
+    private static final short OP_CACHE_PUT = 1001;
 
     /** */
-    private static final short OP_GET_BINARY_TYPE = 3;
+    private static final short OP_CACHE_PUT_IF_ABSENT = 1002;
 
     /** */
-    private static final short OP_CACHE_PUT = 4;
+    private static final short OP_CACHE_GET_ALL = 1003;
 
     /** */
-    private static final short OP_REGISTER_BINARY_TYPE_NAME = 5;
+    private static final short OP_CACHE_PUT_ALL = 1004;
 
     /** */
-    private static final short OP_PUT_BINARY_TYPE = 6;
+    private static final short OP_CACHE_GET_AND_PUT = 1005;
 
     /** */
-    private static final short OP_QUERY_SCAN = 7;
+    private static final short OP_CACHE_GET_AND_REPLACE = 1006;
 
     /** */
-    private static final short OP_QUERY_SCAN_CURSOR_GET_PAGE = 8;
+    private static final short OP_CACHE_GET_AND_REMOVE = 1007;
 
     /** */
-    private static final short OP_RESOURCE_CLOSE = 9;
+    private static final short OP_CACHE_GET_AND_PUT_IF_ABSENT = 1008;
 
     /** */
-    private static final short OP_CACHE_CONTAINS_KEY = 10;
+    private static final short OP_CACHE_REPLACE = 1009;
 
     /** */
-    private static final short OP_CACHE_CONTAINS_KEYS = 11;
+    private static final short OP_CACHE_REPLACE_IF_EQUALS = 1010;
 
     /** */
-    private static final short OP_CACHE_GET_ALL = 12;
+    private static final short OP_CACHE_CONTAINS_KEY = 1011;
 
     /** */
-    private static final short OP_CACHE_GET_AND_PUT = 13;
+    private static final short OP_CACHE_CONTAINS_KEYS = 1012;
 
     /** */
-    private static final short OP_CACHE_GET_AND_REPLACE = 14;
+    private static final short OP_CACHE_CLEAR = 1013;
 
     /** */
-    private static final short OP_CACHE_GET_AND_REMOVE = 15;
+    private static final short OP_CACHE_CLEAR_KEY = 1014;
 
     /** */
-    private static final short OP_CACHE_PUT_IF_ABSENT = 16;
+    private static final short OP_CACHE_CLEAR_KEYS = 1015;
 
     /** */
-    private static final short OP_CACHE_GET_AND_PUT_IF_ABSENT = 17;
+    private static final short OP_CACHE_REMOVE_KEY = 1016;
 
     /** */
-    private static final short OP_CACHE_REPLACE = 18;
+    private static final short OP_CACHE_REMOVE_IF_EQUALS = 1017;
 
     /** */
-    private static final short OP_CACHE_REPLACE_IF_EQUALS = 19;
+    private static final short OP_CACHE_REMOVE_KEYS = 1018;
 
     /** */
-    private static final short OP_CACHE_PUT_ALL = 20;
+    private static final short OP_CACHE_REMOVE_ALL = 1019;
 
     /** */
-    private static final short OP_CACHE_CLEAR = 21;
+    private static final short OP_CACHE_GET_SIZE = 1020;
+
+    /* Cache create / destroy, configuration. */
+    /** */
+    private static final short OP_CACHE_GET_NAMES = 1050;
 
     /** */
-    private static final short OP_CACHE_CLEAR_KEY = 22;
+    private static final short OP_CACHE_CREATE_WITH_NAME = 1051;
 
     /** */
-    private static final short OP_CACHE_CLEAR_KEYS = 23;
+    private static final short OP_CACHE_GET_OR_CREATE_WITH_NAME = 1052;
 
     /** */
-    private static final short OP_CACHE_REMOVE_KEY = 24;
+    private static final short OP_CACHE_CREATE_WITH_CONFIGURATION = 1053;
 
     /** */
-    private static final short OP_CACHE_REMOVE_IF_EQUALS = 25;
+    private static final short OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION = 1054;
 
     /** */
-    private static final short OP_CACHE_GET_SIZE = 26;
+    private static final short OP_CACHE_GET_CONFIGURATION = 1055;
 
     /** */
-    private static final short OP_CACHE_REMOVE_KEYS = 27;
+    private static final short OP_CACHE_DESTROY = 1056;
+
+    /* Query operations. */
+    /** */
+    private static final short OP_QUERY_SCAN = 2000;
 
     /** */
-    private static final short OP_CACHE_REMOVE_ALL = 28;
+    private static final short OP_QUERY_SCAN_CURSOR_GET_PAGE = 2001;
 
     /** */
-    private static final short OP_CACHE_CREATE_WITH_NAME = 29;
+    private static final short OP_QUERY_SQL = 2002;
 
     /** */
-    private static final short OP_CACHE_GET_OR_CREATE_WITH_NAME = 30;
+    private static final short OP_QUERY_SQL_CURSOR_GET_PAGE = 2003;
 
     /** */
-    private static final short OP_CACHE_DESTROY = 31;
+    private static final short OP_QUERY_SQL_FIELDS = 2004;
 
     /** */
-    private static final short OP_CACHE_GET_NAMES = 32;
+    private static final short OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 2005;
+
+    /* Binary metadata operations. */
+    /** */
+    private static final short OP_BINARY_TYPE_NAME_GET = 3000;
 
     /** */
-    private static final short OP_CACHE_GET_CONFIGURATION = 33;
+    private static final short OP_BINARY_TYPE_NAME_PUT = 3001;
 
     /** */
-    private static final short OP_CACHE_CREATE_WITH_CONFIGURATION = 34;
+    private static final short OP_BINARY_TYPE_GET = 3002;
 
     /** */
-    private static final short OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION = 35;
-
-    /** */
-    private static final short OP_QUERY_SQL = 36;
-
-    /** */
-    private static final short OP_QUERY_SQL_CURSOR_GET_PAGE = 37;
-
-    /** */
-    private static final short OP_QUERY_SQL_FIELDS = 38;
-
-    /** */
-    private static final short OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 39;
+    private static final short OP_BINARY_TYPE_PUT = 3003;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -206,7 +212,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
         assert msg != null;
 
         BinaryInputStream inStream = new BinaryHeapInputStream(msg);
-        BinaryRawReaderEx reader = marsh.reader(inStream);
+
+        // skipHdrCheck must be true (we have 103 op code).
+        BinaryRawReaderEx reader = new BinaryReaderExImpl(marsh.context(), inStream,
+                null, null, true, true);
 
         return decode(reader);
     }
@@ -224,19 +233,19 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_CACHE_GET:
                 return new ClientCacheGetRequest(reader);
 
-            case OP_GET_BINARY_TYPE_NAME:
+            case OP_BINARY_TYPE_NAME_GET:
                 return new ClientBinaryTypeNameGetRequest(reader);
 
-            case OP_GET_BINARY_TYPE:
+            case OP_BINARY_TYPE_GET:
                 return new ClientBinaryTypeGetRequest(reader);
 
             case OP_CACHE_PUT:
                 return new ClientCachePutRequest(reader);
 
-            case OP_REGISTER_BINARY_TYPE_NAME:
+            case OP_BINARY_TYPE_NAME_PUT:
                 return new ClientBinaryTypeNamePutRequest(reader);
 
-            case OP_PUT_BINARY_TYPE:
+            case OP_BINARY_TYPE_PUT:
                 return new ClientBinaryTypePutRequest(reader);
 
             case OP_QUERY_SCAN:

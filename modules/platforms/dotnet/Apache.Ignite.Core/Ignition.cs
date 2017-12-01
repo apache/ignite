@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core
                 CheckServerGc(cfg, log);
 
                 // 2. Create context.
-                IgniteUtils.LoadDlls(cfg.JvmDllPath, log);
+                JvmDll.Load(cfg.JvmDllPath, log);
 
                 var cbs = IgniteManager.CreateJvmContext(cfg, log);
                 var env = cbs.Jvm.AttachCurrentThread();

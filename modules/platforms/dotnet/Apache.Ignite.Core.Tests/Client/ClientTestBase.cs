@@ -17,10 +17,13 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using System;
     using System.Net;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -133,6 +136,46 @@ namespace Apache.Ignite.Core.Tests.Client
         protected virtual IgniteConfiguration GetIgniteConfiguration()
         {
             return TestUtils.GetTestConfiguration();
+        }
+
+        /// <summary>
+        /// Converts object to binary form.
+        /// </summary>
+        protected IBinaryObject ToBinary(object o)
+        {
+            return Client.GetBinary().ToBinary<IBinaryObject>(o);
+        }
+
+        /// <summary>
+        /// Gets the binary cache.
+        /// </summary>
+        protected ICacheClient<int, IBinaryObject> GetBinaryCache()
+        {
+            return Client.GetCache<int, Person>(CacheName).WithKeepBinary<int, IBinaryObject>();
+        }
+
+        /// <summary>
+        /// Gets the binary key cache.
+        /// </summary>
+        protected ICacheClient<IBinaryObject, int> GetBinaryKeyCache()
+        {
+            return Client.GetCache<Person, int>(CacheName).WithKeepBinary<IBinaryObject, int>();
+        }
+
+        /// <summary>
+        /// Gets the binary key-val cache.
+        /// </summary>
+        protected ICacheClient<IBinaryObject, IBinaryObject> GetBinaryKeyValCache()
+        {
+            return Client.GetCache<Person, Person>(CacheName).WithKeepBinary<IBinaryObject, IBinaryObject>();
+        }
+
+        /// <summary>
+        /// Gets the binary person.
+        /// </summary>
+        protected IBinaryObject GetBinaryPerson(int id)
+        {
+            return ToBinary(new Person(id) { DateTime = DateTime.MinValue.ToUniversalTime() });
         }
     }
 }

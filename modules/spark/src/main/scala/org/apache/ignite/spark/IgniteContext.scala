@@ -62,13 +62,14 @@ class IgniteContext(
      *
      * @param sc Spark context.
      * @param springUrl Spring configuration path.
+     * @param standalone If true
      */
     def this(
         sc: SparkContext,
         springUrl: String,
-        client: Boolean
+        standalone: Boolean
         ) {
-        this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1(), client)
+        this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1(), standalone)
     }
 
     /**
@@ -170,11 +171,11 @@ object IgniteContext {
       * Get or start Ignite instance it it's not started yet.
       * @return
       */
-    def ignite(igniteCfg: IgniteConfiguration, sparkContext: SparkContext): Ignite = {
+    def ignite(igniteCfg: IgniteConfiguration, sparkContext: SparkContext, standalone: Boolean = true): Ignite = {
         setIgniteHome(IgniteUtils.getIgniteHome)
 
         // check if called from driver
-        if (sparkContext != null)
+        if (standalone || sparkContext != null)
             igniteCfg.setClientMode(true)
 
         try {

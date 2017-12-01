@@ -112,7 +112,7 @@ object AbstractDataFrameSpec {
 
         val discoSpi = new TcpDiscoverySpi
 
-        discoSpi.setIpFinder(IgniteRDDSpec.IP_FINDER)
+        discoSpi.setIpFinder(IP_FINDER)
 
         cfg.setDiscoverySpi(discoSpi)
 
