@@ -128,6 +128,7 @@ import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
 import listEditable from './components/list-editable';
+import breadcrumbs from './components/breadcrumbs';
 import clusterSelector from './components/cluster-selector';
 
 import pageProfile from './components/page-profile';
@@ -210,6 +211,7 @@ angular.module('ignite-console', [
     listEditable.name,
     clusterSelector.name,
     pageProfile.name,
+    breadcrumbs.name,
     // Ignite modules.
     IgniteModules.name
 ])
