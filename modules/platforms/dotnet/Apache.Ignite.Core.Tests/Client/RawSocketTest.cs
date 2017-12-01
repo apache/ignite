@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual(11, requestId);
 
                 var status = reader.ReadInt();
-                Assert.AreEqual(ClientStatusCode.InvalidOpCode, status);
+                Assert.AreEqual((int) ClientStatusCode.InvalidOpCode, status);
 
                 var err = reader.ReadObject<string>();
                 Assert.AreEqual("Invalid request op code: -1", err);
