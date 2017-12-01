@@ -424,18 +424,18 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                     bestRegsKeys);
 
                 if (log.isDebugEnabled())
-                    log.debug("Update of projections cache took " + (System.currentTimeMillis() - before));
+                    log.debug("Update of projections cache time: " + (System.currentTimeMillis() - before));
 
                 before = System.currentTimeMillis();
 
                 updateSplitCache(ind, rc, featuresCnt, ig -> i -> input.affinityKey(i, ig), uuid);
 
                 if (log.isDebugEnabled())
-                    log.debug("Update of split cache took " + (System.currentTimeMillis() - before));
+                    log.debug("Update of split cache time: " + (System.currentTimeMillis() - before));
             }
             else {
                 if (log.isDebugEnabled())
-                    log.debug("Best feature index: " + bestFeatureIdx + ", best infoGain " + bestInfoGain);
+                    log.debug("Best split [bestFeatureIdx=" + bestFeatureIdx + ", bestInfoGain=" + bestInfoGain + "]");
                 break;
             }
         }
