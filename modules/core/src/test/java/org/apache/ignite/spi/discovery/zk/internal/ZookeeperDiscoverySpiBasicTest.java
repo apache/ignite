@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -719,6 +720,69 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testConcurrentStartStop1() throws Exception {
+       concurrentStartStop(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentStartStop2() throws Exception {
+        concurrentStartStop(5);
+    }
+
+    /**
+     * @param initNodes Number of initially started nnodes.
+     * @throws Exception If failed.
+     */
+    private void concurrentStartStop(final int initNodes) throws Exception {
+        startGrids(initNodes);
+
+        final int NODES = 5;
+
+        long topVer = initNodes;
+
+        for (int i = 0; i < 10; i++) {
+            info("Iteration: " + i);
+
+            DiscoveryEvent[] expEvts = new DiscoveryEvent[NODES];
+
+            startGridsMultiThreaded(initNodes, NODES);
+
+            for (int j = 0; j < NODES; j++)
+                expEvts[j] = joinEvent(++topVer);
+
+            checkEvents(ignite(0), expEvts);
+
+            checkEventsConsistency();
+
+            final CyclicBarrier b = new CyclicBarrier(NODES);
+
+            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+                @Override public void apply(Integer idx) {
+                    try {
+                        b.await();
+
+                        stopGrid(initNodes + idx);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+
+                        fail();
+                    }
+                }
+            }, NODES, "stop-node");
+
+            for (int j = 0; j < NODES; j++)
+                expEvts[j] = failEvent(++topVer);
+
+            checkEventsConsistency();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testClusterRestart() throws Exception {
         startGridsMultiThreaded(3, false);
 
@@ -1148,7 +1212,22 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testClientReconnectSessionExpire1() throws Exception {
+    public void testClientReconnectSessionExpire1_1() throws Exception {
+       clientReconnectSessionExpire(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectSessionExpire1_2() throws Exception {
+        clientReconnectSessionExpire(true);
+    }
+
+    /**
+     * @param closeSock Test mode flag.
+     * @throws Exception If failed.
+     */
+    private void clientReconnectSessionExpire(boolean closeSock) throws Exception {
         startGrid(0);
 
         sesTimeout = 2000;
@@ -1159,7 +1238,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         client.cache(DEFAULT_CACHE_NAME).put(1, 1);
 
-        reconnectClientNodes(log, Collections.singletonList(client), null, true);
+        reconnectClientNodes(log, Collections.singletonList(client), null, closeSock);
 
         assertEquals(1, client.cache(DEFAULT_CACHE_NAME).get(1));
 
@@ -1185,6 +1264,96 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         startGrid(1);
 
         client0.compute().broadcast(new DummyCallable(null));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testForceClientReconnect() throws Exception {
+        final int SRVS = 3;
+
+        startGrids(SRVS);
+
+        client = true;
+
+        startGrid(SRVS);
+
+        reconnectClientNodes(Collections.singletonList(ignite(SRVS)), new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(SRVS));
+
+                spi.reconnect();
+
+                return null;
+            }
+        });
+
+        waitForTopology(SRVS + 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testForcibleClientFail() throws Exception {
+        final int SRVS = 3;
+
+        startGrids(SRVS);
+
+        client = true;
+
+        startGrid(SRVS);
+
+        reconnectClientNodes(Collections.singletonList(ignite(SRVS)), new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(0));
+
+                spi.failNode(ignite(SRVS).cluster().localNode().id(), "Test forcible node fail");
+
+                return null;
+            }
+        });
+
+        waitForTopology(SRVS + 1);
+    }
+
+    /**
+     * @param clients Clients.
+     * @param c Closure to run.
+     * @throws Exception If failed.
+     */
+    private void reconnectClientNodes(List<Ignite> clients, Callable<Void> c)
+        throws Exception {
+        final CountDownLatch disconnectLatch = new CountDownLatch(clients.size());
+        final CountDownLatch reconnectLatch = new CountDownLatch(clients.size());
+
+        IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED) {
+                    log.info("Disconnected: " + evt);
+
+                    disconnectLatch.countDown();
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                    log.info("Reconnected: " + evt);
+
+                    reconnectLatch.countDown();
+                }
+
+                return true;
+            }
+        };
+
+        for (Ignite client : clients)
+            client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+
+        c.call();
+
+        waitReconnectEvent(log, disconnectLatch);
+
+        waitReconnectEvent(log, reconnectLatch);
+
+        for (Ignite client : clients)
+            client.events().stopLocalListen(p);
     }
 
     /**
@@ -1506,7 +1675,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                             return false;
                         }
 
-                        assertEquals(expEvt.type(), evt0.type());
+                        assertEquals("Unexpected event [topVer=" + expEvt.topologyVersion() +
+                            ", exp=" + U.gridEventName(expEvt.type()) +
+                            ", evt=" + evt0 + ']', expEvt.type(), evt0.type());
                     }
                 }
 
@@ -1527,7 +1698,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @param spi Spi instance.
      */
     private static void closeZkClient(ZookeeperDiscoverySpi spi) {
-        ZooKeeper zk = GridTestUtils.getFieldValue(spi, "impl", "state", "zkClient", "zk");
+        ZooKeeper zk = zkClient(spi);
 
         try {
             zk.close();
@@ -1535,6 +1706,13 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         catch (Exception e) {
             fail("Unexpected error: " + e);
         }
+    }
+
+    /**
+     * @param spi Spi instance.
+     */
+    private static ZooKeeper zkClient(ZookeeperDiscoverySpi spi) {
+        return GridTestUtils.getFieldValue(spi, "impl", "state", "zkClient", "zk");
     }
 
     /**
@@ -1566,6 +1744,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
         }, 15_000));
     }
+
     /**
      * Reconnect client node.
      *
@@ -1619,8 +1798,31 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
         }
         else {
-            for (Ignite client : clients)
-                closeZkClient(client);
+            /*
+             * Use hack to simulate session expire without waiting session timeout:
+             * create and close ZooKeeper with the same session ID as ignite node's ZooKeeper.
+             */
+            List<ZooKeeper> dummyClients = new ArrayList<>();
+
+            for (Ignite client : clients) {
+                ZookeeperDiscoverySpi spi = (ZookeeperDiscoverySpi)client.configuration().getDiscoverySpi();
+
+                ZooKeeper zk = zkClient(spi);
+
+                ZooKeeper dummyZk = new ZooKeeper(
+                    spi.getZkConnectionString(),
+                    10_000,
+                    null,
+                    zk.getSessionId(),
+                    zk.getSessionPasswd());
+
+                dummyZk.exists("/a", false);
+
+                dummyClients.add(dummyZk);
+            }
+
+            for (ZooKeeper zk : dummyClients)
+                zk.close();
         }
 
         waitNoAliveZkNodes(log,

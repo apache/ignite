@@ -75,20 +75,6 @@ class ZkIgnitePaths {
     /**
      * TODO ZK: copied from curator.
      *
-     * validate the provided znode path string
-     * @param path znode path string
-     * @param isSequential if the path is being created
-     * with a sequential flag
-     * @throws IllegalArgumentException if the path is invalid
-     */
-    public static void validatePath(String path, boolean isSequential)
-        throws IllegalArgumentException {
-        validatePath(isSequential? path + "1": path);
-    }
-
-    /**
-     * TODO ZK: copied from curator.
-     *
      * Validate the provided znode path string
      * @param path znode path string
      * @return The given path if it was valid, for fluent chaining

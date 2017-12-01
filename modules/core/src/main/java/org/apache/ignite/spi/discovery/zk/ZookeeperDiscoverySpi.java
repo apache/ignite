@@ -257,8 +257,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void failNode(UUID nodeId, @Nullable String warning) {
-        // TODO ZK
-        throw new UnsupportedOperationException();
+        impl.failNode(nodeId, warning);
     }
 
     /** {@inheritDoc} */

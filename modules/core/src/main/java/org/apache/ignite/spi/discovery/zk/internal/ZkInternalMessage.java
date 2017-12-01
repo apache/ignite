@@ -15,35 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.spi.discovery.zk.internal;
+
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 /**
- * Clock timer for tests.
+ *
  */
-public class GridTestClockTimer implements Runnable {
-    /**
-     * Constructor.
-     */
-    public GridTestClockTimer() {
-        synchronized (IgniteUtils.mux) {
-            // TODO ZK
-            // assert IgniteUtils.gridCnt == 0 : IgniteUtils.gridCnt;
-
-            IgniteUtils.gridCnt++; // To prevent one more timer thread start from IgniteUtils.onGridStart.
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void run() {
-        while (true) {
-            IgniteUtils.curTimeMillis = System.currentTimeMillis();
-
-            try {
-                Thread.sleep(10);
-            }
-            catch (InterruptedException ignored) {
-                break;
-            }
-        }
-    }
+interface ZkInternalMessage extends DiscoverySpiCustomMessage {
+    // No-op.
 }

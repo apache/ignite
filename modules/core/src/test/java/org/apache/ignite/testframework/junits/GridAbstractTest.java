@@ -112,7 +112,6 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
-import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -123,7 +122,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIEN
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
-import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
 /**
  * Common abstract test for Ignite tests.
@@ -2224,7 +2222,7 @@ public abstract class GridAbstractTest extends TestCase {
         assertFalse("There are no nodes", nodes.isEmpty());
 
         if (nodes.get(0).configuration().getDiscoverySpi().getClass().getName().equals(ZK_DISCOVERY))
-            ZookeeperDiscoverySpiBasicTest.reconnectClientNodes(log, clients, null, true);
+            ZookeeperDiscoverySpiBasicTest.reconnectClientNodes(log, clients, null, false);
         else
             fail("Reconnect is not supported");
     }

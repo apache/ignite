@@ -42,6 +42,9 @@ public class IgniteClientReconnectStopTest extends IgniteClientReconnectAbstract
      * @throws Exception If failed.
      */
     public void testStopWhenDisconnected() throws Exception {
+        if (!tcpDiscovery())
+            return;
+
         clientMode = true;
 
         Ignite client = startGrid(serverCount());

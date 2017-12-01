@@ -19,6 +19,8 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
 import java.util.Map;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -28,9 +30,11 @@ class ZkJoiningNodeData implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @GridToStringInclude
     private final ZookeeperClusterNode node;
 
     /** */
+    @GridToStringInclude
     private final Map<Integer, Serializable> discoData;
 
     /**
@@ -57,5 +61,10 @@ class ZkJoiningNodeData implements Serializable {
      */
     Map<Integer, Serializable> discoveryData() {
         return discoData;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ZkJoiningNodeData.class, this);
     }
 }

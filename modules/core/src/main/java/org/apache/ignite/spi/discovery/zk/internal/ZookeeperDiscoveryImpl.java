@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -63,6 +64,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
@@ -218,6 +220,29 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * @param nodeId Node ID.
+     * @param warning Warning.
+     */
+    public void failNode(UUID nodeId, @Nullable String warning) {
+        ZookeeperClusterNode node = state.top.nodesById.get(nodeId);
+
+        if (node == null) {
+            if (log.isDebugEnabled())
+                log.debug("Ignore forcible node fail request, node does not exist: " + nodeId);
+
+            return;
+        }
+
+        if (!node.isClient()) {
+            U.warn(log, "Ignore forcible node fail request for non-client node: " + node);
+
+            return;
+        }
+
+        sendCustomMessage(new ZkInternalFailNodeMessage(nodeId, warning));
+    }
+
+    /**
      *
      */
     public void reconnect() {
@@ -296,15 +321,19 @@ public class ZookeeperDiscoveryImpl {
      */
     class SegmentedWatcher implements AsyncCallback.VoidCallback {
         @Override public void processResult(int rc, String path, Object ctx) {
-            assert state.evtsData != null;
-
-            lsnr.onDiscovery(EventType.EVT_NODE_SEGMENTED,
-                state.evtsData.topVer,
-                locNode,
-                state.top.topologySnapshot(),
-                Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                null);
+            notifySegmented();
         }
+    }
+
+    private void notifySegmented() {
+        assert state.evtsData != null;
+
+        lsnr.onDiscovery(EventType.EVT_NODE_SEGMENTED,
+            state.evtsData.topVer,
+            locNode,
+            state.top.topologySnapshot(),
+            Collections.<Long, Collection<ClusterNode>>emptyMap(),
+            null);
     }
 
     /**
@@ -995,10 +1024,15 @@ public class ZookeeperDiscoveryImpl {
         }
 
         if (newEvts != null) {
+            Set<UUID> alives = null;
+
             for (Map.Entry<Integer, String> evtE : newEvts.entrySet()) {
                 UUID sndNodeId = ZkIgnitePaths.customEventSendNodeId(evtE.getValue());
 
                 ZookeeperClusterNode sndNode = state.top.nodesById.get(sndNodeId);
+
+                if (alives != null && !alives.contains(sndNode.id()))
+                    sndNode = null;
 
                 String evtDataPath = zkPaths.customEvtsDir + "/" + evtE.getValue();
 
@@ -1011,6 +1045,35 @@ public class ZookeeperDiscoveryImpl {
                         msg = unmarshalZip(evtBytes);
 
                         state.evtsData.evtIdGen++;
+
+                        if (msg instanceof ZkInternalFailNodeMessage) {
+                            ZkInternalFailNodeMessage msg0 = (ZkInternalFailNodeMessage)msg;
+
+                            if (alives == null)
+                                alives = new HashSet<>(state.top.nodesById.keySet());
+
+                            if (alives.contains(msg0.nodeId)) {
+                                state.evtsData.topVer++;
+
+                                alives.remove(msg0.nodeId);
+
+                                ZookeeperClusterNode node = state.top.nodesById.get(msg0.nodeId);
+
+                                assert node != null :  msg0.nodeId;
+
+                                for (String child : zkClient().getChildren(zkPaths.aliveNodesDir)) {
+                                    if (ZkIgnitePaths.aliveInternalId(child) == node.internalId()) {
+                                        zkClient().deleteIfExistsAsync(zkPaths.aliveNodesDir + "/" + child);
+
+                                        break;
+                                    }
+                                }
+                            }
+                            else {
+                                if (log.isDebugEnabled())
+                                    log.debug("Ignore forcible node fail request for unknown node: " + msg0.nodeId);
+                            }
+                        }
 
                         ZkDiscoveryCustomEventData evtData = new ZkDiscoveryCustomEventData(
                             state.evtsData.evtIdGen,
@@ -1164,10 +1227,14 @@ public class ZookeeperDiscoveryImpl {
                             evtData0.msg = msg;
                         }
 
-                        notifyCustomEvent(evtData0, msg);
+                        if (msg instanceof ZkInternalMessage)
+                            processInternalMessage(evtData0, (ZkInternalMessage)msg);
+                        else {
+                            notifyCustomEvent(evtData0, msg);
 
-                        if (!evtData0.ackEvent())
-                            updateNodeInfo = true;
+                            if (!evtData0.ackEvent())
+                                updateNodeInfo = true;
+                        }
 
                         break;
                     }
@@ -1272,6 +1339,36 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * @param evtData
+     * @param msg
+     */
+    private void processInternalMessage(ZkDiscoveryCustomEventData evtData, ZkInternalMessage msg) throws Exception {
+        if (msg instanceof ZkInternalFailNodeMessage) {
+            ZkInternalFailNodeMessage msg0 = (ZkInternalFailNodeMessage)msg;
+
+            ClusterNode creatorNode = state.top.nodesById.get(evtData.sndNodeId);
+
+            if (msg0.warning != null) {
+                U.warn(log, "Received EVT_NODE_FAILED event with warning [" +
+                    "nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : evtData.sndNodeId) +
+                    ", nodeId=" + msg0.nodeId +
+                    ", msg=" + msg0.warning + ']');
+            }
+            else {
+                U.warn(log, "Received force EVT_NODE_FAILED event [" +
+                    "nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : evtData.sndNodeId) +
+                    ", nodeId=" + msg0.nodeId + ']');
+            }
+
+            ZookeeperClusterNode node = state.top.nodesById.get(msg0.nodeId);
+
+            assert node != null : msg0.nodeId;
+
+            processNodeFail(node.internalId(), evtData.topologyVersion());
+        }
+    }
+
+    /**
      * @param evtData Event data.
      * @param msg Custom message.
      */
@@ -1322,20 +1419,55 @@ public class ZookeeperDiscoveryImpl {
     /**
      * @param evtData Event data.
      */
-    @SuppressWarnings("unchecked")
-    private void notifyNodeFail(final ZkDiscoveryNodeFailEventData evtData) {
-        final ZookeeperClusterNode failedNode = state.top.removeNode(evtData.failedNodeInternalId());
+    private void notifyNodeFail(final ZkDiscoveryNodeFailEventData evtData) throws Exception {
+        processNodeFail(evtData.failedNodeInternalId(), evtData.topologyVersion());
+    }
+
+    /**
+     * @param nodeInternalId
+     * @param topVer
+     * @throws Exception
+     */
+    private void processNodeFail(int nodeInternalId, long topVer) throws Exception {
+        final ZookeeperClusterNode failedNode = state.top.removeNode(nodeInternalId);
 
         assert failedNode != null;
 
-        final List<ClusterNode> topSnapshot = state.top.topologySnapshot();
+        if (failedNode.isLocal()) {
+            U.warn(log, "Received EVT_NODE_FAILED for local node.");
 
-        lsnr.onDiscovery(evtData.eventType(),
-            evtData.topologyVersion(),
-            failedNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+            zkClient().onCloseStart();
+
+            if (locNode.isClient() && clientReconnectEnabled) {
+                boolean reconnect = false;
+
+                synchronized (stateMux) {
+                    if (connState == ConnectionState.STARTED) {
+                        reconnect = true;
+
+                        connState = ConnectionState.DISCONNECTED;
+                    }
+                }
+
+                if (reconnect)
+                    new ReconnectorThread().start();
+            }
+            else
+                notifySegmented();
+
+            // Stop any further processing.
+            throw new ZookeeperClientFailedException("Received node failed event for local node.");
+        }
+        else {
+            final List<ClusterNode> topSnapshot = state.top.topologySnapshot();
+
+            lsnr.onDiscovery(EVT_NODE_FAILED,
+                topVer,
+                failedNode,
+                topSnapshot,
+                Collections.<Long, Collection<ClusterNode>>emptyMap(),
+                null);
+        }
     }
 
     /**

@@ -59,8 +59,7 @@ class ZkDiscoveryEventsData implements Serializable {
      * @param nodes Current nodes in topology (these nodes should ack that event processed).
      * @param evt Event.
      */
-    void addEvent(Collection<ZookeeperClusterNode> nodes, ZkDiscoveryEventData evt)
-    {
+    void addEvent(Collection<ZookeeperClusterNode> nodes, ZkDiscoveryEventData evt) {
         Object old = evts.put(evt.eventId(), evt);
 
         assert old == null : old;

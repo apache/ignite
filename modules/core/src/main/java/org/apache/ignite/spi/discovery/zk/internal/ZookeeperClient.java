@@ -218,7 +218,7 @@ public class ZookeeperClient implements Watcher {
      *
      */
     private void notifyConnectionLost() {
-        if (state == ConnectionState.Lost && connLostC != null)
+        if (!closing && state == ConnectionState.Lost && connLostC != null)
             connLostC.run();
     }
 

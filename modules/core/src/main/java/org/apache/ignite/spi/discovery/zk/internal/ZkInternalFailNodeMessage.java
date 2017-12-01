@@ -15,35 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.spi.discovery.zk.internal;
+
+import java.util.UUID;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Clock timer for tests.
+ *
  */
-public class GridTestClockTimer implements Runnable {
-    /**
-     * Constructor.
-     */
-    public GridTestClockTimer() {
-        synchronized (IgniteUtils.mux) {
-            // TODO ZK
-            // assert IgniteUtils.gridCnt == 0 : IgniteUtils.gridCnt;
+public class ZkInternalFailNodeMessage implements ZkInternalMessage {
+    /** */
+    final UUID nodeId;
 
-            IgniteUtils.gridCnt++; // To prevent one more timer thread start from IgniteUtils.onGridStart.
-        }
+    /** */
+    final String warning;
+
+    /**
+     * @param nodeId Node ID.
+     * @param warning Warning to be displayed on all nodes.
+     */
+    ZkInternalFailNodeMessage(UUID nodeId, String warning) {
+        this.nodeId = nodeId;
+        this.warning = warning;
     }
 
     /** {@inheritDoc} */
-    @Override public void run() {
-        while (true) {
-            IgniteUtils.curTimeMillis = System.currentTimeMillis();
+    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
+        return null;
+    }
 
-            try {
-                Thread.sleep(10);
-            }
-            catch (InterruptedException ignored) {
-                break;
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return false;
     }
 }
