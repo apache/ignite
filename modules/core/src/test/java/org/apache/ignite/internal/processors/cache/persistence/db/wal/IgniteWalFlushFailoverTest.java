@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -175,7 +177,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            FileIO delegate = delegateFactory.create(file, modes);
+            final FileIO delegate = delegateFactory.create(file, modes);
 
             return new FileIODecorator(delegate) {
                 int writeAttempts = 2;
@@ -186,6 +188,12 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
                     return super.write(srcBuf);
                 }
+
+                /** {@inheritDoc} */
+                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+                    return delegate.map(maxWalSegmentSize);
+                }
+
             };
         }
     }

@@ -19,13 +19,20 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import sun.nio.ch.DirectBuffer;
+
+import static java.nio.ByteBuffer.allocate;
+import static java.nio.ByteBuffer.allocateDirect;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.MAPPED;
 
 /**
  * Segmented ring byte buffer that represents multi producer/single consumer queue that can be used by multiple writer
@@ -42,10 +49,10 @@ public class SegmentedRingByteBuffer {
     private final int cap;
 
     /** Direct. */
-    private final boolean direct;
+    private final BufferMode mode;
 
     /** Buffer. */
-    private final ByteBuffer buf;
+    public final ByteBuffer buf;
 
     /** Max segment size. */
     private final long maxSegmentSize;
@@ -67,19 +74,62 @@ public class SegmentedRingByteBuffer {
      */
     private volatile boolean waitForConsumer;
 
+    /** Metrics. */
+    private final DataStorageMetricsImpl metrics;
+
     /**
      * Creates ring buffer with given capacity.
      *
      * @param cap Buffer's capacity.
      * @param maxSegmentSize Max segment size.
-     * @param direct Direct byte buffer.
+     * @param mode Buffer mode.
      */
-    public SegmentedRingByteBuffer(int cap, long maxSegmentSize, boolean direct) {
+    public SegmentedRingByteBuffer(int cap, long maxSegmentSize, BufferMode mode) {
+        this(cap, maxSegmentSize, mode == DIRECT ? allocateDirect(cap) : allocate(cap), mode, null);
+    }
+
+    /**
+     * Creates ring buffer with given capacity.
+     *
+     * @param cap Buffer's capacity.
+     * @param maxSegmentSize Max segment size.
+     * @param mode Buffer mode.
+     * @param metrics Metrics.
+     */
+    public SegmentedRingByteBuffer(int cap, long maxSegmentSize, BufferMode mode, DataStorageMetricsImpl metrics) {
+        this(cap, maxSegmentSize, mode == DIRECT ? allocateDirect(cap) : allocate(cap), mode, metrics);
+    }
+
+    /**
+     * Creates ring buffer with given capacity which mapped to file.
+     *
+     * @param buf {@link MappedByteBuffer} instance.
+     * @param metrics Metrics.
+     */
+    public SegmentedRingByteBuffer(MappedByteBuffer buf, DataStorageMetricsImpl metrics) {
+        this(buf.capacity(), buf.capacity(), buf, MAPPED, metrics);
+    }
+
+    /**
+     * @param cap Capacity.
+     * @param maxSegmentSize Max segment size.
+     * @param buf Buffer.
+     * @param mode Mode.
+     * @param metrics Metrics.
+     */
+    private SegmentedRingByteBuffer(
+        int cap,
+        long maxSegmentSize,
+        ByteBuffer buf,
+        BufferMode mode,
+        DataStorageMetricsImpl metrics
+    ) {
         this.cap = cap;
-        this.direct = direct;
-        this.buf = direct ? ByteBuffer.allocateDirect(cap) : ByteBuffer.allocate(cap);
+        this.mode = mode;
+        this.buf = buf;
         this.buf.order(ByteOrder.nativeOrder());
         this.maxSegmentSize = maxSegmentSize;
+        this.metrics = metrics;
     }
 
     /**
@@ -90,6 +140,15 @@ public class SegmentedRingByteBuffer {
     public void init(long pos) {
         head.set(pos);
         tail.set(pos);
+    }
+
+    /**
+     * Returns buffer mode.
+     *
+     * @return Buffer mode.
+     */
+    public BufferMode mode() {
+        return mode;
     }
 
     /**
@@ -108,7 +167,8 @@ public class SegmentedRingByteBuffer {
      * <p>
      * Returned result can be {@code null} in case of requested amount of bytes greater then available space
      * in {@code SegmentedRingByteBuffer}. Also {@link WriteSegment#buffer()} can return {@code null} in case of
-     * {@link #maxSegmentSize} value is exceeded.
+     * {@link #maxSegmentSize} value is exceeded. In this case buffer will be closed in order to prevent any
+     * concurrent threads from trying of reserve new segment.
      * <p>
      * This method can be invoked by many producer threads and each producer will get own {@link ByteBuffer} instance
      * that mapped to own {@link SegmentedRingByteBuffer} slice.
@@ -122,6 +182,26 @@ public class SegmentedRingByteBuffer {
      * {@code null} if buffer space is not enough.
      */
     public WriteSegment offer(int size) {
+        return offer0(size, false);
+    }
+
+    /**
+     * Behaves like {@link #offer(int)} but in safe manner: there are no any concurrent threads and buffer in
+     * closed state.
+     *
+     * @param size Amount of bytes for reserve.
+     * @return {@link WriteSegment} instance that point to {@link ByteBuffer} instance with given {@code size}.
+     * {@code null} if buffer space is not enough.
+     */
+    public WriteSegment offerSafe(int size) {
+        return offer0(size, true);
+    }
+
+    /**
+     * @param size Amount of bytes for reserve.
+     * @param safe Safe ьщву.
+     */
+    private WriteSegment offer0(int size, boolean safe) {
         if (size > cap)
             throw new IllegalArgumentException("Record is too long [capacity=" + cap + ", size=" + size + ']');
 
@@ -137,8 +217,14 @@ public class SegmentedRingByteBuffer {
         for (;;) {
             long currTail = tail.get();
 
-            if (currTail < 0)
-                return new WriteSegment(null, -1);
+            assert !safe || currTail < 0 : "Unsafe usage of segment ring byte buffer";
+
+            if (currTail < 0) {
+                if (safe)
+                    currTail &= SegmentedRingByteBuffer.OPEN_MASK;
+                else
+                    return new WriteSegment(null, -1);
+            }
 
             long head0 = head.get();
 
@@ -154,7 +240,14 @@ public class SegmentedRingByteBuffer {
                 return null;
             }
             else {
-                if (tail.compareAndSet(currTail, fitsSeg ? newTail : newTail | CLOSE_MASK)) {
+                // If safe we should keep buffer closed.
+                long tail0 = fitsSeg ? (safe ? newTail | CLOSE_MASK : newTail) : newTail | CLOSE_MASK;
+
+                boolean upd = tail.compareAndSet(safe ? currTail | CLOSE_MASK : currTail, tail0);
+
+                assert !safe || upd : "Unsafe usage of segment ring byte buffer";
+
+                if (upd) {
                     if (!fitsSeg)
                         return new WriteSegment(null, -1);
 
@@ -239,10 +332,17 @@ public class SegmentedRingByteBuffer {
     public List<ReadSegment> poll(long pos) {
         waitForConsumer = true;
 
+        int spins = 0;
+
         for (;;) {
             if (producersCnt.compareAndSet(0, -1))
                 break;
+
+            spins++;
         }
+
+        if (metrics != null && metrics.metricsEnabled())
+            metrics.onBuffPollSpin(spins);
 
         long head = this.head.get();
 
@@ -281,7 +381,7 @@ public class SegmentedRingByteBuffer {
      * Frees allocated memory in case of direct byte buffer.
      */
     public void free() {
-        if (direct)
+        if (mode == DIRECT || mode == MAPPED)
             ((DirectBuffer)buf).cleaner().clean();
     }
 
@@ -316,6 +416,8 @@ public class SegmentedRingByteBuffer {
      * @param len Length.
      */
     private void copy(ByteBuffer src, int srcPos, ByteBuffer dest, int destPos, int len) {
+        assert mode != MAPPED;
+
         if (buf.isDirect()) {
             ByteBuffer src0 = src.duplicate();
             src0.limit(srcPos + len);
@@ -393,7 +495,7 @@ public class SegmentedRingByteBuffer {
          * @param wrapPnt Wrap point.
          */
         private WriteSegment(long currTail, long newTail, long wrapPnt) {
-            super(ByteBuffer.allocate((int)(newTail - currTail)), newTail);
+            super(allocate((int)(newTail - currTail)), newTail);
 
             this.seg.order(ByteOrder.nativeOrder());
             this.currTail = currTail;
@@ -472,5 +574,19 @@ public class SegmentedRingByteBuffer {
         @Override public String toString() {
             return S.toString(ReadSegment.class, this, "super", super.toString());
         }
+    }
+
+    /**
+     * Buffer mode.
+     */
+    public enum BufferMode {
+        /** Byte buffer on-heap. */
+        ONHEAP,
+
+        /** Direct byte buffer off-heap */
+        DIRECT,
+
+        /** Byte buffer mapped to file. */
+        MAPPED
     }
 }
