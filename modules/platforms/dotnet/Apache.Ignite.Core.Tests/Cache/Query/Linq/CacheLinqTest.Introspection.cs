@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                   "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True, Schema=, Lazy=True]]", str);
 
             // Check fields query
-            var fieldsQuery = (ICacheQueryable)cache.AsCacheQueryable().Select(x => x.Value.Name);
+            var fieldsQuery = cache.AsCacheQueryable().Select(x => x.Value.Name).ToCacheQueryable();
 
             Assert.AreEqual(cache.Name, fieldsQuery.CacheName);
 #pragma warning disable CS0618 // Type or member is obsolete
