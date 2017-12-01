@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System;
     using System.Net;
     using System.Net.Sockets;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
@@ -106,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual(11, requestId);
 
                 var status = reader.ReadInt();
-                Assert.AreEqual((int) ClientStatus.InvalidOpCode, status);
+                Assert.AreEqual(ClientStatusCode.InvalidOpCode, status);
 
                 var err = reader.ReadObject<string>();
                 Assert.AreEqual("Invalid request op code: -1", err);
