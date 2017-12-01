@@ -148,7 +148,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException{
+    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
         if (cctx.affinityNode() && cctx.ttl().eagerTtlEnabled() && pendingEntries == null) {
             String name = "PendingEntries";
 
@@ -452,7 +452,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             while (it.hasNext()) {
                 cctx.shared().database().checkpointReadLock();
 
-                try{
+                try {
                     KeyCacheObject key = it.next().key();
 
                     try {
@@ -1247,8 +1247,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException
-        {
+            @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
 
             DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
@@ -1273,8 +1272,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void update(GridCacheContext cctx,KeyCacheObject key,
-
+        @Override public void update(
+            GridCacheContext cctx,
+            KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
@@ -1489,8 +1489,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return dataTree.find(null, null);
         }
 
-        /** {@inheritDoc}
-         * @param cacheId*/
+        /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId) throws IgniteCheckedException {
             return cursor(cacheId, null, null);
         }
