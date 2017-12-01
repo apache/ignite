@@ -882,8 +882,8 @@ public class ZookeeperDiscoveryImpl {
 
         String joinDataPath = zkPaths.joiningNodeDataPath(locNode.id(), path);
 
-        if (log.isInfoEnabled())
-            log.info("Delete join data: " + joinDataPath);
+        if (log.isDebugEnabled())
+            log.debug("Delete join data: " + joinDataPath);
 
         state.zkClient.deleteIfExistsAsync(joinDataPath);
 
@@ -917,6 +917,8 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void cleanupPreviousClusterData() throws Exception {
+        long start = System.currentTimeMillis();
+
         // TODO ZK: use multi, better batching.
         state.zkClient.setData(zkPaths.evtsPath, null, -1);
 
@@ -937,6 +939,13 @@ public class ZookeeperDiscoveryImpl {
         state.zkClient.deleteAll(zkPaths.customEvtsAcksDir,
             state.zkClient.getChildren(zkPaths.customEvtsAcksDir),
             -1);
+
+        long time = System.currentTimeMillis() - start;
+
+        if (time > 0) {
+            if (log.isInfoEnabled())
+                log.info("Previous cluster data cleanup time: " + time);
+        }
     }
 
     /**
@@ -1175,8 +1184,8 @@ public class ZookeeperDiscoveryImpl {
         else if (updateNodeInfo) {
             assert state.locNodeZkPath != null;
 
-            if (log.isInfoEnabled())
-                log.info("Update processed events: " + state.locNodeInfo.lastProcEvt);
+            if (log.isDebugEnabled())
+                log.debug("Update processed events: " + state.locNodeInfo.lastProcEvt);
 
             state.zkClient.setData(state.locNodeZkPath, marshal(state.locNodeInfo), -1);
         }
@@ -1500,6 +1509,23 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     *
+     */
+    public void onStop() {
+        if (!stop.compareAndSet(false, true))
+            return;
+
+        synchronized (stateMux) {
+            connState = ConnectionState.STOPPED;
+        }
+
+        ZookeeperClient zkClient = state.zkClient;
+
+        if (zkClient != null)
+            zkClient.onCloseStart();
+    }
+
+    /**
      * @throws InterruptedException If interrupted.
      */
     public void stop() throws InterruptedException {
@@ -1511,25 +1537,13 @@ public class ZookeeperDiscoveryImpl {
      * @throws InterruptedException If interrupted.
      */
     private void stop0(Throwable e) throws InterruptedException {
-        if (!stop.compareAndSet(false, true))
-            return;
-
-        log.info("Stop ZookeeperDiscovery [nodeId=" + locNode.id() + ", err=" + e + ']');
-
-        synchronized (stateMux) {
-            connState = ConnectionState.STOPPED;
-        }
-
-        ZookeeperClient zkClient = state.zkClient;
-
-        if (zkClient != null)
-            zkClient.onCloseStart();
-
         busyLock.block();
 
         busyLock.unblock();
 
         joinFut.onDone(e);
+
+        ZookeeperClient zkClient = state.zkClient;
 
         if (zkClient != null)
             zkClient.close();
@@ -1552,6 +1566,8 @@ public class ZookeeperDiscoveryImpl {
         U.error(log, "Fatal error in ZookeeperDiscovery.", err);
 
         try {
+            onStop();
+
             stop0(err);
         }
         catch (InterruptedException e) {

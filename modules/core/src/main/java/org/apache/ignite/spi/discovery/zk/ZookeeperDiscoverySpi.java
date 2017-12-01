@@ -301,6 +301,12 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     }
 
     /** {@inheritDoc} */
+    @Override protected void onContextDestroyed0() {
+        if (impl != null)
+            impl.onStop();
+    }
+
+    /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
         if (impl != null) {
             try {
