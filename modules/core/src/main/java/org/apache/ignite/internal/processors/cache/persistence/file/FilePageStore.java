@@ -459,7 +459,7 @@ public class FilePageStore implements PageStore {
                 PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
             }
 
-            assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
+            assert calculateCrc && !skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
                     "CRC hasn't been calculated, crc=0";
 
             assert pageBuf.position() == 0 : pageBuf.position();
