@@ -549,9 +549,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// </summary>
         private ClientFieldsQueryCursor GetFieldsCursor(IBinaryStream s)
         {
+            var cursorId = s.ReadLong();
             var columnNames = ClientFieldsQueryCursor.ReadColumns(_marsh.StartUnmarshal(s));
 
-            return new ClientFieldsQueryCursor(_ignite, s.ReadLong(), _keepBinary, s,
+            return new ClientFieldsQueryCursor(_ignite, cursorId, _keepBinary, s,
                 ClientOp.QuerySqlFieldsCursorGetPage, columnNames);
         }
 
@@ -561,9 +562,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private ClientQueryCursorBase<T> GetFieldsCursorNoColumnNames<T>(IBinaryStream s,
             Func<IBinaryRawReader, int, T> readerFunc)
         {
+            var cursorId = s.ReadLong();
             var columnCount = s.ReadInt();
 
-            return new ClientQueryCursorBase<T>(_ignite, s.ReadLong(), _keepBinary, s,
+            return new ClientQueryCursorBase<T>(_ignite, cursorId, _keepBinary, s,
                 ClientOp.QuerySqlFieldsCursorGetPage, r => readerFunc(r, columnCount));
         }
 

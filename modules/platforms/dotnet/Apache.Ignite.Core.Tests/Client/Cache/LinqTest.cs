@@ -82,5 +82,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(Count, qry2.ToArray().Length);
         }
+
+        /// <summary>
+        /// Tests the DML via LINQ.
+        /// </summary>
+        [Test]
+        public void TestDml()
+        {
+            // TODO
+        }
     }
 }
