@@ -522,15 +522,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Handles the error.
         /// </summary>
-        private T HandleError<T>(ClientStatus status, string msg)
+        private T HandleError<T>(ClientStatusCode status, string msg)
         {
             switch (status)
             {
-                case ClientStatus.CacheDoesNotExist:
-                    throw new IgniteClientException("Cache doesn't exist: " + Name, null, (int) status);
+                case ClientStatusCode.CacheDoesNotExist:
+                    throw new IgniteClientException("Cache doesn't exist: " + Name, null, status);
 
                 default:
-                    throw new IgniteClientException(msg, null, (int) status);
+                    throw new IgniteClientException(msg, null, status);
             }
         }
 

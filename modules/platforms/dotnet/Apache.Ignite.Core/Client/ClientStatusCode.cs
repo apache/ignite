@@ -15,18 +15,43 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+namespace Apache.Ignite.Core.Client
 {
+    using Apache.Ignite.Core.Configuration;
+
     /// <summary>
-    /// Client status codes.
+    /// Client status codes (see <see cref="IgniteClientException.StatusCode"/>).
     /// </summary>
-    internal enum ClientStatus
+    public enum ClientStatusCode
     {
+        /// <summary>
+        /// Operation succeeded.
+        /// </summary>
         Success = 0,
+
+        /// <summary>
+        /// Operation failed (general-purpose code).
+        /// </summary>
         Fail = 1,
+
+        /// <summary>
+        /// Invalid request operation code.
+        /// </summary>
         InvalidOpCode = 2,
+
+        /// <summary>
+        /// Specified cache does not exist.
+        /// </summary>
         CacheDoesNotExist = 1000,
+
+        /// <summary>
+        /// Cache already exists.
+        /// </summary>
         CacheExists = 1001,
+
+        /// <summary>
+        /// The too many cursors (see <see cref="ClientConnectorConfiguration.MaxOpenCursorsPerConnection"/>).
+        /// </summary>
         TooManyCursors = 1010
     }
 }
