@@ -65,6 +65,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\Person.cs" Link="ThinClient\Cache\Person.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\ScanQueryTest.cs" Link="ThinClient\Cache\ScanQueryTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\SqlQueryTest.cs" Link="ThinClient\Cache\SqlQueryTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\LinqTest.cs" Link="ThinClient\Cache\LinqTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientConnectionTest.cs" Link="ThinClient\ClientConnectionTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestBase.cs" Link="ThinClient\ClientTestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
