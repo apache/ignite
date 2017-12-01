@@ -47,8 +47,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             // DateTime.
             var arg = DateTime.UtcNow.AddDays(Count - 1);
-            qry = cache.AsCacheQueryable().Where(x => x.Value.DateTime > arg);
-            Assert.AreEqual(Count, qry.Single().Key);
+            var qry2 = cache.AsCacheQueryable().Where(x => x.Value.DateTime > arg).Select(x => x.Key);
+            Assert.AreEqual(Count, qry2.Single());
+        }
+
+        /// <summary>
+        /// Tests joins.
+        /// </summary>
+        [Test]
+        public void TestJoins()
+        {
+            // TODO: both syntax, distributed and not
+            
         }
     }
 }
