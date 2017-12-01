@@ -24,13 +24,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.logger.java.JavaLogger;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_STW_DETECTOR_LAST_EVENTS_COUNT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_STW_DETECTOR_THRESHOLD;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_STW_DETECTOR_PRECISION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_PRECISION;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
 /**
- *
+ * Class for detection of long JVM pauses (see <a href="https://issues.apache.org/jira/browse/IGNITE-6171">IGNITE-6171</a>).
  */
 class LongJVMPauseDetector {
     /** Logger. */
@@ -38,9 +38,6 @@ class LongJVMPauseDetector {
 
     /** Started. */
     private static final AtomicBoolean started = new AtomicBoolean();
-
-    /** Lock. */
-    private static final Object lock = new Object();
 
     /** Long pause count. */
     private static long longPausesCnt;
@@ -53,9 +50,6 @@ class LongJVMPauseDetector {
 
     /** Long pauses durations. */
     private static long[] longPausesDurations;
-
-    /** Next event index. */
-    private static int next;
 
     /**
      * Starts worker if not started yet.
@@ -74,11 +68,11 @@ class LongJVMPauseDetector {
                 if (LOG.isDebugEnabled())
                     LOG.debug(getName() + " has been started.");
 
-                final int precision = getInteger(IGNITE_STW_DETECTOR_PRECISION, 50);
-                final int threshold = getInteger(IGNITE_STW_DETECTOR_THRESHOLD, 500);
-                final int evtCnt = getInteger(IGNITE_STW_DETECTOR_LAST_EVENTS_COUNT, 20);
+                final int precision = getInteger(IGNITE_JVM_PAUSE_DETECTOR_PRECISION, 50);
+                final int threshold = getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, 500);
+                final int evtCnt = getInteger(IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT, 20);
 
-                synchronized (lock) {
+                synchronized (LongJVMPauseDetector.class) {
                     longPausesTimestamps = new long[evtCnt];
                     longPausesDurations = new long[evtCnt];
                 }
@@ -95,7 +89,9 @@ class LongJVMPauseDetector {
                         if (pause >= threshold) {
                             LOG.warning("Possible too long JVM pause: " + pause + " milliseconds.");
 
-                            synchronized (lock) {
+                            synchronized (LongJVMPauseDetector.class) {
+                                final int next = (int)(longPausesCnt % evtCnt);
+
                                 longPausesCnt++;
 
                                 longPausesTotalDuration += pause;
@@ -103,9 +99,6 @@ class LongJVMPauseDetector {
                                 longPausesTimestamps[next] = now;
 
                                 longPausesDurations[next] = pause;
-
-                                if (++next >= evtCnt)
-                                    next = 0;
                             }
                         }
                     }
@@ -125,31 +118,29 @@ class LongJVMPauseDetector {
     /**
      * @return Long JVM pauses count.
      */
-    static long longPausesCount() {
+    synchronized static long longPausesCount() {
         return longPausesCnt;
     }
 
     /**
      * @return Long JVM pauses total duration.
      */
-    static long longPausesTotalDuration() {
+    synchronized static long longPausesTotalDuration() {
         return longPausesTotalDuration;
     }
 
     /**
      * @return Last long JVM pause events.
      */
-    static Map<Long, Long> longPauseEvents() {
-        synchronized (lock) {
-            if (longPausesTimestamps == null)
-                return Collections.emptyMap();
+    synchronized static Map<Long, Long> longPauseEvents() {
+        if (longPausesTimestamps == null)
+            return Collections.emptyMap();
 
-            final Map<Long, Long> evts = new TreeMap<>();
+        final Map<Long, Long> evts = new TreeMap<>();
 
-            for (int i = 0; i < longPausesTimestamps.length && longPausesTimestamps[i] != 0; i++)
-                evts.put(longPausesTimestamps[i], longPausesDurations[i]);
+        for (int i = 0; i < longPausesTimestamps.length && longPausesTimestamps[i] != 0; i++)
+            evts.put(longPausesTimestamps[i], longPausesDurations[i]);
 
-            return evts;
-        }
+        return evts;
     }
 }

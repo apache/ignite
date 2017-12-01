@@ -753,13 +753,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
     /** Ignite STW detector precision. */
-    public static final String IGNITE_STW_DETECTOR_PRECISION = "IGNITE_STW_DETECTOR_PRECISION";
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_PRECISION = "IGNITE_JVM_PAUSE_DETECTOR_PRECISION";
 
     /** Ignite STW detector threshold. */
-    public static final String IGNITE_STW_DETECTOR_THRESHOLD = "IGNITE_STW_DETECTOR_THRESHOLD";
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD = "IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD";
 
     /** Ignite STW detector last events count. */
-    public static final String IGNITE_STW_DETECTOR_LAST_EVENTS_COUNT = "IGNITE_STW_DETECTOR_LAST_EVENTS_COUNT";
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT = "IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT";
 
     /**
      * Enforces singleton.
