@@ -38,7 +38,6 @@ import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 
 /**
@@ -206,6 +205,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                     RecordDataV1Serializer.putDataEntry(buf, dataEntry);
 
                 break;
+
             case SNAPSHOT:
                 SnapshotRecord snpRec = (SnapshotRecord)rec;
 

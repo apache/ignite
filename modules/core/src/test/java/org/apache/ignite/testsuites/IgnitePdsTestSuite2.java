@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalF
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushLogOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalHistoryReservationsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteDataIntegrityTests;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteWalReaderTest;
 
@@ -100,6 +101,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
         suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
         suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
+
+        suite.addTestSuite(WalCompactionTest.class);
 
         return suite;
     }

@@ -105,10 +105,29 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         startGridWithConsistentId("A");
         startGridWithConsistentId("B").active(true);
 
+        {
+            IgniteEx nodeA = grid("A");
+
+            assertNotNull(nodeA.cluster().currentBaselineTopology());
+            assertEquals(3, nodeA.cluster().currentBaselineTopology().size());
+
+            assertTrue(nodeA.cluster().active());
+        }
+
         stopAllGrids(false);
 
         startGridWithConsistentId("A");
         startGridWithConsistentId("B");
+
+        {
+            IgniteEx nodeA = grid("A");
+
+            assertNotNull(nodeA.cluster().currentBaselineTopology());
+            assertEquals(3, nodeA.cluster().currentBaselineTopology().size());
+
+            assertFalse(nodeA.cluster().active());
+        }
+
         final Ignite nodeC = startGridWithConsistentId("C");
 
         boolean active = GridTestUtils.waitForCondition(
@@ -754,6 +773,41 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         Ignite nodeB = startGridWithConsistentId("B");
 
         verifyBaselineTopologyHistoryOnNodes(verifier, new Ignite[] {nodeB});
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testBaselineNotDeletedOnDeactivation() throws Exception {
+        Ignite nodeA = startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+        startGridWithConsistentId("C");
+
+        nodeA.active(true);
+
+        assertNotNull(nodeA.cluster().currentBaselineTopology());
+
+        nodeA.active(false);
+
+        stopAllGrids();
+
+        nodeA = startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+        startGridWithConsistentId("C");
+
+        final Ignite ig = nodeA;
+
+        boolean clusterActive = GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ig.active();
+                }
+            },
+            10_000);
+
+        assertNotNull(nodeA.cluster().currentBaselineTopology());
+
+        assertTrue(clusterActive);
     }
 
     /**

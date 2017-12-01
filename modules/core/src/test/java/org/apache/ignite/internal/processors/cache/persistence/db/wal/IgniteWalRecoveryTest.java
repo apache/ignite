@@ -115,7 +115,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private int walSegmentSize;
 
-    /** Logger only. */
+    /** Log only. */
     private boolean logOnly;
 
     /** {@inheritDoc} */

@@ -84,7 +84,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 30_000;
+        return 60_000;
     }
 
     /** {@inheritDoc} */
@@ -186,6 +186,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         }, getTestTimeout());
 
         stopAllGrids();
+
+        canFail.set(false);
 
         Ignite grid0 = startGrids(gridCount() + 1);
 

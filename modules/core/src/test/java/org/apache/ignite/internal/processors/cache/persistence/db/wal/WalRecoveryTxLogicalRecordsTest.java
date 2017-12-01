@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
@@ -489,7 +490,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
             File[] cpFiles = cpDir.listFiles();
 
-            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2);
+            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2 + 1); // starts & ends + node_start
         }
         finally {
             stopAllGrids();
@@ -904,7 +905,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 continue;
 
             AtomicReferenceArray<PagesList.Stripe[]> buckets = GridTestUtils.getFieldValue(freeList,
-                CacheFreeListImpl.class, "buckets");
+                AbstractFreeList.class, "buckets");
             //AtomicIntegerArray cnts = GridTestUtils.getFieldValue(freeList, PagesList.class, "cnts");
 
             assertNotNull(buckets);

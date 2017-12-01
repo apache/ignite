@@ -237,7 +237,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         awaitPartitionMapExchange();
 
-        examineDynamicMetadata(4, contentExaminer0, contentExaminer1, structureExaminer1);
+        examineDynamicMetadata(2, contentExaminer0, contentExaminer1, structureExaminer1);
     }
 
     /**
