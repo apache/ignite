@@ -877,6 +877,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return Handle that will fit the entry.
      */
     private FileWriteHandle rollOver(FileWriteHandle cur) throws StorageException, IgniteCheckedException {
+        //todo remove
+        log.warning("Rollover called for " + cur.idx,
+            new Throwable("debug"));
+
         FileWriteHandle hnd = currentHandle();
 
         if (hnd != cur)
@@ -1381,13 +1385,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param absIdx Segment absolute index.
-         * @return {@code True} if can read, {@code false} if work segment
+         * @return {@code True} if can read, {@code false} if work segment, need release segment later
          */
         @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
         private boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
             synchronized (this) {
-                if (lastAbsArchivedIdx >= absIdx)
+                if (lastAbsArchivedIdx >= absIdx) {
+                    //todo remove code before commit
+                    log.warning("Not needed to reserve work segment: absIdx=" + absIdx + "; lastAbsArchivedIdx=" + lastAbsArchivedIdx ,
+                        new Throwable("debug"));
                     return true;
+                }
 
                 Integer cur = locked.get(absIdx);
 
@@ -1395,8 +1403,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 locked.put(absIdx, cur);
 
-                if (log.isDebugEnabled())
-                    log.debug("Reserved work segment [absIdx=" + absIdx + ", pins=" + cur + ']');
+                //todo return debug
+                //if (log.isDebugEnabled())
+                    log.warning("Reserved work segment [absIdx=" + absIdx + ", pins=" + cur + ']' ,
+                        new Throwable("debug"));
 
                 return false;
             }
@@ -1416,14 +1426,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (cur == 1) {
                     locked.remove(absIdx);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Fully released work segment (ready to archive) [absIdx=" + absIdx + ']');
+                    //todo return debug and remove exception
+                    //if (log.isDebugEnabled())
+                        log.warning("Fully released work segment (ready to archive) [absIdx=" + absIdx + ']',
+                            new Throwable("debug"));
                 }
                 else {
                     locked.put(absIdx, cur - 1);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Partially released work segment [absIdx=" + absIdx + ", pins=" + (cur - 1) + ']');
+                    //todo return debug and remove exception
+                    //if (log.isDebugEnabled())
+                        log.warning("Partially released work segment [absIdx=" + absIdx + ", pins=" + (cur - 1) + ']',
+                            new Throwable("debug"));
                 }
 
                 notifyAll();
