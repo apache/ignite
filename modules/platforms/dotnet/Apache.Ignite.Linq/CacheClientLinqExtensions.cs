@@ -17,17 +17,14 @@
 
 namespace Apache.Ignite.Linq
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
-    using Apache.Ignite.Linq.Impl.Dml;
 
     /// <summary>
     /// Extensions methods for <see cref="ICacheClient{TK,TV}"/>.
@@ -41,7 +38,8 @@ namespace Apache.Ignite.Linq
         /// via either <see cref="ICacheClient{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable"/>
-        /// for introspection, or converted with <see cref="ToCacheQueryable{T}"/> extension method.
+        /// for introspection, or converted with <see cref="CacheLinqExtensions.ToCacheQueryable{T}"/>
+        /// extension method.
         /// </summary>
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>
@@ -130,7 +128,7 @@ namespace Apache.Ignite.Linq
             IgniteArgumentCheck.NotNull(cache, "cache");
             IgniteArgumentCheck.NotNull(queryOptions, "queryOptions");
 
-            return new CacheQueryable<TKey, TValue>(cache, queryOptions);
+            return new CacheQueryable<TKey, TValue>((ICacheInternal)cache, queryOptions);
         }
     }
 }

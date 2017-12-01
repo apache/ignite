@@ -20,9 +20,11 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
@@ -37,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     /// <summary>
     /// Client cache implementation.
     /// </summary>
-    internal sealed class CacheClient<TK, TV> : ICacheClient<TK, TV>
+    internal sealed class CacheClient<TK, TV> : ICacheClient<TK, TV>, ICacheInternal
     {
         /** Scan query filter platform code: .NET filter. */
         private const byte FilterPlatformDotnet = 2;
@@ -192,6 +194,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 s => new ClientFieldsQueryCursor(
                     _ignite, s.ReadLong(), _keepBinary, s, ClientOp.QuerySqlFieldsCursorGetPage,
                     ClientFieldsQueryCursor.ReadColumns(_marsh.StartUnmarshal(s))));
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -361,6 +369,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
+        CacheConfiguration ICacheInternal.GetConfiguration()
+        {
+            return GetConfiguration().ToCacheConfiguration();
+        }
+
+        /** <inheritDoc /> */
         public ICacheClient<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
             if (_keepBinary)
@@ -378,6 +392,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             }
 
             return new CacheClient<TK1, TV1>(_ignite, _name, true);
+        }
+
+        /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
+        public T DoOutInOpExtension<T>(int extensionId, int opCode, Action<IBinaryRawWriter> writeAction,
+            Func<IBinaryRawReader, T> readFunc)
+        {
+            // Should not be called, there are no usages for thin client.
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /// <summary>

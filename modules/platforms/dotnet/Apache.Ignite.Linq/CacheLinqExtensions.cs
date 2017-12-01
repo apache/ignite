@@ -23,6 +23,7 @@ namespace Apache.Ignite.Linq
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
     using Apache.Ignite.Linq.Impl.Dml;
@@ -129,7 +130,7 @@ namespace Apache.Ignite.Linq
             IgniteArgumentCheck.NotNull(cache, "cache");
             IgniteArgumentCheck.NotNull(queryOptions, "queryOptions");
 
-            return new CacheQueryable<TKey, TValue>(cache, queryOptions);
+            return new CacheQueryable<TKey, TValue>((ICacheInternal) cache, queryOptions, cache.Ignite);
         }
 
         /// <summary>
