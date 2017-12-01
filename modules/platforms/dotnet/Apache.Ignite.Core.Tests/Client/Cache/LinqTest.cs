@@ -84,12 +84,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
-        /// Tests the DML via LINQ.
+        /// Tests DML via LINQ.
         /// </summary>
         [Test]
         public void TestDml()
         {
-            // TODO
+            var cache = GetClientCache<Person>();
+
+            Assert.AreEqual(Count, cache.GetSize());
+
+            var res = cache.AsCacheQueryable().Where(x => x.Key % 3 == 0).RemoveAll();
+            Assert.AreEqual(Count / 3, res);
+
+            Assert.AreEqual(Count - res, cache.GetSize());
         }
     }
 }
