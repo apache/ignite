@@ -1410,7 +1410,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             synchronized (this) {
                 Integer cur = locked.get(absIdx);
 
-                assert cur != null && cur > 0;
+                assert cur != null;
+                assert cur > 0;
 
                 if (cur == 1) {
                     locked.remove(absIdx);
