@@ -394,6 +394,10 @@ class ClusterCachesInfo {
         IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
 
         cache.configuration().setStatisticsEnabled(msg.statisticEnabled());
+
+        DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
+
+        desc.cacheConfiguration().setStatisticsEnabled(true);
     }
 
     /**

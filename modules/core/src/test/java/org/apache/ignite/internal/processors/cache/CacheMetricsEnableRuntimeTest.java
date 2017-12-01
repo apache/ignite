@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.lang.management.ManagementFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -31,7 +36,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -68,10 +75,26 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000;
+    /**
+     * Gets CacheGroupMetricsMXBean for given node and group name.
+     *
+     * @param nodeIdx Node index.
+     * @param cacheName Cache name.
+     * @return MBean instance.
+     */
+    private CacheMetricsMXBean mxBean(int nodeIdx, String cacheName) throws MalformedObjectNameException {
+        ObjectName mbeanName = U.makeCacheMBeanName(getTestIgniteInstanceName(nodeIdx), cacheName,
+            CacheClusterMetricsMXBeanImpl.class.getName());
+
+        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        if (!mbeanSrv.isRegistered(mbeanName))
+            fail("MBean is not registered: " + mbeanName.getCanonicalName());
+
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, CacheMetricsMXBean.class,
+            true);
     }
+
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -84,20 +107,14 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
             .setName(CACHE1)
             .setGroupName(GROUP)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setRebalanceMode(CacheRebalanceMode.ASYNC)
-            .setRebalanceBatchSize(100);
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
         CacheConfiguration cfg2 = new CacheConfiguration(cfg1)
             .setName(CACHE2);
 
         CacheConfiguration cfg3 = new CacheConfiguration()
             .setName(CACHE3)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setRebalanceMode(CacheRebalanceMode.ASYNC)
-            .setRebalanceBatchSize(100)
-            .setRebalanceDelay(REBALANCE_DELAY);
+            .setCacheMode(CacheMode.REPLICATED);
 
         cfg.setCacheConfiguration(cfg1, cfg2, cfg3);
 
@@ -107,83 +124,31 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRebalance() throws Exception {
-        Ignite ignite = startGrids(4);
-
-        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE1);
-        IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2);
-
-        for (int i = 0; i < 10000; i++) {
-            cache1.put(i, CACHE1 + "-" + i);
-
-            if (i % 2 == 0)
-                cache2.put(i, CACHE2 + "-" + i);
-        }
-
-        final CountDownLatch l1 = new CountDownLatch(1);
-        final CountDownLatch l2 = new CountDownLatch(1);
-
-        startGrid(4).events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                l1.countDown();
-
-                try {
-                    assertTrue(l2.await(5, TimeUnit.SECONDS));
-                }
-                catch (InterruptedException e) {
-                    throw new AssertionError();
-                }
-
-                return false;
-            }
-        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
-
-        assertTrue(l1.await(5, TimeUnit.SECONDS));
-
-        ignite = ignite(4);
-
-        CacheMetrics metrics1 = ignite.cache(CACHE1).localMetrics();
-        CacheMetrics metrics2 = ignite.cache(CACHE2).localMetrics();
-
-        l2.countDown();
-
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRebalanceEstimateFinishTime() throws Exception {
-        System.setProperty(IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, String.valueOf(1000));
-
+    public void testStatisticsEnableDisable() throws Exception {
         Ignite ig1 = startGrid(1);
+        Ignite ig2 = startGrid(2);
 
-        final int KEYS = 4_000_000;
+        int KEYS = 1_000;
 
-        IgniteCache<Object, Object> cache1 = ig1.cache(CACHE1);
+        CacheMetricsMXBean mxBean = mxBean(1, CACHE1);
 
-        try (IgniteDataStreamer<Integer, String> st = ig1.dataStreamer(CACHE1)) {
-            for (int i = 0; i < KEYS; i++)
-                st.addData(i, CACHE1 + "-" + i);
-        }
+        mxBean.enableStatistics();
 
-        final CountDownLatch finishRebalanceLatch = new CountDownLatch(1);
+        awaitPartitionMapExchange();
 
-        final Ignite ig2 = startGrid(2);
+        assertEquals(true, ig1.cache(CACHE1).metrics().isStatisticsEnabled());
+        assertEquals(true, ig2.cache(CACHE1).metrics().isStatisticsEnabled());
 
-        ig2.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                CacheRebalancingEvent rebEvt = (CacheRebalancingEvent)evt;
 
-                if (rebEvt.cacheName().equals(CACHE1)) {
-                    System.out.println("CountDown rebalance stop latch:" + rebEvt.cacheName());
+        Ignite ig3 = startGrid(3);
 
-                    finishRebalanceLatch.countDown();
-                }
+        awaitPartitionMapExchange();
 
-                return false;
-            }
-        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
+        assertEquals(true, ig3.cache(CACHE1).metrics().isStatisticsEnabled());
 
-        doSleep(500_000);
+        for (int i = 0; i < KEYS; i++)
+            ig1.cache(CACHE1).put(i, i);
+
+        long puts = mxBean.getCachePuts();
     }
 }
