@@ -37,6 +37,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
+import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.ONHEAP;
+
 /**
  *
  */
@@ -45,81 +48,81 @@ public class SegmentedRingByteBufferTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testAligned() throws Exception {
-        doTestAligned(false);
+        doTestAligned(ONHEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAlignedDirect() throws Exception {
-        doTestAligned(true);
+        doTestAligned(DIRECT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNotAligned() throws Exception {
-        doTestNotAligned(false);
+        doTestNotAligned(ONHEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNotAlignedDirect() throws Exception {
-        doTestNotAligned(true);
+        doTestNotAligned(DIRECT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNoOverflowMultiThreaded() throws Exception {
-        doTestNoOverflowMultiThreaded(false);
+        doTestNoOverflowMultiThreaded(ONHEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNoOverflowMultiThreadedDirect() throws Exception {
-        doTestNoOverflowMultiThreaded(true);
+        doTestNoOverflowMultiThreaded(DIRECT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMultiThreaded() throws Exception {
-        doTestMultiThreaded(false);
+        doTestMultiThreaded(ONHEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMultiThreadedDirect() throws Exception {
-        doTestMultiThreaded(true);
+        doTestMultiThreaded(DIRECT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMultiThreaded2() throws Exception {
-        doTestMultiThreaded2(false);
+        doTestMultiThreaded2(ONHEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMultiThreadedDirect2() throws Exception {
-        doTestMultiThreaded2(true);
+        doTestMultiThreaded2(DIRECT);
     }
 
     /**
-     * @param direct Direct.
+     * @param mode Mode.
      */
-    private void doTestAligned(boolean direct) {
+    private void doTestAligned(SegmentedRingByteBuffer.BufferMode mode) {
         int cap = 128;
 
         int size = 8;
 
-        SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, direct);
+        SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, mode);
 
         assertNull(buf.poll());
 
@@ -186,14 +189,14 @@ public class SegmentedRingByteBufferTest extends TestCase {
     }
 
     /**
-     * @param direct Direct.
+     * @param mode Mode.
      */
-    private void doTestNotAligned(boolean direct) {
+    private void doTestNotAligned(SegmentedRingByteBuffer.BufferMode mode) {
         int size = 8;
 
         int cap = 32 - size / 2; // 3.5 long values.
 
-        SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, direct);
+        SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, mode);
 
         assertNull(buf.poll());
 
@@ -291,14 +294,14 @@ public class SegmentedRingByteBufferTest extends TestCase {
     }
 
     /**
-     * @param direct Direct.
+     * @param mode Mode.
      */
-    private void doTestNoOverflowMultiThreaded(boolean direct) throws org.apache.ignite.IgniteCheckedException {
+    private void doTestNoOverflowMultiThreaded(SegmentedRingByteBuffer.BufferMode mode) throws org.apache.ignite.IgniteCheckedException {
         int producerCnt = 16;
 
         final int cap = 256 * 1024;
 
-        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, direct);
+        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, mode);
 
         final AtomicBoolean stop = new AtomicBoolean(false);
 
@@ -394,14 +397,14 @@ public class SegmentedRingByteBufferTest extends TestCase {
     }
 
     /**
-     * @param direct Direct.
+     * @param mode Mode.
      */
-    private void doTestMultiThreaded(boolean direct) throws org.apache.ignite.IgniteCheckedException {
+    private void doTestMultiThreaded(SegmentedRingByteBuffer.BufferMode mode) throws org.apache.ignite.IgniteCheckedException {
         int producerCnt = 16;
 
         final int cap = 256 * 1024;
 
-        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, direct);
+        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, mode);
 
         final AtomicBoolean stop = new AtomicBoolean(false);
 
@@ -478,14 +481,14 @@ public class SegmentedRingByteBufferTest extends TestCase {
     }
 
     /**
-     * @param direct Direct.
+     * @param mode Mode.
      */
-    private void doTestMultiThreaded2(boolean direct) throws org.apache.ignite.IgniteCheckedException {
+    private void doTestMultiThreaded2(SegmentedRingByteBuffer.BufferMode mode) throws org.apache.ignite.IgniteCheckedException {
         int producerCnt = 16;
 
         final int cap = 256 * 1024;
 
-        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, direct);
+        final SegmentedRingByteBuffer buf = new SegmentedRingByteBuffer(cap, Long.MAX_VALUE, mode);
 
         final AtomicBoolean stop = new AtomicBoolean(false);
 

@@ -1320,6 +1320,15 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Returns page size.
+     *
+     * @return Page size.
+     */
+    public static int pageSize() {
+        return UNSAFE.pageSize();
+    }
+
+    /**
      * Returns unaligned flag.
      */
     private static boolean unaligned() {
