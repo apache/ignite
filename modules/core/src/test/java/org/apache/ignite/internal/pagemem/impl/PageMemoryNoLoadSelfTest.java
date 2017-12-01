@@ -33,9 +33,8 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -383,22 +382,5 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      */
     public static FullPageId allocatePage(PageIdAllocator mem) throws IgniteCheckedException {
         return new FullPageId(mem.allocatePage(-1, 1, PageIdAllocator.FLAG_DATA), -1);
-    }
-
-    /** */
-    private static class DummyPageIO extends PageIO {
-        /** */
-        public DummyPageIO() {
-            super(2*Short.MAX_VALUE, 1);
-        }
-
-        /** */
-        @Override
-        protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
-            sb.a("DummyPageIO [\n");
-            sb.a("addr=").a(addr).a(", ");
-            sb.a("pageSize=").a(addr);
-            sb.a("\n]");
-        }
     }
 }
