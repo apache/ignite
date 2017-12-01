@@ -41,7 +41,7 @@ public class GridLog4jInitializedTest extends TestCase {
 
         System.out.println(log.toString());
         assertTrue(log.toString().contains("Log4JLogger"));
-        assertTrue(log.toString().contains("cfg=null"));
+        assertTrue(log.toString().contains("config=null"));
 
         assert log.isInfoEnabled() == true;
 

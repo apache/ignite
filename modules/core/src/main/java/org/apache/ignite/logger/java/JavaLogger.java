@@ -115,8 +115,8 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     private Logger impl;
 
     /** Path to configuration file. */
-    @GridToStringInclude
-    private static String cfg;
+    @GridToStringExclude
+    private String cfg;
 
     /** Quiet flag. */
     private final boolean quiet;
@@ -422,6 +422,6 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JavaLogger.class, this);
+        return S.toString(JavaLogger.class, this, "config", this.cfg);
     }
 }

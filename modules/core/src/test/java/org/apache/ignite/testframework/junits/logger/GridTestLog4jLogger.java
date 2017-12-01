@@ -97,8 +97,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     private Logger impl;
 
     /** Path to configuration file. */
-    @GridToStringInclude
-    private static String cfg;
+    @GridToStringExclude
+    private final String cfg;
 
     /** Quiet flag. */
     private final boolean quiet;
@@ -142,6 +142,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
         }
         else
             quiet = true;
+        cfg = null;
     }
 
     /**
@@ -149,7 +150,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
      *
      * @param impl Log4j implementation to use.
      */
-    public GridTestLog4jLogger(final Logger impl) {
+    private GridTestLog4jLogger(final Logger impl) {
         assert impl != null;
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
@@ -159,6 +160,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+        cfg = null;
     }
 
     /**
@@ -518,6 +520,6 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTestLog4jLogger.class, this);
+        return S.toString(GridTestLog4jLogger.class, this, "config", cfg);
     }
 }

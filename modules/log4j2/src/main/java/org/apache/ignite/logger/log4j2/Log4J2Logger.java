@@ -102,8 +102,8 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     private Logger impl;
 
     /** Path to configuration file. */
-    @GridToStringInclude
-    private static String cfg;
+    @GridToStringExclude
+    private final String cfg;
 
     /** Quiet flag. */
     private final boolean quiet;
@@ -117,7 +117,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      *
      * @param impl Log4j implementation to use.
      */
-    private Log4J2Logger(final Logger impl) {
+    private Log4J2Logger(final Logger impl, String path) {
         assert impl != null;
         
         addConsoleAppenderIfNeeded(new C1<Boolean, Logger>() {
@@ -127,6 +127,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+        cfg = path;
     }
 
     /**
@@ -424,17 +425,17 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      */
     @Override public Log4J2Logger getLogger(Object ctgr) {
         if (ctgr == null)
-            return new Log4J2Logger((Logger)LogManager.getRootLogger());
+            return new Log4J2Logger((Logger)LogManager.getRootLogger(), cfg);
 
         if (ctgr instanceof Class) {
             String name = ((Class<?>)ctgr).getName();
 
-            return new Log4J2Logger((Logger)LogManager.getLogger(name));
+            return new Log4J2Logger((Logger)LogManager.getLogger(name), cfg);
         }
 
         String name = ctgr.toString();
 
-        return new Log4J2Logger((Logger)LogManager.getLogger(name));
+        return new Log4J2Logger((Logger)LogManager.getLogger(name), cfg);
     }
 
     /** {@inheritDoc} */
@@ -503,6 +504,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(Log4J2Logger.class, this);
+        return S.toString(Log4J2Logger.class, this, "config", cfg);
     }
 }

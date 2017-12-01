@@ -815,6 +815,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackOsInfo();
         ackLanguageRuntime();
         ackRemoteManagement();
+        ackLogger();
         ackVmArguments(rtBean);
         ackClassPaths(rtBean);
         ackSystemProperties();
@@ -1979,6 +1980,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (log.isInfoEnabled())
             log.info("Config URL: " + System.getProperty(IGNITE_CONFIG_URL, "n/a"));
+    }
+
+    /**
+     * Acks Logger configuration.
+     */
+    private void ackLogger() {
+        assert log != null;
+
+        if (log.isInfoEnabled())
+            log.info("Logger: " + log.getLoggerInfo() );
     }
 
     /**
