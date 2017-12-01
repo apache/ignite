@@ -459,6 +459,7 @@ public class FilePageStore implements PageStore {
                 PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
             }
 
+            // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
             assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
                     "CRC hasn't been calculated, crc=0";
 
