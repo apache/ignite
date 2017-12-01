@@ -691,6 +691,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         boolean isTransactional = cache.getConfiguration(CacheConfiguration.class)
             .getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
+
         // In transactional cache operations work slower than in atomic.
         int count = isTransactional ? KEY_CNT / 20 : KEY_CNT;
 
