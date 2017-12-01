@@ -689,7 +689,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // Metrics works strange with the LOCAL cache mode.
         boolean isLocal = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.LOCAL;
 
-        boolean isTransactional = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
+        boolean isTransactional = cache.getConfiguration(CacheConfiguration.class)
+            .getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
         // In transactional cache operations work slower than in atomic.
         int count = isTransactional ? KEY_CNT / 20 : KEY_CNT;
 
