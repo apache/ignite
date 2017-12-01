@@ -3085,10 +3085,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     nextHandle = null;
             }
 
-            if (nextHandle != null)
-                nextHandle.workDir = !readArchive;
+            if (nextHandle == null) {
+                if (!readArchive)
+                    releaseWorkSegment(curWalSegmIdx);
+            }
             else
-                releaseWorkSegment(curWalSegmIdx);
+                nextHandle.workDir = !readArchive;
+
 
             curRec = null;
             return nextHandle;
