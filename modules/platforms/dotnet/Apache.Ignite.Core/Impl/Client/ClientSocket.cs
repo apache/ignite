@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Performs a send-receive operation.
         /// </summary>
         public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc, Func<ClientStatus, string, T> errorFunc = null)
+            Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
             var requestId = Interlocked.Increment(ref _requestId);
 
@@ -88,9 +88,9 @@ namespace Apache.Ignite.Core.Impl.Client
                 var resRequestId = stream.ReadLong();
                 Debug.Assert(requestId == resRequestId);
 
-                var statusCode = (ClientStatus) stream.ReadInt();
+                var statusCode = (ClientStatusCode) stream.ReadInt();
 
-                if (statusCode == ClientStatus.Success)
+                if (statusCode == ClientStatusCode.Success)
                 {
                     return readFunc != null ? readFunc(stream) : default(T);
                 }
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     return errorFunc(statusCode, msg);
                 }
 
-                throw new IgniteClientException(msg, null, (int) statusCode);
+                throw new IgniteClientException(msg, null, statusCode);
             }
         }
 

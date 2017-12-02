@@ -129,7 +129,7 @@
     <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientQueryCursorBase.cs" />
     <Compile Include="Impl\Client\Cache\Query\StatementType.cs" />
-    <Compile Include="Impl\Client\ClientStatus.cs" />
+    <Compile Include="Client\ClientStatusCode.cs" />
     <Compile Include="Events\LocalEventListener.cs" />
     <Compile Include="Impl\DataStorageMetrics.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
