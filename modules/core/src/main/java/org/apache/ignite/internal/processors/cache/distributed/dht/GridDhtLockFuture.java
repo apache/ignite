@@ -1137,7 +1137,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 if (err != null)
                     return;
 
-                err = new IgniteFutureCancelledCheckedException("Failed to acquire lock, " +
+                err = new GridDistributedLockCancelledException("Failed to acquire lock, " +
                     "transaction was rolled back [tx=" + tx + ']');
             }
             onComplete(false, false, false);

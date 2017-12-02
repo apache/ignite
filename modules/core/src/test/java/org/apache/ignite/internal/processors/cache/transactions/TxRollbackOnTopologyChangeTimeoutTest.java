@@ -34,7 +34,6 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
@@ -46,13 +45,13 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -67,7 +66,10 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
     private static final long ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT = 500;
 
     /**  */
-    private static final long TX_TIMEOUT = 1000;
+    private static final int TX_TIMEOUT = 1000;
+
+    /**  */
+    private static final int TX_COUNT = 100;
 
     /**  */
     private static final int MAX_BACKUPS = 3;
@@ -156,7 +158,9 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
 
         final Random rnd = new Random();
 
-        final CountDownLatch startTxLatch = new CountDownLatch(grids.size());
+        int txCount = grids.size() * TX_COUNT;
+
+        final CountDownLatch startTxLatch = new CountDownLatch(txCount);
 
         final Collection<Exception> errors = new LinkedBlockingQueue<>();
 
@@ -164,22 +168,37 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
 
         finishTxLatch = new CountDownLatch(1);
 
-        closeTxLatch = new CountDownLatch(grids.size());
+        closeTxLatch = new CountDownLatch(txCount);
 
         multithreadedAsync(new Runnable() {
+
+            private boolean txStarted;
+
             @Override public void run() {
-                int i = idx.getAndIncrement();
+                try {
+                    startTx();
+                }
+                finally {
+                    if (!txStarted)
+                        fail("Transaction was not started");
+                }
+            }
 
-                Ignite grid = grids.get(i);
+            private void startTx() {
+                int thIdx = idx.getAndIncrement();
 
-                Thread.currentThread().setName("startTx-" + grid.name());
+                int gridIdx = thIdx % grids.size();
+
+                Ignite grid = grids.get(gridIdx);
+
+                Thread.currentThread().setName("startTx-#" + thIdx + '%' + grid.name() + '%');
 
                 IgniteCache<Integer, String> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                 Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1);
                 try {
                     if (rnd.nextBoolean())
-                        tx.timeout(TX_TIMEOUT);
+                        tx.timeout(TX_TIMEOUT / 10 + rnd.nextInt(TX_TIMEOUT * 9 / 10));
 
                     int key = rnd.nextInt(grids.size());
 
@@ -190,20 +209,27 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
                     }
                     catch (IgniteFutureTimeoutException ignore) {
                     }
+                    finally {
+                        startTxLatch.countDown();
 
-                    startTxLatch.countDown();
+                        txStarted = true;
+                    }
 
                     fut.get();
 
                     finishTxLatch.await();
 
-                    cache.put(key + 1, Thread.currentThread().getName());
+                    // use a key from the different range to avoid deadlocks
+                    cache.put(grids.size() + key, Thread.currentThread().getName());
                 }
                 catch (Exception e) {
-                    Exception exp = X.cause(e, CacheStoppedException.class);
+                    Exception exp = null;
 
                     if (exp == null)
-                        exp = X.cause(e, IgniteFutureCancelledCheckedException.class);
+                        exp = X.cause(e, CacheStoppedException.class);
+
+                    if (exp == null)
+                        exp = X.cause(e, IgniteFutureCancelledException.class);
 
                     if (exp == null)
                         exp = X.cause(e, NodeStoppingException.class);
@@ -225,19 +251,11 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
                     }
 
                     if (exp == null) {
-                        exp = X.cause(e, TransactionRollbackException.class);
-
-                        if (exp != null && !(exp.getMessage() != null && exp.getMessage().startsWith(
-                            "Cache transaction is marked as rollback-only (will be rolled back automatically)")))
-                            exp = null;
-                    }
-
-                    if (exp == null && tx.timeout() > 0) {
                         exp = X.cause(e, TransactionTimeoutException.class);
 
                         if (exp != null) {
                             String msg = exp.getMessage();
-                            if (!(msg != null && (msg.startsWith("Cache transaction timed out") ||
+                            if (!(msg != null && (msg.startsWith("Cache transaction timed out: GridNearTxLocal") ||
                                 msg.startsWith("Failed to acquire lock within provided timeout for transaction"))))
                             exp = null;
                         }
@@ -259,7 +277,7 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
                     closeTxLatch.countDown();
                 }
             }
-        }, grids.size());
+        }, txCount);
 
         startTxLatch.await();
     }
