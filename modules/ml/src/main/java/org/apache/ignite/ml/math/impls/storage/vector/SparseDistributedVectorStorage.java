@@ -36,9 +36,10 @@ import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.SparseMatrixKey;
+import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
 /**
- * {@link VectorStorage} implementation for {@link /*SparseDistributedVector}.
+ * {@link VectorStorage} implementation for {@link SparseDistributedVector}.
  */
 public class SparseDistributedVectorStorage extends CacheUtils implements VectorStorage, StorageConstants, DistributedStorage<RowColMatrixKey> {
     /** Cache name used for all instances of {@link SparseDistributedVectorStorage}. */
