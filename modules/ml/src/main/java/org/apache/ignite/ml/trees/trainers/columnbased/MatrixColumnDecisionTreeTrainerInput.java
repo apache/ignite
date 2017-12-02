@@ -30,16 +30,17 @@ import org.apache.ignite.ml.math.distributed.keys.impl.SparseMatrixKey;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Adapter of SparseDistributedMatrix to ColumnDecisionTreeTrainerInput.
- * Sparse SparseDistributedMatrix should be in {@see org.apache.ignite.ml.math.StorageConstants#COLUMN_STORAGE_MODE} and
+ * Sparse SparseDistributedMatrix should be in {@link StorageConstants#COLUMN_STORAGE_MODE} and
  * should contain samples in rows last position in row being label of this sample.
  */
 public class MatrixColumnDecisionTreeTrainerInput extends CacheColumnDecisionTreeTrainerInput<RowColMatrixKey, Map<Integer, Double>> {
     /**
-     * @param m Sparse SparseDistributedMatrix should be in {@see org.apache.ignite.ml.math.StorageConstants#COLUMN_STORAGE_MODE}
+     * @param m Sparse SparseDistributedMatrix should be in {@link StorageConstants#COLUMN_STORAGE_MODE}
      * containing samples in rows last position in row being label of this sample.
      * @param catFeaturesInfo Information about which features are categorical in form of feature index -> number of
      * categories.

@@ -20,10 +20,11 @@ package org.apache.ignite.ml.trees.trainers.columnbased.vectors;
 import com.zaxxer.sparsebits.SparseBitSet;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.trees.RegionInfo;
+import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
 import org.apache.ignite.ml.trees.trainers.columnbased.RegionProjection;
 
 /**
- * Base interface for feature processors used in {@see org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer}
+ * Base interface for feature processors used in {@link ColumnDecisionTreeTrainer}
  *
  * @param <D> Class representing data of regions resulted from split.
  * @param <S> Class representing data of split.
@@ -68,7 +69,7 @@ public interface FeatureProcessor<D extends RegionInfo, S extends SplitInfo<D>> 
     /**
      * Splits given region using bitset which maps data point to left or right subregion. This method is used iff the
      * optimal split is received on feature of different type, therefore information about regions is limited to the
-     * {@see RegionInfo} class which is base for all classes used to represent region data.
+     * {@link RegionInfo} class which is base for all classes used to represent region data.
      *
      * @param bs Bitset which maps data point to left or right subregion.
      * @param leftData Data of the left subregion.
