@@ -15,24 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
-
-import java.util.List;
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.exceptions.ConvergenceException;
-import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
-
 /**
- * Support of clusterization with given weights.
+ * <!-- Package description. -->
+ * Clustering examples.
  */
-public interface WeightedClusterer<P, M extends Model> extends Clusterer<P, M> {
-    /**
-     * Perform clusterization of given points weighted by given weights.
-     *
-     * @param points Points.
-     * @param k count of centers.
-     * @param weights Weights.
-     */
-    public M cluster(P points, int k, List<Double> weights) throws
-        MathIllegalArgumentException, ConvergenceException;
-}
+package org.apache.ignite.examples.ml.clustering;
