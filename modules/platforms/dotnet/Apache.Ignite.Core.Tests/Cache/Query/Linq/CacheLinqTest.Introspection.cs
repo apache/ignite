@@ -58,9 +58,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             }).Where(x => x.Key > 10).ToCacheQueryable();
 
             Assert.AreEqual(cache.Name, query.CacheName);
-#pragma warning disable CS0618 // Type or member is obsolete
+#pragma warning disable 618 // Type or member is obsolete
             Assert.AreEqual(cache.Ignite, query.Ignite);
-#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning restore 618 // Type or member is obsolete
 
             var fq = query.GetFieldsQuery();
 
@@ -98,9 +98,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var fieldsQuery = cache.AsCacheQueryable().Select(x => x.Value.Name).ToCacheQueryable();
 
             Assert.AreEqual(cache.Name, fieldsQuery.CacheName);
-#pragma warning disable CS0618 // Type or member is obsolete
+#pragma warning disable 618 // Type or member is obsolete
             Assert.AreEqual(cache.Ignite, query.Ignite);
-#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning restore 618 // Type or member is obsolete
 
             fq = fieldsQuery.GetFieldsQuery();
             Assert.AreEqual(GetSqlEscapeAll()
