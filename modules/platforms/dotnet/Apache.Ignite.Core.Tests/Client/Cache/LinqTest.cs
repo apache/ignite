@@ -98,5 +98,20 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(Count - res, cache.GetSize());
         }
+
+        /// <summary>
+        /// Tests the compiled query.
+        /// </summary>
+        [Test]
+        public void TestCompiledQuery()
+        {
+            var cache = GetClientCache<Person>();
+            var persons = cache.AsCacheQueryable();
+
+            var qry = CompiledQuery.Compile((int id) => persons.Where(x => x.Value.Id == id));
+
+            Assert.AreEqual(1, qry(1).Single().Key);
+            Assert.AreEqual(3, qry(3).Single().Key);
+        }
     }
 }
