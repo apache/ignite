@@ -23,6 +23,7 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
+ * Todo: complete implementation of this benchmark per IGNITE-7097.
  */
 @SuppressWarnings("unused")
 public class IgniteSparseDistributedMatrixMulBenchmark extends IgniteAbstractMatrixMulBenchmark {
