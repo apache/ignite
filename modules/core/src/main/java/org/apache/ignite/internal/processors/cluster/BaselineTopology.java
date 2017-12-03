@@ -34,6 +34,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -78,8 +79,9 @@ public class BaselineTopology implements Serializable {
      */
     private BaselineTopology(Map<Object, Map<String, Object>> nodeMap, int id) {
         this.id = id;
-        this.compactIdMapping = new HashMap<>();
-        this.consistentIdMapping = new HashMap<>();
+
+        compactIdMapping = U.newHashMap(nodeMap.size());
+        consistentIdMapping = U.newHashMap(nodeMap.size());
 
         this.nodeMap = nodeMap;
 
@@ -182,6 +184,16 @@ public class BaselineTopology implements Serializable {
     }
 
     /**
+     * @param consId Consistent ID.
+     * @return Baseline node, if present in the baseline, or {@code null} if absent.
+     */
+    public ClusterNode baselineNode(Object consId) {
+        Map<String, Object> attrs = nodeMap.get(consId);
+
+        return attrs != null ? new DetachedClusterNode(consId, attrs) : null;
+    }
+
+    /**
      * @param aliveNodes Sorted list of currently alive nodes.
      * @param nodeFilter Node filter.
      * @return Sorted list of baseline topology nodes.
@@ -243,6 +255,13 @@ public class BaselineTopology implements Serializable {
             presentedNodeIds.add(node.consistentId());
 
         return presentedNodeIds.containsAll(nodeMap.keySet());
+    }
+
+    /**
+     * @return Size of the baseline topology.
+     */
+    public int size() {
+        return nodeMap.size();
     }
 
     /** {@inheritDoc} */

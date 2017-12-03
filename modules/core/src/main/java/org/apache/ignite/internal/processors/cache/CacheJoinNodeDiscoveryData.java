@@ -51,7 +51,7 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
      * @param templates Templates.
      * @param startCaches {@code True} if required to start all caches on joining node.
      */
-   public CacheJoinNodeDiscoveryData(
+    public CacheJoinNodeDiscoveryData(
         IgniteUuid cacheDeploymentId,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,

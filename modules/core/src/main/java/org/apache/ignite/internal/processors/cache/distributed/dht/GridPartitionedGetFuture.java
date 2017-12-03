@@ -393,10 +393,17 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         }
 
         boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.allowFastLocalRead(part, affNodes, topVer);
+            cctx.reserveForFastLocalGet(part, topVer);
 
-        if (fastLocGet && localGet(topVer, key, part, locVals))
-            return false;
+        if (fastLocGet) {
+            try {
+                if (localGet(topVer, key, part, locVals))
+                    return false;
+            }
+            finally {
+                cctx.releaseForFastLocalGet(part, topVer);
+            }
+        }
 
         ClusterNode node = affinityNode(affNodes);
 

@@ -118,7 +118,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private static final int INITIAL_CAPACITY = 10;
 
     /** Initialization latch. */
-    private volatile CountDownLatch initLatch;
+    private volatile CountDownLatch initLatch = new CountDownLatch(1);
 
     /** Initialization failed flag. */
     private boolean initFailed;
@@ -179,8 +179,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     @Override public void onKernalStart(boolean active) {
         if (ctx.config().isDaemon() || !active)
             return;
-
-        onBeforeActivate();
 
         onKernalStart0();
     }

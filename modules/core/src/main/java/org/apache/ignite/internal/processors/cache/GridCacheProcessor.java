@@ -1702,9 +1702,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param exchTopVer Current exchange version.
      * @throws IgniteCheckedException If failed.
      */
-    public void startCachesOnLocalJoin(List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches,
-        AffinityTopologyVersion exchTopVer)
-        throws IgniteCheckedException {
+    public void startCachesOnLocalJoin(
+        List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches,
+        AffinityTopologyVersion exchTopVer
+    ) throws IgniteCheckedException {
         if (!F.isEmpty(caches)) {
             for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : caches) {
                 DynamicCacheDescriptor desc = t.get1();
@@ -1784,12 +1785,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ccfg.setNearConfiguration(null);
         }
-        else if (CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter())) {
-            if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
-                affNode = true;
-            else
-                affNode = CU.baselineNode(ctx.discovery().localNode(), ctx.state().clusterState());
-        }
+        else if (CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter()))
+            affNode = true;
         else {
             affNode = false;
 
