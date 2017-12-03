@@ -804,9 +804,13 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             }
             tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                    if(tx.isRollbackOnly()) {
+                    if (tx.isRollbackOnly() && tx.timedOut()) {
+                        if (log.isInfoEnabled())
+                            log.info("Forcibly cancelling near lock future: " + GridNearLockFuture.this);
+
+
                         onError(new IgniteFutureCancelledCheckedException("Failed to acquire lock, " +
-                            "transaction was rolled back [tx=" + tx + ']'));
+                            "transaction was rolled back on timeout [tx=" + tx + ']'));
 
                         onComplete(false, true, false);
                     }
