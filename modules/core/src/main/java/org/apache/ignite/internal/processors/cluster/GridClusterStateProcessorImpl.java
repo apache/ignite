@@ -349,9 +349,11 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onStateChangeMessage(AffinityTopologyVersion topVer,
+    @Override public boolean onStateChangeMessage(
+        AffinityTopologyVersion topVer,
         ChangeGlobalStateMessage msg,
-        DiscoCache discoCache) {
+        DiscoCache discoCache
+    ) {
         DiscoveryDataClusterState state = globalState;
 
         if (log.isInfoEnabled())

@@ -474,10 +474,17 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 if (v == null) {
-                    boolean fastLocGet = allowLocRead && cctx.allowFastLocalRead(part, affNodes, topVer);
+                    boolean fastLocGet = allowLocRead && cctx.reserveForFastLocalGet(part, topVer);
 
-                    if (fastLocGet && localDhtGet(key, part, topVer, isNear))
-                        break;
+                    if (fastLocGet) {
+                        try {
+                            if (localDhtGet(key, part, topVer, isNear))
+                                break;
+                        }
+                        finally {
+                            cctx.releaseForFastLocalGet(part, topVer);
+                        }
+                    }
 
                     ClusterNode affNode = affinityNode(affNodes);
 

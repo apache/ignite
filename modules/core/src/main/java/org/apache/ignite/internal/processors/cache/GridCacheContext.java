@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
@@ -2029,21 +2030,43 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * Checks if local reads are allowed for the given partition and reserves the partition when needed. If this
+     * method returns {@code true}, then {@link #releaseForFastLocalGet(int, AffinityTopologyVersion)} method
+     * must be called after the read is completed.
+     *
      * @param part Partition.
-     * @param affNodes Affinity nodes.
      * @param topVer Topology version.
      * @return {@code True} if cache 'get' operation is allowed to get entry locally.
      */
-    public boolean allowFastLocalRead(int part, List<ClusterNode> affNodes, AffinityTopologyVersion topVer) {
-        boolean result = affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
+    public boolean reserveForFastLocalGet(int part, AffinityTopologyVersion topVer) {
+        boolean result = affinityNode() && rebalanceEnabled() && checkAndReservePartition(part, topVer);
 
         // When persistence is enabled, only reading from partitions with OWNING state is allowed.
         assert !result || !group().persistenceEnabled() ||
             topology().partitionState(localNodeId(), part) == OWNING :
-            "result = " + result + ", persistenceEnabled = " + group().persistenceEnabled() +
-                ", partitionState = " + topology().partitionState(localNodeId(), part);
+            "result=" + result + ", persistenceEnabled=" + group().persistenceEnabled() +
+                ", partitionState=" + topology().partitionState(localNodeId(), part) +
+                ", replicated=" + isReplicated();
 
         return result;
+    }
+
+    /**
+     * Releases the partition that was reserved by a call to
+     * {@link #reserveForFastLocalGet(int, AffinityTopologyVersion)}.
+     *
+     * @param part Partition to release.
+     * @param topVer Topology version.
+     */
+    public void releaseForFastLocalGet(int part, AffinityTopologyVersion topVer) {
+        assert affinityNode();
+
+        if (!isReplicated() || group().persistenceEnabled()) {
+            GridDhtLocalPartition locPart = topology().localPartition(part, topVer, false);
+
+            assert locPart != null && locPart.state() == OWNING : "partition evicted after reserveForFastLocalGet " +
+                "[part=" + part + ", locPart=" + locPart + ", topVer=" + topVer + ']';
+        }
     }
 
     /**
@@ -2060,17 +2083,35 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @param part Partition.
-     * @param affNodes Affinity nodes.
      * @param topVer Topology version.
      * @return {@code True} if partition is available locally.
      */
-    private boolean hasPartition(int part, List<ClusterNode> affNodes, AffinityTopologyVersion topVer) {
+    private boolean checkAndReservePartition(int part, AffinityTopologyVersion topVer) {
         assert affinityNode();
 
         GridDhtPartitionTopology top = topology();
 
-        return (top.rebalanceFinished(topVer) && (isReplicated() || affNodes.contains(locNode)))
-            || (top.partitionState(localNodeId(), part) == OWNING);
+        if (isReplicated() && !group().persistenceEnabled())
+            return top.rebalanceFinished(topVer);
+        else {
+            GridDhtLocalPartition locPart = top.localPartition(part, topVer, false, false);
+
+            if (locPart != null && locPart.reserve()) {
+                boolean canRead = true;
+
+                try {
+                    canRead = locPart.state() == OWNING;
+
+                    return canRead;
+                }
+                finally {
+                    if (!canRead)
+                        locPart.release();
+                }
+            }
+            else
+                return false;
+        }
     }
 
     /**

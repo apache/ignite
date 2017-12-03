@@ -1900,7 +1900,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param rebalanceInfo Rebalance information.
      * @param latePrimary If {@code true} delays primary assignment if it is not owner.
      * @param affCache Already calculated assignments (to reduce data stored in history).
-     * @throws IgniteCheckedException If failed.
      */
     private void initAffinityOnNodeJoin(
         ExchangeDiscoveryEvents evts,
@@ -1908,9 +1907,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         GridAffinityAssignmentCache aff,
         WaitRebalanceInfo rebalanceInfo,
         boolean latePrimary,
-        Map<Object, List<List<ClusterNode>>> affCache)
-        throws IgniteCheckedException
-    {
+        Map<Object, List<List<ClusterNode>>> affCache
+    ) {
         if (addedOnExchnage) {
             if (!aff.lastVersion().equals(evts.topologyVersion()))
                 calculateAndInit(evts, aff, evts.topologyVersion());
