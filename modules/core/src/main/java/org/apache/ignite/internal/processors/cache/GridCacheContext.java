@@ -2066,6 +2066,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             assert locPart != null && locPart.state() == OWNING : "partition evicted after reserveForFastLocalGet " +
                 "[part=" + part + ", locPart=" + locPart + ", topVer=" + topVer + ']';
+
+            locPart.release();
         }
     }
 
