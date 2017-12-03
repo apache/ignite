@@ -43,7 +43,7 @@ public class TransactionConfiguration implements Serializable {
     public static final long DFLT_TRANSACTION_TIMEOUT = 0;
 
     /** Default rollback on topology change timeout. */
-    public static final long DFLT_ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT = 0;
+    public static final long DFLT_ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT = 60_000;
 
     /** Default size of pessimistic transactions log. */
     public static final int DFLT_PESSIMISTIC_TX_LOG_LINGER = 10_000;
