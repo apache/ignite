@@ -81,6 +81,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     /** Commit flag. */
     private boolean commit;
 
+    /** {@code True} if transaction timed out. */
+    private boolean timedout;
+
     /** Min version used as base for completed versions. */
     private GridCacheVersion baseVer;
 
@@ -122,6 +125,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      * @param threadId Thread ID.
      * @param commitVer Commit version.
      * @param commit Commit flag.
+     * @param timedout {@code True} if transaction timed out.
      * @param invalidate Invalidate flag.
      * @param sys System transaction flag.
      * @param plc IO policy.
@@ -139,6 +143,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         @Nullable GridCacheVersion commitVer,
         long threadId,
         boolean commit,
+        boolean timedout,
         boolean invalidate,
         boolean sys,
         byte plc,
@@ -161,6 +166,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.commitVer = commitVer;
         this.threadId = threadId;
         this.commit = commit;
+        this.timedout = timedout;
         this.invalidate = invalidate;
         this.sys = sys;
         this.plc = plc;
@@ -171,6 +177,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.txSize = txSize;
 
         completedVersions(committedVers, rolledbackVers);
+    }
+
+    /**
+     * {@code True} if transaction timed out.
+     */
+    public boolean timedOut() {
+        return timedout;
     }
 
     /**
@@ -409,6 +422,12 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
                 writer.incrementState();
 
+            case 21:
+                if (!writer.writeBoolean("timedout", timedout))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -535,6 +554,14 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
             case 20:
                 txSize = reader.readInt("txSize");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 21:
+                timedout = reader.readBoolean("timedout");
 
                 if (!reader.isLastRead())
                     return false;

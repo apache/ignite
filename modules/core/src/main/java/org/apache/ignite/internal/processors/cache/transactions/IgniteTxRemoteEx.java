@@ -31,9 +31,9 @@ public interface IgniteTxRemoteEx extends IgniteInternalTx {
     public void commitRemoteTx() throws IgniteCheckedException;
 
     /**
-     *
+     * @param onTimeout {@code True} if rolled back asynchronously on timeout.
      */
-    public void rollbackRemoteTx();
+    public void rollbackRemoteTx(boolean onTimeout);
 
     /**
      * @param baseVer Base version.

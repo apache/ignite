@@ -86,6 +86,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     /** Commit flag. */
     private boolean commit;
 
+    /**
+     * {@code True} if transaction timed out.
+     */
+    private boolean timedout;
+
     /** Error. */
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
@@ -101,13 +106,17 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      * @param cctx Context.
      * @param tx Transaction.
      * @param commit Commit flag.
+     * @param timedout {@code true} if transaction timed out.
      */
-    public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter tx, boolean commit) {
+    public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter tx, boolean commit,
+        boolean timedout) {
+
         super(F.<IgniteInternalTx>identityReducer(tx));
 
         this.cctx = cctx;
         this.tx = tx;
         this.commit = commit;
+        this.timedout = timedout;
 
         dhtMap = tx.dhtMap();
         nearMap = tx.nearMap();
@@ -157,6 +166,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         assert false;
+    }
+
+    /**
+     * {@code True} if transaction timed out.
+     */
+    public boolean timedOut() {
+        return timedout;
     }
 
     /**
@@ -333,6 +349,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.threadId(),
                 tx.isolation(),
                 false,
+                timedout,
                 tx.isInvalidate(),
                 tx.system(),
                 tx.ioPolicy(),
@@ -435,6 +452,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.threadId(),
                 tx.isolation(),
                 commit,
+                timedout,
                 tx.isInvalidate(),
                 tx.system(),
                 tx.ioPolicy(),
@@ -505,6 +523,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.threadId(),
                     tx.isolation(),
                     commit,
+                    timedout,
                     tx.isInvalidate(),
                     tx.system(),
                     tx.ioPolicy(),

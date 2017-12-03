@@ -69,7 +69,7 @@ public class TxRollbackOnTopologyChangeTimeoutTest extends GridCommonAbstractTes
     private static final int TX_TIMEOUT = 1000;
 
     /**  */
-    private static final int TX_COUNT = 100;
+    private static final int TX_COUNT = 10;
 
     /**  */
     private static final int MAX_BACKUPS = 3;

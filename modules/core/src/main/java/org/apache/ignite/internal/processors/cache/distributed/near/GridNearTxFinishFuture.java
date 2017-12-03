@@ -322,7 +322,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         err = new TransactionRollbackException("Failed to commit transaction.", err);
 
                     try {
-                        tx.localFinish(err == null, true);
+                        tx.localFinish(err == null, false);
                     }
                     catch (IgniteCheckedException e) {
                         if (err != null)
@@ -398,10 +398,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * Initializes future.
      *
      * @param commit Commit flag.
-     * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
+     * @param onTimeout {@code True} if rolled back asynchronously on timeout.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public void finish(boolean commit, boolean clearThreadMap) {
+    public void finish(boolean commit, boolean onTimeout) {
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
@@ -415,7 +415,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
 
         try {
-            if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
+            if (tx.localFinish(commit, onTimeout) || (!commit && tx.state() == UNKNOWN)) {
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();
@@ -423,11 +423,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         if (mapping != null) {
                             assert !hasFutures() : futures();
 
-                            finish(1, mapping, commit);
+                            finish(1, mapping, commit, onTimeout);
                         }
                     }
                     else
-                        finish(mappings.mappings(), commit);
+                        finish(mappings.mappings(), commit, onTimeout);
                 }
 
                 markInitialized();
@@ -679,23 +679,25 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /**
      * @param mappings Mappings.
      * @param commit Commit flag.
+     * @param onTimeout {@code True} if rolled back asynchronously on timeout.
      */
-    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit) {
+    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit, boolean onTimeout) {
         assert !hasFutures() : futures();
 
         int miniId = 0;
 
         // Create mini futures.
         for (GridDistributedTxMapping m : mappings)
-            finish(++miniId, m, commit);
+            finish(++miniId, m, commit, onTimeout);
     }
 
     /**
      * @param miniId Mini future ID.
      * @param m Mapping.
      * @param commit Commit flag.
+     * @param onTimeout {@code True} if rolled back asynchronously on timeout.
      */
-    private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
+    private void finish(int miniId, GridDistributedTxMapping m, boolean commit, boolean onTimeout) {
         ClusterNode n = m.primary();
 
         assert !m.empty() : m;
@@ -713,6 +715,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.xidVersion(),
             tx.threadId(),
             commit,
+            onTimeout,
             tx.isInvalidate(),
             tx.system(),
             tx.ioPolicy(),
@@ -846,6 +849,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.threadId(),
             tx.isolation(),
             true,
+            false,
             false,
             tx.system(),
             tx.ioPolicy(),

@@ -54,6 +54,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param xidVer Transaction ID.
      * @param threadId Thread ID.
      * @param commit Commit flag.
+     * @param timedout {@code True} if transaction timed out.
      * @param invalidate Invalidate flag.
      * @param sys System flag.
      * @param plc IO policy.
@@ -74,6 +75,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         GridCacheVersion xidVer,
         long threadId,
         boolean commit,
+        boolean timedout,
         boolean invalidate,
         boolean sys,
         byte plc,
@@ -95,6 +97,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             null,
             threadId,
             commit,
+            timedout,
             invalidate,
             sys,
             plc,
@@ -171,7 +174,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         }
 
         switch (writer.state()) {
-            case 21:
+            case 22:
                 if (!writer.writeInt("miniId", miniId))
                     return false;
 
@@ -193,7 +196,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             return false;
 
         switch (reader.state()) {
-            case 21:
+            case 22:
                 miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())

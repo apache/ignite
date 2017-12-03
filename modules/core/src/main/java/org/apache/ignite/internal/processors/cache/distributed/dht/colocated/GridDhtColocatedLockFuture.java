@@ -717,7 +717,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         onError(new IgniteFutureCancelledCheckedException("Failed to acquire lock, " +
                             "transaction was rolled back [tx=" + tx + ']'));
 
-                        onComplete(false, true, false);
+                        onComplete(false, false, false);
                     }
                 }
             });

@@ -794,7 +794,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (!isSystemInvalidate())
                 throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
 
-            rollbackRemoteTx();
+            rollbackRemoteTx(false);
         }
 
         commitIfLocked();
@@ -851,14 +851,14 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public final void rollbackRemoteTx() {
+    @Override public final void rollbackRemoteTx(boolean onTimeout) {
         try {
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
-            if (state(ROLLING_BACK) || state() == UNKNOWN) {
-                cctx.tm().rollbackTx(this, false);
+            if (state(ROLLING_BACK, onTimeout) || state() == UNKNOWN) {
+                cctx.tm().rollbackTx(this, !onTimeout);
 
-                state(ROLLED_BACK);
+                state(ROLLED_BACK, onTimeout);
             }
         }
         catch (RuntimeException | Error e) {
@@ -870,7 +870,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
-        rollbackRemoteTx();
+        rollbackRemoteTx(false);
 
         return new GridFinishedFuture<IgniteInternalTx>(this);
     }

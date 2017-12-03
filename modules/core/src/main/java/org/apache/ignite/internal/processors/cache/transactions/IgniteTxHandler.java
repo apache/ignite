@@ -520,7 +520,7 @@ public class IgniteTxHandler {
 
             if (tx.isRollbackOnly() && !tx.commitOnPrepare()) {
                 if (tx.state() != TransactionState.ROLLED_BACK && tx.state() != TransactionState.ROLLING_BACK)
-                    tx.rollbackDhtLocalAsync();
+                    tx.rollbackDhtLocalAsync(false);
             }
 
             final GridDhtTxLocal tx0 = tx;
@@ -948,7 +948,7 @@ public class IgniteTxHandler {
                 return commitFut;
             }
             else {
-                IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackDhtLocalAsync();
+                IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackDhtLocalAsync(req.timedOut());
 
                 // Only for error logging.
                 rollbackFut.listen(CU.errorLogger(log));
@@ -965,7 +965,7 @@ public class IgniteTxHandler {
                 tx.systemInvalidate(true);
 
                 try {
-                    IgniteInternalFuture<IgniteInternalTx> res = tx.rollbackDhtLocalAsync();
+                    IgniteInternalFuture<IgniteInternalTx> res = tx.rollbackDhtLocalAsync(tx.timedOut());
 
                     // Only for error logging.
                     res.listen(CU.errorLogger(log));
@@ -1002,7 +1002,7 @@ public class IgniteTxHandler {
                 return tx.commitAsyncLocal();
             }
             else
-                return tx.rollbackAsyncLocal();
+                return tx.rollbackAsyncLocal(tx.timedOut());
         }
         catch (Throwable e) {
             U.error(log, "Failed completing transaction [commit=" + commit + ", tx=" + tx + ']', e);
@@ -1111,7 +1111,7 @@ public class IgniteTxHandler {
 
             if (nearTx != null)
                 try {
-                    nearTx.rollbackRemoteTx();
+                    nearTx.rollbackRemoteTx(false);
                 }
                 catch (Throwable e1) {
                     e.addSuppressed(e1);
@@ -1321,7 +1321,7 @@ public class IgniteTxHandler {
             else {
                 tx.doneRemote(req.baseVersion(), null, null, null);
 
-                tx.rollbackRemoteTx();
+                tx.rollbackRemoteTx(req.timedOut());
             }
         }
         catch (Throwable e) {
@@ -1373,7 +1373,7 @@ public class IgniteTxHandler {
             tx.systemInvalidate(true);
 
             try {
-                tx.rollbackRemoteTx();
+                tx.rollbackRemoteTx(false);
             }
             catch (Throwable e1) {
                 e.addSuppressed(e1);
@@ -1425,7 +1425,7 @@ public class IgniteTxHandler {
 
             if (nearTx != null)
                 try {
-                    nearTx.rollbackRemoteTx();
+                    nearTx.rollbackRemoteTx(false);
                 }
                 catch (Throwable e1) {
                     e.addSuppressed(e1);
@@ -1433,7 +1433,7 @@ public class IgniteTxHandler {
 
             if (dhtTx != null)
                 try {
-                    dhtTx.rollbackRemoteTx();
+                    dhtTx.rollbackRemoteTx(false);
                 }
                 catch (Throwable e1) {
                     e.addSuppressed(e1);
@@ -1698,7 +1698,7 @@ public class IgniteTxHandler {
             res.invalidPartitionsByCacheId(tx.invalidPartitions());
 
             if (tx.empty() && req.last()) {
-                tx.rollbackRemoteTx();
+                tx.rollbackRemoteTx(false);
 
                 return null;
             }

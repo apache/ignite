@@ -319,7 +319,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 if (tx.state() == COMMITTING)
                                     tx.forceCommit();
                                 else
-                                    tx.rollbackRemoteTx();
+                                    tx.rollbackRemoteTx(false);
                             }
 
                             return null;
@@ -374,7 +374,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (log.isDebugEnabled())
                 log.debug("Rolling back remote DHT transaction because it is empty [req=" + req + ", res=" + res + ']');
 
-            tx.rollbackRemoteTx();
+            tx.rollbackRemoteTx(false);
 
             tx = null;
         }
@@ -573,10 +573,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (fail) {
             if (dhtTx != null)
-                dhtTx.rollbackRemoteTx();
+                dhtTx.rollbackRemoteTx(false);
 
             if (nearTx != null) // Even though this should never happen, we leave this check for consistency.
-                nearTx.rollbackRemoteTx();
+                nearTx.rollbackRemoteTx(false);
 
             List<KeyCacheObject> keys = req.keys();
 
@@ -1416,7 +1416,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             if (tx != null)
                 try {
-                    tx.rollbackDhtLocalAsync();
+                    tx.rollbackDhtLocalAsync(false);
                 }
                 catch (Throwable e1) {
                     e.addSuppressed(e1);

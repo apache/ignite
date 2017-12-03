@@ -307,7 +307,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         setRollbackOnly();
 
-        return rollbackDhtLocalAsync();
+        return rollbackDhtLocalAsync(false);
     }
 
     /**
@@ -436,7 +436,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             if (prepFut != null)
                 prepFut.get(); // Check for errors.
 
-            boolean finished = localFinish(commit, false);
+            boolean finished = localFinish(commit, fut.timedOut());
 
             if (!finished)
                 err = new IgniteCheckedException("Failed to finish transaction [commit=" + commit +
@@ -464,7 +464,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         if (log.isDebugEnabled())
             log.debug("Committing dht local tx: " + this);
 
-        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, true);
+        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, true, false);
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
@@ -507,14 +507,15 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @throws IgniteCheckedException If failed.
      */
     public void rollbackDhtLocal() throws IgniteCheckedException {
-        rollbackDhtLocalAsync().get();
+        rollbackDhtLocalAsync(false).get();
     }
 
     /**
      * @return Rollback future.
+     * @param onTimeout {@code True} if rolled back asynchronously on timeout.
      */
-    public IgniteInternalFuture<IgniteInternalTx> rollbackDhtLocalAsync() {
-        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, false);
+    public IgniteInternalFuture<IgniteInternalTx> rollbackDhtLocalAsync(boolean onTimeout) {
+        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, false, onTimeout);
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
@@ -537,12 +538,12 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
-        return rollbackDhtLocalAsync();
+        return rollbackDhtLocalAsync(false);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
-    @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
+    @Override public boolean localFinish(boolean commit, boolean onTimeout) throws IgniteCheckedException {
         assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate()
             || onePhaseCommit() || state() == PREPARED :
             "Invalid state [nearFinFutId=" + nearFinFutId + ", isInvalidate=" + isInvalidate() + ", commit=" + commit +
@@ -550,7 +551,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         assert nearMiniId != 0;
 
-        return super.localFinish(commit, clearThreadMap);
+        return super.localFinish(commit, onTimeout);
     }
 
     /** {@inheritDoc} */
