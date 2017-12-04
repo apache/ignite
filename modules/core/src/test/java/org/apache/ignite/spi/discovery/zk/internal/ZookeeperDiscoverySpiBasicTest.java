@@ -120,12 +120,18 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
     private boolean dfltConsistenId;
 
+    /** */
+    private UUID nodeId;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         if (testSockNio)
             System.setProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET, ZkTestClientCnxnSocketNIO.class.getName());
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (nodeId != null)
+            cfg.setNodeId(nodeId);
 
         if (!dfltConsistenId)
             cfg.setConsistentId(igniteInstanceName);
@@ -1394,6 +1400,17 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         });
 
         waitForTopology(SRVS + 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDuplicatedNodeId() throws Exception {
+        nodeId = UUID.randomUUID();
+
+        startGrid(0);
+
+        startGrid(1);
     }
 
     /**

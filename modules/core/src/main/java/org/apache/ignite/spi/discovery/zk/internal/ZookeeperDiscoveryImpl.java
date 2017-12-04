@@ -243,7 +243,7 @@ public class ZookeeperDiscoveryImpl {
             return;
         }
 
-        sendCustomMessage(new ZkInternalFailNodeMessage(nodeId, warning));
+        sendCustomMessage(new ZkInternalForceNodeFailMessage(nodeId, warning));
     }
 
     /**
@@ -618,27 +618,19 @@ public class ZookeeperDiscoveryImpl {
 
         TreeMap<Integer, String> alives = new TreeMap<>();
 
-        Integer locInternalId = null;
+        int locInternalId = ZkIgnitePaths.aliveInternalId(state.locNodeZkPath);
 
         for (String aliveNodePath : aliveNodes) {
             Integer internalId = ZkIgnitePaths.aliveInternalId(aliveNodePath);
 
             alives.put(internalId, aliveNodePath);
-
-            if (locInternalId == null) {
-                UUID nodeId = ZkIgnitePaths.aliveNodeId(aliveNodePath);
-
-                if (locNode.id().equals(nodeId))
-                    locInternalId = internalId;
-            }
         }
 
         assert !alives.isEmpty();
-        assert locInternalId != null;
 
         Map.Entry<Integer, String> crdE = alives.firstEntry();
 
-        if (locInternalId.equals(crdE.getKey()))
+        if (locInternalId == crdE.getKey())
             onBecomeCoordinator(aliveNodes, locInternalId);
         else {
             assert alives.size() > 1;
@@ -746,9 +738,7 @@ public class ZookeeperDiscoveryImpl {
             assert old == null;
 
             if (!state.top.nodesByInternalId.containsKey(internalId)) {
-                generateNodeJoin(curTop, internalId, child);
-
-                watchAliveNodeData(child);
+                processJoinOnCoordinator(curTop, internalId, child);
 
                 newEvts = true;
             }
@@ -776,6 +766,81 @@ public class ZookeeperDiscoveryImpl {
 
         if (failedNodes != null)
             handleProcessedEventsOnNodesFail(failedNodes);
+    }
+
+    /**
+     * @param curTop Current nodes.
+     * @param internalId Joined node internal ID.
+     * @param aliveNodePath Joined node path.
+     * @throws Exception If failed.
+     */
+    private void processJoinOnCoordinator(TreeMap<Long, ZookeeperClusterNode> curTop,
+        int internalId,
+        String aliveNodePath) throws Exception {
+        UUID nodeId = ZkIgnitePaths.aliveNodeId(aliveNodePath);
+
+        String joinDataPath = zkPaths.joiningNodeDataPath(nodeId, aliveNodePath);
+        byte[] joinData;
+
+        try {
+            joinData = state.zkClient.getData(joinDataPath);
+        }
+        catch (KeeperException.NoNodeException e) {
+            U.warn(log, "Failed to read joining node data, node left before join process finished: " + nodeId);
+
+            return;
+        }
+
+        String err = null;
+
+        ZkJoiningNodeData joiningNodeData = null;
+
+        try {
+            joiningNodeData = unmarshalZip(joinData);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to unmarshal joining node data [nodePath=" + aliveNodePath + "']", e);
+
+            err = "Failed to unmarshal join data: " + e;
+        }
+
+        if (err == null) {
+            assert joiningNodeData != null;
+
+            err = validateJoiningNode(joiningNodeData.node());
+        }
+
+        if (err == null) {
+            ZookeeperClusterNode joinedNode = joiningNodeData.node();
+
+            assert nodeId.equals(joinedNode.id()) : joiningNodeData.node();
+
+            generateNodeJoin(curTop, joinData, joiningNodeData, internalId);
+
+            watchAliveNodeData(aliveNodePath);
+        }
+        else {
+            ZkInternalJoinErrorMessage msg = new ZkInternalJoinErrorMessage(internalId, err);
+
+            // IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
+        }
+    }
+
+    /**
+     * @param node Joining node.
+     * @return
+     */
+    @Nullable private String validateJoiningNode(ZookeeperClusterNode node) {
+        ZookeeperClusterNode node0 = state.top.nodesById.get(node.id());
+
+        if (node0 != null) {
+            U.error(log, "Failed to include node in cluster, node with the same ID already exists [joiningNode=" + node +
+                ", existingNode=" + node0 + ']');
+
+            return "Node with the same ID already exists";
+        }
+
+        return null;
     }
 
     /**
@@ -827,34 +892,18 @@ public class ZookeeperDiscoveryImpl {
     /**
      * @param curTop Current nodes.
      * @param internalId Joined node internal ID.
-     * @param aliveNodePath Joined node path.
      * @throws Exception If failed.
      */
-    private void generateNodeJoin(TreeMap<Long, ZookeeperClusterNode> curTop,
-        int internalId,
-        String aliveNodePath)
+    private void generateNodeJoin(
+        TreeMap<Long, ZookeeperClusterNode> curTop,
+        byte[] joinData,
+        ZkJoiningNodeData joiningNodeData,
+        int internalId)
         throws Exception
     {
-        UUID nodeId = ZkIgnitePaths.aliveNodeId(aliveNodePath);
-
-        String joinDataPath = zkPaths.joiningNodeDataPath(nodeId, aliveNodePath);
-        byte[] joinData;
-
-        try {
-            joinData = state.zkClient.getData(joinDataPath);
-        }
-        catch (KeeperException.NoNodeException e) {
-            U.warn(log, "Failed to read joining node data, node left before join process finished: " + nodeId);
-
-            return;
-        }
-
-        // TODO ZK: fail node if can not unmarshal.
-        ZkJoiningNodeData joiningNodeData = unmarshalZip(joinData);
-
         ZookeeperClusterNode joinedNode = joiningNodeData.node();
 
-        assert nodeId.equals(joinedNode.id()) : joiningNodeData.node();
+        UUID nodeId = joinedNode.id();
 
         state.evtsData.topVer++;
         state.evtsData.evtIdGen++;
@@ -1061,8 +1110,8 @@ public class ZookeeperDiscoveryImpl {
 
                         state.evtsData.evtIdGen++;
 
-                        if (msg instanceof ZkInternalFailNodeMessage) {
-                            ZkInternalFailNodeMessage msg0 = (ZkInternalFailNodeMessage)msg;
+                        if (msg instanceof ZkInternalForceNodeFailMessage) {
+                            ZkInternalForceNodeFailMessage msg0 = (ZkInternalForceNodeFailMessage)msg;
 
                             if (alives == null)
                                 alives = new HashSet<>(state.top.nodesById.keySet());
@@ -1358,8 +1407,8 @@ public class ZookeeperDiscoveryImpl {
      * @param msg
      */
     private void processInternalMessage(ZkDiscoveryCustomEventData evtData, ZkInternalMessage msg) throws Exception {
-        if (msg instanceof ZkInternalFailNodeMessage) {
-            ZkInternalFailNodeMessage msg0 = (ZkInternalFailNodeMessage)msg;
+        if (msg instanceof ZkInternalForceNodeFailMessage) {
+            ZkInternalForceNodeFailMessage msg0 = (ZkInternalForceNodeFailMessage)msg;
 
             ClusterNode creatorNode = state.top.nodesById.get(evtData.sndNodeId);
 

@@ -17,39 +17,27 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.util.UUID;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.jetbrains.annotations.Nullable;
+import java.io.Serializable;
 
 /**
  *
  */
-public class ZkInternalFailNodeMessage implements ZkInternalMessage {
+class ZkInternalJoinErrorMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    final UUID nodeId;
+    private final int nodeInternalId;
 
     /** */
-    final String warning;
+    private final String err;
 
     /**
-     * @param nodeId Node ID.
-     * @param warning Warning to be displayed on all nodes.
+     * @param nodeInternalId Joining node internal ID.
+     * @param err Error message.
      */
-    ZkInternalFailNodeMessage(UUID nodeId, String warning) {
-        this.nodeId = nodeId;
-        this.warning = warning;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
+    ZkInternalJoinErrorMessage(int nodeInternalId, String err) {
+        this.nodeInternalId = nodeInternalId;
+        this.err = err;
     }
 }
