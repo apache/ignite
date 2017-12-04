@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** <inheritdoc /> */
         protected override IBinaryNameMapper GetNameMapper()
         {
-            return BinaryBasicNameMapper.SimpleNameInstance;
+            return new BinaryBasicNameMapper {IsSimpleName = true};
         }
     }
 }

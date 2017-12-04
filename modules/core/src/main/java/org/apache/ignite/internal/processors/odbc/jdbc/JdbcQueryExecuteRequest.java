@@ -156,7 +156,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         try {
             if (reader.available() > 0)
-                stmtType = JdbcStatementType.values()[reader.readByte()];
+                stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
             else
                 stmtType = JdbcStatementType.ANY_STATEMENT_TYPE;
         }

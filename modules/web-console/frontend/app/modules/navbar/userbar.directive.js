@@ -21,27 +21,29 @@ export default ['igniteUserbar', [function() {
         controller: ['$rootScope', 'IgniteUserbar', 'AclService', function($root, IgniteUserbar, AclService) {
             const ctrl = this;
 
-            ctrl.items = [
-                {text: 'Profile', sref: 'base.settings.profile'},
-                {text: 'Getting started', click: 'gettingStarted.tryShow(true)'}
-            ];
+            this.$onInit = () => {
+                ctrl.items = [
+                    {text: 'Profile', sref: 'base.settings.profile'},
+                    {text: 'Getting started', click: 'gettingStarted.tryShow(true)'}
+                ];
 
-            const _rebuildSettings = () => {
-                ctrl.items.splice(2);
+                const _rebuildSettings = () => {
+                    ctrl.items.splice(2);
 
-                if (AclService.can('admin_page'))
-                    ctrl.items.push({text: 'Admin panel', sref: 'base.settings.admin'});
+                    if (AclService.can('admin_page'))
+                        ctrl.items.push({text: 'Admin panel', sref: 'base.settings.admin'});
 
-                ctrl.items.push(...IgniteUserbar);
+                    ctrl.items.push(...IgniteUserbar);
 
-                if (AclService.can('logout'))
-                    ctrl.items.push({text: 'Log out', sref: 'logout'});
+                    if (AclService.can('logout'))
+                        ctrl.items.push({text: 'Log out', sref: 'logout'});
+                };
+
+                if ($root.user)
+                    _rebuildSettings(null, $root.user);
+
+                $root.$on('user', _rebuildSettings);
             };
-
-            if ($root.user)
-                _rebuildSettings(null, $root.user);
-
-            $root.$on('user', _rebuildSettings);
         }],
         controllerAs: 'userbar'
     };

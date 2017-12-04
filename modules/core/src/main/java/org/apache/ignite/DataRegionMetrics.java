@@ -86,9 +86,9 @@ public interface DataRegionMetrics {
     public float getLargeEntriesPagesPercentage();
 
     /**
-     * Gets the percentage of space that is still free and can be filled in.
+     * Gets the percentage of the used space.
      *
-     * @return The percentage of space that is still free and can be filled in.
+     * @return The percentage of the used space.
      */
     public float getPagesFillFactor();
 
