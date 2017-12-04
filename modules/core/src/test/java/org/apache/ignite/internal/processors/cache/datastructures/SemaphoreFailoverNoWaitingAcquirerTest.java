@@ -20,6 +20,8 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * 
  * Class to test the retrieval of a permit on a semaphore after initial semaphore owner has been closed. 
  * 
+ * IGNITE-7090
+ * 
  * <p>
  * <b><pre>
  * </pre></b>

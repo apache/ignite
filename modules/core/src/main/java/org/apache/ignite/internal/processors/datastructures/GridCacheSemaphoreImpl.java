@@ -589,7 +589,7 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
         // Try to notify any waiting threads.
         sync.releaseShared(0);
 
-
+        //ensure semaphore is release if last node IGNITE-7090
         UUID nodeID = ctx.localNodeId();
         onNodeRemoved(nodeID);
     }
