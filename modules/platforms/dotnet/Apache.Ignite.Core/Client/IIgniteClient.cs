@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Client
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Cache;
 
     /// <summary>
@@ -90,5 +92,12 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         /// <param name="name">The name of the cache to stop.</param>
         void DestroyCache(string name);
+
+        /// <summary>
+        /// Gets Ignite binary services.
+        /// </summary>
+        /// <returns>Instance of <see cref="IBinary"/> interface</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IBinary GetBinary();
     }
 }

@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     new Impl.Client.ClientSocket(GetClientConfiguration(),
                     new Impl.Client.ClientProtocolVersion(-1, -1, -1)));
 
-                Assert.AreEqual((int) Impl.Client.ClientStatus.Fail, ex.ErrorCode);
+                Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
 
                 Assert.AreEqual("Client handhsake failed: 'Unsupported version.'. " +
                                 "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
