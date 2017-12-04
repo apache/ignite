@@ -41,12 +41,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.DiscoverySpiBlockJoinListener;
+import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -319,6 +320,31 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 return null;
             }
         }, 64, "marshal");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAddresses() throws Exception {
+        startGridsMultiThreaded(3);
+
+        client = true;
+
+        startGridsMultiThreaded(3, 3);
+
+        waitForTopology(6);
+
+        for (Ignite node : G.allGrids()) {
+            ClusterNode locNode0 = node.cluster().localNode();
+
+            assertTrue(locNode0.addresses().size() > 0);
+            assertTrue(locNode0.hostNames().size() > 0);
+
+            for (ClusterNode node0 : node.cluster().nodes()) {
+                assertTrue(node0.addresses().size() > 0);
+                assertTrue(node0.hostNames().size() > 0);
+            }
+        }
     }
 
     /**
@@ -1750,7 +1776,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         List<String> zkNodes = new ArrayList<>();
 
-        List<DiscoverySpiBlockJoinListener> lsnrs = new ArrayList<>();
+        List<DiscoverySpiTestListener> lsnrs = new ArrayList<>();
 
         for (Ignite client : clients) {
             client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
@@ -1758,7 +1784,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             zkNodes.add(aliveZkNodePath(client));
 
             if (disconnectedC != null) {
-                DiscoverySpiBlockJoinListener lsnr = new DiscoverySpiBlockJoinListener();
+                DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 
                 ((IgniteDiscoverySpi)client.configuration().getDiscoverySpi()).setInternalListener(lsnr);
 
@@ -1822,7 +1848,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         if (disconnectedC != null) {
             disconnectedC.run();
 
-            for (DiscoverySpiBlockJoinListener lsnr : lsnrs)
+            for (DiscoverySpiTestListener lsnr : lsnrs)
                 lsnr.stopBlock();
         }
 

@@ -472,6 +472,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+        IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
+
+        if (internalLsnr != null) {
+            if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
+                return;
+        }
+
         impl.sendCustomEvent(msg);
     }
 

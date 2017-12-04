@@ -29,7 +29,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -64,11 +63,15 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
     private IgniteProductVersion ver;
 
     /** Node attributes. */
-    @GridToStringExclude
     private Map<String, Object> attrs;
 
+    /** Internal discovery addresses as strings. */
+    private Collection<String> addrs;
+
+    /** Internal discovery host names as strings. */
+    private Collection<String> hostNames;
+
     /** Metrics provider. */
-    @GridToStringExclude
     private transient DiscoveryMetricsProvider metricsProvider;
 
     /** */
@@ -101,6 +104,8 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
      */
     public ZookeeperClusterNode(
         UUID id,
+        Collection<String> addrs,
+        Collection<String> hostNames,
         IgniteProductVersion ver,
         Map<String, Object> attrs,
         Serializable consistentId,
@@ -112,7 +117,9 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
 
         this.id = id;
         this.ver = ver;
-        this.attrs = U.sealMap(attrs);
+        this.attrs = Collections.unmodifiableMap(attrs);
+        this.addrs = addrs;
+        this.hostNames = hostNames;
         this.consistentId = consistentId;
         this.metricsProvider = metricsProvider;
 
@@ -207,12 +214,12 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
 
     /** {@inheritDoc} */
     @Override public Collection<String> addresses() {
-        return Collections.emptyList();
+        return addrs;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<String> hostNames() {
-        return Collections.emptyList();
+        return hostNames;
     }
 
     /** {@inheritDoc} */
@@ -311,6 +318,10 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ZookeeperClusterNode [id=" + id + ", order=" + order + ", client=" + isClient() + ']';
+        return "ZookeeperClusterNode [id=" + id +
+            ", addrs=" + addrs +
+            ", order=" + order +
+            ", loc=" + loc +
+            ", client=" + isClient() + ']';
     }
 }

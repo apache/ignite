@@ -782,7 +782,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
         log.info("Block reconnect.");
 
-        DiscoverySpiBlockJoinListener lsnr = new DiscoverySpiBlockJoinListener();
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 
         clientSpi.setInternalListener(lsnr);
         lsnr.startBlock();

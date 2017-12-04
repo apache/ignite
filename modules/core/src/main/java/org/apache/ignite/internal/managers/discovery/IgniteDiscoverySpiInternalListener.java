@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 /**
  *
@@ -26,5 +28,11 @@ public interface IgniteDiscoverySpiInternalListener {
     /**
      * @param log Log.
      */
-    void beforeJoin(IgniteLogger log);
+    public void beforeJoin(IgniteLogger log);
+
+    /**
+     * @param log Logger.
+     * @param msg Custom message.
+     */
+    public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg);
 }

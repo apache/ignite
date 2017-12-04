@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -28,6 +30,8 @@ import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalL
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -253,6 +257,13 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
+        IgniteDiscoverySpiInternalListener internalLsnr = impl.internalLsnr;
+
+        if (internalLsnr != null) {
+            if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
+                return;
+        }
+
         impl.sendCustomMessage(msg);
     }
 
@@ -347,10 +358,33 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     private ZookeeperClusterNode initLocalNode() {
         assert ignite != null;
 
+        String locHost = ignite.configuration().getLocalHost();
+
+        InetAddress locAddr;
+
+        try {
+            locAddr = U.resolveLocalHost(locHost);
+        }
+        catch (IOException e) {
+            throw new IgniteSpiException("Unknown local address: " + locHost, e);
+        }
+
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs;
+
+        try {
+            addrs = U.resolveLocalAddresses(locAddr);
+        }
+        catch (Exception e) {
+            throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
+        }
+
+
         consistentId = consistentId();
 
         ZookeeperClusterNode locNode = new ZookeeperClusterNode(
             ignite.configuration().getNodeId(),
+            addrs.get1(),
+            addrs.get2(),
             locNodeVer,
             locNodeAttrs,
             consistentId,
