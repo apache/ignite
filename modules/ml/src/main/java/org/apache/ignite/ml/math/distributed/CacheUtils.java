@@ -484,9 +484,7 @@ public class CacheUtils {
                 m.put(k, v);
             }
 
-            long before = System.currentTimeMillis();
             cache.putAll(m);
-            System.out.println("PutAll took: " + (System.currentTimeMillis() - before));
         });
     }
 
