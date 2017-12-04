@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.Level;
@@ -112,9 +113,9 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         cfg.setConnectorConfiguration(null);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setIpFinder(new TcpDiscoveryVmIpFinder(false) {{
-            setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
-        }});
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(false);
+        ipFinder.setAddresses(Collections.singleton("127.0.0.1:47500..47502"));
+        disco.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(disco);
 
         return cfg;
