@@ -134,7 +134,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private static final Object SPI_STOP = "SPI_STOP";
 
     /** False if there are more than one unavailable IP address in IP finder */
-    boolean firstUnavailableAddress = true;
+    private boolean firstUnavailableAddr = true;
 
     /** */
     private static final Object SPI_RECONNECT_FAILED = "SPI_RECONNECT_FAILED";
@@ -695,13 +695,17 @@ class ClientImpl extends TcpDiscoveryImpl {
                     res.clientAck());
             }
             catch (IOException | IgniteCheckedException e) {
-                if(firstUnavailableAddress && (X.hasCause(e, SocketException.class) || X.hasCause(e, SocketTimeoutException.class))) {
-                    log.info(String.format("Unavailabe ip address in Windows OS [%s]." +
-                        " Connection can take a lot of time. If there are any other addresses, " +
-                        "check your address list in ipFinder.", addr.getAddress().toString().substring(1)));
-                    firstUnavailableAddress = false;
-                }
                 U.closeQuiet(sock);
+
+                if (U.isWindows() && firstUnavailableAddr &&
+                    (X.hasCause(e, SocketException.class, SocketTimeoutException.class))) {
+                    log.warning(String.format("Unavailable socket address in Windows OS [%s]." +
+                        " Connection can take a lot of time. Maybe the reason is that the node has not been " +
+                        "started yet on this address. If there are any other addresses, check your address list " +
+                        "in ipFinder.", addr.toString().substring(1)));
+
+                    firstUnavailableAddr = false;
+                }
 
                 if (log.isDebugEnabled())
                     log.error("Exception on joining: " + e.getMessage(), e);

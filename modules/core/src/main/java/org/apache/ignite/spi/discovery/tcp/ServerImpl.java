@@ -99,7 +99,6 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -181,7 +180,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private IgniteThreadPoolExecutor utilityPool;
 
     /** False if there are more than one unavailable IP address in IP finder */
-    boolean firstUnavailableAddress = true;
+    private boolean firstUnavailableAddr = true;
 
     /** Nodes ring. */
     @GridToStringExclude
@@ -1275,11 +1274,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                 errs.add(e);
             }
             catch (IOException | IgniteCheckedException e) {
-                if(firstUnavailableAddress && (X.hasCause(e, SocketException.class) || X.hasCause(e, SocketTimeoutException.class))) {
-                    log.info(String.format("Unavailabe ip address in Windows OS [%s]." +
-                        " Connection can take a lot of time. If there are any other addresses, " +
-                        "check your address list in ipFinder.", addr.getAddress().toString().substring(1)));
-                    firstUnavailableAddress = false;
+                if (U.isWindows() && firstUnavailableAddr &&
+                    (X.hasCause(e, SocketException.class, SocketTimeoutException.class))) {
+                    log.warning(String.format("Unavailable socket address in Windows OS [%s]." +
+                        " Connection can take a lot of time. Maybe the reason is that the node has not been " +
+                        "started yet on this address. If there are any other addresses, check your address list " +
+                        "in ipFinder.", addr.toString().substring(1)));
+
+                    firstUnavailableAddr = false;
                 }
 
                 if (log.isDebugEnabled())

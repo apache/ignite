@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -39,15 +40,21 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     private List<String> ipAddrList = new ArrayList<>();
 
     /** Warning message that will be in log. */
-    private String warningMsg = "Unavailabe ip address in Windows OS [%s]." +
-        " Connection can take a lot of time. If there are any other addresses, " +
-        "check your address list in ipFinder.";
+    private static final String warningMsg = "Unavailable socket address in Windows OS [%s]. " +
+        "Connection can take a lot of time. Maybe the reason is that the node has not been started yet on this " +
+        "address. If there are any other addresses, check your address list in ipFinder.";
 
     /** Right ip address. */
-    private String rightAddr = "127.0.0.1";
+    private static final String rightAddr = "127.0.0.1";
+
+    /** Right port. */
+    private static final String rightPort = ":47501";
 
     /** Wrong ip address. */
-    private String wrongAddr = "0.0.0.0";
+    private static final String wrongAddr = "0.0.0.0";
+
+    /** Wrong port. */
+    private static final String wrongPort = ":8080";
 
     /** Ip finder. */
     private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -57,39 +64,31 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
         super.afterTest();
 
         stopAllGrids();
-
-        ipAddrList.clear();
-
-        strLog.reset();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        boolean skipTimeout = igniteInstanceName.contains("wrongAddress") || igniteInstanceName.contains("SmallSocketTimeout");
+        boolean skipTimeout = igniteInstanceName.contains("wrongAddress") ||
+            igniteInstanceName.contains("SmallSocketTimeout");
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         if (igniteInstanceName.contains("client")) {
             if (skipTimeout)
                 spi.setJoinTimeout(1);
-            cfg.setCacheConfiguration();
             cfg.setClientMode(true);
         }
-        else
-            spi.setForceServerMode(true);
 
         if (igniteInstanceName.contains("RightAddress"))
-            ipAddrList.add(rightAddr + ":47501");
+            ipAddrList.add(rightAddr + rightPort);
 
         ipFinder.setAddresses(ipAddrList);
 
         spi.setIpFinder(ipFinder);
 
         cfg.setGridLogger(strLog);
-
-        cfg.setDiscoverySpi(spi);
 
         if (igniteInstanceName.contains("SmallSocketTimeout"))
             spi.setSocketTimeout(500);
@@ -104,27 +103,43 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
      *
      */
     public void testWrongAddressClientMode() throws Exception {
-        logWarning = String.format(warningMsg, wrongAddr);
+        logWarning = String.format(warningMsg, wrongAddr + wrongPort);
 
-        ipAddrList.add(wrongAddr);
+        ipAddrList.add(wrongAddr + wrongPort);
 
         try {
             startGrid("wrongAddress-client");
         }
         catch (IgniteCheckedException e) {
-            //because of absent available server node for this client
+            assertTrue(e.hasCause(IgniteSpiException.class));
         }
 
-        finally {
-            assertTrue(strLog.toString().contains(logWarning));
+        assertTrue(strLog.toString().contains(logWarning));
+    }
+
+    /**
+     *
+     */
+    public void testRightAddressWrongPortClientMode() throws Exception {
+        logWarning = String.format(warningMsg, rightAddr + wrongPort);
+
+        ipAddrList.add(rightAddr + wrongPort);
+
+        try {
+            startGrid("wrongAddress-client");
         }
+        catch (IgniteCheckedException e) {
+            assertTrue(e.hasCause(IgniteSpiException.class));
+        }
+
+        assertTrue(strLog.toString().contains(logWarning));
     }
 
     /**
      *
      */
     public void testRightAddressClientMode() throws Exception {
-        logWarning = String.format(warningMsg, rightAddr);
+        logWarning = String.format(warningMsg, rightAddr + rightPort);
 
         startGrid("firstNode");
 
@@ -138,10 +153,36 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     /**
      *
      */
-    public void testRightAddresses() throws Exception {
-        logWarning = String.format(warningMsg, rightAddr);
+    public void testWrongAddresses() throws Exception {
+        logWarning = String.format(warningMsg, wrongAddr + wrongPort);
 
-        ipAddrList.add(rightAddr);
+        ipAddrList.add(wrongAddr + wrongPort);
+
+        startGrid("default");
+
+        assertTrue(strLog.toString().contains(logWarning));
+    }
+
+    /**
+     *
+     */
+    public void testRightAddressesWrongPort() throws Exception {
+        logWarning = String.format(warningMsg, rightAddr + wrongPort);
+
+        ipAddrList.add(rightAddr + wrongPort);
+
+        startGrid("default");
+
+        assertTrue(strLog.toString().contains(logWarning));
+    }
+
+    /**
+     *
+     */
+    public void testRightAddresses() throws Exception {
+        logWarning = String.format(warningMsg, rightAddr + rightPort);
+
+        ipAddrList.add(rightAddr + rightPort);
 
         startGrid("firstNode");
 
@@ -155,23 +196,10 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     /**
      *
      */
-    public void testWrongAddresses() throws Exception {
-        logWarning = String.format(warningMsg, wrongAddr);
-
-        ipAddrList.add(wrongAddr);
-
-        startGrid("default");
-
-        assertTrue(strLog.toString().contains(logWarning));
-    }
-
-    /**
-     *
-     */
     public void testSmallSocketTimeout() throws Exception {
-        logWarning = String.format(warningMsg, wrongAddr);
+        logWarning = String.format(warningMsg, wrongAddr + wrongPort);
 
-        ipAddrList.add(wrongAddr);
+        ipAddrList.add(wrongAddr + wrongPort);
 
         startGrid("SmallSocketTimeout");
 
@@ -182,19 +210,18 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
      *
      */
     public void testClientSmallSocketTimeout() throws Exception {
-        logWarning = String.format(warningMsg, wrongAddr);
+        logWarning = String.format(warningMsg, wrongAddr + wrongPort);
 
-        ipAddrList.add(wrongAddr);
+        ipAddrList.add(wrongAddr + wrongPort);
 
         try {
             startGrid("SmallSocketTimeout-client");
         }
         catch (IgniteCheckedException e) {
-            //because of absent available server node for this client
+            assertTrue(e.hasCause(IgniteSpiException.class));
         }
 
-        finally {
-            assertTrue(strLog.toString().contains(logWarning));
-        }
+        assertTrue(strLog.toString().contains(logWarning));
     }
+
 }
