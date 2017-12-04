@@ -39,6 +39,9 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     private long totalAllocatedPages;
 
     /** */
+    private long indexesAllocatedPages;
+
+    /** */
     private float allocationRate;
 
     /** */
@@ -72,6 +75,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     public VisorMemoryMetrics(DataRegionMetrics m) {
         name = m.getName();
         totalAllocatedPages = m.getTotalAllocatedPages();
+        indexesAllocatedPages = m.getIndexesAllocatedPages();
         allocationRate = m.getAllocationRate();
         evictionRate = m.getEvictionRate();
         largeEntriesPagesPercentage = m.getLargeEntriesPagesPercentage();
@@ -93,6 +97,13 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
      */
     public long getTotalAllocatedPages() {
         return totalAllocatedPages;
+    }
+
+    /**
+     * @return Total number of allocated pages for indexes.
+     */
+    public long getIndexesAllocatedPages() {
+        return indexesAllocatedPages;
     }
 
     /**
@@ -148,6 +159,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         out.writeLong(totalAllocatedPages);
+        out.writeLong(indexesAllocatedPages);
         out.writeFloat(allocationRate);
         out.writeFloat(evictionRate);
         out.writeFloat(largeEntriesPagesPercentage);
@@ -161,6 +173,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
         totalAllocatedPages = in.readLong();
+        indexesAllocatedPages = in.readLong();
         allocationRate = in.readFloat();
         evictionRate = in.readFloat();
         largeEntriesPagesPercentage = in.readFloat();

@@ -129,11 +129,13 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         int pageSize = getPageSize(ignite);
 
         assertEquals(0, memMetrics.getTotalAllocatedPages());
+        assertEquals(0, memMetrics.getIndexesAllocatedPages());
 
         fillCache(cache);
 
         assertTrue(memMetrics.getTotalAllocatedPages() * pageSize > MAX_VALS_AMOUNT
             * VAL_SIZE);
+        assertTrue(memMetrics.getIndexesAllocatedPages() > 0);
     }
 
     /**

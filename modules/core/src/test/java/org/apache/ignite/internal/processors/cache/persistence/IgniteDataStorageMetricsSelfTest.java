@@ -167,6 +167,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             assertNotNull(memMetrics);
             assertTrue(memMetrics.getTotalAllocatedPages() > 0);
+            assertTrue(memMetrics.getIndexesAllocatedPages() > 0);
             assertTrue(memMetrics.getPagesFillFactor() > 0);
 
             ig.context().cache().context().database().waitForCheckpoint("test");

@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -255,7 +256,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int cacheId, int partId, byte flags) {
-        memMetrics.incrementTotalAllocatedPages();
+        memMetrics.incrementTotalAllocatedPages(partId);
 
         long relPtr = borrowFreePage();
         long absPtr = 0;

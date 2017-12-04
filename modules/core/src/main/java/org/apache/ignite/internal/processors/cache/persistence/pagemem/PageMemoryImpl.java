@@ -425,7 +425,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         long pageId = storeMgr.allocatePage(cacheId, partId, flags);
 
-        memMetrics.incrementTotalAllocatedPages();
+        memMetrics.incrementTotalAllocatedPages(partId);
 
         assert PageIdUtils.pageIndex(pageId) > 0; //it's crucial for tracking pages (zero page is super one)
 
