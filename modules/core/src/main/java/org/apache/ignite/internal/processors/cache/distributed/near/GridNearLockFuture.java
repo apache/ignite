@@ -792,7 +792,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                     @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
                         IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Failed to " +
                             "acquire lock, transaction was rolled back on timeout [timeout=" + tx.timeout() +
-                            ", tx=" + tx + ']');
+                            ", tx=" + CU.txString(tx) + ']');
 
                         onError(err);
 
@@ -806,11 +806,12 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
                     if (tx.isRollbackOnly() && tx.timedOut()) {
                         if (log.isInfoEnabled())
-                            log.info("Forcibly cancelling near lock future: " + GridNearLockFuture.this);
+                            log.info("Forcibly cancelling near lock future: " +
+                                CU.futString(GridNearLockFuture.this, tx));
 
 
                         onError(new IgniteFutureCancelledCheckedException("Failed to acquire lock, " +
-                            "transaction was rolled back on timeout [tx=" + tx + ']'));
+                            "transaction was rolled back on timeout [tx=" + CU.txString(tx) + ']'));
 
                         onComplete(false, true, false);
                     }
@@ -1537,7 +1538,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(LockTimeoutObject.class, this, "fut", GridNearLockFuture.this);
+            return S.toString(LockTimeoutObject.class, this);
         }
     }
 

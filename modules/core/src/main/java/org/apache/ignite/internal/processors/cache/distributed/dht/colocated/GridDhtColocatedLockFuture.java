@@ -701,7 +701,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
                         IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Failed to " +
                             "acquire lock, transaction was rolled back on timeout [timeout=" + tx.timeout() +
-                            ", tx=" + tx + ']');
+                            ", tx=" + CU.txString(tx) + ']');
 
                         onError(err);
 
@@ -715,7 +715,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
                     if(tx.isRollbackOnly()) {
                         onError(new IgniteFutureCancelledCheckedException("Failed to acquire lock, " +
-                            "transaction was rolled back [tx=" + tx + ']'));
+                            "transaction was rolled back [tx=" + CU.txString(tx) + ']'));
 
                         onComplete(false, false, false);
                     }
@@ -1486,7 +1486,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(LockTimeoutObject.class, this, "fut", GridDhtColocatedLockFuture.this);
+            return S.toString(LockTimeoutObject.class, this);
         }
     }
 

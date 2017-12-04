@@ -771,7 +771,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
                     if (tx.isRollbackOnly() && tx.timedOut()) {
                         if (log.isInfoEnabled())
-                            log.info("Forcibly cancelling DHT lock future: " + GridDhtLockFuture.this);
+                            log.info("Forcibly cancelling DHT lock future: " +
+                                CU.futString(GridDhtLockFuture.this, tx));
 
                         onTimeout();
                     }
@@ -1138,7 +1139,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     return;
 
                 err = new GridDistributedLockCancelledException("Failed to acquire lock, " +
-                    "transaction was rolled back [tx=" + tx + ']');
+                    "transaction was rolled back [tx=" + CU.txString(tx) + ']');
             }
             onComplete(false, false, false);
         }
@@ -1171,7 +1172,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(LockTimeoutObject.class, this, "fut", GridDhtLockFuture.this);
+            return S.toString(LockTimeoutObject.class, this);
         }
     }
 

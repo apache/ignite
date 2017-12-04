@@ -1628,7 +1628,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 final GridClosureException ex = new GridClosureException(
                     new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-                        "for transaction [timeout=" + timeout() + ", tx=" + IgniteTxLocalAdapter.this + ']', deadlockErr)
+                        "for transaction [timeout=" + timeout() + ", tx=" + CU.txString(IgniteTxLocalAdapter.this) + ']',
+                        deadlockErr)
                 );
 
                 if (commit && commitAfterLock())

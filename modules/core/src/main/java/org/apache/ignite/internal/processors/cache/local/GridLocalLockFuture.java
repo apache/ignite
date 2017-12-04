@@ -517,7 +517,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(LockTimeoutObject.class, this, "fut", GridLocalLockFuture.this);
+            return S.toString(LockTimeoutObject.class, this);
         }
     }
 }
