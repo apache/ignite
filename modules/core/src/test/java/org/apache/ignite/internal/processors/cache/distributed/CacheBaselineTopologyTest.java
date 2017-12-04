@@ -180,7 +180,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         nodes.remove(node);
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null);
 
         mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 

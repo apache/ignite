@@ -2093,8 +2093,17 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridDhtPartitionTopology top = topology();
 
-        if (isReplicated() && !group().persistenceEnabled())
-            return top.rebalanceFinished(topVer);
+        if (isReplicated() && !group().persistenceEnabled()) {
+            boolean rebFinished = top.rebalanceFinished(topVer);
+
+            if (rebFinished)
+                return true;
+
+            GridDhtLocalPartition locPart = top.localPartition(part, topVer, false, false);
+
+            // No need to reserve a partition for REPLICATED cache because this partition cannot be evicted.
+            return locPart != null && locPart.state() == OWNING;
+        }
         else {
             GridDhtLocalPartition locPart = top.localPartition(part, topVer, false, false);
 
