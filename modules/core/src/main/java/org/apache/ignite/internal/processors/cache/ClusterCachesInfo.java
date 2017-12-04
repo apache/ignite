@@ -393,11 +393,14 @@ class ClusterCachesInfo {
 
         IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
 
+        if (cache == null) // TODO remove
+            System.out.println("NPE detected");
+
         cache.configuration().setStatisticsEnabled(msg.statisticEnabled());
 
         DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
-        desc.cacheConfiguration().setStatisticsEnabled(true);
+        desc.cacheConfiguration().setStatisticsEnabled(msg.statisticEnabled());
     }
 
     /**
@@ -1159,6 +1162,8 @@ class ClusterCachesInfo {
                     desc0.startTopologyVersion(desc.startTopologyVersion());
                     desc0.receivedFromStartVersion(desc.receivedFromStartVersion());
                     desc0.clientCacheStartVersion(desc.clientCacheStartVersion());
+
+                    desc0.cacheConfiguration().setStatisticsEnabled(cfg.isStatisticsEnabled());
 
                     desc = desc0;
                 }
