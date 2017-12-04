@@ -862,7 +862,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed for any other reason than the expected exception.
      */
     private void checkNoIndexIsCreatedForParallelism(final int parallel, int igniteQryErrorCode) throws Exception {
-        assertSchemaException(new RunnableX() {
+        assertIgniteSqlException(new RunnableX() {
             @Override public void run() throws Exception {
                 QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false, parallel);
