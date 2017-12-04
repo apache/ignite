@@ -588,6 +588,10 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
 
         // Try to notify any waiting threads.
         sync.releaseShared(0);
+
+
+        UUID nodeID = ctx.localNodeId();
+        onNodeRemoved(nodeID);
     }
 
     /** {@inheritDoc} */
