@@ -1810,6 +1810,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxAdapter.class, this,
+            "id", xid(),
             "duration", (U.currentTimeMillis() - startTime) + "ms",
             "onePhaseCommit", onePhaseCommit);
     }

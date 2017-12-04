@@ -828,10 +828,11 @@ public class GridCacheUtils {
             return "null";
 
         return fut.getClass().getSimpleName() + "[futId=" + fut.futureId() +
-            ", trackable=" + fut.trackable() +
             ", done=" + fut.isDone() +
             ", cancelled=" + fut.isCancelled() +
-            ", duration=" + fut.duration() +
+            ", trackable=" + fut.trackable() +
+            ", startTime=" + fut.startTime() +
+            ", duration=" + fut.duration() + "ms" +
             ", tx=" + txString(tx) +']';
     }
 

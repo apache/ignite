@@ -4135,7 +4135,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     // since thread started tx still should be able to see this tx.
                     rollbackNearTxLocalAsync(true);
 
-                    U.warn(log, "Transaction was rolled back because the timeout is reached: " + GridNearTxLocal.this);
+                    U.warn(log, "Transaction was rolled back because the timeout is reached: " +
+                        CU.txString(GridNearTxLocal.this));
                 }
             });
         }
