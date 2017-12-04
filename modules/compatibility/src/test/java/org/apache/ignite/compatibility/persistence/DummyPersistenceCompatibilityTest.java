@@ -42,7 +42,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
  */
 public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
-    private static final String TEST_CACHE_NAME = DummyPersistenceCompatibilityTest.class.getSimpleName();
+    protected static final String TEST_CACHE_NAME = DummyPersistenceCompatibilityTest.class.getSimpleName();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

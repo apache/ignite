@@ -1303,13 +1303,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param absIdx Segment absolute index.
-         * @return {@code True} if can read, {@code false} if work segment
+         * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need
+         * release segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
          */
         @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
         private boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
             synchronized (this) {
-                if (lastAbsArchivedIdx >= absIdx)
+                if (lastAbsArchivedIdx >= absIdx) {
+                    if (log.isDebugEnabled())
+                        log.debug("Not needed to reserve WAL segment: absIdx=" + absIdx + ";" +
+                            " lastAbsArchivedIdx=" + lastAbsArchivedIdx);
+
                     return true;
+                }
 
                 Integer cur = locked.get(absIdx);
 
@@ -1332,7 +1338,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             synchronized (this) {
                 Integer cur = locked.get(absIdx);
 
-                assert cur != null && cur > 0;
+                assert cur != null && cur > 0 : "WAL Segment with Index " + absIdx + " is not locked;" +
+                    " lastAbsArchivedIdx = " + lastAbsArchivedIdx;
 
                 if (cur == 1) {
                     locked.remove(absIdx);
@@ -2641,10 +2648,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     nextHandle = null;
             }
 
-            if (nextHandle != null)
-                nextHandle.workDir = !readArchive;
+            if (nextHandle == null) {
+                if (!readArchive)
+                    releaseWorkSegment(curWalSegmIdx);
+            }
             else
-                releaseWorkSegment(curWalSegmIdx);
+                nextHandle.workDir = !readArchive;
+
 
             curRec = null;
             return nextHandle;
@@ -2652,8 +2662,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param absIdx Absolute index to check.
-         * @return {@code True} if we can safely read the archive, {@code false} if the segment has not been archived
-         * yet. In this case the corresponding work segment is reserved (will not be deleted until release).
+         * @return <ul><li> {@code True} if we can safely read the archive,  </li> <li>{@code false} if the segment has
+         * not been archived yet. In this case the corresponding work segment is reserved (will not be deleted until
+         * release). Use {@link #releaseWorkSegment} for unlock </li></ul>
          */
         private boolean canReadArchiveOrReserveWork(long absIdx) {
             return archiver != null && archiver.checkCanReadArchiveOrReserveWorkSegment(absIdx);
