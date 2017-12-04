@@ -928,9 +928,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testGetRowCol(){
-        consumeSampleMatrix((m,desc)-> {
-            if (! (m instanceof RandomMatrix))
+    public void testGetRowCol() {
+        consumeSampleMatrix((m, desc) -> {
+            if (!(m instanceof RandomMatrix))
                 for (int i = 0; i < m.rowSize(); i++)
                     for (int j = 0; j < m.columnSize(); j++)
                         m.setX(i, j, i + j);

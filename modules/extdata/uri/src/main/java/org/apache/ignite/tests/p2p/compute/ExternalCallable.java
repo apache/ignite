@@ -15,38 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
+package org.apache.ignite.tests.p2p.compute;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 
 /**
- * Scan query response.
  */
-class ClientCacheScanQueryResponse extends ClientResponse {
-    /** Cursor. */
-    private final ClientCacheScanQueryCursor cursor;
+public class ExternalCallable implements IgniteCallable {
+    /** */
+    @IgniteInstanceResource
+    Ignite ignite;
+
+    /** Logger. */
+    @LoggerResource
+    private IgniteLogger log;
+
+    /** */
+    private int param;
 
     /**
-     * Ctor.
-     *
-     * @param requestId Request id.
-     * @param cursor Cursor.
      */
-    ClientCacheScanQueryResponse(long requestId, ClientCacheScanQueryCursor cursor) {
-        super(requestId);
+    public ExternalCallable() {
+        // No-op.
+    }
 
-        assert cursor != null;
-
-        this.cursor = cursor;
+    /**
+     * @param param Param.
+     */
+    public ExternalCallable(int param) {
+        this.param = param;
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(BinaryRawWriterEx writer) {
-        super.encode(writer);
+    @Override public Object call() {
+        log.info("!!!!! I am modified job " + param + " on " + ignite.name());
 
-        writer.writeLong(cursor.id());
-
-        cursor.writePage(writer);
+        return  43;
     }
 }

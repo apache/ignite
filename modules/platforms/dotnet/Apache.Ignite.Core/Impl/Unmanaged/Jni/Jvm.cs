@@ -79,19 +79,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             var env = AttachCurrentThread();
             _methodId = new MethodId(env);
-            _callbacks = GetCallbacks(env, this);
+
+            // Keep AppDomain check here to avoid JITting GetCallbacksFromDefaultDomain method on .NET Core
+            // (which fails due to _AppDomain usage).
+            _callbacks = AppDomain.CurrentDomain.IsDefaultAppDomain()
+                ? new Callbacks(env, this)
+                : GetCallbacksFromDefaultDomain();
         }
 
         /// <summary>
         /// Gets the callbacks.
         /// </summary>
-        private static Callbacks GetCallbacks(Env env, Jvm jvm)
+        private static Callbacks GetCallbacksFromDefaultDomain()
         {
-            if (AppDomain.CurrentDomain.IsDefaultAppDomain())
-            {
-                return new Callbacks(env, jvm);
-            }
-
             // JVM exists once per process, and JVM callbacks exist once per process.
             // We should register callbacks ONLY from the default AppDomain (which can't be unloaded).
             // Non-default appDomains should delegate this logic to the default one.
@@ -126,11 +126,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the JVM.
         /// </summary>
-        public static Jvm Get()
+        public static Jvm Get(bool ignoreMissing = false)
         {
             var res = _instance;
 
-            if (res == null)
+            if (res == null && !ignoreMissing)
             {
                 throw new IgniteException("JVM has not been created.");
             }
@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             int existingJvmCount;
 
             // Use existing JVM if present.
-            var res = JniNativeMethods.JNI_GetCreatedJavaVMs(out jvm, 1, out existingJvmCount);
+            var res = JvmDll.Instance.GetCreatedJvms(out jvm, 1, out existingJvmCount);
             if (res != JniResult.Success)
             {
                 throw new IgniteException("JNI_GetCreatedJavaVMs failed: " + res);
@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
 
             IntPtr env;
-            res = JniNativeMethods.JNI_CreateJavaVM(out jvm, out env, &args);
+            res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
             if (res != JniResult.Success)
             {
                 throw new IgniteException("JNI_CreateJavaVM failed: " + res);
@@ -255,42 +255,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             del = (T) (object) Marshal.GetDelegateForFunctionPointer(ptr, typeof(T));
         }
 
-        /// <summary>
-        /// JavaVMOption.
-        /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable")]
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
-        private struct JvmOption
-        {
-            public IntPtr optionString;
-            private readonly IntPtr extraInfo;
-        }
-
-        /// <summary>
-        /// JavaVMInitArgs.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
-        private struct JvmInitArgs
-        {
-            public int version;
-            public int nOptions;
-            public JvmOption* options;
-            private readonly byte ignoreUnrecognized;
-        }
-
-        /// <summary>
-        /// DLL imports.
-        /// </summary>
-        private static class JniNativeMethods
-        {
-            [DllImport("jvm.dll", CallingConvention = CallingConvention.StdCall)]
-            internal static extern JniResult JNI_CreateJavaVM(out IntPtr pvm, out IntPtr penv,
-                JvmInitArgs* args);
-
-            [DllImport("jvm.dll", CallingConvention = CallingConvention.StdCall)]
-            internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
-                [Out] out int size2);
-        }
 
         /// <summary>
         /// Provides access to <see cref="Callbacks"/> instance in the default AppDomain.

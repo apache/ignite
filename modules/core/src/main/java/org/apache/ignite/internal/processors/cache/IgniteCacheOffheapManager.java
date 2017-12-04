@@ -186,18 +186,6 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cctx Cache context.
      * @param key Key.
-     * @param part Partition.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void updateIndexes(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        GridDhtLocalPartition part
-    ) throws IgniteCheckedException;
-
-    /**
-     * @param cctx Cache context.
-     * @param key Key.
      * @param partId Partition number.
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
@@ -450,13 +438,6 @@ public interface IgniteCacheOffheapManager {
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @throws IgniteCheckedException If failed.
-         */
-        void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

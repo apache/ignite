@@ -32,7 +32,7 @@ mixin result-toolbar
 
 mixin chart-settings
     .total.row
-        .col-xs-4
+        .col-xs-7
             .chart-settings-link(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
                 a(title='Click to show chart settings dialog' ng-click='$event.stopPropagation()' bs-popover data-template-url='{{ $ctrl.chartSettingsTemplateUrl }}' data-placement='bottom' data-auto-close='1' data-trigger='click')
                     i.fa.fa-bars
@@ -41,7 +41,11 @@ mixin chart-settings
                     label Show
                     button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' ng-change='applyChartSettings(paragraph)' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
                     label min
-        .col-xs-4
+
+                div
+                    label Duration: #[b {{paragraph.duration | duration}}]
+                    label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
+        .col-xs-2
             +result-toolbar
 
 mixin notebook-rename
@@ -139,16 +143,17 @@ mixin query-actions
 
 mixin table-result-heading-query
     .total.row
-        .col-xs-4
+        .col-xs-7
             grid-column-selector(grid-api='paragraph.gridOptions.api')
                 .fa.fa-bars.icon
             label Page: #[b {{paragraph.page}}]
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
-        .col-xs-4
+            label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
+        .col-xs-2
             div(ng-if='paragraph.qryType === "query"')
                 +result-toolbar
-        .col-xs-4
+        .col-xs-3
             .pull-right
                 .btn-group.panel-tip-container
                     button.btn.btn-primary.btn--with-icon(
@@ -166,7 +171,7 @@ mixin table-result-heading-query
                         i.fa.fa-fw.fa-refresh.fa-spin(ng-if='paragraph.csvIsPreparing')
                         span Export
 
-                    -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
+                    -var options = [{ text: 'Export', click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }, { divider: true }, { text: '<span title="Copy current result page to clipboard">Copy to clipboard</span>', click: 'exportCsvToClipBoard(paragraph)' }]
                     button.btn.dropdown-toggle.btn-primary(
                         ng-disabled='paragraph.loading'
 
@@ -175,6 +180,7 @@ mixin table-result-heading-query
                         data-toggle='dropdown'
                         data-container='body'
                         data-placement='bottom-right'
+                        data-html='true'
                     )
                         span.caret
 
@@ -182,23 +188,24 @@ mixin table-result-heading-query
 
 mixin table-result-heading-scan
     .total.row
-        .col-xs-4
+        .col-xs-7
             grid-column-selector(grid-api='paragraph.gridOptions.api')
                 .fa.fa-bars.icon
             label Page: #[b {{paragraph.page}}]
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
-        .col-xs-4
+            label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
+        .col-xs-2
             div(ng-if='paragraph.qryType === "query"')
                 +result-toolbar
-        .col-xs-4
+        .col-xs-3
             .pull-right
                 .btn-group.panel-tip-container
                     // TODO: replace this logic for exporting under one component
                     button.btn.btn-primary.btn--with-icon(
                         ng-click='exportCsv(paragraph)'
 
-                        ng-disabled='paragraph.loading'
+                        ng-disabled='paragraph.loading || paragraph.csvIsPreparing'
 
                         bs-tooltip=''
                         ng-attr-title='{{ scanTooltip(paragraph) }}'
@@ -210,15 +217,16 @@ mixin table-result-heading-scan
                         i.fa.fa-fw.fa-refresh.fa-spin(ng-if='paragraph.csvIsPreparing')
                         span Export
 
-                    -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
+                    -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }, { divider: true }, { text: '<span title="Copy current result page to clipboard">Copy to clipboard</span>', click: 'exportCsvToClipBoard(paragraph)' }]
                     button.btn.dropdown-toggle.btn-primary(
-                        ng-disabled='paragraph.loading'
+                        ng-disabled='paragraph.loading || paragraph.csvIsPreparing'
 
                         bs-dropdown=`${JSON.stringify(options)}`
 
                         data-toggle='dropdown'
                         data-container='body'
                         data-placement='bottom-right'
+                        data-html='true'
                     )
                         span.caret
 

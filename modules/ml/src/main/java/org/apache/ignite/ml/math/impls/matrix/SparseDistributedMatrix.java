@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -31,10 +34,6 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorage;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Sparse distributed matrix implementation based on data grid.
@@ -76,13 +75,12 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      */
     public SparseDistributedMatrix(double[][] data) {
         assert data.length > 0;
-        setStorage(new SparseDistributedMatrixStorage(data.length, getMaxAmountOfColumns(data),  StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE));
+        setStorage(new SparseDistributedMatrixStorage(data.length, getMaxAmountOfColumns(data), StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE));
 
         for (int i = 0; i < data.length; i++)
             for (int j = 0; j < data[i].length; j++)
-                storage().set(i,j,data[i][j]);
+                storage().set(i, j, data[i][j]);
     }
-
 
     /**
      * @param rows Amount of rows in the matrix.
@@ -124,7 +122,6 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         return mapOverValues(v -> v * x);
     }
 
-
     /** {@inheritDoc} */
     @Override public Matrix times(Matrix mtx) {
         if (mtx == null)
@@ -160,15 +157,16 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
             // TODO: IGNITE:5114, exec in parallel
             locKeys.forEach(key -> {
                 int idx = key.index();
-                
-                if (isRowMode){
+
+                if (isRowMode) {
                     Vector Aik = matrixA.getRow(idx);
 
                     for (int i = 0; i < matrixB.columnSize(); i++) {
                         Vector Bkj = matrixB.getCol(i);
                         matrixC.set(idx, i, Aik.times(Bkj).sum());
                     }
-                } else {
+                }
+                else {
                     Vector Bkj = matrixB.getCol(idx);
 
                     for (int i = 0; i < matrixA.rowSize(); i++) {
@@ -182,7 +180,6 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         return matrixC;
     }
 
-
     /** {@inheritDoc} */
     @Override public Vector times(Vector vec) {
         if (vec == null)
@@ -192,12 +189,12 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
             throw new CardinalityException(columnSize(), vec.size());
 
         SparseDistributedMatrix matrixA = this;
-        SparseDistributedVector vectorB = (SparseDistributedVector) vec;
+        SparseDistributedVector vectorB = (SparseDistributedVector)vec;
 
         String cacheName = storage().cacheName();
         int rows = this.rowSize();
 
-        SparseDistributedVector vectorC = (SparseDistributedVector) likeVector(rows);
+        SparseDistributedVector vectorC = (SparseDistributedVector)likeVector(rows);
 
         CacheUtils.bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
@@ -271,8 +268,10 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 
     /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
-        if(storage()==null) return new SparseDistributedMatrix(rows, cols);
-        else return new SparseDistributedMatrix(rows, cols, storage().storageMode(), storage().accessMode());
+        if (storage() == null)
+            return new SparseDistributedMatrix(rows, cols);
+        else
+            return new SparseDistributedMatrix(rows, cols, storage().storageMode(), storage().accessMode());
 
     }
 

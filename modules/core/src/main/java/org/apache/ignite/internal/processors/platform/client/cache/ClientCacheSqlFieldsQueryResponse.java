@@ -17,33 +17,58 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
+import java.util.List;
+
 /**
- * Query cursor next page response.
+ * Scan query response.
  */
-class ClientCacheScanQueryNextPageResponse extends ClientResponse {
+class ClientCacheSqlFieldsQueryResponse extends ClientResponse {
     /** Cursor. */
-    private final ClientCacheScanQueryCursor cursor;
+    private final ClientCacheQueryCursor cursor;
+
+    /** Fields cursor. */
+    private final FieldsQueryCursor<List> fieldsCursor;
+
+    /** Include field names flag. */
+    private final boolean includeFieldNames;
 
     /**
      * Ctor.
-     *
      * @param requestId Request id.
-     * @param cursor Cursor.
+     * @param cursor Client cursor.
+     * @param fieldsCursor Fields cursor.
+     * @param includeFieldNames Whether to include field names.
      */
-    ClientCacheScanQueryNextPageResponse(long requestId, ClientCacheScanQueryCursor cursor) {
+    ClientCacheSqlFieldsQueryResponse(long requestId, ClientCacheQueryCursor cursor,
+                                      FieldsQueryCursor<List> fieldsCursor, boolean includeFieldNames) {
         super(requestId);
 
         assert cursor != null;
+        assert fieldsCursor != null;
 
         this.cursor = cursor;
+        this.fieldsCursor = fieldsCursor;
+        this.includeFieldNames = includeFieldNames;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(BinaryRawWriterEx writer) {
         super.encode(writer);
+
+        writer.writeLong(cursor.id());
+
+        int cnt = fieldsCursor.getColumnsCount();
+        writer.writeInt(cnt);
+
+        if (includeFieldNames) {
+            for (int i = 0; i < cnt; i++) {
+                writer.writeString(fieldsCursor.getFieldName(i));
+            }
+        }
 
         cursor.writePage(writer);
     }

@@ -81,13 +81,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             // No template: default configuration.
             var cache = Client.CreateCache<int, int>("foobar");
-            TestUtils.AssertReflectionEqual(new CacheClientConfiguration("foobar"), cache.GetConfiguration());
+            AssertExtensions.ReflectionEqual(new CacheClientConfiguration("foobar"), cache.GetConfiguration());
 
             // Create when exists.
             var ex = Assert.Throws<IgniteClientException>(() => Client.CreateCache<int, int>(cache.Name));
             Assert.AreEqual(
                 "Failed to start cache (a cache with the same name is already started): foobar", ex.Message);
-            Assert.AreEqual((int) ClientStatus.CacheExists, ex.ErrorCode);
+            Assert.AreEqual(ClientStatusCode.CacheExists, ex.StatusCode);
 
             // Template: custom configuration.
             cache = Client.CreateCache<int, int>(TemplateCacheName.Replace("*", "1"));
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             // No template: default configuration.
             var cache = Client.GetOrCreateCache<int, int>("foobar");
-            TestUtils.AssertReflectionEqual(new CacheClientConfiguration { Name = "foobar"}, cache.GetConfiguration());
+            AssertExtensions.ReflectionEqual(new CacheClientConfiguration { Name = "foobar"}, cache.GetConfiguration());
             cache[1] = 1;
 
             // Create when exists.
@@ -134,13 +134,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // Default config.
             var cfg = new CacheClientConfiguration("a");
             var cache = Client.CreateCache<int, int>(cfg);
-            TestUtils.AssertReflectionEqual(cfg, cache.GetConfiguration());
+            AssertExtensions.ReflectionEqual(cfg, cache.GetConfiguration());
 
             // Create when exists.
             var ex = Assert.Throws<IgniteClientException>(() => Client.CreateCache<int, int>(cfg));
             Assert.AreEqual(
                 "Failed to start cache (a cache with the same name is already started): a", ex.Message);
-            Assert.AreEqual((int) ClientStatus.CacheExists, ex.ErrorCode);
+            Assert.AreEqual(ClientStatusCode.CacheExists, ex.StatusCode);
 
             // Custom config.
             cfg = GetFullCacheConfiguration("b");
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // Default configur.
             var cfg = new CacheClientConfiguration("a");
             var cache = Client.GetOrCreateCache<int, int>(cfg);
-            TestUtils.AssertReflectionEqual(cfg, cache.GetConfiguration());
+            AssertExtensions.ReflectionEqual(cfg, cache.GetConfiguration());
             cache[1] = 1;
 
             // Create when exists.

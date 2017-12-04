@@ -65,17 +65,13 @@ import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -108,13 +104,16 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
@@ -1505,15 +1504,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 remainingSql != qry.getSql() ? cloneFieldsQuery(qry).setSql(remainingSql) : qry, firstArg);
 
             // Let's avoid second reflection getter call by returning Prepared object too
-            Prepared prepared = parseRes.prepared;
+            Prepared prepared = parseRes.prepared();
 
-            GridCacheTwoStepQuery twoStepQry = parseRes.twoStepQry;
+            GridCacheTwoStepQuery twoStepQry = parseRes.twoStepQuery();
 
-            List<GridQueryFieldMetadata> meta = parseRes.meta;
+            List<GridQueryFieldMetadata> meta = parseRes.meta();
 
-            SqlFieldsQuery newQry = parseRes.newQry;
+            SqlFieldsQuery newQry = parseRes.newQuery();
 
-            remainingSql = parseRes.remainingSql;
+            remainingSql = parseRes.remainingSql();
 
             if (remainingSql != null && failOnMultipleStmts)
                 throw new IgniteSQLException("Multiple statements queries are not supported");
@@ -1522,8 +1521,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             res.add(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, cancel));
 
-            if (parseRes.twoStepQry != null && parseRes.twoStepQryKey != null && !parseRes.twoStepQry.explain())
-                twoStepCache.putIfAbsent(parseRes.twoStepQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
+            if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
+                    !parseRes.twoStepQuery().explain())
+                twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
         }
 
         return res;
@@ -1661,7 +1661,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             args = Arrays.copyOfRange(argsOrig, firstArg, firstArg + paramsCnt);
         }
 
-        if (prepared.isQuery()) {
+       if (prepared.isQuery()) {
             try {
                 bindParameters(stmt, F.asList(args));
             }
@@ -1672,7 +1672,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     Arrays.deepToString(args) + "]", IgniteQueryErrorCode.PARSING, e);
             }
 
-            loc |= GridSqlQueryParser.isLocalQuery(GridSqlQueryParser.query(prepared), qry.isReplicatedOnly());
+            if (!loc) {
+                GridSqlQueryParser parser = new GridSqlQueryParser(false);
+
+                GridSqlStatement parsedStmt = parser.parse(prepared);
+
+                // Legit assertion - we have H2 query flag above.
+                assert parsedStmt instanceof GridSqlQuery;
+
+                loc = GridSqlQueryParser.isLocalQuery(parser.allTables(), qry.isReplicatedOnly());
+            }
 
             if (loc) {
                 GridCacheContext cctx = GridSqlQueryParser.getFirstPartitionedCache(prepared);
@@ -1758,33 +1767,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private GridCacheTwoStepQuery split(Prepared prepared, SqlFieldsQuery qry) throws IgniteCheckedException,
         SQLException {
-        GridCacheTwoStepQuery res = GridSqlQuerySplitter.split(connectionForThread(qry.getSchema()),prepared,
+        GridCacheTwoStepQuery res = GridSqlQuerySplitter.split(connectionForThread(qry.getSchema()), prepared,
             qry.getArgs(), qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), this);
 
-        LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
+        List<Integer> cacheIds = collectCacheIds(null, res);
 
-        assert res != null;
-
-        int tblCnt = res.tablesCount();
-
-        if (tblCnt > 0) {
-            for (QueryTable tblKey : res.tables()) {
-                GridH2Table tbl = dataTable(tblKey);
-
-                int cacheId = CU.cacheId(tbl.cacheName());
-
-                caches0.add(cacheId);
-            }
-        }
-
-        if (caches0.isEmpty())
+        if (F.isEmpty(cacheIds))
             res.local(true);
         else {
-            //Prohibit usage indices with different numbers of segments in same query.
-            List<Integer> cacheIds = new ArrayList<>(caches0);
-
-            checkCacheIndexSegmentation(cacheIds);
-
             res.cacheIds(cacheIds);
             res.local(qry.isLocal());
         }
@@ -1897,7 +1887,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @throws IllegalStateException if segmented indices used with non-segmented indices.
      */
-    private void checkCacheIndexSegmentation(List<Integer> cacheIds) {
+    private void checkCacheIndexSegmentation(Collection<Integer> cacheIds) {
         if (cacheIds.isEmpty())
             return; // Nothing to check
 
@@ -2233,44 +2223,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
-        IgniteCacheOffheapManager offheapMgr = cctx.isNear() ? cctx.near().dht().context().offheap() : cctx.offheap();
+        final GridCacheQueryManager qryMgr = cctx.queries();
 
-        for (int p = 0; p < cctx.affinity().partitions(); p++) {
-            try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.cacheKeysIterator(cctx.cacheId(), p)) {
-                while (keyIter.hasNext()) {
-                    cctx.shared().database().checkpointReadLock();
+        SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
 
-                    try {
-                        KeyCacheObject key = keyIter.next();
-
-                        while (true) {
-                            GridCacheEntryEx entry = null;
-
-                            try {
-                                entry = cctx.isNear() ?
-                                    cctx.near().dht().entryEx(key) : cctx.cache().entryEx(key);
-
-                                entry.ensureIndexed();
-
-                                break;
-                            }
-                            catch (GridCacheEntryRemovedException ignore) {
-                                // Retry.
-                            }
-                            catch (GridDhtInvalidPartitionException ignore) {
-                                break;
-                            }
-                            finally {
-                                entry.context().evicts().touch(entry, AffinityTopologyVersion.NONE);
-                            }
-                        }
-                    }
-                    finally {
-                        cctx.shared().database().checkpointReadUnlock();
-                    }
-                }
-            }
-        }
+        visitor.visit(new RebuldIndexFromHashClosure(qryMgr));
 
         for (H2TableDescriptor tblDesc : tables(cacheName))
             tblDesc.table().markRebuildFromHashInProgress(false);
@@ -2829,7 +2786,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param twoStepQry Two-step query.
      * @return Result.
      */
-    public List<Integer> collectCacheIds(@Nullable Integer mainCacheId, GridCacheTwoStepQuery twoStepQry) {
+    @Nullable public List<Integer> collectCacheIds(@Nullable Integer mainCacheId, GridCacheTwoStepQuery twoStepQry) {
         LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
 
         int tblCnt = twoStepQry.tablesCount();
@@ -2866,39 +2823,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // No-op.
     }
 
-    /**
-     * Result of parsing and splitting SQL from {@link SqlFieldsQuery}.
-     */
-    private final static class ParsingResult {
-        /** H2 command. */
-        final Prepared prepared;
+    /** */
+    private static class RebuldIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
+        /** */
+        private final GridCacheQueryManager qryMgr;
 
-        /** New fields query that may be executed right away. */
-        final SqlFieldsQuery newQry;
+        /**
+         * @param qryMgr Query manager.
+         */
+        RebuldIndexFromHashClosure(GridCacheQueryManager qryMgr) {
+            this.qryMgr = qryMgr;
+        }
 
-        /** Remaining SQL statements. */
-        final String remainingSql;
-
-        /** Two-step query, or {@code} null if this result is for local query. */
-        final GridCacheTwoStepQuery twoStepQry;
-
-        /** Two-step query key to cache {@link #twoStepQry}, or {@code null} if there's no need to worry
-         * about two-step caching. */
-        final H2TwoStepCachedQueryKey twoStepQryKey;
-
-        /** Metadata for two-step query, or {@code} null if this result is for local query. */
-        final List<GridQueryFieldMetadata> meta;
-
-        /** Simple constructor. */
-        private ParsingResult(Prepared prepared, SqlFieldsQuery newQry, String remainingSql,
-            GridCacheTwoStepQuery twoStepQry, H2TwoStepCachedQueryKey twoStepQryKey,
-            List<GridQueryFieldMetadata> meta) {
-            this.prepared = prepared;
-            this.newQry = newQry;
-            this.remainingSql = remainingSql;
-            this.twoStepQry = twoStepQry;
-            this.twoStepQryKey = twoStepQryKey;
-            this.meta = meta;
+        /** {@inheritDoc} */
+        @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
+            qryMgr.store(row, null, false);
         }
     }
 }

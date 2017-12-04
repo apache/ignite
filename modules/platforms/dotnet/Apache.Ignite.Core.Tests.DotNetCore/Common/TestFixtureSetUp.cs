@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+// ReSharper disable once CheckNamespace
+namespace Apache.Ignite.Core.Tests
 {
+    using NUnit.Framework;
+
     /// <summary>
-    /// Client status codes.
+    /// Provides backwards compatibility for tests linked from Apache.Ignite.Core.Tests.
     /// </summary>
-    internal enum ClientStatus
+    public class TestFixtureSetUp : OneTimeSetUpAttribute
     {
-        Success = 0,
-        Fail = 1,
-        InvalidOpCode = 2,
-        CacheDoesNotExist = 1000,
-        CacheExists = 1001,
-        TooManyCursors = 1010
+        // No-op.
     }
 }

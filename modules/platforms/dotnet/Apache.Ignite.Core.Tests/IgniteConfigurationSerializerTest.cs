@@ -515,15 +515,15 @@ namespace Apache.Ignite.Core.Tests
         {
             // Empty section.
             var cfg = IgniteConfiguration.FromXml("<x />");
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration(), cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration(), cfg);
 
             // Empty section with XML header.
             cfg = IgniteConfiguration.FromXml("<?xml version=\"1.0\" encoding=\"utf-16\"?><x />");
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration(), cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration(), cfg);
 
             // Simple test.
             cfg = IgniteConfiguration.FromXml(@"<igCfg igniteInstanceName=""myGrid"" clientMode=""true"" />");
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration {IgniteInstanceName = "myGrid", ClientMode = true}, cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration {IgniteInstanceName = "myGrid", ClientMode = true}, cfg);
 
             // Invalid xml.
             var ex = Assert.Throws<ConfigurationErrorsException>(() =>
@@ -538,7 +538,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 cfg = IgniteConfiguration.FromXml(xmlReader);
             }
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration { IgniteInstanceName = "myGrid", ClientMode = true }, cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration { IgniteInstanceName = "myGrid", ClientMode = true }, cfg);
         }
 
         /// <summary>
@@ -590,7 +590,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var resCfg = SerializeDeserialize(cfg);
 
-            TestUtils.AssertReflectionEqual(cfg, resCfg);
+            AssertExtensions.ReflectionEqual(cfg, resCfg);
         }
 
         /// <summary>

@@ -190,6 +190,9 @@ namespace ignite
                  */
                 SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
 
+                /** The timeout period expired before the data source responded to the request. */
+                SHYT00_TIMEOUT_EXPIRED,
+
                 /**
                  * The connection timeout period expired before the data source
                  * responded to the request.

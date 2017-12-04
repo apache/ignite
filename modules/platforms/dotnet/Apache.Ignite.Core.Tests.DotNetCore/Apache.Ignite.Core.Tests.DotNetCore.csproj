@@ -1,0 +1,142 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+
+    <StartupObject>Apache.Ignite.Core.Tests.DotNetCore.Common.TestRunner</StartupObject>
+
+    <ApplicationIcon />
+
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NoWarn>1701;1702;1705;NU1701</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Apache.Ignite.Core.Tests\AssertExtensions.cs" Link="Common\AssertExtensions.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\BinaryConfigurationTest.cs" Link="Binary\BinaryConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\BinaryDateTimeTest.cs" Link="Binary\BinaryDateTimeTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\JavaBinaryInteropTest.cs" Link="Binary\JavaBinaryInteropTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\AdvancedSerializationTest.cs" Link="Binary\Serializable\AdvancedSerializationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\CallbacksTest.cs" Link="Binary\Serializable\CallbacksTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\GenericCollectionsTest.cs" Link="Binary\Serializable\GenericCollectionsTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\SqlDmlTest.cs" Link="Binary\Serializable\SqlDmlTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\AddArgCacheEntryProcessor.cs" Link="Cache\AddArgCacheEntryProcessor.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableAddArgCacheEntryProcessor.cs" Link="Cache\BinarizableAddArgCacheEntryProcessor.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableTestException.cs" Link="Cache\BinarizableTestException.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTest.cs" Link="Cache\CacheAbstractTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTransactionalTest.cs" Link="Cache\CacheAbstractTransactionalTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CachePartitionedTest.cs" Link="Cache\CachePartitionedTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestAsyncWrapper.cs" Link="Cache\CacheTestAsyncWrapper.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestKey.cs" Link="Cache\CacheTestKey.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\DataRegionMetricsTest.cs" Link="Cache\DataRegionMetricsTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\NonSerializableCacheEntryProcessor.cs" Link="Cache\NonSerializableCacheEntryProcessor.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\NonSerializableException.cs" Link="Cache\NonSerializableException.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\PersistenceTest.cs" Link="Cache\PersistenceTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheDmlQueriesTest.cs" Link="Cache\Query\CacheDmlQueriesTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheDmlQueriesTestSimpleName.cs" Link="Cache\Query\CacheDmlQueriesTestSimpleName.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheQueriesCodeConfigurationTest.cs" Link="Cache\Query\CacheQueriesCodeConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheQueriesTest.cs" Link="Cache\Query\CacheQueriesTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheQueriesTestSimpleName.cs" Link="Cache\Query\CacheQueriesTestSimpleName.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Aggregates.cs" Link="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Base.cs" Link="Cache\Query\Linq\CacheLinqTest.Base.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" Link="Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Contains.cs" Link="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Custom.cs" Link="Cache\Query\Linq\CacheLinqTest.Custom.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.DateTime.cs" Link="Cache\Query\Linq\CacheLinqTest.DateTime.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Functions.cs" Link="Cache\Query\Linq\CacheLinqTest.Functions.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Introspection.cs" Link="Cache\Query\Linq\CacheLinqTest.Introspection.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Join.cs" Link="Cache\Query\Linq\CacheLinqTest.Join.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" Link="Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Misc.cs" Link="Cache\Query\Linq\CacheLinqTest.Misc.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Numerics.cs" Link="Cache\Query\Linq\CacheLinqTest.Numerics.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTest.Strings.cs" Link="Cache\Query\Linq\CacheLinqTest.Strings.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSimpleName.cs" Link="Cache\Query\Linq\CacheLinqTestSimpleName.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" Link="Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\TestReferenceObject.cs" Link="Cache\TestReferenceObject.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\BinaryBuilderTest.cs" Link="ThinClient\Cache\BinaryBuilderTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTest.cs" Link="ThinClient\Cache\CacheTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestKeepBinary.cs" Link="ThinClient\Cache\CacheTestKeepBinary.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\EmptyObject.cs" Link="ThinClient\Cache\EmptyObject.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\Person.cs" Link="ThinClient\Cache\Person.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\ScanQueryTest.cs" Link="ThinClient\Cache\ScanQueryTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\SqlQueryTest.cs" Link="ThinClient\Cache\SqlQueryTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientConnectionTest.cs" Link="ThinClient\ClientConnectionTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestBase.cs" Link="ThinClient\ClientTestBase.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicLongTest.cs" Link="DataStructures\AtomicLongTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicReferenceTest.cs" Link="DataStructures\AtomicReferenceTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicSequenceTest.cs" Link="DataStructures\AtomicSequenceTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\IgniteTestBase.cs" Link="Common\IgniteTestBase.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Log\CustomLoggerTest.cs" Link="Log\CustomLoggerTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\MessagingTest.cs" Link="Common\MessagingTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Query\BinarizablePerson.cs" Link="Cache\Query\BinarizablePerson.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-binarizables.xml" Link="Config\cache-binarizables.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-query.xml" Link="Config\cache-query.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid1.xml" Link="Config\Compute\compute-grid1.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid2.xml" Link="Config\Compute\compute-grid2.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid3.xml" Link="Config\Compute\compute-grid3.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\native-client-test-cache.xml" Link="Config\native-client-test-cache.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\spring-test.xml" Link="Config\spring-test.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Apache.Ignite" Version="0.0.1-test" />
+    <PackageReference Include="Apache.Ignite.Linq" Version="0.0.1-test" />
+    <PackageReference Include="Apache.Ignite.Schema" Version="0.0.1-test" />
+    <PackageReference Include="Apache.Ignite.NLog" Version="0.0.1-test" />
+    <PackageReference Include="Apache.Ignite.log4net" Version="0.0.1-test" />
+    <PackageReference Include="log4net" Version="2.0.5" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
+    <PackageReference Include="NLog" Version="4.4.12" />
+    <PackageReference Include="NUnit" Version="3.8.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Binary\Serializable\" />
+    <Folder Include="Cache\Query\Linq\" />
+    <Folder Include="Cache\Query\" />
+    <Folder Include="Compute\" />
+    <Folder Include="Config\Compute\" />
+    <Folder Include="Log\" />
+    <Folder Include="DataStructures\" />
+    <Folder Include="ThinClient\Cache\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Common\TestUtils.DotNetCore.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
