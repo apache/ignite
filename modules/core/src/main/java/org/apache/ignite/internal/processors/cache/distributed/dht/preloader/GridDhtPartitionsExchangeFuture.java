@@ -1552,10 +1552,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (firstDiscoEvt instanceof DiscoveryCustomEvent)
                 ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
 
-            if (err == null)
+            if (err == null) {
                 cctx.exchange().lastFinishedFuture(this);
 
-            logExchange();
+                logExchange();
+            }
 
             return true;
         }
@@ -1566,7 +1567,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      *
      */
-    private void logExchange(){
+    private void logExchange() {
         if (cctx.kernalContext().state().publicApiActiveState(false) && cctx.wal() != null) {
             if (((FileWriteAheadLogManager)cctx.wal()).serializerVersion() > 1)
                 try {
