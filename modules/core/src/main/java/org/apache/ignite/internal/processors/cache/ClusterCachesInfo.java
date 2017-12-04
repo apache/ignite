@@ -1761,10 +1761,11 @@ class ClusterCachesInfo {
          */
         static Comparator<DynamicCacheDescriptor> DIRECT = new Comparator<DynamicCacheDescriptor>() {
             @Override public int compare(DynamicCacheDescriptor o1, DynamicCacheDescriptor o2) {
-                if (!o1.cacheType().userCache())
-                    return -1;
-                if (!o2.cacheType().userCache())
-                    return 1;
+                if (o1.cacheType().userCache() ^ o2.cacheType().userCache())
+                    if (o2.cacheType().userCache())
+                        return -1;
+                    else
+                        return 1;
 
                 return o1.cacheId().compareTo(o2.cacheId());
             }
