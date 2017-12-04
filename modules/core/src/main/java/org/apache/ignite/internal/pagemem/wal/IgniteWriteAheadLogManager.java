@@ -120,4 +120,15 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @return True if given pointer is located in reserved segment.
      */
     public boolean reserved(WALPointer ptr);
+
+    /**
+     * @param grpId Group id.
+     * @param disabled Disabled.
+     */
+    public void disabled(int grpId, boolean disabled);
+
+    /**
+     * @param grpId Group id.
+     */
+    public boolean disabled(int grpId);
 }

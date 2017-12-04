@@ -17,8 +17,10 @@
 
 package org.apache.ignite.yardstick;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -47,6 +49,7 @@ import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Standalone Ignite node.
@@ -169,12 +172,20 @@ public class IgniteNode implements BenchmarkServer {
             memCfg.setPageSize(args.getPageSize());
         }
 
-        if (args.persistentStoreEnabled()) {
+        if (args.persistentStoreEnabled() || args.walMode() != null) {
             DataStorageConfiguration pcCfg = new DataStorageConfiguration();
+
+            pcCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+
+            if (args.walMode() != null)
+                pcCfg.setWalMode(args.walMode());
+
+            c.setDataStorageConfiguration(pcCfg);
 
             c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
-            c.setDataStorageConfiguration(pcCfg);
+            // Removing persistence data
+            U.delete(Paths.get(U.defaultWorkDirectory() + File.separator + DFLT_STORE_DIR).toFile());
         }
 
         ignite = IgniteSpring.start(c, appCtx);

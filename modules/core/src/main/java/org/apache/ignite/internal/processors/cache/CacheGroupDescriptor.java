@@ -61,6 +61,9 @@ public class CacheGroupDescriptor {
     /** Persistence enabled flag. */
     private final boolean persistenceEnabled;
 
+    /** Wal mode */
+    private volatile CacheGroupWalMode walMode;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param grpName Group name.
@@ -79,7 +82,8 @@ public class CacheGroupDescriptor {
         @Nullable AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
         Map<String, Integer> caches,
-        boolean persistenceEnabled) {
+        boolean persistenceEnabled,
+        CacheGroupWalMode walMode) {
         assert cacheCfg != null;
         assert grpId != 0;
 
@@ -91,6 +95,7 @@ public class CacheGroupDescriptor {
         this.cacheCfg = new CacheConfiguration<>(cacheCfg);
         this.caches = caches;
         this.persistenceEnabled = persistenceEnabled;
+        this.walMode = walMode;
     }
 
     /**
@@ -105,6 +110,27 @@ public class CacheGroupDescriptor {
      */
     public IgniteUuid deploymentId() {
         return deploymentId;
+    }
+
+    /**
+     *
+     */
+    public CacheGroupWalMode walMode() {
+        return walMode;
+    }
+
+    /**
+     *
+     */
+    public void walMode(CacheGroupWalMode walMode) {
+        assert (this.walMode == CacheGroupWalMode.ENABLING && walMode == CacheGroupWalMode.ENABLE) ||
+            (this.walMode == CacheGroupWalMode.ENABLE && walMode == CacheGroupWalMode.DISABLING) ||
+            (this.walMode == CacheGroupWalMode.DISABLING && walMode == CacheGroupWalMode.DISABLE) ||
+            (this.walMode == CacheGroupWalMode.DISABLE && walMode == CacheGroupWalMode.ENABLING) ||
+            this.walMode == walMode: //todo: this line is incorrect and should be failoved properly
+            "Unexpected modification [current=" + this.walMode + " ,new=" + walMode + "]";
+
+        this.walMode = walMode;
     }
 
     /**

@@ -62,6 +62,9 @@ public class CacheGroupData implements Serializable {
     /** Persistence enabled flag. */
     private final boolean persistenceEnabled;
 
+    /** Wal mode */
+    private final CacheGroupWalMode walMode;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param grpName Group name.
@@ -71,6 +74,7 @@ public class CacheGroupData implements Serializable {
      * @param deploymentId Deployment ID.
      * @param caches Cache group caches.
      * @param persistenceEnabled Persistence enabled flag.
+     * @param walMode WAL mode
      */
     CacheGroupData(
         CacheConfiguration cacheCfg,
@@ -81,7 +85,8 @@ public class CacheGroupData implements Serializable {
         IgniteUuid deploymentId,
         Map<String, Integer> caches,
         long flags,
-        boolean persistenceEnabled) {
+        boolean persistenceEnabled,
+        CacheGroupWalMode walMode) {
         assert cacheCfg != null;
         assert grpId != 0 : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
@@ -95,6 +100,7 @@ public class CacheGroupData implements Serializable {
         this.caches = caches;
         this.flags = flags;
         this.persistenceEnabled = persistenceEnabled;
+        this.walMode = walMode;
     }
 
     /**
@@ -151,6 +157,13 @@ public class CacheGroupData implements Serializable {
      */
     public boolean persistenceEnabled() {
         return persistenceEnabled;
+    }
+
+    /**
+     *
+     */
+    public CacheGroupWalMode walMode() {
+        return walMode;
     }
 
     /** {@inheritDoc} */

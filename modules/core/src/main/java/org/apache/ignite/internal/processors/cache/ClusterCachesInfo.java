@@ -920,7 +920,8 @@ class ClusterCachesInfo {
                 grpDesc.deploymentId(),
                 grpDesc.caches(),
                 0,
-                grpDesc.persistenceEnabled());
+                grpDesc.persistenceEnabled(),
+                grpDesc.walMode());
 
             cacheGrps.put(grpDesc.groupId(), grpData);
         }
@@ -999,7 +1000,18 @@ class ClusterCachesInfo {
                 grpData.startTopologyVersion(),
                 grpData.deploymentId(),
                 grpData.caches(),
-                grpData.persistenceEnabled());
+                grpData.persistenceEnabled(),
+                grpData.walMode());
+
+            if (ctx.cache().context().wal() != null) {
+                ctx.cache().context().wal().disabled(grpDesc.groupId(),
+                    grpDesc.walMode() == CacheGroupWalMode.DISABLE ||
+                        grpDesc.walMode() == CacheGroupWalMode.DISABLING);
+
+                if (grpDesc.walMode() == CacheGroupWalMode.ENABLING)
+                    for (GridCacheContext cctx : ctx.cache().cacheGroup(grpDesc.groupId()).caches())
+                        ctx.cache().disableGateway(cctx.name());
+            }
 
             if (locCacheGrps.containsKey(grpDesc.groupId())) {
                 CacheGroupDescriptor locGrpCfg = locCacheGrps.get(grpDesc.groupId());
@@ -1518,7 +1530,8 @@ class ClusterCachesInfo {
             curTopVer != null ? curTopVer.nextMinorVersion() : null,
             deploymentId,
             caches,
-            CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration()));
+            CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration()),
+            CacheGroupWalMode.ENABLE);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
 

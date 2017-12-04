@@ -342,6 +342,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             });
 
+        cctx.io().addCacheHandler(0, WalModeDynamicChangeAckMessage.class,
+            new MessageHandler<WalModeDynamicChangeAckMessage>() {
+                @Override protected void onMessage(ClusterNode node, WalModeDynamicChangeAckMessage msg) {
+                    cctx.cache().onWalModeDynamicChangeAckMessage(node, msg);
+                }
+            });
+
         if (!cctx.kernalContext().clientNode()) {
             for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++) {
                 final int idx = cnt;
@@ -442,6 +449,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
                     exchFut = exchangeFuture(exchId, evt, cache, exchActions, null);
+                }
+            }
+            else if (customMsg instanceof WalModeDynamicChangeMessage) {
+                WalModeDynamicChangeMessage msg = (WalModeDynamicChangeMessage)customMsg;
+
+                cctx.cache().onWalModeDynamicChangeMessage(msg);
+
+                // We have to finish all operations to gain consistence state before starting checkpoints.
+                if (msg.needExchange()) {
+                    exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
+
+                    exchFut = exchangeFuture(exchId, evt, cache, null, null);
                 }
             }
             else if (customMsg instanceof CacheAffinityChangeMessage) {

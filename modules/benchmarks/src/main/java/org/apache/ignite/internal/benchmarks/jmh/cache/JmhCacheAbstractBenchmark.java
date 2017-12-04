@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
+import java.io.File;
+import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -26,14 +28,19 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Base class for cache benchmarks.
@@ -54,6 +61,9 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
     /** Property: client mode flag. */
     protected static final String PROP_CLIENT_MODE = "ignite.jmh.cache.clientMode";
+
+    /** Property: WAL mode flag. */
+    protected static final String PROP_WAL_MODE = "ignite.jmh.cache.walMode";
 
     /** Default amount of nodes. */
     protected static final int DFLT_DATA_NODES = 1;
@@ -97,6 +107,10 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         System.out.println("\twrite synchronization mode: " +
             enumProperty(PROP_WRITE_SYNC_MODE, CacheWriteSynchronizationMode.class));
 
+        WALMode walMode = enumProperty(PROP_WAL_MODE, WALMode.class);
+
+        System.out.println("\tWAL mode:                   " + walMode);
+
         System.out.println("--------------------");
         System.out.println();
 
@@ -104,7 +118,13 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         A.ensure(nodesCnt >= 1, "nodesCnt >= 1");
 
+        if (walMode != null)
+            U.delete(Paths.get(U.defaultWorkDirectory() + File.separator + DFLT_STORE_DIR).toFile());
+
         node = Ignition.start(configuration("node0"));
+
+        if (walMode != null)
+            node.active(true);
 
         for (int i = 1; i < nodesCnt; i++)
             Ignition.start(configuration("node" + i));
@@ -150,6 +170,15 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCacheConfiguration(cacheConfiguration());
+
+        // Set WAL mode.
+        WALMode walMode = enumProperty(PROP_WAL_MODE, WALMode.class);
+
+        if (walMode != null)
+            cfg.setPersistentStoreConfiguration(
+                new PersistentStoreConfiguration()
+                    .setWalMode(walMode)
+            );
 
         return cfg;
     }

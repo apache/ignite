@@ -20,6 +20,7 @@ package org.apache.ignite.testframework.junits;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import javax.cache.CacheException;
 import javax.management.MBeanServer;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;

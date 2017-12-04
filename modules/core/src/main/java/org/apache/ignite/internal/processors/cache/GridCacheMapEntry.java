@@ -2544,7 +2544,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             boolean update;
 
-            boolean walEnabled = !cctx.isNear() && cctx.group().persistenceEnabled();
+            boolean walEnabled = !cctx.isNear() &&
+                cctx.group().persistenceEnabled() &&
+                !cctx.shared().wal().disabled(cctx.groupId());
 
             if (cctx.group().persistenceEnabled()) {
                 unswap(false);
@@ -3195,7 +3197,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert cctx.atomic();
 
         try {
-            if (cctx.group().persistenceEnabled())
+            if (cctx.group().persistenceEnabled() && !cctx.shared().wal().disabled(cctx.groupId()))
                 cctx.shared().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,

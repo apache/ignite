@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 
 public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizable {
@@ -87,9 +86,24 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
     public boolean isProxyClosed();
 
     /**
+     * @return {@code True} if proxy was disabled.
+     */
+    public boolean isProxyDisabled();
+
+    /**
      * Closes this proxy instance.
      */
     public void closeProxy();
+
+    /**
+     * Disables this proxy instance.
+     */
+    public void disableProxy();
+
+    /**
+     * Enables this proxy instance.
+     */
+    public void enableProxy();
 
     /**
      * @return Future that contains cache destroy operation.

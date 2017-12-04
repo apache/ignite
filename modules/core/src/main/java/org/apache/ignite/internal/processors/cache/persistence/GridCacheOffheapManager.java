@@ -441,7 +441,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             int tag = pageMemory.invalidate(grp.groupId(), p);
 
-            ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), p));
+            if (!ctx.wal().disabled(grp.groupId()))
+                ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), p));
 
             ctx.pageStore().onPartitionDestroyed(grp.groupId(), p, tag);
         }
