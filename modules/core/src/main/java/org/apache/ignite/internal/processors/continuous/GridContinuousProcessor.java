@@ -986,20 +986,29 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         if (doStop) {
+            boolean stop = false;
+
             // Unregister routine locally.
             LocalRoutineInfo routine = locInfos.remove(routineId);
 
+            if (routine != null) {
+                stop = true;
+
+                // Unregister handler locally.
+                unregisterHandler(routineId, routine.hnd, true);
+            }
+
+            if (!stop && discoProtoVer == 2)
+                stop = routinesInfo.routineExists(routineId);
+
             // Finish if routine is not found (wrong ID is provided).
-            if (routine == null) {
+            if (!stop) {
                 stopFuts.remove(routineId);
 
                 fut.onDone();
 
                 return fut;
             }
-
-            // Unregister handler locally.
-            unregisterHandler(routineId, routine.hnd, true);
 
             try {
                 ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
@@ -1144,6 +1153,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         rmtInfos.clear();
 
         clientInfos.clear();
+
+        if (discoProtoVer == 2)
+            routinesInfo.onClientDisconnected(locInfos.keySet());
 
         if (log.isDebugEnabled()) {
             log.debug("after onDisconnected [rmtInfos=" + rmtInfos +

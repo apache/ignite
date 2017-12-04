@@ -28,7 +28,7 @@ class ContinuousRoutineInfo implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    final UUID srcNodeId;
+    UUID srcNodeId;
 
     /** */
     final UUID routineId;
@@ -47,6 +47,9 @@ class ContinuousRoutineInfo implements Serializable {
 
     /** */
     final boolean autoUnsubscribe;
+
+    /** */
+    transient boolean disconnected;
 
     /**
      * @param hnd
@@ -71,5 +74,13 @@ class ContinuousRoutineInfo implements Serializable {
         this.bufSize = bufSize;
         this.interval = interval;
         this.autoUnsubscribe = autoUnsubscribe;
+    }
+
+    void sourceNodeId(UUID srcNodeId) {
+        this.srcNodeId = srcNodeId;
+    }
+
+    void onDisconnected() {
+        disconnected = true;
     }
 }

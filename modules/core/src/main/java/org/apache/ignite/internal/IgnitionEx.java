@@ -196,7 +196,7 @@ public class IgnitionEx {
             }
 
 
-            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, -1));
+            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500));
         }
 
         return new TestingCluster(specs);

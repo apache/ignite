@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -46,6 +47,11 @@ class ContinuousRoutinesInfo {
      * @param dataBag Discovery data bag.
      */
     void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        for (ContinuousRoutineInfo info : startedRoutines.values()) {
+            if (info.disconnected)
+                info.sourceNodeId(dataBag.joiningNodeId());
+        }
+
         dataBag.addJoiningNodeData(CONTINUOUS_PROC.ordinal(),
             new ContinuousRoutinesJoiningNodeDiscoveryData(new ArrayList<>(startedRoutines.values())));
     }
@@ -70,6 +76,22 @@ class ContinuousRoutinesInfo {
      */
     void removeRoutine(UUID routineId) {
         startedRoutines.remove(routineId);
+    }
+
+    /**
+     * @param locRoutines Routines IDs which can survive reconnect.
+     */
+    void onClientDisconnected(Collection<UUID> locRoutines) {
+        for (Iterator<Map.Entry<UUID, ContinuousRoutineInfo>> it = startedRoutines.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<UUID, ContinuousRoutineInfo> e = it.next();
+
+            ContinuousRoutineInfo info = e.getValue();
+
+            if (!locRoutines.contains(info.routineId))
+                it.remove();
+            else
+                info.onDisconnected();
+        }
     }
 
     /**

@@ -80,7 +80,7 @@ import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl
 import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
 /**
- *
+ * TODO ZK: test with max client connections limit error.
  */
 public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */

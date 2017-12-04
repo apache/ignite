@@ -612,9 +612,6 @@ public class ZookeeperClient implements Watcher {
 
             U.warn(log, "Failed to execute zookeeper operation [err=" + e + ", state=" + state + ']');
 
-            if (zk.getState() == ZooKeeper.States.CLOSED)
-                throw new ZookeeperClientFailedException(e);
-
             if (state == ConnectionState.Lost) {
                 U.error(log, "Operation failed with unexpected error, connection lost: " + e, e);
 

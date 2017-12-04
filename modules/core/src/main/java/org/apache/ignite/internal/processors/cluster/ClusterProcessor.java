@@ -56,6 +56,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -509,7 +510,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
                     log.debug("Failed to send metrics update to oldest, node failed: " + e);
             }
             catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to send metrics update to oldest: " + e, e);
+                LT.warn(log, e, "Failed to send metrics update to oldest: " + e, false, false);
             }
         }
     }

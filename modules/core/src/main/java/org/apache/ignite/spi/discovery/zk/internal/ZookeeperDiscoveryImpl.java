@@ -274,15 +274,13 @@ public class ZookeeperDiscoveryImpl {
             ", prevId=" + locNode.id() +
             ", locNode=" + locNode + ']');
 
-        doReconnect(newId);
+        new ReconnectorThread(newId).start();
     }
 
     /**
      * @param newId New ID.
      */
     private void doReconnect(UUID newId) {
-        locNode.onClientDisconnected(newId);
-
         if (state.joined) {
             assert state.evtsData != null;
 
@@ -295,6 +293,8 @@ public class ZookeeperDiscoveryImpl {
         }
 
         try {
+            locNode.onClientDisconnected(newId);
+
             joinTopology0(state.joined);
         }
         catch (Exception e) {
@@ -386,6 +386,9 @@ public class ZookeeperDiscoveryImpl {
             return false;
         }
         catch (ZookeeperClientFailedException e) {
+            if (clientReconnectEnabled)
+                throw new IgniteClientDisconnectedException(null, "Client is disconnected.");
+
             throw new IgniteException(e);
         }
         catch (InterruptedException e) {
@@ -426,6 +429,9 @@ public class ZookeeperDiscoveryImpl {
                 CreateMode.PERSISTENT_SEQUENTIAL);
         }
         catch (ZookeeperClientFailedException e) {
+            if (clientReconnectEnabled)
+                throw new IgniteClientDisconnectedException(null, "Client is disconnected.");
+
             throw new IgniteException(e);
         }
         catch (InterruptedException e) {
@@ -1469,8 +1475,16 @@ public class ZookeeperDiscoveryImpl {
                     }
                 }
 
-                if (reconnect)
-                    new ReconnectorThread().start();
+                if (reconnect) {
+                    UUID newId = UUID.randomUUID();
+
+                    U.quietAndWarn(log, "Received EVT_NODE_FAILED for local node, will try to reconnect with new id [" +
+                        "newId=" + newId +
+                        ", prevId=" + locNode.id() +
+                        ", locNode=" + locNode + ']');
+
+                    new ReconnectorThread(newId).start();
+                }
             }
             else
                 notifySegmented();
@@ -1775,24 +1789,22 @@ public class ZookeeperDiscoveryImpl {
      *
      */
     private class ReconnectorThread extends IgniteSpiThread {
+        /** */
+        private final UUID newId;
+
         /**
          *
          */
-        ReconnectorThread() {
+        ReconnectorThread(UUID newId) {
             super(ZookeeperDiscoveryImpl.this.igniteInstanceName, "zk-reconnector", log);
+
+            this.newId = newId;
         }
 
         @Override protected void body() throws InterruptedException {
             busyLock.block();
 
             busyLock.unblock();
-
-            UUID newId = UUID.randomUUID();
-
-            U.quietAndWarn(log, "Connection to Zookeeper server is lost, local node will try to reconnect with new id [" +
-                "newId=" + newId +
-                ", prevId=" + locNode.id() +
-                ", locNode=" + locNode + ']');
 
             doReconnect(newId);
         }
@@ -1815,7 +1827,14 @@ public class ZookeeperDiscoveryImpl {
                         return;
                 }
 
-                new ReconnectorThread().start();
+                UUID newId = UUID.randomUUID();
+
+                U.quietAndWarn(log, "Connection to Zookeeper server is lost, local node will try to reconnect with new id [" +
+                    "newId=" + newId +
+                    ", prevId=" + locNode.id() +
+                    ", locNode=" + locNode + ']');
+
+                new ReconnectorThread(newId).start();
             }
             else {
                 U.warn(log, "Connection to Zookeeper server is lost, local node SEGMENTED.");

@@ -252,6 +252,10 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientsReconnectDisabled() throws Exception {
+        // TODO ZK
+        if (!tcpDiscovery())
+            return;
+
         clientReconnectDisabled = true;
 
         Ignite srv1 = startGrid("server1");
