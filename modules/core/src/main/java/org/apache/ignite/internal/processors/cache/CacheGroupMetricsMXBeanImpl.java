@@ -66,6 +66,11 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public String getCacheOrGroupName() {
+        return ctx.cacheOrGroupName();
+    }
+
+    /** {@inheritDoc} */
     @Override public List<String> getCaches() {
         List<String> caches = new ArrayList<>(ctx.caches().size());
 

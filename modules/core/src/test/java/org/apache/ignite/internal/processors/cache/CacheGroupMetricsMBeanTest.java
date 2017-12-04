@@ -219,6 +219,13 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         CacheGroupMetricsMXBean mxBean1Grp1 = mxBean(1, "group1");
         CacheGroupMetricsMXBean mxBean2Grp1 = mxBean(2, "group1");
 
+        assertEquals("group1", mxBean0Grp1.getCacheOrGroupName());
+        assertEquals("cache4", mxBean0Grp3.getCacheOrGroupName());
+
+        assertEquals(3, mxBean0Grp1.getBackups());
+
+        assertEquals(10, mxBean0Grp1.getPartitions());
+
         assertEquals(1, mxBean0Grp1.getMinimumNumberOfPartitionCopies());
         assertEquals(3, mxBean0Grp1.getMaximumNumberOfPartitionCopies());
 
