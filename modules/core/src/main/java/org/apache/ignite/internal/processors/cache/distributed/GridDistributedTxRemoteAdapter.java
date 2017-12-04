@@ -745,7 +745,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null)
                                 cctx.wal().log(new DataRecord(dataEntries));
 
-                            if (ptr != null)
+                            if (ptr != null && !cctx.tm().logTxRecords())
                                 cctx.wal().fsync(ptr);
                         }
                         catch (StorageException e) {

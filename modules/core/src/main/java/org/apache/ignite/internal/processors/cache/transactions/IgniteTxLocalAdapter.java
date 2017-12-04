@@ -869,7 +869,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (ptr != null)
+                if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().fsync(ptr);
             }
             catch (StorageException e) {
