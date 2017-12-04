@@ -458,7 +458,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
         assertTrue(ignite.configuration().isClientMode());
 
-        assertEquals(clientDiscovery(), ignite.configuration().getDiscoverySpi().isClientMode());
+        if (tcpDiscovery())
+            assertEquals(clientDiscovery(), ignite.configuration().getDiscoverySpi().isClientMode());
 
         return ignite;
     }

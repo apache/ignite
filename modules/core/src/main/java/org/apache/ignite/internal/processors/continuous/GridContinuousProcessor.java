@@ -553,6 +553,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             try {
                 hnd = U.unmarshal(marsh, routineInfo.hnd, U.resolveClassLoader(ctx.config()));
+
+                if (ctx.config().isPeerClassLoadingEnabled())
+                    hnd.p2pUnmarshal(routineInfo.srcNodeId, ctx);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal continuous routine handler, ignore routine [" +

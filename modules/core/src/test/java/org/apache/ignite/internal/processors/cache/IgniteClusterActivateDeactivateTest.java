@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -1184,7 +1185,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         // Stop all nodes participating in state change and not allow last node to finish exchange.
         for (int i = 0; i < 4; i++)
-            ((TestTcpDiscoverySpi)ignite(i).configuration().getDiscoverySpi()).simulateNodeFailure();
+            ((IgniteDiscoverySpi)ignite(i).configuration().getDiscoverySpi()).simulateNodeFailure();
 
         for (int i = 0; i < 4; i++)
             stopGrid(getTestIgniteInstanceName(i), true, false);

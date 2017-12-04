@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -42,7 +41,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTE
 /**
  *
  */
-public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
+public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Comparable<ZookeeperClusterNode> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -282,6 +281,22 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable {
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         return (CLIENT_NODE_MASK & flags) != 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(@Nullable ZookeeperClusterNode node) {
+        if (node == null)
+            return 1;
+
+        int res = Long.compare(order, node.order);
+
+        if (res == 0) {
+            assert id().equals(node.id()) : "Duplicate order [this=" + this + ", other=" + node + ']';
+
+            res = id().compareTo(node.id());
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
