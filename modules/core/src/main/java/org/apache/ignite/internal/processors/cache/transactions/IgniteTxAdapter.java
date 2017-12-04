@@ -45,6 +45,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -1002,6 +1003,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         boolean notify = false;
 
+        WALPointer ptr = null;
+
         synchronized (this) {
             prev = this.state;
 
@@ -1114,7 +1117,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         );
 
                         try {
-                            cctx.wal().log(txRecord);
+                            ptr = cctx.wal().log(txRecord);
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to log TxRecord: " + txRecord, e);
@@ -1124,6 +1127,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     }
                 }
             }
+        }
+
+        if (valid) {
+            if (ptr != null && (state == COMMITTED || state == ROLLED_BACK))
+                try {
+                    cctx.wal().fsync(ptr);
+                }
+                catch (IgniteCheckedException e) {
+                    String msg = "Failed to fsync ptr: " + ptr;
+
+                    U.error(log, msg, e);
+
+                    throw new IgniteException(msg, e);
+                }
         }
 
         if (notify) {
