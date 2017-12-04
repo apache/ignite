@@ -26,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ZkInternalFailNodeMessage implements ZkInternalMessage {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     final UUID nodeId;
 
     /** */
