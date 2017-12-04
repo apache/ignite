@@ -50,6 +50,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -116,6 +117,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
     private Map<String, Object> userAttrs;
 
+    /** */
+    private boolean dfltConsistenId;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         if (testSockNio)
@@ -123,7 +127,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setConsistentId(igniteInstanceName);
+        if (!dfltConsistenId)
+            cfg.setConsistentId(igniteInstanceName);
 
         ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
 
@@ -325,7 +330,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAddresses() throws Exception {
+    public void testNodeAddresses() throws Exception {
         startGridsMultiThreaded(3);
 
         client = true;
@@ -344,6 +349,55 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 assertTrue(node0.addresses().size() > 0);
                 assertTrue(node0.hostNames().size() > 0);
             }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetConsistentId() throws Exception {
+        startGridsMultiThreaded(3);
+
+        client = true;
+
+        startGridsMultiThreaded(3, 3);
+
+        waitForTopology(6);
+
+        for (Ignite node : G.allGrids()) {
+            ClusterNode locNode0 = node.cluster().localNode();
+
+            assertEquals(locNode0.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME),
+                locNode0.consistentId());
+
+            for (ClusterNode node0 : node.cluster().nodes()) {
+                assertEquals(node0.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME),
+                    node0.consistentId());
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDefaultConsistentId() throws Exception {
+        dfltConsistenId = true;
+
+        startGridsMultiThreaded(3);
+
+        client = true;
+
+        startGridsMultiThreaded(3, 3);
+
+        waitForTopology(6);
+
+        for (Ignite node : G.allGrids()) {
+            ClusterNode locNode0 = node.cluster().localNode();
+
+            assertNotNull(locNode0.consistentId());
+
+            for (ClusterNode node0 : node.cluster().nodes())
+                assertNotNull(node0.consistentId());
         }
     }
 

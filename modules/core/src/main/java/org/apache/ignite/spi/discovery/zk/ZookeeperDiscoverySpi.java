@@ -20,7 +20,10 @@ package org.apache.ignite.spi.discovery.zk;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
@@ -39,6 +42,7 @@ import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -50,6 +54,9 @@ import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClusterNode;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
  *
@@ -104,6 +111,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** */
     @GridToStringExclude
     private Serializable consistentId;
+
+    /** Local node addresses. */
+    private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 
     /** */
     @LoggerResource
@@ -182,12 +192,52 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         if (consistentId == null) {
             consistentId = ignite.configuration().getConsistentId();
 
-            // TODO ZK
-            if (consistentId == null)
-                consistentId = ignite.configuration().getNodeId();
+            if (consistentId == null) {
+                final List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+
+                Collections.sort(sortedAddrs);
+
+                if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
+                    consistentId = U.consistentId(sortedAddrs);
+                else {
+                    Integer commPort = (Integer)locNodeAttrs.get(
+                        TcpCommunicationSpi.class.getSimpleName() + "." + TcpCommunicationSpi.ATTR_PORT);
+
+                    if (commPort == null)
+                        throw new IgniteSpiException("Can not initialized consistent ID.");
+
+                    consistentId = U.consistentId(sortedAddrs, (Integer)commPort);
+                }
+            }
         }
 
         return consistentId;
+    }
+
+    /**
+     *
+     */
+    private void initAddresses() {
+        if (addrs == null) {
+            String locHost = ignite != null ? ignite.configuration().getLocalHost() : null;
+
+            InetAddress locAddr;
+
+            try {
+                locAddr = U.resolveLocalHost(locHost);
+            }
+            catch (IOException e) {
+                throw new IgniteSpiException("Unknown local address: " + locHost, e);
+            }
+
+            try {
+                addrs = U.resolveLocalAddresses(locAddr);
+            }
+            catch (Exception e) {
+                throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost,
+                    e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -358,26 +408,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     private ZookeeperClusterNode initLocalNode() {
         assert ignite != null;
 
-        String locHost = ignite.configuration().getLocalHost();
-
-        InetAddress locAddr;
-
-        try {
-            locAddr = U.resolveLocalHost(locHost);
-        }
-        catch (IOException e) {
-            throw new IgniteSpiException("Unknown local address: " + locHost, e);
-        }
-
-        IgniteBiTuple<Collection<String>, Collection<String>> addrs;
-
-        try {
-            addrs = U.resolveLocalAddresses(locAddr);
-        }
-        catch (Exception e) {
-            throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
-        }
-
+        initAddresses();
 
         consistentId = consistentId();
 
