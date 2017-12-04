@@ -116,8 +116,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         private Map<String, Integer> outgoingSignals;
 
         /** Last condition waited on. */
-        @Nullable
-        private volatile String lastCondition;
+        @Nullable private volatile String lastCondition;
 
         /** True if any node owning the lock had failed. */
         private volatile boolean isBroken;
