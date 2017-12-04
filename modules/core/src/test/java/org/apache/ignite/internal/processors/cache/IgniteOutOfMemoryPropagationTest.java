@@ -54,7 +54,7 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
     private CacheMode mode;
 
     /** */
-    private int backupsCount;
+    private int backupsCnt;
 
     /** */
     private CacheWriteSynchronizationMode writeSyncMode;
@@ -89,7 +89,7 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
         for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
             for (CacheMode cacheMode : CacheMode.values()) {
                 for (CacheWriteSynchronizationMode writeSyncMode : CacheWriteSynchronizationMode.values()) {
-                    for (int backupsCount = 0; backupsCount < 1; backupsCount++) {
+                    for (int backupsCnt = 0; backupsCnt <= 1; backupsCnt++) {
                         if (writeSyncMode == CacheWriteSynchronizationMode.FULL_ASYNC
                             || cacheMode == CacheMode.REPLICATED)
                             continue;
@@ -102,14 +102,14 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
                                         CacheAtomicityMode.TRANSACTIONAL,
                                         cacheMode,
                                         writeSyncMode,
-                                        backupsCount,
+                                        backupsCnt,
                                         concurrency,
                                         isolation);
                                 }
                             }
                         }
-                        else
-                            checkOOMPropagation(useStreamer, atomicityMode, cacheMode, writeSyncMode, backupsCount);
+
+                        checkOOMPropagation(useStreamer, atomicityMode, cacheMode, writeSyncMode, backupsCnt);
                     }
                 }
             }
@@ -118,21 +118,21 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
 
     /** */
     private void checkOOMPropagation(boolean useStreamer, CacheAtomicityMode atomicityMode, CacheMode cacheMode,
-        CacheWriteSynchronizationMode writeSyncMode, int backupsCount) throws Exception {
-        checkOOMPropagation(useStreamer, atomicityMode, cacheMode, writeSyncMode, backupsCount, null, null);
+        CacheWriteSynchronizationMode writeSyncMode, int backupsCnt) throws Exception {
+        checkOOMPropagation(useStreamer, atomicityMode, cacheMode, writeSyncMode, backupsCnt, null, null);
     }
 
     /** */
     private void checkOOMPropagation(boolean useStreamer, CacheAtomicityMode atomicityMode, CacheMode cacheMode,
-        CacheWriteSynchronizationMode writeSyncMode, int backupsCount,
+        CacheWriteSynchronizationMode writeSyncMode, int backupsCnt,
         TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         Throwable t = null;
 
         System.out.println("Checking conf: CacheAtomicityMode." + atomicityMode +
-            " CacheMode." + mode + " CacheWriteSynchronizationMode." + writeSyncMode + " backupsCount = " + backupsCount
+            " CacheMode." + cacheMode + " CacheWriteSynchronizationMode." + writeSyncMode + " backupsCount = " + backupsCnt
             + " TransactionConcurrency." + concurrency + " TransactionIsolation." + isolation);
 
-        initGrid(atomicityMode, cacheMode, writeSyncMode, backupsCount);
+        initGrid(atomicityMode, cacheMode, writeSyncMode, backupsCnt);
         try {
             forceOOM(useStreamer, concurrency, isolation);
         }
@@ -156,15 +156,15 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
      * @param atomicityMode atomicity mode
      * @param mode cache mode
      * @param writeSyncMode cache write synchronization mode
-     * @param backupsCount backups count
+     * @param backupsCnt backups count
      * @throws Exception
      */
     private void initGrid(CacheAtomicityMode atomicityMode, CacheMode mode,
-        CacheWriteSynchronizationMode writeSyncMode, int backupsCount) throws Exception {
+        CacheWriteSynchronizationMode writeSyncMode, int backupsCnt) throws Exception {
 
         this.atomicityMode = atomicityMode;
         this.mode = mode;
-        this.backupsCount = backupsCount;
+        this.backupsCnt = backupsCnt;
         this.writeSyncMode = writeSyncMode;
 
         Ignition.setClientMode(false);
@@ -241,7 +241,7 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
 
         baseCfg.setAtomicityMode(this.atomicityMode);
         baseCfg.setCacheMode(this.mode);
-        baseCfg.setBackups(this.backupsCount);
+        baseCfg.setBackups(this.backupsCnt);
         baseCfg.setWriteSynchronizationMode(this.writeSyncMode);
 
         cfg.setCacheConfiguration(baseCfg);
