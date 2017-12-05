@@ -288,54 +288,13 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            BPlusTree.TreeRowClosure<SearchRow, GridH2Row> rowFilterClo = filterTreeRowClosure();
+            BPlusTree.TreeRowClosure<SearchRow, GridH2Row> rowClo = partitionRowFilterClo();
 
-            return tree.size(rowFilterClo);
+            return tree.size(rowClo);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
-    }
-
-    /**
-     * An adapter from {@link IndexingQueryCacheFilter} to {@link BPlusTree.TreeRowClosure} to
-     * filter entries that belong to the current partition.
-     */
-    private static class PartitionFilterTreeRowClosure implements BPlusTree.TreeRowClosure<SearchRow, GridH2Row> {
-        private final IndexingQueryCacheFilter filter;
-
-        /**
-         * Creates a {@link BPlusTree.TreeRowClosure} adapter based on the given partition filter.
-         *
-         * @param filter The partition filter.
-         */
-        public PartitionFilterTreeRowClosure(IndexingQueryCacheFilter filter) {
-            this.filter = filter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(BPlusTree<SearchRow, GridH2Row> tree,
-            BPlusIO<SearchRow> io, long pageAddr, int idx) throws IgniteCheckedException {
-
-            H2RowLinkIO h2io = (H2RowLinkIO)io;
-
-            return filter.applyPartition(
-                PageIdUtils.partId(
-                    PageIdUtils.pageId(
-                        h2io.getLink(pageAddr, idx))));
-        }
-    }
-
-    /**
-     * Returns a filter to apply to rows in the current index to obtain only the
-     * ones owned by the this cache.
-     *
-     * @return The filter, which returns true for rows owned by this cache.
-     */
-    @Nullable private BPlusTree.TreeRowClosure<SearchRow, GridH2Row> filterTreeRowClosure() {
-        final IndexingQueryCacheFilter filter = partitionFilter(threadLocalFilter());
-
-        return filter != null ? new PartitionFilterTreeRowClosure(filter) : null;
     }
 
     /** {@inheritDoc} */
@@ -414,21 +373,6 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /**
-     * Returns a filter which returns true for entries belonging to a particular partition.
-     *
-     * @param qryFilter Factory that creates a predicate for filtering entries for a particular cache.
-     * @return The filter or null if the filter is not needed (e.g., if the cache is not partitioned).
-     */
-    @Nullable private IndexingQueryCacheFilter partitionFilter(@Nullable IndexingQueryFilter qryFilter) {
-        if (qryFilter == null)
-            return null;
-
-        String cacheName = getTable().cacheName();
-
-        return qryFilter.forCache(cacheName);
-    }
-
-    /**
      * @param inlineIdxs Inline index helpers.
      * @param cfgInlineSize Inline size from cache config.
      * @return Inline size.
@@ -485,6 +429,63 @@ public class H2TreeIndex extends GridH2IndexBase {
         cctx.offheap().dropRootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
     }
 
+    /**
+     * Returns a filter which returns true for entries belonging to a particular partition.
+     *
+     * @param qryFilter Factory that creates a predicate for filtering entries for a particular cache.
+     * @return The filter or null if the filter is not needed (e.g., if the cache is not partitioned).
+     */
+    @Nullable private IndexingQueryCacheFilter partitionFilter(@Nullable IndexingQueryFilter qryFilter) {
+        if (qryFilter == null)
+            return null;
+
+        String cacheName = getTable().cacheName();
+
+        return qryFilter.forCache(cacheName);
+    }
+
+    /**
+     * An adapter from {@link IndexingQueryCacheFilter} to {@link BPlusTree.TreeRowClosure} which
+     * filters entries that belong to the current partition.
+     */
+    private static class PartitionFilterTreeRowClosure implements BPlusTree.TreeRowClosure<SearchRow, GridH2Row> {
+
+        private final IndexingQueryCacheFilter filter;
+
+        /**
+         * Creates a {@link BPlusTree.TreeRowClosure} adapter based on the given partition filter.
+         *
+         * @param filter The partition filter.
+         */
+        public PartitionFilterTreeRowClosure(IndexingQueryCacheFilter filter) {
+            this.filter = filter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(BPlusTree<SearchRow, GridH2Row> tree,
+            BPlusIO<SearchRow> io, long pageAddr, int idx) throws IgniteCheckedException {
+
+            H2RowLinkIO h2io = (H2RowLinkIO)io;
+
+            return filter.applyPartition(
+                PageIdUtils.partId(
+                    PageIdUtils.pageId(
+                        h2io.getLink(pageAddr, idx))));
+        }
+    }
+
+    /**
+     * Returns a filter to apply to rows in the current index to obtain only the
+     * ones owned by the this cache.
+     *
+     * @return The filter, which returns true for rows owned by this cache.
+     */
+    @Nullable private BPlusTree.TreeRowClosure<SearchRow, GridH2Row> partitionRowFilterClo() {
+        final IndexingQueryCacheFilter filter = partitionFilter(threadLocalFilter());
+
+        return filter != null ? new PartitionFilterTreeRowClosure(filter) : null;
+    }
+
     /** A cursor for empty sequence. */
     public static final Cursor EMPTY_CURSOR = new Cursor() {
         /** {@inheritDoc} */
@@ -507,9 +508,9 @@ public class H2TreeIndex extends GridH2IndexBase {
             return false;
         }
     };
-
     /** A cursor that iterates over a single row. */
     public static class SingletonCursor implements Cursor {
+
 
         /** The row to return. */
         private final GridH2Row row;
