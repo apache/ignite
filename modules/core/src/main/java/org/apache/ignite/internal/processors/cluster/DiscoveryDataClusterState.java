@@ -54,12 +54,15 @@ public class DiscoveryDataClusterState implements Serializable {
     /** Local flag for state transition result (global state is updated asynchronously by custom message). */
     private transient volatile Boolean transitionRes;
 
+    /** */
+    private transient DiscoveryDataClusterState prevState;
+
     /**
      * @param active Current status.
      * @return State instance.
      */
     static DiscoveryDataClusterState createState(boolean active, @Nullable BaselineTopology baselineTopology) {
-        return new DiscoveryDataClusterState(active, baselineTopology, null, null, null);
+        return new DiscoveryDataClusterState(null, active, baselineTopology, null, null, null);
     }
 
     /**
@@ -70,6 +73,7 @@ public class DiscoveryDataClusterState implements Serializable {
      * @return State instance.
      */
     static DiscoveryDataClusterState createTransitionState(
+        DiscoveryDataClusterState prevState,
         boolean active,
         @Nullable BaselineTopology baselineTopology,
         UUID transitionReqId,
@@ -80,22 +84,31 @@ public class DiscoveryDataClusterState implements Serializable {
         assert transitionTopVer != null;
         assert !F.isEmpty(transitionNodes) : transitionNodes;
 
-        return new DiscoveryDataClusterState(active, baselineTopology, transitionReqId, transitionTopVer, transitionNodes);
+        return new DiscoveryDataClusterState(
+            prevState,
+            active,
+            baselineTopology,
+            transitionReqId,
+            transitionTopVer,
+            transitionNodes);
     }
 
     /**
+     * @param prevState Previous state. May be non-null only for transitional states.
      * @param active New state.
      * @param transitionReqId State change request ID.
      * @param transitionTopVer State change topology version.
      * @param transitionNodes Nodes participating in state change exchange.
      */
     private DiscoveryDataClusterState(
+        DiscoveryDataClusterState prevState,
         boolean active,
         @Nullable BaselineTopology baselineTopology,
         @Nullable UUID transitionReqId,
         @Nullable AffinityTopologyVersion transitionTopVer,
         @Nullable Set<UUID> transitionNodes
     ) {
+        this.prevState = prevState;
         this.active = active;
         this.baselineTopology = baselineTopology;
         this.transitionReqId = transitionReqId;
@@ -165,16 +178,20 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
+     * @param success Transition success status.
      * @return Cluster state that finished transition.
      */
-    public DiscoveryDataClusterState finish() {
-        return new DiscoveryDataClusterState(
-            active,
-            baselineTopology,
-            null,
-            null,
-            null
-        );
+    public DiscoveryDataClusterState finish(boolean success) {
+        return success ?
+            new DiscoveryDataClusterState(
+                null,
+                active,
+                baselineTopology,
+                null,
+                null,
+                null
+            ) :
+            prevState;
     }
 
     /** {@inheritDoc} */
