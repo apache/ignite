@@ -1288,9 +1288,9 @@ public class IgniteTxHandler {
         if (tx == null) {
             if (req.commit())
                 // Must be some long time duplicate, but we add it anyway.
-                ctx.tm().addCommittedTx(tx, req.version(), null);
+                ctx.tm().addCommittedTx(null, req.version(), null);
             else
-                ctx.tm().addRolledbackTx(tx, req.version());
+                ctx.tm().addRolledbackTx(null, req.version());
 
             if (log.isDebugEnabled())
                 log.debug("Received finish request for non-existing transaction (added to completed set) " +

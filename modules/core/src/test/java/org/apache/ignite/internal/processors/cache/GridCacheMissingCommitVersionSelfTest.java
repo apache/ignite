@@ -17,17 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
@@ -76,6 +74,11 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName(int idx) {
+        return "NODE-" + Integer.toString(idx);
     }
 
     /** {@inheritDoc} */
@@ -152,55 +155,52 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
     /**
      * OnePhaseCommitAckRequest may come with missing version. It could be removed by completedVersHashMap itself if
      * reaches the maximum size under heavy load. This tests verifies IGNITE-7047 fix
+     * Log can be enabled by adding org.apache.ignite.internal.processors.cache.transactions category to log4j-test.xml
      * @throws Exception If failed.
      */
     public void testMissingVersionForOnePhaseCommitAckRequest() throws Exception {
         final int GRID_SIZE = 2;
-        final AtomicBoolean finished = new AtomicBoolean();
-        final AtomicInteger uncaughtCnt = new AtomicInteger();
+
+        final AtomicReference<Throwable> unexpectedE = new AtomicReference<Throwable>();
 
         // catch possible asserts from removeTxReturn
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             public void uncaughtException(Thread t, Throwable e) {
                 log().error("uncaughtException " + e.getMessage());
-                uncaughtCnt.getAndIncrement();
+                unexpectedE.set(e);
             }
         });
 
         startGridsMultiThreaded(GRID_SIZE);
 
-        IgniteInternalFuture<Object> restarterFut = runRestarts(finished);
+        // run NODE-0 restarts 3 times in 100 msec
+        IgniteInternalFuture<Object> restartFut = runNodeRestarts();
 
-        IgniteInternalFuture<Object> updaterFut = runUpdates(finished);
+        // run simultaneous transactions at NODE-1
+        IgniteInternalFuture<Object> txFut = runTransactions(restartFut);
 
-        try {
-            U.sleep(10_000);
-        }
-        finally {
-            finished.set(true);
+        restartFut.get();
+        txFut.get();
 
-            restarterFut.get();
-            updaterFut.get();
-        }
-
-        assertEquals(0, uncaughtCnt.get());
+        assertEquals(null, unexpectedE.get());
 
         checkOnePhaseCommitReturnValuesCleaned(GRID_SIZE);
     }
 
 
     /**
-     * Creates and run a thread that restarts Node-0 every 300 ms.
-     * @param finished Boolean atomic that stops thread infinite loop by True value.
+     * Creates and runs a thread that restarts Node-0 every 100 ms.
      * @return future.
      */
-    private IgniteInternalFuture<Object> runRestarts(final AtomicBoolean finished) {
+    private IgniteInternalFuture<Object> runNodeRestarts() {
         return runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                while (!finished.get()) {
+                U.sleep(200);
+
+                for (int i = 0; i < 3; i++) {
                     stopGrid(0);
 
-                    U.sleep(300);
+                    U.sleep(100);
 
                     startGrid(0);
 
@@ -213,25 +213,30 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Creates and run a thread that executes Cache getAndPut operations (at Node-1) in infinite loop.
-     * @param finished Boolean atomic that stops thread infinite loop by True value.
+     * Creates and runs a thread that executes Cache getAndPut operations (at Node-1) in infinite loop.
+     * @param fut Future that is used as a signal to stop thread infinite loop.
      * @return future.
      */
-    private IgniteInternalFuture<Object> runUpdates(final AtomicBoolean finished) {
+    private IgniteInternalFuture<Object> runTransactions(final IgniteInternalFuture<Object> fut) {
         final int keysCnt = 10_000;
 
         return runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int iter = 0;
 
-                while (!finished.get()) {
+                while (!fut.isDone()) {
                     try {
                         IgniteCache<Integer, Integer> cache = ignite(1).cache(DEFAULT_CACHE_NAME);
 
                         Integer val = ++iter;
 
-                        for (int i = 0; i < keysCnt; i++)
-                            cache.getAndPut(i, val);
+                        final Affinity<Integer> affinity = ignite(1).affinity(cache.getName());
+
+                        // run transactions for primary partitions at NODE-1 to have more unexpected
+                        // OnePhaseCommitAckRequest at NODE-0.
+                        for (int i = 0; i < keysCnt && !fut.isDone(); i++)
+                            if (affinity.mapKeyToNode(i) == ignite(1).cluster().localNode())
+                                cache.getAndPut(i, val);
                     }
                     catch (Exception ignored) {
                         // No-op.

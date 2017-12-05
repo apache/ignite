@@ -933,6 +933,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Committed transaction.
      */
     public void addCommittedTxReturn(IgniteInternalTx tx, GridCacheReturnCompletableWrapper ret) {
+        // nearXidVersion is passed to xidVersion for onePhaseCommit transaction
         addCommittedTxReturn(tx.nearXidVersion(), null, ret);
     }
 
@@ -951,7 +952,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return If transaction was not already present in completed set.
      */
     public boolean addCommittedTx(
-        IgniteInternalTx tx,
+        @Nullable IgniteInternalTx tx,
         GridCacheVersion xidVer,
         @Nullable GridCacheVersion nearXidVer
     ) {
@@ -997,7 +998,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return If transaction was not already present in completed set.
      */
     public boolean addRolledbackTx(
-        IgniteInternalTx tx,
+        @Nullable IgniteInternalTx tx,
         GridCacheVersion xidVer
     ) {
         Object committed0 = completedVersHashMap.putIfAbsent(xidVer, false);
@@ -1035,6 +1036,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * removeTxReturn. completedVersHashMap could have the following values for xidVer:
+     * false - for rollbacked tx,
+     * true - for regular finished tx,
+     * GridCacheReturn - for onePhaseCommit case,
+     * null - for lost tx.
      * @param xidVer xidVer Completed transaction version.
      */
     public void removeTxReturn(GridCacheVersion xidVer) {
@@ -1043,17 +1049,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (Boolean.FALSE.equals(prev)) // Tx can be rolled back.
             return;
 
-        if (!(prev instanceof GridCacheReturnCompletableWrapper))
-            LT.warn(log(), prev + " instead of GridCacheReturnCompletableWrapper for " + xidVer.toString() +
-                ", size=" + completedVersHashMap.sizex());
+        if (prev == null) {
+            if (log.isDebugEnabled())
+                log.debug("removeTxReturn: could not find " + xidVer);
+            return;
+        }
 
-        boolean res;
-        if (prev == null)
-            res = (null == completedVersHashMap.putIfAbsent(xidVer, true));
-        else
-            res = completedVersHashMap.replace(xidVer, prev, true);
-
-        assert res;
+        if (prev instanceof GridCacheReturnCompletableWrapper) {
+            boolean res = completedVersHashMap.replace(xidVer, prev, true);
+            assert res;
+        }
     }
 
     /**
