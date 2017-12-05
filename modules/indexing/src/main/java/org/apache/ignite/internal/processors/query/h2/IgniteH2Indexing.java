@@ -2033,8 +2033,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             Thread t = entry.getKey();
 
-            if (t.getState() == Thread.State.TERMINATED)
+            if (t.getState() == Thread.State.TERMINATED) {
+                U.close(entry.getValue(), log);
+
                 it.remove();
+            }
         }
     }
 
