@@ -23,9 +23,9 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
 
 /**
- * MBean for local node metrics.
+ * Cluster metrics MBean.
  */
-@MXBeanDescription("MBean that provides access to all local node metrics.")
+@MXBeanDescription("MBean that provides access to aggregated cluster metrics.")
 public interface ClusterMetricsMXBean extends ClusterMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Last update time of this node metrics.")

@@ -1710,10 +1710,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if(U.IGNITE_MBEANS_DISABLED)
             return null;
 
-        ObjectName objectName;
+        ObjectName objName;
 
         try {
-            objectName = U.registerMBean(
+            objName = U.registerMBean(
                 cfg.getMBeanServer(),
                 cfg.getIgniteInstanceName(),
                 "Kernal",
@@ -1722,9 +1722,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 ClusterMetricsMXBean.class);
 
             if (log.isDebugEnabled())
-                log.debug("Registered MBean: " + objectName);
+                log.debug("Registered MBean: " + objName);
 
-            return objectName;
+            return objName;
         }
         catch (JMException e) {
             throw new IgniteCheckedException("Failed to register MBean: " + mbean.getClass().getSimpleName(), e);
