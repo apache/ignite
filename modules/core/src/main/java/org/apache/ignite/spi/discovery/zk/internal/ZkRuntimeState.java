@@ -33,6 +33,9 @@ class ZkRuntimeState {
     int internalOrder;
 
     /** */
+    int joinDataPartCnt;
+
+    /** */
     IgniteSpiTimeoutObject joinTimeoutObj;
 
     /** */

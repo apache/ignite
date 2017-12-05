@@ -34,6 +34,12 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
     final UUID nodeId;
 
     /** */
+    final int joinDataPartCnt;
+
+    /** */
+    final UUID joinDataPrefixId;
+
+    /** */
     transient ZkJoiningNodeData joiningNodeData;
 
     /**
@@ -42,11 +48,19 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
      * @param nodeId Joined node ID.
      * @param joinedInternalId Joined node internal ID.
      */
-    ZkDiscoveryNodeJoinEventData(long evtId, long topVer, UUID nodeId, int joinedInternalId) {
+    ZkDiscoveryNodeJoinEventData(long evtId,
+        long topVer,
+        UUID nodeId,
+        int joinedInternalId,
+        UUID joinDataPrefixId,
+        int joinDataPartCnt)
+    {
         super(evtId, EventType.EVT_NODE_JOINED, topVer);
 
         this.nodeId = nodeId;
         this.joinedInternalId = joinedInternalId;
+        this.joinDataPrefixId = joinDataPrefixId;
+        this.joinDataPartCnt = joinDataPartCnt;
     }
 
     /** {@inheritDoc} */

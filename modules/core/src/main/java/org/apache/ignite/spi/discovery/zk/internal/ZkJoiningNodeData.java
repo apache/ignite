@@ -30,12 +30,19 @@ class ZkJoiningNodeData implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridToStringInclude
-    private final ZookeeperClusterNode node;
+    private int partCnt;
 
     /** */
     @GridToStringInclude
-    private final Map<Integer, Serializable> discoData;
+    private ZookeeperClusterNode node;
+
+    /** */
+    @GridToStringInclude
+    private Map<Integer, Serializable> discoData;
+
+    ZkJoiningNodeData(int partCnt) {
+        this.partCnt = partCnt;
+    }
 
     /**
      * @param node Node.
@@ -47,6 +54,10 @@ class ZkJoiningNodeData implements Serializable {
 
         this.node = node;
         this.discoData = discoData;
+    }
+
+    int partCount() {
+        return partCnt;
     }
 
     /**

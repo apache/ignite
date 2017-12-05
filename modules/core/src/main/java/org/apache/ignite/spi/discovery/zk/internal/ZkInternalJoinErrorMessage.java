@@ -25,6 +25,9 @@ class ZkInternalJoinErrorMessage implements ZkInternalMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
+    transient boolean notifyNode = true;
+
+    /** */
     final int nodeInternalId;
 
     /** */

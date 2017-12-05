@@ -276,6 +276,51 @@ public class ZookeeperClient implements Watcher {
 
     }
 
+    /** */
+    private static final int MAX_REQ_SIZE = 1048528;
+
+    /**
+     * @param path Path.
+     * @param data Data.
+     * @return {@code True}
+     */
+    boolean needSplitNodeData(String path, byte[] data, int overhead) {
+        return requestOverhead(path) + data.length + overhead > MAX_REQ_SIZE;
+    }
+
+    List<byte[]> splitNodeData(String path, byte[] data, int overhead) {
+        int partSize = MAX_REQ_SIZE - requestOverhead(path) - overhead;
+
+        int partCnt = data.length / partSize;
+
+        if (data.length % partSize != 0)
+            partCnt++;
+
+        assert partCnt > 1 : "Do not need split";
+
+        List<byte[]> parts = new ArrayList<>(partCnt);
+
+        int remaining = data.length;
+
+        for (int i = 0; i < partCnt; i++) {
+            int partSize0 = Math.min(remaining, partSize);
+
+            byte[] part = new byte[partSize0];
+
+            System.arraycopy(data, i * partCnt, part, 0, part.length);
+
+            remaining -= partSize0;
+        }
+
+        assert remaining == 0 : remaining;
+
+        return parts;
+    }
+
+    private int requestOverhead(String path) {
+        return path.length();
+    }
+
     /**
      * @param path Path.
      * @param data Data.

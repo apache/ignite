@@ -564,6 +564,66 @@ public class ZookeeperDiscoveryImpl {
         }
     }
 
+    private void deleteMultiplePartsAsync(ZookeeperClient zkClient, String basePath, int partCnt) {
+        for (int i = 0; i < partCnt; i++) {
+            String path = multipartPathName(basePath, i);
+
+            zkClient.deleteIfExistsAsync(path);
+        }
+
+    }
+
+    private byte[] readMultipleParts(ZookeeperClient zkClient, String basePath, int partCnt)
+        throws Exception {
+        assert partCnt >= 1;
+
+        if (partCnt > 1) {
+            List<byte[]> parts = new ArrayList<>(partCnt);
+
+            int totSize = 0;
+
+            for (int i = 0; i < partCnt; i++) {
+                byte[] part = zkClient.getData(multipartPathName(basePath, i));
+
+                totSize += part.length;
+            }
+
+            byte[] res = new byte[totSize];
+
+            int pos = 0;
+
+            for (int i = 0; i < partCnt; i++) {
+                byte[] part = parts.get(i);
+
+                System.arraycopy(part, 0, res, pos, part.length);
+
+                pos += part.length;
+            }
+
+            return res;
+        }
+        else
+            return zkClient.getData(multipartPathName(basePath, 0));
+    }
+
+    private void saveMultipleParts(ZookeeperClient zkClient, String basePath, List<byte[]> parts)
+        throws ZookeeperClientFailedException, InterruptedException
+    {
+        assert parts.size() > 1;
+
+        for (int i = 0; i < parts.size(); i++) {
+            byte[] part = parts.get(i);
+
+            String path = multipartPathName(basePath, i);
+
+            zkClient.createIfNeeded(path, part, PERSISTENT);
+        }
+    }
+
+    private static String multipartPathName(String basePath, int part) {
+        return basePath + String.format("%04d", part);
+    }
+
     /**
      * @param joinDataBytes Joining node data.
      * @throws InterruptedException If interrupted.
@@ -577,23 +637,38 @@ public class ZookeeperDiscoveryImpl {
 
             String prefix = UUID.randomUUID().toString();
 
-            // TODO ZK: handle max size.
-
             final ZkRuntimeState rtState = this.rtState;
 
-            String joinDataPath = rtState.zkClient.createSequential(prefix,
-                zkPaths.joinDataDir,
-                prefix + ":" + locNode.id() + "|",
-                joinDataBytes,
-                EPHEMERAL_SEQUENTIAL);
+            ZookeeperClient zkClient = rtState.zkClient;
 
-            // TODO ZK: no need to use sequential
-            int seqNum = Integer.parseInt(joinDataPath.substring(joinDataPath.lastIndexOf('|') + 1));
+            final int OVERHEAD = 5;
 
-            rtState.locNodeZkPath = rtState.zkClient.createSequential(
+            // TODO ZK: need clean up join data if failed before was able to create alive node.
+            String joinDataPath = zkPaths.joinDataDir + "/" + prefix + ":" + locNode.id();
+
+            if (zkClient.needSplitNodeData(joinDataPath, joinDataBytes, OVERHEAD)) {
+                List<byte[]> parts = zkClient.splitNodeData(joinDataPath, joinDataBytes, OVERHEAD);
+
+                rtState.joinDataPartCnt = parts.size();
+
+                saveMultipleParts(zkClient, joinDataPath + ":", parts);
+
+                joinDataPath = zkClient.createIfNeeded(
+                    joinDataPath,
+                    marshalZip(new ZkJoiningNodeData(parts.size())),
+                    PERSISTENT);
+            }
+            else {
+                joinDataPath = zkClient.createIfNeeded(
+                    joinDataPath,
+                    joinDataBytes,
+                    PERSISTENT);
+            }
+
+            rtState.locNodeZkPath = zkClient.createSequential(
                 prefix,
                 zkPaths.aliveNodesDir,
-                prefix + ":" + locNode.id() + "|" + seqNum + "|",
+                prefix + ":" + locNode.id() + "|",
                 null,
                 EPHEMERAL_SEQUENTIAL);
 
@@ -605,21 +680,21 @@ public class ZookeeperDiscoveryImpl {
             rtState.internalOrder = ZkIgnitePaths.aliveInternalId(rtState.locNodeZkPath);
 
             /*
-            If node can not join due to some validation error this error is reported in join data,
-            As a minor optimization do not start watch this immediately, but only if do not receive
-            join event after timeout.
+            If node can not join due to validation error this error is reported in join data,
+            As a minor optimization do not start watch join data immediately, but only if do not receive
+            join event after some timeout.
              */
             rtState.joinTimeoutObj = new CheckJoinStateTimeoutObject(
-                joinDataPath,
+                multipartPathName(joinDataPath, 0),
                 rtState);
 
             spi.getSpiContext().addTimeoutObject(rtState.joinTimeoutObj);
 
-            rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback());
+            zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback());
 
-            rtState.zkClient.getDataAsync(zkPaths.evtsPath, watcher, dataCallback);
+            zkClient.getDataAsync(zkPaths.evtsPath, watcher, dataCallback);
         }
-        catch (ZookeeperClientFailedException e) {
+        catch (IgniteCheckedException | ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
         }
         finally {
@@ -889,80 +964,135 @@ public class ZookeeperDiscoveryImpl {
             handleProcessedEventsOnNodesFail(failedNodes);
     }
 
+    private ZkJoiningNodeData unmarshalJoinData(UUID nodeId, UUID prefixId) throws Exception {
+        String joinDataPath = zkPaths.joiningNodeDataPath(nodeId, prefixId);
+
+        byte[] joinData = rtState.zkClient.getData(joinDataPath);
+
+        Object dataObj = unmarshalZip(joinData);
+
+        if (!(dataObj instanceof ZkJoiningNodeData))
+            throw new Exception("Invalid joined node data: " + dataObj);
+
+        ZkJoiningNodeData joiningNodeData = (ZkJoiningNodeData)dataObj;
+
+        if (joiningNodeData.partCount() > 1) {
+            joinData = readMultipleParts(rtState.zkClient, joinDataPath + ":", joiningNodeData.partCount());
+
+            joiningNodeData = unmarshalZip(joinData);
+        }
+
+        return joiningNodeData;
+    }
+
     /**
-     * @param curTop Current nodes.
-     * @param internalId Joined node internal ID.
-     * @param aliveNodePath Joined node path.
+     * @param nodeId
+     * @param aliveNodePath
+     * @return
      * @throws Exception If failed.
      */
-    private boolean processJoinOnCoordinator(TreeMap<Long, ZookeeperClusterNode> curTop,
-        int internalId,
-        String aliveNodePath) throws Exception {
-        UUID nodeId = ZkIgnitePaths.aliveNodeId(aliveNodePath);
+    private Object unmarshalJoinDataOnCoordinator(UUID nodeId, UUID prefixId, String aliveNodePath) throws Exception {
+        String joinDataPath = zkPaths.joiningNodeDataPath(nodeId, prefixId);
 
-        String joinDataPath = zkPaths.joiningNodeDataPath(nodeId, aliveNodePath);
-        byte[] joinData;
+        byte[] joinData = rtState.zkClient.getData(joinDataPath);
 
-        try {
-            joinData = rtState.zkClient.getData(joinDataPath);
-        }
-        catch (KeeperException.NoNodeException e) {
-            U.warn(log, "Failed to read joining node data, node left before join process finished: " + nodeId);
-
-            return false;
-        }
-
-        String err = null;
-
-        Object dataObj = null;
+        Object dataObj;
 
         try {
             dataObj = unmarshalZip(joinData);
 
-            if (dataObj instanceof ZkInternalJoinErrorMessage) {
-                if (log.isInfoEnabled())
-                    log.info("Ignore join data, node was failed by previous coordinator: " + aliveNodePath);
-
-                zkClient().deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
-
-                return false;
-            }
+            if (dataObj instanceof ZkInternalJoinErrorMessage)
+                return dataObj;
         }
         catch (Exception e) {
             U.error(log, "Failed to unmarshal joining node data [nodePath=" + aliveNodePath + "']", e);
 
-            err = "Failed to unmarshal join data: " + e;
+            return new ZkInternalJoinErrorMessage(ZkIgnitePaths.aliveInternalId(aliveNodePath),
+                "Failed to unmarshal join data: " + e);
         }
 
         assert dataObj instanceof ZkJoiningNodeData : dataObj;
 
         ZkJoiningNodeData joiningNodeData = (ZkJoiningNodeData)dataObj;
 
-        if (err == null)
-            err = validateJoiningNode(joiningNodeData.node());
+        if (joiningNodeData.partCount() > 1) {
+            joinData = readMultipleParts(rtState.zkClient, joinDataPath + ":", joiningNodeData.partCount());
 
-        if (err == null) {
+            try {
+                joiningNodeData = unmarshalZip(joinData);
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to unmarshal joining node data [nodePath=" + aliveNodePath + "']", e);
+
+                return new ZkInternalJoinErrorMessage(ZkIgnitePaths.aliveInternalId(aliveNodePath),
+                    "Failed to unmarshal join data: " + e);
+            }
+        }
+
+        assert joiningNodeData.node() != null : joiningNodeData;
+
+        return joiningNodeData;
+    }
+
+    /**
+     * @param curTop Current nodes.
+     * @param internalId Joined node internal ID.
+     * @param aliveNodePath Joined node path.
+     * @throws Exception If failed.
+     */
+    private boolean processJoinOnCoordinator(
+        TreeMap<Long, ZookeeperClusterNode> curTop,
+        int internalId,
+        String aliveNodePath)
+        throws Exception
+    {
+        UUID nodeId = ZkIgnitePaths.aliveNodeId(aliveNodePath);
+        UUID prefixId = ZkIgnitePaths.aliveNodePrefixId(aliveNodePath);
+
+        Object data = unmarshalJoinDataOnCoordinator(nodeId, prefixId, aliveNodePath);
+
+        ZkInternalJoinErrorMessage joinErr = null;
+        ZkJoiningNodeData joiningNodeData = null;
+
+        if (data instanceof ZkJoiningNodeData) {
+            joiningNodeData = (ZkJoiningNodeData)data;
+
+            String err = validateJoiningNode(joiningNodeData.node());
+
+            if (err != null)
+                joinErr = new ZkInternalJoinErrorMessage(ZkIgnitePaths.aliveInternalId(aliveNodePath), err);
+        }
+        else {
+            assert data instanceof ZkInternalJoinErrorMessage : data;
+
+            joinErr = (ZkInternalJoinErrorMessage)data;
+        }
+
+        if (joinErr == null) {
             ZookeeperClusterNode joinedNode = joiningNodeData.node();
 
             assert nodeId.equals(joinedNode.id()) : joiningNodeData.node();
 
-            generateNodeJoin(curTop, joinData, joiningNodeData, internalId);
+            generateNodeJoin(curTop, joiningNodeData, internalId, prefixId);
 
             watchAliveNodeData(aliveNodePath);
 
             return true;
         }
         else {
-            ZkInternalJoinErrorMessage msg = new ZkInternalJoinErrorMessage(internalId, err);
+            if (joinErr.notifyNode) {
+                String joinDataPath = zkPaths.joiningNodeDataPath(nodeId, prefixId);
 
-            try {
-                zkClient().setData(joinDataPath, marshalZip(msg), -1);
-            }
-            catch (KeeperException.NoNodeException e) {
-                // Ignore, node already failed.
-            }
+                zkClient().setData(joinDataPath, marshalZip(joinErr), -1);
 
-            zkClient().deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
+                zkClient().deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
+            }
+            else {
+                if (log.isInfoEnabled())
+                    log.info("Ignore join data, node was failed by previous coordinator: " + aliveNodePath);
+
+                zkClient().deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
+            }
 
             return false;
         }
@@ -1046,9 +1176,9 @@ public class ZookeeperDiscoveryImpl {
      */
     private void generateNodeJoin(
         TreeMap<Long, ZookeeperClusterNode> curTop,
-        byte[] joinData,
         ZkJoiningNodeData joiningNodeData,
-        int internalId)
+        int internalId,
+        UUID prefixId)
         throws Exception
     {
         ZookeeperClusterNode joinedNode = joiningNodeData.node();
@@ -1085,7 +1215,9 @@ public class ZookeeperDiscoveryImpl {
             rtState.evtsData.evtIdGen,
             rtState.evtsData.topVer,
             joinedNode.id(),
-            joinedNode.internalId());
+            joinedNode.internalId(),
+            prefixId,
+            joiningNodeData.partCount());
 
         evtData.joiningNodeData = joiningNodeData;
 
@@ -1097,14 +1229,12 @@ public class ZookeeperDiscoveryImpl {
 
         long start = System.currentTimeMillis();
 
-        rtState.zkClient.createIfNeeded(zkPaths.joinEventDataPath(evtData.eventId()), joinData, PERSISTENT);
         rtState.zkClient.createIfNeeded(zkPaths.joinEventDataPathForJoined(evtData.eventId()), dataForJoinedBytes, PERSISTENT);
 
         long time = System.currentTimeMillis() - start;
 
         if (log.isInfoEnabled()) {
             log.info("Generated NODE_JOINED event [evt=" + evtData +
-                ", joinedDataSize=" + joinData.length +
                 ", dataForJoinedSize=" + dataForJoinedBytes.length +
                 ", addDataTime=" + time + ']');
         }
@@ -1131,14 +1261,11 @@ public class ZookeeperDiscoveryImpl {
 
         rtState.top.addNode(locNode);
 
-        String path = rtState.locNodeZkPath.substring(rtState.locNodeZkPath.lastIndexOf('/') + 1);
+        String locAlivePath = rtState.locNodeZkPath.substring(rtState.locNodeZkPath.lastIndexOf('/') + 1);
 
-        String joinDataPath = zkPaths.joiningNodeDataPath(locNode.id(), path);
-
-        if (log.isDebugEnabled())
-            log.debug("Delete join data: " + joinDataPath);
-
-        rtState.zkClient.deleteIfExistsAsync(joinDataPath);
+        deleteJoiningNodeData(locNode.id(),
+            ZkIgnitePaths.aliveNodePrefixId(locAlivePath),
+            rtState.joinDataPartCnt);
 
         final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
 
@@ -1398,9 +1525,7 @@ public class ZookeeperDiscoveryImpl {
                             joiningData = evtData0.joiningNodeData;
                         }
                         else {
-                            String path = zkPaths.joinEventDataPath(evtData.eventId());
-
-                            joiningData = unmarshalZip(rtState.zkClient.getData(path));
+                            joiningData = unmarshalJoinData(evtData0.nodeId, evtData0.joinDataPrefixId);
 
                             DiscoveryDataBag dataBag = new DiscoveryDataBag(evtData0.nodeId);
 
@@ -1846,14 +1971,26 @@ public class ZookeeperDiscoveryImpl {
         if (log.isDebugEnabled())
             log.debug("All nodes processed node join [evtData=" + evtData + ']');
 
-        String evtDataPath = zkPaths.joinEventDataPath(evtData.eventId());
+        deleteJoiningNodeData(evtData.nodeId, evtData.joinDataPrefixId, evtData.joinDataPartCnt);
+
         String dataForJoinedPath = zkPaths.joinEventDataPathForJoined(evtData.eventId());
 
         if (log.isDebugEnabled())
-            log.debug("Delete processed event data [path1=" + evtDataPath + ", path2=" + dataForJoinedPath + ']');
+            log.debug("Delete data for joined node [path=" + dataForJoinedPath + ']');
+
+        rtState.zkClient.deleteIfExistsAsync(dataForJoinedPath);
+    }
+
+    private void deleteJoiningNodeData(UUID nodeId, UUID joinDataPrefixId, int partCnt) throws Exception {
+        String evtDataPath = zkPaths.joiningNodeDataPath(nodeId, joinDataPrefixId);
+
+        if (log.isDebugEnabled())
+            log.debug("Delete joining node data [path=" + evtDataPath + ']');
 
         rtState.zkClient.deleteIfExistsAsync(evtDataPath);
-        rtState.zkClient.deleteIfExistsAsync(dataForJoinedPath);
+
+        if (partCnt > 1)
+            deleteMultiplePartsAsync(rtState.zkClient, evtDataPath + ":", partCnt);
     }
 
     /**

@@ -151,14 +151,8 @@ class ZkIgnitePaths {
         return clusterDir + "/" + path;
     }
 
-    String joiningNodeDataPath(UUID nodeId, String aliveNodePath) {
-        int joinSeq = ZkIgnitePaths.aliveJoinDataSequence(aliveNodePath);
-
-        return joinDataDir + '/' +
-            ZkIgnitePaths.aliveNodePrefixId(aliveNodePath) + ":" +
-            nodeId.toString() +
-            "|" +
-            String.format("%010d", joinSeq);
+    String joiningNodeDataPath(UUID nodeId, UUID prefixId) {
+        return joinDataDir + '/' + prefixId + ":" + nodeId.toString();
     }
 
     /**
@@ -175,8 +169,8 @@ class ZkIgnitePaths {
      * @param path Alive node zk path.
      * @return Node ID.
      */
-    static String aliveNodePrefixId(String path) {
-        return path.substring(0, ZkIgnitePaths.UUID_LEN);
+    static UUID aliveNodePrefixId(String path) {
+        return UUID.fromString(path.substring(0, ZkIgnitePaths.UUID_LEN));
     }
 
     /**
@@ -184,23 +178,12 @@ class ZkIgnitePaths {
      * @return Node ID.
      */
     static UUID aliveNodeId(String path) {
-        // <uuid prefix>:<node id>|<join data seq>|<alive seq>
+        // <uuid prefix>:<node id>|<alive seq>
         int startIdx = ZkIgnitePaths.UUID_LEN + 1;
 
         String idStr = path.substring(startIdx, startIdx + ZkIgnitePaths.UUID_LEN);
 
         return UUID.fromString(idStr);
-    }
-
-    /**
-     * @param path Alive node zk path.
-     * @return Joined node sequence.
-     */
-    private static int aliveJoinDataSequence(String path) {
-        int idx2 = path.lastIndexOf('|');
-        int idx1 = path.lastIndexOf('|', idx2 - 1);
-
-        return Integer.parseInt(path.substring(idx1 + 1, idx2));
     }
 
     /**
@@ -230,18 +213,14 @@ class ZkIgnitePaths {
      * @param evtId Event ID.
      * @return Event zk path.
      */
-    String joinEventDataPath(long evtId) {
-        return evtsPath + "/" + evtId;
-    }
-
-    /**
-     * @param evtId Event ID.
-     * @return Event zk path.
-     */
     String joinEventDataPathForJoined(long evtId) {
         return evtsPath + "/joined-" + evtId;
     }
 
+    /**
+     * @param evtId Event ID.
+     * @return Path for custom event ack.
+     */
     String ackEventDataPath(long evtId) {
         return customEventDataPath(true, String.valueOf(evtId));
     }

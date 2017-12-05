@@ -54,36 +54,34 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testSaveLargeValue() throws Exception {
-//        startZK(1);
-//
-//        final ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, null);
-//
-//        ZooKeeper zk = client.zk();
-//
-//        int s = 1048526 + 1;
-//        // 1048517 11 1048528
-//        // 1048519 9 1048528
-//        // 1048520 8 1048528
-//
-//        String path = "/aaaaaaa";
-//
-//        while (true) {
-//            try {
-//                zk.create(path, new byte[s], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-//
-//                info("Created: " + s + " " + path.length() + " " + (s + path.length()));
-//
-//                break;
-//            }
-//            catch (KeeperException.ConnectionLossException e) {
-//                s -= 1;
-//            }
-//        }
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSaveLargeValue() throws Exception {
+        startZK(1);
+
+        final ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, null);
+
+        byte[] data = new byte[1024 * 1024];
+
+        String basePath = "/ignite";
+
+        assertTrue(client.needSplitNodeData(basePath, data, 2));
+
+        List<byte[]> parts = client.splitNodeData(basePath, data, 2);
+
+        ZooKeeper zk = client.zk();
+
+        for (int i = 0; i < parts.size(); i++) {
+            byte[] part = parts.get(i);
+
+            assertTrue(part.length > 0);
+
+            String path0 = basePath + ":" + 1;
+
+            zk.create(path0, part, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        }
+    }
 
     /**
      * @throws Exception If failed.
