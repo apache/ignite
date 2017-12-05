@@ -1762,6 +1762,35 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Checks if the indexed columns are equal in both rows.
+     * @param cctx Cache context.
+     * @param newRow New row.
+     * @param prevRow Previous row.
+     * @return {@code true} if indexed columns are equal.
+     */
+    public boolean checkIndexedColumnsEquality(GridCacheContext cctx, CacheDataRow newRow,
+        @Nullable CacheDataRow prevRow) throws IgniteCheckedException {
+        assert cctx != null;
+        assert newRow != null;
+        assert prevRow == null || newRow.key().equals(prevRow.key());
+
+        if (prevRow == null)
+            return false;
+
+        String cacheName = cctx.name();
+
+        CacheObjectContext coctx = cctx.cacheObjectContext();
+
+        QueryTypeDescriptorImpl newDesc = typeByValue(cacheName, coctx, newRow.key(), newRow.value(), true);
+        QueryTypeDescriptorImpl prevDesc = typeByValue(cacheName, coctx, prevRow.key(), prevRow.value(), true);
+
+        if (newDesc != prevDesc)
+            return false;
+
+        return getIndexing().checkIndexedColumnsEquality(cctx, newDesc, newRow, prevRow);
+    }
+
+    /**
      * @param cacheName Cache name.
      * @param coctx Cache context.
      * @param key Key.

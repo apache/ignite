@@ -573,6 +573,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override  public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
+    }
+
     /**
      *
      */

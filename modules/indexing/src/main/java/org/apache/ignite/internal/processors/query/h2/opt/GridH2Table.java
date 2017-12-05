@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -767,6 +768,18 @@ public class GridH2Table extends TableBase {
         idxs.add(this.idxs.get(1));
 
         return idxs;
+    }
+
+    /**
+     * Returns only user indexes: without scan, hash and pk.
+     *
+     * @return User indexes.
+     */
+    public List<Index> getUserIndexes() {
+        if (rebuildFromHashInProgress)
+            return null; // Can't check now
+
+        return Collections.unmodifiableList(idxs.subList(sysIdxsCnt, idxs.size()));
     }
 
     /** {@inheritDoc} */

@@ -386,6 +386,10 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
             this.key = (TestCacheObject)key;
         }
 
+        @Override public void cacheId(int cacheId) {
+            throw new UnsupportedOperationException();
+        }
+
         /** {@inheritDoc} */
         @Override public CacheObject value() {
             return val;

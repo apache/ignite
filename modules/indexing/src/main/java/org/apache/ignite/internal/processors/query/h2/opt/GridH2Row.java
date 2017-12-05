@@ -78,11 +78,16 @@ public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheD
 
     /** {@inheritDoc} */
     @Override public int hash() {
-        throw new UnsupportedOperationException();
+        return row.hash();
     }
 
     /** {@inheritDoc} */
     @Override public int cacheId() {
         return row.cacheId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cacheId(int cacheId) {
+        row.cacheId(cacheId);
     }
 }

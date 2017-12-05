@@ -1162,9 +1162,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @return {@code True} if it is possible to update old row data.
          * @throws IgniteCheckedException If failed.
          */
-        private boolean canUpdateOldRow(GridCacheContext cctx, @Nullable CacheDataRow oldRow, DataRow dataRow)
+        private boolean canUpdateOldRow(GridCacheContext cctx, @Nullable CacheDataRow oldRow, CacheDataRow dataRow)
             throws IgniteCheckedException {
-            if (oldRow == null || cctx.queries().enabled())
+            if (oldRow == null)
                 return false;
 
             if (oldRow.expireTime() != dataRow.expireTime())
@@ -1180,7 +1180,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             int newLen = FreeListImpl.getRowSize(dataRow, sizeWithCacheId);
 
-            return oldLen == newLen;
+            if (oldLen != newLen)
+                return false;
+
+            if (cctx.queries().enabled())
+                return cctx.kernalContext().query().checkIndexedColumnsEquality(cctx, dataRow, oldRow);
+            else
+                return true;
         }
 
         /** {@inheritDoc} */
@@ -1275,7 +1281,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert oldRow == null || oldRow.cacheId() == cacheId : oldRow;
 
-                DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
+                CacheDataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 

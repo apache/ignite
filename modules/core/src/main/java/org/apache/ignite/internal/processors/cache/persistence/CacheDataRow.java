@@ -54,4 +54,9 @@ public interface CacheDataRow extends CacheSearchRow {
      * @param key Key.
      */
     public void key(KeyCacheObject key);
+
+    /**
+     * @param cacheId Cache ID.
+     */
+    public void cacheId(int cacheId);
 }

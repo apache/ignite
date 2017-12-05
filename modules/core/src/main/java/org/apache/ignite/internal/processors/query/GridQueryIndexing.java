@@ -310,4 +310,17 @@ public interface GridQueryIndexing {
      * @return {@code True} if insert.
      */
     public boolean isInsertStatement(PreparedStatement nativeStmt);
+
+    /**
+     * Checks if the indexed columns are equal in both rows.
+     *
+     * @param cctx Cache context.
+     * @param newRowType Rows type.
+     * @param newRow New row.
+     * @param prevRow Previous row.
+     * @return {@code true} if the indexed columns are equal in both rows
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean checkIndexedColumnsEquality(GridCacheContext cctx, GridQueryTypeDescriptor newRowType,
+        CacheDataRow newRow, @Nullable CacheDataRow prevRow) throws IgniteCheckedException;
 }

@@ -38,6 +38,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -100,6 +101,7 @@ import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -149,9 +151,11 @@ import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.server.web.WebServer;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
+import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -1988,6 +1992,65 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
 
         return prep instanceof Insert;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean checkIndexedColumnsEquality(GridCacheContext cctx, GridQueryTypeDescriptor rowType,
+        CacheDataRow newRow,  @Nullable CacheDataRow prevRow)
+        throws IgniteCheckedException {
+        assert rowType != null;
+        assert newRow != null;
+        assert newRow.key().equals(prevRow.key());
+
+        if (prevRow == null)
+            return false;
+
+        String cacheName = cctx.name();
+
+        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), cacheName, rowType.name());
+
+        if (tbl == null)
+            return false;
+
+        GridH2RowDescriptor rowDesc = tbl.table().rowDescriptor();
+
+        GridH2KeyValueRowOnheap newRow0 = (GridH2KeyValueRowOnheap)rowDesc.createRow(newRow);
+        GridH2KeyValueRowOnheap prevRow0 = (GridH2KeyValueRowOnheap)rowDesc.createRow(prevRow);
+
+        try {
+            newRow0.prepareValuesCache();
+            prevRow0.prepareValuesCache();
+
+            List<Index> idxs = tbl.table().getUserIndexes();
+
+            if (idxs == null)
+                return false;
+
+            Set<Column> idxCols = new HashSet<>();
+
+            for (Index idx : idxs) {
+                Column[] cols = idx.getColumns();
+
+                idxCols.addAll(Arrays.asList(cols));
+            }
+
+            if (idxs.isEmpty())
+                return true; // There are no user indexes to update.
+
+            for (Column col : idxCols) {
+                Value newColVal = newRow0.getValue(col.getColumnId());
+                Value prevColVal = prevRow0.getValue(col.getColumnId());
+
+                if (newColVal == null || prevColVal == null || !newColVal.equals(prevColVal))
+                    return false;
+            }
+
+            return true;
+        }
+        finally {
+            newRow0.clearValuesCache();
+            prevRow0.clearValuesCache();
+        }
     }
 
     /**

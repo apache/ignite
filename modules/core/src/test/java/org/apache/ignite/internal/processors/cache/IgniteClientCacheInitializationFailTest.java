@@ -369,5 +369,10 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         @Override public boolean isInsertStatement(PreparedStatement nativeStmt) {
             return false;
         }
+
+        @Override public boolean checkIndexedColumnsEquality(GridCacheContext cctx, GridQueryTypeDescriptor newRowType,
+            CacheDataRow newRow, @Nullable CacheDataRow prevRow) {
+            return false;
+        }
     }
 }

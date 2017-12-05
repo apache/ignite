@@ -822,6 +822,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public int cacheId() {
             return entry.cacheId();
         }
+
+        /** {@inheritDoc} */
+        @Override public void cacheId(int cacheId) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     /**
