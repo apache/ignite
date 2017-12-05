@@ -94,6 +94,7 @@ import org.h2.schema.Schema;
 import org.h2.table.Column;
 import org.h2.table.FunctionTable;
 import org.h2.table.IndexColumn;
+import org.h2.table.MetaTable;
 import org.h2.table.RangeTable;
 import org.h2.table.Table;
 import org.h2.table.TableBase;
@@ -620,6 +621,8 @@ public class GridSqlQueryParser {
                 res.addChild(parseExpression(RANGE_MIN.get((RangeTable)tbl), false));
                 res.addChild(parseExpression(RANGE_MAX.get((RangeTable)tbl), false));
             }
+            else if (tbl instanceof MetaTable)
+                res = new GridSqlTable(tbl);
             else
                 assert0(false, "Unexpected Table implementation [cls=" + tbl.getClass().getSimpleName() + ']');
 
@@ -1590,8 +1593,12 @@ public class GridSqlQueryParser {
             if (o instanceof GridSqlAlias)
                 o = GridSqlAlias.unwrap((GridSqlAst)o);
 
-            if (o instanceof GridSqlTable)
-                res.add(((GridSqlTable)o).dataTable());
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null)
+                    res.add(tbl);
+            }
         }
 
         return (allTables = Collections.unmodifiableSet(res));
