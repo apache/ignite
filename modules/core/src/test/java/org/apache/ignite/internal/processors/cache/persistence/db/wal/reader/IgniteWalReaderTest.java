@@ -119,8 +119,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Clear properties in afterTest() method. */
     private boolean clearProperties;
 
-    /** */
-    private boolean overrideArchiveAndWal;
+    /** Set WAL and Archive path to same value */
+    private boolean setWalAndArchiveToSameValue;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -137,7 +137,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cfg.setIncludeEventTypes(EventType.EVT_WAL_SEGMENT_ARCHIVED);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(1024 * 1024 * 1024).setPersistenceEnabled(true))
             .setPageSize(PAGE_SIZE)
@@ -147,20 +147,20 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             .setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND);
 
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
-            memCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
+            dsCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
 
-        if(overrideArchiveAndWal) {
+        if(setWalAndArchiveToSameValue) {
             final String workDir = U.defaultWorkDirectory();
             final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
             final File wal = new File(db, "wal");
+            final String walAbsPath = wal.getAbsolutePath();
 
-            final String walAbsolutePath = wal.getAbsolutePath();
-            memCfg.setWalPath(walAbsolutePath);
+            dsCfg.setWalPath(walAbsPath);
 
-            memCfg.setWalArchivePath(walAbsolutePath);
+            dsCfg.setWalArchivePath(walAbsPath);
         }
 
-        cfg.setDataStorageConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
     }
@@ -191,7 +191,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFillWalAndReadRecords() throws Exception {
-        overrideArchiveAndWal = true;
+        setWalAndArchiveToSameValue = true;
         final int cacheObjectsToWrite = 10000;
 
         final Ignite ignite0 = startGrid("node0");
@@ -205,14 +205,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         stopGrid("node0");
 
-        final Ignite ignite1 = startGrid("node0");
-        ignite1.active(true);
-        stopGrid("node0");
-
         final String workDir = U.defaultWorkDirectory();
         final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         final File wal = new File(db, "wal");
-        final File walArchive = overrideArchiveAndWal ? wal : new File(wal, "archive");
+        final File walArchive = setWalAndArchiveToSameValue ? wal : new File(wal, "archive");
 
         final MockWalIteratorFactory mockItFactory = new MockWalIteratorFactory(log, PAGE_SIZE, consistentId, subfolderName, WAL_SEGMENTS);
         final WALIterator it = mockItFactory.iterator(wal, walArchive);

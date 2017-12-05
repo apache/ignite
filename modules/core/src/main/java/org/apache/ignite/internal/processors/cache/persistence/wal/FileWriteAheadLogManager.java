@@ -319,7 +319,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             walArchiveDir = initDirectory(
                 dsCfg.getWalArchivePath(),
-                DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
+                DataStorageConfiguration.DFLT_WAL_PATH, //todo switch back to compatible mode: DFLT_WAL_ARCHIVE_PATH
                 resolveFolders.folderName(),
                 "write ahead log archive directory"
             );
@@ -359,6 +359,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** */
     private boolean isArchiverEnabled() {
+        if (walArchiveDir != null && walWorkDir != null)
+            return !walArchiveDir.equals(walWorkDir);
+
         return !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
     }
 
@@ -1839,7 +1842,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (checkFile.isDirectory())
                     throw new IgniteCheckedException("Failed to initialize WAL log segment (a directory with " +
                         "the same name already exists): " + checkFile.getAbsolutePath());
-                else if (checkFile.length() != dsCfg.getWalSegmentSize() && mode == WALMode.DEFAULT)
+                else if (isArchiverEnabled() && checkFile.length() != dsCfg.getWalSegmentSize() && mode == WALMode.DEFAULT)
                     throw new IgniteCheckedException("Failed to initialize WAL log segment " +
                         "(WAL segment size change is not supported):" + checkFile.getAbsolutePath());
             }

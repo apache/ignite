@@ -194,7 +194,7 @@ public class DataStorageConfiguration implements Serializable {
     private String walPath = DFLT_WAL_PATH;
 
     /** WAL archive path. */
-    private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
+    private String walArchivePath = DFLT_WAL_PATH; // todo compatibility mode with old releases: DFLT_WAL_ARCHIVE_PATH
 
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
