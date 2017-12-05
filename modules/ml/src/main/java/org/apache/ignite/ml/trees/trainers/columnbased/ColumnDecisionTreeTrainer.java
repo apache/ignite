@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,12 +38,12 @@ import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.math.Vector;
@@ -115,6 +116,9 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
     /** Ignite instance. */
     private final Ignite ignite;
 
+    /** Logger */
+    private final IgniteLogger log;
+
     /**
      * Construct {@link ColumnDecisionTreeTrainer}.
      *
@@ -135,6 +139,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
         this.categoricalCalculatorProvider = categoricalCalculatorProvider;
         this.regCalc = regCalc;
         this.ignite = ignite;
+        this.log = ignite.log();
     }
 
     /**
@@ -329,7 +334,8 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
                 regsCnt++;
 
-                X.println(">>> Globally best: " + best.info + " idx time: " + findBestRegIdx + ", calculate best: " + findBestSplit + " fi: " + best.featureIdx + ", regs: " + regsCnt);
+                if (log.isDebugEnabled())
+                    log.debug("Globally best: " + best.info + " idx time: " + findBestRegIdx + ", calculate best: " + findBestSplit + " fi: " + best.featureIdx + ", regs: " + regsCnt);
                 // Request bitset for split region.
                 int ind = best.info.regionIndex();
 
@@ -361,8 +367,10 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
                 if (d > curDepth) {
                     curDepth = d;
-                    X.println(">>> Depth: " + curDepth);
-                    X.println(">>> Cache size: " + prjsCache.size(CachePeekMode.PRIMARY));
+                    if (log.isDebugEnabled()) {
+                        log.debug("Depth: " + curDepth);
+                        log.debug("Cache size: " + prjsCache.size(CachePeekMode.PRIMARY));
+                    }
                 }
 
                 before = System.currentTimeMillis();
@@ -415,16 +423,19 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                     },
                     bestRegsKeys);
 
-                X.println(">>> Update of projs cache took " + (System.currentTimeMillis() - before));
+                if (log.isDebugEnabled())
+                    log.debug("Update of projections cache time: " + (System.currentTimeMillis() - before));
 
                 before = System.currentTimeMillis();
 
                 updateSplitCache(ind, rc, featuresCnt, ig -> i -> input.affinityKey(i, ig), uuid);
 
-                X.println(">>> Update of split cache took " + (System.currentTimeMillis() - before));
+                if (log.isDebugEnabled())
+                    log.debug("Update of split cache time: " + (System.currentTimeMillis() - before));
             }
             else {
-                X.println(">>> Best feature index: " + bestFeatureIdx + ", best infoGain " + bestInfoGain);
+                if (log.isDebugEnabled())
+                    log.debug("Best split [bestFeatureIdx=" + bestFeatureIdx + ", bestInfoGain=" + bestInfoGain + "]");
                 break;
             }
         }
@@ -541,15 +552,15 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                 double[] values = ctx.values(fIdx, ign);
                 double[] labels = ctx.labels();
 
-                IgniteBiTuple<Integer, Double> max = toCompare.entrySet().stream().
+                Optional<IgniteBiTuple<Integer, Double>> max = toCompare.entrySet().stream().
                     map(ent -> {
                         SplitInfo bestSplit = ctx.featureProcessor(fIdx).findBestSplit(ent.getValue(), values, labels, ent.getKey());
                         return new IgniteBiTuple<>(ent.getKey(), bestSplit != null ? bestSplit.infoGain() : Double.NEGATIVE_INFINITY);
                     }).
-                    max(Comparator.comparingDouble(IgniteBiTuple::get2)).
-                    get();
+                    max(Comparator.comparingDouble(IgniteBiTuple::get2));
 
-                return Stream.of(new CacheEntryImpl<>(e.getKey(), max));
+                return max.<Stream<Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>>>>
+                    map(objects -> Stream.of(new CacheEntryImpl<>(e.getKey(), objects))).orElseGet(Stream::empty);
             },
             () -> IntStream.range(0, featuresCnt).mapToObj(fIdx -> SplitCache.key(fIdx, affinity.apply(ignite).apply(fIdx), trainingUUID)).collect(Collectors.toSet())
         );

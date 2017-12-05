@@ -181,7 +181,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             }
         }
 
-        if (e instanceof IgniteTxOptimisticCheckedException || e instanceof IgniteTxTimeoutCheckedException) {
+        if (e instanceof IgniteTxOptimisticCheckedException) {
             if (m != null)
                 tx.removeMapping(m.primary().id());
         }

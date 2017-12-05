@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -58,9 +57,10 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -149,6 +149,9 @@ public class CacheGroupContext {
     /** */
     private boolean mvccEnabled;
 
+    /** MXBean. */
+    private CacheGroupMetricsMXBean mxBean;
+
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -199,6 +202,8 @@ public class CacheGroupContext {
         log = ctx.kernalContext().log(getClass());
 
         caches = new ArrayList<>();
+
+        mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
         mvccEnabled = mvccEnabled(ctx.gridConfig(), ccfg, cacheType);
     }
@@ -1001,6 +1006,13 @@ public class CacheGroupContext {
             top.onReconnected();
 
         preldr.onReconnected();
+    }
+
+    /**
+     * @return MXBean.
+     */
+    public CacheGroupMetricsMXBean mxBean() {
+        return mxBean;
     }
 
     /** {@inheritDoc} */

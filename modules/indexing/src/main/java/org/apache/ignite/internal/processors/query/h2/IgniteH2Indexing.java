@@ -1278,8 +1278,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         // TODO IGNITE-6888
-        if (cctx == null)
+        if (!mvccEnabled)
             return null;
+
+        assert cctx != null;
 
         final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 

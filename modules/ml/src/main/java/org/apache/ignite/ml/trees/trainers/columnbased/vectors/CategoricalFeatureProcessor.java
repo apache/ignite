@@ -34,12 +34,13 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trees.CategoricalRegionInfo;
 import org.apache.ignite.ml.trees.CategoricalSplitInfo;
 import org.apache.ignite.ml.trees.RegionInfo;
+import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
 import org.apache.ignite.ml.trees.trainers.columnbased.RegionProjection;
 
 import static org.apache.ignite.ml.trees.trainers.columnbased.vectors.FeatureVectorProcessorUtils.splitByBitSet;
 
 /**
- * Categorical feature vector processor implementation used by {@see ColumnDecisionTreeTrainer}.
+ * Categorical feature vector processor implementation used by {@link ColumnDecisionTreeTrainer}.
  */
 public class CategoricalFeatureProcessor
     implements FeatureProcessor<CategoricalRegionInfo, CategoricalSplitInfo<CategoricalRegionInfo>> {
