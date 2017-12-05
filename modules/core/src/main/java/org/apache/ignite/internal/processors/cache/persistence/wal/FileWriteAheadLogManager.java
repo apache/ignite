@@ -357,7 +357,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
-    /** */
+    /**
+     * Archiver can be not created, all files will be written to WAL folder, using absolute segment index.
+     *
+     * @return flag indicating if archiver is disabled.
+     */
     private boolean isArchiverEnabled() {
         if (walArchiveDir != null && walWorkDir != null)
             return !walArchiveDir.equals(walWorkDir);
@@ -1117,11 +1121,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws IgniteCheckedException If failed.
      */
     private File pollNextFile(long curIdx) throws IgniteCheckedException {
-        if (archiver == null) {
-            long segmentIdx = curIdx + 1;
-
-            return new File(walWorkDir, FileDescriptor.fileName(segmentIdx));
-        }
+        if (archiver == null)
+            return new File(walWorkDir, FileDescriptor.fileName(curIdx + 1));
 
         // Signal to archiver that we are done with the segment and it can be archived.
         long absNextIdx = archiver.nextAbsoluteSegmentIndex(curIdx);
