@@ -47,11 +47,13 @@ import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalL
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -977,7 +979,15 @@ public class ZookeeperDiscoveryImpl {
             U.error(log, "Failed to include node in cluster, node with the same ID already exists [joiningNode=" + node +
                 ", existingNode=" + node0 + ']');
 
-            return "Node with the same ID already exists";
+            return "Node with the same ID already exists: " + node0;
+        }
+
+        IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
+
+        if (err != null) {
+            LT.warn(log, err.message());
+
+            return err.sendMessage();
         }
 
         return null;
