@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
