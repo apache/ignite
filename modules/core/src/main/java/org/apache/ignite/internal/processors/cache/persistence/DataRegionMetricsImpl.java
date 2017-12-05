@@ -105,6 +105,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         return metricsEnabled ? totalAllocatedPages.longValue() : 0;
     }
 
+    /** {@inheritDoc} */
     @Override public long getIndexesAllocatedPages() {
         return metricsEnabled ? indexesAllocatedPages.longValue() : 0;
     }
