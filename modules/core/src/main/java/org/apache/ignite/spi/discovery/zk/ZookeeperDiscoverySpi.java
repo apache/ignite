@@ -203,10 +203,13 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                     Integer commPort = (Integer)locNodeAttrs.get(
                         TcpCommunicationSpi.class.getSimpleName() + "." + TcpCommunicationSpi.ATTR_PORT);
 
-                    if (commPort == null)
-                        throw new IgniteSpiException("Can not initialized consistent ID.");
+                    if (commPort == null) {
+                        U.warn(log, "Can not initialize default consistentId, TcpCommunicationSpi port is not initialized.");
 
-                    consistentId = U.consistentId(sortedAddrs, (Integer)commPort);
+                        consistentId = ignite.configuration().getNodeId();
+                    }
+                    else
+                        consistentId = U.consistentId(sortedAddrs, commPort);
                 }
             }
         }
