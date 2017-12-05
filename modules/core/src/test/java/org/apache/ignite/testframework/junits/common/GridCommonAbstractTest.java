@@ -60,8 +60,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -85,6 +85,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
+import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -106,7 +109,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -766,6 +768,25 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         log.info("awaitPartitionMapExchange finished");
+    }
+
+    /**
+     * Compares checksums between primary and backup partitions of specified caches.
+     * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
+     * concurrently updated.
+     *
+     * @param ig Ignite instance.
+     * @param cacheNames Cache names (if null, all user caches will be verified).
+     * @throws IgniteCheckedException If checksum conflict has been found.
+     */
+    protected void verifyBackupPartitions(Ignite ig, Set<String> cacheNames) throws IgniteCheckedException {
+        Map<PartitionKey, List<PartitionHashRecord>> conflicts = ig.compute().execute(
+            new VerifyBackupPartitionsTask(), cacheNames);
+
+        if (!conflicts.isEmpty()) {
+            throw new IgniteCheckedException("Partition checksums are different for backups " +
+                "of the following partitions: " + conflicts.keySet());
+        }
     }
 
     /**

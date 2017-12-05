@@ -2048,7 +2048,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * @return Consistent ID.
-     * @deprecated Use PdsConsistentIdProcessor to get actual consistent ID
+     * @deprecated Use {@link ClusterNode#consistentId()} of local node to get actual consistent ID.
      */
     @Deprecated
     public Serializable consistentId() {
