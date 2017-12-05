@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+import browserUpdate from 'browser-update';
+import './style.scss';
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-
-/**
- *
- */
-public class GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest
-    extends GridCachePartitionedQueueCreateMultiNodeSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
-        return ATOMIC;
-    }
-}
+browserUpdate({
+    notify: {
+        i: 10,
+        f: '-18m',
+        s: 9,
+        c: '-18m',
+        o: '-18m',
+        e: '-6m'
+    },
+    l: 'en',
+    mobile: false,
+    api: 5,
+    reminder: 0
+});

@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+@import "./../primitives/btn/index.scss";
 
-import org.apache.ignite.cache.CacheAtomicityMode;
+#buorg.buorg {
+    background-color: $brand-warning;
+    line-height: 16px;
+    font-family: Roboto, sans-serif;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+    a {
+        @extend .btn-ignite;
 
-/**
- *
- */
-public class GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest
-    extends GridCachePartitionedQueueCreateMultiNodeSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
-        return ATOMIC;
+        &#buorgul {
+            @extend .btn-ignite--success;
+        }
+
+        &#buorgig {
+            @extend .btn-ignite--primary;
+        }
     }
 }
