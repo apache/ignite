@@ -2291,12 +2291,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     break;
                                 }
                                 catch (IgniteFutureTimeoutCheckedException ignored) {
-                                    U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
-                                        "topVer=" + exchFut.initialVersion() +
-                                        ", node=" + cctx.localNodeId() + "]. " +
-                                        "Dumping pending objects that might be the cause: ");
-
                                     if (nextDumpTime <= U.currentTimeMillis()) {
+                                        U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
+                                                "topVer=" + exchFut.initialVersion() +
+                                                ", node=" + cctx.localNodeId() + "]. " +
+                                                "Dumping pending objects that might be the cause: ");
                                         try {
                                             dumpDebugInfo(exchFut);
                                         }
