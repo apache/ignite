@@ -4185,6 +4185,22 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         @Deprecated
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
+            try {
+                nextMux.lockInterruptibly();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+            try {
+                processNodeAddedMessage0(msg);
+            }
+            finally {
+                nextMux.unlock();
+            }
+        }
+
+        /** */
+        private void processNodeAddedMessage0(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
             TcpDiscoveryNode node = msg.node();
@@ -4350,18 +4366,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg.client())
                     node.clientAliveTime(spi.clientFailureDetectionTimeout());
 
-                boolean topChanged;
+                boolean topChanged = ring.add(node);
 
-                try {
-                    nextMux.lockInterruptibly();
-                }
-                catch (InterruptedException e) {
-                    throw new IgniteInterruptedException(e);
-                }
-                try {
-                    topChanged = ring.add(node);
+                if (topChanged) {
+                    processMessageFailedNodes(msg);
 
-                    if (topChanged && !node.isClient()) {
+                    if (!node.isClient()) {
                         if (coord) {
                             synchronized (mux) {
                                 lastPrevNodeTime = 0;
@@ -4373,9 +4383,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else if (node.equals(ring.nextNode()))
                             lastNextNodeTime = 0;
                     }
-                }
-                finally {
-                    nextMux.unlock();
                 }
 
                 if (topChanged) {
@@ -4480,6 +4487,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // Restore topology with all nodes visible.
                             ring.restoreTopology(top, node.internalOrder());
+
+                            processMessageFailedNodes(msg);
 
                             if (log.isDebugEnabled())
                                 log.debug("Restored topology from node added message: " + ring);

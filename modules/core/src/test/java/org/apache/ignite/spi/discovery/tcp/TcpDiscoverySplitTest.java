@@ -57,7 +57,7 @@ public class TcpDiscoverySplitTest extends IgniteCacheTopologySplitAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 120_000L;
+        return 180_000L;
     }
 
     /** {@inheritDoc} */
