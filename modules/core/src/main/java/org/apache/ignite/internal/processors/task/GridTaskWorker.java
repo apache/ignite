@@ -1380,6 +1380,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         ses.getStartTime(),
                         timeout,
                         ses.getTopology(),
+                        loc ? ses.getTopologyPredicate() : null,
+                        loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
                         loc ? null : U.marshal(marsh, ses.getJobSiblings()),
                         loc ? ses.getJobSiblings() : null,
                         loc ? null : U.marshal(marsh, sesAttrs),
