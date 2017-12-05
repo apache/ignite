@@ -476,7 +476,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             if (existing != null) {
                 // Must keep NOOP operation if received READ because it means that the lock was sent to a backup node.
                 if (e.op() == READ) {
-                    if (existing.op() != NOOP)
+//                    if (existing.op() != NOOP)
                         existing.op(e.op());
                 }
                 else
