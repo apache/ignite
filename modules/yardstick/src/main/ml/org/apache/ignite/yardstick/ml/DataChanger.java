@@ -17,11 +17,13 @@
 
 package org.apache.ignite.yardstick.ml;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 
 /**
- * Helps mutating data between benchmark invocations.
- * IMPL NOTE introduced per review comments of IGNITE-6123.
+ * Helps to ensure use of meaningfully different data in repeated invocations of benchmarked code in
+ * {@link IgniteAbstractBenchmark#test(Map)} method.
  */
 class DataChanger {
     /** */
