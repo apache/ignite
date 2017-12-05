@@ -809,56 +809,63 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         boolean created = false;
 
-        lock.writeLock().lock();
+        ctx.database().checkpointReadLock();
 
         try {
-            loc = locParts.get(p);
+            lock.writeLock().lock();
 
-            state = loc != null ? loc.state() : null;
+            try {
+                loc = locParts.get(p);
 
-            boolean belongs = partitionLocalNode(p, topVer);
+                state = loc != null ? loc.state() : null;
 
-            if (loc != null && state == EVICTED) {
-                try {
-                    loc.rent(false).get();
+                boolean belongs = partitionLocalNode(p, topVer);
+
+                if (loc != null && state == EVICTED) {
+                    try {
+                        loc.rent(false).get();
+                    }
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteException(ex);
+                    }
+
+                    locParts.set(p, loc = null);
+
+                    if (!belongs) {
+                        throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
+                            "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
+                            "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.readyTopVer + ']');
+                    }
                 }
-                catch (IgniteCheckedException ex) {
-                    throw new IgniteException(ex);
+                else if (loc != null && state == RENTING && !showRenting) {
+                    throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently " +
+                        "evicted [part=" + p + ", shouldBeMoving=" + loc.reload() + ", belongs=" + belongs +
+                        ", topVer=" + topVer + ", curTopVer=" + this.readyTopVer + "]");
                 }
 
-                locParts.set(p, loc = null);
+                if (loc == null) {
+                    if (!belongs)
+                        throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
+                            "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
+                            "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.readyTopVer + ']');
 
-                if (!belongs) {
-                    throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
-                        "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
-                        "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.readyTopVer + ']');
+                    locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
+
+                    if (updateSeq)
+                        this.updateSeq.incrementAndGet();
+
+                    created = true;
+
+                    if (log.isDebugEnabled())
+                        log.debug("Created local partition: " + loc);
                 }
             }
-            else if (loc != null && state == RENTING && !showRenting) {
-                throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently " +
-                    "evicted [part=" + p + ", shouldBeMoving=" + loc.reload() + ", belongs=" + belongs +
-                    ", topVer=" + topVer + ", curTopVer=" + this.readyTopVer + "]");
-            }
-
-            if (loc == null) {
-                if (!belongs)
-                    throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
-                        "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
-                        "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.readyTopVer + ']');
-
-                locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
-
-                if (updateSeq)
-                    this.updateSeq.incrementAndGet();
-
-                created = true;
-
-                if (log.isDebugEnabled())
-                    log.debug("Created local partition: " + loc);
+            finally {
+                lock.writeLock().unlock();
             }
         }
         finally {
-            lock.writeLock().unlock();
+            ctx.database().checkpointReadUnlock();
         }
 
         if (created && ctx.pageStore() != null) {
@@ -1878,35 +1885,42 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void resetLostPartitions(AffinityTopologyVersion resTopVer) {
-        lock.writeLock().lock();
+        ctx.database().checkpointReadLock();
 
         try {
-            long updSeq = updateSeq.incrementAndGet();
+            lock.writeLock().lock();
 
-            for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
-                    if (e0.getValue() != LOST)
-                        continue;
+            try {
+                long updSeq = updateSeq.incrementAndGet();
 
-                    e0.setValue(OWNING);
+                for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+                    for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
+                        if (e0.getValue() != LOST)
+                            continue;
 
-                    GridDhtLocalPartition locPart = localPartition(e0.getKey(), resTopVer, false);
+                        e0.setValue(OWNING);
 
-                    if (locPart != null && locPart.state() == LOST) {
-                        boolean marked = locPart.own();
+                        GridDhtLocalPartition locPart = localPartition(e0.getKey(), resTopVer, false);
 
-                        if (marked)
-                            updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
+                        if (locPart != null && locPart.state() == LOST) {
+                            boolean marked = locPart.own();
+
+                            if (marked)
+                                updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
+                        }
                     }
                 }
+
+                checkEvictions(updSeq, grp.affinity().readyAffinity(resTopVer));
+
+                grp.needsRecovery(false);
             }
-
-            checkEvictions(updSeq, grp.affinity().readyAffinity(resTopVer));
-
-            grp.needsRecovery(false);
+            finally {
+                lock.writeLock().unlock();
+            }
         }
         finally {
-            lock.writeLock().unlock();
+            ctx.database().checkpointReadUnlock();
         }
     }
 
@@ -1944,61 +1958,68 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq) {
         Set<UUID> result = haveHistory ? Collections.<UUID>emptySet() : new HashSet<UUID>();
 
-        lock.writeLock().lock();
+        ctx.database().checkpointReadLock();
 
         try {
-            GridDhtLocalPartition locPart = locParts.get(p);
+            lock.writeLock().lock();
 
-            if (locPart != null) {
-                if (locPart.state() == OWNING && !owners.contains(ctx.localNodeId())) {
-                    if (haveHistory)
-                        locPart.moving();
-                    else {
-                        locPart.rent(false);
+            try {
+                GridDhtLocalPartition locPart = locParts.get(p);
 
-                        locPart.reload(true);
+                if (locPart != null) {
+                    if (locPart.state() == OWNING && !owners.contains(ctx.localNodeId())) {
+                        if (haveHistory)
+                            locPart.moving();
+                        else {
+                            locPart.rent(false);
 
-                        result.add(ctx.localNodeId());
+                            locPart.reload(true);
+
+                            result.add(ctx.localNodeId());
+                        }
+
+                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                            "[nodeId=" + ctx.localNodeId() + ", cacheOrGroupName=" + grp.cacheOrGroupName() +
+                            ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
+
                     }
-
-                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                        "[nodeId=" + ctx.localNodeId() + ", cacheOrGroupName=" + grp.cacheOrGroupName() +
-                        ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
-
                 }
-            }
 
-            for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                GridDhtPartitionMap partMap = e.getValue();
+                for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+                    GridDhtPartitionMap partMap = e.getValue();
 
-                if (!partMap.containsKey(p))
-                    continue;
+                    if (!partMap.containsKey(p))
+                        continue;
 
-                if (partMap.get(p) == OWNING && !owners.contains(e.getKey())) {
-                    if (haveHistory)
-                        partMap.put(p, MOVING);
-                    else {
-                        partMap.put(p, RENTING);
+                    if (partMap.get(p) == OWNING && !owners.contains(e.getKey())) {
+                        if (haveHistory)
+                            partMap.put(p, MOVING);
+                        else {
+                            partMap.put(p, RENTING);
 
-                        result.add(e.getKey());
+                            result.add(e.getKey());
+                        }
+
+                        partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
+
+                        if (partMap.nodeId().equals(ctx.localNodeId()))
+                            this.updateSeq.setIfGreater(partMap.updateSequence());
+
+                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                            "[nodeId=" + e.getKey() + ", cacheOrGroupName=" + grp.cacheOrGroupName() +
+                            ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                     }
-
-                    partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
-
-                    if (partMap.nodeId().equals(ctx.localNodeId()))
-                        this.updateSeq.setIfGreater(partMap.updateSequence());
-
-                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                        "[nodeId=" + e.getKey() + ", cacheOrGroupName=" + grp.cacheOrGroupName() +
-                        ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
-            }
 
-            if (updateSeq)
-                node2part = new GridDhtPartitionFullMap(node2part, this.updateSeq.incrementAndGet());
+                if (updateSeq)
+                    node2part = new GridDhtPartitionFullMap(node2part, this.updateSeq.incrementAndGet());
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
         }
         finally {
-            lock.writeLock().unlock();
+            ctx.database().checkpointReadUnlock();
         }
 
         return result;
