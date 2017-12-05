@@ -19,8 +19,11 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -370,6 +373,40 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getTopologyVersion() {
         return cluster.ignite().cluster().topologyVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> attributeNames() {
+        Set<String> attrs = new HashSet<>();
+
+        for (ClusterNode node : cluster.nodes())
+            attrs.addAll(node.attributes().keySet());
+
+        return attrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> attributeValues(String attrName) {
+        Set<String> values = new HashSet<>();
+
+        for (ClusterNode node : cluster.nodes())
+            values.add(node.attribute(attrName));
+
+        return values;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<UUID> nodeIdsForAttribute(String attrName, String attrVal, boolean includeSrvs, boolean includeClients) {
+        Set<UUID> nodes = new HashSet<>();
+
+        for (ClusterNode node : nodesList(includeSrvs, includeClients)) {
+            Object val = node.attribute(attrName);
+
+            if (val != null && val.toString().equals(attrVal))
+                nodes.add(node.id());
+        }
+
+        return nodes;
     }
 
     /** {@inheritDoc} */
