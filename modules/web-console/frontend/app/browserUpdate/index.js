@@ -15,33 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.task;
+import browserUpdate from 'browser-update';
+import './style.scss';
 
-/**
- * Defines keys for thread-local context in task processor.
- */
-public enum GridTaskThreadContextKey {
-    /** Task name. */
-    TC_TASK_NAME,
-
-    /** No failover flag. */
-    TC_NO_FAILOVER,
-
-    /** Projection for the task. */
-    TC_SUBGRID,
-
-    /** Projection predicate for the task. */
-    TC_SUBGRID_PREDICATE,
-
-    /** Timeout in milliseconds associated with the task. */
-    TC_TIMEOUT,
-
-    /** Security subject ID. */
-    TC_SUBJ_ID,
-
-    /** IO manager policy. */
-    TC_IO_POLICY,
-
-    /** Skip authorization for the task. */
-    TC_SKIP_AUTH
-}
+browserUpdate({
+    notify: {
+        i: 10,
+        f: '-18m',
+        s: 9,
+        c: '-18m',
+        o: '-18m',
+        e: '-6m'
+    },
+    l: 'en',
+    mobile: false,
+    api: 5,
+    reminder: 0
+});
