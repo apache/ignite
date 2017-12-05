@@ -511,6 +511,11 @@ public class GridSqlQueryParser {
     private int parsingSubQryExpression;
 
     /**
+     * All tables encountered in this query.
+     */
+    private Set<GridH2Table> allTables;
+
+    /**
      * @param useOptimizedSubqry If we have to find correct order for table filters in FROM clause.
      *                           Relies on uniqueness of table filter aliases.
      */
@@ -1487,16 +1492,15 @@ public class GridSqlQueryParser {
 
     /**
      * Check if query may be run locally on all caches mentioned in the query.
-     * @param tbls Query tables.
      * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
      * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
      *     to run distributed query.
      * @see SqlFieldsQuery#isReplicatedOnly()
      */
-    public static boolean isLocalQuery(Collection<GridH2Table> tbls, boolean replicatedOnlyQry) {
+    public boolean isLocalQuery(boolean replicatedOnlyQry) {
         boolean hasCaches = false;
 
-        for (GridH2Table tbl : tbls) {
+        for (GridH2Table tbl : allTables()) {
             hasCaches = true;
 
             GridCacheContext cctx = tbl.cache();
@@ -1511,26 +1515,17 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * Get first (i.e. random, as we need any one) partitioned cache from given query
+     * Get first (i.e. random, as we need any one) partitioned cache from parsed query
      *     to determine expected query parallelism.
-     * @param p Query.
      * @return Context for the first of partitioned caches mentioned in the query,
      *     or {@code null} if it does not involve partitioned caches.
      */
-    public static GridCacheContext getFirstPartitionedCache(Prepared p) {
-        A.notNull(p, "p");
+    public GridCacheContext getFirstPartitionedCache() {
+        for (GridH2Table tbl : allTables()) {
+            GridCacheContext cctx = tbl.cache();
 
-        Query qry = query(p);
-
-        for (Table tbl : qry.getTables()) {
-            if (tbl instanceof GridH2Table) {
-                GridCacheContext cctx = ((GridH2Table)tbl).cache();
-
-                if (cctx.isPartitioned())
-                    return cctx;
-            }
-            else if (tbl instanceof TableView)
-                return getFirstPartitionedCache(TABLE_VIEW_QUERY.get((TableView)tbl));
+            if (cctx.isPartitioned())
+                return cctx;
         }
 
         return null;
@@ -1584,7 +1579,10 @@ public class GridSqlQueryParser {
     /**
      * @return Set of all tables encountered by this parser.
      */
-    public Set<GridH2Table> allTables() {
+    private Set<GridH2Table> allTables() {
+        if (allTables != null)
+            return allTables;
+
         Set<GridH2Table> res = Collections.newSetFromMap(new IdentityHashMap<GridH2Table, Boolean>());
 
         // check all involved caches
@@ -1596,7 +1594,7 @@ public class GridSqlQueryParser {
                 res.add(((GridSqlTable)o).dataTable());
         }
 
-        return Collections.unmodifiableSet(res);
+        return (allTables = Collections.unmodifiableSet(res));
     }
 
     /**
