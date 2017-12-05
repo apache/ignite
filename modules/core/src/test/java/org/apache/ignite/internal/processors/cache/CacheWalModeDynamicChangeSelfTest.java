@@ -42,10 +42,12 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -423,9 +425,13 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         }
 
         for (GridCacheSharedContext ctx : ctxs) {
-            Map futs = U.field(ctx.cache(), "walModeChangeFuts");
+            final Map futs = U.field(ctx.cache(), "walModeChangeFuts");
 
-            assertTrue(futs.isEmpty());
+            assertTrue(GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    return futs.isEmpty();
+                }
+            }, 1000));
         }
     }
 }
