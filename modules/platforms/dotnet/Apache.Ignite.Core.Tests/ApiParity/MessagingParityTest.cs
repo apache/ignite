@@ -15,18 +15,25 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client
+namespace Apache.Ignite.Core.Tests.ApiParity
 {
+    using Apache.Ignite.Core.Messaging;
+    using NUnit.Framework;
+
     /// <summary>
-    /// Client status codes.
+    /// Tests that <see cref="IMessaging"/> has all APIs from Java Ignite interface.
     /// </summary>
-    internal enum ClientStatus
+    public class MessagingParityTest
     {
-        Success = 0,
-        Fail = 1,
-        InvalidOpCode = 2,
-        CacheDoesNotExist = 1000,
-        CacheExists = 1001,
-        TooManyCursors = 1010
+        /// <summary>
+        /// Tests the API parity.
+        /// </summary>
+        [Test]
+        public void TestMessaging()
+        {
+            ParityTest.CheckInterfaceParity(
+                @"modules\core\src\main\java\org\apache\ignite\IgniteMessaging.java",
+                typeof(IMessaging));
+        }
     }
 }

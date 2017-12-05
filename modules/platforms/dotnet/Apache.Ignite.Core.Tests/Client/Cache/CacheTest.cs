@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests the Replace overload with additional argument.
         /// </summary>
         [Test]
-        public void TestReplace2()
+        public void TestReplaceIfEquals()
         {
             using (var client = GetClient())
             {
@@ -840,9 +840,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 var ex = Assert.Throws<IgniteClientException>(() => cache.Put(1, 1));
 
                 Assert.AreEqual("Cache doesn't exist: foobar", ex.Message);
-#if !NETCOREAPP2_0
-                Assert.AreEqual((int) Impl.Client.ClientStatus.CacheDoesNotExist, ex.ErrorCode);
-#endif
+                Assert.AreEqual(ClientStatusCode.CacheDoesNotExist, ex.StatusCode);
             }
         }
 
