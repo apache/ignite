@@ -89,8 +89,6 @@ public class InternalJdbcConnectionLeaksOnSqlFieldsQueryTest extends GridCommonA
 
         c.await();
 
-        Thread.sleep(5000);
-
         final Map<Thread, Connection> conns = GridTestUtils.getFieldValue(grid(1).context().query().getIndexing(), "conns");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
