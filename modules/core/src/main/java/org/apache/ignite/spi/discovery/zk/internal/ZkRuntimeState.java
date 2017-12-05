@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import org.apache.ignite.spi.IgniteSpiTimeoutObject;
+
 /**
  *
  */
@@ -28,10 +30,16 @@ class ZkRuntimeState {
     ZookeeperClient zkClient;
 
     /** */
+    int internalOrder;
+
+    /** */
+    IgniteSpiTimeoutObject joinTimeoutObj;
+
+    /** */
     long gridStartTime;
 
     /** */
-    boolean joined;
+    volatile boolean joined;
 
     /** */
     ZkDiscoveryEventsData evtsData;

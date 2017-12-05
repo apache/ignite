@@ -478,7 +478,7 @@ public class ZookeeperClient implements Watcher {
      * @throws InterruptedException If interrupted.
      */
     void setData(String path, byte[] data, int ver)
-        throws ZookeeperClientFailedException, InterruptedException
+        throws ZookeeperClientFailedException, InterruptedException, KeeperException.NoNodeException
     {
         if (data == null)
             data = EMPTY_BYTES;
@@ -490,6 +490,9 @@ public class ZookeeperClient implements Watcher {
                 zk.setData(path, data, ver);
 
                 return;
+            }
+            catch (KeeperException.NoNodeException e) {
+                throw e;
             }
             catch (Exception e) {
                 onZookeeperError(connStartTime, e);

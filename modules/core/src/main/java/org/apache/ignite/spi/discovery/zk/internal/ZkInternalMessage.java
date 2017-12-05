@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import java.io.Serializable;
 
 /**
  *
  */
-interface ZkInternalMessage extends DiscoverySpiCustomMessage {
+interface ZkInternalMessage extends Serializable {
     // No-op.
 }

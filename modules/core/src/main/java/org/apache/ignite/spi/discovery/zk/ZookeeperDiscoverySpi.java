@@ -193,6 +193,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             consistentId = ignite.configuration().getConsistentId();
 
             if (consistentId == null) {
+                initAddresses();
+
                 final List<String> sortedAddrs = new ArrayList<>(addrs.get1());
 
                 Collections.sort(sortedAddrs);
@@ -344,15 +346,13 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             ", rootPath=" + zkRootPath + ']');
 
         impl = new ZookeeperDiscoveryImpl(
+            this,
             igniteInstanceName,
-            zkConnectionString,
-            sesTimeout,
             log,
             zkRootPath,
             locNode,
             lsnr,
-            exchange,
-            locNode.isClient() && !clientReconnectDisabled);
+            exchange);
 
         try {
             impl.joinTopology();

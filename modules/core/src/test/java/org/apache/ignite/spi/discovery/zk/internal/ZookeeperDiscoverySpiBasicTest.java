@@ -38,6 +38,7 @@ import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -760,7 +761,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     private static String aliveZkNodePath(DiscoverySpi spi) {
-        String path = GridTestUtils.getFieldValue(spi, "impl", "state", "locNodeZkPath");
+        String path = GridTestUtils.getFieldValue(spi, "impl", "rtState", "locNodeZkPath");
 
         return path.substring(path.lastIndexOf('/') + 1);
     }
@@ -1406,11 +1407,37 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDuplicatedNodeId() throws Exception {
-        nodeId = UUID.randomUUID();
+        UUID nodeId0 = nodeId = UUID.randomUUID();
 
         startGrid(0);
 
-        startGrid(1);
+        int failingNodeIdx = 100;
+
+        for (int i = 0; i < 5; i++) {
+            final int idx = failingNodeIdx++;
+
+            nodeId = nodeId0;
+
+            info("Start node with duplicated ID [iter=" + i + ", nodeId=" + nodeId + ']');
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    startGrid(idx);
+
+                    return null;
+                }
+            }, IgniteCheckedException.class, null);
+
+            nodeId = null;
+
+            info("Start node with unique ID [iter=" + i + ']');
+
+            Ignite ignite = startGrid(idx);
+
+            nodeId0 = ignite.cluster().localNode().id();
+
+            waitForTopology(i + 2);
+        }
     }
 
     /**
@@ -1650,7 +1677,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 Map<Object, Object> evts = GridTestUtils.getFieldValue(node.configuration().getDiscoverySpi(),
-                    "impl", "state", "evtsData", "evts");
+                    "impl", "rtState", "evtsData", "evts");
 
                 if (!evts.isEmpty()) {
                     info("Unacked events: " + evts);
@@ -1809,7 +1836,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @param spi Spi instance.
      */
     private static ZooKeeper zkClient(ZookeeperDiscoverySpi spi) {
-        return GridTestUtils.getFieldValue(spi, "impl", "state", "zkClient", "zk");
+        return GridTestUtils.getFieldValue(spi, "impl", "rtState", "zkClient", "zk");
     }
 
     /**
