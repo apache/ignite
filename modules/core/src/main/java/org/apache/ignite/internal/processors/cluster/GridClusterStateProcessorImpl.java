@@ -70,6 +70,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -116,6 +117,9 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     /** Fully initialized metastorage. */
     @GridToStringExclude
     private ReadWriteMetastorage metastorage;
+
+    /** */
+    private final JdkMarshaller marsh = new JdkMarshaller();
 
     /** Listener. */
     private final GridLocalEventListener lsr = new GridLocalEventListener() {
@@ -560,7 +564,14 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addJoiningNodeData(discoveryDataType().ordinal(), globalState);
+        try {
+            byte[] marshalledState = marsh.marshal(globalState);
+
+            dataBag.addJoiningNodeData(discoveryDataType().ordinal(), marshalledState);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -571,7 +582,26 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
             BaselineTopologyHistory historyToSend = null;
 
             if (joiningNodeData != null) {
-                DiscoveryDataClusterState joiningNodeState = (DiscoveryDataClusterState) joiningNodeData.joiningNodeData();
+                if (!joiningNodeData.hasJoiningNodeData()) {
+                    //compatibility mode: old nodes don't send any data on join, so coordinator of new version
+                    //doesn't send BaselineTopology history, only its current globalState
+                    dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
+
+                    return;
+                }
+
+                DiscoveryDataClusterState joiningNodeState = null;
+
+                try {
+                    if (joiningNodeData.joiningNodeData() != null)
+                        joiningNodeState = marsh.unmarshal(
+                            (byte[]) joiningNodeData.joiningNodeData(),
+                            U.resolveClassLoader(ctx.config()));
+                } catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to unmarshal disco data from joining node: " + joiningNodeData.joiningNodeId());
+
+                    return;
+                }
 
                 if (!bltHist.isEmpty()) {
                     if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
@@ -590,6 +620,12 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+        if (data.commonData() instanceof DiscoveryDataClusterState) {
+            globalState = (DiscoveryDataClusterState) data.commonData();
+
+            return;
+        }
+
         BaselineStateAndHistoryData stateDiscoData = (BaselineStateAndHistoryData)data.commonData();
 
         if (stateDiscoData != null) {
@@ -749,7 +785,20 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
-        DiscoveryDataClusterState joiningNodeState = (DiscoveryDataClusterState) discoData.joiningNodeData();
+        if (discoData.joiningNodeData() == null)
+            return null;
+
+        DiscoveryDataClusterState joiningNodeState;
+
+        try {
+            joiningNodeState = marsh.unmarshal((byte[]) discoData.joiningNodeData(), Thread.currentThread().getContextClassLoader());
+        } catch (IgniteCheckedException e) {
+            String msg = "Error on unmarshalling discovery data " +
+                "from node " + node.consistentId() + ": " + e.getMessage() +
+                "; node is not allowed to join";
+
+            return new IgniteNodeValidationResult(node.id(), msg , msg);
+        }
 
         if (joiningNodeState == null || joiningNodeState.baselineTopology() == null)
             return null;
