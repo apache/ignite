@@ -29,8 +29,11 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.jetbrains.annotations.Nullable;
@@ -107,16 +110,23 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     private static volatile boolean quiet0;
 
     /** Java Logging implementation proxy. */
+    @GridToStringExclude
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private Logger impl;
+
+    /** Path to configuration file. */
+    @GridToStringExclude
+    private String cfg;
 
     /** Quiet flag. */
     private final boolean quiet;
 
     /** Work directory. */
+    @GridToStringExclude
     private volatile String workDir;
 
     /** Node ID. */
+    @GridToStringExclude
     private volatile UUID nodeId;
 
     /**
@@ -153,6 +163,8 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
         catch (IOException e) {
             error("Failed to read logging configuration: " + cfgUrl, e);
         }
+
+        cfg = cfgUrl.getPath();
     }
 
     /**
@@ -216,6 +228,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
                 // User configured console appender, thus log is not quiet.
                 quiet0 = !consoleHndFound;
                 inited = true;
+                cfg = System.getProperty("java.util.logging.config.file");
 
                 return;
             }
@@ -405,5 +418,10 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JavaLogger.class, this, "config", this.cfg);
     }
 }

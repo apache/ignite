@@ -18,12 +18,16 @@
 package org.apache.ignite.logger.log4j;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Enumeration;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -107,6 +111,12 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         cfg.setIgniteInstanceName(igniteInstanceName);
         cfg.setGridLogger(new Log4JLogger());
         cfg.setConnectorConfiguration(null);
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(false);
+        ipFinder.setAddresses(Collections.singleton("127.0.0.1:47500..47502"));
+        disco.setIpFinder(ipFinder);
+        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }

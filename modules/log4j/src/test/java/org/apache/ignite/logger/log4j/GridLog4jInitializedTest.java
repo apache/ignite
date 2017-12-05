@@ -39,6 +39,10 @@ public class GridLog4jInitializedTest extends TestCase {
     public void testLogInitialize() {
         IgniteLogger log = new Log4JLogger();
 
+        System.out.println(log.toString());
+        assertTrue(log.toString().contains("Log4JLogger"));
+        assertTrue(log.toString().contains("config=null"));
+
         assert log.isInfoEnabled() == true;
 
         if (log.isDebugEnabled())

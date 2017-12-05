@@ -42,6 +42,10 @@ public class JavaLoggerTest extends TestCase {
         ((JavaLogger)log).setWorkDirectory(U.defaultWorkDirectory());
         ((LoggerNodeIdAware)log).setNodeId(UUID.fromString("00000000-1111-2222-3333-444444444444"));
 
+        System.out.println(log.toString());
+        assertTrue(log.toString().contains("JavaLogger"));
+        assertTrue(log.toString().contains(JavaLogger.DFLT_CONFIG_PATH));
+
         if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");
 

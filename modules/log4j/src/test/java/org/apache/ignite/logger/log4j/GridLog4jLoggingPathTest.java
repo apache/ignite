@@ -28,16 +28,22 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 public class GridLog4jLoggingPathTest extends TestCase {
     /** */
     private IgniteLogger log;
+    /** Logger config */
+    private String path = "modules/core/src/test/config/log4j-test.xml";
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        log = new Log4JLogger("modules/core/src/test/config/log4j-test.xml").getLogger(getClass());
+        log = new Log4JLogger(path).getLogger(getClass());
     }
 
     /**
      * Tests log4j logging SPI.
      */
     public void testLog() {
+        System.out.println(log.toString());
+        assertTrue(log.toString().contains("Log4JLogger"));
+        assertTrue(log.toString().contains(path));
+
         assert log.isInfoEnabled() == true;
 
         if (log.isDebugEnabled())

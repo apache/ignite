@@ -30,10 +30,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 public class GridLog4jLoggingFileTest extends TestCase {
     /** */
     private IgniteLogger log;
+    /** Logger config */
+    private File xml;
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        File xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
+        xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
 
         assert xml != null;
         assert xml.exists() == true;
@@ -45,7 +47,10 @@ public class GridLog4jLoggingFileTest extends TestCase {
      * Tests log4j logging SPI.
      */
     public void testLog() {
-        assert log.isDebugEnabled() == true;
+        System.out.println(log.toString());
+        assertTrue(log.toString().contains("Log4JLogger"));
+        assertTrue(log.toString().contains(xml.getPath()));
+
         assert log.isInfoEnabled() == true;
 
         log.debug("This is 'debug' message.");
