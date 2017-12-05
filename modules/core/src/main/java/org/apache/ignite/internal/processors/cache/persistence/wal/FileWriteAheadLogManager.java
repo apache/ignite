@@ -336,7 +336,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             lastTruncatedArchiveIdx = tup == null ? -1 : tup.get1() - 1;
 
-            archiver = new FileArchiver(tup == null ? -1 : tup.get2());
+            if (isArchiverEnabled())
+                archiver = new FileArchiver(tup == null ? -1 : tup.get2());
+            else
+                archiver = null;
 
             if (dsCfg.isWalCompactionEnabled()) {
                 compressor = new FileCompressor();
@@ -352,6 +355,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 U.quietAndWarn(log, "Started write-ahead log manager in NONE mode, persisted data may be lost in " +
                     "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
         }
+    }
+
+    /** */
+    private boolean isArchiverEnabled() {
+        return !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
     }
 
     /**
@@ -413,8 +421,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         start0();
 
         if (!cctx.kernalContext().clientNode()) {
-            assert archiver != null;
-            archiver.start();
+            if (isArchiverEnabled()) {
+                assert archiver != null;
+                archiver.start();
+            }
 
             if (compressor != null)
                 compressor.start();
@@ -950,7 +960,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (lastReadPtr == null)
                     hnd.writeSerializerVersion();
 
-                archiver.currentWalIndex(absIdx);
+                if (archiver != null)
+                    archiver.currentWalIndex(absIdx);
 
                 return hnd;
             }
@@ -1022,9 +1033,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         File[] allFiles = walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER);
 
-        if (allFiles.length != 0 && allFiles.length > dsCfg.getWalSegments())
-            throw new IgniteCheckedException("Failed to initialize wal (work directory contains " +
-                "incorrect number of segments) [cur=" + allFiles.length + ", expected=" + dsCfg.getWalSegments() + ']');
+        if(isArchiverEnabled())
+            if (allFiles.length != 0 && allFiles.length > dsCfg.getWalSegments())
+                throw new IgniteCheckedException("Failed to initialize wal (work directory contains " +
+                    "incorrect number of segments) [cur=" + allFiles.length + ", expected=" + dsCfg.getWalSegments() + ']');
 
         // Allocate the first segment synchronously. All other segments will be allocated by archiver in background.
         if (allFiles.length == 0) {
@@ -1102,6 +1114,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws IgniteCheckedException If failed.
      */
     private File pollNextFile(long curIdx) throws IgniteCheckedException {
+        if (archiver == null) {
+            long segmentIdx = curIdx + 1;
+
+            return new File(walWorkDir, FileDescriptor.fileName(segmentIdx));
+        }
+
         // Signal to archiver that we are done with the segment and it can be archived.
         long absNextIdx = archiver.nextAbsoluteSegmentIndex(curIdx);
 
@@ -2882,13 +2900,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private final File walArchiveDir;
 
         /** */
-        private final FileArchiver archiver;
+        @Nullable private final FileArchiver archiver;
 
         /** */
         private final FileDecompressor decompressor;
 
         /** */
-        private final DataStorageConfiguration psCfg;
+        private final DataStorageConfiguration dsCfg;
 
         /** Optional start pointer. */
         @Nullable
@@ -2904,7 +2922,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param walArchiveDir WAL archive dir.
          * @param start Optional start pointer.
          * @param end Optional end pointer.
-         * @param psCfg Database configuration.
+         * @param dsCfg Database configuration.
          * @param serializerFactory Serializer factory.
          * @param archiver Archiver.
          * @param decompressor Decompressor.
@@ -2916,7 +2934,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             File walArchiveDir,
             @Nullable FileWALPointer start,
             @Nullable FileWALPointer end,
-            DataStorageConfiguration psCfg,
+            DataStorageConfiguration dsCfg,
             @NotNull RecordSerializerFactory serializerFactory,
             FileIOFactory ioFactory,
             FileArchiver archiver,
@@ -2927,10 +2945,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 cctx,
                 serializerFactory,
                 ioFactory,
-                psCfg.getWalRecordIteratorBufferSize());
+                dsCfg.getWalRecordIteratorBufferSize());
             this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
-            this.psCfg = psCfg;
+            this.dsCfg = dsCfg;
             this.archiver = archiver;
             this.start = start;
             this.end = end;
@@ -3042,12 +3060,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             boolean readArchive = canReadArchiveOrReserveWork(curWalSegmIdx);
 
-            if (readArchive) {
+            if (archiver == null || readArchive) {
                 fd = new FileDescriptor(new File(walArchiveDir,
                     FileDescriptor.fileName(curWalSegmIdx)));
             }
             else {
-                long workIdx = curWalSegmIdx % psCfg.getWalSegments();
+                long workIdx = curWalSegmIdx % dsCfg.getWalSegments();
 
                 fd = new FileDescriptor(
                     new File(walWorkDir, FileDescriptor.fileName(workIdx)),

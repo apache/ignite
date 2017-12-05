@@ -119,6 +119,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Clear properties in afterTest() method. */
     private boolean clearProperties;
 
+    /** */
+    private boolean overrideArchiveAndWal;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -145,6 +148,17 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             memCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
+
+        if(overrideArchiveAndWal) {
+            final String workDir = U.defaultWorkDirectory();
+            final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
+            final File wal = new File(db, "wal");
+
+            final String walAbsolutePath = wal.getAbsolutePath();
+            memCfg.setWalPath(walAbsolutePath);
+
+            memCfg.setWalArchivePath(walAbsolutePath);
+        }
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -177,6 +191,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFillWalAndReadRecords() throws Exception {
+        overrideArchiveAndWal = true;
         final int cacheObjectsToWrite = 10000;
 
         final Ignite ignite0 = startGrid("node0");
@@ -190,10 +205,14 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         stopGrid("node0");
 
+        final Ignite ignite1 = startGrid("node0");
+        ignite1.active(true);
+        stopGrid("node0");
+
         final String workDir = U.defaultWorkDirectory();
         final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         final File wal = new File(db, "wal");
-        final File walArchive = new File(wal, "archive");
+        final File walArchive = overrideArchiveAndWal ? wal : new File(wal, "archive");
 
         final MockWalIteratorFactory mockItFactory = new MockWalIteratorFactory(log, PAGE_SIZE, consistentId, subfolderName, WAL_SEGMENTS);
         final WALIterator it = mockItFactory.iterator(wal, walArchive);
