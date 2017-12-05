@@ -31,6 +31,7 @@ import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
+ * Todo: enable this benchmark per IGNITE-7118.
  */
 @SuppressWarnings("unused")
 public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBenchmark {
@@ -77,6 +78,6 @@ public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBen
 
         igniteThread.join();
 
-        return false;
+        return true;
     }
 }

@@ -84,7 +84,7 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
 
         igniteThread.join();
 
-        return false;
+        return true;
     }
 
     /** Override in subclasses with specific type Matrix. */
