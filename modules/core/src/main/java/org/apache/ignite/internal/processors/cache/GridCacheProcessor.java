@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
@@ -2980,11 +2981,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         WalModeChangeFuture fut = new WalModeChangeFuture(uid, grpIds, disable);
 
-        // Checking same fut already registered
-        for (WalModeChangeFuture fut0 : walModeChangeFuts.values()) {
-            if (fut0.grpIds.equals(grpIds) && fut0.disable == disable)
-                return fut0;
-        } // todo. Not same but similar should be handled too
+        fut.acquire();
+
+        // Double check.
+        already = true;
+
+        for (String cacheName : cacheNames) {
+            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
+
+            if (desc.groupDescriptor().walMode() != (disable ? CacheGroupWalMode.DISABLE : CacheGroupWalMode.ENABLE))
+                already = false;
+        }
+
+        if (already) {
+            fut.release();
+
+            return new GridFinishedFuture<>();
+        }
 
         WalModeChangeFuture old = walModeChangeFuts.put(uid, fut);
 
@@ -4188,6 +4201,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** Initialize future. */
         private final GridFutureAdapter<?> initFut = new GridFutureAdapter();
 
+        /** Acquired. */
+        private boolean acquired;
+
         /**
          * @param uid Uid.
          * @param grpIds Groups.
@@ -4261,8 +4277,43 @@ public class GridCacheProcessor extends GridProcessorAdapter {
            sendMessage(true);
         }
 
+        /**
+         *
+         */
+        private IgniteSemaphore sem(){
+            return ctx.grid().semaphore("wal-mode-change", 1, false, true);
+        }
+
+        /**
+         *
+         */
+        public void acquire() {
+            synchronized (this) {
+                sem().acquire();
+
+                acquired = true;
+            }
+        }
+
+        /**
+         *
+         */
+        public void release() {
+            synchronized (this) {
+                if (acquired) {
+                    IgniteSemaphore sem = sem();
+
+                    assert sem.availablePermits() == 0 : sem.availablePermits();
+
+                    sem.release();
+                }
+            }
+        }
+
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
+            release();
+
             // Make sure to remove future before completion.
             walModeChangeFuts.remove(uid, this);
 

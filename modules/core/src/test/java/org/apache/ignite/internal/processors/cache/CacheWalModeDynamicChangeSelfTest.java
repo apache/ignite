@@ -25,11 +25,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -225,7 +222,21 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testAlreadyDone() throws Exception {
+    public void testAlreadyDoneConcurrent() throws Exception {
+        testAlreadyDone(false);
+    }
+
+    /**
+     *
+     */
+    public void testAlreadyDonePredisabled() throws Exception {
+        testAlreadyDone(true);
+    }
+
+    /**
+     *
+     */
+    private void testAlreadyDone(boolean alreadyDisabled) throws Exception {
         final IgniteEx ignite = startGrid(1);
 
         ignite.active(true);
@@ -234,7 +245,8 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger duplicates = new AtomicInteger();
 
-        ignite.cluster().disableWal(Collections.singleton(CACHE1));
+        if (alreadyDisabled)
+            ignite.cluster().disableWal(Collections.singleton(CACHE1));
 
         Collection<Thread> threads = new HashSet<>();
 
@@ -260,60 +272,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         for (Thread th : threads)
             th.join();
 
-        assertEquals(size, duplicates.get());
-    }
-
-    /**
-     *
-     */
-    public void testInProgress() throws Exception {
-        final IgniteEx ignite = startGrid(1);
-
-        ignite.active(true);
-
-        final CyclicBarrier cb = new CyclicBarrier(2);
-
-        final AtomicBoolean found = new AtomicBoolean();
-        final AtomicReference ref = new AtomicReference();
-
-        int cnt = 0;
-        while (!found.get()) {
-            log.info("Iteration: " + ++cnt);
-
-            Collection<Thread> threads = new HashSet<>();
-
-            for (int i = 0; i < 2; i++) {
-                Thread th = new Thread() {
-                    @Override public void run() {
-                        ref.set(null);
-
-                        try {
-                            cb.await();
-
-                            IgniteInternalFuture fut = ignite.context().cache().changeWalMode(
-                                Collections.singleton(CACHE1),
-                                true,
-                                true);
-
-                            boolean res = ref.compareAndSet(null, fut);
-
-                            if (!res && ref.get() == fut)
-                                found.set(true);
-                        }
-                        catch (Exception e) {
-                            fail();
-                        }
-                    }
-                };
-
-                threads.add(th);
-
-                th.start();
-            }
-
-            for (Thread th : threads)
-                th.join();
-        }
+        assertEquals(alreadyDisabled ? size : size - 1, duplicates.get());
     }
 
     /**
