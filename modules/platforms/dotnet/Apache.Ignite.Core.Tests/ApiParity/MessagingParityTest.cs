@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,33 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.task;
+namespace Apache.Ignite.Core.Tests.ApiParity
+{
+    using Apache.Ignite.Core.Messaging;
+    using NUnit.Framework;
 
-/**
- * Defines keys for thread-local context in task processor.
- */
-public enum GridTaskThreadContextKey {
-    /** Task name. */
-    TC_TASK_NAME,
-
-    /** No failover flag. */
-    TC_NO_FAILOVER,
-
-    /** Projection for the task. */
-    TC_SUBGRID,
-
-    /** Projection predicate for the task. */
-    TC_SUBGRID_PREDICATE,
-
-    /** Timeout in milliseconds associated with the task. */
-    TC_TIMEOUT,
-
-    /** Security subject ID. */
-    TC_SUBJ_ID,
-
-    /** IO manager policy. */
-    TC_IO_POLICY,
-
-    /** Skip authorization for the task. */
-    TC_SKIP_AUTH
+    /// <summary>
+    /// Tests that <see cref="IMessaging"/> has all APIs from Java Ignite interface.
+    /// </summary>
+    public class MessagingParityTest
+    {
+        /// <summary>
+        /// Tests the API parity.
+        /// </summary>
+        [Test]
+        public void TestMessaging()
+        {
+            ParityTest.CheckInterfaceParity(
+                @"modules\core\src\main\java\org\apache\ignite\IgniteMessaging.java",
+                typeof(IMessaging));
+        }
+    }
 }

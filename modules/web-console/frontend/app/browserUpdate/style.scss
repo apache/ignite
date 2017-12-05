@@ -15,33 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.task;
+@import "./../primitives/btn/index.scss";
 
-/**
- * Defines keys for thread-local context in task processor.
- */
-public enum GridTaskThreadContextKey {
-    /** Task name. */
-    TC_TASK_NAME,
+#buorg.buorg {
+    background-color: $brand-warning;
+    line-height: 16px;
+    font-family: Roboto, sans-serif;
 
-    /** No failover flag. */
-    TC_NO_FAILOVER,
+    a {
+        @extend .btn-ignite;
 
-    /** Projection for the task. */
-    TC_SUBGRID,
+        &#buorgul {
+            @extend .btn-ignite--success;
+        }
 
-    /** Projection predicate for the task. */
-    TC_SUBGRID_PREDICATE,
-
-    /** Timeout in milliseconds associated with the task. */
-    TC_TIMEOUT,
-
-    /** Security subject ID. */
-    TC_SUBJ_ID,
-
-    /** IO manager policy. */
-    TC_IO_POLICY,
-
-    /** Skip authorization for the task. */
-    TC_SKIP_AUTH
+        &#buorgig {
+            @extend .btn-ignite--primary;
+        }
+    }
 }
