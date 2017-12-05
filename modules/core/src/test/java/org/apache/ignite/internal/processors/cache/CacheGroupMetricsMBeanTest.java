@@ -140,6 +140,11 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * Gets CacheGroupMetricsMXBean for given node and group name.
      *
