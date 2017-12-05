@@ -150,7 +150,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
      *
      * @param impl Log4j implementation to use.
      */
-    private GridTestLog4jLogger(final Logger impl) {
+    protected GridTestLog4jLogger(final Logger impl) {
         assert impl != null;
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
