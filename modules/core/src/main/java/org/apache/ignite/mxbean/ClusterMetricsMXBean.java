@@ -295,6 +295,8 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
      * @param attrName Attribute name.
      */
     @MXBeanDescription("Distinct attrubute values for given nodes projection.")
+    @MXBeanParametersNames("attrName")
+    @MXBeanParametersDescriptions("Attribute name.")
     public Set<String> attributeValues(String attrName);
 
      /**
@@ -302,44 +304,15 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
       *
       * @param attrName Attribute name.
       * @param attrVal Attribute value.
-      * @param includeSrvs Include servers.
-      * @param includeClients Include clients.
+      * @param includeSrvs Include server nodes.
+      * @param includeClients Include client nodes.
       */
      @MXBeanDescription("Get node IDs with the given attribute value.")
+     @MXBeanParametersNames(
+         {"attrName", "attrValue", "includeSrvs", "includeClients"}
+     )
+     @MXBeanParametersDescriptions(
+         {"Attribute name.", "Attribute value.", "Include server nodes.", "Include client nodes."}
+     )
      public Set<UUID> nodeIdsForAttribute(String attrName, String attrVal, boolean includeSrvs, boolean includeClients);
-
-    /**
-     * Get the number of nodes that have specified attribute.
-     *
-     * @param attrName Attribute name.
-     * @param attrVal Attribute value.
-     * @param srv Include server nodes.
-     * @param client Include client nodes.
-     * @return The number of nodes that have specified attribute.
-     */
-    @MXBeanDescription("Get the number of nodes that have specified attribute.")
-    @MXBeanParametersNames(
-        {"attrName", "attrValue", "server", "client"}
-    )
-    @MXBeanParametersDescriptions(
-        {"Attribute name.", "Attribute value.", "Include server nodes.", "Include client nodes."}
-    )
-    public int countNodes(String attrName, String attrVal, boolean srv, boolean client);
-
-    /**
-     * Get the number of nodes grouped by the node attribute value.
-     *
-     * @param attrName Attribute name.
-     * @param srv Include server nodes.
-     * @param client Include client nodes.
-     * @return The number of nodes grouped by the node attribute value.
-     */
-    @MXBeanDescription("Get the number of nodes grouped by the node attribute.")
-    @MXBeanParametersNames(
-        {"attrName", "server", "client"}
-    )
-    @MXBeanParametersDescriptions(
-        {"Attribute name.", "Include server nodes.", "Include client nodes."}
-    )
-    public Map<Object, Integer> groupNodes(String attrName, boolean srv, boolean client);
 }

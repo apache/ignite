@@ -18,12 +18,11 @@
 package org.apache.ignite.internal;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 
@@ -335,7 +334,7 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public int getTotalServerNodes() {
-        return !node.isClient() && !node.isDaemon() ? 1 : 0;
+        return !node.isClient() ? 1 : 0;
     }
 
     /** {@inheritDoc} */
@@ -350,54 +349,27 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public Set<String> attributeNames() {
-        return node.attributes().keySet();
+        return new TreeSet<>(node.attributes().keySet());
     }
 
     /** {@inheritDoc} */
     @Override public Set<String> attributeValues(String attrName) {
-        return Collections.singleton(node.attribute(attrName));
+        Object val = node.attribute(attrName);
+
+        return val == null ? Collections.emptySet() : Collections.singleton(val.toString());
     }
 
     /** {@inheritDoc} */
-    @Override public Set<UUID> nodeIdsForAttribute(String attrName, String attrVal, boolean includeSrvs, boolean includeClients) {
-        if (includeSrvs && !includeClients && (node.isClient() || node.isDaemon()))
-            return Collections.emptySet();
+    @Override public Set<UUID> nodeIdsForAttribute(String attrName, String attrVal, boolean includeSrvs,
+        boolean includeClients) {
+        if ((includeClients && node.isClient()) || (includeSrvs && !node.isClient())) {
+            Object nodeVal = node.attribute(attrName);
 
-        if (includeClients && !includeSrvs && !node.isClient())
-            return Collections.emptySet();
+            if (nodeVal != null && nodeVal.toString().equals(attrVal))
+                return Collections.singleton(node.id());
+        }
 
-        Object nodeVal = node.attribute(attrName);
-
-        if (nodeVal != null && nodeVal.toString().equals(attrVal))
-            return Collections.singleton(node.id());
-        else
-            return Collections.emptySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int countNodes(String name, String val, boolean srv, boolean client) {
-        if (srv && !client && (node.isClient() || node.isDaemon()))
-            return 0;
-
-        if (client && !srv && !node.isClient())
-            return 0;
-
-        Object nodeVal = node.attribute(name);
-
-        return nodeVal != null && nodeVal.toString().equals(val) ? 1 : 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<Object, Integer> groupNodes(String name, boolean srv, boolean client) {
-        if (srv && !client && (node.isClient() || node.isDaemon()))
-            return Collections.emptyMap();
-
-        if (client && !srv && !node.isClient())
-            return Collections.emptyMap();
-
-        Object val = node.attribute(name);
-
-        return val == null ? Collections.<Object, Integer>emptyMap() : F.asMap(val, 1);
+        return Collections.emptySet();
     }
 
     /** {@inheritDoc} */
