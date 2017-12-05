@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.sql.Connection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
