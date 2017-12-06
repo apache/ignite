@@ -2268,9 +2268,35 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param msg Message.
+     */
+    private void onWalModeDynamicChangeMessage(WalModeDynamicChangeMessage msg) {
+        boolean disable = msg.disable();
+        boolean prepare = msg.prepare();
+
+        GridIntIterator it = msg.grpIds().iterator();
+
+        while (it.hasNext()) {
+            int grpId = it.next();
+
+            CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
+
+            desc.walMode(CacheGroupWalMode.resolve(disable, prepare));
+
+            if (!disable)
+                for (GridCacheContext cctx : ctx.cache().cacheGroup(grpId).caches()) {
+                    if (prepare)
+                        ctx.cache().disableGateway(cctx.name());
+                    else
+                        ctx.cache().enableGateway(cctx.name());
+                }
+        }
+    }
+
+    /**
      * @param msg Request.
      */
-    void onWalModeDynamicChangeMessage(WalModeDynamicChangeMessage msg) {
+    void onWalModeDynamicChangeMessageEvent(WalModeDynamicChangeMessage msg) {
         boolean disable = msg.disable();
         boolean prepare = msg.prepare();
 
@@ -2353,11 +2379,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 U.error(log, "Failed to send message [node=" + msg.initiatingNodeId() + ']', e);
             }
         }
-        else {
-            WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
 
-            fut.onAck(sharedCtx.localNode());
-        }
+        WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
+
+        fut.onAck(sharedCtx.localNode());
     }
 
     /**
@@ -3228,9 +3253,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ((SnapshotDiscoveryMessage)msg).needExchange())
             return true;
 
-        if (msg instanceof WalModeDynamicChangeMessage &&
-            ((WalModeDynamicChangeMessage)msg).needExchange())
-            return true;
+        if (msg instanceof WalModeDynamicChangeMessage) {
+            onWalModeDynamicChangeMessage((WalModeDynamicChangeMessage)msg);
+
+            return ((WalModeDynamicChangeMessage)msg).needExchange();
+        }
 
         if (msg instanceof DynamicCacheChangeBatch)
             return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);

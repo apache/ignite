@@ -126,8 +126,7 @@ public class CacheGroupDescriptor {
         assert (this.walMode == CacheGroupWalMode.ENABLING && walMode == CacheGroupWalMode.ENABLE) ||
             (this.walMode == CacheGroupWalMode.ENABLE && walMode == CacheGroupWalMode.DISABLING) ||
             (this.walMode == CacheGroupWalMode.DISABLING && walMode == CacheGroupWalMode.DISABLE) ||
-            (this.walMode == CacheGroupWalMode.DISABLE && walMode == CacheGroupWalMode.ENABLING) ||
-            this.walMode == walMode: //todo: this line is incorrect and should be failoved properly
+            (this.walMode == CacheGroupWalMode.DISABLE && walMode == CacheGroupWalMode.ENABLING) :
             "Unexpected modification [current=" + this.walMode + " ,new=" + walMode + "]";
 
         this.walMode = walMode;

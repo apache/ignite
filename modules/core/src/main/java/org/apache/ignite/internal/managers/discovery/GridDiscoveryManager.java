@@ -70,14 +70,12 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.CacheGroupWalMode;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.WalModeDynamicChangeMessage;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -88,7 +86,6 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -661,31 +658,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         incMinorTopVer = false;
                     }
                     else {
-                        if (customMsg instanceof WalModeDynamicChangeMessage) {
-                            WalModeDynamicChangeMessage msg = (WalModeDynamicChangeMessage)customMsg;
-
-                            boolean disable = msg.disable();
-                            boolean prepare = msg.prepare();
-
-                            GridIntIterator it = msg.grpIds().iterator();
-
-                            while (it.hasNext()) {
-                                int grpId = it.next();
-
-                                CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
-
-                                desc.walMode(CacheGroupWalMode.resolve(disable, prepare));
-
-                                if (!disable)
-                                    for (GridCacheContext cctx : ctx.cache().cacheGroup(grpId).caches()) {
-                                        if (prepare)
-                                            ctx.cache().disableGateway(cctx.name());
-                                        else
-                                            ctx.cache().enableGateway(cctx.name());
-                                    }
-                            }
-                        }
-
                         incMinorTopVer = ctx.cache().onCustomEvent(
                             customMsg,
                             new AffinityTopologyVersion(topVer, minorTopVer),
