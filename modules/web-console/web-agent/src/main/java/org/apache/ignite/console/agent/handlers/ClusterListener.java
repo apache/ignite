@@ -64,6 +64,18 @@ public class ClusterListener implements AutoCloseable {
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(ClusterListener.class));
 
     /** */
+    private static final IgniteProductVersion IGNITE_2_1 = IgniteProductVersion.fromString("2.1.0");
+
+    /** */
+    private static final IgniteProductVersion IGNITE_2_3 = IgniteProductVersion.fromString("2.3.0");
+
+    /** Unique Visor key to get events last order. */
+    private static final String EVT_LAST_ORDER_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
+
+    /** Unique Visor key to get events throttle counter. */
+    private static final String EVT_THROTTLE_CNTR_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
+
+    /** */
     private static final String EVENT_CLUSTER_CONNECTED = "cluster:connected";
 
     /** */
@@ -352,6 +364,51 @@ public class ClusterListener implements AutoCloseable {
         return restExecutor.sendRequest(this.cfg.nodeUri(), params, null);
     }
 
+    /**
+     * @param ver Cluster version.
+     * @param nid Node ID.
+     * @return Cluster active state.
+     * @throws IOException If failed to collect cluster active state.
+     */
+    public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
+        Map<String, Object> params = U.newHashMap(10);
+
+        boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
+
+        if (v23)
+            params.put("cmd", "currentState");
+        else {
+            params.put("cmd", "exe");
+            params.put("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask");
+            params.put("p1", nid);
+            params.put("p2", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask");
+            params.put("p3", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg");
+            params.put("p4", false);
+            params.put("p5", EVT_LAST_ORDER_KEY);
+            params.put("p6", EVT_THROTTLE_CNTR_KEY);
+
+            if (ver.compareTo(IGNITE_2_1) >= 0)
+                params.put("p7", false);
+            else {
+                params.put("p7", 10);
+                params.put("p8", false);
+            }
+        }
+
+        RestResult res = restExecutor.sendRequest(this.cfg.nodeUri(), params, null);
+
+        switch (res.getStatus()) {
+            case STATUS_SUCCESS:
+                if (v23)
+                    return Boolean.valueOf(res.getData());
+
+                return res.getData().contains("\"active\":true");
+
+            default:
+                throw new IOException(res.getError());
+        }
+    }
+
     /** */
     private class WatchTask implements Runnable {
         /** {@inheritDoc} */
@@ -369,7 +426,7 @@ public class ClusterListener implements AutoCloseable {
                         if (newTop.differentCluster(top))
                             log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
 
-                        boolean active = restExecutor.active(newTop.clusterVersion(), F.first(newTop.getNids()));
+                        boolean active = active(newTop.clusterVersion(), F.first(newTop.getNids()));
 
                         newTop.setActive(active);
 

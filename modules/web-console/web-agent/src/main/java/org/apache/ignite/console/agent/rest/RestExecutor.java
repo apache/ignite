@@ -57,17 +57,6 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  */
 public class RestExecutor implements AutoCloseable {
     /** */
-    private static final IgniteProductVersion IGNITE_2_1 = IgniteProductVersion.fromString("2.1.0");
-
-    /** */
-    private static final IgniteProductVersion IGNITE_2_3 = IgniteProductVersion.fromString("2.3.0");
-
-    /** Unique Visor key to get events last order. */
-    private static final String EVT_LAST_ORDER_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
-
-    /** Unique Visor key to get events throttle counter. */
-    private static final String EVT_THROTTLE_CNTR_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
-    /** */
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));
 
     /** JSON object mapper. */
@@ -166,90 +155,6 @@ public class RestExecutor implements AutoCloseable {
                 "(was copied from libs/optional to libs folder).");
 
             throw new ConnectException("Failed connect to cluster [url=" + urlBuilder + ", parameters=" + params + "]");
-        }
-    }
-
-    /**
-     * @param demo Is demo node request.
-     * @param path Path segment.
-     * @param params Params.
-     * @param headers Headers.
-     * @param body Body.
-     */
-    public RestResult execute(boolean demo, String path, Map<String, Object> params,
-        Map<String, Object> headers, String body) {
-        if (log.isDebugEnabled())
-            log.debug("Start execute REST command [uri=/" + (path == null ? "" : path) +
-                ", parameters=" + params + "]");
-
-        try {
-            return sendRequest(demo, path, params, headers, body);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to execute REST command [uri=/" + (path == null ? "" : path) +
-                ", parameters=" + params + "]", e);
-
-            return RestResult.fail(404, e.getMessage());
-        }
-    }
-
-    /**
-     * @param demo {@code true} in case of demo mode.
-     * @param full Flag indicating whether to collect metrics or not.
-     * @throws IOException If failed to collect topology.
-     */
-    public RestResult topology(boolean demo, boolean full) throws IOException {
-        Map<String, Object> params = new HashMap<>(3);
-
-        params.put("cmd", "top");
-        params.put("attr", true);
-        params.put("mtr", full);
-
-        return sendRequest(demo, "ignite", params, null, null);
-    }
-
-    /**
-     * @param ver Cluster version.
-     * @param nid Node ID.
-     * @return Cluster active state.
-     * @throws IOException If failed to collect cluster active state.
-     */
-    public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
-        Map<String, Object> params = new HashMap<>();
-
-        boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
-
-        if (v23)
-            params.put("cmd", "currentState");
-        else {
-            params.put("cmd", "exe");
-            params.put("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask");
-            params.put("p1", nid);
-            params.put("p2", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask");
-            params.put("p3", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg");
-            params.put("p4", false);
-            params.put("p5", EVT_LAST_ORDER_KEY);
-            params.put("p6", EVT_THROTTLE_CNTR_KEY);
-
-            if (ver.compareTo(IGNITE_2_1) >= 0)
-                params.put("p7", false);
-            else {
-                params.put("p7", 10);
-                params.put("p8", false);
-            }
-        }
-
-        RestResult res = sendRequest(false, "ignite", params, null, null);
-
-        switch (res.getStatus()) {
-            case STATUS_SUCCESS:
-                if (v23)
-                    return Boolean.valueOf(res.getData());
-
-                return res.getData().contains("\"active\":true");
-
-            default:
-                throw new IOException(res.getError());
         }
     }
 
