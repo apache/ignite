@@ -42,6 +42,9 @@ public class TransactionConfiguration implements Serializable {
     /** Default transaction timeout. */
     public static final long DFLT_TRANSACTION_TIMEOUT = 0;
 
+    /** Default rollback on topology change timeout. */
+    public static final long DFLT_ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT = 0;
+
     /** Default size of pessimistic transactions log. */
     public static final int DFLT_PESSIMISTIC_TX_LOG_LINGER = 10_000;
 
@@ -56,6 +59,9 @@ public class TransactionConfiguration implements Serializable {
 
     /** Default transaction timeout. */
     private long dfltTxTimeout = DFLT_TRANSACTION_TIMEOUT;
+
+    /** Rollback on topology change default timeout. */
+    private long rollbackOnTopChangeTimeout = DFLT_ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT;
 
     /** Pessimistic tx log size. */
     private int pessimisticTxLogSize;
@@ -89,6 +95,7 @@ public class TransactionConfiguration implements Serializable {
         dfltConcurrency = cfg.getDefaultTxConcurrency();
         dfltIsolation = cfg.getDefaultTxIsolation();
         dfltTxTimeout = cfg.getDefaultTxTimeout();
+        rollbackOnTopChangeTimeout = cfg.getRollbackOnTopologyChangeTimeout();
         pessimisticTxLogLinger = cfg.getPessimisticTxLogLinger();
         pessimisticTxLogSize = cfg.getPessimisticTxLogSize();
         txSerEnabled = cfg.isTxSerializableEnabled();
@@ -187,6 +194,29 @@ public class TransactionConfiguration implements Serializable {
      */
     public TransactionConfiguration setDefaultTxTimeout(long dfltTxTimeout) {
         this.dfltTxTimeout = dfltTxTimeout;
+
+        return this;
+    }
+
+    /**
+     * Gets rollback on topology change timeout. Default value is defined by {@link #DFLT_ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT}
+     * which is {@code 0} and means that transactions will never time out.
+     *
+     * @return Rollback on topology change timeout.
+     */
+    public long getRollbackOnTopologyChangeTimeout() {
+        return rollbackOnTopChangeTimeout;
+    }
+
+    /**
+     * Sets rollback on topology change timeout in milliseconds. By default this value is defined by {@link
+     * #DFLT_ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT}.
+     *
+     * @param rollbackOnTopChangeTimeout Rollback on topology change timeout.
+     * @return {@code this} for chaining.
+     */
+    public TransactionConfiguration setRollbackOnTopologyChangeTimeout(long rollbackOnTopChangeTimeout) {
+        this.rollbackOnTopChangeTimeout = rollbackOnTopChangeTimeout;
 
         return this;
     }

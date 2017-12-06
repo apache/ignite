@@ -51,7 +51,10 @@ public enum TransactionState {
     UNKNOWN,
 
     /** Transaction has been suspended by user. */
-    SUSPENDED;
+    SUSPENDED,
+
+    /** Transaction has started to acquire locks. */
+    LOCKING;
 
     /** Enumerated values. */
     private static final TransactionState[] VALS = values();

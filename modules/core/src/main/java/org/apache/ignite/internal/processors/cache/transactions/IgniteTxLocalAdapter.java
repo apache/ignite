@@ -91,6 +91,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
@@ -1305,7 +1306,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         TransactionState state = state();
 
-        assert state == TransactionState.ACTIVE || remainingTime() == -1 :
+        assert state == TransactionState.ACTIVE || state == TransactionState.LOCKING || remainingTime() == -1 :
             "Invalid tx state for adding entry [op=" + op + ", val=" + val + ", entry=" + entry + ", filter=" +
                 Arrays.toString(filter) + ", txCtx=" + cctx.tm().txContextVersion() + ", tx=" + this + ']';
 
@@ -1628,7 +1629,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 final GridClosureException ex = new GridClosureException(
                     new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-                        "for transaction [timeout=" + timeout() + ", tx=" + this + ']', deadlockErr)
+                        "for transaction [timeout=" + timeout() + ", tx=" + CU.txString(IgniteTxLocalAdapter.this) +
+                        ']', deadlockErr)
                 );
 
                 if (commit && commitAfterLock())
@@ -1660,6 +1662,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 }
 
                 rollback = false;
+
+                state(ACTIVE);
 
                 return new GridFinishedFuture<>(r);
             }
@@ -1714,6 +1718,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 IgniteInternalFuture<T> fut = postLock();
 
                 rollback = false;
+
+                state(ACTIVE);
 
                 return fut;
             }

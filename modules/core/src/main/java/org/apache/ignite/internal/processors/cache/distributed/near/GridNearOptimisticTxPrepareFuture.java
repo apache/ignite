@@ -56,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
@@ -764,7 +765,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         U.warn(log, "Failed to detect deadlock.", e);
                     else {
                         e = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                            "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                            "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
                             deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx)) : null);
                     }
 

@@ -588,12 +588,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (tx != null) {
             cctx.tm().txContext(tx);
 
-            if (restoreTimeout && tx.trackTimeout()) {
-                // Need restore timeout before onDone is called and next tx operation can proceed.
-                boolean add = tx.addTimeoutHandler();
-
-                assert add;
-            }
+//            if (restoreTimeout && tx.trackTimeout()) {
+//                // Need restore timeout before onDone is called and next tx operation can proceed.
+//                boolean add = tx.addTimeoutHandler();
+//
+//                assert add;
+//            }
         }
 
         if (super.onDone(success, err)) {
@@ -694,23 +694,23 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * part. Note that if primary node leaves grid, the future will fail and transaction will be rolled back.
      */
     void map() {
-        if (tx != null && tx.trackTimeout()) {
-            if (!tx.removeTimeoutHandler()) {
-                tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                        IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Failed to " +
-                            "acquire lock, transaction was rolled back on timeout [timeout=" + tx.timeout() +
-                            ", tx=" + tx + ']');
-
-                        onError(err);
-
-                        onComplete(false, false, false);
-                    }
-                });
-
-                return;
-            }
-        }
+//        if (tx != null && tx.trackTimeout()) {
+//            if (!tx.removeTimeoutHandler()) {
+//                tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
+//                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+//                        IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Failed to " +
+//                            "acquire lock, transaction was rolled back on timeout [timeout=" + tx.timeout() +
+//                            ", tx=" + tx + ']');
+//
+//                        onError(err);
+//
+//                        onComplete(false, false, false);
+//                    }
+//                });
+//
+//                return;
+//            }
+//        }
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
@@ -1453,7 +1453,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
                             if (deadlock != null)
                                 err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                                        "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                                        "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
                                         new TransactionDeadlockException(deadlock.toString(cctx.shared())));
                         }
                         catch (IgniteCheckedException e) {

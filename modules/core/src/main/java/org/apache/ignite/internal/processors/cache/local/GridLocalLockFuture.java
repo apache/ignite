@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -498,7 +499,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
                             if (deadlock != null)
                                 ERR_UPD.compareAndSet(GridLocalLockFuture.this, null,
                                         new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                                                "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                                                "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
                                                 new TransactionDeadlockException(deadlock.toString(cctx.shared()))));
                         }
                         catch (IgniteCheckedException e) {

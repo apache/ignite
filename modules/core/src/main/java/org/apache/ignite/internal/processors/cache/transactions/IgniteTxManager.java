@@ -112,6 +112,7 @@ import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
+import static org.apache.ignite.transactions.TransactionState.LOCKING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
@@ -292,6 +293,25 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         rollbackTransactionsForCache(cacheId, nearIdMap);
 
         rollbackTransactionsForCache(cacheId, idMap);
+    }
+
+    /**
+     * Rollback transactions blocking partition map exchange.
+     *
+     * @param topVer Initial exchange version.
+     */
+    public void rollbackOnTopologyChange(AffinityTopologyVersion topVer) {
+        List<IgniteInternalTx> wList = new ArrayList<>();
+        List<IgniteInternalTx> rList = new ArrayList<>();
+
+        for (IgniteInternalTx tx : activeTransactions()) {
+            if (tx.near() && needWaitTransaction(tx, topVer)) {
+                if (log.isInfoEnabled())
+                    log.info("Forcibly rolling back near transaction: " + CU.txString(tx));
+
+                tx.rollbackAsync();
+            }
+        }
     }
 
     /**
@@ -756,7 +776,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if given transaction is explicitly started user transaction.
      */
     private boolean activeUserTx(@Nullable IgniteInternalTx tx) {
-        if (tx != null && tx.user() && tx.state() == ACTIVE) {
+        if (tx != null && tx.user() && (tx.state() == ACTIVE || tx.state() == LOCKING)) {
             assert tx instanceof GridNearTxLocal : tx;
 
             return true;

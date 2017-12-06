@@ -99,6 +99,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
+import static org.apache.ignite.transactions.TransactionState.LOCKING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
@@ -991,10 +992,21 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      *
      * @param state State to set.
      * @param timedOut Timeout flag.
+     *
+     * @return {@code True} if state changed.
+     */
+    protected final boolean state(TransactionState state, boolean timedOut) {
+        return state(state, timedOut, null);
+    }
+
+    /**
+     *
+     * @param state State to set.
+     * @param timedOut Timeout flag.
      * @return {@code True} if state changed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    protected final boolean state(TransactionState state, boolean timedOut) {
+    protected final boolean state(TransactionState state, boolean timedOut, TransactionState[] holder) {
         boolean valid = false;
 
         TransactionState prev;
@@ -1004,9 +1016,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         synchronized (this) {
             prev = this.state;
 
+            if (holder != null)
+                holder[0] = prev;
+
             switch (state) {
                 case ACTIVE: {
-                    valid = prev == SUSPENDED;
+                    valid = prev == SUSPENDED || prev == LOCKING;
 
                     break;
                 }
@@ -1054,7 +1069,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 case MARKED_ROLLBACK: {
-                    valid = prev == ACTIVE || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
+                    valid = prev == ACTIVE || prev == LOCKING || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
 
                     break;
                 }
@@ -1067,6 +1082,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 case SUSPENDED: {
+                    valid = prev == ACTIVE;
+
+                    break;
+                }
+
+                case LOCKING: {
                     valid = prev == ACTIVE;
 
                     break;
