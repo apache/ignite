@@ -26,7 +26,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 
 public class FilePageStoreTest {
 
-
     @Test
     public void nativeCreateFile() throws IOException {
         File file = new File("store2.dat");
@@ -67,22 +66,24 @@ public class FilePageStoreTest {
         buf.put(new byte[buf.remaining()]);
         buf.rewind();
         long address = GridUnsafe.bufferAddress(buf);
-        System.out.println(address);
-        System.out.println(address % pageSize);
+        System.out.println("address=" + address);
+        System.out.println("address % pageSize"  + address % pageSize);
 
-
-        GridUnsafe.copyMemory(address, Pointer.nativeValue(pointer), pageSize);
+        long alignedPtr = Pointer.nativeValue(pointer);
+        System.out.println("alignedPtr=" +alignedPtr);
+        System.out.println("alignedPtr % pageSize=" + alignedPtr % pageSize);
+        GridUnsafe.copyMemory(address, alignedPtr, pageSize);
 
 
         final int start = buf.position();
-        System.err.println(start);
+        System.out.println("start=" +start);
         assert start == lib.blockStart(start);
         final int toWrite = lib.blockEnd(buf.limit()) - start;
 
-        System.err.println(toWrite);
+        System.out.println("toWrite="+ toWrite);
 
-        NativeLong n = IgniteDirectIo.pwrite(fd, pointer, new NativeLong(pageSize), new NativeLong(0));
-        System.out.println(n);
+        NativeLong n = IgniteDirectIo.pwrite(fd, pointer, new NativeLong(pageSize), new NativeLong(pageSize*4));
+        System.out.println("written=" + n);
         if (n.longValue() < 0) {
             throw new IOException("Error writing file at offset "  + ": " + DirectIoLib.getLastError());
         }
@@ -94,7 +95,7 @@ public class FilePageStoreTest {
 
         DirectIoLib.free(pointer);
 
-        System.out.println(fd);
+        System.out.println("fd=" + fd);
 
 
     }
