@@ -131,7 +131,7 @@ public class CachePartitionFullCountersMap implements Serializable {
     	Map<Integer, T2<Long, Long>> map0 = U.newHashMap(map.partsCnt);
     
     	for (int p = 0; p < map.partsCnt; p++)     		    	
-    		map0.put(p, new T2<>(map.initialUpdCntrs==null?0:map.initialUpdCntrs[p], map.updCntrs==null?0:map.updCntrs[p]));
+             map0.put(p, new T2<>(map.initialUpdCntrs == null ? 0 : map.initialUpdCntrs[p], map.updCntrs == null ? 0 : map.updCntrs[p]));
     		    	
         return map0;
     }

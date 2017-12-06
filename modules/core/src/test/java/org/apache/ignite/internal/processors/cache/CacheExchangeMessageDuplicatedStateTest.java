@@ -255,17 +255,14 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
                 long[] updCntrs = getFieldValue(cntrs, "updCntrs");
                 int partCnt = getFieldValue(cntrs, "partsCnt");
                 
-                if(initialUpdCntrs == null && updCntrs == null) {
-                	return;
-                }
+                if (initialUpdCntrs == null && updCntrs == null) 
+                    return;
                 
                 for (int i = 0; i < partCnt; i++) {
-                	if(initialUpdCntrs!=null) {
-                		assertEquals(0, initialUpdCntrs[i]);
-                	}
-                	if(updCntrs != null) {
-                		assertEquals(0, updCntrs[i]);
-                	}
+                    if (initialUpdCntrs != null) 
+                        assertEquals(0, initialUpdCntrs[i]);
+                    if (updCntrs != null) 
+                        assertEquals(0, updCntrs[i]);
                 }
             }
         }
