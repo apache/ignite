@@ -34,6 +34,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -59,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -363,7 +366,55 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     cctx.mvcc().addFuture(this, futId);
                 }
 
-                MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer);
+                IgniteInClosure<Collection<GridCacheEntryInfo>> clos = null;
+
+                if (readThrough && !skipVals) {
+                    clos = new CI1<Collection<GridCacheEntryInfo>>() {
+                        @Override public void apply(Collection<GridCacheEntryInfo> infos) {
+                            if (!F.isEmpty(infos)) {
+                                GridCacheAffinityManager aff = cctx.affinity();
+                                ClusterNode locNode = cctx.localNode();
+
+                                for (GridCacheEntryInfo info : infos) {
+                                    if (aff.backupsByKey(info.key(), topVer).contains(locNode)) {
+                                        while (true) {
+                                            assert cctx.cache().isNear();
+
+                                            GridCacheEntryEx entry = null;
+                                            GridDhtCacheAdapter colocated = ((GridNearCacheAdapter)cctx.cache()).dht();
+
+                                            try {
+                                                entry = colocated.entryEx(info.key(), topVer);
+
+                                                entry.initialValue(
+                                                    info.value(),
+                                                    info.version(),
+                                                    0,
+                                                    0,
+                                                    false,
+                                                    topVer,
+                                                    GridDrType.DR_BACKUP,
+                                                    true);
+
+                                                break;
+                                            }
+                                            catch (GridCacheEntryRemovedException ignore) {
+                                                if (log.isDebugEnabled())
+                                                    log.debug("Got removed entry during postprocessing (will retry): " +
+                                                        entry);
+                                            }
+                                            catch (IgniteCheckedException e) {
+                                                U.error(log, "Error saving backup value: " + entry, e);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    };
+                }
+
+                MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer, clos);
 
                 GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),
@@ -834,6 +885,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         /** Topology version on which this future was mapped. */
         private AffinityTopologyVersion topVer;
 
+        /** Post processing closure. */
+        private final IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos;
+
         /** {@code True} if remapped after node left. */
         private boolean remapped;
 
@@ -842,17 +896,19 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
          * @param keys Keys.
          * @param savedEntries Saved entries.
          * @param topVer Topology version.
+         * @param postProcessingClos Post processing closure.
          */
         MiniFuture(
             ClusterNode node,
             LinkedHashMap<KeyCacheObject, Boolean> keys,
             Map<KeyCacheObject, GridNearCacheEntry> savedEntries,
-            AffinityTopologyVersion topVer
-        ) {
+            AffinityTopologyVersion topVer,
+            IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos) {
             this.node = node;
             this.keys = keys;
             this.savedEntries = savedEntries;
             this.topVer = topVer;
+            this.postProcessingClos = postProcessingClos;
         }
 
         /**
@@ -977,6 +1033,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                     }), F.t(node, keys), topVer);
 
+                    postProcessResult(res);
+
                     // It is critical to call onDone after adding futures to compound list.
                     onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
 
@@ -998,13 +1056,26 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             }
                         }), F.t(node, keys), readyTopVer);
 
+                        postProcessResult(res);
+
                         // It is critical to call onDone after adding futures to compound list.
                         onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
                     }
                 });
             }
-            else
+            else {
+                postProcessResult(res);
+
                 onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
+            }
+        }
+
+        /**
+         * @param res Response.
+         */
+        private void postProcessResult(final GridNearGetResponse res) {
+            if (postProcessingClos != null)
+                postProcessingClos.apply(res.entries());
         }
 
         /** {@inheritDoc} */

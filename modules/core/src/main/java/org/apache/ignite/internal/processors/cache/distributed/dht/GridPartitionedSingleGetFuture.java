@@ -41,18 +41,20 @@ import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -121,6 +123,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** */
     @GridToStringInclude
     private ClusterNode node;
+
+    /** Post processing closure. */
+    private volatile IgniteBiInClosure<CacheObject, GridCacheVersion> postProcessingClos;
 
     /**
      * @param cctx Context.
@@ -273,6 +278,46 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 trackable = true;
 
                 cctx.mvcc().addFuture(this, futId);
+            }
+
+            boolean needVer = this.needVer;
+
+            if (readThrough && !skipVals && cctx.affinity().backupsByKey(key, topVer).contains(cctx.localNode())) {
+                // Need version to correctly store value.
+                needVer = true;
+
+                postProcessingClos = new IgniteBiInClosure<CacheObject, GridCacheVersion>() {
+                    @Override public void apply(CacheObject obj, GridCacheVersion ver) {
+                        while (true) {
+                            GridCacheEntryEx entry = null;
+                            GridDhtCacheAdapter colocated = cctx.dht();
+
+                            try {
+                                entry = colocated.entryEx(key, topVer);
+
+                                entry.initialValue(
+                                    obj,
+                                    ver,
+                                    0,
+                                    0,
+                                    false,
+                                    topVer,
+                                    GridDrType.DR_BACKUP,
+                                    true);
+
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException ignore) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Got removed entry during postprocessing (will retry): " +
+                                        entry);
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Error saving backup value: " + entry, e);
+                            }
+                        }
+                    }
+                };
             }
 
             GridCacheMessage req = new GridNearSingleGetRequest(cctx.cacheId(),
@@ -502,6 +547,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         else {
             if (skipVals)
                 setSkipValueResult(res.containsValue(), null);
+            else if (readThrough && res0 instanceof CacheVersionedValue/* postProcessingClos != null*/) { // TODO Volatile read or instanceof!!!
+                CacheVersionedValue verVal = (CacheVersionedValue)res0;
+
+                setResult(verVal.value(), verVal.version());
+            }
             else
                 setResult((CacheObject)res0, null);
         }
@@ -640,6 +690,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             assert !skipVals;
 
             if (val != null) {
+                if (postProcessingClos != null)
+                    postProcessingClos.apply(val, ver);
+
                 if (!keepCacheObjects) {
                     Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
 
