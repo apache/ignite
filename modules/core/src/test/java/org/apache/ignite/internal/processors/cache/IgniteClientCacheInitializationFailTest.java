@@ -370,7 +370,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return false;
         }
 
-        @Override public boolean checkIndexedColumnsEquality(GridCacheContext cctx, GridQueryTypeDescriptor newRowType,
+        /** {@inheritDoc} */
+        @Override public boolean checkIndexedColumnsEquality(GridCacheContext cctx, GridQueryTypeDescriptor rowsType,
             CacheDataRow newRow, @Nullable CacheDataRow prevRow) {
             return false;
         }

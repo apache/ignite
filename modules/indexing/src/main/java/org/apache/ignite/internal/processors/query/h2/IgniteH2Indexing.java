@@ -1995,10 +1995,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkIndexedColumnsEquality(GridCacheContext cctx, GridQueryTypeDescriptor rowType,
+    @Override public boolean checkIndexedColumnsEquality(GridCacheContext cctx, GridQueryTypeDescriptor rowsType,
         CacheDataRow newRow,  @Nullable CacheDataRow prevRow)
         throws IgniteCheckedException {
-        assert rowType != null;
+        assert rowsType != null;
         assert newRow != null;
         assert newRow.key().equals(prevRow.key());
 
@@ -2007,7 +2007,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String cacheName = cctx.name();
 
-        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), cacheName, rowType.name());
+        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), cacheName, rowsType.name());
 
         if (tbl == null)
             return false;

@@ -1784,7 +1784,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         QueryTypeDescriptorImpl newDesc = typeByValue(cacheName, coctx, newRow.key(), newRow.value(), true);
         QueryTypeDescriptorImpl prevDesc = typeByValue(cacheName, coctx, prevRow.key(), prevRow.value(), true);
 
-        if (newDesc != prevDesc)
+        if (newDesc == null || newDesc != prevDesc)
             return false;
 
         return getIndexing().checkIndexedColumnsEquality(cctx, newDesc, newRow, prevRow);
