@@ -44,6 +44,6 @@ public class DirectRandomAccessFileIOFactory implements FileIOFactory {
         if (lib == null)
             return new RandomAccessFileIOFactory().create(file, modes);
 
-        return new org.apache.ignite.internal.processors.cache.persistence.file.DirectRandomAccessFileIO(file, modes);
+        return new DirectRandomAccessFileIO(file, modes);
     }
 }

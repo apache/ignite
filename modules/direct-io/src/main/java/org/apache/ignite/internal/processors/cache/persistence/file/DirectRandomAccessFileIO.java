@@ -29,12 +29,14 @@ public class DirectRandomAccessFileIO implements FileIO {
     private final DirectIoByteChannelAligner channel;
 
     public DirectRandomAccessFileIO(File file, OpenOption[] openOptions) throws IOException {
-        boolean readOnly = false;
+        boolean readOnly = true;
 
         for (OpenOption option : openOptions) {
             if (option == StandardOpenOption.WRITE ||
-                option == StandardOpenOption.APPEND)
-                readOnly = true;
+                option == StandardOpenOption.APPEND ||
+                option == StandardOpenOption.CREATE ||
+                option == StandardOpenOption.CREATE_NEW)
+                readOnly = false;
         }
 
         channel = DirectIoByteChannelAligner.open(file, readOnly);
@@ -60,7 +62,7 @@ public class DirectRandomAccessFileIO implements FileIO {
     }
 
     @Override public int read(byte[] buffer, int offset, int length) throws IOException {
-        return channel.readBytes( buffer, offset, length);
+        return channel.readBytes(buffer, offset, length);
     }
 
     @Override public int write(ByteBuffer sourceBuffer) throws IOException {
@@ -68,8 +70,10 @@ public class DirectRandomAccessFileIO implements FileIO {
     }
 
     @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        //throw new UnsupportedOperationException("Not implemented");
         // return channel.write(sourceBuffer, position);
+        channel.position(position);
+        return channel.write(sourceBuffer);
     }
 
     @Override public void write(byte[] buffer, int offset, int length) throws IOException {
