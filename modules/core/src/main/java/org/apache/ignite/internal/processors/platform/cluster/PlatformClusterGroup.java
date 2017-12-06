@@ -532,7 +532,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
         writer.writeString(metrics.getName());
         writer.writeLong(metrics.getTotalAllocatedPages());
-        writer.writeLong(metrics.getIndexesAllocatedPages());
         writer.writeFloat(metrics.getAllocationRate());
         writer.writeFloat(metrics.getEvictionRate());
         writer.writeFloat(metrics.getLargeEntriesPagesPercentage());
@@ -551,7 +550,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
         writer.writeString(metrics.getName());
         writer.writeLong(metrics.getTotalAllocatedPages());
-        writer.writeLong(metrics.getIndexesAllocatedPages());
         writer.writeFloat(metrics.getAllocationRate());
         writer.writeFloat(metrics.getEvictionRate());
         writer.writeFloat(metrics.getLargeEntriesPagesPercentage());
