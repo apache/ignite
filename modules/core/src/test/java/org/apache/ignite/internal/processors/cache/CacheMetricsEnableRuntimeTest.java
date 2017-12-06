@@ -124,12 +124,10 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         CacheMetricsMXBean mxBeanCache1 = mxBean(1, CACHE1);
         CacheMetricsMXBean mxBeanCache2 = mxBean(1, CACHE2);
 
-        //awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
 
         mxBeanCache1.enableStatistics();
         mxBeanCache2.disableStatistics();
-
-        awaitPartitionMapExchange();
 
         assertTrue(ig1.cache(CACHE1).metrics().isStatisticsEnabled());
         assertTrue(ig2.cache(CACHE1).metrics().isStatisticsEnabled());
@@ -137,8 +135,6 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         assertFalse(ig2.cache(CACHE2).metrics().isStatisticsEnabled());
 
         Ignite ig3 = startGrid(3);
-
-        awaitPartitionMapExchange();
 
         assertTrue(ig3.cache(CACHE1).metrics().isStatisticsEnabled());
         assertFalse(ig3.cache(CACHE2).metrics().isStatisticsEnabled());
@@ -161,13 +157,13 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
         ig1.getOrCreateCache(cacheCfg2);
 
+        awaitPartitionMapExchange();
+
         CacheMetricsMXBean mxBeanCache1 = mxBean(1, CACHE1);
         CacheMetricsMXBean mxBeanCache2 = mxBean(1, CACHE2);
 
         mxBeanCache1.enableStatistics();
         mxBeanCache2.disableStatistics();
-
-        awaitPartitionMapExchange();
 
         assertTrue(ig1.cache(CACHE1).metrics().isStatisticsEnabled());
         assertTrue(ig2.cache(CACHE1).metrics().isStatisticsEnabled());
@@ -180,8 +176,6 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         mxBeanCache2.enableStatistics();
 
         ig2 = startGrid(2);
-
-        awaitPartitionMapExchange();
 
         assertFalse(ig1.cache(CACHE1).metrics().isStatisticsEnabled());
         assertFalse(ig2.cache(CACHE1).metrics().isStatisticsEnabled());
