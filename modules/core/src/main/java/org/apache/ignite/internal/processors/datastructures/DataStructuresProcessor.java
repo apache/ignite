@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -74,7 +73,6 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -105,10 +103,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public final class DataStructuresProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
-    private static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+    public static final String DEFAULT_VOLATILE_DS_GROUP_NAME = "default-volatile-ds-group";
 
     /** */
-    private static final String DEFAULT_VOLATILE_DS_GROUP_NAME = "default-volatile-ds-group";
+    private static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
 
     /** */
     private static final String DS_CACHE_NAME_PREFIX = "datastructures_";
