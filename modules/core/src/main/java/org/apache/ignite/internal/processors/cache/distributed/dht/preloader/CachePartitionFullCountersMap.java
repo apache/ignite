@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -31,25 +34,30 @@ public class CachePartitionFullCountersMap implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long[] initialUpdCntrs;
+    private int partsCnt; 
+    
+    /** */
+    private long[] initialUpdCntrs = null;
 
     /** */
-    private long[] updCntrs;
+    private long[] updCntrs = null;
 
     /**
      * @param other Map to copy.
      */
     public CachePartitionFullCountersMap(CachePartitionFullCountersMap other) {
-        initialUpdCntrs = Arrays.copyOf(other.initialUpdCntrs, other.initialUpdCntrs.length);
-        updCntrs = Arrays.copyOf(other.updCntrs, other.updCntrs.length);
+    	if(other.initialUpdCntrs != null)
+    		initialUpdCntrs = Arrays.copyOf(other.initialUpdCntrs, other.initialUpdCntrs.length);
+    	
+    	if(updCntrs != null) 
+    		updCntrs = Arrays.copyOf(other.updCntrs, other.updCntrs.length);
     }
 
     /**
      * @param partsCnt Total number of partitions.
      */
     public CachePartitionFullCountersMap(int partsCnt) {
-        initialUpdCntrs = new long[partsCnt];
-        updCntrs = new long[partsCnt];
+        this.partsCnt = partsCnt;    
     }
 
     /**
@@ -59,7 +67,10 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @return Initial update counter for the partition with the given ID.
      */
     public long initialUpdateCounter(int p) {
-        return initialUpdCntrs[p];
+    	if(initialUpdCntrs == null) 
+    		return 0;
+    	else 
+    		return initialUpdCntrs[p];
     }
 
     /**
@@ -69,7 +80,10 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @return Update counter for the partition with the given ID.
      */
     public long updateCounter(int p) {
-        return updCntrs[p];
+    	if(updCntrs == null) 
+    		return 0;
+    	else
+    		return updCntrs[p];
     }
 
     /**
@@ -79,6 +93,12 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @param initialUpdCntr Initial update counter to set.
      */
     public void initialUpdateCounter(int p, long initialUpdCntr) {
+    	if(initialUpdCntrs == null) {
+    		if(initialUpdCntr != 0L) 
+    			initialUpdCntrs = new long[partsCnt];
+    		else 
+    			return;    		    		
+    	}
         initialUpdCntrs[p] = initialUpdCntr;
     }
 
@@ -89,6 +109,12 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @param updCntr Update counter to set.
      */
     public void updateCounter(int p, long updCntr) {
+    	if(updCntrs == null) {
+    		if(updCntr != 0L) 
+    			updCntrs = new long[partsCnt];
+    		else 
+    			return;
+    	}    
         updCntrs[p] = updCntr;
     }
 
@@ -96,8 +122,8 @@ public class CachePartitionFullCountersMap implements Serializable {
      * Clears full counters map.
      */
     public void clear() {
-        Arrays.fill(initialUpdCntrs, 0);
-        Arrays.fill(updCntrs, 0);
+        initialUpdCntrs = null;
+        updCntrs = null;
     }
 
     /**
@@ -105,13 +131,11 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @return Regular java map with counters.
      */
     public static Map<Integer, T2<Long, Long>> toCountersMap(CachePartitionFullCountersMap map) {
-        int partsCnt = map.updCntrs.length;
-
-        Map<Integer, T2<Long, Long>> map0 = U.newHashMap(partsCnt);
-
-        for (int p = 0; p < partsCnt; p++)
-            map0.put(p, new T2<>(map.initialUpdCntrs[p], map.updCntrs[p]));
-
+    	Map<Integer, T2<Long, Long>> map0 = U.newHashMap(map.partsCnt);
+    
+    	for (int p = 0; p < map.partsCnt; p++)     		    	
+    		map0.put(p, new T2<>(map.initialUpdCntrs==null?0:map.initialUpdCntrs[p], map.updCntrs==null?0:map.updCntrs[p]));
+    		    	
         return map0;
     }
 
@@ -126,8 +150,8 @@ public class CachePartitionFullCountersMap implements Serializable {
         for (Map.Entry<Integer, T2<Long, Long>> e : map.entrySet()) {
             T2<Long, Long> cntrs = e.getValue();
 
-            map0.initialUpdCntrs[e.getKey()] = cntrs.get1();
-            map0.updCntrs[e.getKey()] = cntrs.get2();
+            map0.initialUpdateCounter(e.getKey(), cntrs.get1());
+            map0.updateCounter(e.getKey(),cntrs.get2());
         }
 
         return map0;
