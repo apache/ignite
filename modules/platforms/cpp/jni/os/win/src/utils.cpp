@@ -354,7 +354,7 @@ namespace ignite
          */
         std::string NormalizeClasspath(const std::string& usrCp)
         {
-            if (usrCp.empty() || usrCp.back() == ';')
+            if (usrCp.empty() || *usrCp.rbegin() == ';')
                 return usrCp;
 
             return usrCp + ';';
