@@ -355,10 +355,10 @@ public class H2TreeIndex extends GridH2IndexBase {
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
-        IndexingQueryFilter queryFilter) {
+        IndexingQueryFilter filter) {
 
         try {
-            IndexingQueryCacheFilter partitionFilter = partitionFilter(queryFilter);
+            IndexingQueryCacheFilter partitionFilter = partitionFilter(filter);
 
             GridCursor<GridH2Row> range = t.find(first, last, partitionFilter);
 
