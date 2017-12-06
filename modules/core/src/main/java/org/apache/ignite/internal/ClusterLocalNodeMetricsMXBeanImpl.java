@@ -356,7 +356,7 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
     @Override public Set<String> attributeValues(String attrName) {
         Object val = node.attribute(attrName);
 
-        return val == null ? Collections.emptySet() : Collections.singleton(val.toString());
+        return val == null ? Collections.<String>emptySet() : Collections.singleton(val.toString());
     }
 
     /** {@inheritDoc} */
