@@ -218,11 +218,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             parts == null ? RendezvousAffinityFunction.DFLT_PARTITION_COUNT : parts);
     }
 
-    @Override
-    protected void beforeTest() throws Exception {
-        super.beforeTest();
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {

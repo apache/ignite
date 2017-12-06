@@ -1012,7 +1012,7 @@ public class IgniteTxHandler {
 
             if (tx != null)
                 try {
-                    return tx.rollbackNearTxLocalAsync();
+                    return tx.rollbackNearTxLocalAsync(); // TODO FIXME recursive call to rollbackNearTxLocalAsync.
                 }
                 catch (Throwable e1) {
                     e.addSuppressed(e1);
