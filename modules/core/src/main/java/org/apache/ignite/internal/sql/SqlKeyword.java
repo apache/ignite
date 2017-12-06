@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.sql;
 
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
-
-import java.lang.reflect.Field;
-import java.util.HashSet;
 
 /**
  * SQL keyword constants.
@@ -29,6 +31,9 @@ import java.util.HashSet;
 public class SqlKeyword {
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
+
+    /** Keyword: BEGIN. */
+    public static final String BEGIN = "BEGIN";
 
     /** Keyword: BIGINT */
     public static final String BIGINT = "BIGINT";
@@ -50,6 +55,9 @@ public class SqlKeyword {
 
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
+
+    /** Keyword: COMMIT. */
+    public static final String COMMIT = "COMMIT";
 
     /** Keyword: CREATE. */
     public static final String CREATE = "CREATE";
@@ -159,6 +167,9 @@ public class SqlKeyword {
     /** Keyword: RESTRICT. */
     public static final String RESTRICT = "RESTRICT";
 
+    /** Keyword: ROLLBACK. */
+    public static final String ROLLBACK = "ROLLBACK";
+
     /** Keyword: SIGNED. */
     public static final String SIGNED = "SIGNED";
 
@@ -171,6 +182,9 @@ public class SqlKeyword {
     /** Keyword: SPATIAL. */
     public static final String SPATIAL = "SPATIAL";
 
+    /** Keyword: START. */
+    public static final String START = "START";
+
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";
 
@@ -182,6 +196,9 @@ public class SqlKeyword {
 
     /** Keyword: TINYINT. */
     public static final String TINYINT = "TINYINT";
+
+    /** Keyword: TRANSACTION. */
+    public static final String TRANSACTION = "TRANSACTION";
 
     /** Keyword: UNIQUE. */
     public static final String UNIQUE = "UNIQUE";
@@ -198,6 +215,9 @@ public class SqlKeyword {
     /** Keyword: VARCHAR_CASESENSITIVE. */
     public static final String VARCHAR_CASESENSITIVE = "VARCHAR_CASESENSITIVE";
 
+    /** Keyword: WORK. */
+    public static final String WORK = "WORK";
+
     /** Keyword: YEAR. */
     public static final String YEAR = "YEAR";
 
@@ -206,6 +226,9 @@ public class SqlKeyword {
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;
+
+    /** Keywords indicating that a query may be parsed natively. */
+    public static final Set<String> NATIVE_KEYWORDS;
 
     static {
         KEYWORDS = new HashSet<>();
@@ -222,6 +245,12 @@ public class SqlKeyword {
         catch (ReflectiveOperationException e) {
             throw new IgniteException("Failed to initialize keywords collection.", e);
         }
+
+        Set<String> nativeKeywords = new HashSet<>();
+
+        nativeKeywords.addAll(Arrays.asList(INDEX, TRANSACTION, BEGIN, COMMIT, ROLLBACK));
+
+        NATIVE_KEYWORDS = Collections.unmodifiableSet(nativeKeywords);
     }
 
     /**

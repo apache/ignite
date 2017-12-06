@@ -121,11 +121,15 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
+import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -149,6 +153,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
@@ -1425,9 +1432,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @return Result or {@code null} if cannot parse/process this query.
      */
+    @SuppressWarnings("ConstantConditions")
     private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry) {
         // Heuristic check for fast return.
-        if (!qry.getSql().toUpperCase().contains("INDEX"))
+        if (!isNativelyParseable(qry.getSql()))
             return null;
 
         // Parse.
@@ -1443,7 +1451,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return null;
 
             // Only CREATE/DROP INDEX is supported for now.
-            if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand))
+            if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand ||
+                cmd instanceof SqlBeginTransactionCommand || cmd instanceof SqlCommitTransactionCommand ||
+                cmd instanceof SqlRollbackTransactionCommand))
                 return null;
         }
         catch (Exception e) {
@@ -1464,13 +1474,39 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Execute.
         try {
-            List<FieldsQueryCursor<List<?>>> ress = new ArrayList<>(1);
+            if (cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand) {
+                List<FieldsQueryCursor<List<?>>> ress = new ArrayList<>(1);
 
-            FieldsQueryCursor<List<?>> res = ddlProc.runDdlStatement(qry.getSql(), cmd);
+                FieldsQueryCursor<List<?>> res = ddlProc.runDdlStatement(qry.getSql(), cmd);
 
-            ress.add(res);
+                ress.add(res);
 
-            return ress;
+                return ress;
+            }
+            else if (cmd instanceof SqlBeginTransactionCommand) {
+                ctx.grid().transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+                    TransactionIsolation.REPEATABLE_READ);
+            }
+            else if (cmd instanceof SqlCommitTransactionCommand) {
+                Transaction tx = ctx.grid().transactions().tx();
+
+                if (tx == null)
+                    throw new IgniteSQLException("Transaction has not been started");
+
+                tx.commit();
+            }
+            else {
+                assert cmd instanceof SqlRollbackTransactionCommand;
+
+                Transaction tx = ctx.grid().transactions().tx();
+
+                if (tx == null)
+                    throw new IgniteSQLException("Transaction has not been started");
+
+                tx.rollback();
+            }
+
+            return Collections.emptyList();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
@@ -1689,6 +1725,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return res;
+    }
+
+    /**
+     * @param qry Statement.
+     * @return Whether we should attempt to natively parse this statement.
+     */
+    private static boolean isNativelyParseable(String qry) {
+        qry = qry.toUpperCase();
+
+        for (String word : SqlKeyword.NATIVE_KEYWORDS)
+            if (qry.contains(word))
+                return true;
+
+        return false;
     }
 
     /**

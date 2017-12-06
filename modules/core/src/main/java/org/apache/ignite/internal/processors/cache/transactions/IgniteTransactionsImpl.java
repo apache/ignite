@@ -26,9 +26,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
-import org.apache.ignite.transactions.TransactionException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,7 +52,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         return txStart0(
             cfg.getDefaultTxConcurrency(),
             cfg.getDefaultTxIsolation(),
-            cfg.getDefaultTxTimeout(),
+            false, cfg.getDefaultTxTimeout(),
             0,
             null
         ).proxy();
@@ -68,7 +68,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         return txStart0(
             concurrency,
             isolation,
-            cfg.getDefaultTxTimeout(),
+            false, cfg.getDefaultTxTimeout(),
             0,
             null
         ).proxy();
@@ -85,7 +85,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         return txStart0(
             concurrency,
             isolation,
-            timeout,
+            false, timeout,
             txSize,
             null
         ).proxy();
@@ -108,7 +108,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         return txStart0(concurrency,
             isolation,
-            timeout,
+            false, timeout,
             txSize,
             ctx.systemTx() ? ctx : null);
     }
@@ -128,6 +128,28 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         return txStart0(concurrency,
             isolation,
+            false, cfg.getDefaultTxTimeout(),
+            0,
+            ctx.systemTx() ? ctx : null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridNearTxLocal txStartEx(
+        GridCacheContext ctx,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        boolean sql)
+    {
+        A.notNull(concurrency, "concurrency");
+        A.notNull(isolation, "isolation");
+
+        checkTransactional(ctx);
+
+        TransactionConfiguration cfg = CU.transactionConfiguration(ctx, cctx.kernalContext().config());
+
+        return txStart0(concurrency,
+            isolation,
+            sql,
             cfg.getDefaultTxTimeout(),
             0,
             ctx.systemTx() ? ctx : null);
@@ -136,15 +158,16 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /**
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.
+     * @param sql SQL flag.
      * @param timeout Transaction timeout.
      * @param txSize Expected transaction size.
-     * @param sysCacheCtx System cache context.
-     * @return Transaction.
+     * @param sysCacheCtx System cache context.    @return Transaction.
      */
     @SuppressWarnings("unchecked")
     private GridNearTxLocal txStart0(
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
+        boolean sql,
         long timeout,
         int txSize,
         @Nullable GridCacheContext sysCacheCtx
@@ -166,6 +189,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
                 isolation,
                 timeout,
                 true,
+                sql,
                 txSize
             );
 
