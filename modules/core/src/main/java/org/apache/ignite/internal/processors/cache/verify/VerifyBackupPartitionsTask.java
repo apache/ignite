@@ -47,11 +47,14 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task for comparing checksums between primary and backup partitions of specified caches.
+ * Task for comparing update counters and checksums between primary and backup partitions of specified caches.
  * <br>
  * Argument: Set of cache names, 'null' will trigger verification for all caches.
  * <br>
- * Result: Map with conflicts. Each conflict represented by list of {@link PartitionHashRecord} with different hashes.
+ * Result: If there are any update counter conflicts (which signals about concurrent updates in
+ * cluster), map with all counter conflicts is returned. Otherwise, map with all hash conflicts is returned.
+ * Each conflict is represented by list of {@link PartitionHashRecord} with data from different nodes.
+ * Successful verification always returns empty map.
  * <br>
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
@@ -67,7 +70,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Set<String> cacheNames) throws IgniteException {
+    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+        List<ClusterNode> subgrid, Set<String> cacheNames) throws IgniteException {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
         for (ClusterNode node : subgrid)
@@ -77,10 +81,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<PartitionKey, List<PartitionHashRecord>> reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Nullable @Override public Map<PartitionKey, List<PartitionHashRecord>> reduce(List<ComputeJobResult> results)
+        throws IgniteException {
         Map<PartitionKey, List<PartitionHashRecord>> clusterHashes = new HashMap<>();
-
-        Map<PartitionKey, List<PartitionHashRecord>> conflicts = new HashMap<>();
 
         for (ComputeJobResult res : results) {
             Map<PartitionKey, PartitionHashRecord> nodeHashes = res.getData();
@@ -93,15 +96,29 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
             }
         }
 
+        Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = new HashMap<>();
+
+        Map<PartitionKey, List<PartitionHashRecord>> updateCntrConflicts = new HashMap<>();
+
         for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
+            Long updateCntr = null;
 
             for (PartitionHashRecord record : e.getValue()) {
-                if (partHash == null)
+                if (partHash == null) {
                     partHash = record.partitionHash();
+
+                    updateCntr = record.updateCounter();
+                }
                 else {
+                    if (record.updateCounter() != updateCntr) {
+                        updateCntrConflicts.put(e.getKey(), e.getValue());
+
+                        break;
+                    }
+
                     if (record.partitionHash() != partHash) {
-                        conflicts.put(e.getKey(), e.getValue());
+                        hashConflicts.put(e.getKey(), e.getValue());
 
                         break;
                     }
@@ -109,7 +126,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
             }
         }
 
-        return conflicts;
+        return updateCntrConflicts.isEmpty() ? hashConflicts : updateCntrConflicts;
     }
 
     /** {@inheritDoc} */
@@ -206,10 +223,13 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                         continue;
 
                     int partHash = 0;
+                    long updateCntrBefore;
 
                     try {
                         if (part.state() != GridDhtPartitionState.OWNING)
                             continue;
+
+                        updateCntrBefore = part.updateCounter();
 
                         GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
 
@@ -219,6 +239,14 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                             partHash += row.key().hashCode();
 
                             partHash += Arrays.hashCode(row.value().valueBytes(grpCtx.cacheObjectContext()));
+                        }
+
+                        long updateCntrAfter = part.updateCounter();
+
+                        if (updateCntrBefore != updateCntrAfter) {
+                            throw new IgniteException("Cluster is not idle: update counter of partition [grpId=" +
+                                grpId + ", partId=" + part.id() + "] changed during hash calculation [before=" +
+                                updateCntrBefore + ", after=" + updateCntrAfter + "]");
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -235,7 +263,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
                     boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
 
-                    res.put(new PartitionKey(grpId, part.id()), new PartitionHashRecord(isPrimary, consId, partHash));
+                    res.put(new PartitionKey(grpId, part.id()), new PartitionHashRecord(
+                        isPrimary, consId, partHash, updateCntrBefore));
                 }
             }
 

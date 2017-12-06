@@ -27,23 +27,28 @@ public class PartitionHashRecord implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Is primary flag. */
-    private boolean isPrimary;
+    private final boolean isPrimary;
 
     /** Consistent id. */
-    private Object consistentId;
+    private final Object consistentId;
 
     /** Partition hash. */
-    private int partHash;
+    private final int partHash;
+
+    /** Update counter. */
+    private final long updateCntr;
 
     /**
      * @param isPrimary Is primary.
      * @param consistentId Consistent id.
      * @param partHash Partition hash.
+     * @param updateCntr Update counter.
      */
-    public PartitionHashRecord(boolean isPrimary, Object consistentId, int partHash) {
+    public PartitionHashRecord(boolean isPrimary, Object consistentId, int partHash, long updateCntr) {
         this.isPrimary = isPrimary;
         this.consistentId = consistentId;
         this.partHash = partHash;
+        this.updateCntr = updateCntr;
     }
 
     /**
@@ -65,6 +70,13 @@ public class PartitionHashRecord implements Serializable {
      */
     public int partitionHash() {
         return partHash;
+    }
+
+    /**
+     * @return Update counter.
+     */
+    public long updateCounter() {
+        return updateCntr;
     }
 
     /** {@inheritDoc} */
