@@ -27,10 +27,10 @@ public class PartitionKey implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Group id. */
-    private int grpId;
+    private final int grpId;
 
     /** Partition id. */
-    private int partId;
+    private final int partId;
 
     /**
      * @param grpId Group id.
