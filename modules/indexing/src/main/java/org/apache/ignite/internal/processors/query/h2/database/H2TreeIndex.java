@@ -105,7 +105,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             segments = new H2Tree[segmentsCnt];
 
             for (int i = 0; i < segments.length; i++) {
-                IgniteCacheDatabaseSharedManager db = ctx.shared().database();
+                IgniteCacheDatabaseSharedManager db = cctx.shared().database();
 
                 db.checkpointReadLock();
 
