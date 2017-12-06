@@ -149,15 +149,20 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             dsCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
 
+        final String workDir = U.defaultWorkDirectory();
+        final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
+        final File wal = new File(db, "wal");
+
         if(setWalAndArchiveToSameValue) {
-            final String workDir = U.defaultWorkDirectory();
-            final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
-            final File wal = new File(db, "wal");
             final String walAbsPath = wal.getAbsolutePath();
 
             dsCfg.setWalPath(walAbsPath);
-
             dsCfg.setWalArchivePath(walAbsPath);
+        } else {
+            dsCfg.setWalPath(wal.getAbsolutePath());
+
+            final File walArchive = new File(db, "archive");
+            dsCfg.setWalArchivePath(walArchive.getAbsolutePath());
         }
 
         cfg.setDataStorageConfiguration(dsCfg);

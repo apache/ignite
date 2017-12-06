@@ -1002,6 +1002,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             FileIO fileIO = ioFactory.create(nextFile);
 
+            if (archiver == null) {
+                formatFile(fileIO);
+
+                if (mode == WALMode.DEFAULT)
+                    fileIO.position(0);
+            }
+
             FileWriteHandle hnd = new FileWriteHandle(
                 fileIO,
                 curIdx + 1,
@@ -1056,34 +1063,45 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Clears the file with zeros.
+     * Clears the file, fills with zeros for Default mode.
      *
      * @param file File to format.
+     * @throws IgniteCheckedException if formatting failed
      */
     private void formatFile(File file) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
-            int left = dsCfg.getWalSegmentSize();
-
-            if (mode == WALMode.DEFAULT) {
-                while (left > 0) {
-                    int toWrite = Math.min(FILL_BUF.length, left);
-
-                    fileIO.write(FILL_BUF, 0, toWrite);
-
-                    left -= toWrite;
-                }
-
-                fileIO.force();
-            }
-            else
-                fileIO.clear();
+            formatFile(fileIO);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to format WAL segment file: " + file.getAbsolutePath(), e);
         }
+    }
+
+    /**
+     * Clears the file, fills with zeros for Default mode
+     *
+     * @param fileIO File to format.
+     * @throws IOException if formatting failed
+     */
+    private void formatFile(FileIO fileIO) throws IOException {
+        int left = dsCfg.getWalSegmentSize();
+
+        if (mode == WALMode.DEFAULT) {
+            while (left > 0) {
+                int toWrite = Math.min(FILL_BUF.length, left);
+
+                fileIO.write(FILL_BUF, 0, toWrite);
+
+                left -= toWrite;
+            }
+
+            fileIO.force();
+        }
+        else
+            fileIO.clear();
     }
 
     /**
