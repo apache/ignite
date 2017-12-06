@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import org.apache.ignite.IgniteException;
 
 /**
  * Class with various utility methods.
@@ -34,8 +35,9 @@ public class Utils {
      * @param <T> Class of original object;
      * @return Deep copy of original object.
      */
+    @SuppressWarnings({"unchecked"})
     public static <T> T copy(T orig) {
-        Object obj = null;
+        Object obj;
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -50,7 +52,7 @@ public class Utils {
             obj = in.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            throw new IgniteException("Couldn't copy the object.");
         }
 
         return (T)obj;

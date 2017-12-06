@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
     using System.Linq;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
@@ -27,35 +26,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// <summary>
     /// Tests SQL queries via thin client.
     /// </summary>
-    public class SqlQueryTest : ClientTestBase
+    public class SqlQueryTest : SqlQueryTestBase
     {
-        /// <summary>
-        /// Cache item count.
-        /// </summary>
-        private const int Count = 10;
-
-        /// <summary>
-        /// Second cache name.
-        /// </summary>
-        private const string CacheName2 = CacheName + "2";
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ScanQueryTest"/> class.
-        /// </summary>
-        public SqlQueryTest() : base(2)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Sets up the test.
-        /// </summary>
-        public override void TestSetUp()
-        {
-            InitCache(CacheName);
-            InitCache(CacheName2);
-        }
-
         /// <summary>
         /// Tests the SQL query.
         /// </summary>
@@ -249,19 +221,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(1, res[0][0]);
             Assert.AreEqual("baz", cache[-10].Name);
-        }
-
-        /// <summary>
-        /// Initializes the cache.
-        /// </summary>
-        private static void InitCache(string cacheName)
-        {
-            var cache = Ignition.GetIgnite().GetOrCreateCache<int, Person>(
-                new CacheConfiguration(cacheName, new QueryEntity(typeof(int), typeof(Person))));
-
-            cache.RemoveAll();
-
-            cache.PutAll(Enumerable.Range(1, Count).ToDictionary(x => x, x => new Person(x)));
         }
     }
 }

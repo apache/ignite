@@ -294,7 +294,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoCachePartitionedAtomic() throws Exception {
+    public void testCreateIndexNoCachePartitionedAtomic() throws Exception {
         checkCreateNotCache(PARTITIONED, ATOMIC, false);
     }
 
@@ -303,7 +303,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoCachePartitionedAtomicNear() throws Exception {
+    public void testCreateIndexNoCachePartitionedAtomicNear() throws Exception {
         checkCreateNotCache(PARTITIONED, ATOMIC, true);
     }
 
@@ -312,7 +312,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoCachePartitionedTransactional() throws Exception {
+    public void testCreateIndexNoCachePartitionedTransactional() throws Exception {
         checkCreateNotCache(PARTITIONED, TRANSACTIONAL, false);
     }
 
@@ -321,7 +321,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoCachePartitionedTransactionalNear() throws Exception {
+    public void testCreateIndexNoCachePartitionedTransactionalNear() throws Exception {
         checkCreateNotCache(PARTITIONED, TRANSACTIONAL, true);
     }
 
@@ -330,7 +330,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoCacheReplicatedAtomic() throws Exception {
+    public void testCreateIndexNoCacheReplicatedAtomic() throws Exception {
         checkCreateNotCache(REPLICATED, ATOMIC, false);
     }
 
@@ -339,7 +339,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoCacheReplicatedTransactional() throws Exception {
+    public void testCreateIndexNoCacheReplicatedTransactional() throws Exception {
         checkCreateNotCache(REPLICATED, TRANSACTIONAL, false);
     }
 
@@ -456,8 +456,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoColumnPartitionedAtomic() throws Exception {
-        checkCreateNoColumn(PARTITIONED, ATOMIC, false);
+    public void testCreateIndexNoColumnPartitionedAtomic() throws Exception {
+        checkCreateIndexNoColumn(PARTITIONED, ATOMIC, false);
     }
 
     /**
@@ -465,8 +465,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoColumnPartitionedAtomicNear() throws Exception {
-        checkCreateNoColumn(PARTITIONED, ATOMIC, true);
+    public void testCreateIndexNoColumnPartitionedAtomicNear() throws Exception {
+        checkCreateIndexNoColumn(PARTITIONED, ATOMIC, true);
     }
 
     /**
@@ -474,8 +474,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoColumnPartitionedTransactional() throws Exception {
-        checkCreateNoColumn(PARTITIONED, TRANSACTIONAL, false);
+    public void testCreateIndexNoColumnPartitionedTransactional() throws Exception {
+        checkCreateIndexNoColumn(PARTITIONED, TRANSACTIONAL, false);
     }
 
     /**
@@ -483,8 +483,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoColumnPartitionedTransactionalNear() throws Exception {
-        checkCreateNoColumn(PARTITIONED, TRANSACTIONAL, true);
+    public void testCreateIndexNoColumnPartitionedTransactionalNear() throws Exception {
+        checkCreateIndexNoColumn(PARTITIONED, TRANSACTIONAL, true);
     }
 
     /**
@@ -492,8 +492,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoColumnReplicatedAtomic() throws Exception {
-        checkCreateNoColumn(REPLICATED, ATOMIC, false);
+    public void testCreateIndexNoColumnReplicatedAtomic() throws Exception {
+        checkCreateIndexNoColumn(REPLICATED, ATOMIC, false);
     }
 
     /**
@@ -501,8 +501,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoColumnReplicatedTransactional() throws Exception {
-        checkCreateNoColumn(REPLICATED, TRANSACTIONAL, false);
+    public void testCreateIndexNoColumnReplicatedTransactional() throws Exception {
+        checkCreateIndexNoColumn(REPLICATED, TRANSACTIONAL, false);
     }
 
     /**
@@ -513,7 +513,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param near Near flag.
      * @throws Exception If failed.
      */
-    private void checkCreateNoColumn(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
+    private void checkCreateIndexNoColumn(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
         initialize(mode, atomicityMode, near);
 
         final QueryIndex idx = index(IDX_NAME_1, field(randomString()));
@@ -532,8 +532,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateColumnWithAliasPartitionedAtomic() throws Exception {
-        checkCreateColumnWithAlias(PARTITIONED, ATOMIC, false);
+    public void testCreateIndexOnColumnWithAliasPartitionedAtomic() throws Exception {
+        checkCreateIndexOnColumnWithAlias(PARTITIONED, ATOMIC, false);
     }
 
     /**
@@ -541,8 +541,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateColumnWithAliasPartitionedAtomicNear() throws Exception {
-        checkCreateColumnWithAlias(PARTITIONED, ATOMIC, true);
+    public void testCreateIndexOnColumnWithAliasPartitionedAtomicNear() throws Exception {
+        checkCreateIndexOnColumnWithAlias(PARTITIONED, ATOMIC, true);
     }
 
     /**
@@ -550,8 +550,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testCreateColumnWithAliasPartitionedTransactional() throws Exception {
-        checkCreateColumnWithAlias(PARTITIONED, TRANSACTIONAL, false);
+    public void testCreateIndexOnColumnWithAliasPartitionedTransactional() throws Exception {
+        checkCreateIndexOnColumnWithAlias(PARTITIONED, TRANSACTIONAL, false);
     }
 
     /**
@@ -560,7 +560,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateColumnWithAliasPartitionedTransactionalNear() throws Exception {
-        checkCreateColumnWithAlias(PARTITIONED, TRANSACTIONAL, true);
+        checkCreateIndexOnColumnWithAlias(PARTITIONED, TRANSACTIONAL, true);
     }
 
     /**
@@ -569,7 +569,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateColumnWithAliasReplicatedAtomic() throws Exception {
-        checkCreateColumnWithAlias(REPLICATED, ATOMIC, false);
+        checkCreateIndexOnColumnWithAlias(REPLICATED, ATOMIC, false);
     }
 
     /**
@@ -578,7 +578,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateColumnWithAliasReplicatedTransactional() throws Exception {
-        checkCreateColumnWithAlias(REPLICATED, TRANSACTIONAL, false);
+        checkCreateIndexOnColumnWithAlias(REPLICATED, TRANSACTIONAL, false);
     }
 
     /**
@@ -589,7 +589,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param near Near flag.
      * @throws Exception If failed.
      */
-    private void checkCreateColumnWithAlias(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near)
+    private void checkCreateIndexOnColumnWithAlias(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near)
         throws Exception {
         initialize(mode, atomicityMode, near);
 
@@ -862,7 +862,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed for any other reason than the expected exception.
      */
     private void checkNoIndexIsCreatedForParallelism(final int parallel, int igniteQryErrorCode) throws Exception {
-        assertSchemaException(new RunnableX() {
+        assertIgniteSqlException(new RunnableX() {
             @Override public void run() throws Exception {
                 QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false, parallel);
