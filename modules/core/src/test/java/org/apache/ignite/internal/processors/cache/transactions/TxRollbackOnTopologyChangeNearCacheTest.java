@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 /**
- * Tests an ability to eagerly rollback timed out transactions.
+ * Tests an ability to eagerly rollback transactions timed out while waiting for topology change for near caches.
  */
 public class TxRollbackOnTopologyChangeNearCacheTest extends TxRollbackOnTopologyChangeTest {
     /** {@inheritDoc} */

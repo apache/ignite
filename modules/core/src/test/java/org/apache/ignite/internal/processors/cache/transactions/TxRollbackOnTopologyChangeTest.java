@@ -45,7 +45,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Tests an ability to eagerly rollback timed out transactions.
+ * Tests an ability to eagerly rollback transactions timed out while waiting for topology change.
  */
 public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     /** */
@@ -70,7 +70,8 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setTransactionConfiguration(new TransactionConfiguration().setRollbackOnTopologyChangeTimeout(ROLLBACK_TIMEOUT));
+        cfg.setTransactionConfiguration(new TransactionConfiguration().
+            setRollbackOnTopologyChangeTimeout(ROLLBACK_TIMEOUT));
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
