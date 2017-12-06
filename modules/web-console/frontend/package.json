@@ -103,6 +103,8 @@
     "worker-loader": "0.8.1"
   },
   "devDependencies": {
+    "@types/angular": "^1.6.39",
+    "@types/angular-strap": "^2.3.1",
     "chai": "4.1.0",
     "jasmine-core": "2.6.4",
     "karma": "1.7.0",

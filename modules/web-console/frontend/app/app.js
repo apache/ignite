@@ -75,7 +75,7 @@ import btnIgniteLink from './directives/btn-ignite-link';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
-import Confirm from './services/Confirm.service.js';
+import {default as IgniteConfirm, Confirm} from './services/Confirm.service.js';
 import ConfirmBatch from './services/ConfirmBatch.service.js';
 import CopyToClipboard from './services/CopyToClipboard.service';
 import Countries from './services/Countries.service';
@@ -245,7 +245,8 @@ angular.module('ignite-console', [
 .service('JavaTypes', JavaTypes)
 .service('SqlTypes', SqlTypes)
 .service(...ChartColors)
-.service(...Confirm)
+.service(...IgniteConfirm)
+.service(Confirm.name, Confirm)
 .service(...ConfirmBatch)
 .service(...CopyToClipboard)
 .service(...Countries)

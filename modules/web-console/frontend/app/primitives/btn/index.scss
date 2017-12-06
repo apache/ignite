@@ -242,6 +242,14 @@ $btn-content-padding-with-border: 9px 11px;
     @include btn-ignite--link-dashed($color, $activeHover, $disabled);
 }
 
+.btn-ignite--link-dashed-primary {
+    $color: $ignite-brand-primary;
+    $activeHover: change-color($color, $lightness: 26%);
+    $disabled: change-color($color, $saturation: 57%, $lightness: 68%);
+
+    @include btn-ignite--link-dashed($color, $activeHover, $disabled);
+}
+
 .btn-ignite--link-dashed-secondary {
     $activeHover: change-color($ignite-brand-success, $lightness: 26%);
     @include btn-ignite--link-dashed($text-color, $activeHover, $gray-light);
