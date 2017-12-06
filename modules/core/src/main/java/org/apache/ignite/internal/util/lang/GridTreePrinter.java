@@ -66,7 +66,7 @@ public abstract class GridTreePrinter<T> {
         String childPrefix = prefix + (tail ? "    " : "│   ");
 
         if (children == null)
-            a.append(childPrefix).append("<list of children is not accessible>\n");
+            a.append(childPrefix).append("└── <list of children is not accessible>\n");
         else {
             for (int i = 0; i < cnt; i++)
                 printTree(children.get(i), childPrefix, i == cnt - 1, a);
@@ -77,7 +77,8 @@ public abstract class GridTreePrinter<T> {
      * Returns list of tree node children.
      *
      * @param treeNode The tree node.
-     * @return List of children (possibly empty) or null if the node can't be read (e.g., is locked).
+     * @return List of children (possibly empty, if it is a leaf page)
+     *         or null if the node can't be read (e.g., is locked).
      */
     protected abstract List<T> getChildren(T treeNode);
 

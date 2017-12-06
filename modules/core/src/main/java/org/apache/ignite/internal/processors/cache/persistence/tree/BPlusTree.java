@@ -131,13 +131,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 try {
                     long pageAddr = readLock(pageId, page); // No correctness guaranties.
                     if (pageAddr == 0)
-                        return Collections.emptyList();
+                        return null;
 
                     try {
                         BPlusIO io = io(pageAddr);
 
                         if (io.isLeaf())
-                            return null;
+                            return Collections.emptyList();
 
                         int cnt = io.getCount(pageAddr);
 
