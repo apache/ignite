@@ -22,7 +22,6 @@ import './app.config';
 
 import './modules/form/form.module';
 import './modules/agent/agent.module';
-import './modules/sql/sql.module';
 import './modules/nodes/nodes.module';
 import './modules/demo/Demo.module';
 
@@ -113,7 +112,6 @@ import resetPassword from './controllers/reset-password.controller';
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
-import clusterSelect from './components/cluster-select';
 import './components/input-dialog';
 import webConsoleHeader from './components/web-console-header';
 import webConsoleFooter from './components/web-console-footer';
@@ -123,12 +121,14 @@ import userNotifications from './components/user-notifications';
 import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
+import pageQueries from './components/page-queries';
 import gridColumnSelector from './components/grid-column-selector';
 import gridItemSelected from './components/grid-item-selected';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
 import listEditable from './components/list-editable';
+import clusterSelector from './components/cluster-selector';
 
 import igniteServices from './services';
 
@@ -168,7 +168,6 @@ angular.module('ignite-console', [
     'ignite-console.branding',
     'ignite-console.socket',
     'ignite-console.agent',
-    'ignite-console.sql',
     'ignite-console.nodes',
     'ignite-console.demo',
     // States.
@@ -197,6 +196,7 @@ angular.module('ignite-console', [
     pageConfigure.name,
     pageConfigureBasic.name,
     pageConfigureAdvanced.name,
+    pageQueries.name,
     gridColumnSelector.name,
     gridItemSelected.name,
     bsSelectMenu.name,
@@ -205,6 +205,7 @@ angular.module('ignite-console', [
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
     listEditable.name,
+    clusterSelector.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -231,7 +232,6 @@ angular.module('ignite-console', [
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
 .directive('igniteListOfRegisteredUsers', igniteListOfRegisteredUsers)
-.directive('igniteClusterSelect', clusterSelect)
 .directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
 .directive('btnIgniteLinkDashedSecondary', btnIgniteLink)
 // Services.

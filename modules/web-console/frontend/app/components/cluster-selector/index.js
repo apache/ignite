@@ -15,16 +15,9 @@
  * limitations under the License.
  */
 
-ignite-cluster-select {
-    @import "./../../../public/stylesheets/variables.scss";
+import angular from 'angular';
+import component from './component';
 
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-
-    .icon-help {
-        margin-left: 4px;
-
-        color: $text-color;
-    }
-}
+export default angular
+    .module('ignite-console.cluster-selector', [])
+    .component('clusterSelector', component);
