@@ -18,26 +18,18 @@
 package org.apache.ignite.yardstick.ml;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
 import org.apache.ignite.ml.math.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
  */
 @SuppressWarnings("unused")
 public class IgniteKMeansLocalClustererBenchmark extends IgniteAbstractBenchmark {
-    /** */
-    private static AtomicBoolean startLogged = new AtomicBoolean(false);
-
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        if (!startLogged.getAndSet(true))
-            BenchmarkUtils.println("Starting " + this.getClass().getSimpleName());
-
         final DataChanger.Scale scale = new DataChanger.Scale();
 
         // IMPL NOTE originally taken from KMeansLocalClustererTest

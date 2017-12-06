@@ -18,7 +18,6 @@
 package org.apache.ignite.yardstick.ml;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.clustering.KMeansDistributedClusterer;
 import org.apache.ignite.ml.math.EuclideanDistance;
@@ -27,7 +26,6 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
@@ -36,17 +34,11 @@ import org.yardstickframework.BenchmarkUtils;
 @SuppressWarnings("unused")
 public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBenchmark {
     /** */
-    private static AtomicBoolean startLogged = new AtomicBoolean(false);
-
-    /** */
     @IgniteInstanceResource
     Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        if (!startLogged.getAndSet(true))
-            BenchmarkUtils.println("Starting " + this.getClass().getSimpleName());
-
         final DataChanger.Scale scale = new DataChanger.Scale();
 
         // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread

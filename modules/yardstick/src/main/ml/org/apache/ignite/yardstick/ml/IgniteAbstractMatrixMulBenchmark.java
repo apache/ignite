@@ -18,13 +18,11 @@
 package org.apache.ignite.yardstick.ml;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
@@ -32,9 +30,6 @@ import org.yardstickframework.BenchmarkUtils;
 abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark {
     /** */
     private static final int SIZE = 1 << 8;
-
-    /** */
-    private static final AtomicBoolean startLogged = new AtomicBoolean(false);
 
     /** */
     private double[][] dataSquare = createAndFill(SIZE, SIZE);
@@ -51,9 +46,6 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        if (!startLogged.getAndSet(true))
-            BenchmarkUtils.println("Starting " + this.getClass().getSimpleName());
-
         final double scale = DataChanger.next();
 
         // Create IgniteThread, we may want to work with SparseDistributedMatrix inside IgniteThread
