@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -153,7 +154,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
-import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.h2.api.ErrorCode;
@@ -867,6 +867,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public GridQueryFieldsResult queryLocalSqlFields(final String schemaName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
+        checkTransactionType();
+
         final Connection conn = connectionForSchema(schemaName);
 
         H2Utils.setupConnection(conn, false, enforceJoinOrder);
@@ -1475,38 +1477,54 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // Execute.
         try {
             if (cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand) {
-                List<FieldsQueryCursor<List<?>>> ress = new ArrayList<>(1);
-
                 FieldsQueryCursor<List<?>> res = ddlProc.runDdlStatement(qry.getSql(), cmd);
 
-                ress.add(res);
-
-                return ress;
+                return Collections.singletonList(res);
             }
             else if (cmd instanceof SqlBeginTransactionCommand) {
-                ctx.grid().transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+                GridNearTxLocal tx = ctx.cache().context().tm().userTx();
+
+                if (tx != null) {
+                    assert tx.sql();
+
+                    throw new IgniteSQLException("Transaction has already been started.",
+                        IgniteQueryErrorCode.TRANSACTION_EXISTS);
+                }
+
+                if (!ctx.grid().configuration().isMvccEnabled())
+                    throw new IgniteSQLException("MVCC must be enabled in order to start transactions.",
+                        IgniteQueryErrorCode.MVCC_DISABLED);
+
+                ctx.cache().transactions().txStartSql(TransactionConcurrency.PESSIMISTIC,
                     TransactionIsolation.REPEATABLE_READ);
             }
             else if (cmd instanceof SqlCommitTransactionCommand) {
-                Transaction tx = ctx.grid().transactions().tx();
+                GridNearTxLocal tx = ctx.cache().context().tm().userTx();
 
                 if (tx == null)
-                    throw new IgniteSQLException("Transaction has not been started");
+                    throw new IgniteSQLException("Transaction has not been started.",
+                        IgniteQueryErrorCode.NO_TRANSACTION);
+
+                assert tx.sql();
 
                 tx.commit();
             }
             else {
                 assert cmd instanceof SqlRollbackTransactionCommand;
 
-                Transaction tx = ctx.grid().transactions().tx();
+                GridNearTxLocal tx = ctx.cache().context().tm().userTx();
 
                 if (tx == null)
-                    throw new IgniteSQLException("Transaction has not been started");
+                    throw new IgniteSQLException("Transaction has not been started.",
+                        IgniteQueryErrorCode.NO_TRANSACTION);
+
+                assert tx.sql();
 
                 tx.rollback();
             }
 
-            return Collections.emptyList();
+            // All transactions related operations return dummy result set - it's a requirement from JDBC driver.
+            return Collections.singletonList(DdlStatementsProcessor.dummyCursor());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
@@ -1516,6 +1534,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
         boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts) {
+        checkTransactionType();
+
         List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry);
 
         if (res != null)
@@ -1739,6 +1759,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return true;
 
         return false;
+    }
+
+    /**
+     * Throw an exception if there's a non SQL transaction started.
+     */
+    private void checkTransactionType() {
+        GridNearTxLocal tx = ctx.cache().context().tm().userTx();
+
+        if (tx != null && !tx.sql())
+            throw new IgniteSQLException("Only transaction started via SQL may be committed via SQL.",
+                IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
     }
 
     /**

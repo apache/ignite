@@ -1718,8 +1718,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
         if (sql)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Cache operations are forbidden on an SQL " +
-                "transaction"));
+            return new GridFinishedFuture<>(new IgniteCheckedException("Cache operations are forbidden " +
+                "inside of an SQL transaction"));
 
         init();
 
@@ -3947,6 +3947,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * @return SQL flag.
+     */
+    public boolean sql() {
+        return sql;
+    }
+
+    /**
      * @return Public API proxy.
      */
     public TransactionProxy proxy() {
@@ -4148,7 +4155,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             throw new IgniteCheckedException("SQL operations are forbidden within transactions started not via SQL.");
 
         if (!sql && this.sql)
-            throw new IgniteCheckedException("Cache operations are forbidden within transactions started via SQL.");
+            throw new IgniteCheckedException("Cache operations are forbidden inside of an SQL transaction");
 
         if (retval)
             needReturnValue(true);

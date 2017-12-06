@@ -134,25 +134,18 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNearTxLocal txStartEx(
-        GridCacheContext ctx,
-        TransactionConcurrency concurrency,
-        TransactionIsolation isolation,
-        boolean sql)
-    {
+    @Override public GridNearTxLocal txStartSql(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        checkTransactional(ctx);
-
-        TransactionConfiguration cfg = CU.transactionConfiguration(ctx, cctx.kernalContext().config());
+        TransactionConfiguration cfg = CU.transactionConfiguration(null, cctx.kernalContext().config());
 
         return txStart0(concurrency,
             isolation,
-            sql,
+            true,
             cfg.getDefaultTxTimeout(),
             0,
-            ctx.systemTx() ? ctx : null);
+            null);
     }
 
     /**

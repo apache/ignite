@@ -113,6 +113,8 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, ver);
 
         parser = new JdbcMessageParser(ctx);
+
+        handler.start();
     }
 
     /** {@inheritDoc} */

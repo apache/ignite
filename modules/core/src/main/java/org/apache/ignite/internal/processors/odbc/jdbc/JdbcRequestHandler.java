@@ -29,15 +29,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -81,6 +83,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
+
+    private final JdbcRequestHandlerWorker worker;
 
     /** Maximum allowed cursors. */
     private final int maxCursors;
@@ -144,6 +148,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.protocolVer = protocolVer;
 
         log = ctx.log(getClass());
+
+        if (ctx.grid().configuration().isMvccEnabled())
+            worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this);
+        else
+            worker = null;
     }
 
     /** {@inheritDoc} */
@@ -154,6 +163,34 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         JdbcRequest req = (JdbcRequest)req0;
 
+        if (worker == null)
+            return doHandle(req);
+        else {
+            GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
+
+            try {
+                return fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                return exceptionToResult(e);
+            }
+        }
+    }
+
+    /**
+     * Start worker, if it's present.
+     */
+    void start() {
+        if (worker != null)
+            worker.start();
+    }
+
+    /**
+     * Actually handle the request.
+     * @param req Request.
+     * @return Request handling result.
+     */
+    ClientListenerResponse doHandle(JdbcRequest req) {
         if (!busyLock.enterBusy())
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle JDBC request because node is stopping.");
