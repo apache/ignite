@@ -15,15 +15,22 @@
  * limitations under the License.
  */
 
-import template from './cluster-select.pug';
-import './cluster-select.scss';
-import controller from './cluster-select.controller';
+page-queries {
+    .docs-content > header {
+        margin: 0;
+        margin-bottom: 30px;
 
-export default [() => {
-    return {
-        restrict: 'E',
-        template,
-        controller,
-        controllerAs: 'ctrl'
-    };
-}];
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+
+        h1 {
+        	margin: 0;
+        	margin-right: 8px;
+        }
+    }
+
+    .affix + .block-information {
+        margin-top: 90px;
+    }
+}

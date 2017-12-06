@@ -15,18 +15,23 @@
  * limitations under the License.
  */
 
+import './style.scss';
 import angular from 'angular';
+
+import templateUrl from './template.tpl.pug';
 
 import NotebookData from './Notebook.data';
 import Notebook from './Notebook.service';
 import notebook from './notebook.controller';
-import controller from './sql.controller';
+import controller from './controller';
 
-import sqlTplUrl from 'app/../views/sql/sql.tpl.pug';
-
-angular.module('ignite-console.sql', [
+export default angular.module('ignite-console.sql', [
     'ui.router'
 ])
+.component('pageQueries', {
+    controller,
+    templateUrl
+})
 .config(['$stateProvider', ($stateProvider) => {
     // set up the states
     $stateProvider
@@ -37,23 +42,19 @@ angular.module('ignite-console.sql', [
         })
         .state('base.sql.notebook', {
             url: '/notebook/{noteId}',
-            templateUrl: sqlTplUrl,
+            component: 'pageQueries',
             permission: 'query',
             tfMetaTags: {
                 title: 'Query notebook'
-            },
-            controller,
-            controllerAs: '$ctrl'
+            }
         })
         .state('base.sql.demo', {
             url: '/demo',
-            templateUrl: sqlTplUrl,
+            component: 'pageQueries',
             permission: 'query',
             tfMetaTags: {
                 title: 'SQL demo'
-            },
-            controller,
-            controllerAs: '$ctrl'
+            }
         });
 }])
 .service('IgniteNotebookData', NotebookData)

@@ -68,7 +68,8 @@
     "passport-local": "1.0.0",
     "passport-local-mongoose": "4.0.0",
     "passport.socketio": "3.7.0",
-    "socket.io": "1.7.3"
+    "socket.io": "1.7.3",
+    "uuid": "3.1.0"
   },
   "devDependencies": {
     "chai": "4.1.0",

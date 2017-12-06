@@ -15,19 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+import template from './template.pug';
+import controller from './controller';
+import './style.scss';
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-
-/**
- *
- */
-public class GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest
-    extends GridCachePartitionedQueueCreateMultiNodeSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
-        return ATOMIC;
-    }
-}
+export default {
+    template,
+    controller
+};
