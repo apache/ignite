@@ -322,9 +322,9 @@ namespace ignite
             if (!path.empty() && FileExists(path))
                 return path;
 
-            std::string javaEnv;
+            std::string javaEnv = GetEnv(JAVA_HOME);
 
-            if (GetEnv(JAVA_HOME, javaEnv))
+            if (!javaEnv.empty())
             {
                 std::string javaDll = javaEnv + JAVA_DLL;
 
@@ -382,7 +382,7 @@ namespace ignite
          */
         std::string NormalizeClasspath(const std::string& usrCp)
         {
-            if (usrCp.empty() || usrCp.back() == ';')
+            if (usrCp.empty() || *usrCp.rbegin() == ';')
                 return usrCp;
 
             return usrCp + ';';
