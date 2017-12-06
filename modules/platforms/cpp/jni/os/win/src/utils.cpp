@@ -33,6 +33,13 @@ namespace ignite
 {
     namespace jni
     {
+        const char* JAVA_HOME = "JAVA_HOME";
+        const char* JAVA_DLL = "\\jre\\bin\\server\\jvm.dll";
+
+        const char* IGNITE_HOME = "IGNITE_HOME";
+
+        const char* IGNITE_NATIVE_TEST_CLASSPATH = "IGNITE_NATIVE_TEST_CLASSPATH";
+
         AttachHelper::~AttachHelper()
         {
             // No-op.
@@ -42,13 +49,6 @@ namespace ignite
         {
             // No-op.
         }
-
-        const char* JAVA_HOME = "JAVA_HOME";
-        const char* JAVA_DLL = "\\jre\\bin\\server\\jvm.dll";
-
-        const char* IGNITE_HOME = "IGNITE_HOME";
-
-        const char* IGNITE_NATIVE_TEST_CLASSPATH = "IGNITE_NATIVE_TEST_CLASSPATH";
 
         /**
          * Check if the provided path is the valid directory.
@@ -94,7 +94,7 @@ namespace ignite
         }
 
         /**
-         * Helper function for GG home resolution.
+         * Helper function for Ignite home resolution.
          * Goes upwards in directory hierarchy and checks whether certain
          * folders exist in the path.
          *
@@ -347,6 +347,11 @@ namespace ignite
             return cp;
         }
 
+        /**
+         * Adds semicolon at the end of the path if needed.
+         * @param usrCp Classpath provided by user.
+         * @return Normalized classpath.
+         */
         std::string NormalizeClasspath(const std::string& usrCp)
         {
             if (usrCp.empty() || usrCp.back() == ';')
@@ -389,11 +394,17 @@ namespace ignite
                 return home;
 
             // 3. Check current work dir.
-            const DWORD curDirLen = GetCurrentDirectory(0, NULL);
+            DWORD curDirLen = GetCurrentDirectoryA(0, NULL);
+
+            if (!curDirLen)
+                return std::string();
 
             FixedSizeArray<char> curDir(curDirLen);
 
-            GetCurrentDirectoryA(curDir.GetSize(), curDir.GetData());
+            curDirLen = GetCurrentDirectoryA(curDir.GetSize(), curDir.GetData());
+
+            if (!curDirLen)
+                return std::string();
 
             std::string curDirStr(curDir.GetData());
 
