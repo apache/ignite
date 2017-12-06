@@ -22,6 +22,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -36,6 +37,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -223,37 +227,22 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      */
     public void testLockRelease() throws Exception {
-        final Ignite node = ignite(0);
+        final Ignite client = startClient();
 
-        final IgniteCache<Object, Object> cache = node.cache(CACHE_NAME);
+        final ClusterNode n0 = grid(0).affinity(CACHE_NAME).mapKeyToNode(0);
 
-        final int KEYS_PER_THREAD = 10_000;
+        final Ignite prim = G.ignite(n0.id());
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                int start = idx * KEYS_PER_THREAD;
-                int end = start + KEYS_PER_THREAD;
+        toggleBlocking(GridNearLockResponse.class, client, true);
 
-                int locked = 0;
+        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 1)) {
+            client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+        }
+        catch (CacheException e) {
+            assertTrue(e.getMessage(), X.hasCause(e, TransactionTimeoutException.class));
+        }
 
-                try {
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)) {
-                        for (int i = start; i < end; i++) {
-                            cache.get(i);
-
-                            locked++;
-                        }
-
-                        tx.commit();
-                    }
-                }
-                catch (Exception e) {
-                    info("Expected error: " + e);
-                }
-
-                info("Done, locked: " + locked);
-            }
-        }, Math.min(4, Runtime.getRuntime().availableProcessors()), "tx-thread");
+        toggleBlocking(GridNearLockResponse.class, prim, false);
 
         for (Ignite ignite : G.allGrids()) {
             IgniteEx ig = (IgniteEx)ignite;
