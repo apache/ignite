@@ -1304,6 +1304,25 @@ public class GridNioServer<T> {
                 processWrite0(key);
         }
 
+        @Nullable private SessionWriteRequest getSessionWriteRequest(GridSelectorNioSessionImpl ses, @Nullable SessionWriteRequest req) {
+            assert ses != null;
+
+            req = ses.removeMeta(NIO_OPERATION.ordinal());
+
+            if (req == null) {
+                req = systemMessage(ses);
+
+                if (req == null)
+                    req = ses.pollFuture();
+            }
+
+            return req;
+        }
+
+        private void writeMessage(SessionWriteRequest req) {
+
+        }
+
         /**
          * Processes write-ready event on the key.
          *
@@ -1320,12 +1339,16 @@ public class GridNioServer<T> {
 
             if (writer == null) {
                 try {
-                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
+                    writer = writerFactory.writer(ses);
+
+                    ses.addMeta(MSG_WRITER.ordinal(), writer);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IOException("Failed to create message writer.", e);
                 }
             }
+
+            assert writer != null : "Code msg.writeTo(buf, writer) doesn't expect null in second argument.";
 
             boolean handshakeFinished = sslFilter.lock(ses);
 
@@ -1366,27 +1389,21 @@ public class GridNioServer<T> {
                 SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
 
                 while (true) {
-                    if (req == null) {
-                        req = systemMessage(ses);
+                    req = getSessionWriteRequest(ses, req);
 
-                        if (req == null) {
-                            req = ses.pollFuture();
+                    if (req == null && buf.position() == 0) {
+                        if (ses.procWrite.get()) {
+                            ses.procWrite.set(false);
 
-                            if (req == null && buf.position() == 0) {
-                                if (ses.procWrite.get()) {
-                                    ses.procWrite.set(false);
-
-                                    if (ses.writeQueue().isEmpty()) {
-                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                                    }
-                                    else
-                                        ses.procWrite.set(true);
-                                }
-
-                                break;
+                            if (ses.writeQueue().isEmpty()) {
+                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
                             }
+                            else
+                                ses.procWrite.set(true);
                         }
+
+                        break;
                     }
 
                     Message msg;
@@ -1397,12 +1414,11 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
-                        if (writer != null)
-                            writer.setCurrentWriteClass(msg.getClass());
+                        writer.setCurrentWriteClass(msg.getClass());
 
                         finished = msg.writeTo(buf, writer);
 
-                        if (finished && writer != null)
+                        if (finished)
                             writer.reset();
                     }
 
@@ -1422,12 +1438,11 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
-                        if (writer != null)
-                            writer.setCurrentWriteClass(msg.getClass());
+                        writer.setCurrentWriteClass(msg.getClass());
 
                         finished = msg.writeTo(buf, writer);
 
-                        if (finished && writer != null)
+                        if (finished)
                             writer.reset();
                     }
 
