@@ -1672,19 +1672,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     Arrays.deepToString(args) + "]", IgniteQueryErrorCode.PARSING, e);
             }
 
-            if (!loc) {
-                GridSqlQueryParser parser = new GridSqlQueryParser(false);
+           GridSqlQueryParser parser = null;
+
+           if (!loc) {
+                parser = new GridSqlQueryParser(false);
 
                 GridSqlStatement parsedStmt = parser.parse(prepared);
 
                 // Legit assertion - we have H2 query flag above.
                 assert parsedStmt instanceof GridSqlQuery;
 
-                loc = GridSqlQueryParser.isLocalQuery(parser.allTables(), qry.isReplicatedOnly());
+                loc = parser.isLocalQuery(qry.isReplicatedOnly());
             }
 
             if (loc) {
-                GridCacheContext cctx = GridSqlQueryParser.getFirstPartitionedCache(prepared);
+                if (parser == null) {
+                    parser = new GridSqlQueryParser(false);
+
+                    parser.parse(prepared);
+                }
+
+                GridCacheContext cctx = parser.getFirstPartitionedCache();
 
                 if (cctx != null && cctx.config().getQueryParallelism() > 1) {
                     loc = false;
