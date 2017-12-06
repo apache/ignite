@@ -43,10 +43,10 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @param other Map to copy.
      */
     public CachePartitionFullCountersMap(CachePartitionFullCountersMap other) {
-    	if(other.initialUpdCntrs != null)
+    	if (other.initialUpdCntrs != null)
     		initialUpdCntrs = Arrays.copyOf(other.initialUpdCntrs, other.initialUpdCntrs.length);
     	
-    	if(updCntrs != null) 
+    	if (other.updCntrs != null) 
     		updCntrs = Arrays.copyOf(other.updCntrs, other.updCntrs.length);
     }
 
@@ -64,7 +64,7 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @return Initial update counter for the partition with the given ID.
      */
     public long initialUpdateCounter(int p) {
-    	if(initialUpdCntrs == null) 
+    	if (initialUpdCntrs == null) 
     		return 0;
     	else 
     		return initialUpdCntrs[p];
@@ -77,7 +77,7 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @return Update counter for the partition with the given ID.
      */
     public long updateCounter(int p) {
-    	if(updCntrs == null) 
+    	if (updCntrs == null) 
     		return 0;
     	else
     		return updCntrs[p];
@@ -90,8 +90,8 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @param initialUpdCntr Initial update counter to set.
      */
     public void initialUpdateCounter(int p, long initialUpdCntr) {
-    	if(initialUpdCntrs == null) {
-    		if(initialUpdCntr != 0L) 
+    	if (initialUpdCntrs == null) {
+    		if (initialUpdCntr != 0L) 
     			initialUpdCntrs = new long[partsCnt];
     		else 
     			return;    		    		
@@ -106,8 +106,8 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @param updCntr Update counter to set.
      */
     public void updateCounter(int p, long updCntr) {
-    	if(updCntrs == null) {
-    		if(updCntr != 0L) 
+    	if (updCntrs == null) {
+    		if (updCntr != 0L) 
     			updCntrs = new long[partsCnt];
     		else 
     			return;
