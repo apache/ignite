@@ -116,12 +116,14 @@ namespace Apache.Ignite.Core.Tests.ApiParity
                 .ToDictionary(x => x, x => x, StringComparer.OrdinalIgnoreCase);
 
             var sb = new StringBuilder();
+            var codeSb = new StringBuilder();
 
             foreach (var javaMissingProp in missingMembers)
             {
                 if (!knownMissing.ContainsKey(javaMissingProp.Key))
                 {
                     sb.AppendFormat("{0}.{1} member is missing in .NET.\n", type.Name, javaMissingProp.Key);
+                    codeSb.AppendFormat("\"{0}\", ", javaMissingProp.Key);
                 }
             }
 
@@ -136,7 +138,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
 
             if (sb.Length > 0)
             {
-                Assert.Fail(sb.ToString());
+                Assert.Fail(sb + "\nQuoted list: " + codeSb);
             }
         }
 
