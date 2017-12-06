@@ -5632,6 +5632,17 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private volatile UUID nodeId;
 
+        /** */
+        private ClientMessageWorker clientMsgWrk;
+
+        /** */
+        private boolean srvSock;
+
+        /**
+         * Effective socket timeout.
+         **/
+        private long sockTimeout;
+
         /**
          * Constructor.
          *
@@ -5649,248 +5660,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            UUID locNodeId = getConfiguredNodeId();
-
-            ClientMessageWorker clientMsgWrk = null;
-
-            SocketAddress rmtAddr = sock.getRemoteSocketAddress();
-
             if (log.isInfoEnabled())
-                log.info("Started serving remote node connection [rmtAddr=" + rmtAddr +
+                log.info("Started serving remote node connection [rmtAddr=" + sock.getRemoteSocketAddress() +
                     ", rmtPort=" + sock.getPort() + ']');
 
-            boolean srvSock;
+            UUID locNodeId = getConfiguredNodeId();
 
             try {
-                InputStream in;
+                sockTimeout = spi.getEffectiveSocketTimeout(srvSock);
 
-                try {
-                    // Set socket options.
-                    sock.setKeepAlive(true);
-                    sock.setTcpNoDelay(true);
-
-                    int timeout = sock.getSoTimeout();
-
-                    sock.setSoTimeout((int)spi.netTimeout);
-
-                    for (IgniteInClosure<Socket> connLsnr : spi.incomeConnLsnrs)
-                        connLsnr.apply(sock);
-
-                    int rcvBufSize = sock.getReceiveBufferSize();
-
-                    in = new BufferedInputStream(sock.getInputStream(), rcvBufSize > 0 ? rcvBufSize : 8192);
-
-                    byte[] buf = new byte[4];
-                    int read = 0;
-
-                    while (read < buf.length) {
-                        int r = in.read(buf, read, buf.length - read);
-
-                        if (r >= 0)
-                            read += r;
-                        else {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to read magic header (too few bytes received) " +
-                                    "[rmtAddr=" + rmtAddr +
-                                    ", locAddr=" + sock.getLocalSocketAddress() + ']');
-
-                            LT.warn(log, "Failed to read magic header (too few bytes received) [rmtAddr=" +
-                                rmtAddr + ", locAddr=" + sock.getLocalSocketAddress() + ']');
-
-                            return;
-                        }
-                    }
-
-                    if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
-                        if (log.isDebugEnabled())
-                            log.debug("Unknown connection detected (is some other software connecting to " +
-                                "this Ignite port?" +
-                                (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
-                                ") " +
-                                "[rmtAddr=" + rmtAddr +
-                                ", locAddr=" + sock.getLocalSocketAddress() + ']');
-
-                        LT.warn(log, "Unknown connection detected (is some other software connecting to " +
-                            "this Ignite port?" +
-                            (!spi.isSslEnabled() ? " missing SSL configuration on remote node?" : "" ) +
-                            ") [rmtAddr=" + sock.getInetAddress() + ']', true);
-
-                        return;
-                    }
-
-                    // Restore timeout.
-                    sock.setSoTimeout(timeout);
-
-                    TcpDiscoveryAbstractMessage msg = spi.readMessage(sock, in, spi.netTimeout);
-
-                    // Ping.
-                    if (msg instanceof TcpDiscoveryPingRequest) {
-                        if (!spi.isNodeStopping0()) {
-                            TcpDiscoveryPingRequest req = (TcpDiscoveryPingRequest)msg;
-
-                            if (log.isInfoEnabled())
-                                log.info("Received ping request from the remote node " +
-                                    "[rmtNodeId=" + msg.creatorNodeId() +
-                                    ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
-
-                            TcpDiscoveryPingResponse res = new TcpDiscoveryPingResponse(locNodeId);
-
-                            IgniteSpiOperationTimeoutHelper timeoutHelper =
-                                new IgniteSpiOperationTimeoutHelper(spi, true);
-
-                            if (req.clientNodeId() != null) {
-                                ClientMessageWorker clientWorker = clientMsgWorkers.get(req.clientNodeId());
-
-                                if (clientWorker != null)
-                                    res.clientExists(clientWorker.ping(timeoutHelper));
-                            }
-
-                            spi.writeToSocket(sock, res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
-
-                            if (!(sock instanceof SSLSocket))
-                                sock.shutdownOutput();
-
-                            if (log.isInfoEnabled())
-                                log.info("Finished writing ping response " + "[rmtNodeId=" + msg.creatorNodeId() +
-                                    ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
-                        }
-                        else if (log.isDebugEnabled())
-                            log.debug("Ignore ping request, node is stopping.");
-
-                        return;
-                    }
-
-                    // Handshake.
-                    TcpDiscoveryHandshakeRequest req = (TcpDiscoveryHandshakeRequest)msg;
-
-                    srvSock = !req.client();
-
-                    UUID nodeId = req.creatorNodeId();
-
-                    this.nodeId = nodeId;
-
-                    TcpDiscoveryHandshakeResponse res =
-                        new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
-
-                    if (req.client())
-                        res.clientAck(true);
-
-                    spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
-
-                    // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
-                    // the local node sends a handshake request message on the loopback address, so we get here.
-                    if (locNodeId.equals(nodeId)) {
-                        assert !req.client();
-
-                        if (log.isDebugEnabled())
-                            log.debug("Handshake request from local node: " + req);
-
-                        return;
-                    }
-
-                    if (req.client()) {
-                        ClientMessageWorker clientMsgWrk0 = new ClientMessageWorker(sock, nodeId);
-
-                        while (true) {
-                            ClientMessageWorker old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk0);
-
-                            if (old == null)
-                                break;
-
-                            if (old.isInterrupted()) {
-                                clientMsgWorkers.remove(nodeId, old);
-
-                                continue;
-                            }
-
-                            old.join(500);
-
-                            old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk0);
-
-                            if (old == null)
-                                break;
-
-                            if (log.isDebugEnabled())
-                                log.debug("Already have client message worker, closing connection " +
-                                    "[locNodeId=" + locNodeId +
-                                    ", rmtNodeId=" + nodeId +
-                                    ", workerSock=" + old.sock +
-                                    ", sock=" + sock + ']');
-
-                            return;
-                        }
-
-                        if (log.isDebugEnabled())
-                            log.debug("Created client message worker [locNodeId=" + locNodeId +
-                                ", rmtNodeId=" + nodeId + ", sock=" + sock + ']');
-
-                        assert clientMsgWrk0 == clientMsgWorkers.get(nodeId);
-
-                        clientMsgWrk = clientMsgWrk0;
-                    }
-
-                    if (log.isDebugEnabled())
-                        log.debug("Initialized connection with remote node [nodeId=" + nodeId +
-                            ", client=" + req.client() + ']');
-
-                    if (debugMode) {
-                        debugLog(msg, "Initialized connection with remote node [nodeId=" + nodeId +
-                            ", client=" + req.client() + ']');
-                    }
-                }
-                catch (IOException e) {
-                    if (log.isDebugEnabled())
-                        U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
-
-                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0())
-                        LT.warn(log, "Failed to initialize connection " +
-                            "(missing SSL configuration on remote node?) " +
-                            "[rmtAddr=" + sock.getInetAddress() + ']', true);
-                    else if ((X.hasCause(e, ObjectStreamException.class) || !sock.isClosed())
-                        && !spi.isNodeStopping0()) {
-                        if (U.isMacInvalidArgumentError(e))
-                            LT.error(log, e, "Failed to initialize connection [sock=" + sock + "]\n\t" +
-                                U.MAC_INVALID_ARG_MSG);
-                        else {
-                            U.error(
-                                log,
-                                "Failed to initialize connection (this can happen due to short time " +
-                                    "network problems and can be ignored if does not affect node discovery) " +
-                                    "[sock=" + sock + ']',
-                                e);
-                        }
-                    }
-
-                    onException("Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
-
-                    return;
-                }
-                catch (IgniteCheckedException e) {
-                    if (log.isDebugEnabled())
-                        U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
-
-                    onException("Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
-
-                    if (e.hasCause(SocketTimeoutException.class))
-                        LT.warn(log, "Socket operation timed out on handshake " +
-                            "(consider increasing 'networkTimeout' configuration property) " +
-                            "[netTimeout=" + spi.netTimeout + ']');
-
-                    else if (e.hasCause(ClassNotFoundException.class))
-                        LT.warn(log, "Failed to read message due to ClassNotFoundException " +
-                            "(make sure same versions of all classes are available on all nodes) " +
-                            "[rmtAddr=" + rmtAddr +
-                            ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
-
-                        // Always report marshalling problems.
-                    else if (e.hasCause(ObjectStreamException.class) ||
-                        (!sock.isClosed() && !e.hasCause(IOException.class)))
-                        LT.error(log, e, "Failed to initialize connection [sock=" + sock + ']');
-
-                    return;
-                }
-
-                long sockTimeout = spi.getEffectiveSocketTimeout(srvSock);
+                InputStream in = handshake();
 
                 while (!isInterrupted()) {
                     try {
@@ -5911,184 +5690,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (debugMode && recordable(msg))
                             debugLog(msg, "Message has been received: " + msg);
 
-                        if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                        int ret = processInplaceMessage(msg);
 
-                            continue;
-                        }
-                        else if (msg instanceof TcpDiscoveryJoinRequestMessage) {
-                            TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
-
-                            if (!req.responded()) {
-                                boolean ok = processJoinRequestMessage(req, clientMsgWrk);
-
-                                if (clientMsgWrk != null && ok)
-                                    continue;
-                                else
-                                    // Direct join request - no need to handle this socket anymore.
-                                    break;
-                            }
-                        }
-                        else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
-                            TcpDiscoverySpiState state = spiStateCopy();
-
-                            if (state == CONNECTED) {
-                                spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                                if (clientMsgWrk != null && clientMsgWrk.getState() == State.NEW)
-                                    clientMsgWrk.start();
-
-                                processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
-
-                                continue;
-                            }
-                            else {
-                                spi.writeToSocket(msg, sock, RES_CONTINUE_JOIN, sockTimeout);
-
+                        switch (ret) {
+                            case 0:
                                 break;
-                            }
+
+                            case 1:
+                                continue;
+
+                            case 2:
+                                return;
+
+                            default:
+                                assert false : "Unexpected processInplaceMessage() return: " + ret;
                         }
-                        else if (msg instanceof TcpDiscoveryDuplicateIdMessage) {
-                            // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                            boolean ignored = false;
-
-                            TcpDiscoverySpiState state = null;
-
-                            synchronized (mux) {
-                                if (spiState == CONNECTING) {
-                                    joinRes.set(msg);
-
-                                    spiState = DUPLICATE_ID;
-
-                                    mux.notifyAll();
-                                }
-                                else {
-                                    ignored = true;
-
-                                    state = spiState;
-                                }
-                            }
-
-                            if (ignored && log.isDebugEnabled())
-                                log.debug("Duplicate ID message has been ignored [msg=" + msg +
-                                    ", spiState=" + state + ']');
-
-                            continue;
-                        }
-                        else if (msg instanceof TcpDiscoveryAuthFailedMessage) {
-                            // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                            boolean ignored = false;
-
-                            TcpDiscoverySpiState state = null;
-
-                            synchronized (mux) {
-                                if (spiState == CONNECTING) {
-                                    joinRes.set(msg);
-
-                                    spiState = AUTH_FAILED;
-
-                                    mux.notifyAll();
-                                }
-                                else {
-                                    ignored = true;
-
-                                    state = spiState;
-                                }
-                            }
-
-                            if (ignored && log.isDebugEnabled())
-                                log.debug("Auth failed message has been ignored [msg=" + msg +
-                                    ", spiState=" + state + ']');
-
-                            continue;
-                        }
-                        else if (msg instanceof TcpDiscoveryCheckFailedMessage) {
-                            // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                            boolean ignored = false;
-
-                            TcpDiscoverySpiState state = null;
-
-                            synchronized (mux) {
-                                if (spiState == CONNECTING) {
-                                    joinRes.set(msg);
-
-                                    spiState = CHECK_FAILED;
-
-                                    mux.notifyAll();
-                                }
-                                else {
-                                    ignored = true;
-
-                                    ClientMessageWorker worker = clientMsgWorkers.get(msg.creatorNodeId());
-
-                                    if (worker != null) {
-                                        msg.verify(getLocalNodeId());
-
-                                        worker.addMessage(msg);
-                                    }
-                                    else {
-                                        if (log.isDebugEnabled()) {
-                                            log.debug("Failed to find client message worker " +
-                                                "[clientNode=" + msg.creatorNodeId() + ']');
-                                        }
-                                    }
-
-                                    state = spiState;
-                                }
-                            }
-
-                            if (ignored && log.isDebugEnabled())
-                                log.debug("Check failed message has been ignored [msg=" + msg +
-                                    ", spiState=" + state + ']');
-
-                            continue;
-                        }
-                        else if (msg instanceof TcpDiscoveryLoopbackProblemMessage) {
-                            // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                            boolean ignored = false;
-
-                            TcpDiscoverySpiState state = null;
-
-                            synchronized (mux) {
-                                if (spiState == CONNECTING) {
-                                    joinRes.set(msg);
-
-                                    spiState = LOOPBACK_PROBLEM;
-
-                                    mux.notifyAll();
-                                }
-                                else {
-                                    ignored = true;
-
-                                    state = spiState;
-                                }
-                            }
-
-                            if (ignored && log.isDebugEnabled())
-                                log.debug("Loopback problem message has been ignored [msg=" + msg +
-                                    ", spiState=" + state + ']');
-
-                            continue;
-                        }
-                        else if (msg instanceof TcpDiscoveryPingResponse) {
-                            assert msg.client() : msg;
-
-                            ClientMessageWorker clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
-
-                            if (clientWorker != null)
-                                clientWorker.pingResult(true);
-
-                            continue;
-                        }
-                        else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage) {
+                        if (msg instanceof TcpDiscoveryRingLatencyCheckMessage) {
                             if (log.isInfoEnabled())
                                 log.info("Latency check message has been read: " + msg.id());
 
@@ -6183,9 +5801,248 @@ class ServerImpl extends TcpDiscoveryImpl {
                 U.closeQuiet(sock);
 
                 if (log.isInfoEnabled())
-                    log.info("Finished serving remote node connection [rmtAddr=" + rmtAddr +
+                    log.info("Finished serving remote node connection [rmtAddr=" + sock.getRemoteSocketAddress() +
                         ", rmtPort=" + sock.getPort());
             }
+        }
+
+        /**
+         * Handshake with the remote node.
+         *
+         * @return The socket input stream on success, otherwise the socket should be closed.
+         */
+        private InputStream handshake() throws InterruptedException {
+            UUID locNodeId = getConfiguredNodeId();
+
+            try {
+                // Set socket options.
+                sock.setKeepAlive(true);
+                sock.setTcpNoDelay(true);
+
+                int rcvBufSize = sock.getReceiveBufferSize();
+
+                InputStream in = new BufferedInputStream(sock.getInputStream(), rcvBufSize > 0 ? rcvBufSize : 8192);
+
+                if(!readIgniteHeader(in))
+                    return null;
+
+                TcpDiscoveryAbstractMessage msg = spi.readMessage(sock, in, spi.netTimeout);
+
+                // Ping.
+                if (msg instanceof TcpDiscoveryPingRequest) {
+                    processPingRequestMessage((TcpDiscoveryPingRequest)msg);
+
+                    return null;
+                }
+
+                // Handshake.
+                TcpDiscoveryHandshakeRequest req = (TcpDiscoveryHandshakeRequest)msg;
+
+                srvSock = !req.client();
+
+                UUID nodeId = req.creatorNodeId();
+
+                this.nodeId = nodeId;
+
+                TcpDiscoveryHandshakeResponse res =
+                    new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
+
+                if (req.client())
+                    res.clientAck(true);
+
+                spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
+
+                // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
+                // the local node sends a handshake request message on the loopback address, so we get here.
+                if (locNodeId.equals(nodeId)) {
+                    assert !req.client();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Handshake request from local node: " + req);
+
+                    return null;
+                }
+
+                if (req.client()) {
+                    clientMsgWrk = createClientMessageWorker();
+
+                    if (clientMsgWrk == null)
+                        return null;
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Initialized connection with remote node [nodeId=" + nodeId +
+                        ", client=" + req.client() + ']');
+
+                if (debugMode) {
+                    debugLog(msg, "Initialized connection with remote node [nodeId=" + nodeId +
+                        ", client=" + req.client() + ']');
+                }
+
+                return in;
+            }
+            catch (IOException e) {
+                if (log.isDebugEnabled())
+                    U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
+
+                if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0())
+                    LT.warn(log, "Failed to initialize connection " +
+                        "(missing SSL configuration on remote node?) " +
+                        "[rmtAddr=" + sock.getInetAddress() + ']', true);
+
+                else if ((X.hasCause(e, ObjectStreamException.class) || !sock.isClosed())
+                    && !spi.isNodeStopping0()) {
+                    if (U.isMacInvalidArgumentError(e))
+                        LT.error(log, e, "Failed to initialize connection [sock=" + sock + "]\n\t" +
+                            U.MAC_INVALID_ARG_MSG);
+                    else {
+                        U.error(
+                            log,
+                            "Failed to initialize connection (this can happen due to short time " +
+                                "network problems and can be ignored if does not affect node discovery) " +
+                                "[sock=" + sock + ']',
+                            e);
+                    }
+                }
+
+                onException("Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
+
+                return null;
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
+
+                onException("Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
+
+                if (e.hasCause(SocketTimeoutException.class))
+                    LT.warn(log, "Socket operation timed out on handshake " +
+                        "(consider increasing 'networkTimeout' configuration property) " +
+                        "[netTimeout=" + spi.netTimeout + ']');
+
+                else if (e.hasCause(ClassNotFoundException.class))
+                    LT.warn(log, "Failed to read message due to ClassNotFoundException " +
+                        "(make sure same versions of all classes are available on all nodes) " +
+                        "[rmtAddr=" + sock.getRemoteSocketAddress() +
+                        ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
+
+                    // Always report marshalling problems.
+                else if (e.hasCause(ObjectStreamException.class) ||
+                    (!sock.isClosed() && !e.hasCause(IOException.class)))
+                    LT.error(log, e, "Failed to initialize connection [sock=" + sock + ']');
+
+                return null;
+            }
+        }
+
+        /**
+         * Read {@link U#IGNITE_HEADER IGNITE_HEADER} from the remote socket
+         *
+         * @param in the socket input stream
+         *
+         * @return True on success, otherwise socket should be closed.
+         */
+        private boolean readIgniteHeader(InputStream in) throws IOException {
+            int timeout = sock.getSoTimeout();
+
+            sock.setSoTimeout((int)spi.netTimeout);
+
+            for (IgniteInClosure<Socket> connLsnr : spi.incomeConnLsnrs)
+                connLsnr.apply(sock);
+
+            byte[] buf = new byte[4];
+            int read = 0;
+
+            SocketAddress rmtAddr = sock.getRemoteSocketAddress();
+
+            while (read < buf.length) {
+                int r = in.read(buf, read, buf.length - read);
+
+                if (r >= 0)
+                    read += r;
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to read magic header (too few bytes received) " +
+                            "[rmtAddr=" + rmtAddr +
+                            ", locAddr=" + sock.getLocalSocketAddress() + ']');
+
+                    LT.warn(log, "Failed to read magic header (too few bytes received) [rmtAddr=" +
+                        rmtAddr + ", locAddr=" + sock.getLocalSocketAddress() + ']');
+
+                    return false;
+                }
+            }
+
+            if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
+                if (log.isDebugEnabled())
+                    log.debug("Unknown connection detected (is some other software connecting to " +
+                        "this Ignite port?" +
+                        (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
+                        ") " +
+                        "[rmtAddr=" + rmtAddr +
+                        ", locAddr=" + sock.getLocalSocketAddress() + ']');
+
+                LT.warn(log, "Unknown connection detected (is some other software connecting to " +
+                    "this Ignite port?" +
+                    (!spi.isSslEnabled() ? " missing SSL configuration on remote node?" : "" ) +
+                    ") [rmtAddr=" + sock.getInetAddress() + ']', true);
+
+                return false;
+            }
+
+            // Restore timeout.
+            sock.setSoTimeout(timeout);
+
+            return true;
+        }
+
+        /**
+         * Create {@link ClientMessageWorker ClientMessageWorker} for the remote client socket
+         *
+         * @return The {@code ClientMessageWorker} on success or null if the one already exists
+         * and the remote socket should be closed
+         */
+        private ClientMessageWorker createClientMessageWorker() throws IOException, InterruptedException {
+            UUID locNodeId = getConfiguredNodeId();
+
+            ClientMessageWorker clientMsgWrk0 = new ClientMessageWorker(sock, nodeId);
+
+            while (true) {
+                ClientMessageWorker old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk0);
+
+                if (old == null)
+                    break;
+
+                if (old.isInterrupted()) {
+                    clientMsgWorkers.remove(nodeId, old);
+
+                    continue;
+                }
+
+                old.join(500);
+
+                old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk0);
+
+                if (old == null)
+                    break;
+
+                if (log.isDebugEnabled())
+                    log.debug("Already have client message worker, closing connection " +
+                        "[locNodeId=" + locNodeId +
+                        ", rmtNodeId=" + nodeId +
+                        ", workerSock=" + old.sock +
+                        ", sock=" + sock + ']');
+
+                return null;
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Created client message worker [locNodeId=" + locNodeId +
+                    ", rmtNodeId=" + nodeId + ", sock=" + sock + ']');
+
+            assert clientMsgWrk0 == clientMsgWorkers.get(nodeId);
+
+            return clientMsgWrk0;
         }
 
         /**
@@ -6364,6 +6221,265 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 return false;
             }
+        }
+
+        /**
+         * @param msg Ping message.
+         */
+        private void processPingRequestMessage(TcpDiscoveryPingRequest msg) throws
+            InterruptedException, IOException, IgniteCheckedException {
+
+            if (!spi.isNodeStopping0()) {
+                SocketAddress rmtAddr = sock.getRemoteSocketAddress();
+
+                if (log.isInfoEnabled())
+                    log.info("Received ping request from the remote node " +
+                        "[rmtNodeId=" + msg.creatorNodeId() +
+                        ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
+
+                UUID locNodeId = getConfiguredNodeId();
+
+                TcpDiscoveryPingResponse res = new TcpDiscoveryPingResponse(locNodeId);
+
+                IgniteSpiOperationTimeoutHelper timeoutHelper =
+                    new IgniteSpiOperationTimeoutHelper(spi, true);
+
+                if (msg.clientNodeId() != null) {
+                    ClientMessageWorker clientWorker = clientMsgWorkers.get(msg.clientNodeId());
+
+                    if (clientWorker != null)
+                        res.clientExists(clientWorker.ping(timeoutHelper));
+                }
+
+                spi.writeToSocket(sock, res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+
+                if (!(sock instanceof SSLSocket))
+                    sock.shutdownOutput();
+
+                if (log.isInfoEnabled())
+                    log.info("Finished writing ping response " + "[rmtNodeId=" + msg.creatorNodeId() +
+                        ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
+            }
+            else if (log.isDebugEnabled())
+                log.debug("Ignore ping request, node is stopping.");
+        }
+
+        /**
+         * @param msg Duplicate ID message.
+         */
+        private void processDuplicateIdMessage(TcpDiscoveryDuplicateIdMessage msg) throws IOException {
+            // Send receipt back.
+            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+            boolean ignored = false;
+
+            TcpDiscoverySpiState state = null;
+
+            synchronized (mux) {
+                if (spiState == CONNECTING) {
+                    joinRes.set(msg);
+
+                    spiState = DUPLICATE_ID;
+
+                    mux.notifyAll();
+                }
+                else {
+                    ignored = true;
+
+                    state = spiState;
+                }
+            }
+
+            if (ignored && log.isDebugEnabled())
+                log.debug("Duplicate ID message has been ignored [msg=" + msg +
+                    ", spiState=" + state + ']');
+        }
+
+        /**
+         * @param msg Authentication failed message.
+         */
+        private void processAuthFailedMessage(TcpDiscoveryAuthFailedMessage msg) throws IOException {
+            // Send receipt back.
+            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+            boolean ignored = false;
+
+            TcpDiscoverySpiState state = null;
+
+            synchronized (mux) {
+                if (spiState == CONNECTING) {
+                    joinRes.set(msg);
+
+                    spiState = AUTH_FAILED;
+
+                    mux.notifyAll();
+                }
+                else {
+                    ignored = true;
+
+                    state = spiState;
+                }
+            }
+
+            if (ignored && log.isDebugEnabled())
+                log.debug("Auth failed message has been ignored [msg=" + msg +
+                    ", spiState=" + state + ']');
+        }
+
+        /**
+         * @param msg Check failed message.
+         */
+        private void processCheckFailedMessage(TcpDiscoveryCheckFailedMessage msg) throws IOException {
+            // Send receipt back.
+            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+            boolean ignored = false;
+
+            TcpDiscoverySpiState state = null;
+
+            synchronized (mux) {
+                if (spiState == CONNECTING) {
+                    joinRes.set(msg);
+
+                    spiState = CHECK_FAILED;
+
+                    mux.notifyAll();
+                }
+                else {
+                    ignored = true;
+
+                    ClientMessageWorker worker = clientMsgWorkers.get(msg.creatorNodeId());
+
+                    if (worker != null) {
+                        msg.verify(getLocalNodeId());
+
+                        worker.addMessage(msg);
+                    }
+                    else {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Failed to find client message worker " +
+                                "[clientNode=" + msg.creatorNodeId() + ']');
+                        }
+                    }
+
+                    state = spiState;
+                }
+            }
+
+            if (ignored && log.isDebugEnabled())
+                log.debug("Check failed message has been ignored [msg=" + msg +
+                    ", spiState=" + state + ']');
+        }
+
+        /**
+         * @param msg Loopback problem message.
+         */
+        private void processLoopbackProblemMessage(TcpDiscoveryLoopbackProblemMessage msg) throws IOException {
+            // Send receipt back.
+            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+            boolean ignored = false;
+
+            TcpDiscoverySpiState state = null;
+
+            synchronized (mux) {
+                if (spiState == CONNECTING) {
+                    joinRes.set(msg);
+
+                    spiState = LOOPBACK_PROBLEM;
+
+                    mux.notifyAll();
+                }
+                else {
+                    ignored = true;
+
+                    state = spiState;
+                }
+            }
+
+            if (ignored && log.isDebugEnabled())
+                log.debug("Loopback problem message has been ignored [msg=" + msg +
+                    ", spiState=" + state + ']');
+        }
+
+        /**
+         * Process message in-place without queueing to the {@link RingMessageWorker RingMessageWorker}.
+         *
+         * @param msg Discovery message.
+         *
+         * @return 0 - message was not processed, 1 - message was processed, continue serving the socket,
+         * 2 - message was processed and the socket should be closed.
+         */
+        private int processInplaceMessage(TcpDiscoveryAbstractMessage msg) throws IOException {
+            if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
+                spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+                return 1;
+            }
+            else if (msg instanceof TcpDiscoveryJoinRequestMessage) {
+                TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
+
+                if (!req.responded()) {
+                    boolean ok = processJoinRequestMessage(req, clientMsgWrk);
+
+                    if (clientMsgWrk != null && ok)
+                        return 1;
+
+                    // Direct join request - no need to handle this socket anymore.
+                    return 2;
+                }
+            }
+            else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
+                TcpDiscoverySpiState state = spiStateCopy();
+
+                if (state == CONNECTED) {
+                    spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+                    if (clientMsgWrk != null && clientMsgWrk.getState() == State.NEW)
+                        clientMsgWrk.start();
+
+                    processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
+
+                    return 1;
+                }
+                else {
+                    spi.writeToSocket(msg, sock, RES_CONTINUE_JOIN, sockTimeout);
+
+                    return 2;
+                }
+            }
+            else if (msg instanceof TcpDiscoveryDuplicateIdMessage) {
+                processDuplicateIdMessage((TcpDiscoveryDuplicateIdMessage)msg);
+
+                return 1;
+            }
+            else if (msg instanceof TcpDiscoveryAuthFailedMessage) {
+                processAuthFailedMessage((TcpDiscoveryAuthFailedMessage)msg);
+
+                return 1;
+            }
+            else if (msg instanceof TcpDiscoveryCheckFailedMessage) {
+                processCheckFailedMessage((TcpDiscoveryCheckFailedMessage)msg);
+
+                return 1;
+            }
+            else if (msg instanceof TcpDiscoveryLoopbackProblemMessage) {
+                processLoopbackProblemMessage((TcpDiscoveryLoopbackProblemMessage)msg);
+
+                return 1;
+            }
+            else if (msg instanceof TcpDiscoveryPingResponse) {
+                assert msg.client() : msg;
+
+                ClientMessageWorker clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
+
+                if (clientWorker != null)
+                    clientWorker.pingResult(true);
+
+                return 1;
+            }
+
+            return 0;
         }
 
         /** {@inheritDoc} */
