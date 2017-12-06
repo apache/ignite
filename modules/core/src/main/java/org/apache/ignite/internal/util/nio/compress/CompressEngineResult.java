@@ -21,11 +21,17 @@ package org.apache.ignite.internal.util.nio.compress;
  *
  */
 enum CompressEngineResult {
-    /** */
-    BUFFER_UNDERFLOW,
-
-    /** */
+    /**
+     * Can't to process the operation because there are not enough bytes available in the destination buffer
+     * to hold the result.
+     */
     BUFFER_OVERFLOW,
+
+    /**
+     * Can't to decompress the incoming data because there were not enough source bytes available
+     * to make a complete packet.
+     */
+    BUFFER_UNDERFLOW,
 
     /** */
     OK;

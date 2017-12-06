@@ -86,65 +86,55 @@ public class GZipCompressEngine implements CompressEngine {
 
     /** */
     public CompressEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
-        isInboundDone = false;
-
         if (src.remaining() == 0)
             return BUFFER_UNDERFLOW;
 
         int initPos = src.position();
 
-        byte[] bytes;
-        byte[] output = new byte[0];
-
-        byte[] lenBytes = new byte[4];
-        int len;
-
-        while (!isInboundDone) {
-            if (src.remaining() <= 5) {
-                src.position(initPos);
-
-                return BUFFER_UNDERFLOW;
-            }
-
-            src.get(lenBytes);
-
-            len = toInt(lenBytes);
-
-            if (src.remaining() < len) {
-                src.position(initPos);
-
-                return BUFFER_UNDERFLOW;
-            }
-
-            bytes = new byte[len]; //may be reuse or ByteArrayInputStream->ByteBufferInputStream
-
-            src.get(bytes);
-
-            try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                 InputStream in = new GZIPInputStream(new ByteArrayInputStream(bytes))
-            ) {
-                byte[] buffer = new byte[32];
-                int length;
-
-                while ((length = in.read(buffer)) != -1)
-                    baos.write(buffer, 0, length);
-
-                baos.flush();
-
-                output = concat(output, baos.toByteArray());
-            }
-
-            if (src.remaining() == 0)
-                isInboundDone = true;
-        }
-
-        if (output.length > buf.remaining()) {
+        if (src.remaining() <= 5) {
             src.position(initPos);
 
-            return BUFFER_OVERFLOW;
+            return BUFFER_UNDERFLOW;
         }
 
-        buf.put(output);
+        byte[] lenBytes = new byte[4];
+        src.get(lenBytes);
+        int len = toInt(lenBytes);
+
+        if (src.remaining() < len) {
+            src.position(initPos);
+
+            return BUFFER_UNDERFLOW;
+        }
+
+        byte[] bytes = new byte[len]; // ? ByteArrayInputStream->ByteBufferInputStream
+
+        src.get(bytes);
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             InputStream in = new GZIPInputStream(new ByteArrayInputStream(bytes))
+        ) {
+            byte[] buffer = new byte[32];
+            int length;
+
+            while ((length = in.read(buffer)) != -1)
+                baos.write(buffer, 0, length);
+
+            baos.flush();
+
+            byte[] output = baos.toByteArray();
+
+            if (output.length > buf.remaining()) {
+                src.position(initPos);
+
+                return BUFFER_OVERFLOW;
+            }
+
+            buf.put(output);
+        }
+
+        if (src.remaining() == 0)
+            return BUFFER_UNDERFLOW;
 
         return OK;
     }

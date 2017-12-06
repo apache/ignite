@@ -28,8 +28,5 @@ public interface CompressEngine {
     CompressEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException;
 
     /** */
-    boolean isInboundDone();
-
-    /** */
     void closeInbound() throws IOException;
 }

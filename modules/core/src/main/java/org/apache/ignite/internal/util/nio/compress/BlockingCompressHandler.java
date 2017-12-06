@@ -6,10 +6,8 @@ import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.nio.GridNioException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.BUFFER_UNDERFLOW;
 import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.OK;
 
 /** */
@@ -139,30 +137,9 @@ public class BlockingCompressHandler {
 
         unwrapData();
 
-        if (isInboundDone()) {
-            int newPosition = buf.position() - inNetBuf.position();
-
-            if (newPosition >= 0) {
-                buf.position(newPosition);
-
-                // If we received close_notify but not all bytes has been read by compress engine, print a warning.
-                if (buf.hasRemaining())
-                    U.warn(log, "Got unread bytes after receiving close_notify message (will ignore).");
-            }
-
-            inNetBuf.clear();
-        }
-
         appBuf.flip();
 
         return appBuf;
-    }
-
-    /**
-     * @return {@code True} if inbound data stream has ended
-     */
-    private boolean isInboundDone() {
-        return compressEngine.isInboundDone();
     }
 
     /**
@@ -178,21 +155,6 @@ public class BlockingCompressHandler {
         // Flip buffer so we can read it.
         inNetBuf.flip();
 
-        CompressEngineResult res = unwrap0();
-
-        // prepare to be written again
-        inNetBuf.compact();
-
-        checkStatus(res);
-    }
-
-    /**
-     * Performs raw unwrap from network read buffer.
-     *
-     * @return Result.
-     * @throws IOException If compress exception occurs.
-     */
-    private CompressEngineResult unwrap0() throws IOException {
         CompressEngineResult res;
 
         do {
@@ -203,18 +165,8 @@ public class BlockingCompressHandler {
         }
         while (res == OK || res == BUFFER_OVERFLOW);
 
-        return res;
-    }
-
-    /**
-     * @param res Compress engine result.
-     * @throws IOException If status is not acceptable.
-     */
-    private void checkStatus(CompressEngineResult res)
-        throws IOException {
-
-        if (res != OK && res != BUFFER_UNDERFLOW)
-            throw new IOException("Failed to unwrap incoming data (Compress engine error). Status: " + res);
+        // prepare to be written again
+        inNetBuf.compact();
     }
 
     /**

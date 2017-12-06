@@ -10,11 +10,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.BUFFER_UNDERFLOW;
 import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.OK;
 
 class GridNioCompressHandler extends ReentrantLock {
@@ -154,20 +152,6 @@ class GridNioCompressHandler extends ReentrantLock {
         inNetBuf.put(buf);
 
         unwrapData();
-
-        if (isInboundDone()) {
-            int newPosition = buf.position() - inNetBuf.position();
-
-            if (newPosition >= 0) {
-                buf.position(newPosition);
-
-                // If we received close_notify but not all bytes has been read by compress engine, print a warning.
-                if (buf.hasRemaining())
-                    U.warn(log, "Got unread bytes after receiving close message (will ignore): " + ses);
-            }
-
-            inNetBuf.clear();
-        }
     }
 
     /**
@@ -209,14 +193,6 @@ class GridNioCompressHandler extends ReentrantLock {
     }
 
     /**
-     * @return {@code True} if inbound data stream has ended, i.e. compress engine received
-     * <tt>close_notify</tt> message.
-     */
-    boolean isInboundDone() {
-        return compressEngine.isInboundDone();
-    }
-
-    /**
      * Copies data from out net buffer and passes it to the underlying chain.
      *
      * @return Write future.
@@ -244,33 +220,6 @@ class GridNioCompressHandler extends ReentrantLock {
         // Flip buffer so we can read it.
         inNetBuf.flip();
 
-        CompressEngineResult res = unwrap0();
-
-        // prepare to be written again
-        inNetBuf.compact();
-
-        checkStatus(res);
-    }
-
-    /**
-     * @param res compress engine result.
-     * @throws IOException If status is not acceptable.
-     */
-    private void checkStatus(CompressEngineResult res)
-        throws IOException {
-
-        if (res != OK && res != BUFFER_UNDERFLOW)
-            throw new IOException("Failed to unwrap incoming data (Compress engine error) [ses" + ses + ", status=" +
-                res + ']');
-    }
-
-    /**
-     * Performs raw unwrap from network read buffer.
-     *
-     * @return Result.
-     * @throws IOException If compress exception occurs.
-     */
-    private CompressEngineResult unwrap0() throws IOException {
         CompressEngineResult res;
 
         do {
@@ -281,7 +230,8 @@ class GridNioCompressHandler extends ReentrantLock {
         }
         while (res == OK || res == BUFFER_OVERFLOW);
 
-        return res;
+        // prepare to be written again
+        inNetBuf.compact();
     }
 
     /**

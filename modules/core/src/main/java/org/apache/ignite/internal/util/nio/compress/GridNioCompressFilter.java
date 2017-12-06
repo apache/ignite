@@ -221,13 +221,6 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
                 proceedMessageReceived(ses, appBuf);
 
             appBuf.compact();
-
-            if (hnd.isInboundDone()) {
-                if (log.isDebugEnabled())
-                    log.debug("Remote peer closed secure session (will close connection): " + ses);
-
-                shutdownSession(ses, hnd);
-            }
         }
         catch (IOException e) {
             throw new GridNioException("Failed to decode compress data: " + ses, e);
