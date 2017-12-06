@@ -61,13 +61,13 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public int getCacheGroupId() {
+    @Override public int getGroupId() {
         return ctx.groupId();
     }
 
     /** {@inheritDoc} */
-    @Override public String getCacheOrGroupName() {
-        return ctx.cacheOrGroupName();
+    @Override public String getGroupName() {
+        return ctx.name();
     }
 
     /** {@inheritDoc} */
