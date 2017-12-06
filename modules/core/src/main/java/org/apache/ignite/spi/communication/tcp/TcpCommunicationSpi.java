@@ -1817,6 +1817,42 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return metricsLsnr.receivedBytesCount();
     }
 
+    /**
+     * Gets received messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    public Map<String, Long> getReceivedMessagesByType() {
+        return metricsLsnr.receivedMessagesByType();
+    }
+
+    /**
+     * Gets received messages counts (grouped by node).
+     *
+     * @return Map containing sender nodes and respective counts.
+     */
+    public Map<UUID, Long> getReceivedMessagesByNode() {
+        return metricsLsnr.receivedMessagesByNode();
+    }
+
+    /**
+     * Gets sent messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    public Map<String, Long> getSentMessagesByType() {
+        return metricsLsnr.sentMessagesByType();
+    }
+
+    /**
+     * Gets sent messages counts (grouped by node).
+     *
+     * @return Map containing receiver nodes and respective counts.
+     */
+    public Map<UUID, Long> getSentMessagesByNode() {
+        return metricsLsnr.sentMessagesByNode();
+    }
+
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
         GridNioServer<Message> srv = nioSrvr;
@@ -5120,22 +5156,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /** {@inheritDoc} */
         @Override public Map<String, Long> getReceivedMessagesByType() {
-            return TcpCommunicationSpi.this.metricsLsnr.receivedMessagesByType();
+            return TcpCommunicationSpi.this.getReceivedMessagesByType();
         }
 
         /** {@inheritDoc} */
         @Override public Map<UUID, Long> getReceivedMessagesByNode() {
-            return TcpCommunicationSpi.this.metricsLsnr.receivedMessagesByNode();
+            return TcpCommunicationSpi.this.getReceivedMessagesByNode();
         }
 
         /** {@inheritDoc} */
         @Override public Map<String, Long> getSentMessagesByType() {
-            return TcpCommunicationSpi.this.metricsLsnr.sentMessagesByType();
+            return TcpCommunicationSpi.this.getSentMessagesByType();
         }
 
         /** {@inheritDoc} */
         @Override public Map<UUID, Long> getSentMessagesByNode() {
-            return TcpCommunicationSpi.this.metricsLsnr.sentMessagesByNode();
+            return TcpCommunicationSpi.this.getSentMessagesByNode();
         }
 
         /** {@inheritDoc} */
