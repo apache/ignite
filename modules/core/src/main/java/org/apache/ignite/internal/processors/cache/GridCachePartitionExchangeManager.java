@@ -2174,7 +2174,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             int cnt = 0;
 
             for (CachePartitionExchangeWorkerTask task : futQ) {
-                if (isExchangeTask(task)) {
+                if (task instanceof GridDhtPartitionsExchangeFuture) {
                     U.warn(log, ">>> " + ((GridDhtPartitionsExchangeFuture)task).shortInfo());
 
                     if (++cnt == 10)
