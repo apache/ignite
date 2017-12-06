@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCa
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
@@ -436,7 +435,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param success Success flag.
      */
     public void complete(boolean success) {
-        onComplete(success, true, true);
+        onComplete(success, true);
     }
 
     /**
@@ -657,7 +656,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                     log.debug("Local lock acquired for entries [fut=" + this + ", entries=" + entries + "]");
             }
 
-            onComplete(true, true, true);
+            onComplete(true, true);
 
             return true;
         }
@@ -668,7 +667,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /** {@inheritDoc} */
     @Override public boolean cancel() {
         if (onCancelled())
-            onComplete(false, true, true);
+            onComplete(false, true);
 
         return isCancelled();
     }
@@ -692,7 +691,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (err != null)
             success = false;
 
-        return onComplete(success, true, true);
+        return onComplete(success, true);
     }
 
     /**
@@ -700,10 +699,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      *
      * @param success {@code True} if lock was acquired.
      * @param distribute {@code True} if need to distribute lock removal in case of failure.
-     * @param restoreTimeout {@code True} if need restore tx timeout callback.
      * @return {@code True} if complete by this operation.
      */
-    private boolean onComplete(boolean success, boolean distribute, boolean restoreTimeout) {
+    private boolean onComplete(boolean success, boolean distribute) {
         if (log.isDebugEnabled()) {
             log.debug("Received onComplete(..) callback [success=" + success + ", distribute=" + distribute +
                 ", fut=" + this + ']');
@@ -715,16 +713,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (!success)
             undoLocks(distribute, true);
 
-        if (tx != null) {
+        if (tx != null)
             cctx.tm().txContext(tx);
-
-            if (restoreTimeout && tx.trackTimeout()) {
-                // Need restore timeout before onDone is called and next tx operation can proceed.
-                boolean add = tx.addTimeoutHandler();
-
-                assert add;
-            }
-        }
 
         if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
@@ -785,24 +775,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * part. Note that if primary node leaves grid, the future will fail and transaction will be rolled back.
      */
     void map() {
-        if (tx != null && tx.trackTimeout()) {
-            if (!tx.removeTimeoutHandler()) {
-                tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                        IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Failed to " +
-                            "acquire lock, transaction was rolled back on timeout [timeout=" + tx.timeout() +
-                            ", tx=" + tx + ']');
-
-                        onError(err);
-
-                        onComplete(false, false, false);
-                    }
-                });
-
-                return;
-            }
-        }
-
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
 
@@ -1020,7 +992,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                     if (log.isDebugEnabled())
                                         log.debug("Entry being locked did not pass filter (will not lock): " + entry);
 
-                                    onComplete(false, false, true);
+                                    onComplete(false, false);
 
                                     return;
                                 }
@@ -1508,12 +1480,12 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                             U.warn(log, "Failed to detect deadlock.", e);
                         }
 
-                        onComplete(false, true, true);
+                        onComplete(false, true);
                     }
                 });
             }
             else
-                onComplete(false, true, true);
+                onComplete(false, true);
         }
 
         /** {@inheritDoc} */

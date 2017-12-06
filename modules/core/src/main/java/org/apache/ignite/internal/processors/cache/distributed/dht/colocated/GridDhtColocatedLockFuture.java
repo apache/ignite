@@ -585,16 +585,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (!success)
             undoLocks(distribute, true);
 
-        if (tx != null) {
+        if (tx != null)
             cctx.tm().txContext(tx);
-
-//            if (restoreTimeout && tx.trackTimeout()) {
-//                // Need restore timeout before onDone is called and next tx operation can proceed.
-//                boolean add = tx.addTimeoutHandler();
-//
-//                assert add;
-//            }
-        }
 
         if (super.onDone(success, err)) {
             if (log.isDebugEnabled())

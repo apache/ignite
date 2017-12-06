@@ -3302,6 +3302,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 if (locFut instanceof GridDhtColocatedLockFuture)
                     ((GridDhtColocatedLockFuture)locFut).onDone(false, timeoutException());
+                else if (locFut instanceof GridNearLockFuture)
+                    ((GridNearLockFuture)locFut).onDone(false, timeoutException());
 
             }
         }
