@@ -1171,7 +1171,6 @@ public class VisorTaskUtils {
 
                     bits = bits.add(BigDecimal.valueOf(oct * pow));
                 }
-
             }
             catch (Exception ignore) {
                 // No-op.

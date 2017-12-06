@@ -17,17 +17,16 @@
 
 package org.apache.ignite.ml.math.distributed.keys.impl;
 
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
 /**
  * Key implementation for {@link SparseDistributedMatrix}.
@@ -35,8 +34,10 @@ import java.util.UUID;
 public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     /** */
     private int idx;
+
     /** */
     private UUID matrixId;
+
     /** */
     @AffinityKeyMapped
     private Object affinityKey;
@@ -44,7 +45,7 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     /**
      * Default constructor (required by Externalizable).
      */
-    public SparseMatrixKey(){
+    public SparseMatrixKey() {
 
     }
 

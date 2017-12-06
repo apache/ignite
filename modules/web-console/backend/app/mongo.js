@@ -81,6 +81,7 @@ const defineSchema = (passportMongo, mongoose) => {
         DUPLICATE_KEY_ERROR: 11000,
         DUPLICATE_KEY_UPDATE_ERROR: 11001
     };
+
     // Define Account model.
     result.Account = mongoose.model('Account', AccountSchema);
 

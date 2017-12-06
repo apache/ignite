@@ -17,34 +17,40 @@
 
 package org.apache.ignite.ml.math.distributed.keys.impl;
 
-import org.apache.ignite.binary.*;
-import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry;
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Key implementation for {@link MatrixBlockEntry} using for {@link SparseBlockDistributedMatrix}.
  */
-public class MatrixBlockKey implements org.apache.ignite.ml.math.distributed.keys.MatrixBlockKey, Externalizable, Binarylizable {
+public class MatrixBlockKey implements org.apache.ignite.ml.math.distributed.keys.MatrixBlockKey,
+    Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
+
     /** Block row ID */
     private long blockIdRow;
+
     /** Block col ID */
     private long blockIdCol;
+
     /** Matrix ID */
     private UUID matrixUuid;
+
     /** Block affinity key. */
     private UUID affinityKey;
 
@@ -150,13 +156,11 @@ public class MatrixBlockKey implements org.apache.ignite.ml.math.distributed.key
         MatrixBlockKey that = (MatrixBlockKey)obj;
 
         return blockIdRow == that.blockIdRow && blockIdCol == that.blockIdCol && matrixUuid.equals(that.matrixUuid)
-                && F.eq(affinityKey, that.affinityKey);
+            && F.eq(affinityKey, that.affinityKey);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MatrixBlockKey.class, this);
     }
-
-
 }

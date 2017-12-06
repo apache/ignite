@@ -86,11 +86,12 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
         constructor(top) {
             const clusterName = top.clusterName;
 
-            this.id = _.isEmpty(clusterName) ? uuid().substring(0, 8).toUpperCase() : clusterName;
+            this.id = _.isEmpty(clusterName) ? `Cluster ${uuid().substring(0, 8).toUpperCase()}` : clusterName;
             this.nids = top.nids;
             this.addresses = top.addresses;
             this.clients = top.clients;
             this.clusterVersion = top.clusterVersion;
+            this.active = top.active;
         }
 
         isSameCluster(top) {
@@ -102,6 +103,15 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             this.nids = top.nids;
             this.addresses = top.addresses;
             this.clients = top.clients;
+            this.clusterVersion = top.clusterVersion;
+            this.active = top.active;
+        }
+
+        same(top) {
+            return _.difference(this.nids, top.nids).length === 0 &&
+                _.isEqual(this.addresses, top.addresses) &&
+                this.clusterVersion === top.clusterVersion &&
+                this.active === top.active;
         }
     }
 
@@ -237,8 +247,17 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                         this._browsersHnd.agentStats(account);
                     });
                 }
-                else
-                    cluster.update(top);
+                else {
+                    const changed = !cluster.same(top);
+
+                    if (changed) {
+                        cluster.update(top);
+
+                        _.forEach(tokens, (token) => {
+                            this._browsersHnd.clusterChanged(token, cluster);
+                        });
+                    }
+                }
             });
 
             sock.on('cluster:disconnected', () => {

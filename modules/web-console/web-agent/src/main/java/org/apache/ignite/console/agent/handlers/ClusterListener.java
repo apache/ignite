@@ -26,7 +26,6 @@ import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -69,7 +68,7 @@ public class ClusterListener implements AutoCloseable {
 
     /** */
     private static final String EVENT_CLUSTER_TOPOLOGY = "cluster:topology";
-    
+
     /** */
     private static final String EVENT_CLUSTER_DISCONNECTED = "cluster:disconnected";
 
@@ -78,6 +77,15 @@ public class ClusterListener implements AutoCloseable {
 
     /** JSON object mapper. */
     private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
+
+    /** Latest topology snapshot. */
+    private TopologySnapshot top;
+
+    /** */
+    private final WatchTask watchTask = new WatchTask();
+
+    /** */
+    private final BroadcastTask broadcastTask = new BroadcastTask();
 
     /** */
     private static final IgniteClosure<UUID, String> ID2ID8 = new IgniteClosure<UUID, String>() {
@@ -104,15 +112,6 @@ public class ClusterListener implements AutoCloseable {
 
     /** */
     private ScheduledFuture<?> refreshTask;
-
-    /** Latest topology snapshot. */
-    private TopologySnapshot top;
-
-    /** */
-    private final WatchTask watchTask = new WatchTask();
-
-    /** */
-    private final BroadcastTask broadcastTask = new BroadcastTask();
 
     /**
      * @param client Client.
@@ -174,7 +173,7 @@ public class ClusterListener implements AutoCloseable {
             @Override public void call(Object... args) {
                 safeStopRefresh();
 
-                final long timeout = args.length > 1  && args[1] instanceof Long ? (long)args[1] : DFLT_TIMEOUT;
+                final long timeout = args.length > 1 && args[1] instanceof Long ? (long)args[1] : DFLT_TIMEOUT;
 
                 refreshTask = pool.scheduleWithFixedDelay(broadcastTask, 0L, timeout, TimeUnit.MILLISECONDS);
             }
@@ -208,6 +207,9 @@ public class ClusterListener implements AutoCloseable {
         /** */
         private IgniteProductVersion clusterVer;
 
+        /** */
+        private boolean active;
+
         /**
          * Helper method to get attribute.
          *
@@ -226,8 +228,9 @@ public class ClusterListener implements AutoCloseable {
             int sz = nodes.size();
 
             nids = new ArrayList<>(sz);
-            addrs = new HashMap<>(sz);
-            clients = new HashMap<>(sz);
+            addrs = U.newHashMap(sz);
+            clients = U.newHashMap(sz);
+            active = false;
 
             for (GridClientNodeBean node : nodes) {
                 UUID nid = node.getNodeId();
@@ -274,6 +277,20 @@ public class ClusterListener implements AutoCloseable {
          */
         public String getClusterVersion() {
             return clusterVerStr;
+        }
+
+        /**
+         * @return Cluster active flag.
+         */
+        public boolean isActive() {
+            return active;
+        }
+
+        /**
+         * @param active New cluster active state.
+         */
+        public void setActive(boolean active) {
+            this.active = active;
         }
 
         /**
@@ -351,6 +368,10 @@ public class ClusterListener implements AutoCloseable {
 
                         if (newTop.differentCluster(top))
                             log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
+
+                        boolean active = restExecutor.active(newTop.clusterVersion(), F.first(newTop.getNids()));
+
+                        newTop.setActive(active);
 
                         top = newTop;
 
