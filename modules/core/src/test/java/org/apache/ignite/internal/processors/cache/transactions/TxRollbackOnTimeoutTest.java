@@ -220,6 +220,52 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testLockRelease() throws Exception {
+        final Ignite node = ignite(0);
+
+        final IgniteCache<Object, Object> cache = node.cache(CACHE_NAME);
+
+        final int KEYS_PER_THREAD = 10_000;
+
+        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer idx) {
+                int start = idx * KEYS_PER_THREAD;
+                int end = start + KEYS_PER_THREAD;
+
+                int locked = 0;
+
+                try {
+                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)) {
+                        for (int i = start; i < end; i++) {
+                            cache.get(i);
+
+                            locked++;
+                        }
+
+                        tx.commit();
+                    }
+                }
+                catch (Exception e) {
+                    info("Expected error: " + e);
+                }
+
+                info("Done, locked: " + locked);
+            }
+        }, Math.min(4, Runtime.getRuntime().availableProcessors()), "tx-thread");
+
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final IgniteInternalFuture<?> f = ig.context().cache().context().
+                partitionReleaseFuture(new AffinityTopologyVersion(G.allGrids().size() + 1, 0));
+
+            assertTrue("Unexpected incomplete future was found on node " + ig.localNode(), f.isDone());
+        }
+    }
+
+    /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
      *
      * @throws Exception If failed.

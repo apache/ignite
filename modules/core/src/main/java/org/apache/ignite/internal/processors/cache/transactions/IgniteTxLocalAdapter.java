@@ -1247,7 +1247,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         if (isRollbackOnly()) {
             if (remainingTime() == -1)
-                throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + this);
+                throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + CU.txString(this));
 
             TransactionState state = state();
 
@@ -1713,7 +1713,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 if (!locked)
                     throw new GridClosureException(new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
                         "within provided timeout for transaction [timeout=" + timeout() +
-                        ", tx=" + IgniteTxLocalAdapter.this + ']'));
+                        ", tx=" + CU.txString(IgniteTxLocalAdapter.this) + ']'));
 
                 IgniteInternalFuture<T> fut = postLock();
 

@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -673,7 +674,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         // Register listener just so we print out errors.
         // Exclude lock timeout exception since it's not a fatal exception.
         f.listen(CU.errorLogger(log, GridCacheLockTimeoutException.class,
-            GridDistributedLockCancelledException.class));
+            GridDistributedLockCancelledException.class, IgniteTxTimeoutCheckedException.class));
     }
 
     private boolean waitForExchangeFuture(final ClusterNode node, final GridNearLockRequest req) {

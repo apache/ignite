@@ -705,7 +705,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public final IgniteCheckedException timeoutException() {
         return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-            "for transaction [timeout=" + timeout() + ", tx=" + this + ']');
+            "for transaction [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
     }
 
     /** {@inheritDoc} */

@@ -686,24 +686,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * part. Note that if primary node leaves grid, the future will fail and transaction will be rolled back.
      */
     void map() {
-//        if (tx != null && tx.trackTimeout()) {
-//            if (!tx.removeTimeoutHandler()) {
-//                tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-//                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-//                        IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Failed to " +
-//                            "acquire lock, transaction was rolled back on timeout [timeout=" + tx.timeout() +
-//                            ", tx=" + tx + ']');
-//
-//                        onError(err);
-//
-//                        onComplete(false, false, false);
-//                    }
-//                });
-//
-//                return;
-//            }
-//        }
-
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
 
