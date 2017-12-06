@@ -1,17 +1,24 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import com.google.common.base.Strings;
+import com.sun.jna.NativeLong;
+import com.sun.jna.Pointer;
+import com.sun.jna.ptr.PointerByReference;
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import net.smacke.jaydio.DirectIoLib;
+import net.smacke.jaydio.OpenFlags;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.file.DirectRandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.IgniteDirectIo;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -19,11 +26,83 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 
 public class FilePageStoreTest {
 
+
+    @Test
+    public void nativeCreateFile() throws IOException {
+        File file = new File("store2.dat");
+        final DirectIoLib lib = DirectIoLib.getLibForPath(file.getAbsolutePath());
+        int pageSize = DataStorageConfiguration.DFLT_PAGE_SIZE;
+        if (pageSize < 0 || (pageSize % lib.blockSize() != 0)) {
+            throw new IllegalArgumentException("The page size [" + pageSize + "] must be a multiple of the file system block size [" + lib.blockSize() + "]");
+        }
+        System.out.println(pageSize);
+
+        String pathname = file.getAbsolutePath();
+
+        //todo flags
+        int flags = OpenFlags.O_DIRECT;
+      //  if (readOnly) {
+            //flags |= OpenFlags.O_RDONLY;
+       // } else {
+            flags |= OpenFlags.O_RDWR | OpenFlags.O_CREAT;
+      //  }
+        int fd = IgniteDirectIo.open(pathname, flags, 00644);
+        if (fd < 0) {
+            throw new IOException("Error opening " + pathname + ", got " + DirectIoLib.getLastError());
+        }
+
+        NativeLong blockSize = new NativeLong(lib.blockSize());
+        PointerByReference pointerToPointer = new PointerByReference();
+
+        long capacity = pageSize;
+        // align memory for use with O_DIRECT
+        DirectIoLib.posix_memalign(pointerToPointer, blockSize, new NativeLong(capacity));
+        Pointer pointer = pointerToPointer.getValue();
+
+        //  GridUnsafe.copyMemory(pointer);
+
+        ByteBuffer buf = GridUnsafe.allocateBuffer(pageSize);
+
+        buf.put(("Hi There from " + getClass().getName() + ": ").getBytes());
+        buf.put(new byte[buf.remaining()]);
+        buf.rewind();
+        long address = GridUnsafe.bufferAddress(buf);
+        System.out.println(address);
+        System.out.println(address % pageSize);
+
+
+        GridUnsafe.copyMemory(address, Pointer.nativeValue(pointer), pageSize);
+
+
+        final int start = buf.position();
+        System.err.println(start);
+        assert start == lib.blockStart(start);
+        final int toWrite = lib.blockEnd(buf.limit()) - start;
+
+        System.err.println(toWrite);
+
+        NativeLong n = IgniteDirectIo.pwrite(fd, pointer, new NativeLong(pageSize), new NativeLong(0));
+        System.out.println(n);
+        if (n.longValue() < 0) {
+            throw new IOException("Error writing file at offset "  + ": " + DirectIoLib.getLastError());
+        }
+
+        IgniteDirectIo.close(fd);
+
+        GridUnsafe.freeBuffer(buf);
+
+
+        DirectIoLib.free(pointer);
+
+        System.out.println(fd);
+
+
+    }
+
     @Test
     public void saveRead() throws IgniteCheckedException {
         RandomAccessFileIOFactory ioFactory = new RandomAccessFileIOFactory();
         testSaveRead(ioFactory);
-
     }
 
 
