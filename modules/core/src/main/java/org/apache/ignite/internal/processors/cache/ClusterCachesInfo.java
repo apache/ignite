@@ -1755,7 +1755,7 @@ class ClusterCachesInfo {
      * Use DIRECT comparator for ordering cache start operations.
      * Use REVERSE comparator for ordering cache stop operations.
      */
-    private static class CacheComparators {
+    static class CacheComparators {
         /**
          * DIRECT comparator for cache descriptors (first system caches).
          */
