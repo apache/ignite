@@ -67,14 +67,14 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override protected void beforeTest() {
+    @Override protected void beforeTest() throws Exception {
         ignite = grid(NODE_COUNT);
 
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -531,12 +531,12 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
 
         try {
             createRegression().newSampleData(null, new SparseBlockDistributedMatrix(new double[][] {{1}}));
-            fail("NullArgumentException");
+            fail("Expected NullArgumentException was not caught.");
         }
         catch (NullArgumentException e) {
             return;
         }
-        fail("NullArgumentException");
+        fail("Expected NullArgumentException was not caught.");
     }
 
     /** */
@@ -545,12 +545,12 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
 
         try {
             createRegression().newSampleData(new SparseBlockDistributedVector(new double[] {1}), null);
-            fail("NullArgumentException");
+            fail("Expected NullArgumentException was not caught.");
         }
         catch (NullArgumentException e) {
             return;
         }
-        fail("NullArgumentException");
+        fail("Expected NullArgumentException was not caught.");
     }
 
     /**
@@ -831,12 +831,12 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
         try {
             mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new SparseBlockDistributedMatrix());
             mdl.calculateBeta();
-            fail("SingularMatrixException missed");
+            fail("Expected SingularMatrixException was not caught.");
         }
         catch (SingularMatrixException e) {
             return;
         }
-        fail("SingularMatrixException missed");
+        fail("Expected SingularMatrixException was not caught.");
     }
 
     /** */
@@ -846,12 +846,12 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
 
         try {
             mdl.calculateBeta();
-            fail("java.lang.NullPointerException missed");
+            fail("Expected NullPointerException was not caught.");
         }
         catch (NullPointerException e) {
             return;
         }
-        fail("java.lang.NullPointerException missed");
+        fail("Expected NullPointerException was not caught.");
     }
 
     /** */
@@ -861,12 +861,12 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
 
         try {
             mdl.calculateHat();
-            fail("java.lang.NullPointerException missed");
+            fail("Expected NullPointerException was not caught.");
         }
         catch (NullPointerException e) {
             return;
         }
-        fail("java.lang.NullPointerException missed");
+        fail("Expected NullPointerException was not caught.");
     }
 
     /** */
@@ -876,12 +876,12 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
 
         try {
             mdl.calculateTotalSumOfSquares();
-            fail("java.lang.NullPointerException missed");
+            fail("Expected NullPointerException was not caught.");
         }
         catch (NullPointerException e) {
             return;
         }
-        fail("java.lang.NullPointerException missed");
+        fail("Expected NullPointerException was not caught.");
     }
 
     /** */
@@ -891,11 +891,11 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
 
         try {
             mdl.validateSampleData(new SparseBlockDistributedMatrix(1, 2), new SparseBlockDistributedVector(1));
-            fail("MathIllegalArgumentException missed");
+            fail("Expected MathIllegalArgumentException was not caught.");
         }
         catch (MathIllegalArgumentException e) {
             return;
         }
-        fail("MathIllegalArgumentException missed");
+        fail("Expected MathIllegalArgumentException was not caught.");
     }
 }
