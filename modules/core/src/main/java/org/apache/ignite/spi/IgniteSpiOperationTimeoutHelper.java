@@ -76,7 +76,7 @@ public class IgniteSpiOperationTimeoutHelper {
         else {
             long curTs = U.currentTimeMillis();
 
-            timeout = timeout - (curTs - lastOperStartTs);
+            timeout -= Math.max(curTs - lastOperStartTs, 10); // timeout will not be decreased at all if delay between successive calls to nextTimeoutChunk() is smaller than U.currentTimeMillis() discretization; only rare calls (the first right before U.currentTimeMillis() and the second right after that) may decrease timeout, so actual IgniteSpiOperationTimeoutHelper timeout could be much bigger than the failureDetectionTimeout. My opinion to not split failureDetectionTimeout between network operations, but initialize first operation timestamp at first call to nextTimeoutChunk(), and then calculate the timeout as a difference between the current timestamp and the first operation timestamp.
 
             lastOperStartTs = curTs;
 
