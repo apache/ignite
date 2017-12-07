@@ -38,7 +38,7 @@ import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * TODO ZK: limit reconnect attempts.
  */
 public class ZookeeperClient implements Watcher {
     /** */
@@ -683,7 +683,7 @@ public class ZookeeperClient implements Watcher {
                 else {
                     assert connStartTime != 0;
 
-                    assert state == ConnectionState.Disconnected;
+                    assert state == ConnectionState.Disconnected : state;
 
                     remainingTime = connLossTimeout - (System.currentTimeMillis() - connStartTime);
 

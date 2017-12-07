@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1355,6 +1356,40 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             attr[i] = i;
 
         userAttrs.put("testAttr", attr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLargeCustomEvent() throws Exception {
+        Ignite srv0 = startGrid(0);
+
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("c1");
+
+        ccfg.setAffinity(new TestAffinityFunction(1024 * 1024));
+
+        srv0.createCache(ccfg);
+    }
+
+    /**
+     *
+     */
+    static class TestAffinityFunction extends RendezvousAffinityFunction {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private int[] dummyData;
+
+        /**
+         * @param dataSize Dummy data size.
+         */
+        TestAffinityFunction(int dataSize) {
+            dummyData = new int[dataSize];
+
+            for (int i = 0; i < dataSize; i++)
+                dummyData[i] = i;
+        }
     }
 
     /**
