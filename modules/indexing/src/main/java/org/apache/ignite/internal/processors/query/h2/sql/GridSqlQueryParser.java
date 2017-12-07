@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.CommandInterface;
@@ -94,6 +95,7 @@ import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
+import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
@@ -1083,12 +1085,42 @@ public class GridSqlQueryParser {
             }
         }
 
-        boolean wrapKey0 = (res.wrapKey() != null && res.wrapKey()) || !F.isEmpty(res.keyTypeName()) || keyColsNum > 1;
+        final boolean wrapKey0;
+
+        if (!F.isEmpty(res.keyTypeName())) {
+            Class<?> c = U.classForName(res.keyTypeName(), null, true);
+
+            if (c != null && QueryUtils.isSqlType(c)) {
+                if (keyColsNum != 1)
+                    throw new IgniteSQLException(PARAM_KEY_TYPE + " may not point at SQL type " +
+                        "when multiple key columns are defined.", IgniteQueryErrorCode.PARSING);
+
+                GridSqlColumn pkCol = cols.get(pkIdxCols[0].columnName);
+
+                String clsName = DataType.getTypeClassName(pkCol.resultType().type());
+
+                if (!F.eq(clsName, res.keyTypeName()))
+                    throw new IgniteSQLException(PARAM_KEY_TYPE + " points at SQL type " +
+                        "different from the type of primary key column.", IgniteQueryErrorCode.PARSING);
+
+                // We've detected that the user has supplied key type name matching name of actual data type
+                // of the only primary key column, therefore let's ignore key type name and fall back to flat key.
+                res.keyTypeName(null);
+
+                wrapKey0 = false;
+            }
+            else
+                wrapKey0 = true;
+        }
+        else // Let's evaluate flag without honoring type name.
+            wrapKey0 = (res.wrapKey() != null && res.wrapKey()) || keyColsNum > 1;
 
         res.wrapKey(wrapKey0);
 
         // Process value wrapping.
         Boolean wrapVal = res.wrapValue();
+
+        final boolean wrapVal0;
 
         if (wrapVal != null && !wrapVal) {
             if (valColsNum > 1) {
@@ -1101,10 +1133,47 @@ public class GridSqlQueryParser {
                     IgniteQueryErrorCode.PARSING);
             }
 
-            res.wrapValue(false);
+            wrapVal0 = false;
+        }
+        else if (!F.isEmpty(res.valueTypeName())) {
+            Class<?> c = U.classForName(res.valueTypeName(), null, true);
+
+            if (c != null && QueryUtils.isSqlType(c)) {
+                if (valColsNum != 1)
+                    throw new IgniteSQLException(PARAM_VAL_TYPE + " may not point at SQL type " +
+                        "when multiple value columns are defined.", IgniteQueryErrorCode.PARSING);
+
+                GridSqlColumn valCol = null;
+
+                for (GridSqlColumn col : cols.values()) {
+                    if (!pkCols.contains(col.columnName())) {
+                        valCol = col;
+
+                        break;
+                    }
+                }
+
+                assert valCol != null;
+
+                String clsName = DataType.getTypeClassName(valCol.resultType().type());
+
+                if (!F.eq(clsName, res.valueTypeName()))
+                    throw new IgniteSQLException(PARAM_VAL_TYPE + " points at SQL type " +
+                        "different from the type of value column.", IgniteQueryErrorCode.PARSING);
+
+                // We've detected that the user has supplied value type name matching name of actual data type
+                // of the only value column, therefore let's ignore value type name and fall back to flat value.
+                res.valueTypeName(null);
+
+                wrapVal0 = false;
+            }
+            else
+                wrapVal0 = true;
         }
         else
-            res.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+            wrapVal0 = true; // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+
+        res.wrapValue(wrapVal0);
 
         if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
             throw new IgniteSQLException("Key and value type names " +
