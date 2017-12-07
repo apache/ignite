@@ -25,8 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import net.smacke.jaydio.DirectIoLib;
-import net.smacke.jaydio.OpenFlags;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -35,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionC
 import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoLib;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -46,28 +45,28 @@ public class FilePageStoreTest {
     @Test
     public void nativeCreateFile() throws IOException {
         final File file = new File("store2.dat");
-        final DirectIoLib lib = DirectIoLib.getLibForPath(file.getAbsolutePath());
+        int fsBlockSize = IgniteNativeIoLib.getFsBlockSize(file.getAbsolutePath(), new NullLogger());
         int pageSize = DataStorageConfiguration.DFLT_PAGE_SIZE;
-        if (pageSize < 0 || (pageSize % lib.blockSize() != 0))
-            throw new IllegalArgumentException("The page size [" + pageSize + "] must be a multiple of the file system block size [" + lib.blockSize() + "]");
+        if (fsBlockSize < 0 || (pageSize % fsBlockSize != 0))
+            throw new IllegalArgumentException("The page size [" + pageSize + "] must be a multiple of the file system block size [" + fsBlockSize + "]");
 
         System.out.println(pageSize);
 
         String pathname = file.getAbsolutePath();
 
         //todo flags
-        int flags = OpenFlags.O_DIRECT;
+        int flags = IgniteNativeIoLib.O_DIRECT;
       //  if (readOnly) {
             //flags |= OpenFlags.O_RDONLY;
        // } else {
-            flags |= OpenFlags.O_RDWR | OpenFlags.O_CREAT;
+            flags |= IgniteNativeIoLib.O_RDWR | IgniteNativeIoLib.O_CREAT;
       //  }
         int fd = IgniteNativeIoLib.open(pathname, flags, 00644);
         if (fd < 0) {
             throw new IOException("Error opening " + pathname + ", got " +  getLastError());
         }
 
-        NativeLong blockSize = new NativeLong(lib.blockSize());
+        NativeLong blockSize = new NativeLong(fsBlockSize);
         long capacity = pageSize;
         PointerByReference pointerToPointer = new PointerByReference();
 
@@ -93,10 +92,6 @@ public class FilePageStoreTest {
 
         final int start = buf.position();
         System.out.println("start=" +start);
-        assert start == lib.blockStart(start);
-        final int toWrite = lib.blockEnd(buf.limit()) - start;
-
-        System.out.println("toWrite="+ toWrite);
 
         NativeLong n = IgniteNativeIoLib.pwrite(fd, pointer, new NativeLong(pageSize), new NativeLong(pageSize*4));
         System.out.println("written=" + n);

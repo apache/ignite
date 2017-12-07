@@ -107,11 +107,15 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
     private ConcurrentHashMap8<Long, String> setupDirect(IgniteEx ignite) {
         final FilePageStoreManager pageStore = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
-        final AlignedBuffersDirectFileIOFactory factory = new AlignedBuffersDirectFileIOFactory(pageStore.workDir(), pageStore.pageSize(), pageStore.getPageStoreFileIoFactory());
+        final AlignedBuffersDirectFileIOFactory factory = new AlignedBuffersDirectFileIOFactory(
+            ignite.log(),
+            pageStore.workDir(),
+            pageStore.pageSize(),
+            pageStore.getPageStoreFileIoFactory());
         final ConcurrentHashMap8<Long, String> buffers = factory.managedAlignedBuffers();
         pageStore.pageStoreFileIoFactory(factory);
 
-        if(factory.isDirectAvailable()) {
+        if(factory.isDirectIoAvailable()) {
             GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
 
             db.setThreadBuf(new ThreadLocal<ByteBuffer>() {

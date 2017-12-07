@@ -24,7 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
-import net.smacke.jaydio.OpenFlags;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentHashMap8;
@@ -53,7 +53,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         final OpenOption[] modes,
         final ThreadLocal<ByteBuffer> tblOnePageAligned,
         final ConcurrentHashMap8<Long, String> managedAlignedBuffers) throws IOException {
-        
+
         this.fsBlockSize = fsBlockSize;
         this.pageSize = pageSize;
         this.file = file;
@@ -61,18 +61,18 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         this.managedAlignedBuffers = managedAlignedBuffers;
 
         //todo flags from modes
-        int flags = OpenFlags.O_DIRECT;
+        int flags = IgniteNativeIoLib.O_DIRECT;
         //  if (readOnly) {
         //flags |= OpenFlags.O_RDONLY;
         // } else {
-        flags |= OpenFlags.O_RDWR | OpenFlags.O_CREAT;
+        flags |= IgniteNativeIoLib.O_RDWR | IgniteNativeIoLib.O_CREAT;
         //  }
         final String pathname = file.getAbsolutePath();
 
         final int fd = IgniteNativeIoLib.open(pathname, flags, 00644);
 
         if (fd < 0)
-            throw new IOException("Error opening " + pathname + ", got " + getLastError());
+            throw new IOException("Error opening file [" + pathname + "], got error [" + getLastError() + "]");
 
         this.fd = fd;
     }
@@ -213,13 +213,16 @@ public class AlignedBuffersDirectFileIO implements FileIO {
      */
     private int checkSizeIsPadded(int size) throws IOException {
         if (size % fsBlockSize != 0)
-            throw new IOException("Unable to apply DirectIO for read/write of buffer size [" + size + "] on page size [" + fsBlockSize + "]");
+            throw new IOException("Unable to apply DirectIO for read/write buffer [" + size + "] bytes" +
+                " on file system block size [" + fsBlockSize + "]." +
+                " Set " + DataStorageConfiguration.class.getSimpleName() + ".setPageSize(" + fsBlockSize + ").");
 
         return size;
     }
 
     /**
      * Checks if file is opened and returns descriptor.
+     *
      * @return file descriptor.
      * @throws IOException if file not opened.
      */
@@ -259,7 +262,6 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
         return wr;
     }
-
 
     @NotNull private NativeLong nl(long position) {
         return new NativeLong(position);

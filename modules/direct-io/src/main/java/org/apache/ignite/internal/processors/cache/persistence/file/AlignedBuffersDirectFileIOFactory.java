@@ -22,51 +22,92 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
-import net.smacke.jaydio.DirectIoLib;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
 
-    @Nullable private final DirectIoLib directIoLib;
+    /** Logger. */
+    private final IgniteLogger log;
 
-    private int pageSize;
+    /** Page size from durable memory. */
+    private final int pageSize;
 
     /** Backup factory for files in case native is not available or not applicable. */
     private final FileIOFactory backupFactory;
 
-    private ThreadLocal<ByteBuffer> tblOnePageAligned;
+    /** File system/os block size, negative value if library init was failed. */
+    private final int fsBlockSize;
 
+    private boolean useBackupFactory;
+
+    private ThreadLocal<ByteBuffer> tblOnePageAligned;
 
     /** Managed aligned buffers. */
     private final ConcurrentHashMap8<Long, String> managedAlignedBuffers = new ConcurrentHashMap8<>();
 
-
     public AlignedBuffersDirectFileIOFactory(
+        final IgniteLogger log,
         final File storePath,
         final int pageSize,
         final FileIOFactory backupFactory) {
 
+        this.log = log;
         this.pageSize = pageSize;
         this.backupFactory = backupFactory;
-        directIoLib = DirectIoLib.getLibForPath(storePath.getAbsolutePath());
-        //todo validate data storage settings and invalidate factory
-        tblOnePageAligned = new ThreadLocal<ByteBuffer>() {
-            /** {@inheritDoc} */
-            @Override protected ByteBuffer initialValue() {
-                return createManagedBuffer(pageSize);
+        fsBlockSize = IgniteNativeIoLib.getFsBlockSize(storePath.getAbsolutePath(), log);
+
+        this.useBackupFactory = true;
+        if (fsBlockSize > 0) {
+            int blkSize = fsBlockSize;
+
+            if (pageSize % blkSize != 0) {
+                U.warn(log, "Unable to apply DirectIO for page size [" + pageSize + "] bytes" +
+                    " on file system block size [" + blkSize + "]." +
+                    " For speeding up Ignite consider setting " + DataStorageConfiguration.class.getSimpleName()
+                    + ".setPageSize(" + blkSize + "). Direct IO is disabled");
             }
-        };
+            else {
+                useBackupFactory = false;
+
+                tblOnePageAligned = new ThreadLocal<ByteBuffer>() {
+                    /** {@inheritDoc} */
+                    @Override protected ByteBuffer initialValue() {
+                        return createManagedBuffer(pageSize);
+                    }
+                };
+
+                if (log.isInfoEnabled())
+                    log.info("Direct IO is enabled, " +
+                        "using block size [" + blkSize + "] and durable memory page size [" + pageSize + "]");
+            }
+        }
+        else {
+            if (log.isInfoEnabled())
+                log.info("Unable to determine block size, direct IO library is not available on current system " +
+                    "[" + System.getProperty("os.version") + "]. Direct IO is disabled");
+        }
+
     }
 
     /**
-     * @param capacity buffer size
-     * @return
+     * <b>Note: </b> Use only if {@link #isDirectIoAvailable()}.
+     *
+     * @param capacity buffer size to allocate.
+     * @return new byte buffer.
      */
     @NotNull public ByteBuffer createManagedBuffer(int capacity) {
-        final ByteBuffer allocate = AlignedBuffer.allocate(fsBlockSize(), capacity).order(ByteOrder.nativeOrder());
+        assert !useBackupFactory : "Direct IO is disabled, aligned managed buffer creation is disabled now";
+
+        final ByteBuffer allocate = AlignedBuffer.allocate(fsBlockSize, capacity).order(ByteOrder.nativeOrder());
 
         managedAlignedBuffers.put(GridUnsafe.bufferAddress(allocate), Thread.currentThread().getName());
 
@@ -75,26 +116,24 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file) throws IOException {
-        throw new UnsupportedOperationException();
+        return create(file, CREATE, READ, WRITE);
     }
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-        if (directIoLib == null)
+        if (useBackupFactory) {
             return backupFactory.create(file, modes);
+        }
 
-        return new AlignedBuffersDirectFileIO(fsBlockSize(),  pageSize, file, modes, tblOnePageAligned, managedAlignedBuffers);
+        return new AlignedBuffersDirectFileIO(fsBlockSize, pageSize, file, modes, tblOnePageAligned, managedAlignedBuffers);
+
     }
 
     /**
-     * @return fs block size, negative value if library init was failed
+     * @return {@code true} if Direct IO can be used on current OS and file system settings
      */
-    public int fsBlockSize() {
-        return isDirectAvailable() ? directIoLib.blockSize() : -1;
-    }
-
-    public boolean isDirectAvailable() {
-        return directIoLib != null;
+    public boolean isDirectIoAvailable() {
+        return !useBackupFactory;
     }
 
     public ConcurrentHashMap8<Long, String> managedAlignedBuffers() {
