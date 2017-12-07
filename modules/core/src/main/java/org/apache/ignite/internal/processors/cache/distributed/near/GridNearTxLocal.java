@@ -1724,11 +1724,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 long timeout = remainingTime();
 
-                TransactionState[] h = new TransactionState[1];
-
-                boolean state = state(LOCKING, false, h);
-
-                if (timeout == -1 || (!state))
+                if (timeout == -1 || !state(LOCKING))
                     return new GridFinishedFuture<>(timeoutException());
 
                 IgniteInternalFuture<Boolean> fut = locFut = cacheCtx.cache().txLockAsync(lockKeys,

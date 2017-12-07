@@ -22,7 +22,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -36,11 +35,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -214,7 +213,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                         for (int i = start; i < end; i++)
                             cache.get(i);
 
-                        cache.put(start, 0);
+                        //cache.put(start, 0);
 
                         tx.commit();
                     }
@@ -235,22 +234,54 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         toggleBlocking(GridNearLockResponse.class, client, true);
 
-        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 1)) {
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 50, 0)) {
             client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
         }
         catch (CacheException e) {
             assertTrue(e.getMessage(), X.hasCause(e, TransactionTimeoutException.class));
         }
 
-        toggleBlocking(GridNearLockResponse.class, prim, false);
+        toggleBlocking(GridNearLockResponse.class, client, false);
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10 * 60_000, 0)) {
+            client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+        }
+        catch (CacheException e) {
+            assertTrue(e.getMessage(), X.hasCause(e, TransactionTimeoutException.class));
+        }
+
+        Thread.sleep(500);
 
         for (Ignite ignite : G.allGrids()) {
             IgniteEx ig = (IgniteEx)ignite;
 
-            final IgniteInternalFuture<?> f = ig.context().cache().context().
+            final CacheObjectsReleaseFuture<?, ?> f = (CacheObjectsReleaseFuture<?, ?>)ig.context().cache().context().
                 partitionReleaseFuture(new AffinityTopologyVersion(G.allGrids().size() + 1, 0));
 
-            assertTrue("Unexpected incomplete future was found on node " + ig.localNode(), f.isDone());
+            if (!f.isDone()) {
+                // Print incomplete futures.
+                final Collection<? extends IgniteInternalFuture<?>> futs = f.futures();
+
+                for (IgniteInternalFuture<?> fut : futs) {
+                    if (fut instanceof GridCompoundFuture<?, ?>) {
+                        GridCompoundFuture<?, ?> fut0 = (GridCompoundFuture<?, ?>)fut;
+
+                        final Collection<? extends IgniteInternalFuture<?>> futs0 = fut0.futures();
+
+                        for (IgniteInternalFuture<?> fut1 : futs0) {
+                            if (!fut1.isDone())
+                                log.info("Future: " + fut1);
+                        }
+                    }
+                    else {
+                        if (!fut.isDone())
+                            log.info("Future: " + fut);
+                    }
+                }
+
+                fail("Unexpected incomplete future was found on node " + ig.localNode());
+            }
+
         }
     }
 

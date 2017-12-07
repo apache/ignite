@@ -899,8 +899,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                 }
                             }
                             catch (GridCacheEntryRemovedException ex) {
-                                assert false : "Entry cannot become obsolete when DHT local candidate is added " +
-                                    "[e=" + e + ", ex=" + ex + ']';
+                                // Entry can be removed by async tx rollback on force/timeout.
                             }
 
                             // Skip entry if it is not new and is not present in updated mapping.
