@@ -70,6 +70,8 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
 
         List<byte[]> parts = client.splitNodeData(basePath, data, 2);
 
+        assertTrue(parts.size() > 1);
+
         ZooKeeper zk = client.zk();
 
         for (int i = 0; i < parts.size(); i++) {
@@ -77,7 +79,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
 
             assertTrue(part.length > 0);
 
-            String path0 = basePath + ":" + 1;
+            String path0 = basePath + ":" + i;
 
             zk.create(path0, part, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }

@@ -307,9 +307,11 @@ public class ZookeeperClient implements Watcher {
 
             byte[] part = new byte[partSize0];
 
-            System.arraycopy(data, i * partCnt, part, 0, part.length);
+            System.arraycopy(data, i * partSize, part, 0, part.length);
 
             remaining -= partSize0;
+
+            parts.add(part);
         }
 
         assert remaining == 0 : remaining;

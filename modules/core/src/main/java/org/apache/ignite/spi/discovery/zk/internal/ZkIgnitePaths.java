@@ -214,7 +214,7 @@ class ZkIgnitePaths {
      * @return Event zk path.
      */
     String joinEventDataPathForJoined(long evtId) {
-        return evtsPath + "/joined-" + evtId;
+        return evtsPath + "/fj-" + evtId;
     }
 
     /**

@@ -585,6 +585,8 @@ public class ZookeeperDiscoveryImpl {
             for (int i = 0; i < partCnt; i++) {
                 byte[] part = zkClient.getData(multipartPathName(basePath, i));
 
+                parts.add(part);
+
                 totSize += part.length;
             }
 
@@ -606,7 +608,7 @@ public class ZookeeperDiscoveryImpl {
             return zkClient.getData(multipartPathName(basePath, 0));
     }
 
-    private void saveMultipleParts(ZookeeperClient zkClient, String basePath, List<byte[]> parts)
+    private int saveMultipleParts(ZookeeperClient zkClient, String basePath, List<byte[]> parts)
         throws ZookeeperClientFailedException, InterruptedException
     {
         assert parts.size() > 1;
@@ -618,6 +620,8 @@ public class ZookeeperDiscoveryImpl {
 
             zkClient.createIfNeeded(path, part, PERSISTENT);
         }
+
+        return parts.size();
     }
 
     private static String multipartPathName(String basePath, int part) {
@@ -628,11 +632,13 @@ public class ZookeeperDiscoveryImpl {
      * @param joinDataBytes Joining node data.
      * @throws InterruptedException If interrupted.
      */
-    private void startJoin(byte[] joinDataBytes) throws InterruptedException {
+    private void startJoin(final byte[] joinDataBytes) throws InterruptedException {
         if (!busyLock.enterBusy())
             return;
 
         try {
+            long startTime = System.currentTimeMillis();
+
             initZkNodes();
 
             String prefix = UUID.randomUUID().toString();
@@ -675,6 +681,8 @@ public class ZookeeperDiscoveryImpl {
             log.info("Node started join [nodeId=" + locNode.id() +
                 ", instanceName=" + locNode.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) +
                 ", joinDataSize=" + joinDataBytes.length +
+                ", joinDataPartCnt=" + rtState.joinDataPartCnt +
+                ", initTime=" + (System.currentTimeMillis() - startTime) +
                 ", nodePath=" + rtState.locNodeZkPath + ']');
 
             rtState.internalOrder = ZkIgnitePaths.aliveInternalId(rtState.locNodeZkPath);
@@ -1191,6 +1199,8 @@ public class ZookeeperDiscoveryImpl {
         joinedNode.order(rtState.evtsData.topVer);
         joinedNode.internalId(internalId);
 
+        long evtId = rtState.evtsData.evtIdGen;
+
         DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(nodeId);
 
         joiningNodeBag.joiningNodeData(joiningNodeData.discoveryData());
@@ -1211,13 +1221,37 @@ public class ZookeeperDiscoveryImpl {
 
         assert old == null;
 
+        long addDataStart = System.currentTimeMillis();
+
+        byte[] dataForJoinedBytes = marshalZip(dataForJoined);
+
+        int overhead = 5;
+
+        String dataPathForJoined = zkPaths.joinEventDataPathForJoined(evtId);
+
+        int dataForJoinedPartCnt = 1;
+
+        if (rtState.zkClient.needSplitNodeData(dataPathForJoined, dataForJoinedBytes, overhead)) {
+            dataForJoinedPartCnt = saveMultipleParts(rtState.zkClient,
+                dataPathForJoined,
+                rtState.zkClient.splitNodeData(dataPathForJoined, dataForJoinedBytes, overhead));
+        }
+        else {
+            rtState.zkClient.createIfNeeded(multipartPathName(dataPathForJoined, 0),
+                dataForJoinedBytes,
+                PERSISTENT);
+        }
+
+        long addDataTime = System.currentTimeMillis() - addDataStart;
+
         ZkDiscoveryNodeJoinEventData evtData = new ZkDiscoveryNodeJoinEventData(
-            rtState.evtsData.evtIdGen,
+            evtId,
             rtState.evtsData.topVer,
             joinedNode.id(),
             joinedNode.internalId(),
             prefixId,
-            joiningNodeData.partCount());
+            joiningNodeData.partCount(),
+            dataForJoinedPartCnt);
 
         evtData.joiningNodeData = joiningNodeData;
 
@@ -1225,18 +1259,11 @@ public class ZookeeperDiscoveryImpl {
 
         evtData.addRemainingAck(joinedNode); // Topology for joined node does not contain joined node.
 
-        byte[] dataForJoinedBytes = marshalZip(dataForJoined);
-
-        long start = System.currentTimeMillis();
-
-        rtState.zkClient.createIfNeeded(zkPaths.joinEventDataPathForJoined(evtData.eventId()), dataForJoinedBytes, PERSISTENT);
-
-        long time = System.currentTimeMillis() - start;
-
         if (log.isInfoEnabled()) {
             log.info("Generated NODE_JOINED event [evt=" + evtData +
                 ", dataForJoinedSize=" + dataForJoinedBytes.length +
-                ", addDataTime=" + time + ']');
+                ", dataForJoinedPartCnt=" + dataForJoinedPartCnt +
+                ", addDataTime=" + addDataTime + ']');
         }
     }
 
@@ -1626,7 +1653,9 @@ public class ZookeeperDiscoveryImpl {
 
         String path = zkPaths.joinEventDataPathForJoined(evtData.eventId());
 
-        ZkJoinEventDataForJoined dataForJoined = unmarshalZip(rtState.zkClient.getData(path));
+        byte[] dataForJoinedBytes = readMultipleParts(rtState.zkClient, path, evtData.dataForJoinedPartCnt);
+
+        ZkJoinEventDataForJoined dataForJoined = unmarshalZip(dataForJoinedBytes);
 
         rtState.gridStartTime = evtsData.gridStartTime;
 
@@ -1678,10 +1707,7 @@ public class ZookeeperDiscoveryImpl {
 
         rtState.joined = true;
 
-        if (log.isDebugEnabled())
-            log.debug("Delete data for joined: " + path);
-
-        rtState.zkClient.deleteIfExistsAsync(path);
+        deleteDataForJoined(evtData);
     }
 
     /**
@@ -1973,12 +1999,7 @@ public class ZookeeperDiscoveryImpl {
 
         deleteJoiningNodeData(evtData.nodeId, evtData.joinDataPrefixId, evtData.joinDataPartCnt);
 
-        String dataForJoinedPath = zkPaths.joinEventDataPathForJoined(evtData.eventId());
-
-        if (log.isDebugEnabled())
-            log.debug("Delete data for joined node [path=" + dataForJoinedPath + ']');
-
-        rtState.zkClient.deleteIfExistsAsync(dataForJoinedPath);
+        deleteDataForJoined(evtData);
     }
 
     private void deleteJoiningNodeData(UUID nodeId, UUID joinDataPrefixId, int partCnt) throws Exception {
@@ -1991,6 +2012,15 @@ public class ZookeeperDiscoveryImpl {
 
         if (partCnt > 1)
             deleteMultiplePartsAsync(rtState.zkClient, evtDataPath + ":", partCnt);
+    }
+
+    private void deleteDataForJoined(ZkDiscoveryNodeJoinEventData evtData) {
+        String dataForJoinedPath = zkPaths.joinEventDataPathForJoined(evtData.eventId());
+
+        if (log.isDebugEnabled())
+            log.debug("Delete data for joined node [path=" + dataForJoinedPath + ']');
+
+        deleteMultiplePartsAsync(rtState.zkClient, dataForJoinedPath, evtData.dataForJoinedPartCnt);
     }
 
     /**

@@ -63,11 +63,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
 import org.jetbrains.annotations.Nullable;
@@ -1214,17 +1216,22 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      */
     public void testRandomTopologyChanges() throws Exception {
         randomTopologyChanges(false, false);
+    }
 
-//        ZookeeperClient zkClient = new ZookeeperClient(new JavaLogger(), zkCluster.getConnectString(), 10_000, null);
-//
-//        List<String> children = ZKUtil.listSubTreeBFS(zkClient.zk(), IGNITE_ZK_ROOT);
-//
-//        info("Children after test:");
-//
-//        for (String s : children)
-//            info(s);
-//
-//        zkClient.close();
+    /**
+     * @throws Exception If failed.
+     */
+    private void printZkNodes() throws Exception {
+        ZookeeperClient zkClient = new ZookeeperClient(new JavaLogger(), zkCluster.getConnectString(), 10_000, null);
+
+        List<String> children = ZKUtil.listSubTreeBFS(zkClient.zk(), IGNITE_ZK_ROOT);
+
+        info("Zookeeper nodes:");
+
+        for (String s : children)
+            info(s);
+
+        zkClient.close();
     }
 
     /**
@@ -1283,17 +1290,71 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLargeUserAttribute() throws Exception {
+    public void testLargeUserAttribute1() throws Exception {
+        initLargeAttribute();
+
+        startGrid(0);
+
+        printZkNodes();
+
+        userAttrs = null;
+
+        startGrid(1);
+
+        waitForEventsAcks(ignite(0));
+
+        printZkNodes();
+
+        waitForTopology(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLargeUserAttribute2() throws Exception {
+        startGrid(0);
+
+        initLargeAttribute();
+
+        startGrid(1);
+
+        waitForEventsAcks(ignite(0));
+
+        printZkNodes();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLargeUserAttribute3() throws Exception {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        for (int i = 0; i < 25; i++) {
+            if (rnd.nextBoolean())
+                initLargeAttribute();
+            else
+                userAttrs = null;
+
+            client = i > 5;
+
+            startGrid(i);
+        }
+
+        waitForTopology(25);
+    }
+
+    /**
+     *
+     */
+    private void initLargeAttribute() {
         userAttrs = new HashMap<>();
 
-        int[] attr = new int[1024 * 1024];
+        int[] attr = new int[1024 * 1024 + ThreadLocalRandom.current().nextInt(1024)];
 
         for (int i = 0; i < attr.length; i++)
             attr[i] = i;
 
         userAttrs.put("testAttr", attr);
-
-        startGrid(0);
     }
 
     /**
