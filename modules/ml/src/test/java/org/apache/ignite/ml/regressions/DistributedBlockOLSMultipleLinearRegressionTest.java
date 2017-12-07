@@ -35,7 +35,6 @@ import org.junit.Assert;
 /**
  * Tests for {@link OLSMultipleLinearRegression}.
  */
-
 @GridCommonTest(group = "Distributed Models")
 public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonAbstractTest {
     /** */
@@ -68,14 +67,14 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() {
         stopAllGrids();
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         ignite = grid(NODE_COUNT);
 
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -95,7 +94,7 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
     }
 
     /** */
-    protected OLSMultipleLinearRegression createRegression() {
+    private OLSMultipleLinearRegression createRegression() {
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.newSampleData(new SparseBlockDistributedVector(y), new SparseBlockDistributedMatrix(x));
         return regression;
@@ -243,7 +242,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
         // Check R-Square statistics against R
         Assert.assertEquals(0.9999670130706, mdl.calculateRSquared(), 1E-12);
         Assert.assertEquals(0.999947220913, mdl.calculateAdjustedRSquared(), 1E-12);
-
     }
 
     /**
@@ -553,7 +551,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
             return;
         }
         fail("NullArgumentException");
-
     }
 
     /**
@@ -830,17 +827,16 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
     public void testSingularCalculateBeta() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression(1e-15);
-        mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new SparseBlockDistributedMatrix());
 
         try {
+            mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new SparseBlockDistributedMatrix());
             mdl.calculateBeta();
-            fail("SingularMatrixException");
+            fail("SingularMatrixException missed");
         }
         catch (SingularMatrixException e) {
             return;
         }
-        fail("SingularMatrixException");
-
+        fail("SingularMatrixException missed");
     }
 
     /** */
@@ -850,13 +846,12 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
 
         try {
             mdl.calculateBeta();
-            fail("java.lang.NullPointerException");
+            fail("java.lang.NullPointerException missed");
         }
         catch (NullPointerException e) {
             return;
         }
-        fail("java.lang.NullPointerException");
-
+        fail("java.lang.NullPointerException missed");
     }
 
     /** */
@@ -866,12 +861,12 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
 
         try {
             mdl.calculateHat();
-            fail("java.lang.NullPointerException");
+            fail("java.lang.NullPointerException missed");
         }
         catch (NullPointerException e) {
             return;
         }
-        fail("java.lang.NullPointerException");
+        fail("java.lang.NullPointerException missed");
     }
 
     /** */
@@ -881,13 +876,12 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
 
         try {
             mdl.calculateTotalSumOfSquares();
-            fail("java.lang.NullPointerException");
+            fail("java.lang.NullPointerException missed");
         }
         catch (NullPointerException e) {
             return;
         }
-        fail("java.lang.NullPointerException");
-
+        fail("java.lang.NullPointerException missed");
     }
 
     /** */
@@ -897,11 +891,11 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
 
         try {
             mdl.validateSampleData(new SparseBlockDistributedMatrix(1, 2), new SparseBlockDistributedVector(1));
-            fail("MathIllegalArgumentException");
+            fail("MathIllegalArgumentException missed");
         }
         catch (MathIllegalArgumentException e) {
             return;
         }
-        fail("MathIllegalArgumentException");
+        fail("MathIllegalArgumentException missed");
     }
 }

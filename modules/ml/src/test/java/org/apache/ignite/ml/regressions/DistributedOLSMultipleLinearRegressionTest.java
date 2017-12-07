@@ -35,7 +35,6 @@ import org.junit.Assert;
 /**
  * Tests for {@link OLSMultipleLinearRegression}.
  */
-
 @GridCommonTest(group = "Distributed Models")
 public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstractTest {
     /** */
@@ -58,9 +57,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
 
     /** */
     public DistributedOLSMultipleLinearRegressionTest() {
-
         super(false);
-
     }
 
     /** {@inheritDoc} */
@@ -70,14 +67,14 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() {
         stopAllGrids();
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         ignite = grid(NODE_COUNT);
 
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -97,7 +94,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /** */
-    protected OLSMultipleLinearRegression createRegression() {
+    private OLSMultipleLinearRegression createRegression() {
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.newSampleData(new SparseDistributedVector(y), new SparseDistributedMatrix(x));
         return regression;
@@ -245,7 +242,6 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         // Check R-Square statistics against R
         Assert.assertEquals(0.9999670130706, mdl.calculateRSquared(), 1E-12);
         Assert.assertEquals(0.999947220913, mdl.calculateAdjustedRSquared(), 1E-12);
-
     }
 
     /**
@@ -526,7 +522,6 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         }
         for (int i = 0; i < combinedY.size(); i++)
             Assert.assertEquals(combinedY.get(i), regression.getY().get(i), PRECISION);
-
     }
 
     /** */
@@ -535,12 +530,12 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
 
         try {
             createRegression().newSampleData(null, new SparseDistributedMatrix(new double[][] {{1}}));
-            fail("NullArgumentException");
+            fail("NullArgumentException missed");
         }
         catch (NullArgumentException e) {
             return;
         }
-        fail("NullArgumentException");
+        fail("NullArgumentException missed");
     }
 
     /** */
@@ -549,12 +544,12 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
 
         try {
             createRegression().newSampleData(new SparseDistributedVector(new double[] {1}), null);
-            fail("NullArgumentException");
+            fail("NullArgumentException missed");
         }
         catch (NullArgumentException e) {
             return;
         }
-        fail("NullArgumentException");
+        fail("NullArgumentException missed");
 
     }
 
@@ -832,16 +827,16 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     public void testSingularCalculateBeta() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression(1e-15);
-        mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new SparseDistributedMatrix());
 
         try {
+            mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new SparseDistributedMatrix());
             mdl.calculateBeta();
-            fail("SingularMatrixException");
+            fail("SingularMatrixException missed");
         }
         catch (SingularMatrixException e) {
             return;
         }
-        fail("SingularMatrixException");
+        fail("SingularMatrixException missed");
 
     }
 
@@ -852,12 +847,12 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
 
         try {
             mdl.calculateBeta();
-            fail("java.lang.NullPointerException");
+            fail("java.lang.NullPointerException missed");
         }
         catch (NullPointerException e) {
             return;
         }
-        fail("java.lang.NullPointerException");
+        fail("java.lang.NullPointerException missed");
 
     }
 
@@ -868,12 +863,12 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
 
         try {
             mdl.calculateHat();
-            fail("java.lang.NullPointerException");
+            fail("java.lang.NullPointerException missed");
         }
         catch (NullPointerException e) {
             return;
         }
-        fail("java.lang.NullPointerException");
+        fail("java.lang.NullPointerException missed");
     }
 
     /** */
@@ -883,13 +878,12 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
 
         try {
             mdl.calculateTotalSumOfSquares();
-            fail("java.lang.NullPointerException");
+            fail("java.lang.NullPointerException missed");
         }
         catch (NullPointerException e) {
             return;
         }
-        fail("java.lang.NullPointerException");
-
+        fail("java.lang.NullPointerException missed");
     }
 
     /** */
@@ -899,11 +893,11 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
 
         try {
             mdl.validateSampleData(new SparseDistributedMatrix(1, 2), new SparseDistributedVector(1));
-            fail("MathIllegalArgumentException");
+            fail("MathIllegalArgumentException missed");
         }
         catch (MathIllegalArgumentException e) {
             return;
         }
-        fail("MathIllegalArgumentException");
+        fail("MathIllegalArgumentException missed");
     }
 }
