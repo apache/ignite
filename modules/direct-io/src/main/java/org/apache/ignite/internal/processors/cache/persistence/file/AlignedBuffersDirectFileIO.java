@@ -74,9 +74,26 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    /** {@inheritDoc} */
     @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
+        int size = checkSizeIsPadded(destinationBuffer.remaining());
 
-        throw new UnsupportedOperationException("Not implemented");
+        checkOpened();
+
+        ByteBuffer alignedBuf = AlignedBuffer.allocate(fsBlockSize, size);
+        try {
+
+            int loaded = readAligned(alignedBuf, position);
+            if (loaded < 0)
+                return loaded;
+
+            AlignedBuffer.copyMemory(alignedBuf, destinationBuffer);
+            destinationBuffer.position(destinationBuffer.position() + loaded);
+            return loaded;
+        }
+        finally {
+            AlignedBuffer.free(alignedBuf);
+        }
     }
 
     @Override public int read(byte[] buffer, int offset, int length) throws IOException {
@@ -85,16 +102,13 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-        int size = sourceBuffer.remaining();
-        if (size % fsBlockSize != 0) {
-            throw new IOException("Unable to run DirectIO for write [" + size + "] on page size [" + fsBlockSize + "]");
-        }
+        int size = checkSizeIsPadded(sourceBuffer.remaining());
 
         checkOpened();
 
         ByteBuffer alignedBuf = AlignedBuffer.allocate(fsBlockSize, size);
         try {
-            AlignedBuffer.copyFrom(sourceBuffer, alignedBuf);
+            AlignedBuffer.copyMemory(sourceBuffer, alignedBuf);
 
             int written = writeAligned(alignedBuf);
 
@@ -106,10 +120,42 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         }
     }
 
+    private int checkSizeIsPadded(int size) throws IOException {
+        if (size % fsBlockSize != 0) {
+            throw new IOException("Unable to apply DirectIO for read/write of buffer size [" + size + "] on page size [" + fsBlockSize + "]");
+        }
+        return size;
+    }
+
     private void checkOpened() throws IOException {
         if (fd < 0) {
             throw new IOException("Error " + file + " not opened");
         }
+    }
+
+    private int readAligned(ByteBuffer buf, long position) throws IOException {
+        long alignedPointer = GridUnsafe.bufferAddress(buf);
+
+        if (alignedPointer % fsBlockSize != 0) {
+            //todo warning
+        }
+
+        Pointer pointer = new Pointer(alignedPointer);
+        NativeLong n = IgniteNativeIoLib.pread(fd, pointer, new NativeLong(buf.remaining()), new NativeLong(position));
+
+        int rd = n.intValue();
+
+        System.out.println("read=" + rd); //todo remove
+
+        if (rd == 0) {
+            System.out.println("Tried to read past EOF for [" + file + "] at offset " + position + " into ByteBuffer " + buf);
+            return -1;
+        }
+
+        if (rd < 0) {
+            throw new IOException("Error during reading file [" + file + "] " + ": " + DirectIoLib.getLastError());
+        }
+        return rd;
     }
 
     private int writeAligned(ByteBuffer buf) throws IOException {

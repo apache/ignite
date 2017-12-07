@@ -43,7 +43,7 @@ public class AlignedBuffer {
         DirectIoLib.free(new Pointer(address));
     }
 
-    static void copyFrom(ByteBuffer sourceBuffer, ByteBuffer destAligned) {
+    static void copyMemory(ByteBuffer sourceBuffer, ByteBuffer destAligned) {
         //todo check bounds
 
         int size = sourceBuffer.remaining();
