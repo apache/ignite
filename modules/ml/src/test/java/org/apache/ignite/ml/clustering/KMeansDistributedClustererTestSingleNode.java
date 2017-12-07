@@ -40,7 +40,6 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
-import org.junit.Test;
 
 import static org.apache.ignite.ml.clustering.KMeansUtil.checkIsInEpsilonNeighbourhood;
 
@@ -81,7 +80,6 @@ public class KMeansDistributedClustererTestSingleNode extends GridCommonAbstract
     }
 
     /** */
-    @Test
     public void testPerformClusterAnalysisDegenerate() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -103,7 +101,6 @@ public class KMeansDistributedClustererTestSingleNode extends GridCommonAbstract
     }
 
     /** */
-    @Test
     public void testClusterizationOnDatasetWithObviousStructure() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -137,7 +134,7 @@ public class KMeansDistributedClustererTestSingleNode extends GridCommonAbstract
 
         for (Integer count : centers.keySet()) {
             for (int i = 0; i < count; i++) {
-                DenseLocalOnHeapVector pnt = (DenseLocalOnHeapVector)new DenseLocalOnHeapVector(2).assign(centers.get(count));
+                Vector pnt = new DenseLocalOnHeapVector(2).assign(centers.get(count));
                 // Perturbate point on random value.
                 pnt.map(val -> val + rnd.nextDouble() * squareSideLen / 100);
                 mc[centIdx] = mc[centIdx].plus(pnt);
@@ -159,6 +156,8 @@ public class KMeansDistributedClustererTestSingleNode extends GridCommonAbstract
         Arrays.sort(resCenters, comp);
 
         checkIsInEpsilonNeighbourhood(resCenters, massCenters.toArray(new Vector[] {}), 30.0);
+
+        points.destroy();
     }
 
     /** */
@@ -170,7 +169,7 @@ public class KMeansDistributedClustererTestSingleNode extends GridCommonAbstract
         List<Vector> orderedNodes;
 
         /** */
-        public OrderedNodesComparator(Vector[] orderedNodes, DistanceMeasure measure) {
+        OrderedNodesComparator(Vector[] orderedNodes, DistanceMeasure measure) {
             this.orderedNodes = Arrays.asList(orderedNodes);
             this.measure = measure;
         }
