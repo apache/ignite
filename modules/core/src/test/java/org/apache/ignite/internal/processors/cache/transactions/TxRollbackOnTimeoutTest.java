@@ -279,11 +279,12 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         deadlockUnblockedOnTimeout(ignite(0), ignite(0));
 
-        Ignite client = startClient();
+        // TODO Detection for client is unreliable, see https://issues.apache.org/jira/browse/IGNITE-6405
+        // Ignite client = startClient();
 
-        deadlockUnblockedOnTimeout(ignite(0), client);
+        // deadlockUnblockedOnTimeout(ignite(0), client);
 
-        deadlockUnblockedOnTimeout(client, ignite(0));
+        // deadlockUnblockedOnTimeout(client, ignite(0));
     }
 
     /**
