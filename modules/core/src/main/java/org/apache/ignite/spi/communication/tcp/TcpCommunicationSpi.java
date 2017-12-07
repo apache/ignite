@@ -2100,6 +2100,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
     }
 
+    /**
+     * @return Bound TCP server port.
+     */
+    public int boundPort() {
+        return boundTcpPort;
+    }
+
     /** {@inheritDoc} */
     @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         assert locHost != null;

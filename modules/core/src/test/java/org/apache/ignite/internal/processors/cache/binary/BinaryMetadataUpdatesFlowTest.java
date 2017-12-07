@@ -316,6 +316,9 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     public void testFlowNoConflictsWithClients() throws Exception {
         startComputation(0, stopFlag0);
 
+        if (!tcpDiscovery())
+            return;
+
         startComputation(1, stopFlag1);
 
         startComputation(2, stopFlag2);
@@ -616,6 +619,9 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
             while (!updatesQueue.isEmpty()) {
                 BinaryUpdateDescription desc = updatesQueue.poll();
+
+                if (desc == null)
+                    break;
 
                 BinaryObjectBuilder builder = ignite.binary().builder(BINARY_TYPE_NAME);
 

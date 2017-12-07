@@ -32,6 +32,7 @@ import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -42,6 +43,7 @@ import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -74,7 +76,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** */
     @GridToStringInclude
-    private int sesTimeout = 10_000;
+    private int sesTimeout;
 
     /** */
     @GridToStringInclude
@@ -202,8 +204,22 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                 if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
                     consistentId = U.consistentId(sortedAddrs);
                 else {
-                    Integer commPort = (Integer)locNodeAttrs.get(
-                        TcpCommunicationSpi.class.getSimpleName() + "." + TcpCommunicationSpi.ATTR_PORT);
+                    Integer commPort = null;
+
+                    if (locNodeAttrs != null) {
+                        commPort = (Integer)locNodeAttrs.get(
+                            TcpCommunicationSpi.class.getSimpleName() + "." + TcpCommunicationSpi.ATTR_PORT);
+                    }
+                    else {
+                        CommunicationSpi commSpi = ignite.configuration().getCommunicationSpi();
+
+                        if (commSpi instanceof TcpCommunicationSpi) {
+                            commPort = ((TcpCommunicationSpi)commSpi).boundPort();
+
+                            if (commPort == -1)
+                                commPort = null;
+                        }
+                    }
 
                     if (commPort == null) {
                         U.warn(log, "Can not initialize default consistentId, TcpCommunicationSpi port is not initialized.");
@@ -339,11 +355,17 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        if (sesTimeout == 0)
+            sesTimeout = ignite.configuration().getFailureDetectionTimeout().intValue();
+
+        assertParameter(sesTimeout > 0, "sessionTimeout > 0");
+        A.notNullOrEmpty(zkConnectionString, "zkConnectionString can not be empty");
+
         ZookeeperClusterNode locNode = initLocalNode();
 
         log.info("Start Zookeeper discovery [zkConnectionString=" + zkConnectionString +
-            ", sesTimeout=" + sesTimeout +
-            ", rootPath=" + zkRootPath + ']');
+            ", sessionTimeout=" + sesTimeout +
+            ", zkRootPath=" + zkRootPath + ']');
 
         impl = new ZookeeperDiscoveryImpl(
             this,

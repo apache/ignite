@@ -49,6 +49,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
@@ -171,7 +172,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
                     joinedCnt.countDown();
                 }
-                else if (EVT_NODE_LEFT == evt.type()) {
+                else if (EVT_NODE_LEFT == evt.type() || EVT_NODE_FAILED == evt.type()) {
                     int i = cnt.decrementAndGet();
 
                     assert i >= 0;
@@ -185,7 +186,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
             }
         };
 
-        ignite.events().localListen(lsnr, EVT_NODE_LEFT, EVT_NODE_JOINED);
+        ignite.events().localListen(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_NODE_JOINED);
 
         try {
             for (int i = 0; i < NODES_CNT; i++)

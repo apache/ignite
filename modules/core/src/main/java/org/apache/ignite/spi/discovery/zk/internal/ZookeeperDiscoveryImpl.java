@@ -230,7 +230,8 @@ public class ZookeeperDiscoveryImpl {
      */
     public boolean pingNode(UUID nodeId) {
         // TODO ZK
-        checkState();
+        if (connState == ConnectionState.DISCONNECTED)
+            throw new IgniteClientDisconnectedException(null, "Client is disconnected.");
 
         return node(nodeId) != null;
     }
@@ -950,7 +951,7 @@ public class ZookeeperDiscoveryImpl {
         assert rtState.crd;
 
         if (log.isInfoEnabled())
-            log.info("Process alive nodes change: " + aliveNodes.size());
+            log.info("Process alive nodes change [alives=" + aliveNodes.size() + "]");
 
         TreeMap<Integer, String> alives = new TreeMap<>();
 

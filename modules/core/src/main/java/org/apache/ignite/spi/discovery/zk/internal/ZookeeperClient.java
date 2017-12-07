@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.zookeeper.AsyncCallback;
@@ -42,7 +43,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ZookeeperClient implements Watcher {
     /** */
-    private static final long RETRY_TIMEOUT = 1000;
+    private static final long RETRY_TIMEOUT =
+        IgniteSystemProperties.getLong("IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT", 1000);
 
     /** */
     private static final List<ACL> ZK_ACL = ZooDefs.Ids.OPEN_ACL_UNSAFE;
