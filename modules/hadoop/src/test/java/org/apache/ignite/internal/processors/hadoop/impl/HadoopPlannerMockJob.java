@@ -178,5 +178,11 @@ public class HadoopPlannerMockJob extends HadoopJobEx {
 
             return null;
         }
+
+        @Override public byte[] credentials() {
+            throwUnsupported();
+
+            return null;
+        }
     }
 }

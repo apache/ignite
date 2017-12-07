@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestCsprojToolsVersion()
         {
             var projFiles = GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
-                .Where(x => !x.Name.Contains("DotNetCore")).ToArray();
+                .Where(x => !x.FullName.ToLower().Contains("dotnetcore")).ToArray();
             
             Assert.GreaterOrEqual(projFiles.Length, 7);
             CheckFiles(projFiles, x => !x.Contains("ToolsVersion=\"4.0\""), "Invalid csproj files: ");
