@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.math.trees;
+package org.apache.ignite.examples.ml.trees;
 
 import java.io.IOException;
 import java.util.HashMap;

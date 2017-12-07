@@ -17,19 +17,30 @@
 
 package org.apache.ignite.ml.regressions;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.Serializable;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.decompositions.QRDSolver;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.regressions.* package.
+ * Linear regression model representation.
+ *
+ * @see OLSMultipleLinearRegressionModel
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    OLSMultipleLinearRegressionTest.class,
-    DistributedOLSMultipleLinearRegressionTest.class,
-    DistributedBlockOLSMultipleLinearRegressionTest.class,
-    OLSMultipleLinearRegressionModelTest.class
-})
-public class RegressionsTestSuite {
-    // No-op.
+public class OLSMultipleLinearRegressionModelFormat implements Serializable {
+    /** X sample data. */
+    private final Matrix xMatrix;
+
+    /** Whether or not the regression model includes an intercept.  True means no intercept. */
+    private final QRDSolver solver;
+
+    /** */
+    public OLSMultipleLinearRegressionModelFormat(Matrix xMatrix, QRDSolver solver) {
+        this.xMatrix = xMatrix;
+        this.solver = solver;
+    }
+
+    /** */
+    public OLSMultipleLinearRegressionModel getOLSMultipleLinearRegressionModel() {
+        return new OLSMultipleLinearRegressionModel(xMatrix, solver);
+    }
 }
