@@ -76,5 +76,15 @@ namespace ignite
 
             return res != -1;
         }
+
+        bool IsValidDirectory(const std::string& path)
+        {
+            if (path.empty())
+                return false;
+
+            struct stat pathStat;
+
+            return stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode);
+        }
     }
 }

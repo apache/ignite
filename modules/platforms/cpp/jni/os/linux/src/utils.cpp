@@ -75,42 +75,27 @@ namespace ignite
         }
 
         /**
-         * Check if the provided path is the valid directory.
-         * @return @c true if the provided path is the valid directory.
-         */
-        bool IsValidDirectory(const std::string& path)
-        {
-            if (path.empty())
-                return false;
-
-            struct stat pathStat;
-
-            return stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode);
-        }
-
-        /**
          * Checks if the path looks like binary release home directory.
          * Internally checks for presence of some directories, that are
          * @return @c true if the path looks like binary release home directory.
          */
         bool LooksLikeBinaryReleaseHome(const std::string& path)
         {
-            static const char* PROBE_LIB_INDEXING = "\\lib\\ignite-indexing";
-            static const char* PROBE_LIB_SPRING = "\\lib\\ignite-spring";
+            static const char* PROBE_CORE_LIB = "/libs/ignite-core*.jar";
 
-            std::string indexingPath = path + PROBE_LIB_INDEXING;
-            std::string springPath = path + PROBE_LIB_SPRING;
+            std::string coreLibProbe = path + PROBE_CORE_LIB;
 
-            return IsValidDirectory(indexingPath) && IsValidDirectory(springPath);
+            return FileExists(coreLibProbe);
         }
 
         /**
          * Checks if the path looks like source release home directory.
+         * Internally checks for presence of core source directory.
          * @return @c true if the path looks like binary release home directory.
          */
         bool LooksLikeSourceReleaseHome(const std::string& path)
         {
-            static const char* PROBE_CORE_SOURCE = "\\modules\\core\\src\\main\\java\\org\\apache\\ignite";
+            static const char* PROBE_CORE_SOURCE = "/modules/core/src/main/java/org/apache/ignite";
 
             std::string coreSourcePath = path + PROBE_CORE_SOURCE;
 

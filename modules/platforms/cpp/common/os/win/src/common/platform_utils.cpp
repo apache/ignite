@@ -81,5 +81,15 @@ namespace ignite
 
             return true;
         }
+
+        bool IsValidDirectory(const std::string& path)
+        {
+            if (path.empty())
+                return false;
+
+            DWORD attrs = GetFileAttributesA(path.c_str());
+
+            return attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY) != 0;
+        }
     }
 }

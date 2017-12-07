@@ -81,6 +81,12 @@ namespace ignite
          * @return True if file exists, false otherwise.
          */
         IGNITE_IMPORT_EXPORT bool FileExists(const std::string& path);
+
+        /**
+         * Check if the provided path is the valid directory.
+         * @return @c true if the provided path is the valid directory.
+         */
+        IGNITE_IMPORT_EXPORT bool IsValidDirectory(const std::string& path);
     }
 }
 

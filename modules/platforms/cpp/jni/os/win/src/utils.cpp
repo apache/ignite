@@ -51,37 +51,22 @@ namespace ignite
         }
 
         /**
-         * Check if the provided path is the valid directory.
-         * @return @c true if the provided path is the valid directory.
-         */
-        bool IsValidDirectory(const std::string& path)
-        {
-            if (path.empty())
-                return false;
-
-            DWORD attrs = GetFileAttributesA(path.c_str());
-
-            return attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY) != 0;
-        }
-
-        /**
          * Checks if the path looks like binary release home directory.
-         * Internally checks for presence of some directories, that are
+         * Internally checks for presence of core library.
          * @return @c true if the path looks like binary release home directory.
          */
         bool LooksLikeBinaryReleaseHome(const std::string& path)
         {
-            static const char* PROBE_LIB_INDEXING = "\\lib\\ignite-indexing";
-            static const char* PROBE_LIB_SPRING = "\\lib\\ignite-spring";
+            static const char* PROBE_CORE_LIB = "\\libs\\ignite-core*.jar";
 
-            std::string indexingPath = path + PROBE_LIB_INDEXING;
-            std::string springPath = path + PROBE_LIB_SPRING;
+            std::string coreLibProbe = path + PROBE_CORE_LIB;
 
-            return IsValidDirectory(indexingPath) && IsValidDirectory(springPath);
+            return FileExists(coreLibProbe);
         }
 
         /**
          * Checks if the path looks like source release home directory.
+         * Internally checks for presence of core source directory.
          * @return @c true if the path looks like binary release home directory.
          */
         bool LooksLikeSourceReleaseHome(const std::string& path)
