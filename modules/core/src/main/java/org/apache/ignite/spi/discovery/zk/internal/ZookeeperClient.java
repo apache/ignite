@@ -359,14 +359,14 @@ public class ZookeeperClient implements Watcher {
     /**
      * @param checkPrefix Unique prefix to check in case of retry.
      * @param parentPath Parent node path.
-     * @param childPath  Child path.
+     * @param path Node to create.
      * @param data Node data.
      * @param createMode Create mode.
      * @return Create path.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
-    String createSequential(String checkPrefix, String parentPath, String childPath, byte[] data, CreateMode createMode)
+    String createSequential(String checkPrefix, String parentPath, String path, byte[] data, CreateMode createMode)
         throws ZookeeperClientFailedException, InterruptedException
     {
         assert createMode.isSequential() : createMode;
@@ -375,8 +375,6 @@ public class ZookeeperClient implements Watcher {
             data = EMPTY_BYTES;
 
         boolean first = true;
-
-        String path = parentPath + "/" + childPath;
 
         for (;;) {
             long connStartTime = this.connStartTime;

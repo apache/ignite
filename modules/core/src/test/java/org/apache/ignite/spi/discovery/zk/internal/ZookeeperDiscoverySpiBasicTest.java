@@ -41,7 +41,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -76,6 +75,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -158,7 +158,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -780,7 +780,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     try {
-                        List<String> c = zkClient.getChildren(IGNITE_ZK_ROOT + "/n");
+                        List<String> c = zkClient.getChildren(IGNITE_ZK_ROOT + "/" + ZkIgnitePaths.ALIVE_NODES_DIR);
 
                         for (String failedZkNode : failedZkNodes) {
                             if (c.contains(failedZkNode)) {
@@ -1364,32 +1364,29 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     public void testLargeCustomEvent() throws Exception {
         Ignite srv0 = startGrid(0);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("c1");
+        // Send large message, single node in topology.
+        IgniteCache cache = srv0.createCache(largeCacheConfiguration("c1"));
 
-        ccfg.setAffinity(new TestAffinityFunction(1024 * 1024));
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
 
-        srv0.createCache(ccfg);
-    }
+        assertEquals(1, cache.get(1));
 
-    /**
-     *
-     */
-    static class TestAffinityFunction extends RendezvousAffinityFunction {
-        /** */
-        private static final long serialVersionUID = 0L;
+        waitForEventsAcks(ignite(0));
 
-        /** */
-        private int[] dummyData;
+        startGridsMultiThreaded(1, 3);
 
-        /**
-         * @param dataSize Dummy data size.
-         */
-        TestAffinityFunction(int dataSize) {
-            dummyData = new int[dataSize];
+        srv0.destroyCache("c1");
 
-            for (int i = 0; i < dataSize; i++)
-                dummyData[i] = i;
-        }
+        // Send large message, multiple nodes in topology.
+        cache = srv0.createCache(largeCacheConfiguration("c1"));
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        printZkNodes();
+
+        waitForTopology(4);
     }
 
     /**
@@ -2064,6 +2061,40 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             U.dumpThreads(log);
 
             fail("Failed to wait for disconnect/reconnect event.");
+        }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Configuration.
+     */
+    private CacheConfiguration largeCacheConfiguration(String cacheName) {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(cacheName);
+
+        ccfg.setAffinity(new TestAffinityFunction(1024 * 1024));
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        return ccfg;
+    }
+
+    /**
+     *
+     */
+    static class TestAffinityFunction extends RendezvousAffinityFunction {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private int[] dummyData;
+
+        /**
+         * @param dataSize Dummy data size.
+         */
+        TestAffinityFunction(int dataSize) {
+            dummyData = new int[dataSize];
+
+            for (int i = 0; i < dataSize; i++)
+                dummyData[i] = i;
         }
     }
 

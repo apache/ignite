@@ -435,11 +435,33 @@ public class ZookeeperDiscoveryImpl {
             checkState();
 
         try {
+            ZookeeperClient zkClient = rtState.zkClient;
+
             String prefix = UUID.randomUUID().toString();
 
-            rtState.zkClient.createSequential(prefix,
+            int partCnt = 1;
+
+            int overhead = 10;
+
+            UUID locId = locNode.id();
+
+            String path = zkPaths.createCustomEventPath(prefix, locId, partCnt);
+
+            if (zkClient.needSplitNodeData(path, msgBytes, overhead)) {
+                List<byte[]> parts = zkClient.splitNodeData(path, msgBytes, overhead);
+
+                String partsBasePath = zkPaths.customEventPartsBasePath(prefix, locId);
+
+                saveMultipleParts(zkClient, partsBasePath, parts);
+
+                msgBytes = null;
+
+                partCnt = parts.size();
+            }
+
+            zkClient.createSequential(prefix,
                 zkPaths.customEvtsDir,
-                prefix + ":" + locNode.id() + '|',
+                zkPaths.createCustomEventPath(prefix, locId, partCnt),
                 msgBytes,
                 CreateMode.PERSISTENT_SEQUENTIAL);
         }
@@ -545,6 +567,7 @@ public class ZookeeperDiscoveryImpl {
             dirs.add(zkPaths.evtsPath);
             dirs.add(zkPaths.joinDataDir);
             dirs.add(zkPaths.customEvtsDir);
+            dirs.add(zkPaths.customEvtsPartsDir);
             dirs.add(zkPaths.customEvtsAcksDir);
             dirs.add(zkPaths.aliveNodesDir);
 
@@ -674,7 +697,7 @@ public class ZookeeperDiscoveryImpl {
             rtState.locNodeZkPath = zkClient.createSequential(
                 prefix,
                 zkPaths.aliveNodesDir,
-                prefix + ":" + locNode.id() + "|",
+                zkPaths.aliveNodesDir + "/" + prefix + ":" + locNode.id() + "|",
                 null,
                 EPHEMERAL_SEQUENTIAL);
 
@@ -1343,6 +1366,10 @@ public class ZookeeperDiscoveryImpl {
             rtState.zkClient.getChildren(zkPaths.customEvtsDir),
             -1);
 
+        rtState.zkClient.deleteAll(zkPaths.customEvtsPartsDir,
+            rtState.zkClient.getChildren(zkPaths.customEvtsPartsDir),
+            -1);
+
         rtState.zkClient.deleteAll(zkPaths.customEvtsAcksDir,
             rtState.zkClient.getChildren(zkPaths.customEvtsAcksDir),
             -1);
@@ -1371,6 +1398,19 @@ public class ZookeeperDiscoveryImpl {
         return rtState.zkClient;
     }
 
+    private byte[] readCustomEventData(String evtPath, UUID sndNodeId) throws Exception {
+        int partCnt = ZkIgnitePaths.customEventPartsCount(evtPath);
+
+        if (partCnt > 1) {
+            String partsBasePath = zkPaths.customEventPartsBasePath(
+                ZkIgnitePaths.customEventPrefix(evtPath), sndNodeId);
+
+            return readMultipleParts(rtState.zkClient, partsBasePath, partCnt);
+        }
+        else
+            return rtState.zkClient.getData(zkPaths.customEvtsDir + "/" + evtPath);
+    }
+
     /**
      * @param customEvtNodes ZK nodes representing custom events to process.
      * @throws Exception If failed.
@@ -1397,17 +1437,17 @@ public class ZookeeperDiscoveryImpl {
             Set<UUID> alives = null;
 
             for (Map.Entry<Integer, String> evtE : newEvts.entrySet()) {
-                UUID sndNodeId = ZkIgnitePaths.customEventSendNodeId(evtE.getValue());
+                String evtPath = evtE.getValue();
+
+                UUID sndNodeId = ZkIgnitePaths.customEventSendNodeId(evtPath);
 
                 ZookeeperClusterNode sndNode = rtState.top.nodesById.get(sndNodeId);
 
                 if (alives != null && !alives.contains(sndNode.id()))
                     sndNode = null;
 
-                String evtDataPath = zkPaths.customEvtsDir + "/" + evtE.getValue();
-
                 if (sndNode != null) {
-                    byte[] evtBytes = rtState.zkClient.getData(zkPaths.customEvtsDir + "/" + evtE.getValue());
+                    byte[] evtBytes = readCustomEventData(evtPath, sndNodeId);
 
                     DiscoverySpiCustomMessage msg;
 
@@ -1449,7 +1489,7 @@ public class ZookeeperDiscoveryImpl {
                             rtState.evtsData.evtIdGen,
                             rtState.evtsData.topVer,
                             sndNodeId,
-                            evtE.getValue(),
+                            evtPath,
                             false);
 
                         evtData.msg = msg;
@@ -1461,12 +1501,14 @@ public class ZookeeperDiscoveryImpl {
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to unmarshal custom discovery message: " + e, e);
+
+                        deleteCustomEventData(rtState.zkClient, evtPath);
                     }
                 }
                 else {
                     U.warn(log, "Ignore custom event from unknown node: " + sndNodeId);
 
-                    rtState.zkClient.deleteIfExistsAsync(evtDataPath);
+                    deleteCustomEventData(rtState.zkClient, evtPath);
                 }
 
                 rtState.evtsData.procCustEvt = evtE.getKey();
@@ -1474,6 +1516,27 @@ public class ZookeeperDiscoveryImpl {
 
             saveAndProcessNewEvents();
         }
+    }
+
+    private void deleteCustomEventData(ZookeeperClient zkClient, String evtPath) {
+        if (log.isDebugEnabled())
+            log.debug("Delete custom event data: " + evtPath);
+
+        String prefix = ZkIgnitePaths.customEventPrefix(evtPath);
+        UUID sndNodeId = ZkIgnitePaths.customEventSendNodeId(evtPath);
+        int partCnt = ZkIgnitePaths.customEventPartsCount(evtPath);
+
+        assert partCnt >= 1 : partCnt;
+
+        if (partCnt > 1) {
+            for (int i = 0; i < partCnt; i++) {
+                String path0 = zkPaths.customEventPartPath(prefix, sndNodeId, i);
+
+                zkClient.deleteIfExistsAsync(path0);
+            }
+        }
+
+        zkClient.deleteIfExistsAsync(zkPaths.customEvtsDir + "/" + evtPath);
     }
 
     /**
@@ -1586,14 +1649,16 @@ public class ZookeeperDiscoveryImpl {
                             msg = evtData0.msg;
                         }
                         else {
-                            String path;
+                            if (evtData0.ackEvent()) {
+                                String path = zkPaths.ackEventDataPath(evtData0.eventId());
 
-                            if (evtData0.ackEvent())
-                                path = zkPaths.ackEventDataPath(evtData0.eventId());
-                            else
-                                path = zkPaths.customEventDataPath(false, evtData0.evtPath);
+                                msg = unmarshalZip(rtState.zkClient.getData(path));
+                            }
+                            else {
+                                byte[] msgBytes = readCustomEventData(evtData0.evtPath, evtData0.sndNodeId);
 
-                            msg = unmarshalZip(rtState.zkClient.getData(path));
+                                msg = unmarshalZip(msgBytes);
+                            }
 
                             evtData0.msg = msg;
                         }
@@ -2035,12 +2100,7 @@ public class ZookeeperDiscoveryImpl {
             log.debug("All nodes processed custom event [ctx=" + ctx + ", evtData=" + evtData + ']');
 
         if (!evtData.ackEvent()) {
-            String path = zkPaths.customEventDataPath(false, evtData.evtPath);
-
-            if (log.isDebugEnabled())
-                log.debug("Delete path: " + path);
-
-            rtState.zkClient.deleteIfExistsAsync(path);
+            deleteCustomEventData(rtState.zkClient, evtData.evtPath);
 
             assert evtData.msg != null || locNode.order() > evtData.topologyVersion() : evtData;
 

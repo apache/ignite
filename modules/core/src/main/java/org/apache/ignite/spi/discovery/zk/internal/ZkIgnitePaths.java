@@ -30,13 +30,16 @@ class ZkIgnitePaths {
     private static final String JOIN_DATA_DIR = "jd";
 
     /** */
-    private static final String CUSTOM_EVTS_DIR = "c";
+    private static final String CUSTOM_EVTS_DIR = "ce";
+
+    /** */
+    private static final String CUSTOM_EVTS_PARTS_DIR = "cp";
 
     /** */
     private static final String CUSTOM_EVTS_ACKS_DIR = "ca";
 
     /** */
-    private static final String ALIVE_NODES_DIR = "n";
+    static final String ALIVE_NODES_DIR = "n";
 
     /** */
     private static final String DISCO_EVENTS_PATH = "e";
@@ -57,6 +60,9 @@ class ZkIgnitePaths {
     final String customEvtsDir;
 
     /** */
+    final String customEvtsPartsDir;
+
+    /** */
     final String customEvtsAcksDir;
 
     /**
@@ -69,6 +75,7 @@ class ZkIgnitePaths {
         joinDataDir = zkPath(JOIN_DATA_DIR);
         evtsPath = zkPath(DISCO_EVENTS_PATH);
         customEvtsDir = zkPath(CUSTOM_EVTS_DIR);
+        customEvtsPartsDir = zkPath(CUSTOM_EVTS_PARTS_DIR);
         customEvtsAcksDir = zkPath(CUSTOM_EVTS_ACKS_DIR);
     }
 
@@ -201,12 +208,47 @@ class ZkIgnitePaths {
      * @return Event node ID.
      */
     static UUID customEventSendNodeId(String path) {
-        // <uuid prefix>:<node id>|<seq>
+        // <uuid prefix>:<node id>:<partCnt>|<seq>
         int startIdx = ZkIgnitePaths.UUID_LEN + 1;
 
         String idStr = path.substring(startIdx, startIdx + ZkIgnitePaths.UUID_LEN);
 
         return UUID.fromString(idStr);
+    }
+
+    static String customEventPrefix(String path) {
+        // <uuid prefix>:<node id>:<partCnt>|<seq>
+
+        return path.substring(0, ZkIgnitePaths.UUID_LEN);
+    }
+
+    /**
+     * @param path Custom event zl path.
+     * @return Event node ID.
+     */
+    static int customEventPartsCount(String path) {
+        // <uuid prefix>:<node id>:<partCnt>|<seq>
+        int startIdx = 2 * ZkIgnitePaths.UUID_LEN + 2;
+
+        String cntStr = path.substring(startIdx, startIdx + 4);
+
+        int partCnt = Integer.parseInt(cntStr);
+
+        assert partCnt >= 1 : partCnt;
+
+        return partCnt;
+    }
+
+    String createCustomEventPath(String prefix, UUID nodeId, int partCnt) {
+        return customEvtsDir + "/" + prefix + ":" + nodeId + ":" + String.format("%04d", partCnt) + '|';
+    }
+
+    String customEventPartsBasePath(String prefix, UUID nodeId) {
+        return customEvtsPartsDir + "/" + prefix + ":" + nodeId + ":";
+    }
+
+    String customEventPartPath(String prefix, UUID nodeId, int part) {
+        return customEventPartsBasePath(prefix, nodeId) + String.format("%04d", part);
     }
 
     /**
@@ -222,17 +264,6 @@ class ZkIgnitePaths {
      * @return Path for custom event ack.
      */
     String ackEventDataPath(long evtId) {
-        return customEventDataPath(true, String.valueOf(evtId));
-    }
-
-    /**
-     * @param ack Ack event flag.
-     * @param child Event child path.
-     * @return Full event data path.
-     */
-    String customEventDataPath(boolean ack, String child) {
-        String baseDir = ack ? customEvtsAcksDir : customEvtsDir;
-
-        return baseDir + "/" + child;
+        return customEvtsAcksDir + "/" + String.valueOf(evtId);
     }
 }
