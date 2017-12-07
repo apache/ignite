@@ -23,8 +23,6 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
         meta(http-equiv='content-language' content='en')
         meta(http-equiv='X-UA-Compatible' content='IE=Edge')
 
-        //meta(http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://js.stripe.com http://www.google-analytics.com http://s3.amazonaws.com" )
-
         title(ng-bind='tfMetaTags.title')
         meta(ng-repeat='(key, value) in tfMetaTags.properties' name='{{::key}}' content='{{::value}}')
 
