@@ -15,13 +15,18 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+export default class IgniteIcon {
+    _icons = {};
 
-import directive from './directive';
-import service from './service';
-import './style.scss';
+    registerIcons(icons) {
+        return Object.assign(this._icons, icons);
+    }
 
-export default angular
-    .module('ignite-console.ignite-icon', [])
-    .service('IgniteIcon', service)
-    .directive('igniteIcon', directive);
+    getIcon(name) {
+        return this._icons[name];
+    }
+
+    getAllIcons() {
+        return this._icons;
+    }
+}
