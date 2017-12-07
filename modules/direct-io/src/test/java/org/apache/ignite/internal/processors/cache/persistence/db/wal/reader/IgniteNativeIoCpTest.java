@@ -23,11 +23,13 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffersDirectFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
-public class IgniteNativePageStoreTest extends GridCommonAbstractTest {
+public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
@@ -63,6 +65,9 @@ public class IgniteNativePageStoreTest extends GridCommonAbstractTest {
     public void testRecoveryAfterCpEnd() throws Exception {
 
         IgniteEx ignite = startGrid(0);
+
+        setupDirect(ignite);
+
         ignite.active(true);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache");
@@ -70,11 +75,6 @@ public class IgniteNativePageStoreTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             cache.put(i, valueForKey(i));
         }
-        /*boolean successfulWaiting = GridTestUtils.waitForCondition(new PAX() {
-            @Override public boolean applyx() {
-                return ignite.cache("partitioned") != null;
-            }
-        }, 10_000);*/
 
         ignite.context().cache().context().database().waitForCheckpoint("test");
 
@@ -90,6 +90,14 @@ public class IgniteNativePageStoreTest extends GridCommonAbstractTest {
             assertEquals(valueForKey(i), cacheRestart.get(i));
         }
 
+    }
+
+    private void setupDirect(IgniteEx ignite) {
+        final FilePageStoreManager pageStore = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+        final AlignedBuffersDirectFileIOFactory factory = new AlignedBuffersDirectFileIOFactory(pageStore.workDir(), pageStore.getPageStoreFileIoFactory());
+
+        pageStore.pageStoreFileIoFactory(factory);
     }
 
     @NotNull private String valueForKey(int i) {

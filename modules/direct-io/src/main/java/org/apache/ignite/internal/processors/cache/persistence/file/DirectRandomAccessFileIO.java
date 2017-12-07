@@ -24,6 +24,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import net.smacke.jaydio.align.DirectIoByteChannelAligner;
 
+@Deprecated
 public class DirectRandomAccessFileIO implements FileIO {
 
     private final DirectIoByteChannelAligner channel;

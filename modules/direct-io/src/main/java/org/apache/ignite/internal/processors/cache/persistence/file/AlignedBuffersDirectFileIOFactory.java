@@ -22,30 +22,28 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import net.smacke.jaydio.DirectIoLib;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
+    private final DirectIoLib directIoLib;
+    private File storePath;
+    private FileIOFactory backupFactory;
 
-/**
- * File I/O factory which provides RandomAccessFileIO implementation of FileIO.
- */
-
-@Deprecated
-public class DirectRandomAccessFileIOFactory implements FileIOFactory {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** {@inheritDoc} */
-    @Override public FileIO create(File file) throws IOException {
-        return create(file, CREATE, READ, WRITE);
+    public AlignedBuffersDirectFileIOFactory(File storePath,
+        FileIOFactory backupFactory) {
+        this.storePath = storePath;
+        this.backupFactory = backupFactory;
+        directIoLib = DirectIoLib.getLibForPath(storePath.getAbsolutePath());
+        //todo validate data storage settings and invalidate factory
     }
 
-    /** {@inheritDoc} */
-    @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-        final DirectIoLib lib = DirectIoLib.getLibForPath(file.getAbsolutePath());
-        if (lib == null)
-            return new RandomAccessFileIOFactory().create(file, modes);
+    @Override public FileIO create(File file) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
-        return new DirectRandomAccessFileIO(file, modes);
+    @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+        if (directIoLib == null)
+            return backupFactory.create(file, modes);
+
+
+        return new AlignedBuffersDirectFileIO(  directIoLib.blockSize(), file, modes);
     }
 }

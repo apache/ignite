@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.DirectRandom
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.IgniteDirectIo;
+import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoLib;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
@@ -62,19 +62,19 @@ public class FilePageStoreTest {
        // } else {
             flags |= OpenFlags.O_RDWR | OpenFlags.O_CREAT;
       //  }
-        int fd = IgniteDirectIo.open(pathname, flags, 00644);
+        int fd = IgniteNativeIoLib.open(pathname, flags, 00644);
         if (fd < 0) {
             throw new IOException("Error opening " + pathname + ", got " + DirectIoLib.getLastError());
         }
 
         NativeLong blockSize = new NativeLong(lib.blockSize());
+        long capacity = pageSize;
         PointerByReference pointerToPointer = new PointerByReference();
 
-        long capacity = pageSize;
         // align memory for use with O_DIRECT
         DirectIoLib.posix_memalign(pointerToPointer, blockSize, new NativeLong(capacity));
         Pointer pointer = pointerToPointer.getValue();
-
+        long alignedPtr = Pointer.nativeValue(pointer);
         //  GridUnsafe.copyMemory(pointer);
 
         ByteBuffer buf = GridUnsafe.allocateBuffer(pageSize);
@@ -86,7 +86,6 @@ public class FilePageStoreTest {
         System.out.println("address=" + address);
         System.out.println("address % pageSize"  + address % pageSize);
 
-        long alignedPtr = Pointer.nativeValue(pointer);
         System.out.println("alignedPtr=" +alignedPtr);
         System.out.println("alignedPtr % pageSize=" + alignedPtr % pageSize);
         GridUnsafe.copyMemory(address, alignedPtr, pageSize);
@@ -99,13 +98,13 @@ public class FilePageStoreTest {
 
         System.out.println("toWrite="+ toWrite);
 
-        NativeLong n = IgniteDirectIo.pwrite(fd, pointer, new NativeLong(pageSize), new NativeLong(pageSize*4));
+        NativeLong n = IgniteNativeIoLib.pwrite(fd, pointer, new NativeLong(pageSize), new NativeLong(pageSize*4));
         System.out.println("written=" + n);
         if (n.longValue() < 0) {
             throw new IOException("Error writing file at offset "  + ": " + DirectIoLib.getLastError());
         }
 
-        IgniteDirectIo.close(fd);
+        IgniteNativeIoLib.close(fd);
 
         GridUnsafe.freeBuffer(buf);
 

@@ -92,8 +92,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private final IgniteConfiguration igniteCfg;
 
+    /** File IO factory for page store, by default is taken from {@link #dsCfg}*/
+    private FileIOFactory pageStoreFileIoFactory;
+
     /** */
-    private DataStorageConfiguration dsCfg;
+    private final DataStorageConfiguration dsCfg;
 
     /** Absolute directory for file page store. Includes consistent id based folder. */
     private File storeWorkDir;
@@ -115,6 +118,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         assert dsCfg != null;
 
         this.dsCfg = dsCfg;
+
+        pageStoreFileIoFactory = dsCfg.getFileIOFactory();
     }
 
     /** {@inheritDoc} */
@@ -353,7 +358,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             grpsWithoutIdx.add(grpDesc.groupId());
 
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
-            dsCfg.getFileIOFactory(), igniteCfg.getDataStorageConfiguration());
+            pageStoreFileIoFactory, igniteCfg.getDataStorageConfiguration());
 
         FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
 
@@ -642,6 +647,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "(partition has not been created) [grpId=" + grpId + ", partId=" + partId + ']');
 
         return store;
+    }
+
+    /**
+     * @param factory File IO factory to override default.
+     */
+    public void pageStoreFileIoFactory(FileIOFactory factory) {
+        this.pageStoreFileIoFactory = factory;
+    }
+
+    /**
+     * @return File IO factory currently selected for page store
+     */
+    public FileIOFactory getPageStoreFileIoFactory() {
+        return pageStoreFileIoFactory;
     }
 
     /**
