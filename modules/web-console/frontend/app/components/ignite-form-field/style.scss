@@ -95,11 +95,54 @@
             font-size: 12px;
             clear: both;
             &:empty {
-                display: none;
+                padding-top: 0;
+                padding-bottom: 0;
             }
             [ng-message] + [ng-message] {
                 margin-top: 10px;
             }
+        }
+    }
+
+    @keyframes form-field-errors__message-expand {
+        from {
+            opacity: 0;
+            max-height: 0;
+        }
+
+        to {
+            opacity: 1;
+            // About four lines of error message.
+            // Increase the value if some very long multiline error messages get clipped.
+            max-height: 60px;
+        }
+    }
+
+    [ng-message] {
+        overflow: hidden;
+
+        &.ng-enter-prepare {
+            opacity: 0;
+            max-height: 0;
+        }
+
+        &.ng-enter {
+            animation: form-field-errors__message-expand 0.3s;
+        }
+
+        &.ng-leave {
+            animation: form-field-errors__message-expand 0.15s reverse;
+        }
+
+        // Disable animation for eror message change
+
+        &.ng-enter:not(:only-child), &.ng-enter-prepare:not(:only-child) {
+            animation: none;
+        }
+
+        &.ng-leave-prepare:not(:only-child), &.ng-leave:not(:only-child) {
+            animation: none;
+            display: none;
         }
     }
 }

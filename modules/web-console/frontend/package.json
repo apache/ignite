@@ -104,6 +104,7 @@
   },
   "devDependencies": {
     "@types/angular": "^1.6.39",
+    "@types/angular-animate": "^1.5.9",
     "@types/angular-strap": "^2.3.1",
     "chai": "4.1.0",
     "jasmine-core": "2.6.4",

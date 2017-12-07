@@ -15,22 +15,16 @@
  * limitations under the License.
  */
 
-import './badge/index.scss';
-import './btn/index.scss';
-import './datepicker/index.scss';
-import './timepicker/index.scss';
-import './tabs/index.scss';
-import './table/index.scss';
-import './panel/index.scss';
-import './dropdown/index.scss';
-import './modal/index.scss';
-import './ui-grid/index.scss';
-import './ui-grid-header/index.scss';
-import './ui-grid-settings/index.scss';
-import './page/index.scss';
-import './radio/index.scss';
-import './switcher/index.scss';
-import './typography/index.scss';
-import './grid/index.scss';
-import './tooltip/index.scss';
-import './spinner-circle/index.scss';
+/**
+ * Enables animation on ng-messages directive
+ * @param {ng.animate.IAnimateService} $animate
+ * @type {ng.IDirectiveFactory}
+ */
+export function ngMessages($animate) {
+    return {
+        restrict: 'A',
+        link: (scope, el) => $animate.enabled(el, true)
+    };
+}
+
+ngMessages.$inject = ['$animate'];

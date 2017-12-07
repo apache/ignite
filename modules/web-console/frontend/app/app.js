@@ -130,6 +130,7 @@ import uiGridHovering from './components/ui-grid-hovering';
 import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
 import clusterSelector from './components/cluster-selector';
+import igniteFormField from './components/ignite-form-field';
 
 import pageProfile from './components/page-profile';
 
@@ -213,6 +214,7 @@ angular.module('ignite-console', [
     clusterSelector.name,
     pageProfile.name,
     breadcrumbs.name,
+    igniteFormField.name,
     // Ignite modules.
     IgniteModules.name
 ])
