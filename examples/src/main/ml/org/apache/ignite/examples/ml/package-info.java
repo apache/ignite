@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Decision trees examples.
+ * Machine learning examples.
  */
-package org.apache.ignite.examples.ml.math.trees;
+package org.apache.ignite.examples.ml;

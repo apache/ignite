@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.regressions;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.TestUtils;
@@ -35,7 +36,6 @@ import org.junit.Assert;
 /**
  * Tests for {@link OLSMultipleLinearRegression}.
  */
-
 @GridCommonTest(group = "Distributed Models")
 public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstractTest {
     /** */
@@ -58,9 +58,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
 
     /** */
     public DistributedOLSMultipleLinearRegressionTest() {
-
         super(false);
-
     }
 
     /** {@inheritDoc} */
@@ -97,7 +95,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /** */
-    protected OLSMultipleLinearRegression createRegression() {
+    private OLSMultipleLinearRegression createRegression() {
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.newSampleData(new SparseDistributedVector(y), new SparseDistributedMatrix(x));
         return regression;
@@ -108,6 +106,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         double[] betaHat = regression.estimateRegressionParameters();
+        System.out.println("Beta hat is " + Arrays.toString(betaHat));
         TestUtils.assertEquals(new double[] {11.0, 1.0 / 2.0, 2.0 / 3.0, 3.0 / 4.0, 4.0 / 5.0, 5.0 / 6.0},
             betaHat,
             1e-13);
@@ -133,11 +132,14 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /**
-     * Test Longley dataset against certified values provided by NIST. Data Source: J. Longley (1967) "An Appraisal of
-     * Least Squares Programs for the Electronic Computer from the Point of View of the User" Journal of the American
-     * Statistical Association, vol. 62. September, pp. 819-841.
+     * Test Longley dataset against certified values provided by NIST.
+     * Data Source: J. Longley (1967) "An Appraisal of Least Squares
+     * Programs for the Electronic Computer from the Point of View of the User"
+     * Journal of the American Statistical Association, vol. 62. September,
+     * pp. 819-841.
      *
-     * Certified values (and data) are from NIST: http://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Longley.dat
+     * Certified values (and data) are from NIST:
+     * http://www.itl.nist.gov/div898/strd/lls/data/LINKS/DATA/Longley.dat
      */
     public void testLongly() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -245,11 +247,11 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         // Check R-Square statistics against R
         Assert.assertEquals(0.9999670130706, mdl.calculateRSquared(), 1E-12);
         Assert.assertEquals(0.999947220913, mdl.calculateAdjustedRSquared(), 1E-12);
-
     }
 
     /**
-     * Test R Swiss fertility dataset against R. Data Source: R datasets package
+     * Test R Swiss fertility dataset against R.
+     * Data Source: R datasets package
      */
     public void testSwissFertility() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -526,7 +528,6 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         }
         for (int i = 0; i < combinedY.size(); i++)
             Assert.assertEquals(combinedY.get(i), regression.getY().get(i), PRECISION);
-
     }
 
     /** */
@@ -559,7 +560,8 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /**
-     * This is a test based on the Wampler1 data set http://www.itl.nist.gov/div898/strd/lls/data/Wampler1.shtml
+     * This is a test based on the Wampler1 data set
+     * http://www.itl.nist.gov/div898/strd/lls/data/Wampler1.shtml
      */
     public void testWampler1() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -625,7 +627,8 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /**
-     * This is a test based on the Wampler2 data set http://www.itl.nist.gov/div898/strd/lls/data/Wampler2.shtml
+     * This is a test based on the Wampler2 data set
+     * http://www.itl.nist.gov/div898/strd/lls/data/Wampler2.shtml
      */
     public void testWampler2() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -691,7 +694,8 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /**
-     * This is a test based on the Wampler3 data set http://www.itl.nist.gov/div898/strd/lls/data/Wampler3.shtml
+     * This is a test based on the Wampler3 data set
+     * http://www.itl.nist.gov/div898/strd/lls/data/Wampler3.shtml
      */
     public void testWampler3() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -759,7 +763,8 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /**
-     * This is a test based on the Wampler4 data set http://www.itl.nist.gov/div898/strd/lls/data/Wampler4.shtml
+     * This is a test based on the Wampler4 data set
+     * http://www.itl.nist.gov/div898/strd/lls/data/Wampler4.shtml
      */
     public void testWampler4() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -832,16 +837,16 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     public void testSingularCalculateBeta() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression(1e-15);
-        mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new SparseDistributedMatrix());
 
         try {
+            mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new SparseDistributedMatrix());
             mdl.calculateBeta();
-            fail("SingularMatrixException");
+            fail("SingularMatrixException missed");
         }
         catch (SingularMatrixException e) {
             return;
         }
-        fail("SingularMatrixException");
+        fail("SingularMatrixException missed");
 
     }
 
@@ -889,7 +894,6 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
             return;
         }
         fail("java.lang.NullPointerException");
-
     }
 
     /** */
