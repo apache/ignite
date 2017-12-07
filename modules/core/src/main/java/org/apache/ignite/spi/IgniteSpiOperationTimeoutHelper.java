@@ -30,13 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class IgniteSpiOperationTimeoutHelper {
     /** */
-    private long lastOperStartTs;
-
-    /** */
-    private long timeout;
-
-    /** */
-    private final boolean failureDetectionTimeoutEnabled;
+    private long deadline;
 
     /** */
     private final long failureDetectionTimeout;
@@ -48,9 +42,8 @@ public class IgniteSpiOperationTimeoutHelper {
      * @param srvOp {@code True} if communicates with server node.
      */
     public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp) {
-        failureDetectionTimeoutEnabled = adapter.failureDetectionTimeoutEnabled();
-        failureDetectionTimeout = srvOp ? adapter.failureDetectionTimeout() :
-            adapter.clientFailureDetectionTimeout();
+        failureDetectionTimeout = adapter.failureDetectionTimeoutEnabled() ? (srvOp ? adapter.failureDetectionTimeout()
+            : adapter.clientFailureDetectionTimeout()) : 0;
     }
 
     /**
@@ -65,27 +58,24 @@ public class IgniteSpiOperationTimeoutHelper {
      * this {@code IgniteSpiOperationTimeoutController}.
      */
     public long nextTimeoutChunk(long dfltTimeout) throws IgniteSpiOperationTimeoutException {
-        if (!failureDetectionTimeoutEnabled)
+        if (failureDetectionTimeout == 0)
             return dfltTimeout;
 
-        if (lastOperStartTs == 0) {
-            timeout = failureDetectionTimeout;
-            lastOperStartTs = U.currentTimeMillis();
+        if (deadline == 0) {
+            deadline = U.currentTimeMillis() + failureDetectionTimeout;
+
+            return failureDetectionTimeout;
         }
         else {
-            long curTs = U.currentTimeMillis();
-
-            timeout = timeout - (curTs - lastOperStartTs);
-
-            lastOperStartTs = curTs;
+            long timeout = deadline - U.currentTimeMillis();
 
             if (timeout <= 0)
                 throw new IgniteSpiOperationTimeoutException("Network operation timed out. Increase " +
                     "'failureDetectionTimeout' configuration property [failureDetectionTimeout="
                     + failureDetectionTimeout + ']');
-        }
 
-        return timeout;
+            return timeout;
+        }
     }
 
     /**
@@ -95,12 +85,12 @@ public class IgniteSpiOperationTimeoutHelper {
      * @return {@code true} if failure detection timeout is reached, {@code false} otherwise.
      */
     public boolean checkFailureTimeoutReached(Exception e) {
-        if (!failureDetectionTimeoutEnabled)
+        if (failureDetectionTimeout == 0)
             return false;
 
         if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
             return true;
 
-        return (timeout - (U.currentTimeMillis() - lastOperStartTs) <= 0);
+        return U.currentTimeMillis() >= deadline;
     }
 }
