@@ -26,6 +26,7 @@ import java.nio.file.OpenOption;
 import net.smacke.jaydio.DirectIoLib;
 import net.smacke.jaydio.OpenFlags;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Limited capabilities Direct IO, which enables file write and read using aligned buffers and O_DIRECT mode.
@@ -78,7 +79,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
         int size = checkSizeIsPadded(destinationBuffer.remaining());
 
-        checkOpened();
+        fdCheckOpened();
 
         ByteBuffer alignedBuf = AlignedBuffer.allocate(fsBlockSize, size);
         try {
@@ -104,7 +105,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     @Override public int write(ByteBuffer sourceBuffer) throws IOException {
         int size = checkSizeIsPadded(sourceBuffer.remaining());
 
-        checkOpened();
+        fdCheckOpened();
 
         ByteBuffer alignedBuf = AlignedBuffer.allocate(fsBlockSize, size);
         try {
@@ -127,20 +128,15 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         return size;
     }
 
-    private void checkOpened() throws IOException {
+    private int fdCheckOpened() throws IOException {
         if (fd < 0) {
             throw new IOException("Error " + file + " not opened");
         }
+        return fd;
     }
 
     private int readAligned(ByteBuffer buf, long position) throws IOException {
-        long alignedPointer = GridUnsafe.bufferAddress(buf);
-
-        if (alignedPointer % fsBlockSize != 0) {
-            //todo warning
-        }
-
-        Pointer pointer = new Pointer(alignedPointer);
+        Pointer pointer = getAlignedBufPointer(buf);
         NativeLong n = IgniteNativeIoLib.pread(fd, pointer, new NativeLong(buf.remaining()), new NativeLong(position));
 
         int rd = n.intValue();
@@ -158,15 +154,18 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         return rd;
     }
 
-    private int writeAligned(ByteBuffer buf) throws IOException {
-        long alignedPointer = GridUnsafe.bufferAddress(buf);
-
-        if (alignedPointer % fsBlockSize != 0) {
-            //todo warning
+    private int writeAligned(ByteBuffer buf, long position) throws IOException {
+        NativeLong n = IgniteNativeIoLib.pwrite(fd, getAlignedBufPointer(buf), new NativeLong(buf.remaining()), new NativeLong(position));
+        int wr = n.intValue();
+        System.out.println("written=" + wr); //todo remove
+        if (wr < 0) {
+            throw new IOException("Error during writing file [" + file + "] at position [" + position + "]: " + DirectIoLib.getLastError());
         }
+        return wr;
+    }
 
-        Pointer pointer = new Pointer(alignedPointer);
-        NativeLong n = IgniteNativeIoLib.write(fd, pointer, new NativeLong(buf.remaining()));
+    private int writeAligned(ByteBuffer buf) throws IOException {
+        NativeLong n = IgniteNativeIoLib.write(fd, getAlignedBufPointer(buf), new NativeLong(buf.remaining()));
         int wr = n.intValue();
         System.out.println("written=" + wr); //todo remove
         if (wr < 0) {
@@ -175,9 +174,33 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         return wr;
     }
 
-    @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
+    @NotNull private Pointer getAlignedBufPointer(ByteBuffer buf) {
+        long alignedPointer = GridUnsafe.bufferAddress(buf);
 
-        throw new UnsupportedOperationException("Not implemented");
+        if (alignedPointer % fsBlockSize != 0) {
+            //todo warning
+        }
+
+        return new Pointer(alignedPointer);
+    }
+
+    @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
+        int size = checkSizeIsPadded(sourceBuffer.remaining());
+
+        fdCheckOpened();
+
+        ByteBuffer alignedBuf = AlignedBuffer.allocate(fsBlockSize, size);
+        try {
+            AlignedBuffer.copyMemory(sourceBuffer, alignedBuf);
+
+            int written = writeAligned(alignedBuf, position);
+
+            sourceBuffer.position(sourceBuffer.position() + written);
+            return written;
+        }
+        finally {
+            AlignedBuffer.free(alignedBuf);
+        }
     }
 
     @Override public void write(byte[] buffer, int offset, int length) throws IOException {
@@ -186,8 +209,12 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     @Override public void force() throws IOException {
-
-        throw new UnsupportedOperationException("Not implemented");
+        int fsync = IgniteNativeIoLib.fsync(fdCheckOpened());
+        if (fsync < 0) {
+            throw new IOException("Error opening " + file + ", got " + DirectIoLib.getLastError());
+        }
+//todo implement
+//        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override public long size() throws IOException {

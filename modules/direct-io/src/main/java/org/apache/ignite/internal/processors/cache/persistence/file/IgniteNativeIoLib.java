@@ -53,4 +53,7 @@ public class IgniteNativeIoLib {
 
     public static native NativeLong pread(int fd, Pointer buf, NativeLong count, NativeLong offset);
 
+
+    public static native int fsync(int fd);
+
 }
