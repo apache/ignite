@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,16 +15,25 @@
  * limitations under the License.
  */
 
-ignite-cluster-select {
-    @import "./../../../public/stylesheets/variables.scss";
+namespace Apache.Ignite.Core.Tests.ApiParity
+{
+    using Apache.Ignite.Core.Transactions;
+    using NUnit.Framework;
 
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-
-    .icon-help {
-        margin-left: 4px;
-
-        color: $text-color;
+    /// <summary>
+    /// Tests that <see cref="ITransactionMetrics"/> has all APIs from Java Ignite interface.
+    /// </summary>
+    public class TransactionMetricsParityTest
+    {
+        /// <summary>
+        /// Tests the API parity.
+        /// </summary>
+        [Test]
+        public void TestTransactionMetrics()
+        {
+            ParityTest.CheckInterfaceParity(
+                @"modules\core\src\main\java\org\apache\ignite\transactions\TransactionMetrics.java",
+                typeof(ITransactionMetrics));
+        }
     }
 }

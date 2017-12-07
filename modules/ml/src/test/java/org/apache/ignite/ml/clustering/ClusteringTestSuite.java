@@ -27,7 +27,9 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     KMeansDistributedClustererTestSingleNode.class,
     KMeansDistributedClustererTestMultiNode.class,
-    KMeansLocalClustererTest.class
+    KMeansLocalClustererTest.class,
+    FuzzyCMeansDistributedClustererTest.class,
+    FuzzyCMeansLocalClustererTest.class
 })
 public class ClusteringTestSuite {
 }

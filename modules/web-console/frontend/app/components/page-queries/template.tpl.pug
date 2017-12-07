@@ -32,7 +32,7 @@ mixin result-toolbar
 
 mixin chart-settings
     .total.row
-        .col-xs-5
+        .col-xs-7
             .chart-settings-link(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
                 a(title='Click to show chart settings dialog' ng-click='$event.stopPropagation()' bs-popover data-template-url='{{ $ctrl.chartSettingsTemplateUrl }}' data-placement='bottom' data-auto-close='1' data-trigger='click')
                     i.fa.fa-bars
@@ -143,7 +143,7 @@ mixin query-actions
 
 mixin table-result-heading-query
     .total.row
-        .col-xs-5
+        .col-xs-7
             grid-column-selector(grid-api='paragraph.gridOptions.api')
                 .fa.fa-bars.icon
             label Page: #[b {{paragraph.page}}]
@@ -153,7 +153,7 @@ mixin table-result-heading-query
         .col-xs-2
             div(ng-if='paragraph.qryType === "query"')
                 +result-toolbar
-        .col-xs-5
+        .col-xs-3
             .pull-right
                 .btn-group.panel-tip-container
                     button.btn.btn-primary.btn--with-icon(
@@ -188,7 +188,7 @@ mixin table-result-heading-query
 
 mixin table-result-heading-scan
     .total.row
-        .col-xs-5
+        .col-xs-7
             grid-column-selector(grid-api='paragraph.gridOptions.api')
                 .fa.fa-bars.icon
             label Page: #[b {{paragraph.page}}]
@@ -198,7 +198,7 @@ mixin table-result-heading-scan
         .col-xs-2
             div(ng-if='paragraph.qryType === "query"')
                 +result-toolbar
-        .col-xs-5
+        .col-xs-3
             .pull-right
                 .btn-group.panel-tip-container
                     // TODO: replace this logic for exporting under one component
@@ -357,10 +357,14 @@ mixin paragraph-query
 
 .row
     .docs-content
+        header
+            h1 Queries
+            cluster-selector
+
         .row(ng-if='notebook' bs-affix style='margin-bottom: 20px;')
             +notebook-rename
 
-        ignite-information(data-title='With query notebook you can' style='margin-top: 0; margin-bottom: 30px')
+        ignite-information(data-title='With query notebook you can' style='margin-bottom: 30px')
             ul
                 li Create any number of queries
                 li Execute and explain SQL queries

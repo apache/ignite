@@ -15,6 +15,16 @@
  * limitations under the License.
  */
 
+import 'rxjs/add/operator/mergeMap';
+import 'rxjs/add/operator/merge';
+import 'rxjs/add/operator/switchMap';
+import 'rxjs/add/operator/exhaustMap';
+import 'rxjs/add/operator/distinctUntilChanged';
+
+import { fromPromise } from 'rxjs/observable/fromPromise';
+import { timer } from 'rxjs/observable/timer';
+import { defer } from 'rxjs/observable/defer';
+
 import paragraphRateTemplateUrl from 'views/sql/paragraph-rate.tpl.pug';
 import cacheMetadataTemplateUrl from 'views/sql/cache-metadata.tpl.pug';
 import chartSettingsTemplateUrl from 'views/sql/chart-settings.tpl.pug';
@@ -211,33 +221,49 @@ class Paragraph {
     checkScanInProgress(showLocal = false) {
         return this.scanningInProgress && (this.localQueryMode === showLocal);
     }
+
+    cancelRefresh($interval) {
+        if (this.rate && this.rate.stopTime) {
+            $interval.cancel(this.rate.stopTime);
+
+            delete this.rate.stopTime;
+        }
+    }
+
+    reset($interval) {
+        this.meta = [];
+        this.chartColumns = [];
+        this.chartKeyCols = [];
+        this.chartValCols = [];
+        this.error.root = {};
+        this.error.message = '';
+        this.rows = [];
+        this.duration = 0;
+
+        this.cancelRefresh($interval);
+    }
 }
 
 // Controller for SQL notebook screen.
-export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard',
-    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard) {
+export default class {
+    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard'];
+
+    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard) {
         const $ctrl = this;
+
+        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes });
 
         // Define template urls.
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
         $ctrl.cacheMetadataTemplateUrl = cacheMetadataTemplateUrl;
         $ctrl.chartSettingsTemplateUrl = chartSettingsTemplateUrl;
-
         $ctrl.demoStarted = false;
 
-        let stopTopology = null;
-
         const _tryStopRefresh = function(paragraph) {
-            if (paragraph.rate && paragraph.rate.stopTime) {
-                $interval.cancel(paragraph.rate.stopTime);
-
-                delete paragraph.rate.stopTime;
-            }
+            paragraph.cancelRefresh($interval);
         };
 
         const _stopTopologyRefresh = () => {
-            $interval.cancel(stopTopology);
-
             if ($scope.notebook && $scope.notebook.paragraphs)
                 $scope.notebook.paragraphs.forEach((paragraph) => _tryStopRefresh(paragraph));
         };
@@ -850,8 +876,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         /**
          * Update caches list.
          */
-        const _refreshFn = () =>
-            agentMgr.topology(true)
+        const _refreshFn = () => {
+            return agentMgr.topology(true)
                 .then((nodes) => {
                     $scope.caches = _.sortBy(_.reduce(nodes, (cachesAcc, node) => {
                         _.forEach(node.caches, (cache) => {
@@ -897,18 +923,35 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                     }
                 })
                 .catch((err) => Messages.showError(err));
+        };
 
-        const _startWatch = () =>
-            agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.tabs.advanced.clusters')
-                .then(() => Loading.start('sqlLoading'))
-                .then(_refreshFn)
-                .then(() => {
-                    if (!$root.IgniteDemoMode)
-                        Loading.finish('sqlLoading');
+        const _startWatch = () => {
+            const awaitClusters$ = fromPromise(
+                agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.tabs.advanced.clusters'));
+
+            const currentCluster$ = agentMgr.connectionSbj
+                .distinctUntilChanged((n, o) => n.cluster === o.cluster);
+
+            const finishLoading$ = defer(() => {
+                if (!$root.IgniteDemoMode)
+                    Loading.finish('sqlLoading');
+            }).take(1);
+
+            const refreshCaches = (period) => {
+                return timer(0, period).exhaustMap(() => _refreshFn()).merge(finishLoading$);
+            };
+
+            this.refresh$ = awaitClusters$
+                .mergeMap(() => currentCluster$)
+                .do(() => Loading.start('sqlLoading'))
+                .do(() => {
+                    _.forEach($scope.notebook.paragraphs, (paragraph) => {
+                        paragraph.reset($interval);
+                    });
                 })
-                .then(() => {
-                    stopTopology = $interval(_refreshFn, 5000, 0, false);
-                });
+                .switchMap(() => refreshCaches(5000))
+                .subscribe();
+        };
 
         Notebook.find($state.params.noteId)
             .then((notebook) => {
@@ -930,7 +973,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 else
                     $scope.rebuildScrollParagraphs();
             })
-            .then(_startWatch)
+            .then(() => _startWatch())
             .catch(() => {
                 $scope.notebookLoadFailed = true;
 
@@ -1884,4 +1927,12 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             }
         };
     }
-];
+
+    $onInit() {
+
+    }
+
+    $onDestroy() {
+        this.refresh$.unsubscribe();
+    }
+}

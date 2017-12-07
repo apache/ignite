@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -100,10 +101,15 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private Logger impl;
 
+    /** Path to configuration file. */
+    @GridToStringExclude
+    private final String cfg;
+
     /** Quiet flag. */
     private final boolean quiet;
 
     /** Node ID. */
+    @GridToStringExclude
     private volatile UUID nodeId;
 
     /**
@@ -111,7 +117,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      *
      * @param impl Log4j implementation to use.
      */
-    private Log4J2Logger(final Logger impl) {
+    private Log4J2Logger(final Logger impl, String path) {
         assert impl != null;
         
         addConsoleAppenderIfNeeded(new C1<Boolean, Logger>() {
@@ -121,6 +127,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+        cfg = path;
     }
 
     /**
@@ -148,6 +155,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+        cfg = path;
     }
 
     /**
@@ -175,6 +183,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+        cfg = cfgFile.getPath();
     }
 
     /**
@@ -197,6 +206,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+        cfg = cfgUrl.getPath();
     }
 
     /**
@@ -415,17 +425,17 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      */
     @Override public Log4J2Logger getLogger(Object ctgr) {
         if (ctgr == null)
-            return new Log4J2Logger((Logger)LogManager.getRootLogger());
+            return new Log4J2Logger((Logger)LogManager.getRootLogger(), cfg);
 
         if (ctgr instanceof Class) {
             String name = ((Class<?>)ctgr).getName();
 
-            return new Log4J2Logger((Logger)LogManager.getLogger(name));
+            return new Log4J2Logger((Logger)LogManager.getLogger(name), cfg);
         }
 
         String name = ctgr.toString();
 
-        return new Log4J2Logger((Logger)LogManager.getLogger(name));
+        return new Log4J2Logger((Logger)LogManager.getLogger(name), cfg);
     }
 
     /** {@inheritDoc} */
@@ -494,6 +504,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(Log4J2Logger.class, this);
+        return S.toString(Log4J2Logger.class, this, "config", cfg);
     }
 }

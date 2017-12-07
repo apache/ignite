@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,15 +15,25 @@
  * limitations under the License.
  */
 
-import template from './cluster-select.pug';
-import './cluster-select.scss';
-import controller from './cluster-select.controller';
+namespace Apache.Ignite.Core.Tests.ApiParity
+{
+    using Apache.Ignite.Core.Messaging;
+    using NUnit.Framework;
 
-export default [() => {
-    return {
-        restrict: 'E',
-        template,
-        controller,
-        controllerAs: 'ctrl'
-    };
-}];
+    /// <summary>
+    /// Tests that <see cref="IMessaging"/> has all APIs from Java Ignite interface.
+    /// </summary>
+    public class MessagingParityTest
+    {
+        /// <summary>
+        /// Tests the API parity.
+        /// </summary>
+        [Test]
+        public void TestMessaging()
+        {
+            ParityTest.CheckInterfaceParity(
+                @"modules\core\src\main\java\org\apache\ignite\IgniteMessaging.java",
+                typeof(IMessaging));
+        }
+    }
+}
