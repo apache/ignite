@@ -22,6 +22,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -553,6 +554,67 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             for (TransactionIsolation isolation : TransactionIsolation.values())
                 testTimeoutOnPrimaryDhtNode0(prim, concurrency, isolation);
         }
+    }
+
+    /**
+     *
+     */
+    public void testCleanup() throws Exception {
+        final Ignite client = startClient();
+
+        final AtomicInteger idx = new AtomicInteger();
+
+        final int threadCnt = 2;
+
+        final CountDownLatch readStartLatch = new CountDownLatch(1);
+
+        final CountDownLatch commitLatch = new CountDownLatch(threadCnt - 1);
+
+        final IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                final int idx0 = idx.getAndIncrement();
+
+                if (idx0 == 0) {
+                    try(final Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                        client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+
+                        readStartLatch.countDown();
+
+                        U.awaitQuiet(commitLatch);
+
+                        tx.commit();
+                    }
+                }
+                else {
+                    try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 300, 1)) {
+                        U.awaitQuiet(readStartLatch);
+
+                        client.cache(CACHE_NAME).get(0); // Lock acquisition is queued.
+                    }
+                    catch (CacheException e) {
+                        assertTrue(e.getMessage(), X.hasCause(e, TransactionTimeoutException.class));
+                    }
+
+                    commitLatch.countDown();
+                }
+            }
+        }, threadCnt, "tx-async");
+
+        fut.get();
+
+        Thread.sleep(500);
+
+        assertEquals(0, client.cache(CACHE_NAME).get(0));
+
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final IgniteInternalFuture<?> f = ig.context().cache().context().
+                partitionReleaseFuture(new AffinityTopologyVersion(G.allGrids().size() + 1, 0));
+
+            assertTrue("Unexpected incomplete future", f.isDone());
+        }
+
     }
 
     /**

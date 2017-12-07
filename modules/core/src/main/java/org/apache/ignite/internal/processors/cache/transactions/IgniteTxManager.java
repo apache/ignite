@@ -306,8 +306,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (log.isInfoEnabled())
                     log.info("Forcibly rolling back near transaction: " + CU.txString(tx));
 
-
-                ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(true);
+                ((GridNearTxLocal)tx).rollbackOnTopologyChange();
             }
         }
     }

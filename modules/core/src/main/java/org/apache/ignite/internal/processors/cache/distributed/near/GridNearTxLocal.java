@@ -1724,7 +1724,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 long timeout = remainingTime();
 
-                if (timeout == -1 || !state(LOCKING))
+                if (timeout == -1 || !state(LOCKING, false))
                     return new GridFinishedFuture<>(timeoutException());
 
                 IgniteInternalFuture<Boolean> fut = locFut = cacheCtx.cache().txLockAsync(lockKeys,
@@ -3270,40 +3270,27 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return Rollback future.
      */
     public IgniteInternalFuture<IgniteInternalTx> rollbackNearTxLocalAsync() {
-        return rollbackNearTxLocalAsync(false, false);
+        return rollbackNearTxLocalAsync(false, null);
     }
 
     /**
-     * @param forceLockRelease Forces release of locks.
-     *
-     * @return Rollback future.
+     * Rollback tx on topology change.
      */
-    public IgniteInternalFuture<IgniteInternalTx> rollbackNearTxLocalAsync(boolean forceLockRelease) {
-        return rollbackNearTxLocalAsync(false, forceLockRelease);
+    public void rollbackOnTopologyChange() {
+        TransactionState[] txState = new TransactionState[1];
+
+        if (state(MARKED_ROLLBACK, false, txState) || (state() == MARKED_ROLLBACK))
+            rollbackNearTxLocalAsync(false, txState[0]);
     }
 
     /**
      * @param onTimeout {@code True} if rolled back asynchronously on timeout.
-     * @param forceUnlock {@code True} if shouldn't wait for current locks acquisition.
+     * @param prevState State of transaction before it was rolled back.
+     *
      * @return Rollback future.
      */
-    private IgniteInternalFuture<IgniteInternalTx> rollbackNearTxLocalAsync(final boolean onTimeout,
-        final boolean forceUnlock) {
-
-        if (forceUnlock && state() != MARKED_ROLLBACK) {
-            TransactionState[] txStateHolder = new TransactionState[1];
-
-            if (state(MARKED_ROLLBACK, true, txStateHolder) && txStateHolder[0] == LOCKING) {
-                while (locFut == null); // Wait for initialization.
-
-                if (locFut instanceof GridDhtColocatedLockFuture)
-                    ((GridDhtColocatedLockFuture)locFut).onDone(false, timeoutException());
-                else if (locFut instanceof GridNearLockFuture)
-                    ((GridNearLockFuture)locFut).onDone(false, timeoutException());
-
-            }
-        }
-
+    public IgniteInternalFuture<IgniteInternalTx> rollbackNearTxLocalAsync(final boolean onTimeout,
+        @Nullable TransactionState prevState) {
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
@@ -3330,6 +3317,21 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false)))
             return chainFinishFuture(finishFut, false);
+
+        // Make sure lock future is finished.
+        if (prevState == LOCKING) {
+            while(locFut == null); // Await initialization.
+
+            fut0.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                @Override public void apply(IgniteInternalFuture fut) {
+                    if (locFut instanceof GridDhtColocatedLockFuture)
+                        ((GridDhtColocatedLockFuture)locFut).onDone(false, timeoutException());
+                    else if (locFut instanceof GridNearLockFuture)
+                        ((GridNearLockFuture)locFut).onDone(false, timeoutException());
+
+                }
+            });
+        }
 
         cctx.mvcc().addFuture(fut0, fut0.futureId());
 
@@ -4154,12 +4156,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        if (state(MARKED_ROLLBACK, true) || (state() == MARKED_ROLLBACK)) {
+        final TransactionState[] txState = new TransactionState[1];
+
+        if (state(MARKED_ROLLBACK, true, txState) || (state() == MARKED_ROLLBACK)) {
             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
                     // Note: if rollback asynchronously on timeout should not clear thread map
                     // since thread started tx still should be able to see this tx.
-                    rollbackNearTxLocalAsync(true, false);
+                    rollbackNearTxLocalAsync(true, txState[0]);
 
                     U.warn(log, "Transaction was rolled back because the timeout is reached: " +
                         CU.txString(GridNearTxLocal.this));
