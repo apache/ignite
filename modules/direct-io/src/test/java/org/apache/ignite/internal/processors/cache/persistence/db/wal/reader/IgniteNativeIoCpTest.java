@@ -68,7 +68,6 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
     }
 
     public void testRecoveryAfterCpEnd() throws Exception {
-
         IgniteEx ignite = startGrid(0);
 
         ConcurrentHashMap8<Long, String> map8 = setupDirect(ignite);
@@ -77,9 +76,8 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache");
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 10000; i++)
             cache.put(i, valueForKey(i));
-        }
 
         ignite.context().cache().context().database().waitForCheckpoint("test");
 
@@ -91,9 +89,8 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cacheRestart = igniteRestart.getOrCreateCache("cache");
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 1000; i++)
             assertEquals(valueForKey(i), cacheRestart.get(i));
-        }
 
         System.err.println("Buffers: " + map8.size());
         for (Map.Entry<Long, String> next : map8.entrySet()) {
@@ -114,17 +111,24 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
         final ConcurrentHashMap8<Long, String> buffers = factory.managedAlignedBuffers();
         pageStore.pageStoreFileIoFactory(factory);
 
-        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
+        if(factory.isDirectAvailable()) {
+            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
 
-        database.setThreadBuf(new ThreadLocal<ByteBuffer>() {
-            /** {@inheritDoc} */
-            @Override protected ByteBuffer initialValue() {
-                return factory.createManagedBuffer(pageStore.pageSize());
-            }
-        });
+            db.setThreadBuf(new ThreadLocal<ByteBuffer>() {
+                /** {@inheritDoc} */
+                @Override protected ByteBuffer initialValue() {
+                    return factory.createManagedBuffer(pageStore.pageSize());
+                }
+            });
+        }
+
         return buffers;
     }
 
+    /**
+     * @param i key.
+     * @return
+     */
     @NotNull private String valueForKey(int i) {
         return Strings.repeat(Integer.toString(i), 10);
     }

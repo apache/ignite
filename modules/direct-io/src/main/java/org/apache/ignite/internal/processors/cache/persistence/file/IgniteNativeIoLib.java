@@ -22,28 +22,36 @@ import com.sun.jna.NativeLong;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 public class IgniteNativeIoLib {
 
+    private static boolean jnaAvailable;
+
     static {
-        Native.register(Platform.C_LIBRARY_NAME);
+        try {
+            Native.register(Platform.C_LIBRARY_NAME);
+            jnaAvailable = true;
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            jnaAvailable = false;
+        }
     }
 
     public static native int open(String pathname, int flags, int mode);
-
 
     /**
      * See "man 2 close"
      *
      * @param fd The file descriptor of the file to close
-     *
      * @return 0 on success, -1 on error
      */
     public static native int close(int fd);
 
     public static native NativeLong pwrite(int fd, Pointer buf, NativeLong count, NativeLong offset);
 
-    public static native NativeLong write(int fd,  Pointer buf, NativeLong count);
+    public static native NativeLong write(int fd, Pointer buf, NativeLong count);
 
     public static native NativeLong pread(int fd, Pointer buf, NativeLong count, NativeLong offset);
 
@@ -52,6 +60,7 @@ public class IgniteNativeIoLib {
     public static native int posix_memalign(PointerByReference memptr, NativeLong alignment, NativeLong size);
 
     public static native void free(Pointer ptr);
+
     public static native String strerror(int errnum);
 
 }

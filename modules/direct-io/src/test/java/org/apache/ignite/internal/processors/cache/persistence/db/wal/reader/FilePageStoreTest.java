@@ -45,12 +45,12 @@ public class FilePageStoreTest {
 
     @Test
     public void nativeCreateFile() throws IOException {
-        File file = new File("store2.dat");
+        final File file = new File("store2.dat");
         final DirectIoLib lib = DirectIoLib.getLibForPath(file.getAbsolutePath());
         int pageSize = DataStorageConfiguration.DFLT_PAGE_SIZE;
-        if (pageSize < 0 || (pageSize % lib.blockSize() != 0)) {
+        if (pageSize < 0 || (pageSize % lib.blockSize() != 0))
             throw new IllegalArgumentException("The page size [" + pageSize + "] must be a multiple of the file system block size [" + lib.blockSize() + "]");
-        }
+
         System.out.println(pageSize);
 
         String pathname = file.getAbsolutePath();

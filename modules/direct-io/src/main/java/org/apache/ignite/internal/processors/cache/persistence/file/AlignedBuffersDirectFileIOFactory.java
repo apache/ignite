@@ -25,16 +25,22 @@ import java.nio.file.OpenOption;
 import net.smacke.jaydio.DirectIoLib;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
-    private final DirectIoLib directIoLib;
+
+    @Nullable private final DirectIoLib directIoLib;
+
     private int pageSize;
-    private FileIOFactory backupFactory;
+
+    /** Backup factory for files in case native is not available or not applicable. */
+    private final FileIOFactory backupFactory;
 
     private ThreadLocal<ByteBuffer> tblOnePageAligned;
 
 
+    /** Managed aligned buffers. */
     private final ConcurrentHashMap8<Long, String> managedAlignedBuffers = new ConcurrentHashMap8<>();
 
 
@@ -42,6 +48,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         final File storePath,
         final int pageSize,
         final FileIOFactory backupFactory) {
+
         this.pageSize = pageSize;
         this.backupFactory = backupFactory;
         directIoLib = DirectIoLib.getLibForPath(storePath.getAbsolutePath());
@@ -54,8 +61,12 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         };
     }
 
-    @NotNull public ByteBuffer createManagedBuffer(int pageSize) {
-        final ByteBuffer allocate = AlignedBuffer.allocate(fsBlockSize(), pageSize).order(ByteOrder.nativeOrder());
+    /**
+     * @param capacity buffer size
+     * @return
+     */
+    @NotNull public ByteBuffer createManagedBuffer(int capacity) {
+        final ByteBuffer allocate = AlignedBuffer.allocate(fsBlockSize(), capacity).order(ByteOrder.nativeOrder());
 
         managedAlignedBuffers.put(GridUnsafe.bufferAddress(allocate), Thread.currentThread().getName());
 
@@ -75,8 +86,15 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         return new AlignedBuffersDirectFileIO(fsBlockSize(),  pageSize, file, modes, tblOnePageAligned, managedAlignedBuffers);
     }
 
+    /**
+     * @return fs block size, negative value if library init was failed
+     */
     public int fsBlockSize() {
-        return directIoLib.blockSize();
+        return isDirectAvailable() ? directIoLib.blockSize() : -1;
+    }
+
+    public boolean isDirectAvailable() {
+        return directIoLib != null;
     }
 
     public ConcurrentHashMap8<Long, String> managedAlignedBuffers() {

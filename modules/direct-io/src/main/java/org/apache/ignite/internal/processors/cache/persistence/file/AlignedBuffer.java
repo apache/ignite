@@ -21,16 +21,17 @@ import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 import java.nio.ByteBuffer;
-import net.smacke.jaydio.DirectIoLib;
 import org.apache.ignite.internal.util.GridUnsafe;
 import sun.nio.ch.DirectBuffer;
 
 public class AlignedBuffer {
     public static ByteBuffer allocate(int fsBlockSize, int capacity) {
+        assert fsBlockSize > 0;
+        assert capacity > 0;
         PointerByReference pointerToPointer = new PointerByReference();
 
         // align memory for use with O_DIRECT
-        DirectIoLib.posix_memalign(pointerToPointer, new NativeLong(fsBlockSize), new NativeLong(capacity));
+        IgniteNativeIoLib.posix_memalign(pointerToPointer, new NativeLong(fsBlockSize), new NativeLong(capacity));
         Pointer pointer = pointerToPointer.getValue();
         long alignedPtr = Pointer.nativeValue(pointer);
 
