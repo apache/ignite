@@ -213,7 +213,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                         for (int i = start; i < end; i++)
                             cache.get(i);
 
-                        //cache.put(start, 0);
+                        cache.put(start, 0);
 
                         tx.commit();
                     }
