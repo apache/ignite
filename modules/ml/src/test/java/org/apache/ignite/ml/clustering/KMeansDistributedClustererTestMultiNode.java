@@ -36,7 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * This test is made to make sure that K-Means distributed clustering does not crash on distributed environment.
- * In {@link KMeansDistributedClustererTestMultiNode} we check logic of clustering (checks for clusters structures).
+ * In {@link KMeansDistributedClustererTestSingleNode} we check logic of clustering (checks for clusters structures).
  * In this class we just check that clusterer does not crash. There are two separate tests because we cannot
  * guarantee order in which nodes return results of intermediate computations and therefore algorithm can return
  * different results.

@@ -43,7 +43,9 @@ import org.junit.Assert;
 
 import static org.apache.ignite.ml.clustering.KMeansUtil.checkIsInEpsilonNeighbourhood;
 
-/** */
+/**
+ * This test checks logic of clustering (checks for clusters structures).
+ */
 public class KMeansDistributedClustererTestSingleNode extends GridCommonAbstractTest {
     /**
      * Number of nodes in grid. We should use 1 in this test because otherwise algorithm will be unstable

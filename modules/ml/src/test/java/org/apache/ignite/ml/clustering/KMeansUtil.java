@@ -21,7 +21,7 @@ import org.apache.ignite.ml.math.Vector;
 
 import static org.junit.Assert.assertTrue;
 
-/** Base test for k-means algorithms. */
+/** Utilities for k-means tests. */
 class KMeansUtil {
     /** */
     static void checkIsInEpsilonNeighbourhood(Vector[] v1s, Vector[] v2s, double epsilon) {
