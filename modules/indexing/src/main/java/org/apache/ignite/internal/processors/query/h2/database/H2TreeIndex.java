@@ -204,6 +204,8 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
+
             return tree.put(row);
         }
         catch (IgniteCheckedException e) {
@@ -222,6 +224,8 @@ public class H2TreeIndex extends GridH2IndexBase {
             int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
+
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             return tree.putx(row);
         }
@@ -242,6 +246,8 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
+
             return tree.remove(row);
         }
         catch (IgniteCheckedException e) {
@@ -260,6 +266,8 @@ public class H2TreeIndex extends GridH2IndexBase {
             int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
+
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             return tree.removex(row);
         }
@@ -324,6 +332,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void destroy(boolean rmvIndex) {
         try {
             if (cctx.affinityNode() && rmvIndex) {
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
                 for (int i = 0; i < segments.length; i++) {
                     H2Tree tree = segments[i];
 
