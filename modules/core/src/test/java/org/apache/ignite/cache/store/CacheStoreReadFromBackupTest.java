@@ -151,6 +151,9 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
         checkReadAllFromBackup();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     private void checkReadSingleFromBackup() throws Exception {
         storeMap.put(1, "val-1");
 
@@ -169,6 +172,9 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     private void checkReadAllFromBackup() throws Exception {
         for (int i = 0; i < 100; i++)
             storeMap.put(i, String.valueOf(i));
@@ -219,6 +225,7 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("SuspiciousMethodCalls")
         @Override public void delete(Object key) {
             storeMap.remove(key);
         }
