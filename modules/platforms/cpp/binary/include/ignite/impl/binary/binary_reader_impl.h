@@ -884,6 +884,17 @@ namespace ignite
                 template<typename T>
                 T ReadTopObject()
                 {
+                    return ignite::binary::ReadHelper<T>::Read(*this);
+                }
+
+                /**
+                 * Read object.
+                 *
+                 * @return Read object.
+                 */
+                template<typename T>
+                void ReadTopObject0(T& res)
+                {
                     int32_t pos = stream->Position();
                     int8_t hdr = stream->ReadInt8();
 
@@ -891,7 +902,9 @@ namespace ignite
                     {
                         case IGNITE_HDR_NULL:
                         {
-                            return GetNull<T>();
+                            res = GetNull<T>();
+
+                            return;
                         }
 
                         case IGNITE_HDR_HND:
@@ -908,11 +921,11 @@ namespace ignite
 
                             stream->Position(curPos + portOff); // Position stream right on the object.
 
-                            T val = ReadTopObject<T>();
+                            ReadTopObject0<T>(res);
 
                             stream->Position(curPos + portLen + 4); // Position stream after binary.
 
-                            return val;
+                            return;
                         }
 
                         case IGNITE_HDR_FULL:
@@ -985,12 +998,11 @@ namespace ignite
                                                         footerBegin, footerEnd, schemaType);
                             ignite::binary::BinaryReader reader(&readerImpl);
 
-                            T val;
-                            BType::Read(reader, val);
+                            BType::Read(reader, res);
 
                             stream->Position(pos + len);
 
-                            return val;
+                            return;
                         }
 
                         default:
@@ -1407,43 +1419,43 @@ namespace ignite
             };
 
             template<>
-            int8_t IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<int8_t>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<int8_t>(int8_t& res);
 
             template<>
-            bool IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<bool>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<bool>(bool& res);
 
             template<>
-            int16_t IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<int16_t>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<int16_t>(int16_t& res);
 
             template<>
-            uint16_t IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<uint16_t>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<uint16_t>(uint16_t& res);
 
             template<>
-            int32_t IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<int32_t>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<int32_t>(int32_t& res);
 
             template<>
-            int64_t IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<int64_t>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<int64_t>(int64_t& res);
 
             template<>
-            float IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<float>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<float>(float& res);
 
             template<>
-            double IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<double>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<double>(double& res);
 
             template<>
-            Guid IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<Guid>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<Guid>(Guid& res);
 
             template<>
-            Date IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<Date>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<Date>(Date& res);
 
             template<>
-            Timestamp IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<Timestamp>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<Timestamp>(Timestamp& res);
 
             template<>
-            Time IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<Time>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<Time>(Time& res);
 
             template<>
-            std::string IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<std::string>();
+            void IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject0<std::string>(std::string& res);
 
             template<>
             inline int8_t BinaryReaderImpl::GetNull() const

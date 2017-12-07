@@ -47,4 +47,8 @@ Creating NuGet package:
             <dependency id="NLog" version="[4.0.0, 5.0.0)" />
         </dependencies>    
     </metadata>
+    <files>
+	    <file src="bin\$configuration$\Apache.Ignite.NLog.dll" target="lib\net40" />
+		<file src="bin\$configuration$\Apache.Ignite.NLog.xml" target="lib\net40" />
+    </files>
 </package>

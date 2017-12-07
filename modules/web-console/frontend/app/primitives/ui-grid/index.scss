@@ -401,6 +401,7 @@
                             .ui-grid-column-resizer {
                                 right: -1px;
                                 opacity: 0;
+                                z-index: 1000;
                             }
                         }
                     }
@@ -500,6 +501,10 @@
         &:before {
             content: '';
         }
+    }
+
+    .ui-grid-selection-row-header-buttons::before {
+        opacity: 1;
     }
 }
 

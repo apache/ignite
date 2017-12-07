@@ -237,7 +237,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi {
         if (failedNodes == null)
             failedNodes = U.newHashSet(1);
 
-        Integer failoverCnt = failedNodes.size();
+        int failoverCnt = failedNodes.size();
 
         if (failoverCnt >= maxFailoverAttempts) {
             U.warn(log, "Job failover failed because number of maximum failover attempts is exceeded [failedJob=" +

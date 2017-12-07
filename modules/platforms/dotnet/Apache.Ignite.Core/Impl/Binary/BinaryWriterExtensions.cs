@@ -18,6 +18,9 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.IO;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
@@ -75,5 +78,138 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writer.WriteBoolean(false);
         }
 
+        /// <summary>
+        /// Write collection.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="vals">Values.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The same writer for chaining.</returns>
+        private static void WriteCollection<T1, T2>(this BinaryWriter writer, ICollection<T1> vals, 
+            Func<T1, T2> selector)
+        {
+            writer.WriteInt(vals.Count);
+
+            if (selector == null)
+            {
+                foreach (var val in vals)
+                    writer.WriteObjectDetached(val);
+            }
+            else
+            {
+                foreach (var val in vals)
+                    writer.WriteObjectDetached(selector(val));
+            }
+        }
+
+        /// <summary>
+        /// Write enumerable.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="vals">Values.</param>
+        /// <returns>The same writer for chaining.</returns>
+        public static void WriteEnumerable<T>(this BinaryWriter writer, IEnumerable<T> vals)
+        {
+            WriteEnumerable<T, T>(writer, vals, null);
+        }
+
+        /// <summary>
+        /// Write enumerable.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="vals">Values.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The same writer for chaining.</returns>
+        public static void WriteEnumerable<T1, T2>(this BinaryWriter writer, IEnumerable<T1> vals, 
+            Func<T1, T2> selector)
+        {
+            var col = vals as ICollection<T1>;
+
+            if (col != null)
+            {
+                WriteCollection(writer, col, selector);
+                return;
+            }
+
+            var stream = writer.Stream;
+
+            var pos = stream.Position;
+
+            stream.Seek(4, SeekOrigin.Current);
+
+            var size = 0;
+
+            if (selector == null)
+            {
+                foreach (var val in vals)
+                {
+                    writer.WriteObjectDetached(val);
+
+                    size++;
+                }
+            }
+            else
+            {
+                foreach (var val in vals)
+                {
+                    writer.WriteObjectDetached(selector(val));
+
+                    size++;
+                }
+            }
+
+            stream.WriteInt(pos, size);
+        }
+
+        /// <summary>
+        /// Write dictionary.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="vals">Values.</param>
+        public static void WriteDictionary<T1, T2>(this BinaryWriter writer, IEnumerable<KeyValuePair<T1, T2>> vals)
+        {
+            var pos = writer.Stream.Position;
+            writer.WriteInt(0);  // Reserve count.
+
+            int cnt = 0;
+
+            foreach (var pair in vals)
+            {
+                writer.WriteObjectDetached(pair.Key);
+                writer.WriteObjectDetached(pair.Value);
+
+                cnt++;
+            }
+
+            writer.Stream.WriteInt(pos, cnt);
+        }
+
+        /// <summary>
+        /// Writes the collection of write-aware items.
+        /// </summary>
+        public static void WriteCollectionRaw<T, TWriter>(this TWriter writer, ICollection<T> collection)
+            where T : IBinaryRawWriteAware<TWriter> where TWriter: IBinaryRawWriter
+        {
+            Debug.Assert(writer != null);
+
+            if (collection != null)
+            {
+                writer.WriteInt(collection.Count);
+
+                foreach (var x in collection)
+                {
+                    if (x == null)
+                    {
+                        throw new ArgumentNullException(string.Format("{0} can not be null", typeof(T).Name));
+                    }
+
+                    x.Write(writer);
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+        }
     }
 }

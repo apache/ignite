@@ -33,8 +33,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Tests that system transactions do not interact with user transactions.
@@ -100,6 +102,22 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
         checkEntries(DEFAULT_CACHE_NAME,                  "1", "11", "2", "22", "3", null);
         checkEntries(CU.UTILITY_CACHE_NAME, "1", null, "2", "2",  "3", "3");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGridNearTxLocalDuplicateAsyncCommit() throws Exception {
+        IgniteKernal ignite = (IgniteKernal)grid(0);
+
+        IgniteInternalCache<Object, Object> utilityCache = ignite.context().cache().utilityCache();
+
+        try (GridNearTxLocal itx = utilityCache.txStartEx(OPTIMISTIC, SERIALIZABLE)) {
+            utilityCache.put("1", "1");
+
+            itx.commitNearTxLocalAsync();
+            itx.commitNearTxLocalAsync().get();
+        }
     }
 
     /**

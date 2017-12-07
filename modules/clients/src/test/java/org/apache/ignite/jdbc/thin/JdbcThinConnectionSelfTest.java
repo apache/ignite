@@ -17,6 +17,22 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -29,19 +45,31 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.concurrent.Callable;
+import static java.sql.Connection.TRANSACTION_NONE;
+import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
+import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
+import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
+import static java.sql.Connection.TRANSACTION_SERIALIZABLE;
+import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
+import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static java.sql.Statement.NO_GENERATED_KEYS;
+import static java.sql.Statement.RETURN_GENERATED_KEYS;
 
 /**
  * Connection test.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -107,9 +135,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         assertInvalid("jdbc:ignite:thin://:10000", "Host name is empty");
         assertInvalid("jdbc:ignite:thin://     :10000", "Host name is empty");
 
-        assertInvalid("jdbc:ignite:thin://127.0.0.1:-1", "Invalid port");
-        assertInvalid("jdbc:ignite:thin://127.0.0.1:0", "Invalid port");
-        assertInvalid("jdbc:ignite:thin://127.0.0.1:100000", "Invalid port");
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:-1", "Property cannot be lower than 1 [name=port, value=-1]");
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:0", "Property cannot be lower than 1 [name=port, value=0]");
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:100000",
+            "Property cannot be upper than 65535 [name=port, value=100000]");
     }
 
     /**
@@ -119,31 +148,31 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testSocketBuffers() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=-1",
-            "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_SND_BUF);
+            "Property cannot be lower than 0 [name=socketSendBuffer, value=-1]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=-1",
-            "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_RCV_BUF);
+            "Property cannot be lower than 0 [name=socketReceiveBuffer, value=-1]");
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertEquals(0, io(conn).socketSendBuffer());
-            assertEquals(0, io(conn).socketReceiveBuffer());
+            assertEquals(0, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(0, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
         // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=1024")) {
-            assertEquals(1024, io(conn).socketSendBuffer());
-            assertEquals(0, io(conn).socketReceiveBuffer());
+            assertEquals(1024, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(0, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=1024")) {
-            assertEquals(0, io(conn).socketSendBuffer());
-            assertEquals(1024, io(conn).socketReceiveBuffer());
+            assertEquals(0, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(1024, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
             "socketSendBuffer=1024&socketReceiveBuffer=2048")) {
-            assertEquals(1024, io(conn).socketSendBuffer());
-            assertEquals(2048, io(conn).socketReceiveBuffer());
+            assertEquals(1024, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(2048, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
     }
 
@@ -154,46 +183,76 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testSqlHints() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertFalse(io(conn).distributedJoins());
-            assertFalse(io(conn).enforceJoinOrder());
-            assertFalse(io(conn).collocated());
-            assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).connectionProperties().isDistributedJoins());
+            assertFalse(io(conn).connectionProperties().isEnforceJoinOrder());
+            assertFalse(io(conn).connectionProperties().isCollocated());
+            assertFalse(io(conn).connectionProperties().isReplicatedOnly());
+            assertFalse(io(conn).connectionProperties().isLazy());
+            assertFalse(io(conn).connectionProperties().isSkipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true")) {
-            assertTrue(io(conn).distributedJoins());
-            assertFalse(io(conn).enforceJoinOrder());
-            assertFalse(io(conn).collocated());
-            assertFalse(io(conn).replicatedOnly());
+            assertTrue(io(conn).connectionProperties().isDistributedJoins());
+            assertFalse(io(conn).connectionProperties().isEnforceJoinOrder());
+            assertFalse(io(conn).connectionProperties().isCollocated());
+            assertFalse(io(conn).connectionProperties().isReplicatedOnly());
+            assertFalse(io(conn).connectionProperties().isLazy());
+            assertFalse(io(conn).connectionProperties().isSkipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?enforceJoinOrder=true")) {
-            assertFalse(io(conn).distributedJoins());
-            assertTrue(io(conn).enforceJoinOrder());
-            assertFalse(io(conn).collocated());
-            assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).connectionProperties().isDistributedJoins());
+            assertTrue(io(conn).connectionProperties().isEnforceJoinOrder());
+            assertFalse(io(conn).connectionProperties().isCollocated());
+            assertFalse(io(conn).connectionProperties().isReplicatedOnly());
+            assertFalse(io(conn).connectionProperties().isLazy());
+            assertFalse(io(conn).connectionProperties().isSkipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?collocated=true")) {
-            assertFalse(io(conn).distributedJoins());
-            assertFalse(io(conn).enforceJoinOrder());
-            assertTrue(io(conn).collocated());
-            assertFalse(io(conn).replicatedOnly());
+            assertFalse(io(conn).connectionProperties().isDistributedJoins());
+            assertFalse(io(conn).connectionProperties().isEnforceJoinOrder());
+            assertTrue(io(conn).connectionProperties().isCollocated());
+            assertFalse(io(conn).connectionProperties().isReplicatedOnly());
+            assertFalse(io(conn).connectionProperties().isLazy());
+            assertFalse(io(conn).connectionProperties().isSkipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?replicatedOnly=true")) {
-            assertFalse(io(conn).distributedJoins());
-            assertFalse(io(conn).enforceJoinOrder());
-            assertFalse(io(conn).collocated());
-            assertTrue(io(conn).replicatedOnly());
+            assertFalse(io(conn).connectionProperties().isDistributedJoins());
+            assertFalse(io(conn).connectionProperties().isEnforceJoinOrder());
+            assertFalse(io(conn).connectionProperties().isCollocated());
+            assertTrue(io(conn).connectionProperties().isReplicatedOnly());
+            assertFalse(io(conn).connectionProperties().isLazy());
+            assertFalse(io(conn).connectionProperties().isSkipReducerOnUpdate());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?lazy=true")) {
+            assertFalse(io(conn).connectionProperties().isDistributedJoins());
+            assertFalse(io(conn).connectionProperties().isEnforceJoinOrder());
+            assertFalse(io(conn).connectionProperties().isCollocated());
+            assertFalse(io(conn).connectionProperties().isReplicatedOnly());
+            assertTrue(io(conn).connectionProperties().isLazy());
+            assertFalse(io(conn).connectionProperties().isSkipReducerOnUpdate());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?skipReducerOnUpdate=true")) {
+            assertFalse(io(conn).connectionProperties().isDistributedJoins());
+            assertFalse(io(conn).connectionProperties().isEnforceJoinOrder());
+            assertFalse(io(conn).connectionProperties().isCollocated());
+            assertFalse(io(conn).connectionProperties().isReplicatedOnly());
+            assertFalse(io(conn).connectionProperties().isLazy());
+            assertTrue(io(conn).connectionProperties().isSkipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true&" +
-                "enforceJoinOrder=true&collocated=true&replicatedOnly=true")) {
-            assertTrue(io(conn).distributedJoins());
-            assertTrue(io(conn).enforceJoinOrder());
-            assertTrue(io(conn).collocated());
-            assertTrue(io(conn).replicatedOnly());
+            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&skipReducerOnUpdate=true")) {
+            assertTrue(io(conn).connectionProperties().isDistributedJoins());
+            assertTrue(io(conn).connectionProperties().isEnforceJoinOrder());
+            assertTrue(io(conn).connectionProperties().isCollocated());
+            assertTrue(io(conn).connectionProperties().isReplicatedOnly());
+            assertTrue(io(conn).connectionProperties().isLazy());
+            assertTrue(io(conn).connectionProperties().isSkipReducerOnUpdate());
         }
     }
 
@@ -204,35 +263,35 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testTcpNoDelay() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=0",
-            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+            "Failed to parse boolean property [name=tcpNoDelay, value=0]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=1",
-            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+            "Failed to parse boolean property [name=tcpNoDelay, value=1]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false1",
-            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+            "Failed to parse boolean property [name=tcpNoDelay, value=false1]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=true1",
-            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+            "Failed to parse boolean property [name=tcpNoDelay, value=true1]");
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertTrue(io(conn).tcpNoDelay());
+            assertTrue(io(conn).connectionProperties().isTcpNoDelay());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=true")) {
-            assertTrue(io(conn).tcpNoDelay());
+            assertTrue(io(conn).connectionProperties().isTcpNoDelay());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=True")) {
-            assertTrue(io(conn).tcpNoDelay());
+            assertTrue(io(conn).connectionProperties().isTcpNoDelay());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false")) {
-            assertFalse(io(conn).tcpNoDelay());
+            assertFalse(io(conn).connectionProperties().isTcpNoDelay());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=False")) {
-            assertFalse(io(conn).tcpNoDelay());
+            assertFalse(io(conn).connectionProperties().isTcpNoDelay());
         }
     }
 
@@ -242,9 +301,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testAutoCloseServerCursorProperty() throws Exception {
-        String url = "jdbc:ignite:thin://127.0.0.1?" + JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSOR;
+        String url = "jdbc:ignite:thin://127.0.0.1?autoCloseServerCursor";
 
-        String err = "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSOR;
+        String err = "Failed to parse boolean property [name=autoCloseServerCursor";
 
         assertInvalid(url + "=0", err);
         assertInvalid(url + "=1", err);
@@ -252,23 +311,45 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         assertInvalid(url + "=true1", err);
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertFalse(io(conn).autoCloseServerCursor());
+            assertFalse(io(conn).connectionProperties().isAutoCloseServerCursor());
         }
 
         try (Connection conn = DriverManager.getConnection(url + "=true")) {
-            assertTrue(io(conn).autoCloseServerCursor());
+            assertTrue(io(conn).connectionProperties().isAutoCloseServerCursor());
         }
 
         try (Connection conn = DriverManager.getConnection(url + "=True")) {
-            assertTrue(io(conn).autoCloseServerCursor());
+            assertTrue(io(conn).connectionProperties().isAutoCloseServerCursor());
         }
 
         try (Connection conn = DriverManager.getConnection(url + "=false")) {
-            assertFalse(io(conn).autoCloseServerCursor());
+            assertFalse(io(conn).connectionProperties().isAutoCloseServerCursor());
         }
 
         try (Connection conn = DriverManager.getConnection(url + "=False")) {
-            assertFalse(io(conn).autoCloseServerCursor());
+            assertFalse(io(conn).connectionProperties().isAutoCloseServerCursor());
+        }
+    }
+
+    /**
+     * Test schema property in URL.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSchema() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1/qwe/qwe",
+            "Invalid URL format (only schema name is allowed in URL path parameter 'host:port[/schemaName]')" );
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/public")) {
+            assertEquals("Invalid schema", "PUBLIC", conn.getSchema());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/\"" + DEFAULT_CACHE_NAME + '"')) {
+            assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/_not_exist_schema_")) {
+            assertEquals("Invalid schema", "_NOT_EXIST_SCHEMA_", conn.getSchema());
         }
     }
 
@@ -282,7 +363,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     private static JdbcThinTcpIo io(Connection conn) throws Exception {
         JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
 
-        return conn0.io();
+        return GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "cliIo");
     }
 
     /**
@@ -327,5 +408,1366 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 return null;
             }
         }, SQLException.class, "Invalid timeout");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateStatement() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            try (Statement stmt = conn.createStatement()) {
+                assertNotNull(stmt);
+
+                stmt.close();
+
+                conn.close();
+
+                // Exception when called on closed connection
+                checkConnectionClosed(new RunnableX() {
+                    @Override public void run() throws Exception {
+                        conn.createStatement();
+                    }
+                });
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateStatement2() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            int [] rsTypes = new int[]
+                {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+
+            int [] rsConcurs = new int[]
+                {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+
+            DatabaseMetaData meta = conn.getMetaData();
+
+            for (final int type : rsTypes) {
+                for (final int concur : rsConcurs) {
+                    if (meta.supportsResultSetConcurrency(type, concur)) {
+                        assert type == TYPE_FORWARD_ONLY;
+                        assert concur == CONCUR_READ_ONLY;
+
+                        try (Statement stmt = conn.createStatement(type, concur)) {
+                            assertNotNull(stmt);
+
+                            assertEquals(type, stmt.getResultSetType());
+                            assertEquals(concur, stmt.getResultSetConcurrency());
+                        }
+
+                        continue;
+                    }
+
+                    GridTestUtils.assertThrows(log,
+                        new Callable<Object>() {
+                            @Override public Object call() throws Exception {
+                                return conn.createStatement(type, concur);
+                            }
+                        },
+                        SQLFeatureNotSupportedException.class,
+                        null
+                    );
+                }
+            }
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createStatement(TYPE_FORWARD_ONLY,
+                        CONCUR_READ_ONLY);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateStatement3() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            int [] rsTypes = new int[]
+                {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+
+            int [] rsConcurs = new int[]
+                {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+
+            int [] rsHoldabilities = new int[]
+                {HOLD_CURSORS_OVER_COMMIT, CLOSE_CURSORS_AT_COMMIT};
+
+            DatabaseMetaData meta = conn.getMetaData();
+
+            for (final int type : rsTypes) {
+                for (final int concur : rsConcurs) {
+                    for (final int holdabililty : rsHoldabilities) {
+                        if (meta.supportsResultSetConcurrency(type, concur)) {
+                            assert type == TYPE_FORWARD_ONLY;
+                            assert concur == CONCUR_READ_ONLY;
+
+                            try (Statement stmt = conn.createStatement(type, concur, holdabililty)) {
+                                assertNotNull(stmt);
+
+                                assertEquals(type, stmt.getResultSetType());
+                                assertEquals(concur, stmt.getResultSetConcurrency());
+                                assertEquals(holdabililty, stmt.getResultSetHoldability());
+                            }
+
+                            continue;
+                        }
+
+                        GridTestUtils.assertThrows(log,
+                            new Callable<Object>() {
+                                @Override public Object call() throws Exception {
+                                    return conn.createStatement(type, concur, holdabililty);
+                                }
+                            },
+                            SQLFeatureNotSupportedException.class,
+                            null
+                        );
+                    }
+                }
+            }
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createStatement(TYPE_FORWARD_ONLY,
+                        CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrepareStatement() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // null query text
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(null);
+                    }
+                },
+                SQLException.class,
+                "SQL string cannot be null"
+            );
+
+            final String sqlText = "select * from test where param = ?";
+
+            try (PreparedStatement prepared = conn.prepareStatement(sqlText)) {
+                assertNotNull(prepared);
+            }
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.prepareStatement(sqlText);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrepareStatement3() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            final String sqlText = "select * from test where param = ?";
+
+            int [] rsTypes = new int[]
+                {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+
+            int [] rsConcurs = new int[]
+                {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+
+            DatabaseMetaData meta = conn.getMetaData();
+
+            for (final int type : rsTypes) {
+                for (final int concur : rsConcurs) {
+                    if (meta.supportsResultSetConcurrency(type, concur)) {
+                        assert type == TYPE_FORWARD_ONLY;
+                        assert concur == CONCUR_READ_ONLY;
+
+                        // null query text
+                        GridTestUtils.assertThrows(log,
+                            new Callable<Object>() {
+                                @Override public Object call() throws Exception {
+                                    return conn.prepareStatement(null, type, concur);
+                                }
+                            },
+                            SQLException.class,
+                            "SQL string cannot be null"
+                        );
+
+                        continue;
+                    }
+
+                    GridTestUtils.assertThrows(log,
+                        new Callable<Object>() {
+                            @Override public Object call() throws Exception {
+                                return conn.prepareStatement(sqlText, type, concur);
+                            }
+                        },
+                        SQLFeatureNotSupportedException.class,
+                        null
+                    );
+                }
+            }
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+                }
+            });
+
+            conn.close();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrepareStatement4() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            final String sqlText = "select * from test where param = ?";
+
+            int [] rsTypes = new int[]
+                {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+
+            int [] rsConcurs = new int[]
+                {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+
+            int [] rsHoldabilities = new int[]
+                {HOLD_CURSORS_OVER_COMMIT, CLOSE_CURSORS_AT_COMMIT};
+
+            DatabaseMetaData meta = conn.getMetaData();
+
+            for (final int type : rsTypes) {
+                for (final int concur : rsConcurs) {
+                    for (final int holdabililty : rsHoldabilities) {
+                        if (meta.supportsResultSetConcurrency(type, concur)) {
+                            assert type == TYPE_FORWARD_ONLY;
+                            assert concur == CONCUR_READ_ONLY;
+
+                            // null query text
+                            GridTestUtils.assertThrows(log,
+                                new Callable<Object>() {
+                                    @Override public Object call() throws Exception {
+                                        return conn.prepareStatement(null, type, concur, holdabililty);
+                                    }
+                                },
+                                SQLException.class,
+                                "SQL string cannot be null"
+                            );
+
+                            continue;
+                        }
+
+                        GridTestUtils.assertThrows(log,
+                            new Callable<Object>() {
+                                @Override public Object call() throws Exception {
+                                    return conn.prepareStatement(sqlText, type, concur, holdabililty);
+                                }
+                            },
+                            SQLFeatureNotSupportedException.class,
+                            null
+                        );
+                    }
+                }
+            }
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                }
+            });
+
+            conn.close();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrepareStatementAutoGeneratedKeysUnsupported() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            final String sqlText = "insert into test (val) values (?)";
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, RETURN_GENERATED_KEYS);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Auto generated keys are not supported."
+            );
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, NO_GENERATED_KEYS);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Auto generated keys are not supported."
+            );
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, new int[] {1});
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Auto generated keys are not supported."
+            );
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, new String[] {"ID"});
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Auto generated keys are not supported."
+            );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrepareCallUnsupported() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            final String sqlText = "exec test()";
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareCall(sqlText);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Callable functions are not supported."
+            );
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareCall(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Callable functions are not supported."
+            );
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareCall(sqlText, TYPE_FORWARD_ONLY,
+                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Callable functions are not supported."
+            );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNativeSql() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // null query text
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.nativeSQL(null);
+                    }
+                },
+                SQLException.class,
+                "SQL string cannot be null"
+            );
+
+            final String sqlText = "select * from test";
+
+            assertEquals(sqlText, conn.nativeSQL(sqlText));
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.nativeSQL(sqlText);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetAutoCommit() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assertTrue(conn.getAutoCommit());
+
+            conn.setAutoCommit(false);
+
+            assertFalse(conn.getAutoCommit());
+
+            conn.setAutoCommit(true);
+
+            assertTrue(conn.getAutoCommit());
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setAutoCommit(true);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCommit() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assert !conn.getMetaData().supportsTransactions();
+
+            // Should not be called in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.commit();
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Transaction cannot be committed explicitly in auto-commit mode"
+            );
+
+            conn.setAutoCommit(false);
+
+            conn.commit();
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.commit();
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRollback() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assert !conn.getMetaData().supportsTransactions();
+
+            // Should not be called in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.rollback();
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Transaction cannot rollback in auto-commit mode"
+            );
+
+            conn.setAutoCommit(false);
+
+            conn.rollback();
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.rollback();
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetMetaData() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertNotNull(meta);
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getMetaData();
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetReadOnly() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setReadOnly(true);
+                }
+            });
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.isReadOnly();
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetCatalog() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assert !conn.getMetaData().supportsCatalogsInDataManipulation();
+
+            assertNull(conn.getCatalog());
+
+            conn.setCatalog("catalog");
+
+            assertEquals(null, conn.getCatalog());
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setCatalog("");
+                }
+            });
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getCatalog();
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetTransactionIsolation() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assert !conn.getMetaData().supportsTransactions();
+
+            // Invalid parameter value
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setTransactionIsolation(-1);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid transaction isolation level"
+            );
+
+            // default level
+            assertEquals(TRANSACTION_NONE, conn.getTransactionIsolation());
+
+            int[] levels = {
+                TRANSACTION_READ_UNCOMMITTED, TRANSACTION_READ_COMMITTED,
+                TRANSACTION_REPEATABLE_READ, TRANSACTION_SERIALIZABLE};
+
+            for (int level : levels) {
+                conn.setTransactionIsolation(level);
+                assertEquals(level, conn.getTransactionIsolation());
+            }
+
+            conn.close();
+
+            // Exception when called on closed connection
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getTransactionIsolation();
+                }
+            });
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClearGetWarnings() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            SQLWarning warn = conn.getWarnings();
+
+            assertNull(warn);
+
+            conn.clearWarnings();
+
+            warn = conn.getWarnings();
+
+            assertNull(warn);
+
+            conn.close();
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getWarnings();
+                }
+            });
+
+
+            // Exception when called on closed connection
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.clearWarnings();
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetTypeMap() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getTypeMap();
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Types mapping is not supported"
+            );
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setTypeMap(new HashMap<String, Class<?>>());
+
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Types mapping is not supported"
+            );
+
+            conn.close();
+
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getTypeMap();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setTypeMap(new HashMap<String, Class<?>>());
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetHoldability() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // default value
+            assertEquals(conn.getMetaData().getResultSetHoldability(), conn.getHoldability());
+
+            assertEquals(HOLD_CURSORS_OVER_COMMIT, conn.getHoldability());
+
+            conn.setHoldability(CLOSE_CURSORS_AT_COMMIT);
+
+            assertEquals(CLOSE_CURSORS_AT_COMMIT, conn.getHoldability());
+
+            // Invalid constant
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setHoldability(-1);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid result set holdability value"
+            );
+
+            conn.close();
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getHoldability();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setHoldability(HOLD_CURSORS_OVER_COMMIT);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetSavepoint() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assert !conn.getMetaData().supportsSavepoints();
+
+            // Disallowed in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint();
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Savepoint cannot be set in auto-commit mode"
+            );
+
+            conn.setAutoCommit(false);
+
+            // Unsupported
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setSavepoint();
+                }
+            });
+
+            conn.close();
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setSavepoint();
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetSavepointName() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assert !conn.getMetaData().supportsSavepoints();
+
+            // Invalid arg
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint(null);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Savepoint name cannot be null"
+            );
+
+            final String name = "savepoint";
+
+            // Disallowed in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint(name);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Savepoint cannot be set in auto-commit mode"
+            );
+
+            conn.setAutoCommit(false);
+
+            // Unsupported
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setSavepoint(name);
+                }
+            });
+
+            conn.close();
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setSavepoint(name);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRollbackSavePoint() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assert !conn.getMetaData().supportsSavepoints();
+
+            // Invalid arg
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.rollback(null);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid savepoint"
+            );
+
+            final Savepoint savepoint = getFakeSavepoint();
+
+            // Disallowed in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.rollback(savepoint);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Auto-commit mode"
+            );
+
+            conn.setAutoCommit(false);
+
+            // Unsupported
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.rollback(savepoint);
+                }
+            });
+
+            conn.close();
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.rollback(savepoint);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReleaseSavepoint() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assert !conn.getMetaData().supportsSavepoints();
+
+            // Invalid arg
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.releaseSavepoint(null);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Savepoint cannot be null"
+            );
+
+            final Savepoint savepoint = getFakeSavepoint();
+
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.releaseSavepoint(savepoint);
+                }
+            });
+
+            conn.close();
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.releaseSavepoint(savepoint);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateClob() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createClob();
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "SQL-specific types are not supported"
+            );
+
+            conn.close();
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createClob();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateBlob() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createBlob();
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "SQL-specific types are not supported"
+            );
+
+            conn.close();
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createBlob();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateNClob() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createNClob();
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "SQL-specific types are not supported"
+            );
+
+            conn.close();
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createNClob();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateSQLXML() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createSQLXML();
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "SQL-specific types are not supported"
+            );
+
+            conn.close();
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createSQLXML();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetClientInfoPair() throws Exception {
+//        fail("https://issues.apache.org/jira/browse/IGNITE-5425");
+
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            final String name = "ApplicationName";
+            final String val = "SelfTest";
+
+            assertNull(conn.getWarnings());
+
+            conn.setClientInfo(name, val);
+
+            assertNull(conn.getClientInfo(val));
+
+            conn.close();
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getClientInfo(name);
+                }
+            });
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setClientInfo(name, val);
+
+                        return null;
+                    }
+                }, SQLClientInfoException.class, "Connection is closed");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetClientInfoProperties() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            final String name = "ApplicationName";
+            final String val = "SelfTest";
+
+            final Properties props = new Properties();
+            props.setProperty(name, val);
+
+            conn.setClientInfo(props);
+
+            Properties propsResult = conn.getClientInfo();
+
+            assertNotNull(propsResult);
+
+            assertTrue(propsResult.isEmpty());
+
+            conn.close();
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getClientInfo();
+                }
+            });
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setClientInfo(props);
+
+                        return null;
+                    }
+                }, SQLClientInfoException.class, "Connection is closed");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateArrayOf() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            final String typeName = "varchar";
+
+            final String[] elements = new String[] {"apple", "pear"};
+
+            // Invalid typename
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.createArrayOf(null, null);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Type name cannot be null"
+            );
+
+            // Unsupported
+
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createArrayOf(typeName, elements);
+                }
+            });
+
+            conn.close();
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createArrayOf(typeName, elements);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateStruct() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // Invalid typename
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createStruct(null, null);
+                    }
+                },
+                SQLException.class,
+                "Type name cannot be null"
+            );
+
+            final String typeName = "employee";
+
+            final Object[] attrs = new Object[] {100, "Tom"};
+
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createStruct(typeName, attrs);
+                }
+            });
+
+            conn.close();
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createStruct(typeName, attrs);
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetSchema() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assertEquals("PUBLIC", conn.getSchema());
+
+            final String schema = "test";
+
+            conn.setSchema(schema);
+
+            assertEquals(schema.toUpperCase(), conn.getSchema());
+
+            conn.setSchema('"' + schema + '"');
+
+            assertEquals(schema, conn.getSchema());
+
+            conn.close();
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setSchema(schema);
+                }
+            });
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getSchema();
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAbort() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            //Invalid executor
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.abort(null);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Executor cannot be null"
+            );
+
+            final Executor executor = Executors.newFixedThreadPool(1);
+
+            conn.abort(executor);
+
+            assertTrue(conn.isClosed());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetNetworkTimeout() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // default
+            assertEquals(0, conn.getNetworkTimeout());
+
+            final Executor executor = Executors.newFixedThreadPool(1);
+
+            final int timeout = 1000;
+
+            //Invalid executor
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setNetworkTimeout(null, timeout);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Executor cannot be null"
+            );
+
+            //Invalid timeout
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setNetworkTimeout(executor, -1);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Network timeout cannot be negative"
+            );
+
+            conn.setNetworkTimeout(executor, timeout);
+
+            assertEquals(timeout, conn.getNetworkTimeout());
+
+            conn.close();
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getNetworkTimeout();
+                }
+            });
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setNetworkTimeout(executor, timeout);
+                }
+            });
+        }
+    }
+
+    /**
+     * @return Savepoint.
+     */
+    private Savepoint getFakeSavepoint() {
+        return new Savepoint() {
+            @Override public int getSavepointId() throws SQLException {
+                return 100;
+            }
+
+            @Override public String getSavepointName() {
+                return "savepoint";
+            }
+        };
     }
 }

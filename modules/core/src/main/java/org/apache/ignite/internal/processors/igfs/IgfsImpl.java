@@ -237,7 +237,9 @@ public final class IgfsImpl implements IgfsEx {
 
         for (CacheConfiguration cacheCfg : igfsCtx.kernalContext().config().getCacheConfiguration()) {
             if (F.eq(dataCacheName, cacheCfg.getName())) {
-                EvictionPolicy evictPlc = cacheCfg.getEvictionPolicy();
+                EvictionPolicy evictPlc = cacheCfg.getEvictionPolicyFactory() != null ?
+                    (EvictionPolicy)cacheCfg.getEvictionPolicyFactory().create()
+                    : cacheCfg.getEvictionPolicy();
 
                 if (evictPlc != null & evictPlc instanceof IgfsPerBlockLruEvictionPolicy)
                     this.evictPlc = (IgfsPerBlockLruEvictionPolicy)evictPlc;
@@ -247,7 +249,7 @@ public final class IgfsImpl implements IgfsEx {
         }
 
         dualPool = secondaryFs != null ? new IgniteThreadPoolExecutor(4, Integer.MAX_VALUE, 5000L,
-            new SynchronousQueue<Runnable>(), new IgfsThreadFactory(cfg.getName()), null) : null;
+            new SynchronousQueue<Runnable>(), new IgfsThreadFactory(cfg.getName())) : null;
     }
 
     /** {@inheritDoc} */

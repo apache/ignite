@@ -35,7 +35,7 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.likeVector;
  * @see <a href="http://mathworld.wolfram.com/LUDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/LU_decomposition">Wikipedia</a>
  *
- * TODO: Maybe we should make this class (and other decompositions) Externalizable.
+ * <p>TODO: IGNITE-5828, Maybe we should make this class (and other decompositions) Externalizable.</p>
  */
 public class LUDecomposition implements Destroyable {
     /** Default bound to determine effective singularity in LU decomposition. */

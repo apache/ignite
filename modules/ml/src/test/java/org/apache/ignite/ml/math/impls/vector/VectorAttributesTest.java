@@ -75,7 +75,7 @@ public class VectorAttributesTest {
             "isRandomAccess", "isDistributed"),
         new Specification(new MatrixVectorView(new DenseLocalOnHeapMatrix(1, 1), 0, 0, 1, 1),
             DenseLocalOnHeapVector.class, "isDense",
-            "isRandomAccess", "isDistributed"), // todo find out why "isSequentialAccess" fails here
+            "isRandomAccess", "isDistributed"), // TODO: IGNTIE-5723, find out why "isSequentialAccess" fails here
         new Specification(new MatrixVectorView(new DenseLocalOffHeapMatrix(1, 1), 0, 0, 1, 1),
             DenseLocalOffHeapVector.class, "isDense",
             "isRandomAccess", "isDistributed"));

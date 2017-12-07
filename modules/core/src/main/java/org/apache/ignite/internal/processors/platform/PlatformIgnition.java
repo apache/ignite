@@ -49,9 +49,8 @@ public class PlatformIgnition {
      * @param factoryId Factory ID.
      * @param envPtr Environment pointer.
      * @param dataPtr Optional pointer to additional data required for startup.
-     * @return Ignite instance.
      */
-    public static synchronized PlatformProcessor start(@Nullable String springCfgPath,
+    public static synchronized void start(@Nullable String springCfgPath,
         @Nullable String igniteInstanceName, int factoryId, long envPtr, long dataPtr) {
         if (envPtr <= 0)
             throw new IgniteException("Environment pointer must be positive.");
@@ -64,7 +63,7 @@ public class PlatformIgnition {
             PlatformBootstrap bootstrap = bootstrap(factoryId);
 
             // This should be done before Spring XML initialization so that redirected stream is picked up.
-            bootstrap.init();
+            bootstrap.init(dataPtr);
 
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg = configuration(springCfgPath);
 
@@ -73,13 +72,11 @@ public class PlatformIgnition {
             else
                 igniteInstanceName = cfg.get1().getIgniteInstanceName();
 
-            PlatformProcessor proc = bootstrap.start(cfg.get1(), cfg.get2(), envPtr, dataPtr);
+            PlatformProcessor proc = bootstrap.start(cfg.get1(), cfg.get2(), envPtr);
 
             PlatformProcessor old = instances.put(igniteInstanceName, proc);
 
             assert old == null;
-
-            return proc;
         }
         finally {
             Thread.currentThread().setContextClassLoader(oldClsLdr);

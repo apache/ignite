@@ -55,16 +55,20 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -114,16 +118,18 @@ import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_START_JAVA7;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
@@ -184,9 +190,38 @@ public class IgnitionEx {
     static {
         // Check 1.8 just in case for forward compatibility.
         if (!U.jdkVersion().contains("1.7") &&
-            !U.jdkVersion().contains("1.8"))
-            throw new IllegalStateException("Ignite requires Java 7 or above. Current Java version " +
+            !U.jdkVersion().contains("1.8")) {
+            throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
                 "is not supported: " + U.jdkVersion());
+        }
+
+        String jreVer = U.jreVersion();
+
+        if (jreVer.startsWith("1.7")) {
+            int upd = jreVer.indexOf('_');
+            int beta = jreVer.indexOf('-');
+
+            if (beta < 0)
+                beta = jreVer.length();
+
+            if (upd > 0 && beta > 0) {
+                try {
+                    int update = Integer.parseInt(jreVer.substring(upd + 1, beta));
+
+                    boolean forceJ7 = IgniteSystemProperties.getBoolean(IGNITE_FORCE_START_JAVA7, false);
+
+                    if (update < 71 && !forceJ7) {
+                        throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
+                            "is not supported: " + jreVer);
+                    }
+                    else if (forceJ7)
+                        System.err.println("Ignite requires Java 1.7.0_71 or above. Start on your own risk.");
+                }
+                catch (NumberFormatException ignore) {
+                    // No-op
+                }
+            }
+        }
 
         // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.
         // For details please see:
@@ -525,7 +560,6 @@ public class IgnitionEx {
      * an exception will be thrown.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
-     * failIfStarted Throw or not an exception if grid is already started.
      * @param failIfStarted When flag is {@code true} and grid with specified name has been already started
      *      the exception is thrown. Otherwise the existing instance of the grid is returned.
      * @return Started grid or existing grid.
@@ -1510,7 +1544,7 @@ public class IgnitionEx {
         private ThreadPoolExecutor igfsExecSvc;
 
         /** Data streamer executor service. */
-        private ThreadPoolExecutor dataStreamerExecSvc;
+        private StripedExecutor dataStreamerExecSvc;
 
         /** REST requests executor service. */
         private ThreadPoolExecutor restExecSvc;
@@ -1697,7 +1731,8 @@ public class IgnitionEx {
                 cfg.getPublicThreadPoolSize(),
                 cfg.getPublicThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.PUBLIC_POOL);
 
             execSvc.allowCoreThreadTimeOut(true);
 
@@ -1709,7 +1744,8 @@ public class IgnitionEx {
                 cfg.getServiceThreadPoolSize(),
                 cfg.getServiceThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.SERVICE_POOL);
 
             svcExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1721,13 +1757,18 @@ public class IgnitionEx {
                 cfg.getSystemThreadPoolSize(),
                 cfg.getSystemThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.SYSTEM_POOL);
 
             sysExecSvc.allowCoreThreadTimeOut(true);
 
             validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
-            stripedExecSvc = new StripedExecutor(cfg.getStripedPoolSize(), cfg.getIgniteInstanceName(), "sys", log);
+            stripedExecSvc = new StripedExecutor(
+                cfg.getStripedPoolSize(),
+                cfg.getIgniteInstanceName(),
+                "sys",
+                log);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1741,7 +1782,8 @@ public class IgnitionEx {
                 cfg.getManagementThreadPoolSize(),
                 cfg.getManagementThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.MANAGEMENT_POOL);
 
             mgmtExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1756,20 +1798,17 @@ public class IgnitionEx {
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.P2P_POOL);
 
             p2pExecSvc.allowCoreThreadTimeOut(true);
 
-            // Note that we do not pre-start threads here as this pool may not be needed.
-            dataStreamerExecSvc = new IgniteThreadPoolExecutor(
-                "data-streamer",
+            dataStreamerExecSvc = new StripedExecutor(
+                cfg.getDataStreamerThreadPoolSize(),
                 cfg.getIgniteInstanceName(),
-                cfg.getDataStreamerThreadPoolSize(),
-                cfg.getDataStreamerThreadPoolSize(),
-                DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
-
-            dataStreamerExecSvc.allowCoreThreadTimeOut(true);
+                "data-streamer",
+                log,
+                true);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
@@ -1779,8 +1818,7 @@ public class IgnitionEx {
                 cfg.getIgfsThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
-                new IgfsThreadFactory(cfg.getIgniteInstanceName(), "igfs"),
-                null /* Abort policy will be used. */);
+                new IgfsThreadFactory(cfg.getIgniteInstanceName(), "igfs"));
 
             igfsExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1815,7 +1853,8 @@ public class IgnitionEx {
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheKeepAliveTime(),
-                new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.UTILITY_CACHE_POOL);
 
             utilityCacheExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1825,7 +1864,8 @@ public class IgnitionEx {
                 1,
                 1,
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.AFFINITY_POOL);
 
             affExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1838,7 +1878,8 @@ public class IgnitionEx {
                     cpus,
                     cpus * 2,
                     3000L,
-                    new LinkedBlockingQueue<Runnable>(1000)
+                    new LinkedBlockingQueue<Runnable>(1000),
+                    GridIoPolicy.IDX_POOL
                 );
             }
 
@@ -1850,7 +1891,8 @@ public class IgnitionEx {
                 cfg.getQueryThreadPoolSize(),
                 cfg.getQueryThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.QUERY_POOL);
 
             qryExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1860,7 +1902,8 @@ public class IgnitionEx {
                 2,
                 2,
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.SCHEMA_POOL);
 
             schemaExecSvc.allowCoreThreadTimeOut(true);
 
@@ -2123,7 +2166,7 @@ public class IgnitionEx {
             if (myCfg.getUserAttributes() == null)
                 myCfg.setUserAttributes(Collections.<String, Object>emptyMap());
 
-            if (myCfg.getMBeanServer() == null)
+            if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
                 myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
 
             Marshaller marsh = myCfg.getMarshaller();
@@ -2176,15 +2219,27 @@ public class IgnitionEx {
                 myCfg.setExecutorConfiguration(clone);
             }
 
-            if (!myCfg.isClientMode() && myCfg.getMemoryConfiguration() == null) {
-                MemoryConfiguration memCfg = new MemoryConfiguration();
-
-                memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-
-                myCfg.setMemoryConfiguration(memCfg);
-            }
+            initializeDataStorageConfiguration(myCfg);
 
             return myCfg;
+        }
+
+        /**
+         * @param cfg Ignite configuration.
+         */
+        private void initializeDataStorageConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
+            if (cfg.getDataStorageConfiguration() != null &&
+                (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)) {
+                throw new IgniteCheckedException("Data storage can be configured with either legacy " +
+                    "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
+                    "but not both.");
+            }
+
+            if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)
+                convertLegacyDataStorageConfigurationToNew(cfg);
+
+            if (!cfg.isClientMode() && cfg.getDataStorageConfiguration() == null)
+                cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         }
 
         /**
@@ -2573,6 +2628,11 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If registration failed.
          */
         private void registerFactoryMbean(MBeanServer srv) throws IgniteCheckedException {
+            if(U.IGNITE_MBEANS_DISABLED)
+                return;
+
+            assert srv != null;
+
             synchronized (mbeans) {
                 GridMBeanServerData data = mbeans.get(srv);
 
@@ -2623,6 +2683,9 @@ public class IgnitionEx {
          * Unregister delegate Mbean instance for {@link Ignition}.
          */
         private void unregisterFactoryMBean() {
+            if(U.IGNITE_MBEANS_DISABLED)
+                return;
+
             synchronized (mbeans) {
                 Iterator<Entry<MBeanServer, GridMBeanServerData>> iter = mbeans.entrySet().iterator();
 
@@ -2739,5 +2802,112 @@ public class IgnitionEx {
                 this.cnt = cnt;
             }
         }
+    }
+
+    /**
+     * @param cfg Ignite Configuration with legacy data storage configuration.
+     */
+    private static void convertLegacyDataStorageConfigurationToNew(
+        IgniteConfiguration cfg) throws IgniteCheckedException {
+        PersistentStoreConfiguration psCfg = cfg.getPersistentStoreConfiguration();
+
+        boolean persistenceEnabled = psCfg != null;
+
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+        MemoryConfiguration memCfg = cfg.getMemoryConfiguration() != null ?
+            cfg.getMemoryConfiguration() : new MemoryConfiguration();
+
+        dsCfg.setConcurrencyLevel(memCfg.getConcurrencyLevel());
+        dsCfg.setPageSize(memCfg.getPageSize());
+        dsCfg.setSystemRegionInitialSize(memCfg.getSystemCacheInitialSize());
+        dsCfg.setSystemRegionMaxSize(memCfg.getSystemCacheMaxSize());
+
+        List<DataRegionConfiguration> optionalDataRegions = new ArrayList<>();
+
+        boolean customDfltPlc = false;
+
+        if (memCfg.getMemoryPolicies() != null) {
+            for (MemoryPolicyConfiguration mpc : memCfg.getMemoryPolicies()) {
+                DataRegionConfiguration region = new DataRegionConfiguration();
+
+                region.setPersistenceEnabled(persistenceEnabled);
+
+                if (mpc.getInitialSize() != 0L)
+                    region.setInitialSize(mpc.getInitialSize());
+
+                region.setEmptyPagesPoolSize(mpc.getEmptyPagesPoolSize());
+                region.setEvictionThreshold(mpc.getEvictionThreshold());
+                region.setMaxSize(mpc.getMaxSize());
+                region.setName(mpc.getName());
+                region.setPageEvictionMode(mpc.getPageEvictionMode());
+                region.setMetricsRateTimeInterval(mpc.getRateTimeInterval());
+                region.setMetricsSubIntervalCount(mpc.getSubIntervals());
+                region.setSwapPath(mpc.getSwapFilePath());
+                region.setMetricsEnabled(mpc.isMetricsEnabled());
+
+                if (persistenceEnabled)
+                    region.setCheckpointPageBufferSize(psCfg.getCheckpointingPageBufferSize());
+
+                if (mpc.getName() == null) {
+                    throw new IgniteCheckedException(new IllegalArgumentException(
+                        "User-defined MemoryPolicyConfiguration must have non-null and non-empty name."));
+                }
+
+                if (mpc.getName().equals(memCfg.getDefaultMemoryPolicyName())) {
+                    customDfltPlc = true;
+
+                    dsCfg.setDefaultDataRegionConfiguration(region);
+                } else
+                    optionalDataRegions.add(region);
+            }
+        }
+
+        if (!optionalDataRegions.isEmpty())
+            dsCfg.setDataRegionConfigurations(optionalDataRegions.toArray(
+                new DataRegionConfiguration[optionalDataRegions.size()]));
+
+        if (!customDfltPlc) {
+            if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(memCfg.getDefaultMemoryPolicyName())) {
+                throw new IgniteCheckedException(new IllegalArgumentException("User-defined default MemoryPolicy " +
+                    "name must be presented among configured MemoryPolices: " + memCfg.getDefaultMemoryPolicyName()));
+            }
+
+            dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(memCfg.getDefaultMemoryPolicySize())
+                .setName(memCfg.getDefaultMemoryPolicyName())
+                .setPersistenceEnabled(persistenceEnabled));
+        } else {
+            if (memCfg.getDefaultMemoryPolicySize() != DFLT_MEMORY_POLICY_MAX_SIZE)
+                throw new IgniteCheckedException(new IllegalArgumentException("User-defined MemoryPolicy " +
+                    "configuration and defaultMemoryPolicySize properties are set at the same time."));
+        }
+
+        if (persistenceEnabled) {
+            dsCfg.setCheckpointFrequency(psCfg.getCheckpointingFrequency());
+            dsCfg.setCheckpointThreads(psCfg.getCheckpointingThreads());
+            dsCfg.setCheckpointWriteOrder(psCfg.getCheckpointWriteOrder());
+            dsCfg.setFileIOFactory(psCfg.getFileIOFactory());
+            dsCfg.setLockWaitTime(psCfg.getLockWaitTime());
+            dsCfg.setStoragePath(psCfg.getPersistentStorePath());
+            dsCfg.setMetricsRateTimeInterval(psCfg.getRateTimeInterval());
+            dsCfg.setMetricsSubIntervalCount(psCfg.getSubIntervals());
+            dsCfg.setWalThreadLocalBufferSize(psCfg.getTlbSize());
+            dsCfg.setWalArchivePath(psCfg.getWalArchivePath());
+            dsCfg.setWalAutoArchiveAfterInactivity(psCfg.getWalAutoArchiveAfterInactivity());
+            dsCfg.setWalFlushFrequency(psCfg.getWalFlushFrequency());
+            dsCfg.setWalFsyncDelayNanos(psCfg.getWalFsyncDelayNanos());
+            dsCfg.setWalHistorySize(psCfg.getWalHistorySize());
+            dsCfg.setWalMode(psCfg.getWalMode());
+            dsCfg.setWalRecordIteratorBufferSize(psCfg.getWalRecordIteratorBufferSize());
+            dsCfg.setWalSegments(psCfg.getWalSegments());
+            dsCfg.setWalSegmentSize(psCfg.getWalSegmentSize());
+            dsCfg.setWalPath(psCfg.getWalStorePath());
+            dsCfg.setAlwaysWriteFullPages(psCfg.isAlwaysWriteFullPages());
+            dsCfg.setMetricsEnabled(psCfg.isMetricsEnabled());
+            dsCfg.setWriteThrottlingEnabled(psCfg.isWriteThrottlingEnabled());
+        }
+
+        cfg.setDataStorageConfiguration(dsCfg);
     }
 }

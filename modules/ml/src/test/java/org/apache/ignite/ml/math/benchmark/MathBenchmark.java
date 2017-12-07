@@ -197,7 +197,7 @@ class MathBenchmark {
 
     /** */
     interface BenchmarkCode {
-        // todo find out why Callable<Void> failed to work here
+        //TODO: IGNITE-5827, find out why Callable<Void> failed to work here
 
         /** */
         void call() throws Exception;

@@ -177,7 +177,7 @@ public class PivotedVectorViewConstructorTest {
     }
 
     /** */
-    private static class Metric { // todo consider if softer tolerance (like say 0.1 or 0.01) would make sense here
+    private static class Metric { // TODO: IGNITE-5824, consider if softer tolerance (like say 0.1 or 0.01) would make sense here
         /** */
         private final double exp;
 

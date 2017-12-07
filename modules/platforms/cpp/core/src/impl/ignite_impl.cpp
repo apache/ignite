@@ -19,29 +19,23 @@
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
+using namespace ignite::impl::interop;
+using namespace ignite::impl::binary;
+
+using namespace ignite::binary;
 
 namespace ignite
-{    
+{
     namespace impl
     {
-        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
+        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env) :
+            InteropTarget(env, static_cast<jobject>(env.Get()->GetProcessor()), true),
             env(env),
-            javaRef(javaRef)
+            txImpl(),
+            prjImpl()
         {
-            IgniteError err;
-
-            txImpl = InternalGetTransactions(err);
-
-            IgniteError::ThrowIfNeeded(err);
-
-            prjImpl = InternalGetProjection(err);
-
-            IgniteError::ThrowIfNeeded(err);
-        }
-
-        IgniteImpl::~IgniteImpl()
-        {
-            JniContext::Release(javaRef);
+            txImpl.Init(common::Bind(this, &IgniteImpl::InternalGetTransactions));
+            prjImpl.Init(common::Bind(this, &IgniteImpl::InternalGetProjection));
         }
 
         const char* IgniteImpl::GetName() const
@@ -66,41 +60,61 @@ namespace ignite
 
         IgniteImpl::SP_ComputeImpl IgniteImpl::GetCompute()
         {
-            cluster::SP_ClusterGroupImpl serversCluster = prjImpl.Get()->ForServers();
+            cluster::SP_ClusterGroupImpl serversCluster = prjImpl.Get().Get()->ForServers();
 
             return serversCluster.Get()->GetCompute();
         }
 
-        IgniteImpl::SP_TransactionsImpl IgniteImpl::InternalGetTransactions(IgniteError &err)
+        transactions::TransactionsImpl* IgniteImpl::InternalGetTransactions()
         {
-            SP_TransactionsImpl res;
+            IgniteError err;
 
-            JniErrorInfo jniErr;
+            jobject txJavaRef = InOpObject(ProcessorOp::GET_TRANSACTIONS, err);
 
-            jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
+            IgniteError::ThrowIfNeeded(err);
 
-            if (txJavaRef)
-                res = SP_TransactionsImpl(new transactions::TransactionsImpl(env, txJavaRef));
-            else
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            if (!txJavaRef)
+                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not get Transactions instance.");
 
-            return res;
+            return new transactions::TransactionsImpl(env, txJavaRef);
         }
 
-        cluster::SP_ClusterGroupImpl IgniteImpl::InternalGetProjection(IgniteError& err)
+        cluster::ClusterGroupImpl* IgniteImpl::InternalGetProjection()
         {
-            cluster::SP_ClusterGroupImpl res;
+            IgniteError err;
 
-            JniErrorInfo jniErr;
+            jobject clusterGroupJavaRef = InOpObject(ProcessorOp::GET_CLUSTER_GROUP, err);
 
-            jobject txJavaRef = env.Get()->Context()->ProcessorProjection(javaRef, &jniErr);
+            IgniteError::ThrowIfNeeded(err);
 
-            if (txJavaRef)
-                res = cluster::SP_ClusterGroupImpl(new cluster::ClusterGroupImpl(env, txJavaRef));
-            else
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            if (!clusterGroupJavaRef)
+                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not get ClusterGroup instance.");
 
-            return res;
+            return new cluster::ClusterGroupImpl(env, clusterGroupJavaRef);
+        }
+
+        cache::CacheImpl* IgniteImpl::GetOrCreateCache(const char* name, IgniteError& err, int32_t op)
+        {
+            SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
+            InteropMemory* mem0 = mem.Get();
+            InteropOutputStream out(mem0);
+            BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
+            BinaryRawWriter rawWriter(&writer);
+
+            rawWriter.WriteString(name);
+
+            out.Synchronize();
+
+            jobject cacheJavaRef = InStreamOutObject(op, *mem0, err);
+
+            if (!cacheJavaRef)
+            {
+                return NULL;
+            }
+
+            char* name0 = common::CopyChars(name);
+
+            return new cache::CacheImpl(name0, env, cacheJavaRef);
         }
     }
 }

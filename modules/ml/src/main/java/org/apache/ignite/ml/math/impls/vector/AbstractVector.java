@@ -38,6 +38,7 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
 import org.jetbrains.annotations.NotNull;
 
@@ -903,5 +904,12 @@ public abstract class AbstractVector implements Vector {
         AbstractVector that = (AbstractVector)obj;
 
         return (sto != null ? sto.equals(that.sto) : that.sto == null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void compute(int idx, IgniteIntDoubleToDoubleBiFunction f) {
+        storageSet(idx, f.apply(idx, storageGet(idx)));
+        lenSq = 0.0;
+        maxElm = minElm = null;
     }
 }

@@ -105,6 +105,13 @@ namespace ignite
                  */
                 virtual int64_t AffectedRows() const;
 
+                /**
+                 * Move to the next result set.
+                 *
+                 * @return Operatoin result.
+                 */
+                virtual SqlResult::Type NextResultSet();
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(ColumnMetadataQuery);
 
@@ -129,6 +136,9 @@ namespace ignite
 
                 /** Query executed. */
                 bool executed;
+
+                /** Fetched flag. */
+                bool fetched;
 
                 /** Fetched metadata. */
                 meta::ColumnMetaVector meta;

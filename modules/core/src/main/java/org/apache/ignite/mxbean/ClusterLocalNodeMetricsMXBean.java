@@ -90,6 +90,10 @@ public interface ClusterLocalNodeMetricsMXBean extends ClusterMetrics {
     public int getTotalExecutedJobs();
 
     /** {@inheritDoc} */
+    @MXBeanDescription("Total time all finished jobs takes to execute on the node.")
+    public long getTotalJobsExecutionTime();
+
+    /** {@inheritDoc} */
     @MXBeanDescription("Maximum time a job ever spent waiting in a queue to be executed.")
     public long getMaximumJobWaitTime();
 

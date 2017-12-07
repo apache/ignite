@@ -65,7 +65,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
@@ -202,7 +202,7 @@ public class IgfsDataManager extends IgfsManager {
         grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
             ((IgfsGroupDataBlocksKeyMapper)mapper).getGroupSize() : 1;
 
-        grpBlockSize = igfsCtx.configuration().getBlockSize() * grpSize;
+        grpBlockSize = igfsCtx.configuration().getBlockSize() * (long)grpSize;
 
         assert grpBlockSize != 0;
 
@@ -243,7 +243,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Maximum number of bytes for IGFS data cache.
      */
     public long maxSpaceSize() {
-        MemoryPolicy plc = dataCachePrj.context().memoryPolicy();
+        DataRegion plc = dataCachePrj.context().dataRegion();
 
         long size = plc != null ? plc.config().getMaxSize() : 0;
 

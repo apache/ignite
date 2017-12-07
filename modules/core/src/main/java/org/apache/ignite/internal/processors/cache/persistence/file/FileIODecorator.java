@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
  * Decorator class for File I/O
  */
 public class FileIODecorator implements FileIO {
-
     /** File I/O delegate */
     private final FileIO delegate;
 

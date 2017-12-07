@@ -42,7 +42,7 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
         CacheWriteSynchronizationMode.FULL_SYNC, CacheWriteSynchronizationMode.FULL_ASYNC};
 
     /** Client grid. */
-    private Ignite clientGrid;
+    Ignite clientGrid;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -94,7 +94,7 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
      * @param cfg Config.
      * @throws Exception If failed.
      */
-    private void createCacheAndTestEvcition(CacheConfiguration<Object, Object> cfg) throws Exception {
+    protected void createCacheAndTestEvcition(CacheConfiguration<Object, Object> cfg) throws Exception {
         IgniteCache<Object, Object> cache = clientGrid.getOrCreateCache(cfg);
 
         for (int i = 1; i <= ENTRIES; i++) {
@@ -121,7 +121,7 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
         System.out.println(">>> Resulting size: " + resultingSize);
 
         // Eviction started, no OutOfMemory occurred, success.
-        assertTrue(resultingSize < ENTRIES);
+        assertTrue(resultingSize < ENTRIES * 10 / 11);
 
         clientGrid.destroyCache(cfg.getName());
     }

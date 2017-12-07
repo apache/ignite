@@ -18,20 +18,28 @@
 package org.apache.ignite.internal;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
 import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -42,6 +50,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 
 /**
  * Grid node metrics self test.
@@ -111,7 +122,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         final IgniteCache cache = ignite.getOrCreateCache(CACHE_NAME);
 
-        MemoryMetricsImpl memMetrics = getDefaultMemoryPolicyMetrics(ignite);
+        DataRegionMetricsImpl memMetrics = getDefaultMemoryPolicyMetrics(ignite);
 
         memMetrics.enableMetrics();
 
@@ -128,8 +139,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @param ignite Ignite instance.
      */
-    private MemoryMetricsImpl getDefaultMemoryPolicyMetrics(IgniteEx ignite) throws IgniteCheckedException {
-        return ignite.context().cache().context().database().memoryPolicy(null).memoryMetrics();
+    private DataRegionMetricsImpl getDefaultMemoryPolicyMetrics(IgniteEx ignite) throws IgniteCheckedException {
+        return ignite.context().cache().context().database().dataRegion(null).memoryMetrics();
     }
 
     /**
@@ -218,6 +229,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assert metrics.getTotalExecutedJobs() == 1;
         assert metrics.getTotalRejectedJobs() == 0;
         assert metrics.getTotalExecutedTasks() == 1;
+        assert metrics.getTotalJobsExecutionTime() > 0;
 
         assertTrue("MaximumJobExecuteTime=" + metrics.getMaximumJobExecuteTime() +
             " is less than AverageJobExecuteTime=" + metrics.getAverageJobExecuteTime(),
@@ -274,6 +286,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assert metrics.getTotalExecutedJobs() == 0;
         assert metrics.getTotalRejectedJobs() == 0;
         assert metrics.getTotalExecutedTasks() == 0;
+        assert metrics.getTotalJobsExecutionTime() == 0;
 
         assertTrue("MaximumJobExecuteTime=" + metrics.getMaximumJobExecuteTime() +
             " is less than AverageJobExecuteTime=" + metrics.getAverageJobExecuteTime(),
@@ -360,6 +373,44 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test JMX metrics.
+     *
+     * @throws Exception If failed.
+     */
+    public void testJmxClusterMetrics() throws Exception {
+        Ignite node = grid();
+
+        Ignite node1 = startGrid(1);
+
+        Ignition.setClientMode(true);
+
+        Ignite node2 = startGrid(2);
+
+        waitForDiscovery(node2, node1, node);
+
+        JmxClusterMetricsHelper h = new JmxClusterMetricsHelper(node.configuration());
+
+        assertEquals(node.cluster().topologyVersion(), h.attr("TopologyVersion"));
+
+        assertEquals(2, h.attr("TotalServerNodes"));
+        assertEquals(1, h.attr("TotalClientNodes"));
+
+        assertEquals(3, h.countNodes(ATTR_BUILD_VER, VER_STR, true, true));
+        assertEquals(2, h.countNodes(ATTR_BUILD_VER, VER_STR, true, false));
+        assertEquals(1, h.countNodes(ATTR_BUILD_VER, VER_STR, false, true));
+        assertEquals(0, h.countNodes(ATTR_BUILD_VER, VER_STR, false, false));
+
+        assertEquals(2, h.countNodes(ATTR_CLIENT_MODE, "false", true, true));
+        assertEquals(0, h.countNodes(ATTR_CLIENT_MODE, "false", false, false));
+        assertEquals(1, h.countNodes(ATTR_CLIENT_MODE, "true", true, true));
+
+        assertEquals(F.asMap(false, 2, true, 1), h.groupNodes(ATTR_CLIENT_MODE, true, true));
+        assertEquals(F.asMap(false, 2), h.groupNodes(ATTR_CLIENT_MODE, true, false));
+        assertEquals(F.asMap(true, 1), h.groupNodes(ATTR_CLIENT_MODE, false, true));
+        assertEquals(Collections.emptyMap(), h.groupNodes(ATTR_CLIENT_MODE, false, false));
+    }
+
+    /**
      * Test message.
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -374,5 +425,71 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     @GridInternal
     private static class TestInternalTask extends GridTestTask {
         // No-op.
+    }
+
+    /**
+     * Helper class to simplify ClusterMetricsMXBean testing.
+     */
+    private static class JmxClusterMetricsHelper {
+        /** MBean server. */
+        private final MBeanServer mbeanSrv;
+
+        /** ClusterMetrics MX bean name. */
+        private final ObjectName mbean;
+
+        /**
+         * @param cfg Ignite configuration.
+         * @throws MalformedObjectNameException Thrown in case of any errors.
+         */
+        private JmxClusterMetricsHelper(IgniteConfiguration cfg) throws MalformedObjectNameException {
+            this.mbeanSrv = cfg.getMBeanServer();
+
+            this.mbean = U.makeMBeanName(cfg.getIgniteInstanceName(), "Kernal",
+                ClusterMetricsMXBeanImpl.class.getSimpleName());
+        }
+
+        /**
+         * Invoke "countNodes" method through MBean server.
+         *
+         * @param attrName Node attribute name,
+         * @param attrVal Node attribute value,
+         * @param srv Include server nodes.
+         * @param client Include client nodes.
+         * @return Count of nodes filtered by node attribute.
+         * @throws Exception If failed.
+         */
+        private int countNodes(String attrName, String attrVal, boolean srv, boolean client) throws Exception {
+            String[] signature = {"java.lang.String", "java.lang.String", "boolean", "boolean"};
+            Object[] params = {attrName, attrVal, srv, client};
+
+            return (int)mbeanSrv.invoke(mbean, "countNodes", params, signature);
+        }
+
+        /**
+         * Invoke "groupNodes" method through MBean server.
+         *
+         * @param attrName Node attribute name.
+         * @param srv Include server nodes.
+         * @param client Include client nodes.
+         * @return The number of nodes grouped by node attribute name.
+         * @throws Exception If failed.
+         */
+        private Map groupNodes(String attrName, boolean srv, boolean client) throws Exception {
+            String[] signature = {"java.lang.String", "boolean", "boolean"};
+            Object[] params = {attrName, srv, client};
+
+            return (Map)mbeanSrv.invoke(mbean, "groupNodes", params, signature);
+        }
+
+        /**
+         * Get MBean attribute through MBean server.
+         *
+         * @param name Attribute name.
+         * @return Current value of attribute.
+         * @throws Exception If failed.
+         */
+        private Object attr(String name) throws Exception {
+            return mbeanSrv.getAttribute(mbean, name);
+        }
     }
 }

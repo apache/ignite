@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import javax.cache.Cache;
+import javax.cache.integration.CompletionListener;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -41,8 +53,8 @@ import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
-import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryProxy;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
@@ -62,19 +74,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
-import javax.cache.integration.CompletionListener;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 
 /**
  * Native cache wrapper implementation.
@@ -931,7 +930,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Arguments.
      */
-    @Nullable private Object[] readQueryArgs(BinaryRawReaderEx reader) {
+    @Nullable public static Object[] readQueryArgs(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         if (cnt > 0) {
@@ -1009,7 +1008,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             }
 
             case OP_WITH_NO_RETRIES: {
-                CacheOperationContext opCtx = cache.operationContext();
+                CacheOperationContext opCtx = cache.context().operationContextPerCall();
 
                 if (opCtx != null && opCtx.noRetries())
                     return this;
@@ -1018,7 +1017,9 @@ public class PlatformCache extends PlatformAbstractTarget {
             }
 
             case OP_WITH_SKIP_STORE: {
-                if (cache.delegate().skipStore())
+                CacheOperationContext opCtx = cache.context().operationContextPerCall();
+
+                if (opCtx != null && opCtx.skipStore())
                     return this;
 
                 return copy(rawCache.withSkipStore(), keepBinary);
@@ -1309,6 +1310,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         boolean distrJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
+        boolean lazy = reader.readBoolean();
         int timeout = reader.readInt();
         boolean replicated = reader.readBoolean();
         boolean collocated = reader.readBoolean();
@@ -1320,6 +1322,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 .setLocal(loc)
                 .setDistributedJoins(distrJoins)
                 .setEnforceJoinOrder(enforceJoinOrder)
+                .setLazy(lazy)
                 .setTimeout(timeout, TimeUnit.MILLISECONDS)
                 .setReplicatedOnly(replicated)
                 .setCollocated(collocated)

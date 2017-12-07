@@ -122,7 +122,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         final boolean deserializeBinary,
         final boolean recovery,
         final boolean skipVals,
-        boolean canRemap,
         final boolean needVer
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
@@ -167,7 +166,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             skipStore,
-            canRemap,
             needVer);
     }
 
@@ -202,7 +200,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             deserializeBinary,
             expiryPlc,
             skipVals,
-            /*can remap*/true,
             needVer,
             /*keepCacheObjects*/true,
             recovery);
@@ -433,7 +430,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         assert nodeId != null;
         assert res != null;
 
-        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>mvccFuture(res.version(),
+        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>versionedFuture(res.version(),
             res.futureId());
 
         if (fut != null)
@@ -466,9 +463,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
-
-        if (!ctx.mvcc().addFuture(fut))
-            throw new IllegalStateException("Duplicate future ID: " + fut);
 
         fut.map();
 
@@ -540,7 +534,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             ver = cand.version();
 
                             if (map == null) {
-                                Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
+                                Collection<ClusterNode> affNodes = CU.affinityNodes(ctx, cand.topologyVersion());
 
                                 if (F.isEmpty(affNodes))
                                     return;
@@ -663,7 +657,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                             if (cand != null) {
                                 if (map == null) {
-                                    Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
+                                    Collection<ClusterNode> affNodes = CU.affinityNodes(ctx, cand.topologyVersion());
 
                                     if (F.isEmpty(affNodes))
                                         return;

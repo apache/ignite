@@ -1043,6 +1043,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
+                        IgnitePredicate<ClusterNode> topologyPred = req.getTopologyPredicate();
+
+                        if (topologyPred == null && req.getTopologyPredicateBytes() != null) {
+                            topologyPred = U.unmarshal(marsh, req.getTopologyPredicateBytes(),
+                                U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                        }
+
                         // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.getSessionId(),
@@ -1051,6 +1058,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             dep,
                             req.getTaskClassName(),
                             req.topology(),
+                            topologyPred,
                             req.getStartTaskTime(),
                             endTime,
                             siblings,
@@ -1785,6 +1793,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 if (jobAlwaysActivate) {
                     if (metricsUpdateFreq > -1L)
                         updateJobMetrics();
+
+                    if (!activeJobs.remove(worker.getJobId(), worker))
+                        cancelledJobs.remove(worker.getJobId(), worker);
+
+                    heldJobs.remove(worker.getJobId());
                 }
                 else {
                     if (!rwLock.tryReadLock()) {
@@ -1794,6 +1807,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         return;
                     }
 
+                    if (!activeJobs.remove(worker.getJobId(), worker))
+                        cancelledJobs.remove(worker.getJobId(), worker);
+
+                    heldJobs.remove(worker.getJobId());
+
                     try {
                         handleCollisions();
                     }
@@ -1801,11 +1819,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         rwLock.readUnlock();
                     }
                 }
-
-                if (!activeJobs.remove(worker.getJobId(), worker))
-                    cancelledJobs.remove(worker.getJobId(), worker);
-
-                heldJobs.remove(worker.getJobId());
             }
         }
     }

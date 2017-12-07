@@ -191,6 +191,28 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
     /** {@inheritDoc} */
     @Override public Object readObjectOverride() throws ClassNotFoundException, IOException {
+        Object oldObj = curObj;
+
+        OptimizedClassDescriptor.ClassFields oldFields = curFields;
+
+        try {
+            return readObject0();
+        }
+        finally {
+            curObj = oldObj;
+
+            curFields = oldFields;
+        }
+    }
+
+    /**
+     * Reads object from stream.
+     *
+     * @return Object.
+     * @throws ClassNotFoundException If class was not found.
+     * @throws IOException In case of error.
+     */
+    private Object readObject0() throws ClassNotFoundException, IOException {
         curObj = null;
         curFields = null;
 

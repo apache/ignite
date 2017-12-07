@@ -184,6 +184,9 @@ public class GridBinaryMarshaller {
     public static final byte LINKED_HASH_SET = 4;
 
     /** */
+    public static final byte SINGLETON_LIST = 5;
+
+    /** */
     public static final byte HASH_MAP = 1;
 
     /** */

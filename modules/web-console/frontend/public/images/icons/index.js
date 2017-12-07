@@ -23,3 +23,6 @@ export manual from './manual.svg';
 export download from './download.svg';
 export filter from './filter.svg';
 export search from './search.svg';
+export refresh from './refresh.svg';
+export sort from './sort.svg';
+export info from './info.svg';

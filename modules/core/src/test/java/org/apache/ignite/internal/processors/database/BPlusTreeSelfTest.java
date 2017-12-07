@@ -17,14 +17,22 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,8 +40,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
+
+import com.google.common.base.Predicate;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -42,7 +52,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
@@ -54,6 +64,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -103,6 +114,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** */
     private static int RMV_INC = 1;
 
+    /** Forces printing lock/unlock events on the test tree */
+    private static boolean PRINT_LOCKS = false;
+
     /** */
     protected PageMemory pageMem;
 
@@ -112,11 +126,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Collection<Long> rmvdIds = new GridConcurrentHashSet<>();
 
+    /** Stop. */
+    private final AtomicBoolean stop = new AtomicBoolean();
 
-//    /** {@inheritDoc} */
-//    @Override protected long getTestTimeout() {
-//        return 25 * 60 * 1000;
-//    }
+    /** Future. */
+    private volatile GridCompoundFuture<?, ?> asyncRunFut;
 
     /**
      * Check that we do not keep any locks at the moment.
@@ -127,6 +141,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        stop.set(false);
+
         long seed = System.nanoTime();
 
         X.println("Test seed: " + seed + "L; // ");
@@ -156,6 +172,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         rnd = null;
 
         try {
+            if (asyncRunFut != null && !asyncRunFut.isDone()) {
+                stop.set(true);
+
+                try {
+                    asyncRunFut.cancel();
+                    asyncRunFut.get(60000);
+                }
+                catch (Throwable ex) {
+                    //Ignore
+                }
+            }
+
             if (reuseList != null) {
                 long size = reuseList.recycledPagesCount();
 
@@ -1062,10 +1090,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         for (long i = 15; i >= 0; i--)
             tree.put(i);
-
-
-
-
     }
 
     /**
@@ -1136,6 +1160,790 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(map.size(), size(tree.find(null, null)));
+
+        assertNoLocks();
+    }
+
+    /**
+     * Verifies that {@link BPlusTree#size} and {@link BPlusTree#size} methods behave correctly
+     * on single-threaded addition and removal of elements in random order.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testSizeForPutRmvSequential() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+        boolean DEBUG_PRINT = false;
+
+        int itemCnt = (int) Math.pow(MAX_PER_PAGE, 5) + rnd.nextInt(MAX_PER_PAGE * MAX_PER_PAGE);
+
+        Long[] items = new Long[itemCnt];
+        for (int i = 0; i < itemCnt; ++i)
+            items[i] = (long) i;
+
+        TestTree testTree = createTestTree(true);
+        TreeMap<Long,Long> goldenMap = new TreeMap<>();
+
+        assertEquals(0, testTree.size());
+        assertEquals(0, goldenMap.size());
+
+        final Predicate<Long> rowMatcher = new Predicate<Long>() {
+            @Override public boolean apply(Long row) {
+                return row % 7 == 0;
+            }
+        };
+
+        final BPlusTree.TreeRowClosure<Long, Long> rowClosure = new BPlusTree.TreeRowClosure<Long, Long>() {
+            @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
+                throws IgniteCheckedException {
+                return rowMatcher.apply(io.getLookupRow(tree, pageAddr, idx));
+            }
+        };
+
+        int correctMatchingRows = 0;
+
+        Collections.shuffle(Arrays.asList(items), rnd);
+
+        for (Long row : items) {
+            if (DEBUG_PRINT) {
+                X.println(" --> put(" + row + ")");
+                X.print(testTree.printTree());
+            }
+
+            assertEquals(goldenMap.put(row, row), testTree.put(row));
+            assertEquals(row, testTree.findOne(row));
+
+            if (rowMatcher.apply(row))
+                ++correctMatchingRows;
+
+            assertEquals(correctMatchingRows, testTree.size(rowClosure));
+
+            long correctSize = goldenMap.size();
+
+            assertEquals(correctSize, testTree.size());
+            assertEquals(correctSize, size(testTree.find(null, null)));
+
+            assertNoLocks();
+        }
+
+        Collections.shuffle(Arrays.asList(items), rnd);
+
+        for (Long row : items) {
+            if (DEBUG_PRINT) {
+                X.println(" --> rmv(" + row + ")");
+                X.print(testTree.printTree());
+            }
+
+            assertEquals(row, goldenMap.remove(row));
+            assertEquals(row, testTree.remove(row));
+            assertNull(testTree.findOne(row));
+
+            if (rowMatcher.apply(row))
+                --correctMatchingRows;
+
+            assertEquals(correctMatchingRows, testTree.size(rowClosure));
+
+            long correctSize = goldenMap.size();
+
+            assertEquals(correctSize, testTree.size());
+            assertEquals(correctSize, size(testTree.find(null, null)));
+
+            assertNoLocks();
+        }
+    }
+
+    /**
+     * Verifies that {@link BPlusTree#size()} method behaves correctly when run concurrently with
+     * {@link BPlusTree#put}, {@link BPlusTree#remove} methods. Please see details in
+     * {@link #doTestSizeForRandomPutRmvMultithreaded}.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSizeForRandomPutRmvMultithreaded_5_4() throws Exception {
+        MAX_PER_PAGE = 5;
+        CNT = 10_000;
+
+        doTestSizeForRandomPutRmvMultithreaded(4);
+    }
+
+    public void testSizeForRandomPutRmvMultithreaded_3_256() throws Exception {
+        MAX_PER_PAGE = 3;
+        CNT = 10_000;
+
+        doTestSizeForRandomPutRmvMultithreaded(256);
+    }
+
+    /**
+     * Verifies that {@link BPlusTree#size()} method behaves correctly when run between series of
+     * concurrent {@link BPlusTree#put}, {@link BPlusTree#remove} methods.
+     *
+     * @param rmvPutSlidingWindowSize Sliding window size (distance between items being deleted and added).
+     * @throws Exception If failed.
+     */
+    private void doTestSizeForRandomPutRmvMultithreaded(final int rmvPutSlidingWindowSize) throws Exception {
+        final TestTree tree = createTestTree(false);
+
+        final boolean DEBUG_PRINT = false;
+
+        final AtomicLong curRmvKey = new AtomicLong(0);
+        final AtomicLong curPutKey = new AtomicLong(rmvPutSlidingWindowSize);
+
+        for (long i = curRmvKey.get(); i < curPutKey.get(); ++i)
+            assertNull(tree.put(i));
+
+        final int putRmvThreadCnt = Math.min(Runtime.getRuntime().availableProcessors(), rmvPutSlidingWindowSize);
+
+        final int loopCnt = CNT / putRmvThreadCnt;
+
+        final CyclicBarrier putRmvOpBarrier = new CyclicBarrier(putRmvThreadCnt);
+        final CyclicBarrier sizeOpBarrier = new CyclicBarrier(putRmvThreadCnt);
+
+        IgniteInternalFuture<?> putRmvFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+
+                for (int i = 0; i < loopCnt && !stop.get(); ++i) {
+                    putRmvOpBarrier.await();
+
+                    Long putVal = curPutKey.getAndIncrement();
+
+                    if (DEBUG_PRINT || (i & 0x7ff) == 0)
+                        X.println(" --> put(" + putVal + ")");
+
+                    assertNull(tree.put(putVal));
+
+                    assertNoLocks();
+
+                    Long rmvVal = curRmvKey.getAndIncrement();
+
+                    if (DEBUG_PRINT || (i & 0x7ff) == 0)
+                        X.println(" --> rmv(" + rmvVal + ")");
+
+                    assertEquals(rmvVal, tree.remove(rmvVal));
+                    assertNull(tree.remove(rmvVal));
+
+                    assertNoLocks();
+
+                    if (stop.get())
+                        break;
+
+                    sizeOpBarrier.await();
+
+                    long correctSize = curPutKey.get() - curRmvKey.get();
+
+                    if (DEBUG_PRINT || (i & 0x7ff) == 0)
+                        X.println("====> correctSize=" + correctSize);
+
+                    assertEquals(correctSize, size(tree.find(null, null)));
+                    assertEquals(correctSize, tree.size());
+                }
+
+                return null;
+            }
+        }, putRmvThreadCnt, "put-remove-size");
+
+        IgniteInternalFuture<?> lockPrintingFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stop.get()) {
+                    Thread.sleep(5000);
+
+                    X.println(TestTree.printLocks());
+                }
+
+                return null;
+            }
+        }, 1, "printLocks");
+
+        asyncRunFut = new GridCompoundFuture<>();
+
+        asyncRunFut.add((IgniteInternalFuture) putRmvFut);
+        asyncRunFut.add((IgniteInternalFuture) lockPrintingFut);
+
+        asyncRunFut.markInitialized();
+
+        try {
+            putRmvFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stop.set(true);
+            putRmvOpBarrier.reset();
+            sizeOpBarrier.reset();
+
+            asyncRunFut.get();
+        }
+
+        tree.validateTree();
+
+        assertNoLocks();
+    }
+
+    /**
+     * Verifies that concurrent running of {@link BPlusTree#put} + {@link BPlusTree#remove} sequence
+     * and {@link BPlusTree#size} methods results in correct calculation of tree size.
+     *
+     * @see #doTestSizeForRandomPutRmvMultithreadedAsync doTestSizeForRandomPutRmvMultithreadedAsync() for details.
+     */
+    public void testSizeForRandomPutRmvMultithreadedAsync_16() throws Exception {
+        doTestSizeForRandomPutRmvMultithreadedAsync(16);
+    }
+
+    /**
+     * Verifies that concurrent running of {@link BPlusTree#put} + {@link BPlusTree#remove} sequence
+     * and {@link BPlusTree#size} methods results in correct calculation of tree size.
+     *
+     * @see #doTestSizeForRandomPutRmvMultithreadedAsync doTestSizeForRandomPutRmvMultithreadedAsync() for details.
+     */
+    public void testSizeForRandomPutRmvMultithreadedAsync_3() throws Exception {
+        doTestSizeForRandomPutRmvMultithreadedAsync(3);
+    }
+
+    /**
+     * Verifies that concurrent running of {@link BPlusTree#put} + {@link BPlusTree#remove} sequence
+     * and {@link BPlusTree#size} methods results in correct calculation of tree size.
+     *
+     * Since in the presence of concurrent modifications the size may differ from the actual one, the test maintains
+     * sliding window of records in the tree, uses a barrier between concurrent runs to limit runaway delta in
+     * the calculated size, and checks that the measured size lies within certain bounds.
+     *
+     * NB: This test has to be changed with the integration of IGNITE-3478.
+     *
+     */
+    public void doTestSizeForRandomPutRmvMultithreadedAsync(final int rmvPutSlidingWindowSize) throws Exception {
+        MAX_PER_PAGE = 5;
+
+        final boolean DEBUG_PRINT = false;
+
+        final TestTree tree = createTestTree(false);
+
+        final AtomicLong curRmvKey = new AtomicLong(0);
+        final AtomicLong curPutKey = new AtomicLong(rmvPutSlidingWindowSize);
+
+        for (long i = curRmvKey.get(); i < curPutKey.get(); ++i)
+            assertNull(tree.put(i));
+
+        final int putRmvThreadCnt = Math.min(Runtime.getRuntime().availableProcessors(), rmvPutSlidingWindowSize);
+        final int sizeThreadCnt = putRmvThreadCnt;
+
+        final CyclicBarrier putRmvOpBarrier = new CyclicBarrier(putRmvThreadCnt + sizeThreadCnt, new Runnable() {
+            @Override public void run() {
+                if (DEBUG_PRINT) {
+                    try {
+                        X.println("===BARRIER=== size=" + tree.size()
+                            + "; contents=[" + tree.findFirst() + ".." + tree.findLast() + "]"
+                            + "; rmvVal=" + curRmvKey.get() + "; putVal=" + curPutKey.get());
+
+                        X.println(tree.printTree());
+                    }
+                    catch (IgniteCheckedException e) {
+                        // ignore
+                    }
+                }
+            }
+        });
+
+        final int loopCnt = 500;
+
+        IgniteInternalFuture<?> putRmvFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < loopCnt && !stop.get(); ++i) {
+                    int order;
+                    try {
+                        order = putRmvOpBarrier.await();
+                    } catch (BrokenBarrierException e) {
+                        break;
+                    }
+
+                    Long putVal = curPutKey.getAndIncrement();
+
+                    if (DEBUG_PRINT || (i & 0x3ff) == 0)
+                        X.println(order + ": --> put(" + putVal + ")");
+
+                    assertNull(tree.put(putVal));
+
+                    Long rmvVal = curRmvKey.getAndIncrement();
+
+                    if (DEBUG_PRINT || (i & 0x3ff) == 0)
+                        X.println(order + ": --> rmv(" + rmvVal + ")");
+
+                    assertEquals(rmvVal, tree.remove(rmvVal));
+                    assertNull(tree.findOne(rmvVal));
+                }
+
+                return null;
+            }
+        }, putRmvThreadCnt, "put-remove");
+
+        IgniteInternalFuture<?> sizeFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+
+                final List<Long> treeContents = new ArrayList<>(rmvPutSlidingWindowSize * 2);
+
+                final BPlusTree.TreeRowClosure<Long, Long> rowDumper = new BPlusTree.TreeRowClosure<Long, Long>() {
+                    @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
+                        throws IgniteCheckedException {
+
+                        treeContents.add(io.getLookupRow(tree, pageAddr, idx));
+                        return true;
+                    }
+                };
+
+                for (long iter = 0; !stop.get(); ++iter) {
+                    int order = 0;
+
+                    try {
+                        order = putRmvOpBarrier.await();
+                    } catch (BrokenBarrierException e) {
+                        break;
+                    }
+
+                    long correctSize = curPutKey.get() - curRmvKey.get();
+
+                    treeContents.clear();
+                    long treeSize = tree.size(rowDumper);
+
+                    long minBound = correctSize - putRmvThreadCnt;
+                    long maxBound = correctSize + putRmvThreadCnt;
+
+                    if (DEBUG_PRINT || (iter & 0x3ff) == 0)
+                      X.println(order + ": size=" + treeSize + "; bounds=[" + minBound + ".." + maxBound
+                            + "]; contents=" + treeContents);
+
+                    if (treeSize < minBound || treeSize > maxBound) {
+                        fail("Tree size is not in bounds ["  + minBound + ".." + maxBound + "]: " + treeSize
+                            + "; Tree contents: " + treeContents);
+                    }
+                }
+
+                return null;
+            }
+        }, sizeThreadCnt, "size");
+
+        IgniteInternalFuture<?> lockPrintingFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stop.get()) {
+                    Thread.sleep(5000);
+
+                    X.println(TestTree.printLocks());
+                }
+
+                return null;
+            }
+        }, 1, "printLocks");
+
+        asyncRunFut = new GridCompoundFuture<>();
+
+        asyncRunFut.add((IgniteInternalFuture) putRmvFut);
+        asyncRunFut.add((IgniteInternalFuture) sizeFut);
+        asyncRunFut.add((IgniteInternalFuture) lockPrintingFut);
+
+        asyncRunFut.markInitialized();
+
+        try {
+            putRmvFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stop.set(true);
+            putRmvOpBarrier.reset();
+
+            asyncRunFut.get();
+        }
+
+        tree.validateTree();
+
+        assertNoLocks();
+    }
+
+    /**
+     * The test forces {@link BPlusTree#size} method to run into a livelock: during single run
+     * the method is picking up new pages which are concurrently added to the tree until the new pages are not added
+     * anymore. Test verifies that despite livelock condition a size from a valid range is returned.
+     *
+     * NB: This test has to be changed with the integration of IGNITE-3478.
+     *
+     * @throws Exception if test failed
+     */
+    public void testPutSizeLivelock() throws Exception {
+        MAX_PER_PAGE = 5;
+        CNT = 800;
+
+        final int SLIDING_WINDOW_SIZE = 16;
+        final boolean DEBUG_PRINT = false;
+
+        final TestTree tree = createTestTree(false);
+
+        final AtomicLong curRmvKey = new AtomicLong(0);
+        final AtomicLong curPutKey = new AtomicLong(SLIDING_WINDOW_SIZE);
+
+        for (long i = curRmvKey.get(); i < curPutKey.get(); ++i)
+            assertNull(tree.put(i));
+
+        final int hwThreads = Runtime.getRuntime().availableProcessors();
+        final int putRmvThreadCnt = Math.max(1, hwThreads / 2);
+        final int sizeThreadCnt = hwThreads - putRmvThreadCnt;
+
+        final CyclicBarrier putRmvOpBarrier = new CyclicBarrier(putRmvThreadCnt, new Runnable() {
+            @Override public void run() {
+                if (DEBUG_PRINT) {
+                    try {
+                        X.println("===BARRIER=== size=" + tree.size()
+                            + " [" + tree.findFirst() + ".." + tree.findLast() + "]");
+                    }
+                    catch (IgniteCheckedException e) {
+                        // ignore
+                    }
+                }
+            }
+        });
+
+        final int loopCnt = CNT / hwThreads;
+
+        IgniteInternalFuture<?> putRmvFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < loopCnt && !stop.get(); ++i) {
+                    int order;
+                    try {
+                        order = putRmvOpBarrier.await();
+                    } catch (BrokenBarrierException e) {
+                        // barrier reset() has been called: terminate
+                        break;
+                    }
+
+                    Long putVal = curPutKey.getAndIncrement();
+
+                    if ((i & 0xff) == 0)
+                        X.println(order + ": --> put(" + putVal + ")");
+
+                    assertNull(tree.put(putVal));
+
+                    Long rmvVal = curRmvKey.getAndIncrement();
+
+                    if ((i & 0xff) == 0)
+                        X.println(order + ": --> rmv(" + rmvVal + ")");
+
+                    assertEquals(rmvVal, tree.remove(rmvVal));
+                    assertNull(tree.findOne(rmvVal));
+                }
+
+                return null;
+            }
+        }, putRmvThreadCnt, "put-remove");
+
+        IgniteInternalFuture<?> sizeFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+
+                final List<Long> treeContents = new ArrayList<>(SLIDING_WINDOW_SIZE * 2);
+
+                final BPlusTree.TreeRowClosure<Long, Long> rowDumper = new BPlusTree.TreeRowClosure<Long, Long>() {
+                    @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
+                        throws IgniteCheckedException {
+
+                        treeContents.add(io.getLookupRow(tree, pageAddr, idx));
+
+                        final long endMs = System.currentTimeMillis() + 10;
+                        final long endPutKey = curPutKey.get() + MAX_PER_PAGE;
+
+                        while (System.currentTimeMillis() < endMs && curPutKey.get() < endPutKey)
+                            Thread.yield();
+
+                        return true;
+                    }
+                };
+
+                while (!stop.get()) {
+                    treeContents.clear();
+
+                    long treeSize = tree.size(rowDumper);
+                    long curPutVal = curPutKey.get();
+
+                    X.println(" ======> size=" + treeSize + "; last-put-value=" + curPutVal);
+
+                    if (treeSize < SLIDING_WINDOW_SIZE || treeSize > curPutVal)
+                        fail("Tree size is not in bounds [" + SLIDING_WINDOW_SIZE + ".." + curPutVal + "]:"
+                            + treeSize + "; contents=" + treeContents);
+                }
+
+                return null;
+            }
+        }, sizeThreadCnt, "size");
+
+        asyncRunFut = new GridCompoundFuture<>();
+
+        asyncRunFut.add((IgniteInternalFuture) putRmvFut);
+        asyncRunFut.add((IgniteInternalFuture) sizeFut);
+
+        asyncRunFut.markInitialized();
+
+        try {
+            putRmvFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stop.set(true);
+            putRmvOpBarrier.reset();
+
+            asyncRunFut.get();
+        }
+
+        tree.validateTree();
+
+        assertNoLocks();
+    }
+
+    /**
+     * Verifies that in case for threads concurrently calling put and remove
+     * on a tree with 1-3 pages, the size() method performs correctly.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPutRmvSizeSinglePageContention() throws Exception {
+        MAX_PER_PAGE = 10;
+        CNT = 20_000;
+        final boolean DEBUG_PRINT = false;
+        final int SLIDING_WINDOWS_SIZE = MAX_PER_PAGE * 2;
+
+        final TestTree tree = createTestTree(false);
+
+        final AtomicLong curPutKey = new AtomicLong(0);
+        final BlockingQueue<Long> rowsToRemove = new ArrayBlockingQueue<>(MAX_PER_PAGE / 2);
+
+        final int hwThreadCnt = Runtime.getRuntime().availableProcessors();
+        final int putThreadCnt = Math.max(1, hwThreadCnt / 4);
+        final int rmvThreadCnt = Math.max(1, hwThreadCnt / 2 - putThreadCnt);
+        final int sizeThreadCnt = Math.max(1, hwThreadCnt - putThreadCnt - rmvThreadCnt);
+
+        final AtomicInteger sizeInvokeCnt = new AtomicInteger(0);
+
+        final int loopCnt = CNT;
+
+        IgniteInternalFuture<?> sizeFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int iter = 0;
+                while (!stop.get()) {
+                    long size = tree.size();
+
+                    if (DEBUG_PRINT || (++iter & 0xffff) == 0)
+                        X.println(" --> size() = " + size);
+
+                    sizeInvokeCnt.incrementAndGet();
+                }
+
+                return null;
+            }
+        }, sizeThreadCnt, "size");
+
+        // Let the size threads ignite
+        while (sizeInvokeCnt.get() < sizeThreadCnt * 2)
+            Thread.yield();
+
+        IgniteInternalFuture<?> rmvFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int iter = 0;
+                while(!stop.get()) {
+                    Long rmvVal = rowsToRemove.poll(200, TimeUnit.MILLISECONDS);
+                    if (rmvVal != null)
+                        assertEquals(rmvVal, tree.remove(rmvVal));
+
+                    if (DEBUG_PRINT || (++iter & 0x3ff) == 0)
+                        X.println(" --> rmv(" + rmvVal + ")");
+                }
+
+                return null;
+            }
+        }, rmvThreadCnt, "rmv");
+
+        IgniteInternalFuture<?> putFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < loopCnt && !stop.get(); ++i) {
+                    Long putVal = curPutKey.getAndIncrement();
+                    assertNull(tree.put(putVal));
+
+                    while (rowsToRemove.size() > SLIDING_WINDOWS_SIZE && !stop.get())
+                        Thread.yield();
+
+                    rowsToRemove.put(putVal);
+
+                    if (DEBUG_PRINT || (i & 0x3ff) == 0)
+                        X.println(" --> put(" + putVal + ")");
+                }
+
+                return null;
+            }
+        }, putThreadCnt, "put");
+
+        IgniteInternalFuture<?> treePrintFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stop.get()) {
+                    Thread.sleep(1000);
+
+                    X.println(TestTree.printLocks());
+                    X.println(tree.printTree());
+                }
+
+                return null;
+            }
+        }, 1, "printTree");
+
+        asyncRunFut = new GridCompoundFuture<>();
+
+        asyncRunFut.add((IgniteInternalFuture) sizeFut);
+        asyncRunFut.add((IgniteInternalFuture) rmvFut);
+        asyncRunFut.add((IgniteInternalFuture) putFut);
+        asyncRunFut.add((IgniteInternalFuture) treePrintFut);
+
+        asyncRunFut.markInitialized();
+
+        try {
+            putFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stop.set(true);
+
+            asyncRunFut.get();
+        }
+
+        tree.validateTree();
+
+        assertNoLocks();
+    }
+
+    /**
+     * The test verifies that {@link BPlusTree#put}, {@link BPlusTree#remove}, {@link BPlusTree#find}, and
+     * {@link BPlusTree#size} run concurrently, perform correctly and report correct values.
+     *
+     * A sliding window of numbers is maintainted in the tests.
+     *
+     * NB: This test has to be changed with the integration of IGNITE-3478.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPutRmvFindSizeMultithreaded() throws Exception {
+        MAX_PER_PAGE = 5;
+        CNT = 60_000;
+
+        final int SLIDING_WINDOW_SIZE = 100;
+
+        final TestTree tree = createTestTree(false);
+
+        final AtomicLong curPutKey = new AtomicLong(0);
+        final BlockingQueue<Long> rowsToRemove = new ArrayBlockingQueue<>(SLIDING_WINDOW_SIZE);
+
+        final int hwThreadCnt = Runtime.getRuntime().availableProcessors();
+        final int putThreadCnt = Math.max(1, hwThreadCnt / 4);
+        final int rmvThreadCnt = Math.max(1, hwThreadCnt / 4);
+        final int findThreadCnt = Math.max(1, hwThreadCnt / 4);
+        final int sizeThreadCnt = Math.max(1, hwThreadCnt - putThreadCnt - rmvThreadCnt - findThreadCnt);
+
+        final AtomicInteger sizeInvokeCnt = new AtomicInteger(0);
+
+        final int loopCnt = CNT;
+
+        IgniteInternalFuture<?> sizeFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int iter = 0;
+                while (!stop.get()) {
+                    long size = tree.size();
+
+                    if ((++iter & 0x3ff) == 0)
+                        X.println(" --> size() = " + size);
+
+                    sizeInvokeCnt.incrementAndGet();
+                }
+
+                return null;
+            }
+        }, sizeThreadCnt, "size");
+
+        // Let the size threads start
+        while (sizeInvokeCnt.get() < sizeThreadCnt * 2)
+            Thread.yield();
+
+        IgniteInternalFuture<?> rmvFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int iter = 0;
+                while(!stop.get()) {
+                    Long rmvVal = rowsToRemove.poll(200, TimeUnit.MILLISECONDS);
+                    if (rmvVal != null)
+                        assertEquals(rmvVal, tree.remove(rmvVal));
+
+                    if ((++iter & 0x3ff) == 0)
+                        X.println(" --> rmv(" + rmvVal + ")");
+                }
+
+                return null;
+            }
+        }, rmvThreadCnt, "rmv");
+
+        IgniteInternalFuture<?> findFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int iter = 0;
+                while(!stop.get()) {
+                    Long findVal = curPutKey.get()
+                        + SLIDING_WINDOW_SIZE / 2
+                        - rnd.nextInt(SLIDING_WINDOW_SIZE * 2);
+
+                    tree.findOne(findVal);
+
+                    if ((++iter & 0x3ff) == 0)
+                        X.println(" --> fnd(" + findVal + ")");
+                }
+
+                return null;
+            }
+        }, findThreadCnt, "find");
+
+        IgniteInternalFuture<?> putFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < loopCnt && !stop.get(); ++i) {
+                    Long putVal = curPutKey.getAndIncrement();
+                    assertNull(tree.put(putVal));
+
+                    while (rowsToRemove.size() > SLIDING_WINDOW_SIZE) {
+                        if (stop.get())
+                            return null;
+
+                        Thread.yield();
+                    }
+
+                    rowsToRemove.put(putVal);
+
+                    if ((i & 0x3ff) == 0)
+                        X.println(" --> put(" + putVal + ")");
+                }
+
+                return null;
+            }
+        }, putThreadCnt, "put");
+
+        IgniteInternalFuture<?> lockPrintingFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stop.get()) {
+                    Thread.sleep(1000);
+
+                    X.println(TestTree.printLocks());
+                }
+
+                return null;
+            }
+        }, 1, "printLocks");
+
+        asyncRunFut = new GridCompoundFuture<>();
+
+        asyncRunFut.add((IgniteInternalFuture) sizeFut);
+        asyncRunFut.add((IgniteInternalFuture) rmvFut);
+        asyncRunFut.add((IgniteInternalFuture) findFut);
+        asyncRunFut.add((IgniteInternalFuture) putFut);
+        asyncRunFut.add((IgniteInternalFuture) lockPrintingFut);
+
+        asyncRunFut.markInitialized();
+
+        try {
+            putFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stop.set(true);
+
+            asyncRunFut.get();
+        }
+
+        tree.validateTree();
 
         assertNoLocks();
     }
@@ -1316,7 +2124,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 0; i < loops; i++) {
+                for (int i = 0; i < loops && !stop.get(); i++) {
                     final Long x = (long)DataStructure.randomInt(CNT);
                     final int op = DataStructure.randomInt(4);
 
@@ -1402,8 +2210,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, Runtime.getRuntime().availableProcessors(), "put-remove");
 
-        final AtomicBoolean stop = new AtomicBoolean();
-
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 while (!stop.get()) {
@@ -1442,14 +2248,22 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, 4, "find");
 
+
+        asyncRunFut = new GridCompoundFuture<>();
+
+        asyncRunFut.add((IgniteInternalFuture)fut);
+        asyncRunFut.add((IgniteInternalFuture)fut2);
+        asyncRunFut.add((IgniteInternalFuture)fut3);
+
+        asyncRunFut.markInitialized();
+
         try {
             fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
             stop.set(true);
 
-            fut2.get();
-            fut3.get();
+            asyncRunFut.get();
         }
 
         GridCursor<Long> cursor = tree.find(null, null);
@@ -1599,7 +2413,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
-//            X.println("  onBeforeReadLock: " + U.hexLong(page.id()));
+            if (PRINT_LOCKS)
+                X.println("  onBeforeReadLock: " + U.hexLong(pageId));
 //
 //            U.dumpStack();
 
@@ -1608,7 +2423,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onReadLock(int cacheId, long pageId, long page, long pageAddr) {
-//            X.println("  onReadLock: " + U.hexLong(page.id()));
+            if (PRINT_LOCKS)
+                X.println("  onReadLock: " + U.hexLong(pageId));
 
             if (pageAddr != 0L) {
                 long actual = PageIO.getPageId(pageAddr);
@@ -1623,7 +2439,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr) {
-//            X.println("  onReadUnlock: " + U.hexLong(page.id()));
+            if (PRINT_LOCKS)
+                X.println("  onReadUnlock: " + U.hexLong(pageId));
 
             checkPageId(pageId, pageAddr);
 
@@ -1634,14 +2451,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onBeforeWriteLock(int cacheId, long pageId, long page) {
-//            X.println("  onBeforeWriteLock: " + U.hexLong(page.id()));
+            if (PRINT_LOCKS)
+                X.println("  onBeforeWriteLock: " + U.hexLong(pageId));
 
             assertNull(beforeWriteLock.put(threadId(), pageId));
         }
 
         /** {@inheritDoc} */
         @Override public void onWriteLock(int cacheId, long pageId, long page, long pageAddr) {
-//            X.println("  onWriteLock: " + U.hexLong(page.id()));
+            if (PRINT_LOCKS)
+                X.println("  onWriteLock: " + U.hexLong(pageId));
 //
 //            U.dumpStack();
 
@@ -1661,7 +2480,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onWriteUnlock(int cacheId, long pageId, long page, long pageAddr) {
-//            X.println("  onWriteUnlock: " + U.hexLong(page.id()));
+            if (PRINT_LOCKS)
+                X.println("  onWriteUnlock: " + U.hexLong(pageId));
 
             assertEquals(effectivePageId(pageId), effectivePageId(PageIO.getPageId(pageAddr)));
 
@@ -1774,14 +2594,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @return Page memory.
      */
     protected PageMemory createPageMemory() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration()
+            .setInitialSize(1024 * MB)
+            .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
             new UnsafeMemoryProvider(log),
             null,
             PAGE_SIZE,
             plcCfg,
-            new MemoryMetricsImpl(plcCfg), true);
+            new DataRegionMetricsImpl(plcCfg), true);
 
         pageMem.start();
 

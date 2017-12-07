@@ -28,7 +28,11 @@ const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
-const ENFORCE_JOIN_VERS = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], ['1.9.1']];
+const ENFORCE_JOIN_SINCE = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], '1.9.1'];
+
+const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
+
+const DDL_SINCE = [['2.1.6', '2.2.0'], '2.3.0'];
 
 const _fullColName = (col) => {
     const res = [];
@@ -54,6 +58,10 @@ class Paragraph {
         self.qryType = paragraph.qryType || 'query';
         self.maxPages = 0;
         self.filter = '';
+        self.useAsDefaultSchema = false;
+        self.localQueryMode = false;
+        self.csvIsPreparing = false;
+        self.scanningInProgress = false;
 
         _.assign(this, paragraph);
 
@@ -130,12 +138,19 @@ class Paragraph {
             while (_.nonNil(cause)) {
                 if (_.nonEmpty(cause.className) &&
                     _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
-                    this.error.message = cause.message;
+                    this.error.message = cause.message || cause.className;
 
                     break;
                 }
 
                 cause = cause.cause;
+            }
+
+            if (_.isEmpty(this.error.message) && _.nonEmpty(err.className)) {
+                this.error.message = 'Internal cluster error';
+
+                if (_.nonEmpty(err.className))
+                    this.error.message += ': ' + err.className;
             }
         };
     }
@@ -188,17 +203,27 @@ class Paragraph {
     chartTimeLineEnabled() {
         return _.nonEmpty(this.chartKeyCols) && _.eq(this.chartKeyCols[0], TIME_LINE);
     }
+
+    executionInProgress(showLocal = false) {
+        return this.loading && (this.localQueryMode === showLocal);
+    }
+
+    checkScanInProgress(showLocal = false) {
+        return this.scanningInProgress && (this.localQueryMode === showLocal);
+    }
 }
 
 // Controller for SQL notebook screen.
-export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes',
-    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes) {
+export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard',
+    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard) {
         const $ctrl = this;
 
         // Define template urls.
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
         $ctrl.cacheMetadataTemplateUrl = cacheMetadataTemplateUrl;
         $ctrl.chartSettingsTemplateUrl = chartSettingsTemplateUrl;
+
+        $ctrl.demoStarted = false;
 
         let stopTopology = null;
 
@@ -824,7 +849,6 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
         /**
          * Update caches list.
-         * @private
          */
         const _refreshFn = () =>
             agentMgr.topology(true)
@@ -847,15 +871,13 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                                 ip: _.head(node.attributes['org.apache.ignite.ips'].split(', ')),
                                 version: node.attributes['org.apache.ignite.build.ver'],
                                 gridName: node.attributes['org.apache.ignite.ignite.name'],
-                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`
+                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`,
+                                client: node.attributes['org.apache.ignite.cache.client']
                             });
                         });
 
                         return cachesAcc;
-                    }, []), 'label');
-
-                    if (_.isEmpty($scope.caches))
-                        return;
+                    }, []), (cache) => cache.label.toLowerCase());
 
                     // Reset to first cache in case of stopped selected.
                     const cacheNames = _.map($scope.caches, (cache) => cache.value);
@@ -864,6 +886,15 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                         if (!_.includes(cacheNames, paragraph.cacheName))
                             paragraph.cacheName = _.head(cacheNames);
                     });
+
+                    // Await for demo caches.
+                    if (!$ctrl.demoStarted && $root.IgniteDemoMode && _.nonEmpty(cacheNames)) {
+                        $ctrl.demoStarted = true;
+
+                        Loading.finish('sqlLoading');
+
+                        _.forEach($scope.notebook.paragraphs, (paragraph) => $scope.execute(paragraph));
+                    }
                 })
                 .catch((err) => Messages.showError(err));
 
@@ -871,10 +902,11 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.tabs.advanced.clusters')
                 .then(() => Loading.start('sqlLoading'))
                 .then(_refreshFn)
-                .then(() => Loading.finish('sqlLoading'))
                 .then(() => {
-                    $root.IgniteDemoMode && _.forEach($scope.notebook.paragraphs, (paragraph) => $scope.execute(paragraph));
-
+                    if (!$root.IgniteDemoMode)
+                        Loading.finish('sqlLoading');
+                })
+                .then(() => {
                     stopTopology = $interval(_refreshFn, 5000, 0, false);
                 });
 
@@ -1247,7 +1279,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
             const chartHistory = paragraph.chartHistory;
 
-                // Clear history on query change.
+            // Clear history on query change.
             if (clearChart) {
                 chartHistory.length = 0;
 
@@ -1304,7 +1336,10 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
          * @return {String} Nid
          */
         const _chooseNode = (name, local) => {
-            const nodes = cacheNodes(name);
+            if (_.isEmpty(name))
+                return Promise.resolve(null);
+
+            const nodes = _.filter(cacheNodes(name), (node) => !node.client);
 
             if (local) {
                 return Nodes.selectNode(nodes, name)
@@ -1321,7 +1356,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins,
-                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize))
+                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy))
                 .then((res) => _processQueryResult(paragraph, false, res))
                 .catch((err) => paragraph.setError(err));
         };
@@ -1358,7 +1393,25 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const cache = _.find($scope.caches, {name: paragraph.cacheName});
 
             if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...ENFORCE_JOIN_VERS));
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...ENFORCE_JOIN_SINCE));
+
+            return false;
+        };
+
+        $scope.lazyQueryAvailable = (paragraph) => {
+            const cache = _.find($scope.caches, {name: paragraph.cacheName});
+
+            if (cache)
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...LAZY_QUERY_SINCE));
+
+            return false;
+        };
+
+        $scope.ddlAvailable = (paragraph) => {
+            const cache = _.find($scope.caches, {name: paragraph.cacheName});
+
+            if (cache)
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...DDL_SINCE));
 
             return false;
         };
@@ -1366,12 +1419,14 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         $scope.execute = (paragraph, local = false) => {
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
+            const lazy = !!paragraph.lazy;
 
-            $scope.actionAvailable(paragraph, true) && _chooseNode(paragraph.cacheName, local)
+            $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
 
+                    paragraph.localQueryMode = local;
                     paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
 
                     _showLoading(paragraph, true);
@@ -1380,20 +1435,21 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                         .then(() => {
                             const args = paragraph.queryArgs = {
                                 type: 'QUERY',
-                                cacheName: paragraph.cacheName,
+                                cacheName: ($scope.ddlAvailable(paragraph) && !paragraph.useAsDefaultSchema) ? null : paragraph.cacheName,
                                 query: paragraph.query,
                                 pageSize: paragraph.pageSize,
                                 maxPages: paragraph.maxPages,
                                 nonCollocatedJoins,
                                 enforceJoinOrder,
-                                localNid: local ? nid : null
+                                localNid: local ? nid : null,
+                                lazy
                             };
 
                             const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : paragraph.query;
 
                             ActivitiesData.post({ action: '/queries/execute' });
 
-                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize);
+                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy);
                         })
                         .then((res) => {
                             _processQueryResult(paragraph, true, res);
@@ -1424,7 +1480,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         };
 
         $scope.explain = (paragraph) => {
-            if (!$scope.actionAvailable(paragraph, true))
+            if (!$scope.queryAvailable(paragraph))
                 return;
 
             Notebook.save($scope.notebook)
@@ -1446,7 +1502,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
                     ActivitiesData.post({ action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize);
+                    return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false);
                 })
                 .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
@@ -1463,8 +1519,12 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
-            $scope.actionAvailable(paragraph, false) && _chooseNode(cacheName, local)
+            paragraph.localQueryMode = local;
+
+            $scope.scanAvailable(paragraph) && _chooseNode(cacheName, local)
                 .then((nid) => {
+                    paragraph.scanningInProgress = true;
+
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
 
@@ -1494,7 +1554,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                             paragraph.setError(err);
 
                             _showLoading(paragraph, false);
-                        });
+                        })
+                        .then(() => paragraph.scanningInProgress = false);
                 });
         };
 
@@ -1552,7 +1613,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .then(() => paragraph.ace && paragraph.ace.focus());
         };
 
-        const _export = (fileName, columnDefs, meta, rows) => {
+        const _export = (fileName, columnDefs, meta, rows, toClipBoard = false) => {
             let csvContent = '';
 
             const cols = [];
@@ -1591,11 +1652,34 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 csvContent += cols.join(';') + '\n';
             });
 
-            LegacyUtils.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
+            if (toClipBoard)
+                IgniteCopyToClipboard.copy(csvContent);
+            else
+                LegacyUtils.download('text/csv', fileName, csvContent);
+        };
+
+        /**
+         * Generate file name with query results.
+         *
+         * @param paragraph {Object} Query paragraph .
+         * @param all {Boolean} All result export flag.
+         * @returns {string}
+         */
+        const exportFileName = (paragraph, all) => {
+            const args = paragraph.queryArgs;
+
+            if (args.type === 'SCAN')
+                return `export-scan-${args.cacheName}-${paragraph.name}${all ? '-all' : ''}.csv`;
+
+            return `export-query-${paragraph.name}${all ? '-all' : ''}.csv`;
+        };
+
+        $scope.exportCsvToClipBoard = (paragraph) => {
+            _export(exportFileName(paragraph, false), paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows, true);
         };
 
         $scope.exportCsv = function(paragraph) {
-            _export(paragraph.name + '.csv', paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows);
+            _export(exportFileName(paragraph, false), paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows);
 
             // paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
@@ -1605,15 +1689,21 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         };
 
         $scope.exportCsvAll = (paragraph) => {
+            paragraph.csvIsPreparing = true;
+
             const args = paragraph.queryArgs;
 
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
                     ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
-                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid))
-                .then((res) => _export(paragraph.name + '-all.csv', paragraph.gridOptions.columnDefs, res.columns, res.rows))
+                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy))
+                .then((res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
-                .then(() => paragraph.ace && paragraph.ace.focus());
+                .then(() => {
+                    paragraph.csvIsPreparing = false;
+
+                    return paragraph.ace && paragraph.ace.focus();
+                });
         };
 
         // $scope.exportPdfAll = function(paragraph) {
@@ -1669,18 +1759,32 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             _chartApplySettings(paragraph, true);
         };
 
-        $scope.actionAvailable = function(paragraph, needQuery) {
-            return $scope.caches.length > 0 && (!needQuery || paragraph.query) && !paragraph.loading;
+        $scope.queryAvailable = function(paragraph) {
+            return paragraph.query && !paragraph.loading;
         };
 
-        $scope.actionTooltip = function(paragraph, action, needQuery) {
-            if ($scope.actionAvailable(paragraph, needQuery))
+        $scope.queryTooltip = function(paragraph, action) {
+            if ($scope.queryAvailable(paragraph))
                 return;
 
             if (paragraph.loading)
                 return 'Waiting for server response';
 
-            return 'To ' + action + ' query select cache' + (needQuery ? ' and input query' : '');
+            return 'Input text to ' + action;
+        };
+
+        $scope.scanAvailable = function(paragraph) {
+            return $scope.caches.length && !(paragraph.loading || paragraph.csvIsPreparing);
+        };
+
+        $scope.scanTooltip = function(paragraph) {
+            if ($scope.scanAvailable(paragraph))
+                return;
+
+            if (paragraph.loading)
+                return 'Waiting for server response';
+
+            return 'Select cache to export scan results';
         };
 
         $scope.clickableMetadata = function(node) {
@@ -1743,6 +1847,10 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                     scope.content = paragraph.queryArgs.query.split(/\r?\n/);
                 }
 
+                // Attach duration and selected node info
+                scope.meta = `Duration: ${$filter('duration')(paragraph.duration)}.`;
+                scope.meta += paragraph.localQueryMode ? ` Node ID8: ${_.id8(paragraph.resNodeId)}` : '';
+
                 // Show a basic modal from a controller
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});
             }
@@ -1761,7 +1869,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                     if (_.nonNil(item)) {
                         const clsName = _.isEmpty(item.className) ? '' : '[' + JavaTypes.shortClassName(item.className) + '] ';
 
-                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + item.message);
+                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + (item.message || ''));
 
                         addToTrace(item.cause);
 

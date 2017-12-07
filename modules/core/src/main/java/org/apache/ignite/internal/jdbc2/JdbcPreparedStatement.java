@@ -39,6 +39,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 /**
  * JDBC prepared statement implementation.
@@ -49,6 +50,9 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** H2's parsed statement to retrieve metadata from. */
     PreparedStatement nativeStatement;
+
+    /** Batch arguments. */
+    private List<List<Object>> batchArgs;
 
     /**
      * Creates new prepared statement.
@@ -66,7 +70,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared statement.");
+        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch is not supported for prepared " +
+            "statement (use addBatch() to add new set of arguments)");
     }
 
     /** {@inheritDoc} */
@@ -185,7 +190,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        batchArgs = null;
     }
 
     /** {@inheritDoc} */
@@ -207,13 +212,25 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        if (batchArgs == null)
+            batchArgs = new ArrayList<>();
+
+        batchArgs.add(args);
+
+        args = null;
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        ensureNotClosed();
+
+        List<List<Object>> batchArgs = this.batchArgs;
+
+        this.batchArgs = null;
+
+        return doBatchUpdate(sql, null, batchArgs);
     }
+
 
     /** {@inheritDoc} */
     @Override public void setCharacterStream(int paramIdx, Reader x, int len) throws SQLException {

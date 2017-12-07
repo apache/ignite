@@ -55,6 +55,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -92,6 +93,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CONTINUOUS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_ACK;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_NOTIFICATION;
 
@@ -161,46 +163,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         marsh = ctx.config().getMarshaller();
 
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @SuppressWarnings({"fallthrough", "TooBroadScope"})
-            @Override public void onEvent(Event evt) {
-                assert evt instanceof DiscoveryEvent;
-                assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
-
-                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
-
-                clientInfos.remove(nodeId);
-
-                // Unregister handlers created by left node.
-                for (Map.Entry<UUID, RemoteRoutineInfo> e : rmtInfos.entrySet()) {
-                    UUID routineId = e.getKey();
-                    RemoteRoutineInfo info = e.getValue();
-
-                    if (nodeId.equals(info.nodeId)) {
-                        if (info.autoUnsubscribe)
-                            unregisterRemote(routineId);
-
-                        if (info.hnd.isQuery())
-                            info.hnd.onNodeLeft();
-                    }
-                }
-
-                for (Map.Entry<IgniteUuid, SyncMessageAckFuture> e : syncMsgFuts.entrySet()) {
-                    SyncMessageAckFuture fut = e.getValue();
-
-                    if (fut.nodeId().equals(nodeId)) {
-                        SyncMessageAckFuture fut0 = syncMsgFuts.remove(e.getKey());
-
-                        if (fut0 != null) {
-                            ClusterTopologyCheckedException err = new ClusterTopologyCheckedException(
-                                "Node left grid while sending message to: " + nodeId);
-
-                            fut0.onDone(err);
-                        }
-                    }
-                }
-            }
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        ctx.event().addLocalEventListener(new DiscoveryListener(), EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -213,8 +176,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StartRoutineDiscoveryMessage msg) {
-                    if (!snd.id().equals(ctx.localNodeId()) && !ctx.isStopping())
-                        processStartRequest(snd, msg);
+                    if (ctx.isStopping())
+                        return;
+
+                    processStartRequest(snd, msg);
                 }
             });
 
@@ -223,38 +188,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StartRoutineAckDiscoveryMessage msg) {
-                    StartFuture fut = startFuts.remove(msg.routineId());
+                    if (ctx.isStopping())
+                        return;
 
-                    if (fut != null) {
-                        if (msg.errs().isEmpty()) {
-                            LocalRoutineInfo routine = locInfos.get(msg.routineId());
-
-                            // Update partition counters.
-                            if (routine != null && routine.handler().isQuery()) {
-                                Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode = msg.updateCountersPerNode();
-                                Map<Integer, T2<Long, Long>> cntrs = msg.updateCounters();
-
-                                GridCacheAdapter<Object, Object> interCache =
-                                    ctx.cache().internalCache(routine.handler().cacheName());
-
-                                GridCacheContext cctx = interCache != null ? interCache.context() : null;
-
-                                if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
-                                    cntrsPerNode.put(ctx.localNodeId(), cctx.topology().updateCounters(false));
-
-                                routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
-                            }
-
-                            fut.onRemoteRegistered();
-                        }
-                        else {
-                            IgniteCheckedException firstEx = F.first(msg.errs().values());
-
-                            fut.onDone(firstEx);
-
-                            stopRoutine(msg.routineId());
-                        }
-                    }
+                    processStartAckRequest(topVer, msg);
                 }
             });
 
@@ -263,16 +200,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StopRoutineDiscoveryMessage msg) {
-                    if (!snd.id().equals(ctx.localNodeId())) {
-                        UUID routineId = msg.routineId();
+                    if (ctx.isStopping())
+                        return;
 
-                        unregisterRemote(routineId);
-                    }
-
-                    for (Map<UUID, LocalRoutineInfo> clientInfo : clientInfos.values()) {
-                        if (clientInfo.remove(msg.routineId()) != null)
-                            break;
-                    }
+                    processStopRequest(snd, msg);
                 }
             });
 
@@ -281,10 +212,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StopRoutineAckDiscoveryMessage msg) {
-                    StopFuture fut = stopFuts.remove(msg.routineId());
+                    if (ctx.isStopping())
+                        return;
 
-                    if (fut != null)
-                        fut.onDone();
+                    processStopAckRequest(msg);
                 }
             });
 
@@ -495,7 +426,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         if (log.isDebugEnabled()) {
-            log.info("onJoiningNodeDataReceived [joining=" + data.joiningNodeId() +
+            log.debug("onJoiningNodeDataReceived [joining=" + data.joiningNodeId() +
                     ", loc=" + ctx.localNodeId() +
                     ", data=" + data.joiningNodeData() +
                     ']');
@@ -1012,11 +943,82 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param msg Message.
+     */
+    private void processStopAckRequest(StopRoutineAckDiscoveryMessage msg) {
+        StopFuture fut = stopFuts.remove(msg.routineId());
+
+        if (fut != null)
+            fut.onDone();
+    }
+
+    /**
+     * @param snd Sender node.
+     * @param msg Message/
+     */
+    private void processStopRequest(ClusterNode snd, StopRoutineDiscoveryMessage msg) {
+        if (!snd.id().equals(ctx.localNodeId())) {
+            UUID routineId = msg.routineId();
+
+            unregisterRemote(routineId);
+        }
+
+        for (Map<UUID, LocalRoutineInfo> clientInfo : clientInfos.values()) {
+            if (clientInfo.remove(msg.routineId()) != null)
+                break;
+        }
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param msg Message.
+     */
+    private void processStartAckRequest(AffinityTopologyVersion topVer,
+        StartRoutineAckDiscoveryMessage msg) {
+        StartFuture fut = startFuts.remove(msg.routineId());
+
+        if (fut != null) {
+            if (msg.errs().isEmpty()) {
+                LocalRoutineInfo routine = locInfos.get(msg.routineId());
+
+                // Update partition counters.
+                if (routine != null && routine.handler().isQuery()) {
+                    Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode = msg.updateCountersPerNode();
+                    Map<Integer, T2<Long, Long>> cntrs = msg.updateCounters();
+
+                    GridCacheAdapter<Object, Object> interCache =
+                        ctx.cache().internalCache(routine.handler().cacheName());
+
+                    GridCacheContext cctx = interCache != null ? interCache.context() : null;
+
+                    if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
+                        cntrsPerNode.put(ctx.localNodeId(),
+                            toCountersMap(cctx.topology().localUpdateCounters(false)));
+
+                    routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
+                }
+
+                fut.onRemoteRegistered();
+            }
+            else {
+                IgniteCheckedException firstEx = F.first(msg.errs().values());
+
+                fut.onDone(firstEx);
+
+                stopRoutine(msg.routineId());
+            }
+        }
+    }
+
+    /**
      * @param node Sender.
      * @param req Start request.
      */
     private void processStartRequest(ClusterNode node, StartRoutineDiscoveryMessage req) {
         UUID routineId = req.routineId();
+        if (node.id().equals(ctx.localNodeId()))
+            return;
+
         StartRequestData data = req.startRequestData();
 
         GridContinuousHandler hnd = data.handler();
@@ -1108,7 +1110,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 GridCacheAdapter cache = ctx.cache().internalCache(hnd0.cacheName());
 
                 if (cache != null && !cache.isLocal() && cache.context().userCache())
-                    req.addUpdateCounters(ctx.localNodeId(), cache.context().topology().updateCounters(false));
+                    req.addUpdateCounters(ctx.localNodeId(),
+                        toCountersMap(cache.context().topology().localUpdateCounters(false)));
             }
         }
 
@@ -1420,6 +1423,55 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 U.sleep(retryDelay);
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private class DiscoveryListener implements GridLocalEventListener, HighPriorityListener {
+        /** {@inheritDoc} */
+        @Override public void onEvent(Event evt) {
+            assert evt instanceof DiscoveryEvent;
+            assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
+
+            UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+
+            clientInfos.remove(nodeId);
+
+            // Unregister handlers created by left node.
+            for (Map.Entry<UUID, RemoteRoutineInfo> e : rmtInfos.entrySet()) {
+                UUID routineId = e.getKey();
+                RemoteRoutineInfo info = e.getValue();
+
+                if (nodeId.equals(info.nodeId)) {
+                    if (info.autoUnsubscribe)
+                        unregisterRemote(routineId);
+
+                    if (info.hnd.isQuery())
+                        info.hnd.onNodeLeft();
+                }
+            }
+
+            for (Map.Entry<IgniteUuid, SyncMessageAckFuture> e : syncMsgFuts.entrySet()) {
+                SyncMessageAckFuture fut = e.getValue();
+
+                if (fut.nodeId().equals(nodeId)) {
+                    SyncMessageAckFuture fut0 = syncMsgFuts.remove(e.getKey());
+
+                    if (fut0 != null) {
+                        ClusterTopologyCheckedException err = new ClusterTopologyCheckedException(
+                            "Node left grid while sending message to: " + nodeId);
+
+                        fut0.onDone(err);
+                    }
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int order() {
+            return 1;
         }
     }
 

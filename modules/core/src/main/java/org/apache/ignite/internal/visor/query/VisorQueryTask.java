@@ -23,9 +23,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorEither;
@@ -70,7 +72,6 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
         /** {@inheritDoc} */
         @Override protected VisorEither<VisorQueryResult> run(final VisorQueryTaskArg arg) {
             try {
-                IgniteCache<Object, Object> c = ignite.context().cache().jcache(arg.getCacheName());
                 UUID nid = ignite.localNode().id();
 
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
@@ -79,10 +80,26 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
                 qry.setDistributedJoins(arg.isDistributedJoins());
                 qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
                 qry.setReplicatedOnly(arg.isReplicatedOnly());
+                qry.setLazy(arg.getLazy());
 
                 long start = U.currentTimeMillis();
 
-                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
+                FieldsQueryCursor<List<?>> qryCursor;
+
+                String cacheName = arg.getCacheName();
+
+                if (F.isEmpty(cacheName))
+                    qryCursor = ignite.context().query().querySqlFieldsNoCache(qry, true);
+                else {
+                    IgniteCache<Object, Object> c = ignite.cache(cacheName);
+
+                    if (c == null)
+                        throw new SQLException("Fail to execute query. Cache not found: " + cacheName);
+
+                    qryCursor = c.withKeepBinary().query(qry);
+                }
+
+                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(qryCursor);
 
                 Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 

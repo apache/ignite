@@ -23,6 +23,8 @@ import org.apache.ignite.ml.math.Precision;
 import org.apache.ignite.ml.math.Vector;
 import org.junit.Assert;
 
+import static org.junit.Assert.assertTrue;
+
 /** */
 public class TestUtils {
     /**
@@ -160,7 +162,7 @@ public class TestUtils {
                 double eij = exp.getX(i, j);
                 double aij = actual.getX(i, j);
 
-                // TODO: Check precision here.
+                // TODO: IGNITE-5824, Check precision here.
                 Assert.assertEquals(eij, aij, 0.0);
             }
     }
@@ -244,5 +246,18 @@ public class TestUtils {
     /** */
     public static double maximumAbsoluteRowSum(Matrix mtx) {
         return IntStream.range(0, mtx.rowSize()).mapToObj(mtx::viewRow).map(v -> Math.abs(v.sum())).reduce(Math::max).get();
+    }
+
+    /** */
+    public static void checkIsInEpsilonNeighbourhood(Vector[] v1s, Vector[] v2s, double epsilon) {
+        for (int i = 0; i < v1s.length; i++) {
+            assertTrue("Not in epsilon neighbourhood (index " + i + ") ",
+                v1s[i].minus(v2s[i]).kNorm(2) < epsilon);
+        }
+    }
+
+    /** */
+    public static void checkIsInEpsilonNeighbourhood(Vector v1, Vector v2, double epsilon) {
+        checkIsInEpsilonNeighbourhood(new Vector[] {v1}, new Vector[] {v2}, epsilon);
     }
 }

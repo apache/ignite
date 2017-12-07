@@ -172,6 +172,34 @@ namespace ignite
                 }
 
                 /**
+                 * Get next entry assuming it's an array of 8-byte signed
+                 * integers. Maps to "byte[]" type in Java.
+                 *
+                 * This method should only be used on the valid instance.
+                 *
+                 * @param dst Array to store data to.
+                 * @param len Expected length of array.
+                 * @return Actual amount of elements read. If "len" argument is less than actual
+                 *     array size or resulting array is set to null, nothing will be written
+                 *     to resulting array and returned value will contain required array length.
+                 *     -1 will be returned in case array in stream was null.
+                 *
+                 * @throw IgniteError class instance in case of failure.
+                 */
+                int32_t GetNextInt8Array(int8_t* dst, int32_t len)
+                {
+                    impl::cache::query::QueryFieldsRowImpl* impl0 = impl.Get();
+
+                    if (impl0)
+                        return impl0->GetNextInt8Array(dst, len);
+                    else
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Instance is not usable (did you check for error?).");
+                    }
+                }
+
+                /**
                  * Check if the instance is valid.
                  *
                  * Invalid instance can be returned if some of the previous

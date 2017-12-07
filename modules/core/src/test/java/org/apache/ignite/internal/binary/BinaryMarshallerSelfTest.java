@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import com.google.common.collect.ImmutableList;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -649,6 +650,32 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testDeclaredBodyEnum() throws Exception {
+        final MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
+        ctx.registerClassName((byte)0, 1, EnumObject.class.getName());
+        ctx.registerClassName((byte)0, 2, DeclaredBodyEnum.class.getName());
+
+        BinaryMarshaller marsh = binaryMarshaller();
+        marsh.setContext(ctx);
+
+        EnumObject obj = new EnumObject(1L, "test 1", DeclaredBodyEnum.TWO);
+
+        final byte[] marshal = marsh.marshal(obj);
+        final Object restored = marsh.unmarshal(marshal, null);
+
+        assertTrue(restored instanceof EnumObject);
+
+        obj = (EnumObject)restored;
+
+        assertEquals(1, obj.id);
+        assertEquals(DeclaredBodyEnum.TWO.ordinal(), obj.type.ordinal());
+        assertEquals(DeclaredBodyEnum.TWO, obj.type);
+        assertTrue(obj.type == DeclaredBodyEnum.TWO);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDateAndTimestampInSingleObject() throws Exception {
         BinaryTypeConfiguration cfg1 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
@@ -909,6 +936,40 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         clazz = Void.TYPE;
 
         assertEquals(clazz, marshalUnmarshal(clazz));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWriteReplacePrivate() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singleton(
+            new BinaryTypeConfiguration(TestObject.class.getName())
+        ));
+
+        TestObject obj = new TestObject();
+
+        BinaryObject po = marshal(obj, marsh);
+
+        assertEquals(obj, po.deserialize());
+
+        assertEquals(obj.val, ((BinaryObject)po.field("val")).deserialize());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWriteReplaceInheritable() throws Exception {
+        ImmutableList<String> obj = ImmutableList.of("This is a test");
+
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singleton(
+            new BinaryTypeConfiguration(obj.getClass().getName())
+        ));
+
+        BinaryObject po = marshal(obj, marsh);
+
+        Object des = po.deserialize();
+
+        assertEquals(obj, des);
     }
 
     /**
@@ -2597,19 +2658,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         MyTestClass obj = binaryObj.deserialize();
 
         assertEquals("readResolve", obj.s);
-    }
-
-    /**
-     * @throws Exception If ecxeption thrown.
-     */
-    public void testDeclareReadResolveInParent() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(ChildBinary.class.getName())));
-
-        BinaryObjectImpl binaryObj = marshal(new ChildBinary(), marsh);
-
-        ChildBinary singleton = binaryObj.deserialize();
-
-        assertNotNull(singleton.s);
     }
 
     /**
@@ -5091,13 +5139,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public static class ChildBinary extends ParentBinary {
-
-    }
-
-    /**
-     *
-     */
     public static class SimpleEnclosingObject {
         /** */
         private Object simpl;
@@ -5150,25 +5191,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return field.hashCode();
-        }
-    }
-
-    /**
-     *
-     */
-    private static class ParentBinary {
-        /** */
-        public String s;
-
-        /**
-         * Package only visibility!!!!
-         *
-         * @return Object.
-         */
-        Object readResolve() {
-            s = "readResolve";
-
-            return this;
         }
     }
 
@@ -5454,6 +5476,121 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             val0 = reader.rawReader().readInt();
             val1 = reader.rawReader().readInt();
+        }
+    }
+
+    /** */
+    private static class EnumObject implements Serializable {
+        /** */
+        private long id;
+
+        /** */
+        private String name;
+
+        /** */
+        private DeclaredBodyEnum type;
+
+        /** */
+        EnumObject(final long id, final String name, final DeclaredBodyEnum type) {
+            this.id = id;
+            this.name = name;
+            this.type = type;
+        }
+    }
+
+    /** */
+    public enum DeclaredBodyEnum {
+        ONE {
+            @Override boolean isSupported() {
+                return false;
+            }
+        },
+        TWO {
+            @Override boolean isSupported() {
+                return false;
+            }
+        };
+
+        abstract boolean isSupported();
+    }
+
+    /** */
+    interface Intf {
+        /** */
+        long value();
+    }
+
+    /** */
+    static class TestObject {
+        /** Value. */
+        Intf val = new IntfImpl();
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestObject obj = (TestObject)o;
+
+            return val.equals(obj.val);
+        }
+    }
+
+    /** */
+    static class IntfImpl extends Cls implements Intf {
+        /** {@inheritDoc} */
+        @Override public long value() {
+            return longValue();
+        }
+    }
+
+    /** */
+    static class Cls implements Serializable {
+        /** Value. */
+        long val;
+
+        /** */
+        public long longValue() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Cls cls = (Cls)o;
+
+            return val == cls.val;
+        }
+
+        /** */
+        private Object writeReplace() {
+            return new SerializationProxy(this);
+        }
+
+        /** */
+        private static class SerializationProxy implements Serializable {
+            /** Value. */
+            private final long val;
+
+            /** */
+            SerializationProxy(Cls a) {
+                val = a.longValue();
+            }
+
+            /** */
+            private Object readResolve() {
+                Cls a = new Cls();
+
+                a.val = val;
+
+                return a;
+            }
         }
     }
 }

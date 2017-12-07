@@ -20,12 +20,16 @@ package org.apache.ignite.ml.math.util;
 import java.util.List;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
 import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
@@ -53,7 +57,7 @@ public class MatrixUtil {
      */
     public static Matrix identityLike(Matrix matrix, int n) {
         Matrix res = like(matrix, n, n);
-        // TODO: Maybe we should introduce API for walking(and changing) matrix in
+        // TODO: IGNITE-5216, Maybe we should introduce API for walking(and changing) matrix in.
         // a fastest possible visiting order.
         for (int i = 0; i < n; i++)
             res.setX(i, i, 1.0);
@@ -88,6 +92,15 @@ public class MatrixUtil {
     }
 
     /**
+     * Check if a given matrix is distributed.
+     *
+     * @param matrix Matrix for like.
+     */
+    private static boolean isDistributed(Matrix matrix) {
+        return matrix instanceof SparseDistributedMatrix || matrix instanceof SparseBlockDistributedMatrix;
+    }
+
+    /**
      * Create the like vector with read-only matrices support.
      *
      * @param matrix Matrix for like.
@@ -113,6 +126,17 @@ public class MatrixUtil {
         }
         else
             return matrix.copy();
+    }
+
+    /** */
+    public static DenseLocalOnHeapMatrix asDense(SparseLocalOnHeapMatrix m, int acsMode) {
+        DenseLocalOnHeapMatrix res = new DenseLocalOnHeapMatrix(m.rowSize(), m.columnSize(), acsMode);
+
+        for (int row : m.indexesMap().keySet())
+            for (int col : m.indexesMap().get(row))
+                res.set(row, col, m.get(row, col));
+
+        return res;
     }
 
     /** */
@@ -143,12 +167,67 @@ public class MatrixUtil {
         return res;
     }
 
-    /** TODO: rewrite in a more optimal way. */
+    /** TODO: IGNITE-5723, rewrite in a more optimal way. */
     public static DenseLocalOnHeapVector localCopyOf(Vector vec) {
         DenseLocalOnHeapVector res = new DenseLocalOnHeapVector(vec.size());
 
         for (int i = 0; i < vec.size(); i++)
             res.setX(i, vec.getX(i));
+
+        return res;
+    }
+
+    /** */
+    public static double[][] unflatten(double[] fArr, int colsCnt, int stoMode) {
+        int rowsCnt = fArr.length / colsCnt;
+
+        boolean isRowMode = stoMode == StorageConstants.ROW_STORAGE_MODE;
+
+        double[][] res = new double[rowsCnt][colsCnt];
+
+        for (int i = 0; i < rowsCnt; i++)
+            for (int j = 0; j < colsCnt; j++)
+                res[i][j] = fArr[!isRowMode ? i * colsCnt + j : j * rowsCnt + i];
+
+        return res;
+    }
+
+    /** */
+    public static void unflatten(double[] fArr, Matrix mtx) {
+        assert mtx != null;
+
+        if (fArr.length <= 0)
+            return;
+
+        int rowsCnt = mtx.rowSize();
+        int colsCnt = mtx.columnSize();
+
+        boolean isRowMode = mtx.getStorage().storageMode() == StorageConstants.ROW_STORAGE_MODE;
+
+        for (int i = 0; i < rowsCnt; i++)
+            for (int j = 0; j < colsCnt; j++)
+                mtx.setX(i, j, fArr[!isRowMode ? i * colsCnt + j : j * rowsCnt + i]);
+    }
+
+    /** */
+    public static double[] flatten(double[][] arr, int stoMode) {
+        assert arr != null;
+        assert arr[0] != null;
+
+        boolean isRowMode = stoMode == StorageConstants.ROW_STORAGE_MODE;
+
+        int size = arr.length * arr[0].length;
+        int rows = isRowMode ? arr.length : arr[0].length;
+        int cols = size / rows;
+
+        double[] res = new double[size];
+
+        int iLim = isRowMode ? rows : cols;
+        int jLim = isRowMode ? cols : rows;
+
+        for (int i = 0; i < iLim; i++)
+            for (int j = 0; j < jLim; j++)
+                res[isRowMode ? j * iLim + i : i * jLim + j] = arr[i][j];
 
         return res;
     }

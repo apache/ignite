@@ -29,7 +29,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -173,30 +172,31 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
-        supplier.onTopologyChanged(lastFut.topologyVersion());
+        supplier.onTopologyChanged(lastFut.initialVersion());
 
         demander.onTopologyChanged(lastFut);
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments assign(GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public GridDhtPreloaderAssignments assign(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
+        assert exchFut == null || exchFut.isDone();
+
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = grp.topology();
 
         if (!grp.rebalanceEnabled())
-            return new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
+            return new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion());
 
         int partCnt = grp.affinity().partitions();
 
-        assert exchFut.forcePreload() || exchFut.dummyReassign() ||
-            exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
-            "Topology version mismatch [exchId=" + exchFut.exchangeId() +
-                ", grp=" + grp.name() +
-                ", topVer=" + top.topologyVersion() + ']';
+        AffinityTopologyVersion topVer = top.readyTopologyVersion();
 
-        GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
+        assert exchFut == null || exchFut.context().events().topologyVersion().equals(top.readyTopologyVersion()) :
+            "Topology version mismatch [exchId=" + exchId +
+            ", grp=" + grp.name() +
+            ", topVer=" + top.readyTopologyVersion() + ']';
 
-        AffinityTopologyVersion topVer = assigns.topologyVersion();
+        GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchId, topVer);
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
@@ -204,7 +204,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (ctx.exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
-                        exchFut.exchangeId());
+                        exchId);
 
                 assigns.cancelled(true);
 
@@ -220,7 +220,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 ClusterNode histSupplier = null;
 
-                if (ctx.database().persistenceEnabled()) {
+                if (grp.persistenceEnabled() && exchFut != null) {
                     UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p);
 
                     if (nodeId != null)
@@ -235,7 +235,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         continue; // For.
                     }
 
-                    assert ctx.database().persistenceEnabled();
+                    assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
                     GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
@@ -243,14 +243,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     if (msg == null) {
                         assigns.put(histSupplier, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
-                            exchFut.exchangeId().topologyVersion(),
+                            assigns.topologyVersion(),
                             grp.groupId()));
                     }
 
                     msg.addPartition(p, true);
                 }
                 else {
-                    if (ctx.database().persistenceEnabled()) {
+                    if (grp.persistenceEnabled()) {
                         if (part.state() == RENTING || part.state() == EVICTED) {
                             IgniteInternalFuture<?> rentFut = part.rent(false);
 
@@ -292,14 +292,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         top.own(part);
 
                         if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                            DiscoveryEvent discoEvt = exchFut.discoveryEvent();
-
-                        grp.addRebalanceEvent(p,
-                            EVT_CACHE_REBALANCE_PART_DATA_LOST,
-                            discoEvt.eventNode(),
-                            discoEvt.type(),
-                            discoEvt.timestamp());
-                    }
+                            grp.addRebalanceEvent(p,
+                                EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                                exchId.eventNode(),
+                                exchId.event(),
+                                exchId.eventTimestamp());
+                        }
 
                         if (log.isDebugEnabled())
                             log.debug("Owning partition as there are no other owners: " + part);
@@ -312,7 +310,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     if (msg == null) {
                         assigns.put(n, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
-                            exchFut.exchangeId().topologyVersion(),
+                            assigns.topologyVersion(),
                             grp.groupId()));
                     }
 
@@ -399,11 +397,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
+    @Override public Runnable addAssignments(
+        GridDhtPreloaderAssignments assignments,
         boolean forceRebalance,
         int cnt,
         Runnable next,
-        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
+        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
+    ) {
         return demander.addAssignments(assignments, forceRebalance, cnt, next, forcedRebFut);
     }
 
@@ -613,8 +613,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             }
                         }
                         finally {
-                            if (!partsToEvict.isEmpty())
-                                locked = true;
+                            if (!partsToEvict.isEmpty()) {
+                                if (ctx.kernalContext().isStopping()) {
+                                    partsToEvict.clear();
+
+                                    locked = false;
+                                }
+                                else
+                                    locked = true;
+                            }
                             else {
                                 boolean res = partsEvictOwning.compareAndSet(1, 0);
 
