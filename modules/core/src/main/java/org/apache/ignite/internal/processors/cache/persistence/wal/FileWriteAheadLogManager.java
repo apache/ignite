@@ -1003,10 +1003,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileIO fileIO = ioFactory.create(nextFile);
 
             if (archiver == null) {
-                formatFile(fileIO);
+                wipeFile(fileIO);
 
-                if (mode == WALMode.DEFAULT)
-                    fileIO.position(0);
+                fileIO.position(0);
             }
 
             FileWriteHandle hnd = new FileWriteHandle(
@@ -1087,21 +1086,29 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws IOException if formatting failed
      */
     private void formatFile(FileIO fileIO) throws IOException {
-        int left = dsCfg.getWalSegmentSize();
-
-        if (mode == WALMode.DEFAULT) {
-            while (left > 0) {
-                int toWrite = Math.min(FILL_BUF.length, left);
-
-                fileIO.write(FILL_BUF, 0, toWrite);
-
-                left -= toWrite;
-            }
-
-            fileIO.force();
-        }
+        if (mode == WALMode.DEFAULT)
+            wipeFile(fileIO);
         else
             fileIO.clear();
+    }
+
+    /**
+     * Clears the file, fills with zeros, position is kept in end of file
+     *
+     * @param fileIO File to format.
+     * @throws IOException if formatting failed
+     */
+    private void wipeFile(FileIO fileIO) throws IOException {
+        int left = dsCfg.getWalSegmentSize();
+        while (left > 0) {
+            int toWrite = Math.min(FILL_BUF.length, left);
+
+            fileIO.write(FILL_BUF, 0, toWrite);
+
+            left -= toWrite;
+        }
+
+        fileIO.force();
     }
 
     /**
