@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils.BackupPostProcessingClosure;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
@@ -47,14 +48,13 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -125,7 +125,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private ClusterNode node;
 
     /** Post processing closure. */
-    private volatile IgniteBiInClosure<CacheObject, GridCacheVersion> postProcessingClos;
+    private volatile BackupPostProcessingClosure postProcessingClos;
 
     /**
      * @param cctx Context.
@@ -286,46 +286,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 // Need version to correctly store value.
                 needVer = true;
 
-                postProcessingClos = new IgniteBiInClosure<CacheObject, GridCacheVersion>() {
-                    @Override public void apply(CacheObject val, GridCacheVersion ver) {
-                        while (true) {
-                            GridCacheEntryEx entry = null;
-                            GridDhtCacheAdapter colocated = cctx.dht();
-
-                            try {
-                                entry = colocated.entryEx(key, topVer);
-
-                                entry.initialValue(
-                                    val,
-                                    ver,
-                                    0,
-                                    0,
-                                    false,
-                                    topVer,
-                                    GridDrType.DR_BACKUP,
-                                    true);
-
-                                break;
-                            }
-                            catch (GridCacheEntryRemovedException ignore) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Got removed entry during postprocessing (will retry): " +
-                                        entry);
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Error saving backup value: " + entry, e);
-                            }
-                            catch (GridDhtInvalidPartitionException ignored) {
-                                break;
-                            }
-                            finally {
-                                assert entry != null;
-
-                                cctx.evicts().touch(entry, topVer);
-                            }
-                        }
-                    }
-                };
+                postProcessingClos = CU.createBackupPostProcessingClosure(topVer, log, cctx, key, readThrough, skipVals);
             }
 
             GridCacheMessage req = new GridNearSingleGetRequest(cctx.cacheId(),

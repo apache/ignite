@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils.BackupPostProcessingClosure;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter;
@@ -59,7 +60,6 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -364,7 +364,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     cctx.mvcc().addFuture(this, futId);
                 }
 
-                MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer, createPostProcessingClosure(topVer, log));
+                MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer,
+                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, readThrough, skipVals));
 
                 GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),
@@ -838,7 +839,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         private AffinityTopologyVersion topVer;
 
         /** Post processing closure. */
-        private final IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos;
+        private final BackupPostProcessingClosure postProcessingClos;
 
         /** {@code True} if remapped after node left. */
         private boolean remapped;
@@ -855,7 +856,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             LinkedHashMap<KeyCacheObject, Boolean> keys,
             Map<KeyCacheObject, GridNearCacheEntry> savedEntries,
             AffinityTopologyVersion topVer,
-            IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos) {
+            BackupPostProcessingClosure postProcessingClos) {
             this.node = node;
             this.keys = keys;
             this.savedEntries = savedEntries;
