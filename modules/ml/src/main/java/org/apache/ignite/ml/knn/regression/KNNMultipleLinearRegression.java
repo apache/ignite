@@ -34,12 +34,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * </ul>
  */
 public class KNNMultipleLinearRegression extends KNNModel {
-    /**
-     * @param k amount of nearest neighbors
-     * @param distanceMeasure
-     * @param stgy
-     * @param training
-     */
+    /** {@inheritDoc} */
     public KNNMultipleLinearRegression(int k, DistanceMeasure distanceMeasure, KNNStrategy stgy,
         LabeledDataset training) {
         super(k, distanceMeasure, stgy, training);
@@ -49,16 +44,15 @@ public class KNNMultipleLinearRegression extends KNNModel {
     @Override public Double predict(Vector v) {
 
         LabeledVector[] neighbors = findKNearestNeighbors(v, true);
-        double clsLb = predictYBasedOn(neighbors, v);
 
-        return clsLb;
+        return predictYBasedOn(neighbors, v);
     }
 
     /** */
-    private double predictYBasedOn(LabeledVector<Vector, Double>[] neighbors, Vector v) {
+    private double predictYBasedOn(LabeledVector[] neighbors, Vector v) {
         switch (stgy) {
             case SIMPLE:
-                return simpleRegression(neighbors, v);
+                return simpleRegression(neighbors);
             case WEIGHTED:
                 return weightedRegression(neighbors, v);
             default:
@@ -79,7 +73,7 @@ public class KNNMultipleLinearRegression extends KNNModel {
     }
 
     /** */
-    private double simpleRegression(LabeledVector<Vector, Double>[] neighbors, Vector v) {
+    private double simpleRegression(LabeledVector<Vector, Double>[] neighbors) {
         double sum = 0.0;
         for (LabeledVector<Vector, Double> neighbor : neighbors)
             sum += neighbor.label();

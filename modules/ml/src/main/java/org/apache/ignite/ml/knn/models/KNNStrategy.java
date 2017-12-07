@@ -17,9 +17,7 @@
 
 package org.apache.ignite.ml.knn.models;
 
-/**
- * This enum contains settings for kNN algorithm
- */
+/** This enum contains settings for kNN algorithm. */
 public enum KNNStrategy {
     /** */
     SIMPLE,

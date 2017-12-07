@@ -22,7 +22,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.knn.models.FillMissingValueWith;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -34,10 +33,10 @@ public class BaseKNNTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 4;
 
     /** Separator */
-    protected static final String SEPARATOR = "\t";
+    private static final String SEPARATOR = "\t";
 
     /** Path to the Iris dataset */
-    protected static final String KNN_IRIS_TXT = "knn/iris.txt";
+    static final String KNN_IRIS_TXT = "knn/iris.txt";
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -70,10 +69,10 @@ public class BaseKNNTest extends GridCommonAbstractTest {
     /**
      * Loads labeled dataset from file with .txt extension
      *
-     * @param rsrcPath
+     * @param rsrcPath path to dataset
      * @return null if path is incorrect
      */
-    protected LabeledDataset loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
+    LabeledDataset loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
         try {
             Path path = Paths.get(this.getClass().getClassLoader().getResource(rsrcPath).toURI());
             try {

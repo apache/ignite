@@ -22,13 +22,13 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.knn.models.FillMissingValueWith;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.structures.LabeledDataset;
-
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /** Tests behaviour of KNNClassificationTest. */
 public class LabeledDatasetTest extends BaseKNNTest {
@@ -49,6 +49,53 @@ public class LabeledDatasetTest extends BaseKNNTest {
 
 
     /** */
+    public void testFeatureNames() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        double[][] mtx =
+            new double[][] {
+                {1.0, 1.0},
+                {1.0, 2.0},
+                {2.0, 1.0},
+                {-1.0, -1.0},
+                {-1.0, -2.0},
+                {-2.0, -1.0}};
+        double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
+
+        String[] featureNames = new String[] {"x", "y"};
+        final LabeledDataset dataset = new LabeledDataset(mtx, lbs, featureNames, false);
+
+        assertEquals(dataset.getFeatureName(0), "x");
+    }
+
+    /** */
+    public void testAccessMethods() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        double[][] mtx =
+            new double[][] {
+                {1.0, 1.0},
+                {1.0, 2.0},
+                {2.0, 1.0},
+                {-1.0, -1.0},
+                {-1.0, -2.0},
+                {-2.0, -1.0}};
+        double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
+
+        final LabeledDataset dataset = new LabeledDataset(mtx, lbs, null, false);
+
+        assertEquals(dataset.colSize(), 2);
+        assertEquals(dataset.rowSize(), 6);
+
+        final LabeledVector<Vector, Double> row = dataset.getRow(0);
+
+        assertEquals(row.features().get(0), 1.0);
+        assertEquals(row.label(), 1.0);
+        dataset.setLabel(0, 2.0);
+        assertEquals(row.label(), 2.0);
+    }
+
+    /** */
     public void testFailOnYNull() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -63,7 +110,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
         double[] lbs = new double[] {};
 
         try {
-            LabeledDataset training = new LabeledDataset(mtx, lbs);
+            new LabeledDataset(mtx, lbs);
             fail("CardinalityException");
         }
         catch (CardinalityException e) {
@@ -81,7 +128,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
         try {
-            LabeledDataset training = new LabeledDataset(mtx, lbs);
+            new LabeledDataset(mtx, lbs);
             fail("CardinalityException");
         }
         catch (CardinalityException e) {
@@ -102,7 +149,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         try {
-            LabeledDataset training = loadDatasetFromTxt(EMPTY_TXT, false);
+            loadDatasetFromTxt(EMPTY_TXT, false);
             fail("EmptyFileException");
         }
         catch (EmptyFileException e) {
@@ -116,7 +163,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         try {
-            LabeledDataset training = loadDatasetFromTxt(NO_DATA_TXT, false);
+            loadDatasetFromTxt(NO_DATA_TXT, false);
             fail("NoDataException");
         }
         catch (NoDataException e) {
@@ -138,7 +185,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         try {
-            LabeledDataset training = loadDatasetFromTxt(IRIS_INCORRECT_TXT, true);
+            loadDatasetFromTxt(IRIS_INCORRECT_TXT, true);
             fail("FileParsingException");
         }
         catch (FileParsingException e) {
@@ -154,9 +201,8 @@ public class LabeledDatasetTest extends BaseKNNTest {
 
         Path path = Paths.get(this.getClass().getClassLoader().getResource(IRIS_MISSED_DATA).toURI());
 
-        LabeledDataset training = LabeledDataset.loadTxt(path, ",", false, false, FillMissingValueWith.ZERO);
+        LabeledDataset training = LabeledDataset.loadTxt(path, ",", false, false);
 
         assertEquals(training.features(2).get(1), 0.0);
-
     }
 }

@@ -39,7 +39,7 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
     private double[][] x;
 
     /** */
-    public void testSimpleRegressionWithOneNeighboor() {
+    public void testSimpleRegressionWithOneNeighbour() {
 
         y = new double[] {11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
         x = new double[6][];
@@ -115,9 +115,9 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
         LabeledDataset training = new LabeledDataset(x, y);
 
-        training.normalizeWith(Normalization.MINIMAX);
+        final LabeledDataset normalizedTrainingDataset = training.normalizeWith(Normalization.MINIMAX);
 
-        KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(5, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+        KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(5, new EuclideanDistance(), KNNStrategy.SIMPLE, normalizedTrainingDataset);
         Vector vector = new DenseLocalOnHeapVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
         System.out.println(knnMdl.predict(vector));
         Assert.assertEquals(67857, knnMdl.predict(vector), 2000);
@@ -147,9 +147,9 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
         LabeledDataset training = new LabeledDataset(x, y);
 
-        training.normalizeWith(Normalization.MINIMAX);
+        final LabeledDataset normalizedTrainingDataset = training.normalizeWith(Normalization.MINIMAX);
 
-        KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(5, new EuclideanDistance(), KNNStrategy.WEIGHTED, training);
+        KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(5, new EuclideanDistance(), KNNStrategy.WEIGHTED, normalizedTrainingDataset);
         Vector vector = new DenseLocalOnHeapVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
         System.out.println(knnMdl.predict(vector));
         Assert.assertEquals(67857, knnMdl.predict(vector), 2000);

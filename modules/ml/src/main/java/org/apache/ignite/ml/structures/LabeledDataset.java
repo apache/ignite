@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.knn.models.FillMissingValueWith;
 import org.apache.ignite.ml.knn.models.Normalization;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
@@ -34,7 +33,6 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
-import org.apache.ignite.ml.math.impls.vector.AbstractVector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class LabeledDataset implements Serializable {
     /** Data to keep */
-    private final LabeledVector<Vector, Double>[] data;
+    private final LabeledVector[] data;
 
     /** Feature names (one name for each attribute in vector) */
     private String[] featureNames;
@@ -74,13 +72,15 @@ public class LabeledDataset implements Serializable {
         assert data != null;
         assert data.length > 0;
 
-        if(featureNames == null) generateFeatureNames();
-        else assert data.length == featureNames.length;
-
         this.data = data;
         this.rowSize = data.length;
         this.colSize = colSize;
-        this.featureNames = featureNames;
+
+        if(featureNames == null) generateFeatureNames();
+        else {
+            assert colSize == featureNames.length;
+            this.featureNames = featureNames;
+        }
 
     }
 
@@ -115,7 +115,13 @@ public class LabeledDataset implements Serializable {
         assert colSize > 0;
 
         if(featureNames == null) generateFeatureNames();
-        else assert colSize == featureNames.length;
+        else {
+            assert colSize == featureNames.length;
+            this.featureNames = featureNames;
+        }
+
+        this.rowSize = rowSize;
+        this.colSize = colSize;
 
         data = new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++)
@@ -150,6 +156,10 @@ public class LabeledDataset implements Serializable {
 
         this.rowSize = lbs.length;
         this.colSize = mtx[0].length;
+
+        if(featureNames == null) generateFeatureNames();
+        else this.featureNames = featureNames;
+
 
         data = new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++){
@@ -187,6 +197,15 @@ public class LabeledDataset implements Serializable {
      */
     public int rowSize(){
         return rowSize;
+    }
+
+    /**
+     * Returns feature name for column with given index
+     * @param i given index
+     * @return feature name
+     */
+    public String getFeatureName(int i){
+        return featureNames[i];
     }
 
     /**
@@ -229,7 +248,7 @@ public class LabeledDataset implements Serializable {
         if(labeledVector!=null)
             return (double)labeledVector.label();
         else
-            return Double.parseDouble(null);
+            return Double.NaN;
     }
 
     /**
@@ -253,7 +272,7 @@ public class LabeledDataset implements Serializable {
      * @param isFallOnBadData Fall on incorrect data if true
      * @return Labeled Dataset parsed from file
      */
-    public static LabeledDataset loadTxt(Path pathToFile, String separator, boolean isDistributed, boolean isFallOnBadData, FillMissingValueWith fillingStgy) throws IOException {
+    public static LabeledDataset loadTxt(Path pathToFile, String separator, boolean isDistributed, boolean isFallOnBadData) throws IOException {
         Stream<String> stream = Files.lines(pathToFile);
         List<String> list = new ArrayList<>();
         stream.forEach(list::add);
@@ -273,7 +292,7 @@ public class LabeledDataset implements Serializable {
 
                     try {
                         clsLb = Double.parseDouble(rowData[0]);
-                        Vector vec = parseFeatures(pathToFile, isDistributed, isFallOnBadData, fillingStgy, colSize, i, rowData);
+                        Vector vec = parseFeatures(pathToFile, isDistributed, isFallOnBadData, colSize, i, rowData);
                         labels.add(clsLb);
                         vectors.add(vec);
                     }
@@ -298,13 +317,13 @@ public class LabeledDataset implements Serializable {
 
     /** */
     @NotNull private static Vector parseFeatures(Path pathToFile, boolean isDistributed, boolean isFallOnBadData,
-        FillMissingValueWith fillingStgy, int colSize, int rowIdx, String[] rowData) {
+        int colSize, int rowIdx, String[] rowData) {
         final Vector vec = getVector(colSize, isDistributed);
 
         for (int j = 0; j < colSize; j++) {
 
             if (rowData.length == colSize + 1) {
-                double val = fillMissedData(fillingStgy);
+                double val = fillMissedData();
                 try {
                     val = Double.parseDouble(rowData[j + 1]);
                     vec.set(j, val);
@@ -323,12 +342,8 @@ public class LabeledDataset implements Serializable {
 
     // TODO: IGNITE-7025 add filling with mean, mode, ignoring and so on
     /** */
-    private static double fillMissedData(FillMissingValueWith fillingStgy) {
-        switch (fillingStgy){
-            case ZERO: return 0.0;
-            default: throw new UnsupportedOperationException("Filling missing data is not supported for strategy " + fillingStgy.name());
-        }
-
+    private static double fillMissedData() {
+            return 0.0;
     }
 
     /** */
@@ -399,21 +414,15 @@ public class LabeledDataset implements Serializable {
 
         LabeledDataset that = (LabeledDataset)o;
 
-        if (rowSize != that.rowSize)
-            return false;
-        if (colSize != that.colSize)
-            return false;
-        if (!Arrays.equals(data, that.data))
-            return false;
-        return Arrays.equals(featureNames, that.featureNames);
+        return rowSize == that.rowSize && colSize == that.colSize && Arrays.equals(data, that.data) && Arrays.equals(featureNames, that.featureNames);
     }
 
     /** */
     @Override public int hashCode() {
-        int result = Arrays.hashCode(data);
-        result = 31 * result + Arrays.hashCode(featureNames);
-        result = 31 * result + rowSize;
-        result = 31 * result + colSize;
-        return result;
+        int res = Arrays.hashCode(data);
+        res = 31 * res + Arrays.hashCode(featureNames);
+        res = 31 * res + rowSize;
+        res = 31 * res + colSize;
+        return res;
     }
 }

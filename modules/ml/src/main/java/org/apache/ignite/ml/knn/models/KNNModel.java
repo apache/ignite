@@ -79,9 +79,8 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
     @Override public Double predict(Vector v) {
 
         LabeledVector[] neighbors = findKNearestNeighbors(v, true);
-        double classLabel = classify(neighbors, v, stgy);
 
-        return classLabel;
+        return classify(neighbors, v, stgy);
     }
 
     /** */
@@ -104,9 +103,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
 
         TreeMap<Double, Set<Integer>> distanceIdxPairs = getDistances(v, trainingData);
 
-        LabeledVector[] res = getKClosestVectors(trainingData, distanceIdxPairs, isCashedDistance);
-
-        return res;
+        return getKClosestVectors(trainingData, distanceIdxPairs, isCashedDistance);
     }
 
     /**
@@ -121,9 +118,9 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
         TreeMap<Double, Set<Integer>> distanceIdxPairs, boolean isCashedDistances) {
         LabeledVector[] res = new LabeledVector[k];
         int i = 0;
-        final Iterator<Double> iterator = distanceIdxPairs.keySet().iterator();
+        final Iterator<Double> iter = distanceIdxPairs.keySet().iterator();
         while (i < k) {
-            double key = iterator.next();
+            double key = iter.next();
             Set<Integer> idxs = distanceIdxPairs.get(key);
             for (Integer idx : idxs) {
                 res[i] = trainingData[idx];
@@ -207,7 +204,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
     /** */
     private double getClassVoteForVector(KNNStrategy stgy, double distance) {
 
-        if (stgy.equals(stgy.WEIGHTED))
+        if (stgy.equals(KNNStrategy.WEIGHTED))
             return 1 / distance; // strategy.WEIGHTED
         else
             return 1.0; // strategy.SIMPLE
