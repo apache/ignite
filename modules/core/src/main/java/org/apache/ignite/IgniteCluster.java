@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
@@ -418,6 +419,44 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @return Future that will be completed when client reconnected.
      */
     @Nullable public IgniteFuture<?> clientReconnectFuture();
+
+    /**
+     * Checks Ignite grid is active or not active.
+     *
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
+     */
+    public boolean active();
+
+    /**
+     * Changes Ignite grid state to active or inactive.
+     *
+     * @param active If {@code True} start activation process. If {@code False} start deactivation process.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     */
+    public void active(boolean active);
+
+    /**
+     * Gets current baseline topology. If baseline topology was not set, will return {@code null}.
+     *
+     * @return Collection of nodes included to the current baseline topology.
+     */
+    @Nullable public Collection<BaselineNode> currentBaselineTopology();
+
+    /**
+     * Sets baseline topology. The cluster must be activated for this method to be called.
+     *
+     * @param baselineTop A collection of nodes to be included to the baseline topology.
+     */
+    public void setBaselineTopology(Collection<BaselineNode> baselineTop);
+
+    /**
+     * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds
+     * only if the cluster topology has not changed). All client and daemon nodes will be filtered out of the
+     * resulting baseline.
+     *
+     * @param topVer Topology version to set.
+     */
+    public void setBaselineTopology(long topVer);
 
     /** {@inheritDoc} */
     @Deprecated

@@ -48,13 +48,14 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -489,7 +490,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
             File[] cpFiles = cpDir.listFiles();
 
-            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2);
+            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2 + 1); // starts & ends + node_start
         }
         finally {
             stopAllGrids();
@@ -897,14 +898,14 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         boolean foundTails = false;
 
         for (GridDhtLocalPartition part : parts) {
-            FreeListImpl freeList = GridTestUtils.getFieldValue(part.dataStore(), "freeList");
+            CacheFreeListImpl freeList = GridTestUtils.getFieldValue(part.dataStore(), "freeList");
 
             if (freeList == null)
                 // Lazy store.
                 continue;
 
             AtomicReferenceArray<PagesList.Stripe[]> buckets = GridTestUtils.getFieldValue(freeList,
-                FreeListImpl.class, "buckets");
+                AbstractFreeList.class, "buckets");
             //AtomicIntegerArray cnts = GridTestUtils.getFieldValue(freeList, PagesList.class, "cnts");
 
             assertNotNull(buckets);

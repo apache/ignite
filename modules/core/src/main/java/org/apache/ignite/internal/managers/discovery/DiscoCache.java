@@ -23,11 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -39,6 +41,13 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class DiscoCache {
+    /** */
+    private static final C1<BaselineNode, ClusterNode> BASELINE_TO_CLUSTER = new C1<BaselineNode, ClusterNode>() {
+        @Override public ClusterNode apply(BaselineNode baselineNode) {
+            return (ClusterNode)baselineNode;
+        }
+    };
+
     /** */
     private final DiscoveryDataClusterState state;
 
@@ -56,6 +65,9 @@ public class DiscoCache {
 
     /** Daemon nodes. */
     private final List<ClusterNode> daemonNodes;
+
+    /** Baseline nodes. */
+    private final List<? extends BaselineNode> baselineNodes;
 
     /** All remote nodes with at least one cache configured. */
     @GridToStringInclude
@@ -81,6 +93,18 @@ public class DiscoCache {
     /** */
     private final AffinityTopologyVersion topVer;
 
+    /** */
+    final Map<UUID, Short> nodeIdToConsIdx;
+
+    /** */
+    final Map<Short, UUID> consIdxToNodeId;
+
+    /** */
+    private final P1<BaselineNode> aliveBaselineNodePred;
+
+    /** */
+    private final P1<ClusterNode> aliveNodePred;
+
     /**
      * @param topVer Topology version.
      * @param state Current cluster state.
@@ -90,10 +114,13 @@ public class DiscoCache {
      * @param srvNodes Server nodes.
      * @param daemonNodes Daemon nodes.
      * @param rmtNodesWithCaches Remote nodes with at least one cache configured.
+     * @param baselineNodes Baseline nodes or {@code null} if baseline was not set.
      * @param allCacheNodes Cache nodes by cache name.
      * @param cacheGrpAffNodes Affinity nodes by cache group ID.
      * @param nodeMap Node map.
-     * @param alives Alive nodes.
+     * @param alives0 Alive nodes.
+     * @param nodeIdToConsIdx Node ID to consistent ID mapping.
+     * @param consIdxToNodeId Consistent ID to node ID mapping.
      * @param minNodeVer Minimum node version.
      */
     DiscoCache(
@@ -105,11 +132,15 @@ public class DiscoCache {
         List<ClusterNode> srvNodes,
         List<ClusterNode> daemonNodes,
         List<ClusterNode> rmtNodesWithCaches,
+        @Nullable List<? extends BaselineNode> baselineNodes,
         Map<Integer, List<ClusterNode>> allCacheNodes,
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
-        Set<UUID> alives,
-        IgniteProductVersion minNodeVer) {
+        Set<UUID> alives0,
+        @Nullable Map<UUID, Short> nodeIdToConsIdx,
+        @Nullable  Map<Short, UUID> consIdxToNodeId,
+        IgniteProductVersion minNodeVer
+    ) {
         this.topVer = topVer;
         this.state = state;
         this.loc = loc;
@@ -118,11 +149,28 @@ public class DiscoCache {
         this.srvNodes = srvNodes;
         this.daemonNodes = daemonNodes;
         this.rmtNodesWithCaches = rmtNodesWithCaches;
+        this.baselineNodes = baselineNodes;
         this.allCacheNodes = allCacheNodes;
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
-        this.alives.addAll(alives);
+        alives.addAll(alives0);
         this.minNodeVer = minNodeVer;
+        this.nodeIdToConsIdx = nodeIdToConsIdx;
+        this.consIdxToNodeId = consIdxToNodeId;
+
+        aliveBaselineNodePred = new P1<BaselineNode>() {
+            @Override
+            public boolean apply(BaselineNode node) {
+                return node instanceof ClusterNode && alives.contains(((ClusterNode)node).id());
+
+            }
+        };
+
+        aliveNodePred = new P1<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
+                return alives.contains(node.id());
+            }
+        };
     }
 
     /**
@@ -156,6 +204,15 @@ public class DiscoCache {
         return rmtNodes;
     }
 
+    /**
+     * Returns a collection of baseline nodes.
+     *
+     * @return A collection of baseline nodes or {@code null} if baseline topology was not set.
+     */
+    @Nullable public List<? extends BaselineNode> baselineNodes() {
+        return baselineNodes;
+    }
+
     /** @return All nodes. */
     public List<ClusterNode> allNodes() {
         return allNodes;
@@ -171,17 +228,23 @@ public class DiscoCache {
         return daemonNodes;
     }
 
+    /** @return Consistent id map UUID -> Short (compacted consistent id). */
+    public Map<UUID, Short> consistentIdMap() {
+        return nodeIdToConsIdx;
+    }
+
+    /** @return Consistent id map Short (compacted consistent id) -> UUID. */
+    public Map<Short, UUID> nodeIdMap() {
+        return consIdxToNodeId;
+    }
+
     /**
      * Gets all alive remote nodes that have at least one cache configured.
      *
      * @return Collection of nodes.
      */
     public Collection<ClusterNode> remoteAliveNodesWithCaches() {
-        return F.view(rmtNodesWithCaches, new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode node) {
-                return alives.contains(node.id());
-            }
-        });
+        return F.view(rmtNodesWithCaches, aliveNodePred);
     }
 
     /**
@@ -190,17 +253,26 @@ public class DiscoCache {
      * @return Collection of nodes.
      */
     public Collection<ClusterNode> aliveServerNodes() {
-        return F.view(serverNodes(), new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode node) {
-                return alives.contains(node.id());
-            }
-        });
+        return F.view(serverNodes(), aliveNodePred);
+    }
+
+    /**
+     * Returns a collection of live baseline nodes.
+     *
+     * @return A view of baseline nodes that are currently present in the cluster or {@code null} if baseline
+     *      topology was not set.
+     */
+    @Nullable public Collection<ClusterNode> aliveBaselineNodes() {
+        return baselineNodes == null ? null : F.viewReadOnly(baselineNodes, BASELINE_TO_CLUSTER, aliveBaselineNodePred);
+
     }
 
     /**
      * @return Oldest alive server node.
      */
-    public @Nullable ClusterNode oldestAliveServerNode(){
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Nullable public ClusterNode oldestAliveServerNode(){
+        // Avoid iterator allocation.
         for (int i = 0; i < srvNodes.size(); i++) {
             ClusterNode srv = srvNodes.get(i);
 
@@ -330,10 +402,13 @@ public class DiscoCache {
             srvNodes,
             daemonNodes,
             rmtNodesWithCaches,
+            baselineNodes,
             allCacheNodes,
             cacheGrpAffNodes,
             nodeMap,
             alives,
+            nodeIdToConsIdx,
+            consIdxToNodeId,
             minNodeVer);
     }
 

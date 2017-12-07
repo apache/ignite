@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -51,8 +52,9 @@ import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictio
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
@@ -83,7 +85,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
 
     /** */
-    protected Map<String, DataRegion> dataRegionMap;
+    protected volatile Map<String, DataRegion> dataRegionMap;
+
+    /** */
+    private volatile boolean dataRegionsInitialized;
 
     /** */
     protected Map<String, DataRegionMetrics> memMetricsMap;
@@ -92,10 +97,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected DataRegion dfltDataRegion;
 
     /** */
-    protected Map<String, FreeListImpl> freeListMap;
+    protected Map<String, CacheFreeListImpl> freeListMap;
 
     /** */
-    private FreeListImpl dfltFreeList;
+    private CacheFreeListImpl dfltFreeList;
 
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
@@ -112,6 +117,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         validateConfiguration(memCfg);
 
         pageSize = memCfg.getPageSize();
+
+        initDataRegions(memCfg);
     }
 
     /**
@@ -172,7 +179,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             boolean persistenceEnabled = memPlcCfg.isPersistenceEnabled();
 
-            FreeListImpl freeList = new FreeListImpl(0,
+            CacheFreeListImpl freeList = new CacheFreeListImpl(0,
                     cctx.igniteInstanceName(),
                     memMetrics,
                     memPlc,
@@ -210,21 +217,25 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
     protected void initDataRegions(DataStorageConfiguration memCfg) throws IgniteCheckedException {
+        if (dataRegionsInitialized)
+            return;
+
         DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegionConfigurations();
 
         int dataRegions = dataRegionCfgs == null ? 0 : dataRegionCfgs.length;
 
-        dataRegionMap = U.newHashMap(2 + dataRegions);
-        memMetricsMap = U.newHashMap(2 + dataRegions);
+        dataRegionMap = U.newHashMap(3 + dataRegions);
+        memMetricsMap = U.newHashMap(3 + dataRegions);
 
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
-                addDataRegion(memCfg, dataRegionCfg);
+                addDataRegion(memCfg, dataRegionCfg, true);
         }
 
         addDataRegion(
             memCfg,
-            memCfg.getDefaultDataRegionConfiguration()
+            memCfg.getDefaultDataRegionConfiguration(),
+            true
         );
 
         addDataRegion(
@@ -233,8 +244,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memCfg.getSystemRegionInitialSize(),
                 memCfg.getSystemRegionMaxSize(),
                 CU.isPersistenceEnabled(memCfg)
-            )
+            ),
+            true
         );
+
+        dataRegionsInitialized = true;
     }
 
     /**
@@ -242,9 +256,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRegionCfg Data region config.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
-    private void addDataRegion(
+    protected void addDataRegion(
         DataStorageConfiguration dataStorageCfg,
-        DataRegionConfiguration dataRegionCfg
+        DataRegionConfiguration dataRegionCfg,
+        boolean trackable
     ) throws IgniteCheckedException {
         String dataRegionName = dataRegionCfg.getName();
 
@@ -255,7 +270,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, fillFactorProvider(dataRegionCfg));
 
-        DataRegion memPlc = initMemory(dataStorageCfg, dataRegionCfg, memMetrics);
+        DataRegion memPlc = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
 
         dataRegionMap.put(dataRegionName, memPlc);
 
@@ -278,11 +293,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         final String dataRegName = dataRegCfg.getName();
 
         return new IgniteOutClosure<Float>() {
-            private FreeListImpl freeList;
+            private CacheFreeListImpl freeList;
 
             @Override public Float apply() {
                 if (freeList == null) {
-                    FreeListImpl freeList0 = freeListMap.get(dataRegName);
+                    CacheFreeListImpl freeList0 = freeListMap.get(dataRegName);
 
                     if (freeList0 == null)
                         return (float) 0;
@@ -526,7 +541,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void dumpStatistics(IgniteLogger log) {
         if (freeListMap != null) {
-            for (FreeListImpl freeList : freeListMap.values())
+            for (CacheFreeListImpl freeList : freeListMap.values())
                 freeList.dumpStatistics(log);
         }
     }
@@ -641,6 +656,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             dataRegionMap.clear();
 
             dataRegionMap = null;
+
+            dataRegionsInitialized = false;
         }
     }
 
@@ -660,6 +677,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     cfg.getIgniteInstanceName(),
                     "DataRegionMetrics", name
                     ));
+        }
+        catch (InstanceNotFoundException ignored) {
+            // We tried to unregister a non-existing MBean, not a big deal.
         }
         catch (Throwable e) {
             U.error(log, "Failed to unregister MBean for memory metrics: " +
@@ -798,7 +818,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         int sysPageSize = pageMem.systemPageSize();
 
-        FreeListImpl freeListImpl = freeListMap.get(plcCfg.getName());
+        CacheFreeListImpl freeListImpl = freeListMap.get(plcCfg.getName());
 
         for (;;) {
             long allocatedPagesCnt = pageMem.loadedPages();
@@ -826,7 +846,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private DataRegion initMemory(
         DataStorageConfiguration memCfg,
         DataRegionConfiguration plcCfg,
-        DataRegionMetricsImpl memMetrics
+        DataRegionMetricsImpl memMetrics,
+        boolean trackable
     ) throws IgniteCheckedException {
         File allocPath = buildAllocPath(plcCfg);
 
@@ -836,7 +857,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 log,
                 allocPath);
 
-        PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics);
+        PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable);
 
         return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
@@ -845,7 +866,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param plc data region Configuration.
      * @param pageMem Page memory.
      */
-    private PageEvictionTracker createPageEvictionTracker(DataRegionConfiguration plc, PageMemory pageMem) {
+    protected PageEvictionTracker createPageEvictionTracker(DataRegionConfiguration plc, PageMemory pageMem) {
         if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || plc.isPersistenceEnabled())
             return new NoOpPageEvictionTracker();
 
@@ -873,7 +894,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @throws IgniteCheckedException If resolving swap directory fails.
      */
-    @Nullable private File buildAllocPath(DataRegionConfiguration plc) throws IgniteCheckedException {
+    @Nullable protected File buildAllocPath(DataRegionConfiguration plc) throws IgniteCheckedException {
         String path = plc.getSwapPath();
 
         if (path == null)
@@ -901,7 +922,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DirectMemoryProvider memProvider,
         DataStorageConfiguration memCfg,
         DataRegionConfiguration memPlcCfg,
-        DataRegionMetricsImpl memMetrics
+        DataRegionMetricsImpl memMetrics,
+        boolean trackable
     ) {
         memMetrics.persistenceEnabled(false);
 
@@ -968,5 +990,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     protected void setPageSize(int pageSize) {
         this.pageSize = pageSize;
+    }
+
+    /**
+     * @return MetaStorage
+     */
+    public MetaStorage metaStorage() {
+        return null;
     }
 }

@@ -232,9 +232,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
-            if (!ctx.clientNode()) {
-                assert cache.context().affinityNode();
-
+            if (!ctx.clientNode() && cache.context().affinityNode()) {
                 cache.context().continuousQueries().executeInternalQuery(
                     new ServiceEntriesListener(), null, true, true, false
                 );
@@ -1757,8 +1755,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                                     try {
                                         svcName.set(dep.configuration().getName());
 
-                                        ctx.cache().internalCache(UTILITY_CACHE_NAME).context().affinity().
-                                            affinityReadyFuture(topVer).get();
+                                        ctx.cache().context().exchange().affinityReadyFuture(topVer).get();
 
                                         reassign(dep, topVer);
                                     }

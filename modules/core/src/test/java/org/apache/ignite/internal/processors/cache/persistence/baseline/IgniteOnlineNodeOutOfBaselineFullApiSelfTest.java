@@ -14,32 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
-package org.apache.ignite.internal;
-
-import java.io.Serializable;
-import java.util.Comparator;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- * Node order comparator.
+ *
  */
-public class GridNodeOrderComparator implements Comparator<ClusterNode>, Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    public static final Comparator<ClusterNode> INSTANCE = new GridNodeOrderComparator();
-
-    /**
-     * Private constructor. Don't create this class, use {@link #INSTANCE}.
-     */
-    private GridNodeOrderComparator() {
-
-    }
-
+public class IgniteOnlineNodeOutOfBaselineFullApiSelfTest extends IgniteBaselineAbstractFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override public int compare(ClusterNode n1, ClusterNode n2) {
-        return n1.order() < n2.order() ? -1 : n1.order() > n2.order() ? 1 : n1.id().compareTo(n2.id());
+    @Override protected void beforeTestsStarted() throws Exception {
+        initStoreStrategy();
+
+        GridTestUtils.deleteDbFiles();
+
+        startGrids(gridCount());
+
+        grid(0).active(true);
+
+        startGrid("onlineOutOfBaselineNode");
+
+        awaitPartitionMapExchange();
     }
 }

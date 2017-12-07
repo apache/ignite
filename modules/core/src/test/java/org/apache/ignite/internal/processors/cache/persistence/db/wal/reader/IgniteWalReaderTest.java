@@ -1094,11 +1094,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                             unwrappedKeyObj = key instanceof BinaryObject ? key : key.value(null, false);
                         }
-                        log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
-                            "under transaction: " + globalTxId +
-                            //; entry " + entry +
-                            "; Key: " + unwrappedKeyObj +
-                            "; Value: " + unwrappedValObj);
+
+                        if (dumpRecords)
+                            log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
+                                "under transaction: " + globalTxId +
+                                //; entry " + entry +
+                                "; Key: " + unwrappedKeyObj +
+                                "; Value: " + unwrappedValObj);
 
                         if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
                             cacheObjHnd.apply(unwrappedKeyObj, unwrappedValObj);
@@ -1111,8 +1113,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                     final TxRecord txRecord = (TxRecord)walRecord;
                     final GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
-                    log.info("//Tx Record, state: " + txRecord.state() +
-                        "; nearTxVersion" + globalTxId);
+                    if (dumpRecords)
+                        log.info("//Tx Record, state: " + txRecord.state() +
+                            "; nearTxVersion" + globalTxId);
                 }
             }
         }

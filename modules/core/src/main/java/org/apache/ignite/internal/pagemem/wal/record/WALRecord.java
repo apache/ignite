@@ -166,7 +166,16 @@ public abstract class WALRecord {
         PARTITION_DESTROY,
 
         /** Snapshot record. */
-        SNAPSHOT;
+        SNAPSHOT,
+
+        /** Metastore data record. */
+        METASTORE_DATA_RECORD,
+
+        /** Exchange record. */
+        EXCHANGE,
+
+        /** Baseline topology record. */
+        BASELINE_TOP_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -255,6 +264,13 @@ public abstract class WALRecord {
         assert size >= 0: size;
 
         this.size = size;
+    }
+
+    /**
+     * @return Need wal rollOver.
+     */
+    public boolean rollOver(){
+        return false;
     }
 
     /**

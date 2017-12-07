@@ -168,6 +168,13 @@ public class GridFunc {
     /** */
     private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new ClusterNodeGetIdClosure();
 
+    /** */
+    private static final IgniteClosure<ClusterNode, Object> NODE2CONSISTENTID = new IgniteClosure<ClusterNode, Object>() {
+        @Override public Object apply(ClusterNode node) {
+            return node.consistentId();
+        }
+    };
+
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
      *
@@ -321,6 +328,23 @@ public class GridFunc {
             return Collections.emptyList();
 
         return F.viewReadOnly(nodes, node2id());
+    }
+
+    /**
+     * Convenient utility method that returns collection of node consistent IDs for a given
+     * collection of grid nodes.
+     * <p>
+     * Note that this method doesn't create a new collection but simply iterates
+     * over the input one.
+     *
+     * @param nodes Collection of grid nodes.
+     * @return Collection of node consistent IDs for given collection of grid nodes.
+     */
+    public static Collection<Object> nodeConsistentIds(@Nullable Collection<? extends ClusterNode> nodes) {
+        if (nodes == null || nodes.isEmpty())
+            return Collections.emptyList();
+
+        return F.viewReadOnly(nodes, NODE2CONSISTENTID);
     }
 
     /**

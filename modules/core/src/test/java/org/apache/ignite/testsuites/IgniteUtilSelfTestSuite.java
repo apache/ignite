@@ -39,6 +39,7 @@ import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
+import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLongListSelfTest;
 import org.apache.ignite.util.GridMessageCollectionTest;
@@ -106,6 +107,9 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
 
         //dbx
         suite.addTestSuite(PageIdUtilsSelfTest.class);
+
+        // control.sh
+        suite.addTestSuite(GridCommandHandlerTest.class);
 
         return suite;
     }

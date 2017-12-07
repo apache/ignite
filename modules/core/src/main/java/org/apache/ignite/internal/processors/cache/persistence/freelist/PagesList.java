@@ -38,7 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousR
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
@@ -695,7 +695,7 @@ public abstract class PagesList extends DataStructure {
             if (needWalDeltaRecord(pageId, page, null))
                 wal.log(new PagesListAddPageRecord(grpId, pageId, dataId));
 
-            DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataAddr);
+            AbstractDataPageIO dataIO = PageIO.getPageIO(dataAddr);
             dataIO.setFreeListPageId(dataAddr, pageId);
 
             if (needWalDeltaRecord(dataId, dataPage, null))
@@ -726,7 +726,7 @@ public abstract class PagesList extends DataStructure {
         final long dataAddr,
         int bucket
     ) throws IgniteCheckedException {
-        DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataAddr);
+        AbstractDataPageIO dataIO = PageIO.getPageIO(dataAddr);
 
         // Attempt to add page failed: the node page is full.
         if (isReuseBucket(bucket)) {
@@ -1149,7 +1149,7 @@ public abstract class PagesList extends DataStructure {
         final long dataId,
         final long dataPage,
         final long dataAddr,
-        DataPageIO dataIO,
+        AbstractDataPageIO dataIO,
         int bucket)
         throws IgniteCheckedException {
         final long pageId = dataIO.getFreeListPageId(dataAddr);

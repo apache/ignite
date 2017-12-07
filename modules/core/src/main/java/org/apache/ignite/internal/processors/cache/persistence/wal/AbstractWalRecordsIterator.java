@@ -263,7 +263,7 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final Exception e,
         @Nullable final FileWALPointer ptr) {
         if (log.isInfoEnabled())
-            log.info("Stopping WAL iteration due to an exception: " + e.getMessage());
+            log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
     }
 
     /**

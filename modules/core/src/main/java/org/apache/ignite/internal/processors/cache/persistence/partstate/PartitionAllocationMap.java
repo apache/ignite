@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.partstate;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,6 +35,9 @@ import org.jetbrains.annotations.Nullable;
 public class PartitionAllocationMap {
     /** Maps following pairs: (groupId, partId) -> (lastAllocatedCount, allocatedCount) */
     private final NavigableMap<GroupPartitionId, PagesAllocationRange> map = new TreeMap<>();
+
+    /** Partitions forced to be skipped. */
+    private final Set<GroupPartitionId> skippedParts = new HashSet<>();
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -81,6 +86,20 @@ public class PartitionAllocationMap {
     }
 
     /**
+     * Forces the index partition for the given group ID to be skipped in collected map.
+     *
+     * @param grpId Group ID to skip.
+     * @return {@code true} if skipped partition was added to the ignore list during this call.
+     */
+    public boolean forceSkipIndexPartition(int grpId) {
+        GroupPartitionId idxId = new GroupPartitionId(grpId, PageIdAllocator.INDEX_PARTITION);
+
+        map.remove(idxId);
+
+        return skippedParts.add(idxId);
+    }
+
+    /**
      * Returns next (higher) key for provided cache and partition or null
      *
      * @param key cache and partition to search
@@ -107,7 +126,6 @@ public class PartitionAllocationMap {
      * <tt>key</tt>.
      */
     public PagesAllocationRange put(GroupPartitionId key, PagesAllocationRange val) {
-        return map.put(key, val);
+        return !skippedParts.contains(key) ? map.put(key, val) : null;
     }
-
 }

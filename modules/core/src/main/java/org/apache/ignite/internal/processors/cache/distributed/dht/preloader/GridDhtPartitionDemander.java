@@ -271,7 +271,7 @@ public class GridDhtPartitionDemander {
 
         long delay = grp.config().getRebalanceDelay();
 
-        if (delay == 0 || force) {
+        if ((delay == 0 || force) && assigns != null) {
             final RebalanceFuture oldFut = rebalanceFut;
 
             final RebalanceFuture fut = new RebalanceFuture(grp, assigns, log, cnt);

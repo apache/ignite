@@ -55,6 +55,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -76,8 +77,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -458,6 +461,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return exchActions != null && exchActions.deactivate();
     }
 
+    public boolean changedBaseline() {
+        return exchActions != null && exchActions.changedBaseline();
+    }
+
     /**
      * @return First event discovery event.
      *
@@ -799,74 +806,94 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert req != null : exchActions;
 
-        if (req.activate()) {
-            if (log.isInfoEnabled()) {
-                log.info("Start activation process [nodeId=" + cctx.localNodeId() +
-                    ", client=" + cctx.kernalContext().clientNode() +
-                    ", topVer=" + initialVersion() + "]");
-            }
-
-            try {
-                cctx.activate();
-
-                if (!cctx.kernalContext().clientNode()) {
-                    List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
-
-                    for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests()) {
-                        DynamicCacheDescriptor desc = startReq.descriptor();
-
-                        if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
-                            startDescs.add(desc);
-                    }
-
-                    cctx.database().readCheckpointAndRestoreMemory(startDescs);
-                }
-
-                cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
-
+        if (req.activeChanged()) {
+            if (req.activate()) {
                 if (log.isInfoEnabled()) {
-                    log.info("Successfully activated caches [nodeId=" + cctx.localNodeId() +
+                    log.info("Start activation process [nodeId=" + cctx.localNodeId() +
                         ", client=" + cctx.kernalContext().clientNode() +
                         ", topVer=" + initialVersion() + "]");
                 }
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to activate node components [nodeId=" + cctx.localNodeId() +
-                    ", client=" + cctx.kernalContext().clientNode() +
-                    ", topVer=" + initialVersion() + "]", e);
 
-                changeGlobalStateE = e;
+                try {
+                    cctx.activate();
 
-                if (crd) {
-                    synchronized (mux) {
-                        changeGlobalStateExceptions.put(cctx.localNodeId(), e);
+                    if (!cctx.kernalContext().clientNode()) {
+                        List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
+
+                        for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests()) {
+                            DynamicCacheDescriptor desc = startReq.descriptor();
+
+                            if (CU.isPersistentCache(desc.cacheConfiguration(),
+                                cctx.gridConfig().getDataStorageConfiguration()))
+                                startDescs.add(desc);
+                        }
+
+                        cctx.database().readCheckpointAndRestoreMemory(startDescs);
                     }
+
+                    cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Successfully activated caches [nodeId=" + cctx.localNodeId() +
+                            ", client=" + cctx.kernalContext().clientNode() +
+                            ", topVer=" + initialVersion() + "]");
+                    }
+                }
+                catch (Exception e) {
+                    U.error(log, "Failed to activate node components [nodeId=" + cctx.localNodeId() +
+                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", topVer=" + initialVersion() + "]", e);
+
+                    changeGlobalStateE = e;
+
+                    if (crd) {
+                        synchronized (mux) {
+                            changeGlobalStateExceptions.put(cctx.localNodeId(), e);
+                        }
+                    }
+                }
+            }
+            else {
+                if (log.isInfoEnabled()) {
+                    log.info("Start deactivation process [nodeId=" + cctx.localNodeId() +
+                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", topVer=" + initialVersion() + "]");
+                }
+
+                try {
+                    cctx.kernalContext().dataStructures().onDeActivate(cctx.kernalContext());
+
+                    cctx.kernalContext().service().onDeActivate(cctx.kernalContext());
+
+                    cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Successfully deactivated data structures, services and caches [" +
+                            "nodeId=" + cctx.localNodeId() +
+                            ", client=" + cctx.kernalContext().clientNode() +
+                            ", topVer=" + initialVersion() + "]");
+                    }
+                }
+                catch (Exception e) {
+                    U.error(log, "Failed to deactivate node components [nodeId=" + cctx.localNodeId() +
+                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", topVer=" + initialVersion() + "]", e);
+
+                    changeGlobalStateE = e;
                 }
             }
         }
-        else {
-            if (log.isInfoEnabled()) {
-                log.info("Start deactivation process [nodeId=" + cctx.localNodeId() +
-                    ", client=" + cctx.kernalContext().clientNode() +
-                    ", topVer=" + initialVersion() + "]");
-            }
-
+        else if (req.activate()) {
+            // TODO: BLT changes on inactive cluster can't be handled easily because persistent storage hasn't been initialized yet.
             try {
-                cctx.kernalContext().dataStructures().onDeActivate(cctx.kernalContext());
+                cctx.affinity().onBaselineTopologyChanged(this, crd);
 
-                cctx.kernalContext().service().onDeActivate(cctx.kernalContext());
-
-                cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
-
-                if (log.isInfoEnabled()) {
-                    log.info("Successfully deactivated data structures, services and caches [" +
-                        "nodeId=" + cctx.localNodeId() +
-                        ", client=" + cctx.kernalContext().clientNode() +
-                        ", topVer=" + initialVersion() + "]");
-                }
+                if (CU.isPersistenceEnabled(cctx.kernalContext().config()) && !cctx.kernalContext().clientNode())
+                    cctx.kernalContext().state().onBaselineTopologyChanged(req.baselineTopology(),
+                        req.prevBaselineTopologyHistoryItem());
             }
             catch (Exception e) {
-                U.error(log, "Failed to deactivate node components [nodeId=" + cctx.localNodeId() +
+                U.error(log, "Failed to change baseline topology [nodeId=" + cctx.localNodeId() +
                     ", client=" + cctx.kernalContext().clientNode() +
                     ", topVer=" + initialVersion() + "]", e);
 
@@ -1525,13 +1552,46 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (firstDiscoEvt instanceof DiscoveryCustomEvent)
                 ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
 
-            if (err == null)
+            if (err == null) {
                 cctx.exchange().lastFinishedFuture(this);
+
+                logExchange();
+            }
 
             return true;
         }
 
         return false;
+    }
+
+    /**
+     *
+     */
+    private void logExchange() {
+        if (cctx.kernalContext().state().publicApiActiveState(false) && cctx.wal() != null) {
+            if (((FileWriteAheadLogManager)cctx.wal()).serializerVersion() > 1)
+                try {
+                    ExchangeRecord.Type type = null;
+
+                    if (firstDiscoEvt.type() == EVT_NODE_JOINED)
+                        type = ExchangeRecord.Type.JOIN;
+                    else if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
+                        type = ExchangeRecord.Type.LEFT;
+
+                    BaselineTopology blt = cctx.kernalContext().state().clusterState().baselineTopology();
+
+                    // todo handle merge exchange events
+                    if (type != null && blt != null) {
+                        Short constId = blt.consistentIdMapping().get(firstDiscoEvt.eventNode().consistentId());
+
+                        if (constId != null)
+                            cctx.wal().log(new ExchangeRecord(constId, type));
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Fail during log exchange record.", e);
+                }
+        }
     }
 
     /**
@@ -2301,11 +2361,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert firstDiscoEvt instanceof DiscoveryCustomEvent;
 
-                if (activateCluster())
+                if (activateCluster() || changedBaseline())
                     assignPartitionsStates();
 
                 if (((DiscoveryCustomEvent)firstDiscoEvt).customMessage() instanceof DynamicCacheChangeBatch) {
                     if (exchActions != null) {
+                        assignPartitionsStates();
+
                         Set<String> caches = exchActions.cachesToResetLostPartitions();
 
                         if (!F.isEmpty(caches))
@@ -2412,7 +2474,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     ChangeGlobalStateFinishMessage stateFinishMsg = new ChangeGlobalStateFinishMessage(
                         req.requestId(),
-                        active);
+                        active,
+                        !stateChangeErr);
 
                     cctx.discovery().sendCustomEvent(stateFinishMsg);
                 }

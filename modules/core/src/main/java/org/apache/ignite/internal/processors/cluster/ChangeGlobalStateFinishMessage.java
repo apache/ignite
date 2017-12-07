@@ -34,23 +34,27 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** State change request ID. */
-    private UUID reqId;
+    private final UUID reqId;
 
     /** New cluster state. */
-    private boolean clusterActive;
+    private final boolean clusterActive;
+
+    /** State change error. */
+    private Boolean transitionRes;
 
     /**
      * @param reqId State change request ID.
      * @param clusterActive New cluster state.
      */
-    public ChangeGlobalStateFinishMessage(UUID reqId, boolean clusterActive) {
+    public ChangeGlobalStateFinishMessage(UUID reqId, boolean clusterActive, Boolean transitionRes) {
         assert reqId != null;
 
         this.reqId = reqId;
         this.clusterActive = clusterActive;
+        this.transitionRes = transitionRes;
     }
 
     /**
@@ -65,6 +69,13 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
      */
     public boolean clusterActive() {
         return clusterActive;
+    }
+
+    /**
+     * @return
+     */
+    public boolean success() {
+        return transitionRes == null ? clusterActive : transitionRes;
     }
 
     /** {@inheritDoc} */

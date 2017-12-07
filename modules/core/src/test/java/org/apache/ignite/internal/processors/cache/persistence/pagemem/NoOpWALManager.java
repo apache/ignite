@@ -72,7 +72,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(WALPointer ptr) {
+    @Override public int truncate(WALPointer low, WALPointer high) {
         return 0;
     }
 

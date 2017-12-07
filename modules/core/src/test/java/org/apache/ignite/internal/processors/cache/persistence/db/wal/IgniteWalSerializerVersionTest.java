@@ -50,6 +50,7 @@ import org.apache.ignite.transactions.TransactionState;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
  *
@@ -131,13 +132,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
             @Override public List<WALRecord> call() throws Exception {
                 WALRecord rec0 = new DataRecord(Collections.<DataEntry>emptyList());
 
-                WALRecord rec1 = new TxRecord(
-                    TransactionState.PREPARED,
-                    null,
-                    null,
-                    null,
-                    null
-                );
+                WALRecord rec1 = new TxRecord(PREPARED,null,null,null);
 
                 return Arrays.asList(rec0, rec1);
             }
@@ -293,6 +288,8 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         deleteWorkFiles();
+
+        System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
     }
 
     /** {@inheritDoc} */
@@ -302,6 +299,8 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         deleteWorkFiles();
+
+        System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
     }
 
     /** {@inheritDoc} */

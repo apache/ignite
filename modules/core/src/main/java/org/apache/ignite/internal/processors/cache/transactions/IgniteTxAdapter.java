@@ -45,6 +45,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVer
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1001,6 +1003,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         boolean notify = false;
 
+        WALPointer ptr = null;
+
         synchronized (this) {
             prev = this.state;
 
@@ -1089,6 +1093,54 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     log.debug("Invalid transaction state transition [invalid=" + state + ", cur=" + this.state +
                         ", tx=" + this + ']');
             }
+
+            if (valid) {
+                // Seal transactions maps.
+                if (state != ACTIVE && state != SUSPENDED)
+                    seal();
+
+                if (cctx.wal() != null && cctx.tm().logTxRecords()) {
+                    // Log tx state change to WAL.
+                    if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
+                        assert txNodes != null || state == ROLLED_BACK;
+
+                        BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
+
+                        Map<Short, Collection<Short>> participatingNodes = consistentIdMapper
+                            .mapToCompactIds(topVer, txNodes, baselineTop);
+
+                        TxRecord txRecord = new TxRecord(
+                            state,
+                            nearXidVersion(),
+                            writeVersion(),
+                            participatingNodes
+                        );
+
+                        try {
+                            ptr = cctx.wal().log(txRecord);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to log TxRecord: " + txRecord, e);
+
+                            throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (valid) {
+            if (ptr != null && (state == COMMITTED || state == ROLLED_BACK))
+                try {
+                    cctx.wal().fsync(ptr);
+                }
+                catch (IgniteCheckedException e) {
+                    String msg = "Failed to fsync ptr: " + ptr;
+
+                    U.error(log, msg, e);
+
+                    throw new IgniteException(msg, e);
+                }
         }
 
         if (notify) {
@@ -1096,39 +1148,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             if (fut != null)
                 fut.onDone(this);
-        }
-
-        if (valid) {
-            // Seal transactions maps.
-            if (state != ACTIVE && state != SUSPENDED)
-                seal();
-
-            if (cctx.wal() != null && cctx.tm().logTxRecords()) {
-                // Log tx state change to WAL.
-                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                    assert txNodes != null || state == ROLLED_BACK;
-
-                    Map<Object, Collection<Object>> participatingNodes = consistentIdMapper
-                        .mapToConsistentIds(topVer, txNodes);
-
-                    TxRecord txRecord = new TxRecord(
-                            state,
-                            nearXidVersion(),
-                            writeVersion(),
-                            participatingNodes,
-                            remote() ? nodeId() : null
-                    );
-
-                    try {
-                        cctx.wal().log(txRecord);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to log TxRecord: " + txRecord, e);
-
-                        throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
-                    }
-                }
-            }
         }
 
         return valid;

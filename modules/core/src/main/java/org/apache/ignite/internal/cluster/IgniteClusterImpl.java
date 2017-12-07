@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -37,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,6 +47,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -277,6 +280,175 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             ctx.jobMetric().reset();
             ctx.io().resetMetrics();
             ctx.task().resetMetrics();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        guard();
+
+        try {
+            return ctx.state().publicApiActiveState(true);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        guard();
+
+        try {
+            ctx.state().changeGlobalState(active, baselineNodes(), false).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** */
+    private Collection<BaselineNode> baselineNodes() {
+        Collection<ClusterNode> srvNodes = ctx.cluster().get().forServers().nodes();
+
+        ArrayList baselineNodes = new ArrayList(srvNodes.size());
+
+        for (ClusterNode clN : srvNodes)
+            baselineNodes.add(clN);
+
+        return baselineNodes;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Collection<BaselineNode> currentBaselineTopology() {
+        guard();
+
+        try {
+            BaselineTopology blt = ctx.state().clusterState().baselineTopology();
+
+            return blt != null ? blt.currentBaseline() : null;
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(Collection<BaselineNode> baselineTop) {
+        guard();
+
+        try {
+            if (isInMemoryMode())
+                return;
+
+            validateBeforeBaselineChange(baselineTop);
+
+            ctx.state().changeGlobalState(true, baselineTop, true).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** */
+    private boolean isInMemoryMode() {
+        return !CU.isPersistenceEnabled(cfg);
+    }
+
+    /**
+     * Executes validation checks of cluster state and BaselineTopology before changing BaselineTopology to new one.
+     */
+    private void validateBeforeBaselineChange(Collection<BaselineNode> baselineTop) {
+        if (!ctx.state().clusterState().active())
+            throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
+
+        if (baselineTop != null) {
+            if (baselineTop.isEmpty())
+                throw new IgniteException("BaselineTopology must contain at least one node.");
+
+            Collection<Object> onlineNodes = onlineBaselineNodesRequestedForRemoval(baselineTop);
+
+            if (onlineNodes != null) {
+                if (!onlineNodes.isEmpty())
+                    throw new IgniteException("Removing online nodes from BaselineTopology is not supported: " + onlineNodes);
+            }
+            else
+                //should never happen, actually: if cluster was activated, we expect it to have a BaselineTopology.
+                throw new IgniteException("Previous BaselineTopology was not found.");
+        }
+    }
+
+    /** */
+    @Nullable private Collection<Object> onlineBaselineNodesRequestedForRemoval(Collection<BaselineNode> newBlt) {
+        BaselineTopology blt = ctx.state().clusterState().baselineTopology();
+        Set<Object> bltConsIds;
+
+        if (blt == null)
+            return null;
+        else
+            bltConsIds = blt.consistentIds();
+
+        ArrayList<Object> onlineNodesRequestedForRemoval = new ArrayList<>();
+
+        Collection<Object> aliveNodesConsIds = getConsistentIds(ctx.discovery().aliveServerNodes());
+
+        Collection<Object> newBltConsIds = getConsistentIds(newBlt);
+
+        for (Object oldBltConsId : bltConsIds) {
+            if (aliveNodesConsIds.contains(oldBltConsId)) {
+                if (!newBltConsIds.contains(oldBltConsId))
+                    onlineNodesRequestedForRemoval.add(oldBltConsId);
+            }
+        }
+
+        return onlineNodesRequestedForRemoval;
+    }
+
+    /** */
+    private Collection<Object> getConsistentIds(Collection<? extends BaselineNode> nodes) {
+        ArrayList<Object> res = new ArrayList<>(nodes.size());
+
+        for (BaselineNode n : nodes)
+            res.add(n.consistentId());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(long topVer) {
+        guard();
+
+        try {
+            if (isInMemoryMode())
+                return;
+
+            Collection<ClusterNode> top = topology(topVer);
+
+            if (top == null)
+                throw new IgniteException("Topology version does not exist: " + topVer);
+
+            Collection<BaselineNode> target = new ArrayList<>(top.size());
+
+            for (ClusterNode node : top) {
+                if (!node.isClient())
+                    target.add(node);
+            }
+
+            validateBeforeBaselineChange(target);
+
+            ctx.state().changeGlobalState(true, target, true).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();

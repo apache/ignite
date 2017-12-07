@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
@@ -1367,6 +1368,15 @@ public class GridCacheUtils {
      */
     public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
         return !node.isDaemon() && !clientNode(node) && filter.apply(node);
+    }
+
+    /**
+     * @param node Node.
+     * @param discoveryDataClusterState Discovery data cluster state.
+     * @return {@code True} if node is included in BaselineTopology.
+     */
+    public static boolean baselineNode(ClusterNode node, DiscoveryDataClusterState discoveryDataClusterState) {
+        return discoveryDataClusterState.baselineTopology().consistentIds().contains(node.consistentId());
     }
 
     /**

@@ -751,11 +751,23 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
     /**
+     * If the property is set Ignite will use legacy node comparator (based on node order) inste
+     *
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_USE_LEGACY_NODE_COMPARATOR = "IGNITE_USE_LEGACY_NODE_COMPARATOR";
+
+    /**
      * When set to {@code true}, Data store folders are generated only by consistent id, and no consistent ID will be
      * set based on existing data store folders. This option also enables compatible folder generation mode as it was
      * before 2.3.
      */
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
+
+    /**
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_WAL_DEBUG_LOG_ON_RECOVERY = "IGNITE_WAL_DEBUG_LOG_ON_RECOVERY";
 
     /**
      * Enforces singleton.

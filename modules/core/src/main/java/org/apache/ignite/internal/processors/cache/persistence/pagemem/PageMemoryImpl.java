@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -57,8 +58,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -74,6 +75,7 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 import sun.nio.ch.DirectBuffer;
@@ -216,8 +218,11 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Flush dirty page closure. When possible, will be called by evictPage(). */
     private final GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPage;
 
-    /** Flush dirty page closure. When possible, will be called by evictPage(). */
-    private final GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
+    /**
+     * Flush dirty page closure. When possible, will be called by evictPage().
+     * {@code Null} if page tracking functionality is disabled
+     * */
+    @Nullable private final GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
 
     /** Pages write throttle. */
     private PagesWriteThrottle writeThrottle;
@@ -248,7 +253,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
         GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPage,
-        GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
+        @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl memMetrics,
         boolean throttleEnabled
@@ -355,8 +360,10 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         U.shutdownNow(getClass(), asyncRunner, log);
 
-        for (Segment seg : segments)
-            seg.close();
+        if (segments != null) {
+            for (Segment seg : segments)
+                seg.close();
+        }
 
         directMemoryProvider.shutdown();
     }
@@ -438,7 +445,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         seg.writeLock().lock();
 
-        boolean isTrackingPage = trackingIO.trackingPageFor(pageId, pageSize()) == pageId;
+        boolean isTrackingPage = changeTracker != null && trackingIO.trackingPageFor(pageId, pageSize()) == pageId;
 
         try {
             long relPtr = seg.borrowOrAllocateFreePage(pageId);
@@ -798,9 +805,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public boolean safeToUpdate() {
-        for (Segment segment : segments)
-            if (!segment.safeToUpdate())
-                return false;
+        if (segments != null) {
+            for (Segment segment : segments)
+                if (!segment.safeToUpdate())
+                    return false;
+        }
 
         return true;
     }
@@ -819,6 +828,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException {
+        if (segments == null)
+            return new GridMultiCollectionWrapper<>(Collections.<FullPageId>emptyList());
+
         Collection[] collections = new Collection[segments.length];
 
         for (int i = 0; i < segments.length; i++) {
@@ -840,6 +852,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
     @Override public void finishCheckpoint() {
+        if (segments == null)
+            return;
+
         for (Segment seg : segments)
             seg.segCheckpointPages = null;
 
@@ -1255,7 +1270,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean dirty = isDirty(page);
 
         //if page is for restore, we shouldn't mark it as changed
-        if (!restore && markDirty && !dirty)
+        if (!restore && markDirty && !dirty && changeTracker != null)
             changeTracker.apply(page, fullId, this);
 
         boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !dirty);

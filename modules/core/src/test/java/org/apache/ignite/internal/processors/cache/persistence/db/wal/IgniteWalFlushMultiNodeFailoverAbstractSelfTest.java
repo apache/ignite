@@ -84,7 +84,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 30_000;
+        return 60_000;
     }
 
     /** {@inheritDoc} */
@@ -164,6 +164,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                     startGrid(gridCount());
 
+                    grid.cluster().setBaselineTopology(grid.cluster().topologyVersion());
+
                     waitForRebalancing();
                 } catch (Exception expected) {
                     // There can be any exception. Do nothing.
@@ -184,6 +186,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         }, getTestTimeout());
 
         stopAllGrids();
+
+        canFail.set(false);
 
         Ignite grid0 = startGrids(gridCount() + 1);
 
@@ -235,7 +239,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                 @Override public int write(ByteBuffer sourceBuffer) throws IOException {
 
-                    if (--writeAttempts == 0 && fail!= null && fail.get())
+                    if (--writeAttempts <= 0 && fail!= null && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(sourceBuffer);

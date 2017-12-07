@@ -48,6 +48,9 @@ public class DiscoveryDataPacket implements Serializable {
     private Map<Integer, byte[]> joiningNodeData = new HashMap<>();
 
     /** */
+    private transient Map<Integer, Serializable> unmarshalledJoiningNodeData;
+
+    /** */
     private Map<Integer, byte[]> commonData = new HashMap<>();
 
     /** */
@@ -154,14 +157,14 @@ public class DiscoveryDataPacket implements Serializable {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId);
 
         if (joiningNodeData != null && !joiningNodeData.isEmpty()) {
-            Map<Integer, Serializable> unmarshJoiningNodeData = unmarshalData(
+            unmarshalledJoiningNodeData = unmarshalData(
                     joiningNodeData,
                     marsh,
                     clsLdr,
                     clientNode,
                     log);
 
-            dataBag.joiningNodeData(unmarshJoiningNodeData);
+            dataBag.joiningNodeData(unmarshalledJoiningNodeData);
         }
 
         return dataBag;
@@ -340,6 +343,11 @@ public class DiscoveryDataPacket implements Serializable {
      * (e.g. on nodes prior in cluster to the one where this method is called).
      */
     public DiscoveryDataBag bagForDataCollection() {
-        return new DiscoveryDataBag(joiningNodeId, commonData.keySet());
+        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, commonData.keySet());
+
+        if (unmarshalledJoiningNodeData != null)
+            dataBag.joiningNodeData(unmarshalledJoiningNodeData);
+
+        return dataBag;
     }
 }

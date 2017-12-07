@@ -92,6 +92,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -1143,12 +1144,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (log.isInfoEnabled()) {
             log.info("Started cache [name=" + cfg.getName() +
-                ", id=" + cacheCtx.cacheId() +
+                ", id="+cacheCtx.cacheId() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
                 ", memoryPolicyName=" + memPlcName +
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
-                ", backups=" + cfg.getBackups() + ']');
+                ", backups=" + cfg.getBackups() +']');
         }
     }
 
@@ -1721,9 +1722,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param exchTopVer Current exchange version.
      * @throws IgniteCheckedException If failed.
      */
-    public void startCachesOnLocalJoin(List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches,
-        AffinityTopologyVersion exchTopVer)
-        throws IgniteCheckedException {
+    public void startCachesOnLocalJoin(
+        List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches,
+        AffinityTopologyVersion exchTopVer
+    ) throws IgniteCheckedException {
         if (!F.isEmpty(caches)) {
             for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : caches) {
                 DynamicCacheDescriptor desc = t.get1();
@@ -3931,7 +3933,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ccfg != null) {
             cloneCheckSerializable(ccfg);
 
-            if (desc != null) {
+            if (desc != null || MetaStorage.METASTORAGE_CACHE_NAME.equals(cacheName)) {
                 if (failIfExists) {
                     throw new CacheExistsException("Failed to start cache " +
                         "(a cache with the same name is already started): " + cacheName);
