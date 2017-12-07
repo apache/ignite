@@ -545,6 +545,21 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return !grpsWithoutIdx.contains(grpId);
     }
 
+    /** {@inheritDoc} */
+    @Override public long pagesAllocated(int grpId) {
+        CacheStoreHolder holder = idxCacheStores.get(grpId);
+
+        if (holder == null)
+            return 0;
+
+        long pageCnt = holder.idxStore.pages();
+
+        for (int i = 0; i < holder.partStores.length; i++)
+            pageCnt += holder.partStores[i].pages();
+
+        return pageCnt;
+    }
+
     /**
      * @return Store work dir. Includes consistent-id based folder
      */

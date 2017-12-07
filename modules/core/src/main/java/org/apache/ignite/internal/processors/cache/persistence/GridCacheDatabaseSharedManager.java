@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -57,6 +58,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.management.ObjectName;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1063,6 +1065,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             CheckpointStatus status = readCheckpointStatus();
 
+            if (!CheckpointStatus.NULL_UUID.equals(status.cpStartId))
+                resetTotalMemoryPagesMetricToStoreSize();
+
             checkpointReadLock();
 
             try {
@@ -1080,6 +1085,45 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     *
+     */
+    private void resetTotalMemoryPagesMetricToStoreSize() {
+        cctx.pageStore().finishRecover();
+
+        Map<String, Set<Integer>> grpsByRegions = new HashMap<>();
+
+        for (Object ctx : cctx.cacheContexts()) {
+            CacheGroupContext grp = ((GridCacheContext)ctx).group();
+
+            String regionName = grp.dataRegion().config().getName();
+
+            Set<Integer> grps = grpsByRegions.get(regionName);
+
+            if (grps == null)
+                grps = new HashSet<>();
+
+            grps.add(grp.groupId());
+
+            grpsByRegions.put(regionName, grps);
+        }
+
+        for (Map.Entry<String, DataRegionMetrics> e : memMetricsMap.entrySet()) {
+            if (e.getValue() instanceof DataRegionMetricsImpl) {
+                DataRegionMetricsImpl m = (DataRegionMetricsImpl)e.getValue();
+
+                Set<Integer> grps = grpsByRegions.get(e.getKey());
+
+                m.resetTotalAllocatedPages(0);
+
+                if (grps != null) {
+                    for (int grp : grps)
+                        m.incrementTotalAllocatedPages(cctx.pageStore().pagesAllocated(grp));
+                }
+            }
         }
     }
 

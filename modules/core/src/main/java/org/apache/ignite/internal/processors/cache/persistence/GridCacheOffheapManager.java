@@ -527,6 +527,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 long metastoreRoot, reuseListRoot;
 
                 if (PageIO.getType(pageAddr) != PageIO.T_META) {
+                    grp.dataRegion().memoryMetrics().incrementTotalAllocatedPages();
+
                     PageMetaIO pageIO = PageMetaIO.VERSIONS.latest();
 
                     pageIO.initNewPage(pageAddr, metaId, pageMem.pageSize());
@@ -1051,6 +1053,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     // Initialize new page.
                     if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
+                        grp.dataRegion().memoryMetrics().incrementTotalAllocatedPages();
+
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
                         io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());

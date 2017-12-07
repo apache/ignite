@@ -207,21 +207,46 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /**
-     * Increments totalAllocatedPages counter.
+     * Increments totalAllocatedPages counter by 1.
      */
     public void incrementTotalAllocatedPages() {
         if (metricsEnabled) {
             totalAllocatedPages.increment();
 
-            updateAllocationRateMetrics();
+            updateAllocationRateMetrics(1);
+        }
+    }
+
+    /**
+     * Increments totalAllocatedPages counter.
+     *
+     * @param n number of pages to increment by.
+     */
+    public void incrementTotalAllocatedPages(long n) {
+        if (metricsEnabled) {
+            totalAllocatedPages.add(n);
+
+            updateAllocationRateMetrics(n);
+        }
+    }
+
+    /**
+     * Resets totalAllocatedPages counter.
+     *
+     * @param val new counter value.
+     */
+    public void resetTotalAllocatedPages(long val) {
+        if (metricsEnabled) {
+            totalAllocatedPages.reset();
+            totalAllocatedPages.add(val);
         }
     }
 
     /**
      *
      */
-    private void updateAllocationRateMetrics() {
-        allocRate.onHit();
+    private void updateAllocationRateMetrics(long n) {
+        allocRate.onHits(n);
     }
 
     /**
