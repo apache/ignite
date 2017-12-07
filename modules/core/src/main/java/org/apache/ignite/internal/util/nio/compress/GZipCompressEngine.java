@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -33,9 +32,7 @@ import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.
 
 /** */
 public class GZipCompressEngine implements CompressEngine {
-    /** */
-    private boolean isInboundDone = false;
-
+    /* For debug stats. */
     private long bytesBefore = 0;
     private long bytesAfter = 0;
 
@@ -56,26 +53,14 @@ public class GZipCompressEngine implements CompressEngine {
             bytes = baos.toByteArray();
         }
 
-        bytes = concat(toArray(bytes.length), bytes);
-
-        if (bytes.length > buf.remaining())
+        if (bytes.length + 4 > buf.remaining())
             return BUFFER_OVERFLOW;
 
+        buf.put(toArray(bytes.length));
         buf.put(bytes);
         bytesAfter += bytes.length;
 
         return OK;
-    }
-
-    private static byte[] concat(byte[] first, byte[] second) {
-        byte[] result = Arrays.copyOf(first, first.length + second.length);
-        System.arraycopy(second, 0, result, first.length, second.length);
-        return result;
-    }
-
-    /** */
-    public boolean isInboundDone() {
-        return isInboundDone;
     }
 
     /** */
