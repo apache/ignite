@@ -5709,16 +5709,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                         boolean ignoreMessage = false;
 
                         switch (ret) {
-                            case 0:
+                            case 0: // message was not processed
                                 break;
 
-                            case 1:
+                            case 1: // message was fully processed, continue serving the socket
                                 continue;
 
-                            case 2:
+                            case 2: // message was fully processed and the socket should be closed
                                 return;
 
-                            case 3:
+                            case 3: // message should be ignored, reply to the sender and continue serving the socket
                                 ignoreMessage = true;
 
                                 break;
