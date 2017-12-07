@@ -287,7 +287,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 needVer = true;
 
                 postProcessingClos = new IgniteBiInClosure<CacheObject, GridCacheVersion>() {
-                    @Override public void apply(CacheObject obj, GridCacheVersion ver) {
+                    @Override public void apply(CacheObject val, GridCacheVersion ver) {
                         while (true) {
                             GridCacheEntryEx entry = null;
                             GridDhtCacheAdapter colocated = cctx.dht();
@@ -296,7 +296,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 entry = colocated.entryEx(key, topVer);
 
                                 entry.initialValue(
-                                    obj,
+                                    val,
                                     ver,
                                     0,
                                     0,
@@ -314,6 +314,14 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Error saving backup value: " + entry, e);
+                            }
+                            catch (GridDhtInvalidPartitionException ignored) {
+                                break;
+                            }
+                            finally {
+                                assert entry != null;
+
+                                cctx.evicts().touch(entry, topVer);
                             }
                         }
                     }
@@ -547,7 +555,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         else {
             if (skipVals)
                 setSkipValueResult(res.containsValue(), null);
-            else if (readThrough && res0 instanceof CacheVersionedValue/* postProcessingClos != null*/) { // TODO Volatile read or instanceof!!!
+            else if (readThrough && res0 instanceof CacheVersionedValue) {
+                // Could be versioned value for store in backup.
                 CacheVersionedValue verVal = (CacheVersionedValue)res0;
 
                 setResult(verVal.value(), verVal.version());

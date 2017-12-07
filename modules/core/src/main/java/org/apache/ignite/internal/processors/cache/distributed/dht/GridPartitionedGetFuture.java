@@ -34,7 +34,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -334,53 +332,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }));
             }
             else {
-                IgniteInClosure<Collection<GridCacheEntryInfo>> clos = null;
-
-                if (readThrough && !skipVals) {
-                    clos = new CI1<Collection<GridCacheEntryInfo>>() {
-                        @Override public void apply(Collection<GridCacheEntryInfo> infos) {
-                            if (!F.isEmpty(infos)) {
-                                GridCacheAffinityManager aff = cctx.affinity();
-                                ClusterNode locNode = cctx.localNode();
-
-                                for (GridCacheEntryInfo info : infos) {
-                                    if (aff.backupsByKey(info.key(), topVer).contains(locNode)) {
-                                        while (true) {
-                                            GridCacheEntryEx entry = null;
-                                            GridDhtCacheAdapter colocated = cctx.dht();
-
-                                            try {
-                                                entry = colocated.entryEx(info.key(), topVer);
-
-                                                entry.initialValue(
-                                                    info.value(),
-                                                    info.version(),
-                                                    0,
-                                                    0,
-                                                    false,
-                                                    topVer,
-                                                    GridDrType.DR_BACKUP,
-                                                    true);
-
-                                                break;
-                                            }
-                                            catch (GridCacheEntryRemovedException ignore) {
-                                                if (log.isDebugEnabled())
-                                                    log.debug("Got removed entry during postprocessing (will retry): " +
-                                                        entry);
-                                            }
-                                            catch (IgniteCheckedException e) {
-                                                U.error(log, "Error saving backup value: " + entry, e);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    };
-                }
-
-                MiniFuture fut = new MiniFuture(n, mappedKeys, topVer, clos);
+                MiniFuture fut = new MiniFuture(n, mappedKeys, topVer, createPostProcessingClosure(topVer, log));
 
                 GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),

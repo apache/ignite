@@ -22,16 +22,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -185,5 +195,68 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
     protected final ClusterTopologyServerNotFoundException serverNotFoundError(AffinityTopologyVersion topVer) {
         return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
             "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param log Logger.
+     */
+    protected CI1<Collection<GridCacheEntryInfo>> createPostProcessingClosure(
+        final AffinityTopologyVersion topVer, final IgniteLogger log) {
+        if (!readThrough || skipVals)
+            return null;
+
+        return new CI1<Collection<GridCacheEntryInfo>>() {
+            @Override public void apply(Collection<GridCacheEntryInfo> infos) {
+                if (!F.isEmpty(infos)) {
+                    GridCacheAffinityManager aff = cctx.affinity();
+                    ClusterNode locNode = cctx.localNode();
+
+                    for (GridCacheEntryInfo info : infos) {
+                        if (aff.backupsByKey(info.key(), topVer).contains(locNode)) {
+                            GridDhtCacheAdapter colocated = cctx.cache().isNear()
+                                ? ((GridNearCacheAdapter)cctx.cache()).dht()
+                                : cctx.dht();
+
+                            while (true) {
+                                GridCacheEntryEx entry = null;
+
+                                try {
+                                    entry = colocated.entryEx(info.key(), topVer);
+
+                                    entry.initialValue(
+                                        info.value(),
+                                        info.version(),
+                                        0,
+                                        0,
+                                        false,
+                                        topVer,
+                                        GridDrType.DR_BACKUP,
+                                        true);
+
+                                    break;
+                                }
+                                catch (GridCacheEntryRemovedException ignore) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Got removed entry during postprocessing (will retry): " +
+                                            entry);
+                                }
+                                catch (GridDhtInvalidPartitionException ignored) {
+                                    break;
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Error saving backup value: " + entry, e);
+                                }
+                                finally {
+                                    assert entry != null;
+
+                                    cctx.evicts().touch(entry, topVer);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
     }
 }

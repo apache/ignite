@@ -34,7 +34,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -366,55 +364,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     cctx.mvcc().addFuture(this, futId);
                 }
 
-                IgniteInClosure<Collection<GridCacheEntryInfo>> clos = null;
-
-                if (readThrough && !skipVals) {
-                    clos = new CI1<Collection<GridCacheEntryInfo>>() {
-                        @Override public void apply(Collection<GridCacheEntryInfo> infos) {
-                            if (!F.isEmpty(infos)) {
-                                GridCacheAffinityManager aff = cctx.affinity();
-                                ClusterNode locNode = cctx.localNode();
-
-                                for (GridCacheEntryInfo info : infos) {
-                                    if (aff.backupsByKey(info.key(), topVer).contains(locNode)) {
-                                        while (true) {
-                                            assert cctx.cache().isNear();
-
-                                            GridCacheEntryEx entry = null;
-                                            GridDhtCacheAdapter colocated = ((GridNearCacheAdapter)cctx.cache()).dht();
-
-                                            try {
-                                                entry = colocated.entryEx(info.key(), topVer);
-
-                                                entry.initialValue(
-                                                    info.value(),
-                                                    info.version(),
-                                                    0,
-                                                    0,
-                                                    false,
-                                                    topVer,
-                                                    GridDrType.DR_BACKUP,
-                                                    true);
-
-                                                break;
-                                            }
-                                            catch (GridCacheEntryRemovedException ignore) {
-                                                if (log.isDebugEnabled())
-                                                    log.debug("Got removed entry during postprocessing (will retry): " +
-                                                        entry);
-                                            }
-                                            catch (IgniteCheckedException e) {
-                                                U.error(log, "Error saving backup value: " + entry, e);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    };
-                }
-
-                MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer, clos);
+                MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer, createPostProcessingClosure(topVer, log));
 
                 GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),
@@ -448,6 +398,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             }
         }
     }
+
+
 
     /**
      * @param mappings Mappings.
