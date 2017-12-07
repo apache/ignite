@@ -192,6 +192,8 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         }
     }
 
+    boolean sslEnabled = false;
+
     /**
      * @throws Exception If failed.
      */
@@ -221,6 +223,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
                         GridTestMessage msg = new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
 
+                        //msg.payload(new byte[1000]);
                         spis.get(from.id()).sendMessage(to, msg);
 
                         ConcurrentLinkedDeque8<GridTestMessage> queue = msgs.get(to.id());
@@ -514,7 +517,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
             info("Lsnrs: " + lsnrs);
 
-            if (true /* Set ssl factory for test. */) {
+            if (sslEnabled /* Set ssl factory for test. */) {
                 IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
 
                 IgniteConfiguration cfg = ignite.configuration()
