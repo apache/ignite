@@ -1003,9 +1003,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileIO fileIO = ioFactory.create(nextFile);
 
             if (archiver == null) {
-                wipeFile(fileIO);
+                int size = dsCfg.getWalSegmentSize();
 
-                fileIO.position(0);
+                fileIO.write(ByteBuffer.wrap(new byte[1]), size - 1);
+                fileIO.force();
             }
 
             FileWriteHandle hnd = new FileWriteHandle(

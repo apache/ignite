@@ -196,7 +196,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFillWalAndReadRecords() throws Exception {
-        setWalAndArchiveToSameValue = true;
+        setWalAndArchiveToSameValue = false;
         final int cacheObjectsToWrite = 10000;
 
         final Ignite ignite0 = startGrid("node0");
