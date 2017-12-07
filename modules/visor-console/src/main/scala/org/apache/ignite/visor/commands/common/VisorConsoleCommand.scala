@@ -41,8 +41,8 @@ trait VisorConsoleCommand {
         assert(warnMsgs != null)
 
         warnMsgs.foreach{
-            case ex: Throwable => println(s"(wrn) <visor>: ${ex.getMessage}")
-            case line => println(s"(wrn) <visor>: $line")
+            case ex: Throwable => warn(ex.getMessage)
+            case line => warn(line)
         }
     }
 
