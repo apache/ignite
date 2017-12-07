@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -30,21 +31,22 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * JDBC request handler worker to maintain single threaded transactional execution of SQL statements when MVCC is on.
+ * JDBC request handler worker to maintain single threaded transactional execution of SQL statements when MVCC is on.<p>
+ * This worker is intended for internal use as a temporary solution and from within {@link JdbcRequestHandler},
+ * therefore it does not do any fine-grained lifecycle handling as it relies on existing guarantees from
+ * {@link ClientListenerNioListener}.
  */
 class JdbcRequestHandlerWorker extends GridWorker {
     /** Requests queue.*/
     private final LinkedBlockingQueue<T2<JdbcRequest, GridFutureAdapter<ClientListenerResponse>>> queue =
         new LinkedBlockingQueue<>();
 
-    /** Start state guard. */
-    private final AtomicBoolean startState = new AtomicBoolean();
-
-    /** Finish state guard. */
-    private final AtomicBoolean finishState = new AtomicBoolean();
-
     /** Handler.*/
     private final JdbcRequestHandler hnd;
+
+    /** Response */
+    private final static ClientListenerResponse ERR_RESPONSE = new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
+        "Connection closed.");
 
     /**
      * Constructor.
@@ -52,11 +54,10 @@ class JdbcRequestHandlerWorker extends GridWorker {
      * @param log Logger.
      * @param hnd Handler.
      */
-    JdbcRequestHandlerWorker(@Nullable String igniteInstanceName, IgniteLogger log,
-        JdbcRequestHandler hnd) {
+    JdbcRequestHandlerWorker(@Nullable String igniteInstanceName, IgniteLogger log, JdbcRequestHandler hnd) {
         super(igniteInstanceName, "jdbc-request-handler-worker", log);
 
-        A.notNull(hnd, "handler");
+        A.notNull(hnd, "hnd");
 
         this.hnd = hnd;
     }
@@ -65,26 +66,31 @@ class JdbcRequestHandlerWorker extends GridWorker {
      * Start this worker.
      */
     void start() {
-        if (startState.compareAndSet(false, true))
-            new IgniteThread(this).start();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancel() {
-        if (finishState.compareAndSet(false, true))
-            super.cancel();
+        new IgniteThread(this).start();
     }
 
     /** {@inheritDoc} */
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-        while (!finishState.get()) {
-            T2<JdbcRequest, GridFutureAdapter<ClientListenerResponse>> req = queue.take();
+        try {
+            while (!isCancelled()) {
+                T2<JdbcRequest, GridFutureAdapter<ClientListenerResponse>> req = queue.take();
 
-            GridFutureAdapter<ClientListenerResponse> fut = req.get2();
+                GridFutureAdapter<ClientListenerResponse> fut = req.get2();
 
-            ClientListenerResponse res = hnd.doHandle(req.get1());
+                ClientListenerResponse res = hnd.doHandle(req.get1());
 
-            fut.onDone(res);
+                fut.onDone(res);
+            }
+        }
+        finally {
+            // Drain the queue on stop.
+            T2<JdbcRequest, GridFutureAdapter<ClientListenerResponse>> req = queue.poll();
+
+            while (req != null) {
+                req.get2().onDone(ERR_RESPONSE);
+
+                req = queue.poll();
+            }
         }
     }
 
@@ -94,11 +100,6 @@ class JdbcRequestHandlerWorker extends GridWorker {
      * @return Future to track request processing.
      */
     GridFutureAdapter<ClientListenerResponse> process(JdbcRequest req) {
-        if (!startState.get())
-            throw new IllegalStateException();
-
-        // TODO finish
-
         GridFutureAdapter<ClientListenerResponse> fut = new GridFutureAdapter<>();
 
         queue.add(new T2<>(req, fut));

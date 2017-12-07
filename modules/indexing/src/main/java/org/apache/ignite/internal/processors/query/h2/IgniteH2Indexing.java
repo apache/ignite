@@ -1482,7 +1482,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return Collections.singletonList(res);
             }
             else if (cmd instanceof SqlBeginTransactionCommand) {
-                GridNearTxLocal tx = ctx.cache().context().tm().userTx();
+                GridNearTxLocal tx = userTx();
 
                 if (tx != null) {
                     assert tx.sql();
@@ -1495,8 +1495,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw new IgniteSQLException("MVCC must be enabled in order to start transactions.",
                         IgniteQueryErrorCode.MVCC_DISABLED);
 
-                ctx.cache().transactions().txStartSql(TransactionConcurrency.PESSIMISTIC,
-                    TransactionIsolation.REPEATABLE_READ);
+                sqlUserTxStart();
             }
             else if (cmd instanceof SqlCommitTransactionCommand) {
                 GridNearTxLocal tx = ctx.cache().context().tm().userTx();
@@ -1562,6 +1561,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
 
             List<GridQueryFieldMetadata> meta = cachedQry.meta();
+
+            if (userTx() == null)
+                sqlUserTxStart();
 
             return Collections.singletonList(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(),
                 qry.getArgs(), keepBinary, qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
@@ -1682,6 +1684,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     GridH2QueryContext.clearThreadLocal();
                 }
 
+                if (userTx() == null)
+                    sqlUserTxStart();
+
                 // It is a DML statement if we did not create a twoStepQuery.
                 if (twoStepQry == null) {
                     if (DmlStatementsProcessor.isDmlStatement(prepared)) {
@@ -1765,11 +1770,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Throw an exception if there's a non SQL transaction started.
      */
     private void checkTransactionType() {
-        GridNearTxLocal tx = ctx.cache().context().tm().userTx();
+        GridNearTxLocal tx = userTx();
 
         if (tx != null && !tx.sql())
             throw new IgniteSQLException("Only transaction started via SQL may be committed via SQL.",
                 IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
+    }
+
+    /**
+     * @return Currently started transaction, or {@code null} if none started.
+     */
+    private GridNearTxLocal userTx() {
+        return ctx.cache().context().tm().userTx();
+    }
+
+    /**
+     * @return Newly started SQL transaction.
+     */
+    private GridNearTxLocal sqlUserTxStart() {
+        return ctx.cache().transactions().txStartSql(TransactionConcurrency.PESSIMISTIC,
+            TransactionIsolation.REPEATABLE_READ);
     }
 
     /**

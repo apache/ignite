@@ -112,7 +112,7 @@ public class JdbcThinConnection implements Connection {
         ((ConnectionPropertiesImpl)connProps).init(props);
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
-        autoCommit = true;
+        autoCommit = false;
         txIsolation = Connection.TRANSACTION_NONE;
 
         this.schema = normalizeSchema(schema);
@@ -228,21 +228,19 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
         ensureNotClosed();
 
-        this.autoCommit = autoCommit;
+        if (autoCommit)
+            throw new SQLFeatureNotSupportedException("autocommit=true is not supported.");
 
-        if (!autoCommit)
-            LOG.warning("Transactions are not supported.");
+        this.autoCommit = autoCommit;
     }
 
     /** {@inheritDoc} */
     @Override public boolean getAutoCommit() throws SQLException {
         ensureNotClosed();
-
-        if (!autoCommit)
-            LOG.warning("Transactions are not supported.");
 
         return autoCommit;
     }
@@ -254,7 +252,9 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
 
-        LOG.warning("Transactions are not supported.");
+        try (Statement s = createStatement()) {
+            s.execute("COMMIT");
+        }
     }
 
     /** {@inheritDoc} */
@@ -262,9 +262,11 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw new SQLException("Transaction cannot rollback in auto-commit mode.");
+            throw new SQLException("Transaction cannot be rolled back explicitly in auto-commit mode.");
 
-        LOG.warning("Transactions are not supported.");
+        try (Statement s = createStatement()) {
+            s.execute("ROLLBACK");
+        }
     }
 
     /** {@inheritDoc} */
