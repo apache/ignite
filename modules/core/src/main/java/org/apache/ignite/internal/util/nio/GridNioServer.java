@@ -1039,13 +1039,13 @@ public class GridNioServer<T> {
     private static boolean writeMessage(SessionWriteRequest req, ByteBuffer buf, MessageWriter writer){
         assert req != null;
         assert buf != null;
-        assert writer != null;
 
         Message msg = (Message)req.message();
 
         assert msg != null;
 
-        writer.setCurrentWriteClass(msg.getClass());
+        if (writer != null)
+            writer.setCurrentWriteClass(msg.getClass());
 
         return msg.writeTo(buf, writer);
     }
@@ -1433,8 +1433,6 @@ public class GridNioServer<T> {
                 }
             }
 
-            assert writer != null : "Code msg.writeTo(buf, writer) doesn't expect null in second argument.";
-
             return writer;
         }
 
@@ -1477,13 +1475,13 @@ public class GridNioServer<T> {
             assert ses != null;
             assert buf != null;
             assert req != null;
-            assert writer != null;
 
             boolean finished = writeMessage(req, buf, writer);
 
             // Fill up as many messages as possible to write buffer.
             while (finished) {
-                writer.reset();
+                if (writer != null)
+                    writer.reset();
 
                 req.onMessageWritten();
 
