@@ -15,15 +15,20 @@
  * limitations under the License.
  */
 
-import template from './cluster-select.pug';
-import './cluster-select.scss';
-import controller from './cluster-select.controller';
+package org.apache.ignite.internal.processors.cache.index;
 
-export default [() => {
-    return {
-        restrict: 'E',
-        template,
-        controller,
-        controllerAs: 'ctrl'
-    };
-}];
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+
+/**
+ * Test to check work of DML+DDL operations of atomic partitioned cache without backups
+ * with queries initiated from client node.
+ */
+public class H2DynamicIndexingComplexClientAtomicPartitionedNoBackupsTest extends H2DynamicIndexingComplexTest {
+    /**
+     * Constructor.
+     */
+    public H2DynamicIndexingComplexClientAtomicPartitionedNoBackupsTest() {
+        super(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, 0, CLIENT_IDX);
+    }
+}

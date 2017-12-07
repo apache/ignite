@@ -124,6 +124,12 @@ module.exports = {
                     .then((stat) => _.forEach(socks, (sock) => sock.emit('agents:stat', stat)));
             }
 
+            clusterChanged(token, cluster) {
+                const socks = this._browserSockets.get(token);
+
+                _.forEach(socks, (sock) => sock.emit('cluster:changed', cluster));
+            }
+
             emitNotification(sock) {
                 sock.emit('user:notifications', this.notification);
             }
@@ -224,6 +230,7 @@ module.exports = {
                 this.registerVisorTask('queryClose', internalVisor('query.VisorQueryCleanupTask'), 'java.util.Map', 'java.util.UUID', 'java.util.Set');
                 this.registerVisorTask('queryCloseX2', internalVisor('query.VisorQueryCleanupTask'), internalVisor('query.VisorQueryCleanupTaskArg'));
 
+                this.registerVisorTask('toggleClusterState', internalVisor('misc.VisorChangeGridActiveStateTask'), internalVisor('misc.VisorChangeGridActiveStateTaskArg'));
 
                 // Return command result from grid to browser.
                 sock.on('node:visor', (clusterId, taskId, nids, ...args) => {

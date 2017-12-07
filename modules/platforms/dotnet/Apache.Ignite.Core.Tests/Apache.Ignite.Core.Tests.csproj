@@ -69,13 +69,24 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApiParity\BinaryParityTest.cs" />
+    <Compile Include="ApiParity\CacheAffinityParityTest.cs" />
+    <Compile Include="ApiParity\CacheParityTest.cs" />
     <Compile Include="ApiParity\ClientConnectorConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\ClusterParityTest.cs" />
+    <Compile Include="ApiParity\ComputeParityTest.cs" />
     <Compile Include="ApiParity\DataRegionConfigurationParityTest.cs" />
     <Compile Include="ApiParity\DataStorageConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\EventsParityTest.cs" />
     <Compile Include="ApiParity\IgniteConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\IgniteParityTest.cs" />
+    <Compile Include="ApiParity\MessagingParityTest.cs" />
     <Compile Include="ApiParity\ParityTest.cs" />
     <Compile Include="ApiParity\CacheConfigurationParityTest.cs" />
     <Compile Include="ApiParity\QueryEntityConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\ServicesParityTest.cs" />
+    <Compile Include="ApiParity\StreamerParityTest.cs" />
+    <Compile Include="ApiParity\TransactionsParityTest.cs" />
     <Compile Include="AssertExtensions.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
     <Compile Include="Binary\BinaryDateTimeTest.cs" />
@@ -113,9 +124,11 @@
     <Compile Include="Client\Cache\ClientCacheConfigurationTest.cs" />
     <Compile Include="Client\Cache\EmptyObject.cs" />
     <Compile Include="Client\Cache\CreateCacheTest.cs" />
+    <Compile Include="Client\Cache\LinqTest.cs" />
     <Compile Include="Client\Cache\ScanQueryTest.cs" />
     <Compile Include="Client\Cache\Person.cs" />
     <Compile Include="Client\Cache\SqlQueryTest.cs" />
+    <Compile Include="Client\Cache\SqlQueryTestBase.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
     <Compile Include="Client\RawSocketTest.cs" />
     <Compile Include="Client\ClientConnectionTest.cs" />
