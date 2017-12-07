@@ -87,6 +87,11 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize() {
+        return memMetrics.getCheckpointBufferSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public void rateTimeInterval(long rateTimeInterval) {
         if (rateTimeInterval < 1000)
             throw new IllegalArgumentException("rateTimeInterval property must be positive " +

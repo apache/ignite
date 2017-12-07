@@ -127,4 +127,11 @@ public interface DataRegionMetrics {
      * @return Total number of pages loaded to RAM.
      */
     public long getPhysicalMemoryPages();
+
+    /**
+     * Gets checkpoint buffer size.
+     *
+     * @return Checkpoint buffer size in bytes.
+     */
+    public long getCheckpointBufferSize();
 }

@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -65,7 +65,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private final DataRegionConfiguration memPlcCfg;
 
     /** */
-    private PageMemory pageMem;
+    private PageMemoryImpl pageMem;
 
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
@@ -171,6 +171,15 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         return pageMem.loadedPages();
     }
 
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize() {
+        if (!metricsEnabled || pageMem == null)
+            return 0;
+
+        return pageMem.checkpointBufferPagesCount() * pageMem.pageSize();
+    }
+
     /**
      * Updates pageReplaceRate metric.
      */
@@ -271,7 +280,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * @param pageMem Page mem.
      */
-    public void pageMemory(PageMemory pageMem) {
+    public void pageMemory(PageMemoryImpl pageMem) {
         this.pageMem = pageMem;
     }
 
