@@ -3320,7 +3320,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         // Make sure lock future is finished.
         if (prevState == LOCKING) {
-            while(locFut == null); // Await initialization.
+            while (locFut == null); // Await initialization.
 
             fut0.listen(new IgniteInClosure<IgniteInternalFuture>() {
                 @Override public void apply(IgniteInternalFuture fut) {
