@@ -209,6 +209,11 @@ class VisorCacheCommand {
     def cache(args: String) {
         if (!isConnected)
             adviseToConnect()
+        else if (!isActive) {
+            warn("Can not perform the operation because the cluster is inactive.",
+                "Note, that the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes join the cluster.",
+                "To activate the cluster execute following command: top -active.")
+        }
         else {
             var argLst = parseArgs(args)
 
