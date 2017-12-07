@@ -230,12 +230,10 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         final ClusterNode n0 = grid(0).affinity(CACHE_NAME).mapKeyToNode(0);
 
-        final Ignite prim = G.ignite(n0.id());
-
         toggleBlocking(GridNearLockResponse.class, client, true);
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 50, 0)) {
-            client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+            client.cache(CACHE_NAME).put(0, 0);
         }
         catch (CacheException e) {
             assertTrue(e.getMessage(), X.hasCause(e, TransactionTimeoutException.class));
@@ -244,7 +242,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         toggleBlocking(GridNearLockResponse.class, client, false);
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10 * 60_000, 0)) {
-            client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+            client.cache(CACHE_NAME).put(0, 0);
         }
         catch (CacheException e) {
             assertTrue(e.getMessage(), X.hasCause(e, TransactionTimeoutException.class));
