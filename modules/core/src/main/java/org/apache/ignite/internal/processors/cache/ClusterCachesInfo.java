@@ -393,14 +393,18 @@ class ClusterCachesInfo {
 
         IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
 
-        if (cache == null) // TODO remove
-            System.out.println("NPE detected");
-
-        cache.configuration().setStatisticsEnabled(msg.statisticEnabled());
+        if (cache == null)
+            log.warning("Failed to change cache configuration, cache not found [cacheName=" + cacheName + ']');
+        else
+            cache.configuration().setStatisticsEnabled(msg.statisticEnabled());
 
         DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
-        desc.cacheConfiguration().setStatisticsEnabled(msg.statisticEnabled());
+        if (desc == null)
+            log.warning("Failed to change cache descriptor configuration, cache not found [cacheName="
+                + cacheName + ']');
+        else
+            desc.cacheConfiguration().setStatisticsEnabled(msg.statisticEnabled());
     }
 
     /**
