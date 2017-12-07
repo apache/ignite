@@ -26,21 +26,23 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import sun.nio.ch.DirectBuffer;
 
 public class AlignedBuffer {
-    public static ByteBuffer allocate(int blockSize, int capacity) {
+    public static ByteBuffer allocate(int fsBlockSize, int capacity) {
         PointerByReference pointerToPointer = new PointerByReference();
 
         // align memory for use with O_DIRECT
-        DirectIoLib.posix_memalign(pointerToPointer, new NativeLong(blockSize), new NativeLong(capacity));
+        DirectIoLib.posix_memalign(pointerToPointer, new NativeLong(fsBlockSize), new NativeLong(capacity));
         Pointer pointer = pointerToPointer.getValue();
         long alignedPtr = Pointer.nativeValue(pointer);
 
         return GridUnsafe.wrapPointer(alignedPtr, capacity);
     }
 
-    static void free(ByteBuffer buffer) {
-        long address = GridUnsafe.bufferAddress(buffer);
+    public static void free(ByteBuffer buffer) {
+        free(GridUnsafe.bufferAddress(buffer));
+    }
 
-        DirectIoLib.free(new Pointer(address));
+    public static void free(long address) {
+        IgniteNativeIoLib.free(new Pointer(address));
     }
 
     static void copyMemory(ByteBuffer sourceBuffer, ByteBuffer destAligned) {

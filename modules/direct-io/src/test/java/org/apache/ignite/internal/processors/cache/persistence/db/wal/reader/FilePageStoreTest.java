@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffersDirectFileIO.getLastError;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.PAGE_ID_OFF;
 
 public class FilePageStoreTest {
@@ -63,7 +64,7 @@ public class FilePageStoreTest {
       //  }
         int fd = IgniteNativeIoLib.open(pathname, flags, 00644);
         if (fd < 0) {
-            throw new IOException("Error opening " + pathname + ", got " + DirectIoLib.getLastError());
+            throw new IOException("Error opening " + pathname + ", got " +  getLastError());
         }
 
         NativeLong blockSize = new NativeLong(lib.blockSize());
@@ -71,7 +72,7 @@ public class FilePageStoreTest {
         PointerByReference pointerToPointer = new PointerByReference();
 
         // align memory for use with O_DIRECT
-        DirectIoLib.posix_memalign(pointerToPointer, blockSize, new NativeLong(capacity));
+        IgniteNativeIoLib.posix_memalign(pointerToPointer, blockSize, new NativeLong(capacity));
         Pointer pointer = pointerToPointer.getValue();
         long alignedPtr = Pointer.nativeValue(pointer);
         //  GridUnsafe.copyMemory(pointer);
@@ -100,7 +101,7 @@ public class FilePageStoreTest {
         NativeLong n = IgniteNativeIoLib.pwrite(fd, pointer, new NativeLong(pageSize), new NativeLong(pageSize*4));
         System.out.println("written=" + n);
         if (n.longValue() < 0) {
-            throw new IOException("Error writing file at offset "  + ": " + DirectIoLib.getLastError());
+            throw new IOException("Error writing file at offset "  + ": " + getLastError());
         }
 
         IgniteNativeIoLib.close(fd);
@@ -108,7 +109,7 @@ public class FilePageStoreTest {
         GridUnsafe.freeBuffer(buf);
 
 
-        DirectIoLib.free(pointer);
+        IgniteNativeIoLib.free(pointer);
 
         System.out.println("fd=" + fd);
 

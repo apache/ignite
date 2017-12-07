@@ -19,36 +19,67 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
 import net.smacke.jaydio.DirectIoLib;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentHashMap8;
 
 public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
     private final DirectIoLib directIoLib;
+    private int pageSize;
     private FileIOFactory backupFactory;
-    private ConcurrentHashMap8<Long, Long> buffers;
 
-    public AlignedBuffersDirectFileIOFactory(File storePath,
-        FileIOFactory backupFactory) {
+    private ThreadLocal<ByteBuffer> tblOnePageAligned;
+
+
+    private final ConcurrentHashMap8<Long, String> managedAlignedBuffers = new ConcurrentHashMap8<>();
+
+
+    public AlignedBuffersDirectFileIOFactory(
+        final File storePath,
+        final int pageSize,
+        final FileIOFactory backupFactory) {
+        this.pageSize = pageSize;
         this.backupFactory = backupFactory;
         directIoLib = DirectIoLib.getLibForPath(storePath.getAbsolutePath());
         //todo validate data storage settings and invalidate factory
+        tblOnePageAligned = new ThreadLocal<ByteBuffer>() {
+            /** {@inheritDoc} */
+            @Override protected ByteBuffer initialValue() {
+                return createManagedBuffer(pageSize);
+            }
+        };
     }
 
+    @NotNull public ByteBuffer createManagedBuffer(int pageSize) {
+        final ByteBuffer allocate = AlignedBuffer.allocate(fsBlockSize(), pageSize).order(ByteOrder.nativeOrder());
+
+        managedAlignedBuffers.put(GridUnsafe.bufferAddress(allocate), Thread.currentThread().getName());
+
+        return allocate;
+    }
+
+    /** {@inheritDoc} */
     @Override public FileIO create(File file) throws IOException {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         if (directIoLib == null)
             return backupFactory.create(file, modes);
 
-
-        return new AlignedBuffersDirectFileIO(  directIoLib.blockSize(), file, modes, buffers);
+        return new AlignedBuffersDirectFileIO(fsBlockSize(),  pageSize, file, modes, tblOnePageAligned, managedAlignedBuffers);
     }
 
-    public void knownAlignedBuffers(ConcurrentHashMap8<Long, Long> buffers) {
+    public int fsBlockSize() {
+        return directIoLib.blockSize();
+    }
 
-        this.buffers = buffers;
+    public ConcurrentHashMap8<Long, String> managedAlignedBuffers() {
+        return managedAlignedBuffers;
     }
 }

@@ -21,6 +21,7 @@ import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
+import com.sun.jna.ptr.PointerByReference;
 
 public class IgniteNativeIoLib {
 
@@ -38,22 +39,19 @@ public class IgniteNativeIoLib {
      *
      * @return 0 on success, -1 on error
      */
-    public static native int close(int fd); // musn't forget to do this
+    public static native int close(int fd);
 
-    /**
-     * @param fd
-     * @param buf
-     * @param count
-     * @param offset
-     * @return
-     */
     public static native NativeLong pwrite(int fd, Pointer buf, NativeLong count, NativeLong offset);
 
     public static native NativeLong write(int fd,  Pointer buf, NativeLong count);
 
     public static native NativeLong pread(int fd, Pointer buf, NativeLong count, NativeLong offset);
 
-
     public static native int fsync(int fd);
+
+    public static native int posix_memalign(PointerByReference memptr, NativeLong alignment, NativeLong size);
+
+    public static native void free(Pointer ptr);
+    public static native String strerror(int errnum);
 
 }
