@@ -36,6 +36,7 @@
     <properties>
         <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
+        <spark.hadoop.version>2.6.5</spark.hadoop.version>
         <spark.version>2.2.0</spark.version>
         <spring.version>4.3.7.RELEASE</spring.version> <!-- don't forget to update spring-data version -->
         <spring.data.version>1.13.1.RELEASE</spring.data.version> <!-- don't forget to update spring version -->

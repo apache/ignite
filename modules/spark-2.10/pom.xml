@@ -94,7 +94,7 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>${hadoop.version}</version>
+            <version>${spark.hadoop.version}</version>
         </dependency>
 
         <dependency>

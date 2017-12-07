@@ -91,6 +91,26 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
                     ("ID", LongType.catalogString, false),
                     ("NAME", StringType.catalogString, true)))
         }
+
+        it("Should allow register tables based on other datasources") {
+            val citiesDataFrame = igniteSession.read.json("src/test/resources/cities.json")
+
+            citiesDataFrame.createOrReplaceTempView("JSON_CITIES")
+
+            val res = igniteSession.sql("SELECT id, name FROM json_cities").rdd
+
+            res.count should equal(3)
+
+            val cities = res.collect
+
+            cities.map(c ⇒ (c.getAs[JLong]("id"), c.getAs[String]("name"))) should equal (
+                Array(
+                    (1, "Forest Hill"),
+                    (2, "Denver"),
+                    (3, "St. Petersburg")
+                )
+            )
+        }
     }
 
     override protected def beforeAll(): Unit = {

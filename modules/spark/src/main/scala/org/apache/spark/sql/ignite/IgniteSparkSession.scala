@@ -17,166 +17,219 @@
 
 package org.apache.spark.sql.ignite
 
-import java.{lang, util}
-
 import org.apache.ignite.IgniteException
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.IgniteContext
+
+import scala.collection.JavaConverters._
+import scala.reflect.runtime.universe.TypeTag
 import org.apache.spark.SparkConf
-import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession.Builder
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.internal.{CatalogImpl, SessionState, SessionStateBuilder, SharedState}
+import org.apache.spark.sql.catalyst._
+import org.apache.spark.sql.catalyst.encoders._
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, Range}
+import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.internal._
 import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.streaming.{DataStreamReader, StreamingQueryManager}
-import org.apache.spark.sql.types.{DataType, StructType}
-import org.apache.spark.sql.util.ExecutionListenerManager
-
-import scala.reflect.runtime.universe
+import org.apache.spark.sql.streaming._
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.util.Utils
 
 /**
   * Implementation of Spark Session for Ignite.
   */
-class IgniteSparkSession private(ic: IgniteContext, proxy: SparkSession) extends SparkSession(proxy.sparkContext)  {
+class IgniteSparkSession private(ic: IgniteContext, proxy: SparkSession) extends SparkSession(proxy.sparkContext) {
     self ⇒
 
-    def this(proxy: SparkSession) =
+    private def this(proxy: SparkSession) =
         this(new IgniteContext(proxy.sparkContext, IgnitionEx.DFLT_CFG), proxy)
 
-    def this(proxy: SparkSession, configPath: String) =
+    private def this(proxy: SparkSession, configPath: String) =
         this(new IgniteContext(proxy.sparkContext, configPath), proxy)
 
-    def this(proxy: SparkSession, cfgF: () => IgniteConfiguration) =
+    private def this(proxy: SparkSession, cfgF: () => IgniteConfiguration) =
         this(new IgniteContext(proxy.sparkContext, cfgF), proxy)
 
+    /** @inheritdoc */
     @transient override lazy val catalog = new CatalogImpl(self)
 
+    /** @inheritdoc */
     @transient override val sqlContext: SQLContext = new SQLContext(self)
 
+    /** @inheritdoc */
     @transient override lazy val sharedState: SharedState =
         new IgniteSharedState(ic, sparkContext)
 
+    /** @inheritdoc */
     @transient override lazy val sessionState: SessionState =
         new SessionStateBuilder(self, None).build()
 
+    /** @inheritdoc */
     @transient override lazy val conf: RuntimeConfig = proxy.conf
 
+    /** @inheritdoc */
     @transient override lazy val emptyDataFrame: DataFrame = proxy.emptyDataFrame
 
+    /** @inheritdoc */
     override def newSession(): SparkSession = new IgniteSparkSession(ic, proxy.newSession())
 
+    /** @inheritdoc */
     override def version: String = proxy.version
 
-    override def listenerManager: ExecutionListenerManager = proxy.listenerManager
+    /** @inheritdoc */
+    override def emptyDataset[T: Encoder]: Dataset[T] = {
+        val encoder = implicitly[Encoder[T]]
+        new Dataset(self, LocalRelation(encoder.schema.toAttributes), encoder)
+    }
 
-    override def experimental: ExperimentalMethods = proxy.experimental
+    /** @inheritdoc */
+    override def createDataFrame(rows: java.util.List[Row], schema: StructType): DataFrame = {
+        Dataset.ofRows(self, LocalRelation.fromExternalRows(schema.toAttributes, rows.asScala))
+    }
 
-    override def udf: UDFRegistration = proxy.udf
+    /** @inheritdoc */
+    override def createDataFrame(rdd: RDD[_], beanClass: Class[_]): DataFrame = {
+        val attributeSeq: Seq[AttributeReference] = getSchema(beanClass)
+        val className = beanClass.getName
+        val rowRdd = rdd.mapPartitions { iter =>
+            SQLContext.beansToRows(iter, Utils.classForName(className), attributeSeq)
+        }
+        Dataset.ofRows(self, LogicalRDD(attributeSeq, rowRdd)(self))
+    }
 
-    override def streams: StreamingQueryManager = proxy.streams
+    /** @inheritdoc */
+    override def createDataFrame(data: java.util.List[_], beanClass: Class[_]): DataFrame = {
+        val attrSeq = getSchema(beanClass)
+        val rows = SQLContext.beansToRows(data.asScala.iterator, beanClass, attrSeq)
+        Dataset.ofRows(self, LocalRelation(attrSeq, rows.toSeq))
+    }
 
-    override def emptyDataset[T](implicit evidence$1: Encoder[T]): Dataset[T] = proxy.emptyDataset
+    /** @inheritdoc */
+    override def createDataFrame[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
+        SparkSession.setActiveSession(this)
+        val encoder = Encoders.product[A]
+        Dataset.ofRows(self, ExternalRDD(rdd, self)(encoder))
+    }
 
-    override def createDataFrame[A <: Product](rdd: RDD[A])(implicit
-        evidence$2: universe.TypeTag[A]): DataFrame = proxy.createDataFrame(rdd)
+    /** @inheritdoc */
+    override def baseRelationToDataFrame(baseRelation: BaseRelation): DataFrame = {
+        Dataset.ofRows(self, LogicalRelation(baseRelation))
+    }
 
-    override def createDataFrame[A <: Product](data: Seq[A])(implicit
-        evidence$3: universe.TypeTag[A]): DataFrame = proxy.createDataFrame(data)
+    /** @inheritdoc */
+    override def createDataset[T: Encoder](data: Seq[T]): Dataset[T] = {
+        val enc = encoderFor[T]
+        val attributes = enc.schema.toAttributes
+        val encoded = data.map(d => enc.toRow(d).copy())
+        val plan = new LocalRelation(attributes, encoded)
+        Dataset[T](self, plan)
+    }
 
-    override def createDataFrame(rowRDD: RDD[Row],
-        schema: StructType): DataFrame = proxy.createDataFrame(rowRDD, schema)
+    /** @inheritdoc */
+    override def createDataset[T: Encoder](data: RDD[T]): Dataset[T] = {
+        Dataset[T](self, ExternalRDD(data, self))
+    }
 
-    override def createDataFrame(rowRDD: JavaRDD[Row],
-        schema: StructType): DataFrame = proxy.createDataFrame(rowRDD, schema)
+    /** @inheritdoc */
+    override def range(start: Long, end: Long, step: Long, numPartitions: Int): Dataset[java.lang.Long] = {
+        new Dataset(self, Range(start, end, step, numPartitions), Encoders.LONG)
+    }
 
-    override def createDataFrame(rows: util.List[Row],
-        schema: StructType): DataFrame = proxy.createDataFrame(rows, schema)
+    /** @inheritdoc */
+    override def table(tableName: String): DataFrame = {
+        val tableIdent = sessionState.sqlParser.parseTableIdentifier(tableName)
 
-    override def createDataFrame(rdd: RDD[_],
-        beanClass: Class[_]): DataFrame = proxy.createDataFrame(rdd, beanClass)
+        Dataset.ofRows(self, sessionState.catalog.lookupRelation(tableIdent))
+    }
 
-    override def createDataFrame(rdd: JavaRDD[_],
-        beanClass: Class[_]): DataFrame = proxy.createDataFrame(rdd, beanClass)
+    /** @inheritdoc */
+    override def sql(sqlText: String): DataFrame = Dataset.ofRows(self, sessionState.sqlParser.parsePlan(sqlText))
 
-    override def createDataFrame(data: util.List[_],
-        beanClass: Class[_]): DataFrame = proxy.createDataFrame(data, beanClass)
+    /** @inheritdoc */
+    override def read: DataFrameReader = new DataFrameReader(self)
 
-    override def baseRelationToDataFrame(
-        baseRelation: BaseRelation): DataFrame = proxy.baseRelationToDataFrame(baseRelation)
+    /** @inheritdoc */
+    override def readStream: DataStreamReader = new DataStreamReader(self)
 
-    override def createDataset[T](data: Seq[T])(implicit
-        evidence$4: Encoder[T]): Dataset[T] = proxy.createDataset(data)
-
-    override def createDataset[T](data: RDD[T])(implicit
-        evidence$5: Encoder[T]): Dataset[T] = proxy.createDataset(data)
-
-    override def createDataset[T](data: util.List[T])(implicit
-        evidence$6: Encoder[T]): Dataset[T] = proxy.createDataset(data)
-
-    override def range(end: Long): Dataset[lang.Long] = proxy.range(end)
-
-    override def range(start: Long,
-        end: Long): Dataset[lang.Long] = proxy.range(start, end)
-
-    override def range(start: Long, end: Long,
-        step: Long): Dataset[lang.Long] = proxy.range(start, end, step)
-
-    override def range(start: Long, end: Long, step: Long,
-        numPartitions: Int): Dataset[lang.Long] = proxy.range(start, end, step, numPartitions)
-
-    override def table(
-        tableName: String): DataFrame = proxy.table(tableName)
-
-    override def sql(sqlText: String): DataFrame =
-        Dataset.ofRows(self, sessionState.sqlParser.parsePlan(sqlText))
-
-    override def read: DataFrameReader = proxy.read
-
-    override def readStream: DataStreamReader = proxy.readStream
-
-    override def time[T](f: ⇒ T): T = proxy.time(f)
-
+    /** @inheritdoc */
     override def stop(): Unit = proxy.stop()
 
-    override def close(): Unit = proxy.close()
+    /** @inheritdoc */
+    override private[sql] def applySchemaToPythonRDD(rdd: RDD[Array[Any]], schema: StructType) = {
+        val rowRdd = rdd.map(r => python.EvaluatePython.fromJava(r, schema).asInstanceOf[InternalRow])
+        Dataset.ofRows(self, LogicalRDD(schema.toAttributes, rowRdd)(self))
+    }
 
-    override protected[sql] def parseDataType(
-        dataTypeString: String): DataType = proxy.parseDataType(dataTypeString)
-
-    override private[sql] def applySchemaToPythonRDD(rdd: RDD[Array[Any]],
-        schemaString: String) = proxy.applySchemaToPythonRDD(rdd, schemaString)
-
-    override private[sql] def applySchemaToPythonRDD(rdd: RDD[Array[Any]],
-        schema: StructType) = proxy.applySchemaToPythonRDD(rdd, schema)
-
+    /** @inheritdoc */
     override private[sql] def cloneSession() = new IgniteSparkSession(ic, proxy.cloneSession())
 
-    @transient override private[sql] val extensions = proxy.extensions
+    /** @inheritdoc */
+    @transient override private[sql] val extensions =
+        proxy.extensions
 
+    /** @inheritdoc */
     override private[sql] def internalCreateDataFrame(
         catalystRows: RDD[InternalRow],
-        schema: StructType) = proxy.internalCreateDataFrame(catalystRows, schema)
+        schema: StructType) = {
+        val logicalPlan = LogicalRDD(schema.toAttributes, catalystRows)(self)
+        Dataset.ofRows(self, logicalPlan)
+    }
 
+    /** @inheritdoc */
     override private[sql] def createDataFrame(rowRDD: RDD[Row],
         schema: StructType,
-        needsConversion: Boolean) = proxy.createDataFrame(rowRDD, schema, needsConversion)
+        needsConversion: Boolean) = {
+        val catalystRows = if (needsConversion) {
+            val encoder = RowEncoder(schema)
+            rowRDD.map(encoder.toRow)
+        } else {
+            rowRDD.map{r: Row => InternalRow.fromSeq(r.toSeq)}
+        }
+        val logicalPlan = LogicalRDD(schema.toAttributes, catalystRows)(self)
+        Dataset.ofRows(self, logicalPlan)
+    }
 
-    override private[sql] def table(
-        tableIdent: TableIdentifier) = proxy.table(tableIdent)
+    /** @inheritdoc */
+    override private[sql] def table( tableIdent: TableIdentifier) =
+        Dataset.ofRows(self, sessionState.catalog.lookupRelation(tableIdent))
+
+    private def getSchema(beanClass: Class[_]): Seq[AttributeReference] = {
+        val (dataType, _) = JavaTypeInference.inferDataType(beanClass)
+        dataType.asInstanceOf[StructType].fields.map { f =>
+            AttributeReference(f.name, f.dataType, f.nullable)()
+        }
+    }
 }
 
 object IgniteSparkSession {
+    /**
+      * @return New instance of <code>IgniteBuilder</code>
+      */
     def builder(): IgniteBuilder = {
         new IgniteBuilder
     }
 
+    /**
+      * Builder for <code>IgniteSparkSession</code>.
+      * Extends spark session builder with methods related to Ignite configuration.
+      */
     class IgniteBuilder extends Builder {
+        /**
+          * Config provider.
+          */
         private var cfgF: () ⇒ IgniteConfiguration = _
+
+        /**
+          * Path to config file.
+          */
         private var config: String = _
 
+        /** @inheritdoc */
         override def getOrCreate(): IgniteSparkSession = synchronized {
             val sparkSession = super.getOrCreate()
 
@@ -193,6 +246,13 @@ object IgniteSparkSession {
             new IgniteSparkSession(ic, sparkSession)
         }
 
+        /**
+          * Set path to Ignite config file.
+          * User should use only one of <code>igniteConfig</code> and <code>igniteConfigProvider</code>.
+          *
+          * @param cfg Path to Ignite config file.
+          * @return This for chaining.
+          */
         def igniteConfig(cfg: String): IgniteBuilder = {
             if (cfgF != null)
                 throw new IgniteException("only one of config or configProvider should be provided")
@@ -202,6 +262,13 @@ object IgniteSparkSession {
             this
         }
 
+        /**
+          * Set Ignite config provider.
+          * User should use only one of <code>igniteConfig</code> and <code>igniteConfigProvider</code>.
+          *
+          * @param cfgF Closure to provide <code>IgniteConfiguration</code>.
+          * @return This for chaining.
+          */
         def igniteConfigProvider(cfgF: () ⇒ IgniteConfiguration): IgniteBuilder = {
             if (config != null)
                 throw new IgniteException("only one of config or configProvider should be provided")

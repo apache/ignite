@@ -26,6 +26,7 @@ import org.apache.spark.sql.internal.SharedState
   * Shared state to override link to IgniteExternalCatalog
   */
 class IgniteSharedState(igniteContext: IgniteContext, sparkContext: SparkContext) extends SharedState(sparkContext) {
+    /** @inheritdoc */
     override lazy val externalCatalog: ExternalCatalog = {
         val externalCatalog = new IgniteExternalCatalog(Some(igniteContext))
 
