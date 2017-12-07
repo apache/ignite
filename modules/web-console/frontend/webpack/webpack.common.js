@@ -128,13 +128,18 @@ export default {
             },
             {
                 test: /\.(ttf|eot|svg|woff(2)?)(\?v=[\d.]+)?(\?[a-z0-9#-]+)?$/,
-                exclude: [contentBase],
+                exclude: [contentBase, IgniteModules],
                 loader: 'file?name=assets/fonts/[name].[ext]'
             },
             {
-                test: /.*\.svg$/,
-                include: [contentBase],
+                test: /^(?:(?!url\.svg$).)*\.svg$/,
+                include: [contentBase, IgniteModules],
                 use: ['svg-sprite-loader']
+            },
+            {
+                test: /.*\.url\.svg$/,
+                include: [contentBase, IgniteModules],
+                loader: 'file?name=assets/fonts/[name].[ext]'
             },
             {
                 test: /\.(jpe?g|png|gif)$/i,

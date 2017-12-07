@@ -28,5 +28,3 @@ export sort from './sort.svg';
 export info from './info.svg';
 export plus from './plus.svg';
 export copy from './copy.svg';
-export monitoring from './monitoring.svg';
-export queries from './queries.svg';
