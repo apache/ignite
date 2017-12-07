@@ -29,7 +29,6 @@ import net.smacke.jaydio.DirectIoLib;
 import net.smacke.jaydio.OpenFlags;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.file.DirectRandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
@@ -121,13 +120,6 @@ public class FilePageStoreTest {
         RandomAccessFileIOFactory ioFactory = new RandomAccessFileIOFactory();
         testSaveRead(ioFactory);
     }
-
-
-    @Test
-    public void saveReadDirect() throws IgniteCheckedException {
-        testSaveRead(new DirectRandomAccessFileIOFactory());
-    }
-
 
     private void testSaveRead(FileIOFactory ioFactory) throws IgniteCheckedException {
         int pageSize = DataStorageConfiguration.DFLT_PAGE_SIZE;

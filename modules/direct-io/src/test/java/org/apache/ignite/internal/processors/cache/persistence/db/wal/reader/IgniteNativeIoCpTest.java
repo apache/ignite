@@ -18,16 +18,22 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import com.google.common.base.Strings;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffersDirectFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.jsr166.ConcurrentHashMap8;
 
 public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
 
@@ -66,13 +72,13 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        setupDirect(ignite);
+        ConcurrentHashMap8<Long, Long> map8 = setupDirect(ignite);
 
         ignite.active(true);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache");
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10000; i++) {
             cache.put(i, valueForKey(i));
         }
 
@@ -90,14 +96,35 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
             assertEquals(valueForKey(i), cacheRestart.get(i));
         }
 
+        System.err.println("Buffers: " + map8);
     }
 
-    private void setupDirect(IgniteEx ignite) {
+    private ConcurrentHashMap8<Long, Long> setupDirect(IgniteEx ignite) {
         final FilePageStoreManager pageStore = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
+        final ConcurrentHashMap8<Long, Long> buffers = new ConcurrentHashMap8<>();
         final AlignedBuffersDirectFileIOFactory factory = new AlignedBuffersDirectFileIOFactory(pageStore.workDir(), pageStore.getPageStoreFileIoFactory());
 
+        factory.knownAlignedBuffers(buffers);
         pageStore.pageStoreFileIoFactory(factory);
+
+        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
+
+
+        database.setThreadBuf(new ThreadLocal<ByteBuffer>() {
+            /** {@inheritDoc} */
+            @Override protected ByteBuffer initialValue() {
+
+                int pageSize = pageStore.pageSize();
+                ByteBuffer allocate = AlignedBuffer.allocate(pageSize, pageSize);
+                allocate.order(ByteOrder.nativeOrder());
+
+                long address = GridUnsafe.bufferAddress(allocate);
+                buffers.put(address, address);
+                return allocate;
+            }
+        });
+        return buffers;
     }
 
     @NotNull private String valueForKey(int i) {

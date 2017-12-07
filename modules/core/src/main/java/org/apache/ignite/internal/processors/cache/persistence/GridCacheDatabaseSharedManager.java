@@ -1960,6 +1960,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return cpTs + "-" + cpId + "-" + type + ".bin";
     }
 
+    public void setThreadBuf(ThreadLocal<ByteBuffer> threadBuf) {
+        this.threadBuf = threadBuf;
+    }
+
     /**
      *
      */

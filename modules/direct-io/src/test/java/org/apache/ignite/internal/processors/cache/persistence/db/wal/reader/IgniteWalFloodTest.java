@@ -49,7 +49,6 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.DirectRandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -104,9 +103,6 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         memPlcCfg.setPersistenceEnabled(true);
 
         dsCfg.setDefaultDataRegionConfiguration(memPlcCfg);
-        // dsCfg.setDefaultDataRegionConfiguration("dfltMemPlc");
-
-        dsCfg.setFileIOFactory(new DirectRandomAccessFileIOFactory());
 
         if (walSegmentSize != 0)
             dsCfg.setWalSegmentSize(walSegmentSize);

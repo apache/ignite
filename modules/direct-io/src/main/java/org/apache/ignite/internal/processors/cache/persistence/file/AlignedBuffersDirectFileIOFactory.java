@@ -21,15 +21,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import net.smacke.jaydio.DirectIoLib;
+import org.jsr166.ConcurrentHashMap8;
 
 public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
     private final DirectIoLib directIoLib;
-    private File storePath;
     private FileIOFactory backupFactory;
+    private ConcurrentHashMap8<Long, Long> buffers;
 
     public AlignedBuffersDirectFileIOFactory(File storePath,
         FileIOFactory backupFactory) {
-        this.storePath = storePath;
         this.backupFactory = backupFactory;
         directIoLib = DirectIoLib.getLibForPath(storePath.getAbsolutePath());
         //todo validate data storage settings and invalidate factory
@@ -44,6 +44,11 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
             return backupFactory.create(file, modes);
 
 
-        return new AlignedBuffersDirectFileIO(  directIoLib.blockSize(), file, modes);
+        return new AlignedBuffersDirectFileIO(  directIoLib.blockSize(), file, modes, buffers);
+    }
+
+    public void knownAlignedBuffers(ConcurrentHashMap8<Long, Long> buffers) {
+
+        this.buffers = buffers;
     }
 }

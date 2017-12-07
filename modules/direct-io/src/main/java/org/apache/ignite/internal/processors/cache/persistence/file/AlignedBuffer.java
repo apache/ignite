@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import sun.nio.ch.DirectBuffer;
 
 public class AlignedBuffer {
-    static ByteBuffer allocate(int blockSize, int capacity) {
+    public static ByteBuffer allocate(int blockSize, int capacity) {
         PointerByReference pointerToPointer = new PointerByReference();
 
         // align memory for use with O_DIRECT
