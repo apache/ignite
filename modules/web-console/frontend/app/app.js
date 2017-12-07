@@ -139,6 +139,7 @@ import igniteServices from './services';
 import IgniteModules from 'IgniteModules/index';
 
 import baseTemplate from 'views/base.pug';
+import * as icons from '../public/images/icons';
 
 angular.module('ignite-console', [
     // Optional AngularJS modules.
@@ -329,4 +330,5 @@ angular.module('ignite-console', [
                 .catch(Messages.showError);
         };
     }
-]);
+])
+.run(['IgniteIcon', (IgniteIcon) => IgniteIcon.registerIcons(icons)]);

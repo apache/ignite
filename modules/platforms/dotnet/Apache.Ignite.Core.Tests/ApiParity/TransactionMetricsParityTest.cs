@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,13 +15,25 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+namespace Apache.Ignite.Core.Tests.ApiParity
+{
+    using Apache.Ignite.Core.Transactions;
+    using NUnit.Framework;
 
-import directive from './directive';
-import service from './service';
-import './style.scss';
-
-export default angular
-    .module('ignite-console.ignite-icon', [])
-    .service('IgniteIcon', service)
-    .directive('igniteIcon', directive);
+    /// <summary>
+    /// Tests that <see cref="ITransactionMetrics"/> has all APIs from Java Ignite interface.
+    /// </summary>
+    public class TransactionMetricsParityTest
+    {
+        /// <summary>
+        /// Tests the API parity.
+        /// </summary>
+        [Test]
+        public void TestTransactionMetrics()
+        {
+            ParityTest.CheckInterfaceParity(
+                @"modules\core\src\main\java\org\apache\ignite\transactions\TransactionMetrics.java",
+                typeof(ITransactionMetrics));
+        }
+    }
+}
