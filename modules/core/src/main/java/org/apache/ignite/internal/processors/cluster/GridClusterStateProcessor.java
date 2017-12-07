@@ -91,6 +91,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private boolean inMemoryMode;
 
+    /**
+     * Compatibility mode flag. When node detects it runs in heterogeneous cluster (nodes of different versions),
+     * it should skip baseline topology operations (
+     */
+    private volatile boolean compatibilityMode;
+
     /** */
     private volatile DiscoveryDataClusterState globalState;
 
@@ -209,6 +215,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
         this.metastorage = metastorage;
+
+        if (compatibilityMode) {
+            if (log.isInfoEnabled())
+                log.info("BaselineTopology won't be stored as this node is running in compatibility mode");
+
+            return;
+        }
 
         writeBaselineTopology(globalState.baselineTopology(), null);
 
@@ -621,7 +634,15 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         if (data.commonData() instanceof DiscoveryDataClusterState) {
+            if (globalState != null && globalState.baselineTopology() != null)
+                //node with BaselineTopology is not allowed to join mixed cluster
+                // (where some nodes don't support BaselineTopology)
+                throw new IgniteException("Node with BaselineTopology cannot join" +
+                    " mixed cluster running in compatibility mode");
+
             globalState = (DiscoveryDataClusterState) data.commonData();
+
+            compatibilityMode = true;
 
             return;
         }
@@ -786,6 +807,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
         if (discoData.joiningNodeData() == null)
+            //TODO check for existing BaselineTopology (and failing of joining node if necessary)
+            // should be done here when it is approved
             return null;
 
         DiscoveryDataClusterState joiningNodeState;
@@ -1016,6 +1039,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void onBaselineTopologyChanged(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
+        if (compatibilityMode) {
+            if (log.isDebugEnabled())
+                log.info("BaselineTopology won't be stored as this node is running in compatibility mode");
+
+            return;
+        }
+
         writeBaselineTopology(blt, prevBltHistItem);
     }
 
