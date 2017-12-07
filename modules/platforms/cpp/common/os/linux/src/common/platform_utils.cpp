@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#include <iostream>
-
 #include <time.h>
 
 #include <sys/stat.h>
