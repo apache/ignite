@@ -490,18 +490,7 @@ public final class GridTestUtils {
      * @throws Exception In case of any exception distinct from {@link TimeoutException}.
      */
     public static void assertTimeout(long timeout, TimeUnit timeUnit, Runnable runnable) throws Exception {
-        ExecutorService executorSvc = Executors.newSingleThreadExecutor();
-        Future<?> fut = executorSvc.submit(runnable);
-
-        try {
-            fut.get(timeout, timeUnit);
-        }
-        catch (TimeoutException ignored) {
-            fail("Timeout occurred.", null);
-        }
-        finally {
-            executorSvc.shutdownNow();
-        }
+        assertTimeout("Timeout occurred.", timeout, timeUnit, runnable);
     }
 
     /**
