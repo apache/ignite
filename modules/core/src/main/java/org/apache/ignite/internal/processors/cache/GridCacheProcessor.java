@@ -4010,6 +4010,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Enable/disable statistics globally for the cache
+     *
+     * @param cacheName Cache name.
+     * @param enabled Statistics enabled flag.
+     */
+    public void enableStatistics(String cacheName, boolean enabled) {
+        try {
+            CacheConfigurationChangeMessage msg = new CacheConfigurationChangeMessage(cacheName);
+
+            msg.statisticEnabled(enabled);
+
+            ctx.grid().context().discovery().sendCustomEvent(msg);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send discovery message to change statistics collection flag [cache="
+                + cacheName + ']', e);
+        }
+    }
+
+    /**
      * @param obj Object to clone.
      * @return Object copy.
      * @throws IgniteCheckedException If failed.
