@@ -1030,12 +1030,32 @@ public class GridNioServer<T> {
     }
 
     private static void disableWriteFlag(SelectionKey key) {
+        assert key != null;
+
         if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
             key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
     }
 
+    private static boolean writeMessage(SessionWriteRequest req, ByteBuffer buf, MessageWriter writer){
+        assert req != null;
+        assert buf != null;
+        assert writer != null;
+
+        Message msg = (Message)req.message();
+
+        assert msg != null;
+
+        writer.setCurrentWriteClass(msg.getClass());
+
+        return msg.writeTo(buf, writer);
+    }
+
     private void writeOrSkip(GridSelectorNioSessionImpl ses, ByteBuffer buf,
         WritableByteChannel sockCh) throws IOException {
+        assert ses != null;
+        assert buf != null;
+        assert sockCh != null;
+
         if (!skipWrite) {
             int cnt = sockCh.write(buf);
 
@@ -1459,19 +1479,12 @@ public class GridNioServer<T> {
             assert req != null;
             assert writer != null;
 
-            Message msg = (Message)req.message();
-
-            assert msg != null;
-
-            writer.setCurrentWriteClass(msg.getClass());
-
-            boolean finished = msg.writeTo(buf, writer);
-
-            if (finished)
-                writer.reset();
+            boolean finished = writeMessage(req, buf, writer);
 
             // Fill up as many messages as possible to write buffer.
             while (finished) {
+                writer.reset();
+
                 req.onMessageWritten();
 
                 req = getSessionWriteRequest(ses);
@@ -1479,16 +1492,7 @@ public class GridNioServer<T> {
                 if (req == null)
                     break;
 
-                msg = (Message)req.message();
-
-                assert msg != null;
-
-                writer.setCurrentWriteClass(msg.getClass());
-
-                finished = msg.writeTo(buf, writer);
-
-                if (finished)
-                    writer.reset();
+                finished = writeMessage(req, buf, writer);
             }
 
             return req;
