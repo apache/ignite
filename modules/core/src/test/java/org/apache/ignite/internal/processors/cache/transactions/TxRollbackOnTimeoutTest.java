@@ -224,67 +224,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    public void testLockRelease() throws Exception {
-        final Ignite client = startClient();
-
-        final ClusterNode n0 = grid(0).affinity(CACHE_NAME).mapKeyToNode(0);
-
-        toggleBlocking(GridNearLockResponse.class, client, true);
-
-        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 50, 0)) {
-            client.cache(CACHE_NAME).put(0, 0);
-        }
-        catch (CacheException e) {
-            assertTrue(e.getMessage(), X.hasCause(e, TransactionTimeoutException.class));
-        }
-
-        toggleBlocking(GridNearLockResponse.class, client, false);
-
-        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10 * 60_000, 0)) {
-            client.cache(CACHE_NAME).put(0, 0);
-        }
-        catch (CacheException e) {
-            assertTrue(e.getMessage(), X.hasCause(e, TransactionTimeoutException.class));
-        }
-
-        Thread.sleep(500);
-
-        for (Ignite ignite : G.allGrids()) {
-            IgniteEx ig = (IgniteEx)ignite;
-
-            final CacheObjectsReleaseFuture<?, ?> f = (CacheObjectsReleaseFuture<?, ?>)ig.context().cache().context().
-                partitionReleaseFuture(new AffinityTopologyVersion(G.allGrids().size() + 1, 0));
-
-            if (!f.isDone()) {
-                // Print incomplete futures.
-                final Collection<? extends IgniteInternalFuture<?>> futs = f.futures();
-
-                for (IgniteInternalFuture<?> fut : futs) {
-                    if (fut instanceof GridCompoundFuture<?, ?>) {
-                        GridCompoundFuture<?, ?> fut0 = (GridCompoundFuture<?, ?>)fut;
-
-                        final Collection<? extends IgniteInternalFuture<?>> futs0 = fut0.futures();
-
-                        for (IgniteInternalFuture<?> fut1 : futs0) {
-                            if (!fut1.isDone())
-                                log.info("Future: " + fut1);
-                        }
-                    }
-                    else {
-                        if (!fut.isDone())
-                            log.info("Future: " + fut);
-                    }
-                }
-
-                fail("Unexpected incomplete future was found on node " + ig.localNode());
-            }
-
-        }
-    }
-
-    /**
      * Tests if timeout on first tx unblocks second tx waiting for the locked key.
      *
      * @throws Exception If failed.
@@ -559,12 +498,12 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testCleanup() throws Exception {
+    public void testLockRelease() throws Exception {
         final Ignite client = startClient();
 
         final AtomicInteger idx = new AtomicInteger();
 
-        final int threadCnt = 2;
+        final int threadCnt = Runtime.getRuntime().availableProcessors() * 2;
 
         final CountDownLatch readStartLatch = new CountDownLatch(1);
 
