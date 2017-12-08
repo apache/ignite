@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.util.Collection;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.transactions.Transaction;
@@ -103,4 +104,10 @@ public interface IgniteTransactions {
      * Resets transaction metrics.
      */
     public void resetMetrics();
+
+    /**
+     * Returns list of transactions, started on local node.
+     * @return List of active local transactions.
+     */
+    public Collection<Transaction> localActiveTransactions();
 }

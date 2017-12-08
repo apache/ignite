@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -236,6 +237,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         }
 
         valMap = new ConcurrentHashMap8<>();
+
+        if (tx != null && !tx.updateLockFuture(null, this)) {
+            onError(new IgniteTxRollbackCheckedException("Failed to acquire lock because transaction " +
+                "has started to roll back [tx=" + CU.txString(tx) + ']'));
+
+            onComplete(false, false);
+        }
     }
 
     /** {@inheritDoc} */
@@ -565,6 +573,16 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
+     *
+     * @param err Lock removal reason.
+     */
+    public void onRollback(Throwable err) {
+        onError(err);
+
+        onComplete(false, true);
+    }
+
+    /**
      * Completeness callback.
      *
      * @param success {@code True} if lock was acquired.
@@ -583,8 +601,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (!success)
             undoLocks(distribute, true);
 
-        if (tx != null)
+        if (tx != null) {
             cctx.tm().txContext(tx);
+
+            tx.clearLockFuture();
+        }
 
         if (super.onDone(success, err)) {
             if (log.isDebugEnabled())

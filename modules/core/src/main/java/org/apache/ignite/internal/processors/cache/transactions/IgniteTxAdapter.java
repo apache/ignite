@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVer
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -99,7 +100,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
-import static org.apache.ignite.transactions.TransactionState.LOCKING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
@@ -708,6 +708,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             "for transaction [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
     }
 
+    /**
+     * @return Rollback exception.
+     */
+    public final IgniteCheckedException rollbackException() {
+        return new IgniteTxRollbackCheckedException("Failed to acquire lock within provided timeout because " +
+            "operation was rolled back for transaction [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+    }
+
     /** {@inheritDoc} */
     @Override public GridCacheVersion xidVersion() {
         return xidVer;
@@ -1022,7 +1030,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             switch (state) {
                 case ACTIVE: {
-                    valid = prev == SUSPENDED || prev == LOCKING;
+                    valid = prev == SUSPENDED;
 
                     break;
                 }
@@ -1070,7 +1078,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 case MARKED_ROLLBACK: {
-                    valid = prev == ACTIVE || prev == LOCKING || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
+                    valid = prev == ACTIVE  || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
 
                     break;
                 }
@@ -1083,12 +1091,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 case SUSPENDED: {
-                    valid = prev == ACTIVE;
-
-                    break;
-                }
-
-                case LOCKING: {
                     valid = prev == ACTIVE;
 
                     break;

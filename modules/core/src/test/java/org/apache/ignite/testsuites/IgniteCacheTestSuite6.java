@@ -29,8 +29,8 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAss
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeNearCacheTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncNearCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncTest;
 
 /**
  * Test suite.
@@ -57,8 +57,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
         suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
-        suite.addTestSuite(TxRollbackOnTopologyChangeTest.class);
-        suite.addTestSuite(TxRollbackOnTopologyChangeNearCacheTest.class);
+        suite.addTestSuite(TxRollbackAsyncTest.class);
+        suite.addTestSuite(TxRollbackAsyncNearCacheTest.class);
 
         suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
 

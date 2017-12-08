@@ -259,6 +259,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
 
     /**
      * Rolls back this transaction.
+     * Note that it's allowed to roll back transaction from any thread.
      *
      * @throws IgniteException If rollback failed.
      */
@@ -267,6 +268,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
 
     /**
      * Asynchronously rolls back this transaction.
+     * Note that it's allowed to roll back transaction from any thread.
      *
      * @return a Future representing pending completion of the rollback.
      * @throws IgniteException If rollback failed.

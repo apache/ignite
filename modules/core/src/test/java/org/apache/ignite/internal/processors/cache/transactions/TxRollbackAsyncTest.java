@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
@@ -37,17 +40,19 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
+import static java.util.Collections.synchronizedList;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Tests an ability to eagerly rollback transactions timed out while waiting for topology change.
+ * Tests an ability to async rollback near transactions.
  */
-public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
+public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
     public static final int ROLLBACK_TIMEOUT = 500;
 
@@ -138,7 +143,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testSimple() throws Exception {
+    public void testRollbackOnTopologyChange() throws Exception {
         final Ignite client = startClient();
 
         final AtomicInteger idx = new AtomicInteger();
@@ -192,14 +197,99 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         assertNull(client.cache(CACHE_NAME).get(0));
 
+        checkFutures();
+    }
+
+    /**
+     *
+     */
+    public void testSimple() throws Exception {
+        final Ignite client = startClient();
+
+        testSimple0(client, 2);
+    }
+
+    /**
+     *
+     */
+    private void testSimple0(final Ignite node, int threadsCnt) throws Exception {
+        final AtomicInteger idx = new AtomicInteger();
+
+        final CountDownLatch readStartLatch = new CountDownLatch(1);
+
+        final CountDownLatch enqueueLatch = new CountDownLatch(threadsCnt - 1);
+
+        final CountDownLatch commitLatch = new CountDownLatch(1);
+
+        final List<Transaction> txs = synchronizedList(new ArrayList<Transaction>());
+
+        final IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                final int idx0 = idx.getAndIncrement();
+
+                if (idx0 == 0) {
+                    try(Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)){
+                        node.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+
+                        readStartLatch.countDown();
+
+                        U.awaitQuiet(commitLatch);
+
+                        tx.commit();
+                    }
+                }
+                else {
+                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                        txs.add(tx);
+
+                        enqueueLatch.countDown();
+
+                        U.awaitQuiet(readStartLatch);
+
+                        node.cache(CACHE_NAME).get(0); // Lock acquisition is queued.
+                    }
+                    catch (CacheException e) {
+                        assertTrue(e.getMessage(), X.hasCause(e, TransactionRollbackException.class));
+                    }
+                }
+            }
+        }, threadsCnt, "tx-async");
+
+        U.awaitQuiet(enqueueLatch);
+
+        final Transaction tx0 = txs.remove(0);
+
+        tx0.rollback();
+
+        commitLatch.countDown();
+
+        fut.get();
+
+        assertEquals(0, node.cache(CACHE_NAME).get(0));
+
+        checkFutures();
+    }
+
+    public void testRollbackActiveTransactions() throws Exception {
+        final Ignite client = startClient();
+
+        final Collection<Transaction> transactions = client.transactions().localActiveTransactions();
+
+        for (Transaction transaction : transactions)
+            transaction.rollback();
+    }
+
+    /**
+     * Checks if all tx futures are finished.
+     */
+    private void checkFutures() {
         for (Ignite ignite : G.allGrids()) {
             IgniteEx ig = (IgniteEx)ignite;
 
             final IgniteInternalFuture<?> f = ig.context().cache().context().
                 partitionReleaseFuture(new AffinityTopologyVersion(G.allGrids().size() + 1, 0));
 
-            assertTrue("Unexpected incomplete future", f.isDone());
+            assertTrue("Unexpected incomplete future: " + f, f.isDone());
         }
-
     }
 }

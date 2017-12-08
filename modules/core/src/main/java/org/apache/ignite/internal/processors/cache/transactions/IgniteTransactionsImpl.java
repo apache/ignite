@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -193,6 +198,19 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
         cctx.resetTxMetrics();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Transaction> localActiveTransactions() {
+        return F.viewReadOnly(cctx.tm().activeTransactions(), new IgniteClosure<IgniteInternalTx, Transaction>() {
+            @Override public Transaction apply(IgniteInternalTx tx) {
+                return ((GridNearTxLocal)tx).proxy();
+            }
+        }, new IgnitePredicate<IgniteInternalTx>() {
+            @Override public boolean apply(IgniteInternalTx tx) {
+                return tx instanceof GridNearTxLocal;
+            }
+        });
     }
 
     /**
