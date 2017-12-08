@@ -1423,8 +1423,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         try {
                             TxDeadlock deadlock = fut.get();
 
-                            err = new IgniteTxTimeoutCheckedException("xxxx Failed to acquire lock within provided timeout for " +
-                                "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
+                            err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
+                                "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
                                 deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx.shared())) :
                                     null);
                         }

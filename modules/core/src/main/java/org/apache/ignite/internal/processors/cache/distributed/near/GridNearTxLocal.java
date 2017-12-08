@@ -74,7 +74,6 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -93,7 +92,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -110,7 +108,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
-import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.LOCKING;
@@ -174,7 +171,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @GridToStringExclude
     private TransactionProxyImpl proxy;
 
-    private volatile IgniteInternalFuture<Boolean> locFut;
+    /** */
+    private volatile IgniteInternalFuture<Boolean> lockFut;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -571,7 +569,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (timeout == -1 || !state(LOCKING))
                     return new GridFinishedFuture<>(timeoutException());
 
-                IgniteInternalFuture<Boolean> fut = locFut = cacheCtx.cache().txLockAsync(enlisted,
+                lockFut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
                     this,
                     /*read*/entryProcessor != null, // Needed to force load from store.
@@ -602,9 +600,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 };
 
-                if (fut.isDone()) {
+                if (lockFut.isDone()) {
                     try {
-                        return nonInterruptable(plc1.apply(fut.get(), null));
+                        return nonInterruptable(plc1.apply(lockFut.get(), null));
                     }
                     catch (GridClosureException e) {
                         return new GridFinishedFuture<>(e.unwrap());
@@ -620,7 +618,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
                 else {
                     return nonInterruptable(new GridEmbeddedFuture<>(
-                        fut,
+                        lockFut,
                         plc1
                     ));
                 }
@@ -751,7 +749,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (timeout == -1 || !state(LOCKING))
                     return new GridFinishedFuture<>(timeoutException());
 
-                IgniteInternalFuture<Boolean> fut = locFut = cacheCtx.cache().txLockAsync(enlisted,
+                lockFut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
                     this,
                     /*read*/invokeMap != null, // Needed to force load from store.
@@ -782,9 +780,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 };
 
-                if (fut.isDone()) {
+                if (lockFut.isDone()) {
                     try {
-                        return nonInterruptable(plc1.apply(fut.get(), null));
+                        return nonInterruptable(plc1.apply(lockFut.get(), null));
                     }
                     catch (GridClosureException e) {
                         return new GridFinishedFuture<>(e.unwrap());
@@ -800,7 +798,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
                 else {
                     return nonInterruptable(new GridEmbeddedFuture<>(
-                        fut,
+                        lockFut,
                         plc1
                     ));
                 }
@@ -1568,7 +1566,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (timeout == -1 || !state(LOCKING))
                 return new GridFinishedFuture<>(timeoutException());
 
-            IgniteInternalFuture<Boolean> fut = locFut = cacheCtx.cache().txLockAsync(enlisted,
+            lockFut = cacheCtx.cache().txLockAsync(enlisted,
                 timeout,
                 this,
                 false,
@@ -1599,9 +1597,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             };
 
-            if (fut.isDone()) {
+            if (lockFut.isDone()) {
                 try {
-                    return nonInterruptable(plc1.apply(fut.get(), null));
+                    return nonInterruptable(plc1.apply(lockFut.get(), null));
                 }
                 catch (GridClosureException e) {
                     return new GridFinishedFuture<>(e.unwrap());
@@ -1617,7 +1615,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             }
             else
                 return nonInterruptable(new GridEmbeddedFuture<>(
-                    fut,
+                    lockFut,
                     plc1
                 ));
         }
@@ -1727,7 +1725,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (timeout == -1 || !state(LOCKING, false))
                     return new GridFinishedFuture<>(timeoutException());
 
-                IgniteInternalFuture<Boolean> fut = locFut = cacheCtx.cache().txLockAsync(lockKeys,
+                lockFut = cacheCtx.cache().txLockAsync(lockKeys,
                     timeout,
                     this,
                     true,
@@ -1880,9 +1878,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 };
 
-                if (fut.isDone()) {
+                if (lockFut.isDone()) {
                     try {
-                        IgniteInternalFuture<Map<K, V>> fut1 = plc2.apply(fut.get(), null);
+                        IgniteInternalFuture<Map<K, V>> fut1 = plc2.apply(lockFut.get(), null);
 
                         return fut1.isDone() ?
                             new GridFinishedFuture<>(finClos.apply(fut1.get(), null)) :
@@ -1902,7 +1900,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
                 else {
                     return new GridEmbeddedFuture<>(
-                        fut,
+                        lockFut,
                         plc2,
                         finClos);
                 }
@@ -3274,13 +3272,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Rollback tx on topology change.
+     * Rollback transaction asynchronously from current state.
+     *
+     * @return Future which completes when transaction is finished.
      */
-    public void rollbackOnTopologyChange() {
+    public IgniteInternalFuture<IgniteInternalTx> forceAsyncRollback() {
         TransactionState[] txState = new TransactionState[1];
 
-        if (state(MARKED_ROLLBACK, false, txState) || (state() == MARKED_ROLLBACK))
-            rollbackNearTxLocalAsync(false, txState[0]);
+        return state(MARKED_ROLLBACK, false, txState) || (state() == MARKED_ROLLBACK) ?
+            rollbackNearTxLocalAsync(false, txState[0]) : finishFuture();
     }
 
     /**
@@ -3318,19 +3318,25 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false)))
             return chainFinishFuture(finishFut, false);
 
-        // Make sure lock future is finished.
+        // If concurrently acquiring lock, wait until termination.
         if (prevState == LOCKING) {
-            while (locFut == null); // Await initialization.
+            while (lockFut == null); // Await initialization.
 
-            fut0.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                @Override public void apply(IgniteInternalFuture fut) {
-                    if (locFut instanceof GridDhtColocatedLockFuture)
-                        ((GridDhtColocatedLockFuture)locFut).onDone(false, timeoutException());
-                    else if (locFut instanceof GridNearLockFuture)
-                        ((GridNearLockFuture)locFut).onDone(false, timeoutException());
-
+            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    if (lockFut instanceof GridDhtColocatedLockFuture)
+                        ((GridDhtColocatedLockFuture)lockFut).onDone(false, timeoutException());
+                    else if (lockFut instanceof GridNearLockFuture)
+                        ((GridNearLockFuture)lockFut).onDone(false, timeoutException());
                 }
             });
+
+            try {
+                lockFut.getUninterruptibly();
+            }
+            catch (IgniteCheckedException e) {
+                // Expected.
+            }
         }
 
         cctx.mvcc().addFuture(fut0, fut0.futureId());

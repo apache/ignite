@@ -306,9 +306,47 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (log.isInfoEnabled())
                     log.info("Forcibly rolling back near transaction: " + CU.txString(tx));
 
-                ((GridNearTxLocal)tx).rollbackOnTopologyChange();
+                ((GridNearTxLocal)tx).forceAsyncRollback();
             }
         }
+    }
+
+    /**
+     * @param ver Version.
+     *
+     * @return Future which completes when transaction will be finished or null if no such transaction.
+     */
+    public IgniteInternalFuture<IgniteInternalTx> forceRollback(GridCacheVersion ver) {
+        IgniteInternalTx tx = idMap.get(ver);
+
+        if (tx == null)
+            tx = nearIdMap.get(ver);
+
+        if (tx == null || !tx.near())
+            return null;
+
+        if (log.isInfoEnabled())
+            log.info("Forcibly rolling back near transaction: " + CU.txString(tx));
+
+        return ((GridNearTxLocal)tx).forceAsyncRollback();
+    }
+
+    /**
+     * @param id Id.
+     *
+     * @return Future which completes when transaction will be finished or null if no such transaction.
+     */
+    public IgniteInternalFuture<IgniteInternalTx> forceRollback(IgniteUuid id) {
+        for (IgniteInternalTx tx : activeTransactions()) {
+            if (tx.near() && tx.xid().equals(id)) {
+                if (log.isInfoEnabled())
+                    log.info("Forcibly rolling back near transaction: " + CU.txString(tx));
+
+                return ((GridNearTxLocal)tx).forceAsyncRollback();
+            }
+        }
+
+        return null;
     }
 
     /**

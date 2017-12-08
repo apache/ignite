@@ -56,6 +56,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jsr166.LongAdder8;
 
@@ -418,6 +419,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         final LongAdder8 cntr1 = new LongAdder8();
         final LongAdder8 cntr2 = new LongAdder8();
         final LongAdder8 cntr3 = new LongAdder8();
+        final LongAdder8 cntr4 = new LongAdder8();
 
         final IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -457,8 +459,19 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     catch (TransactionTimeoutException e) {
                         cntr2.add(1);
                     }
+                    catch (TransactionRollbackException e) {
+                        cntr4.add(1);
+                    }
                     catch (CacheException e) {
-                        assertEquals(TransactionTimeoutException.class, X.getCause(e).getClass());
+                        final boolean isTimeout = X.hasCause(e, TransactionTimeoutException.class);
+
+                        if (!isTimeout) {
+                            log.error("Exception", e);
+
+                            fail("");
+                        }
+
+                        assertTrue(isTimeout);
 
                         cntr2.add(1);
                     }
@@ -470,14 +483,18 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         stop.set(true);
 
-        fut.get(10_000);
+        log.info("Waiting for tx threads to stop...");
+
+        fut.get();
 
         log.info("Tx test stats: started=" + cntr0.sum() +
             ", completed=" + cntr1.sum() +
             ", failed=" + cntr3.sum() +
+            ", rolledBack=" + cntr4.sum() +
             ", timedOut=" + cntr2.sum());
 
-        assertEquals("Expected finished count same as started count", cntr0.sum(), cntr1.sum() + cntr2.sum() + cntr3.sum());
+        assertEquals("Expected finished count same as started count", cntr0.sum(), cntr1.sum() + cntr2.sum() +
+            cntr3.sum() + cntr4.sum());
     }
 
     /**

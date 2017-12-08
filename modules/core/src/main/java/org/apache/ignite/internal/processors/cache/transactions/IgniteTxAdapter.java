@@ -1003,10 +1003,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      *
      * @param state State to set.
      * @param timedOut Timeout flag.
+     * @param holder Holder to return previous state.
      * @return {@code True} if state changed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    protected final boolean state(TransactionState state, boolean timedOut, TransactionState[] holder) {
+    protected final boolean state(TransactionState state, boolean timedOut, @Nullable TransactionState[] holder) {
         boolean valid = false;
 
         TransactionState prev;
