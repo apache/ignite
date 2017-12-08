@@ -182,7 +182,6 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
@@ -1705,11 +1704,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Register instance of ClusterMetricsMBean.
      *
      * @param mbean MBean instance to register.
-     * @param clazz MBean interface to register.
-     * @param <T> MBean type.
      * @throws IgniteCheckedException If registration failed.
      */
-    private <T> ObjectName registerClusterMetricsMBean(T mbean, Class<T> clazz) throws IgniteCheckedException {
+    private ObjectName registerClusterMetricsMBean(ClusterMetricsMXBean mbean) throws IgniteCheckedException {
         if(U.IGNITE_MBEANS_DISABLED)
             return null;
 
@@ -1722,7 +1719,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 "Kernal",
                 mbean.getClass().getSimpleName(),
                 mbean,
-                clazz);
+                ClusterMetricsMXBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered MBean: " + objName);
@@ -1736,10 +1733,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** @throws IgniteCheckedException If registration failed. */
     private void registerClusterMetricsMBeans() throws IgniteCheckedException {
-        locNodeMBean = registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery().localNode()),
-            ClusterLocalNodeMetricsMXBean.class);
-        allNodesMBean = registerClusterMetricsMBean(new ClusterMetricsMXBeanImpl(cluster()),
-            ClusterMetricsMXBean.class);
+        locNodeMBean = registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery()));
+        allNodesMBean = registerClusterMetricsMBean(new ClusterMetricsMXBeanImpl(cluster()));
     }
 
     /**
