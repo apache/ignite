@@ -282,11 +282,13 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             boolean needVer = this.needVer;
 
-            if (readThrough && !skipVals && cctx.affinity().backupsByKey(key, topVer).contains(cctx.localNode())) {
+            final BackupPostProcessingClosure postClos = CU.createBackupPostProcessingClosure(topVer, log, cctx, key, readThrough, skipVals);
+
+            if (postClos != null) {
                 // Need version to correctly store value.
                 needVer = true;
 
-                postProcessingClos = CU.createBackupPostProcessingClosure(topVer, log, cctx, key, readThrough, skipVals);
+                postProcessingClos = postClos;
             }
 
             GridCacheMessage req = new GridNearSingleGetRequest(cctx.cacheId(),
