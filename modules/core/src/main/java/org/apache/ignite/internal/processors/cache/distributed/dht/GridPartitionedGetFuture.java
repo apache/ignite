@@ -57,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -234,7 +235,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        AffinityTopologyVersion topVer
+        final AffinityTopologyVersion topVer
     ) {
         Collection<ClusterNode> cacheNodes = CU.affinityNodes(cctx, topVer);
 
@@ -348,7 +349,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }));
             }
             else {
-                MiniFuture fut = new MiniFuture(n, mappedKeys, topVer);
+                MiniFuture fut = new MiniFuture(n, mappedKeys, topVer,
+                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, readThrough, skipVals));
 
                 GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),
@@ -676,6 +678,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         /** Topology version on which this future was mapped. */
         private final AffinityTopologyVersion topVer;
 
+        /** Post processing closure. */
+        private final IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos;
+
         /** {@code True} if remapped after node left. */
         private boolean remapped;
 
@@ -683,11 +688,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
          * @param node Node.
          * @param keys Keys.
          * @param topVer Topology version.
+         * @param postProcessingClos Post processing closure.
          */
-        MiniFuture(ClusterNode node, LinkedHashMap<KeyCacheObject, Boolean> keys, AffinityTopologyVersion topVer) {
+        MiniFuture(ClusterNode node, LinkedHashMap<KeyCacheObject, Boolean> keys, AffinityTopologyVersion topVer,
+            @Nullable IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos) {
             this.node = node;
             this.keys = keys;
             this.topVer = topVer;
+            this.postProcessingClos = postProcessingClos;
         }
 
         /**
@@ -805,6 +813,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         }
                     }), F.t(node, keys), topVer);
 
+                    postProcessResult(res);
+
                     onDone(createResultMap(res.entries()));
 
                     return;
@@ -825,18 +835,30 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             }
                         }), F.t(node, keys), topVer);
 
+                        postProcessResult(res);
+
                         onDone(createResultMap(res.entries()));
                     }
                 });
             }
             else {
                 try {
+                    postProcessResult(res);
+
                     onDone(createResultMap(res.entries()));
                 }
                 catch (Exception e) {
                     onDone(e);
                 }
             }
+        }
+
+        /**
+         * @param res Response.
+         */
+        private void postProcessResult(final GridNearGetResponse res) {
+            if (postProcessingClos != null)
+                postProcessingClos.apply(res.entries());
         }
 
         /** {@inheritDoc} */
