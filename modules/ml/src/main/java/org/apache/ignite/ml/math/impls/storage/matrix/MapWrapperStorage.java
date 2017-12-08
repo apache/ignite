@@ -17,14 +17,13 @@
 
 package org.apache.ignite.ml.math.impls.storage.matrix;
 
-import org.apache.ignite.internal.util.GridArgumentCheck;
-import org.apache.ignite.ml.math.VectorStorage;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.util.GridArgumentCheck;
+import org.apache.ignite.ml.math.VectorStorage;
 
 /**
  * Storage for wrapping given map.

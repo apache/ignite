@@ -14,26 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math.distances;
-
-import java.io.Externalizable;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Interface for distance measures of n-dimensional vectors.
+ * <!-- Package description. -->
+ * Contains exceptions for kNN algorithms.
  */
-public interface DistanceMeasure extends Externalizable {
-    /**
-     * Compute the distance between two n-dimensional vectors.
-     * <p>
-     * The two vectors are required to have the same dimension.
-     *
-     * @param a The first vector.
-     * @param b The second vector.
-     * @return The distance between the two vectors.
-     * @throws CardinalityException if the array lengths differ.
-     */
-    public double compute(Vector a, Vector b) throws CardinalityException;
-}
+package org.apache.ignite.ml.math.exceptions.knn;

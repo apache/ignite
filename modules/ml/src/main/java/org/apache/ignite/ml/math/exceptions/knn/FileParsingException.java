@@ -11,9 +11,9 @@ public class FileParsingException extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new exception
-     * @param parsedData Data to parse
-     * @param rowIdx Index of row in file
+     * Creates new exception.
+     * @param parsedData Data to parse.
+     * @param rowIdx Index of row in file.
      * @param file File path
      */
     public FileParsingException(String parsedData, int rowIdx, Path file) {

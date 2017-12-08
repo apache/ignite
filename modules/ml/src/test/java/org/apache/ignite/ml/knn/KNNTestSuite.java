@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package
+ * Test suite for all tests located in org.apache.ignite.ml.trees package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({

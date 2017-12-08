@@ -39,31 +39,30 @@ import org.jetbrains.annotations.NotNull;
  * kNN algorithm is a classification algorithm.
  */
 public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelFormat> {
-    /** Amount of nearest neighbors */
+    /** Amount of nearest neighbors. */
     protected final int k;
 
-    /** Distance measure */
+    /** Distance measure. */
     protected final DistanceMeasure distanceMeasure;
 
-    /** Training dataset */
+    /** Training dataset. */
     protected final LabeledDataset training;
 
-    /** kNN strategy */
+    /** kNN strategy. */
     protected final KNNStrategy stgy;
 
-    /** Cached distances for k-nearest neighbors */
+    /** Cached distances for k-nearest neighbors. */
     protected double[] cachedDistances;
 
     /**
-     * Creates the kNN model with the given parameters
+     * Creates the kNN model with the given parameters.
      *
-     * @param k amount of nearest neighbors
-     * @param distanceMeasure distance measure
-     * @param stgy strategy of calculations
-     * @param training training dataset
+     * @param k Amount of nearest neighbors.
+     * @param distanceMeasure Distance measure.
+     * @param stgy Strategy of calculations.
+     * @param training Training dataset.
      */
     public KNNModel(int k, DistanceMeasure distanceMeasure, KNNStrategy stgy, LabeledDataset training) {
-
         assert training != null;
 
         if (training.rowSize() < k)
@@ -77,7 +76,6 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector v) {
-
         LabeledVector[] neighbors = findKNearestNeighbors(v, true);
 
         return classify(neighbors, v, stgy);
@@ -92,13 +90,12 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
 
     /**
      * The main idea is calculation all distance pairs between given vector and all vectors in training set, sorting
-     * them and finding k vectors with min distance with the given vector
+     * them and finding k vectors with min distance with the given vector.
      *
-     * @param v the given vector
-     * @return k nearest neighbors
+     * @param v The given vector.
+     * @return K-nearest neighbors.
      */
     protected LabeledVector[] findKNearestNeighbors(Vector v, boolean isCashedDistance) {
-
         LabeledVector[] trainingData = training.data();
 
         TreeMap<Double, Set<Integer>> distanceIdxPairs = getDistances(v, trainingData);
@@ -107,12 +104,12 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
     }
 
     /**
-     * Iterates along entries in distance map and fill the resulting k-element array
+     * Iterates along entries in distance map and fill the resulting k-element array.
      *
-     * @param trainingData the training data
-     * @param distanceIdxPairs the distance map
-     * @param isCashedDistances cache distances if true
-     * @return k nearest neighbors
+     * @param trainingData The training data.
+     * @param distanceIdxPairs The distance map.
+     * @param isCashedDistances Cache distances if true.
+     * @return K-nearest neighbors.
      */
     @NotNull private LabeledVector[] getKClosestVectors(LabeledVector[] trainingData,
         TreeMap<Double, Set<Integer>> distanceIdxPairs, boolean isCashedDistances) {
@@ -138,12 +135,12 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
     }
 
     /**
-     * Computes distances between given vector and each vector in training dataset
+     * Computes distances between given vector and each vector in training dataset.
      *
-     * @param v The given vector
-     * @param trainingData The training dataset
-     * @return key - distanceMeasure from given features before features with idx stored in value. Value is presented
-     * with Set because there can be a few vectors with the same distance
+     * @param v The given vector.
+     * @param trainingData The training dataset.
+     * @return Key - distanceMeasure from given features before features with idx stored in value. Value is presented
+     * with Set because there can be a few vectors with the same distance.
      */
     @NotNull private TreeMap<Double, Set<Integer>> getDistances(Vector v, LabeledVector[] trainingData) {
         TreeMap<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
@@ -174,8 +171,8 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
 
     /** */
     private double classify(LabeledVector[] neighbors, Vector v, KNNStrategy stgy) {
-
         Map<Double, Double> clsVotes = new HashMap<>();
+
         for (int i = 0; i < neighbors.length; i++) {
             LabeledVector neighbor = neighbors[i];
             double clsLb = (double)neighbor.label(); // TODO: handle different types, not double only
@@ -192,7 +189,6 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
                 clsVotes.put(clsLb, val);
             }
         }
-
         return getClassWithMaxVotes(clsVotes);
     }
 
@@ -203,7 +199,6 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
 
     /** */
     private double getClassVoteForVector(KNNStrategy stgy, double distance) {
-
         if (stgy.equals(KNNStrategy.WEIGHTED))
             return 1 / distance; // strategy.WEIGHTED
         else

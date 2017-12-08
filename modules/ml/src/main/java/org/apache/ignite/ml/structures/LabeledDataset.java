@@ -38,35 +38,37 @@ import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Class for set of labeled vectors
+ * Class for set of labeled vectors.
  */
 public class LabeledDataset implements Serializable {
-    /** Data to keep */
+    /** Data to keep. */
     private final LabeledVector[] data;
 
-    /** Feature names (one name for each attribute in vector) */
+    /** Feature names (one name for each attribute in vector). */
     private String[] featureNames;
 
-    /** Amount of instances */
+    /** Amount of instances. */
     private int rowSize;
 
-    /** Amount of attributes in each vector */
+    /** Amount of attributes in each vector. */
     private int colSize;
 
     /**
-     * Creates new Labeled Dataset by given data
-     * @param data Should be initialized with one vector at least
-     * @param colSize amount of observed attributes in each vector
+     * Creates new Labeled Dataset by given data.
+     *
+     * @param data Should be initialized with one vector at least.
+     * @param colSize Amount of observed attributes in each vector.
      */
     public LabeledDataset(LabeledVector[] data, int colSize) {
         this(data, null, colSize);
     }
 
     /**
-     * Creates new Labeled Dataset by given data
-     * @param data Given data. Should be initialized with one vector at least
-     * @param featureNames Column names
-     * @param colSize Amount of observed attributes in each vector
+     * Creates new Labeled Dataset by given data.
+     *
+     * @param data Given data. Should be initialized with one vector at least.
+     * @param featureNames Column names.
+     * @param colSize Amount of observed attributes in each vector.
      */
     public LabeledDataset(LabeledVector[] data, String[] featureNames, int colSize) {
         assert data != null;
@@ -85,30 +87,33 @@ public class LabeledDataset implements Serializable {
     }
 
     /**
-     * Creates new Labeled Dataset and initialized with empty data structure
-     * @param rowSize Amount of instances. Should be > 0
-     * @param colSize Amount of attributes. Should be > 0
-     * @param isDistributed Use distributed data structures to keep data
+     * Creates new Labeled Dataset and initialized with empty data structure.
+     *
+     * @param rowSize Amount of instances. Should be > 0.
+     * @param colSize Amount of attributes. Should be > 0.
+     * @param isDistributed Use distributed data structures to keep data.
      */
     public LabeledDataset(int rowSize, int colSize,  boolean isDistributed){
         this(rowSize, colSize, null, isDistributed);
     }
 
     /**
-     * Creates new local Labeled Dataset and initialized with empty data structure
-     * @param rowSize Amount of instances. Should be > 0
-     * @param colSize Amount of attributes. Should be > 0
+     * Creates new local Labeled Dataset and initialized with empty data structure.
+     *
+     * @param rowSize Amount of instances. Should be > 0.
+     * @param colSize Amount of attributes. Should be > 0.
      */
     public LabeledDataset(int rowSize, int colSize){
         this(rowSize, colSize, null, false);
     }
 
     /**
-     * Creates new Labeled Dataset and initialized with empty data structure
-     * @param rowSize Amount of instances. Should be > 0
+     * Creates new Labeled Dataset and initialized with empty data structure.
+     *
+     * @param rowSize Amount of instances. Should be > 0.
      * @param colSize Amount of attributes. Should be > 0
-     * @param featureNames Column names
-     * @param isDistributed Use distributed data structures to keep data
+     * @param featureNames Column names.
+     * @param isDistributed Use distributed data structures to keep data.
      */
     public LabeledDataset(int rowSize, int colSize, String[] featureNames, boolean isDistributed){
         assert rowSize > 0;
@@ -131,26 +136,30 @@ public class LabeledDataset implements Serializable {
 
 
     /**
-     * Creates new local Labeled Dataset by matrix and vector of labels
-     * @param mtx Given matrix with rows as observations
-     * @param lbs Labels of observations
+     * Creates new local Labeled Dataset by matrix and vector of labels.
+     *
+     * @param mtx Given matrix with rows as observations.
+     * @param lbs Labels of observations.
      */
     public LabeledDataset(double[][] mtx, double[] lbs) {
        this(mtx, lbs, null, false);
     }
 
     /**
-     * Creates new Labeled Dataset by matrix and vector of labels
-     * @param mtx Given matrix with rows as observations
-     * @param lbs Labels of observations
-     * @param featureNames Column names
-     * @param isDistributed Use distributed data structures to keep data
+     * Creates new Labeled Dataset by matrix and vector of labels.
+     *
+     * @param mtx Given matrix with rows as observations.
+     * @param lbs Labels of observations.
+     * @param featureNames Column names.
+     * @param isDistributed Use distributed data structures to keep data.
      */
     public LabeledDataset(double[][] mtx, double[] lbs, String[] featureNames, boolean isDistributed) {
         assert mtx != null;
         assert lbs != null;
+
         if(mtx.length != lbs.length)
             throw new CardinalityException(lbs.length, mtx.length);
+
         if(mtx[0] == null)
             throw new NoDataException("Pass filled array, the first vector is empty");
 
@@ -163,6 +172,7 @@ public class LabeledDataset implements Serializable {
 
         data = new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++){
+
             data[i] = new LabeledVector(getVector(colSize, isDistributed), lbs[i]);
             for (int j = 0; j < colSize; j++) {
                 try {
@@ -177,6 +187,7 @@ public class LabeledDataset implements Serializable {
     /** */
     private void generateFeatureNames() {
         featureNames = new String[colSize];
+
         for (int i = 0; i < colSize; i++)
             featureNames[i] = "f_" + i;
     }
@@ -185,50 +196,55 @@ public class LabeledDataset implements Serializable {
     /**
      * Get vectors and their labels.
      *
-     * @return array of Label Vector instances.
+     * @return Array of Label Vector instances.
      */
     public LabeledVector[] data() {
         return data;
     }
 
     /**
-     * Gets amount of observation
-     * @return amount of rows in dataset
+     * Gets amount of observation.
+     *
+     * @return Amount of rows in dataset.
      */
     public int rowSize(){
         return rowSize;
     }
 
     /**
-     * Returns feature name for column with given index
-     * @param i given index
-     * @return feature name
+     * Returns feature name for column with given index.
+     *
+     * @param i The given index.
+     * @return Feature name.
      */
     public String getFeatureName(int i){
         return featureNames[i];
     }
 
     /**
-     * Gets amount of attributes
-     * @return amount of attributes in each Labeled Vector
+     * Gets amount of attributes.
+     *
+     * @return Amount of attributes in each Labeled Vector.
      */
     public int colSize(){
         return colSize;
     }
 
     /**
-     * Retrieves Labeled Vector by given index
-     * @param idx index of observation
-     * @return Labeled features
+     * Retrieves Labeled Vector by given index.
+     *
+     * @param idx Index of observation.
+     * @return Labeled features.
      */
     public LabeledVector getRow(int idx){
         return data[idx];
     }
 
     /**
-     * Get the features
-     * @param idx index of observation
-     * @return Vector with features
+     * Get the features.
+     *
+     * @param idx Index of observation.
+     * @return Vector with features.
      */
     public Vector features(int idx){
         assert idx < rowSize;
@@ -239,12 +255,14 @@ public class LabeledDataset implements Serializable {
     }
 
     /**
-     * Returns label if label is attached or null if label is missed
-     * @param idx index of observation
-     * @return label
+     * Returns label if label is attached or null if label is missed.
+     *
+     * @param idx Index of observation.
+     * @return Label.
      */
     public double label(int idx) {
         LabeledVector labeledVector = data[idx];
+
         if(labeledVector!=null)
             return (double)labeledVector.label();
         else
@@ -252,12 +270,14 @@ public class LabeledDataset implements Serializable {
     }
 
     /**
-     * Fill the label with given value
-     * @param idx index of observation
-     * @param lb given label
+     * Fill the label with given value.
+     *
+     * @param idx Index of observation.
+     * @param lb The given label.
      */
     public void setLabel(int idx, double lb) {
         LabeledVector labeledVector = data[idx];
+
         if(labeledVector != null)
             labeledVector.setLabel(lb);
         else
@@ -265,12 +285,13 @@ public class LabeledDataset implements Serializable {
     }
 
     /**
-     * Datafile should keep class labels in the first column
-     * @param pathToFile Path to file
-     * @param separator Element to tokenize row on separate tokens
-     * @param isDistributed Generates distributed dataset if true
-     * @param isFallOnBadData Fall on incorrect data if true
-     * @return Labeled Dataset parsed from file
+     * Datafile should keep class labels in the first column.
+     *
+     * @param pathToFile Path to file.
+     * @param separator Element to tokenize row on separate tokens.
+     * @param isDistributed Generates distributed dataset if true.
+     * @param isFallOnBadData Fall on incorrect data if true.
+     * @return Labeled Dataset parsed from file.
      */
     public static LabeledDataset loadTxt(Path pathToFile, String separator, boolean isDistributed, boolean isFallOnBadData) throws IOException {
         Stream<String> stream = Files.lines(pathToFile);
@@ -283,8 +304,11 @@ public class LabeledDataset implements Serializable {
         List<Vector> vectors = new ArrayList<>();
 
         if (rowSize > 0) {
+
             final int colSize = getColumnSize(separator, list) - 1;
+
             if (colSize > 0) {
+
                 for (int i = 0; i < rowSize; i++) {
                     Double clsLb;
 
@@ -324,6 +348,7 @@ public class LabeledDataset implements Serializable {
 
             if (rowData.length == colSize + 1) {
                 double val = fillMissedData();
+
                 try {
                     val = Double.parseDouble(rowData[j + 1]);
                     vec.set(j, val);
@@ -361,7 +386,8 @@ public class LabeledDataset implements Serializable {
     }
 
     /**
-     * Scales features in dataset
+     * Scales features in dataset.
+     *
      * @param normalization normalization approach
      * @return Labeled dataset
      */
@@ -385,17 +411,20 @@ public class LabeledDataset implements Serializable {
         for (int j = 0; j < colSize; j++) {
             double maxInCurrCol = Double.MIN_VALUE;
             double minInCurrCol = Double.MAX_VALUE;
+
             for (int i = 0; i < rowSize; i++) {
                 double e = data[i].features().get(j);
                 maxInCurrCol = Math.max(e, maxInCurrCol);
                 minInCurrCol = Math.min(e, minInCurrCol);
             }
+
             mins[j] = minInCurrCol;
             maxs[j] = maxInCurrCol;
         }
 
         for (int j = 0; j < colSize; j++) {
             double div = maxs[j] - mins[j];
+
             for (int i = 0; i < rowSize; i++) {
                 double oldVal = data[i].features().get(j);
                 double newVal = (oldVal - mins[j])/div;

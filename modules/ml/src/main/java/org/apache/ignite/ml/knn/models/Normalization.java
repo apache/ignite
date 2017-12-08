@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.knn.models;
 
-/** This enum contains names of different normalization approaches */
+/** This enum contains names of different normalization approaches. */
 public enum Normalization {
     /** Minimax.
      *

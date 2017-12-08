@@ -24,16 +24,16 @@ import org.apache.ignite.ml.structures.LabeledDataset;
 
 /** */
 public class KNNModelFormat implements Serializable {
-    /** Amount of nearest neighbors */
+    /** Amount of nearest neighbors. */
     private int k;
 
-    /** Distance measure */
+    /** Distance measure. */
     private DistanceMeasure distanceMeasure;
 
     /** Training dataset */
     private LabeledDataset training;
 
-    /** kNN strategy */
+    /** kNN strategy. */
     private KNNStrategy stgy;
 
     /** */

@@ -26,7 +26,9 @@ import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * This class provides kNN Multiple Linear Regression or Locally [weighted] regression (Simple and Weighted versions).
+ *
  * <p> This is an instance-based learning method. </p>
+ *
  * <ul>
  *     <li>Local means using nearby points (i.e. a nearest neighbors approach).</li>
  *     <li>Weighted means we value points based upon how far away they are.</li>
@@ -42,7 +44,6 @@ public class KNNMultipleLinearRegression extends KNNModel {
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector v) {
-
         LabeledVector[] neighbors = findKNearestNeighbors(v, true);
 
         return predictYBasedOn(neighbors, v);

@@ -65,7 +65,7 @@ public class LabeledVector<V extends Vector, T> implements Serializable {
     /**
      * Set the label
      *
-     * @param lb
+     * @param lb Label.
      */
     public void setLabel(T lb) {
         this.lb = lb;
@@ -87,8 +87,8 @@ public class LabeledVector<V extends Vector, T> implements Serializable {
 
     /** */
     @Override public int hashCode() {
-        int result = vector != null ? vector.hashCode() : 0;
-        result = 31 * result + (lb != null ? lb.hashCode() : 0);
-        return result;
+        int res = vector != null ? vector.hashCode() : 0;
+        res = 31 * res + (lb != null ? lb.hashCode() : 0);
+        return res;
     }
 }
