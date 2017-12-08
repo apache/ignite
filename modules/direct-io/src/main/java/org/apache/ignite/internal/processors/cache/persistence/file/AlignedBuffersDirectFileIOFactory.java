@@ -79,7 +79,6 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         final File storePath,
         final int pageSize,
         final FileIOFactory backupFactory) {
-
         this.log = log;
         this.pageSize = pageSize;
         this.backupFactory = backupFactory;
@@ -90,32 +89,31 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
             int blkSize = fsBlockSize;
 
             if (pageSize % blkSize != 0) {
-                U.warn(log,
-                    String.format("Unable to setup Direct IO for Ignite page size [%d] bytes" +
-                            " on file system block size [%d]." +
-                            " For speeding up Ignite consider setting %s.setPageSize(%d)." +
-                            " Direct IO is disabled",
-                        pageSize, blkSize, DataStorageConfiguration.class.getSimpleName(), blkSize));
+                U.warn(log, String.format("Unable to setup Direct IO for Ignite [pageSize=%d bytes;" +
+                        " file system block size=%d]. For speeding up Ignite consider setting %s.setPageSize(%d)." +
+                        " Direct IO is disabled",
+                    pageSize, blkSize, DataStorageConfiguration.class.getSimpleName(), blkSize));
             }
             else {
                 useBackupFactory = false;
 
                 tlbOnePageAligned = new ThreadLocal<ByteBuffer>() {
-                    /** {@inheritDoc} */
                     @Override protected ByteBuffer initialValue() {
                         return createManagedBuffer(pageSize);
                     }
                 };
 
-                if (log.isInfoEnabled())
-                    log.info("Direct IO is enabled, " +
-                        "using block size [" + blkSize + "] and durable memory page size [" + pageSize + "]");
+                if (log.isInfoEnabled()) {
+                    log.info(String.format("Direct IO is enabled, using block size [%d]" +
+                        " and durable memory page size [%d]", blkSize, pageSize));
+                }
             }
         }
         else {
-            if (log.isInfoEnabled())
-                log.info("Direct IO library is not available on current operating system " +
-                    "[" + System.getProperty("os.version") + "]. Direct IO is not enabled.");
+            if (log.isInfoEnabled()) {
+                log.info(String.format("Direct IO library is not available on current operating system [%s]." +
+                    " Direct IO is not enabled.", System.getProperty("os.version")));
+            }
         }
 
     }
@@ -129,7 +127,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
     @NotNull public ByteBuffer createManagedBuffer(int size) {
         assert !useBackupFactory : "Direct IO is disabled, aligned managed buffer creation is disabled now";
 
-        final ByteBuffer allocate = AlignedBuffers.allocate(fsBlockSize, size).order(ByteOrder.nativeOrder());
+        ByteBuffer allocate = AlignedBuffers.allocate(fsBlockSize, size).order(ByteOrder.nativeOrder());
 
         managedAlignedBuffers.put(GridUnsafe.bufferAddress(allocate), Thread.currentThread());
 

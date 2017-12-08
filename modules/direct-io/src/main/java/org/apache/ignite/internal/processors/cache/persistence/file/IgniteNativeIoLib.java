@@ -81,7 +81,6 @@ public class IgniteNativeIoLib {
                     jnaAvailable = false;
             }
             catch (Exception e) {
-                e.printStackTrace();
                 ex = e;
                 jnaAvailable = false;
             }
@@ -91,8 +90,8 @@ public class IgniteNativeIoLib {
     }
 
     /**
-     *
      * O_DIRECT  support was added under Linux in kernel version 2.4.10.
+     *
      * @return {@code true} if O_DIRECT is supported, kernel version >= 2.4.10
      */
     private static boolean checkLinuxVersion() {
@@ -101,14 +100,13 @@ public class IgniteNativeIoLib {
         if (osVer == null)
             return false;
 
-        final List<Integer> verIntComps = new ArrayList<>();
+        List<Integer> verIntComps = new ArrayList<>();
 
         for (StringTokenizer tokenizer = new StringTokenizer(osVer, ".-"); tokenizer.hasMoreTokens(); ) {
-            final String verComp = tokenizer.nextToken();
+            String verComp = tokenizer.nextToken();
 
             if (verComp.matches("\\d*"))
                 verIntComps.add(Integer.parseInt(verComp));
-
         }
 
         if (verIntComps.isEmpty())
@@ -168,6 +166,7 @@ public class IgniteNativeIoLib {
     public static int getFsBlockSize(final String storageDir, final IgniteLogger log) {
         if (ex != null) {
             U.warn(log, "Failed to initialize O_DIRECT support at current OS: " + ex.getMessage(), ex);
+
             return -1;
         }
 
@@ -175,13 +174,13 @@ public class IgniteNativeIoLib {
             return -1;
 
         int fsBlockSize = -1;
-        final int _PC_REC_XFER_ALIGN = 0x11;
-        final int pcAlign = pathconf(storageDir, _PC_REC_XFER_ALIGN).intValue();
+        int _PC_REC_XFER_ALIGN = 0x11;
+        int pcAlign = pathconf(storageDir, _PC_REC_XFER_ALIGN).intValue();
 
         if (pcAlign > 0)
             fsBlockSize = pcAlign;
 
-        final int pageSize = getpagesize();
+        int pageSize = getpagesize();
 
         fsBlockSize = (int)lcm(fsBlockSize, pageSize);
 

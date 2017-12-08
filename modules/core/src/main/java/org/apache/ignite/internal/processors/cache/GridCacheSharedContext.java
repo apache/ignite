@@ -113,7 +113,7 @@ public class GridCacheSharedContext<K, V> {
     /** Snp manager. */
     private IgniteCacheSnapshotManager snpMgr;
 
-    /** Page store manager. {@code null} if persistence is not enabled. */
+    /** Page store manager. {@code Null} if persistence is not enabled. */
     @Nullable private IgnitePageStoreManager pageStoreMgr;
 
     /** Affinity manager. */
@@ -169,7 +169,7 @@ public class GridCacheSharedContext<K, V> {
      * @param txMgr Transaction manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
-     * @param pageStoreMgr Page store manager. {@code null} if persistence is not enabled.
+     * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
@@ -399,7 +399,7 @@ public class GridCacheSharedContext<K, V> {
      * @param jtaMgr JTA manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
-     * @param pageStoreMgr Page store manager. {@code null} if persistence is not enabled.
+     * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
@@ -669,7 +669,7 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Page store manager. {@code null} if persistence is not enabled.
+     * @return Page store manager. {@code Null} if persistence is not enabled.
      */
     @Nullable public IgnitePageStoreManager pageStore() {
         return pageStoreMgr;

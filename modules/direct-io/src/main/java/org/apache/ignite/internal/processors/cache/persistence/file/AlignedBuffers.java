@@ -36,16 +36,19 @@ public class AlignedBuffers {
      * @param size capacity.
      * @return byte buffer, to be released by {@link #free(ByteBuffer)}.
      */
-    public static ByteBuffer allocate(final int fsBlockSize, final int size) {
+    public static ByteBuffer allocate(int fsBlockSize, int size) {
         assert fsBlockSize > 0;
         assert size > 0;
-        final PointerByReference pointerToPointer = new PointerByReference();
 
-        final int rval = IgniteNativeIoLib.posix_memalign(pointerToPointer, new NativeLong(fsBlockSize), new NativeLong(size));
-        if (rval != 0)
-            throw new IgniteOutOfMemoryException("Failed to allocate memory: " + IgniteNativeIoLib.strerror(rval));
+        PointerByReference refToPtr = new PointerByReference();
 
-        return GridUnsafe.wrapPointer(Pointer.nativeValue(pointerToPointer.getValue()), size);
+        int retVal = IgniteNativeIoLib.posix_memalign(refToPtr, new NativeLong(fsBlockSize),
+            new NativeLong(size));
+
+        if (retVal != 0)
+            throw new IgniteOutOfMemoryException("Failed to allocate memory: " + IgniteNativeIoLib.strerror(retVal));
+
+        return GridUnsafe.wrapPointer(Pointer.nativeValue(refToPtr.getValue()), size);
     }
 
     /**
@@ -54,7 +57,7 @@ public class AlignedBuffers {
      *
      * @param buf direct buffer to free.
      */
-    public static void free(final ByteBuffer buf) {
+    public static void free(ByteBuffer buf) {
         free(GridUnsafe.bufferAddress(buf));
     }
 
@@ -64,7 +67,7 @@ public class AlignedBuffers {
      *
      * @param addr direct buffer address to free.
      */
-    public static void free(final long addr) {
+    public static void free(long addr) {
         IgniteNativeIoLib.free(new Pointer(addr));
     }
 
@@ -75,7 +78,7 @@ public class AlignedBuffers {
      * @param src source buffer, native or heap.
      * @param dest destination buffer, native or heap. Data is coped to the beginning of buffer.
      */
-    public static void copyMemory(final ByteBuffer src, final ByteBuffer dest) {
+    public static void copyMemory(ByteBuffer src, ByteBuffer dest) {
         //todo check bounds
         int size = src.remaining();
 

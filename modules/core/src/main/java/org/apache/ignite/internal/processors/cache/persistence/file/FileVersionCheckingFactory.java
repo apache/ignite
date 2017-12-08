@@ -32,29 +32,29 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     public static final String LATEST_VERSION_OVERRIDE_PROPERTY = "file.page.store.latest.version.override";
 
     /** Latest page store version. */
-    public final static int LATEST_VERSION = 2;
+    public static final int LATEST_VERSION = 2;
 
     /** Factory to provide I/O interfaces for read/write operations with files. */
     private final FileIOFactory fileIOFactory;
 
-    /** Factory to provide I/O interfaces for read/write operations with files. This is backup factory for V1 page store. */
-    private FileIOFactory storV1FileIoFactory;
+    /**
+     * Factory to provide I/O interfaces for read/write operations with files.
+     * This is backup factory for V1 page store.
+     */
+    private FileIOFactory fileIOFactoryStoreV1;
 
     /** Memory configuration. */
     private final DataStorageConfiguration memCfg;
 
     /**
      * @param fileIOFactory File IO factory.
-     * @param storV1FileIoFactory File IO factory for V1 page store and for version checking.
+     * @param fileIOFactoryStoreV1 File IO factory for V1 page store and for version checking.
      * @param memCfg Memory configuration.
      */
-    public FileVersionCheckingFactory(
-        FileIOFactory fileIOFactory,
-        FileIOFactory storV1FileIoFactory,
+    public FileVersionCheckingFactory(FileIOFactory fileIOFactory, FileIOFactory fileIOFactoryStoreV1,
         DataStorageConfiguration memCfg) {
-
         this.fileIOFactory = fileIOFactory;
-        this.storV1FileIoFactory = storV1FileIoFactory;
+        this.fileIOFactoryStoreV1 = fileIOFactoryStoreV1;
         this.memCfg = memCfg;
     }
 
@@ -63,7 +63,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         if (!file.exists())
             return createPageStore(type, file, latestVersion());
 
-        try (FileIO fileIO = storV1FileIoFactory.create(file)) {
+        try (FileIO fileIO = fileIOFactoryStoreV1.create(file)) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)
@@ -112,7 +112,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     public FilePageStore createPageStore(byte type, File file, int ver) {
         switch (ver) {
             case FilePageStore.VERSION:
-                return new FilePageStore(type, file, storV1FileIoFactory, memCfg);
+                return new FilePageStore(type, file, fileIOFactoryStoreV1, memCfg);
 
             case FilePageStoreV2.VERSION:
                 return new FilePageStoreV2(type, file, fileIOFactory, memCfg);

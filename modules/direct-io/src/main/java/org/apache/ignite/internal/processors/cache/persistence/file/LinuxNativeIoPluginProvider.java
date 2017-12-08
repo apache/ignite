@@ -41,10 +41,10 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 /**
- * See {@link IgniteNativeIoLib}.
+ * Plugin provider for setting up {@link IgniteNativeIoLib}.
  */
 public class LinuxNativeIoPluginProvider implements PluginProvider {
-    /** Managed buffers. */
+    /** Managed buffers map from address to thread requested buffer. */
     @Nullable private ConcurrentHashMap8<Long, Thread> managedBuffers;
 
     /** Logger. */
@@ -85,24 +85,30 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (managedBuffers != null) {
+        if (managedBuffers != null)
+            freeDirectBuffers();
+    }
+
+    /**
+     * Free direct thread local buffer allocated for Direct IO user's threads.
+     */
+    private void freeDirectBuffers() {
+        if (log.isInfoEnabled())
+            log.info("Direct IO buffers to be freed: " + managedBuffers.size());
+
+        for (Map.Entry<Long, Thread> next : managedBuffers.entrySet()) {
+            Thread th = next.getValue();
+            boolean thAlive = th.isAlive();
+            Long addr = next.getKey();
+            String thName = th.getName();
+
             if (log.isInfoEnabled())
-                log.info("Direct IO buffers to be freed: " + managedBuffers.size());
+                log.info(String.format("Direct IO buffer [address=%d; Thread=%s; alive=%s]", addr, thName, thAlive));
 
-            for (Map.Entry<Long, Thread> next : managedBuffers.entrySet()) {
-                Thread th = next.getValue();
-                boolean thAlive = th.isAlive();
-                Long addr = next.getKey();
-                String thName = th.getName();
-
-                if (log.isInfoEnabled())
-                    log.info("Direct IO buffer addr=" + addr + " T:" + thName + " alive " + thAlive);
-
-                if (thAlive)
-                    AlignedBuffers.free(addr);
-                else
-                    U.warn(log, "Can't free buffer for alive thread: " + thName);
-            }
+            if (thAlive)
+                AlignedBuffers.free(addr);
+            else
+                U.warn(log, "Can't free buffer for alive thread: " + thName);
         }
     }
 
@@ -146,9 +152,9 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
      * @return Managed aligned buffers and its associated threads. This collection is used to free buffers. May return
      * {@code null}.
      */
-    @Nullable private ConcurrentHashMap8<Long, Thread> setupDirect(final IgniteEx ignite) {
-        final GridCacheSharedContext<Object, Object> cacheCtx = ignite.context().cache().context();
-        final IgnitePageStoreManager ignitePageStoreMgr = cacheCtx.pageStore();
+    @Nullable private ConcurrentHashMap8<Long, Thread> setupDirect(IgniteEx ignite) {
+        GridCacheSharedContext<Object, Object> cacheCtx = ignite.context().cache().context();
+        IgnitePageStoreManager ignitePageStoreMgr = cacheCtx.pageStore();
 
         if (ignitePageStoreMgr == null)
             return null;
@@ -157,7 +163,8 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
             return null;
 
         final FilePageStoreManager pageStore = (FilePageStoreManager)ignitePageStoreMgr;
-        final FileIOFactory backupIoFactory = pageStore.getPageStoreFileIoFactory();
+        FileIOFactory backupIoFactory = pageStore.getPageStoreFileIoFactory();
+
         final AlignedBuffersDirectFileIOFactory factory = new AlignedBuffersDirectFileIOFactory(
             ignite.log(),
             pageStore.workDir(),

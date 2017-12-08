@@ -60,6 +60,7 @@ public class FilePageStoreTest {
             flags |= IgniteNativeIoLib.O_RDWR | IgniteNativeIoLib.O_CREAT;
 
         int fd = IgniteNativeIoLib.open(pathname, flags, 00644);
+
         if (fd < 0)
             throw new IOException("Error opening " + pathname + ", got " +  getLastError());
 

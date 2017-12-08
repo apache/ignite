@@ -449,7 +449,8 @@ public class FilePageStore implements PageStore {
 
             assert pageBuf.capacity() == pageSize;
             assert pageBuf.position() == 0;
-            assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order() + " should be same with " + ByteOrder.nativeOrder();
+            assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
+                + " should be same with " + ByteOrder.nativeOrder();
             assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
 
             int crc32 = skipCrc ? 0 : PureJavaCrc32.calcCrc32(pageBuf, pageSize);

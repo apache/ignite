@@ -366,7 +366,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (dirExisted && !idxFile.exists())
             grpsWithoutIdx.add(grpDesc.groupId());
 
-        FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
+        FilePageStoreFactory pageStoreFactory = new FileVersionCheckingFactory(
             pageStoreFileIoFactory, pageStoreV1FileIoFactory, igniteCfg.getDataStorageConfiguration());
 
         FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
@@ -660,7 +660,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /**
      * @param pageStoreFileIoFactory File IO factory to override default, may be used for blocked read-write.
-     * @param pageStoreV1FileIoFactory File IO factory for reading V1 page store and for fast touching page files (non blocking).
+     * @param pageStoreV1FileIoFactory File IO factory for reading V1 page store and for fast touching page files
+     *      (non blocking).
      */
     public void setPageStoreFileIOFactories(final FileIOFactory pageStoreFileIoFactory,
         final FileIOFactory pageStoreV1FileIoFactory) {
