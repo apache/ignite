@@ -228,7 +228,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 final int idx0 = idx.getAndIncrement();
 
                 if (idx0 == 0) {
-                    try(Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)){
+                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)){
                         node.cache(CACHE_NAME).put(0, 0); // Lock is owned.
 
                         readStartLatch.countDown();
@@ -270,6 +270,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         checkFutures();
     }
 
+    /**
+     * Tests rollback of active local transactions.
+     */
     public void testRollbackActiveTransactions() throws Exception {
         final Ignite client = startClient();
 
@@ -277,6 +280,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         for (Transaction transaction : transactions)
             transaction.rollback();
+
+        assertTrue(client.transactions().localActiveTransactions().isEmpty());
     }
 
     /**

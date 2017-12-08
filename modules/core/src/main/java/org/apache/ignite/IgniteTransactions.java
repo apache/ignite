@@ -106,8 +106,9 @@ public interface IgniteTransactions {
     public void resetMetrics();
 
     /**
-     * Returns list of transactions, started on local node.
-     * @return List of active local transactions.
+     * Returns list of active transactions started on local node.
+     *
+     * @return Transactions.
      */
     public Collection<Transaction> localActiveTransactions();
 }
