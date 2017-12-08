@@ -405,31 +405,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             GridTimeoutProcessor proc = grid.context().timeout();
 
-            GridTimeoutObject to = new GridTimeoutObject() {
-
-                /**  */
-                private final IgniteUuid id = IgniteUuid.randomUuid();
-
-                /**  */
-                private final long endTime = U.currentTimeMillis() + EXECUTE_WAIT_TIME;
-
-                /**  */
-                private final Thread thread = Thread.currentThread();
-
-                @Override public IgniteUuid timeoutId() {
-                    return id;
-                }
-
-                @Override public long endTime() {
-                    return endTime;
-                }
-
-                @Override public void onTimeout() {
-                    thread.interrupt();
-                }
-            };
-
-            proc.addTimeoutObject(to);
+            GridTimeoutObject to = null;
 
             SB out = null;
 
@@ -446,16 +422,45 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
                     out.a(line);
 
-                    first = false;
+                    if (first) {
+                        to = new GridTimeoutObject() {
+
+                            /**  */
+                            private final IgniteUuid id = IgniteUuid.randomUuid();
+
+                            /**  */
+                            private final long endTime = U.currentTimeMillis() + EXECUTE_WAIT_TIME;
+
+                            /**  */
+                            private final Thread thread = Thread.currentThread();
+
+                            @Override public IgniteUuid timeoutId() {
+                                return id;
+                            }
+
+                            @Override public long endTime() {
+                                return endTime;
+                            }
+
+                            @Override public void onTimeout() {
+                                thread.interrupt();
+                            }
+                        };
+
+                        proc.addTimeoutObject(to);
+                    }
+                    else
+                        first = false;
                 }
             }
             catch (InterruptedIOException ignore) {
             }
             finally {
-                proc.removeTimeoutObject(to);
+                if (to != null)
+                    proc.removeTimeoutObject(to);
             }
 
-            return out == null || out.length() == 0 ? null : out.toString();
+            return out == null ? null : out.toString();
         }
         finally {
             if (ch != null && ch.isConnected())
