@@ -35,9 +35,9 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
@@ -248,7 +248,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout());
 
-            List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFieldsNoCache(qry, true, false);
+            List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFieldsNoCache(qry, true, false, true, null);
 
             OdbcQueryResults results = new OdbcQueryResults(cursors);
 

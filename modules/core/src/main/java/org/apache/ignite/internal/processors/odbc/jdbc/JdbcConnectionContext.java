@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContex
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 
 /**
@@ -106,11 +107,23 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
 
         boolean skipReducerOnUpdate = false;
 
-        if (ver.compareTo(VER_2_3_0) >= 0)
+        NestedTxMode nestedTxMode = NestedTxMode.ERROR;
+
+        if (ver.compareTo(VER_2_3_0) >= 0) {
             skipReducerOnUpdate = reader.readBoolean();
 
+            String nestedTxModeName = reader.readString();
+
+            try {
+                nestedTxMode = NestedTxMode.valueOf(nestedTxModeName);
+            }
+            catch (IllegalArgumentException e) {
+                throw new AssertionError("Unexpected nested TX mode: " + nestedTxModeName);
+            }
+        }
+
         handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, ver);
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, ver);
 
         parser = new JdbcMessageParser(ctx);
 

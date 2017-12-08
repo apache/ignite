@@ -1917,7 +1917,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             qry.setDistributedJoins(true);
 
                             cur = idx.queryDistributedSqlFields(schemaName, qry,
-                                keepBinary, cancel, mainCacheId, true).get(0);
+                                keepBinary, cancel, mainCacheId, true, true, null).get(0);
                         }
                         else {
                             IndexingQueryFilter filter = idx.backupFilter(requestTopVer.get(), qry.getPartitions());
@@ -1934,7 +1934,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else {
                 clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
                     @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId, true).get(0);
+                        return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId, true, true, null).get(0);
                     }
                 };
             }
@@ -1960,7 +1960,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public FieldsQueryCursor<List<?>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
         final boolean keepBinary) {
-        return querySqlFieldsNoCache(qry, keepBinary, true).get(0);
+        return querySqlFieldsNoCache(qry, keepBinary, true, true, null).get(0);
     }
 
     /**
@@ -1970,10 +1970,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
+     * @param autoCommit Auto commit flag from the driver, should be {@code true} when in doubt.
+     * @param nestedTxMode Nested transactions handling mode, or {@code null} if none given explicitly.
      * @return Cursor.
+     * @see NestedTxMode
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
-        final boolean keepBinary, final boolean failOnMultipleStmts) {
+        final boolean keepBinary, final boolean failOnMultipleStmts, final boolean autoCommit,
+        final NestedTxMode nestedTxMode) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
@@ -2000,7 +2004,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null,
-                        failOnMultipleStmts);
+                        failOnMultipleStmts, autoCommit, nestedTxMode);
                 }
             };
 

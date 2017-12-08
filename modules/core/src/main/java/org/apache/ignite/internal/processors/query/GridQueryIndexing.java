@@ -84,12 +84,14 @@ public interface GridQueryIndexing {
      * @param mainCacheId Main cache ID.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
+     * @param autoCommit Auto commit flag from the driver, should be {@code true} when in doubt.
+     * @param nestedTxMode Nested transactions handling mode, or {@code null} if none given explicitly.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts)
-        throws IgniteCheckedException;
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts,
+        boolean autoCommit, NestedTxMode nestedTxMode) throws IgniteCheckedException;
 
     /**
      * Perform a MERGE statement using data streamer as receiver.

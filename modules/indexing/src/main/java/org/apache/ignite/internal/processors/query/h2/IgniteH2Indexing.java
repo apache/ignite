@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -1395,7 +1396,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
         final QueryCursor<List<?>> res =
-            queryDistributedSqlFields(schemaName, fqry, keepBinary, null, mainCacheId, true).get(0);
+            queryDistributedSqlFields(schemaName, fqry, keepBinary, null, mainCacheId, true, true, null).get(0);
 
         final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -1432,10 +1433,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param schemaName Schema name.
      * @param qry Query.
+     * @param autoCommit Auto commit flag from the driver.
+     * @param nestedTxMode Nested transactions handling mode, or {@code null} if none given explicitly.
      * @return Result or {@code null} if cannot parse/process this query.
      */
     @SuppressWarnings("ConstantConditions")
-    private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry) {
+    private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry,
+        boolean autoCommit, NestedTxMode nestedTxMode) {
         // Heuristic check for fast return.
         if (!isNativelyParseable(qry.getSql()))
             return null;
@@ -1487,39 +1491,34 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (tx != null) {
                     assert tx.sql();
 
-                    throw new IgniteSQLException("Transaction has already been started.",
-                        IgniteQueryErrorCode.TRANSACTION_EXISTS);
+                    // TODO handle auto commit / nested mode
                 }
 
                 if (!ctx.grid().configuration().isMvccEnabled())
                     throw new IgniteSQLException("MVCC must be enabled in order to start transactions.",
                         IgniteQueryErrorCode.MVCC_DISABLED);
-
-                sqlUserTxStart();
             }
             else if (cmd instanceof SqlCommitTransactionCommand) {
                 GridNearTxLocal tx = ctx.cache().context().tm().userTx();
 
-                if (tx == null)
-                    throw new IgniteSQLException("Transaction has not been started.",
-                        IgniteQueryErrorCode.NO_TRANSACTION);
+                // Do nothing if there's no transaction.
+                if (tx != null) {
+                    assert tx.sql();
 
-                assert tx.sql();
-
-                tx.commit();
+                    tx.commit();
+                }
             }
             else {
                 assert cmd instanceof SqlRollbackTransactionCommand;
 
                 GridNearTxLocal tx = ctx.cache().context().tm().userTx();
 
-                if (tx == null)
-                    throw new IgniteSQLException("Transaction has not been started.",
-                        IgniteQueryErrorCode.NO_TRANSACTION);
+                // Do nothing if there's no transaction.
+                if (tx != null) {
+                    assert tx.sql();
 
-                assert tx.sql();
-
-                tx.rollback();
+                    tx.rollback();
+                }
             }
 
             // All transactions related operations return dummy result set - it's a requirement from JDBC driver.
@@ -1532,10 +1531,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts) {
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts,
+        boolean autoCommit, NestedTxMode nestedTxMode) {
         checkTransactionType();
 
-        List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry);
+        List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry, autoCommit,
+            nestedTxMode);
 
         if (res != null)
             return res;
@@ -1561,9 +1562,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
 
             List<GridQueryFieldMetadata> meta = cachedQry.meta();
-
-            if (userTx() == null)
-                sqlUserTxStart();
 
             return Collections.singletonList(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(),
                 qry.getArgs(), keepBinary, qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
@@ -1661,8 +1659,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         twoStepQry = cachedQry.query().copy();
                         meta = cachedQry.meta();
 
-                        res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
-                            qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
+                        res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args,
+                            keepBinary, qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
                             twoStepQry, meta));
 
                         continue;
@@ -1683,9 +1681,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 finally {
                     GridH2QueryContext.clearThreadLocal();
                 }
-
-                if (userTx() == null)
-                    sqlUserTxStart();
 
                 // It is a DML statement if we did not create a twoStepQuery.
                 if (twoStepQry == null) {

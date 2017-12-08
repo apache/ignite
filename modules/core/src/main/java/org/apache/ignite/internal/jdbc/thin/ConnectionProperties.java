@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.SQLException;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 
 /**
  * Provide access and manipulations with connection JDBC properties.
@@ -145,4 +146,14 @@ public interface ConnectionProperties {
      * @param skipReducerOnUpdate Skip reducer on update flag.
      */
     public void setSkipReducerOnUpdate(boolean skipReducerOnUpdate);
+
+    /**
+     * @return Nested transactions handling strategy.
+     */
+    public NestedTxMode nestedTxMode();
+
+    /**
+     * @param nestedTxMode Nested transactions handling strategy.
+     */
+    public void nestedTxMode(NestedTxMode nestedTxMode);
 }

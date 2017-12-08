@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -113,6 +114,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
+    /** Nested transactions handling mode. */
+    private final NestedTxMode nestedTxMode;
+
     /** Protocol version. */
     private ClientListenerProtocolVersion protocolVer;
 
@@ -133,7 +137,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate,
+        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate, NestedTxMode nestedTxMode,
         ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
         this.busyLock = busyLock;
@@ -145,6 +149,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.autoCloseCursors = autoCloseCursors;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
+        this.nestedTxMode = nestedTxMode;
         this.protocolVer = protocolVer;
 
         log = ctx.log(getClass());
@@ -351,7 +356,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setSchema(schemaName);
 
             List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
-                protocolVer.compareTo(VER_2_3_0) < 0);
+                protocolVer.compareTo(VER_2_3_0) < 0, req.autoCommit(), nestedTxMode);
 
             if (results.size() == 1) {
                 FieldsQueryCursor<List<?>> qryCur = results.get(0);
@@ -546,7 +551,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 qry.setSchema(schemaName);
 
                 QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
-                    .querySqlFieldsNoCache(qry, true, true).get(0);
+                    .querySqlFieldsNoCache(qry, true, true, true, nestedTxMode).get(0);
 
                 assert !qryCur.isQuery();
 
