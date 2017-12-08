@@ -2154,6 +2154,9 @@ public class GridSqlQuerySplitter {
 
                 break;
 
+            case GROUP_CONCAT:
+                throw new IgniteException("GROUP_CONCAT is unsupported for not collocated data");
+
             default:
                 throw new IgniteException("Unsupported aggregate: " + agg.type());
         }

@@ -58,6 +58,7 @@ import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
+import org.h2.command.dml.SelectOrderBy;
 import org.h2.command.dml.SelectUnion;
 import org.h2.command.dml.Update;
 import org.h2.engine.Constants;
@@ -235,6 +236,12 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<Aggregate, Expression> ON = getter(Aggregate.class, "on");
+
+    /** */
+    private static final Getter<Aggregate, Expression> GROUP_CONCAT_SEPARATOR = getter(Aggregate.class, "groupConcatSeparator");
+
+    /** */
+    private static final Getter<Aggregate, ArrayList<SelectOrderBy>> GROUP_CONCAT_ORDER_LIST = getter(Aggregate.class, "groupConcatOrderList");
 
     /** */
     private static final Getter<RangeTable, Expression> RANGE_MIN = getter(RangeTable.class, "min");
@@ -1830,6 +1837,16 @@ public class GridSqlQueryParser {
                 if (on != null)
                     res.addChild(parseExpression(on, calcTypes));
 
+                ArrayList<SelectOrderBy> orders = GROUP_CONCAT_ORDER_LIST.get((Aggregate)expression);
+
+                if (!F.isEmpty(orders))
+                    parseGroupConcatOrder(res, orders, calcTypes);
+
+                Expression separator = GROUP_CONCAT_SEPARATOR.get((Aggregate)expression);
+
+                if (separator!= null)
+                    res.setGroupConcatSeparator(parseExpression(separator, calcTypes));
+
                 return res;
             }
         }
@@ -1857,6 +1874,26 @@ public class GridSqlQueryParser {
 
         throw new IgniteException("Unsupported expression: " + expression + " [type=" +
             expression.getClass().getSimpleName() + ']');
+    }
+
+    /**
+     * @param f Aggregate function.
+     * @param orders Orders.
+     * @param calcTypes Calculate types for all the expressions.
+     */
+    private void parseGroupConcatOrder(GridSqlAggregateFunction f, ArrayList<SelectOrderBy> orders,
+        boolean calcTypes) {
+        GridSqlElement[] groupConcatOrderExpression = new GridSqlElement[orders.size()];
+        boolean[] groupConcatOrderDesc = new boolean[orders.size()];
+
+        for(int i =0; i < orders.size(); ++i) {
+            SelectOrderBy o = orders.get(i);
+
+            groupConcatOrderExpression[i] = parseExpression(o.expression, calcTypes);
+            groupConcatOrderDesc[i] = o.descending;
+        }
+
+        f.setOder(groupConcatOrderExpression, groupConcatOrderDesc);
     }
 
     /**

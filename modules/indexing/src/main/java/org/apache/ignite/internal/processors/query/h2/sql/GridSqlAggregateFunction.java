@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.StringUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.h2.util.StatementBuilder;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.COUNT;
@@ -39,6 +40,15 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
 
     /** */
     private final boolean distinct;
+
+    /** */
+    private GridSqlElement groupConcatSeparator;
+
+    /** */
+    private GridSqlElement[] groupConcatOrderExpression;
+
+    /** */
+    private boolean[] groupConcatOrderDesc;
 
     /**
      * @param distinct Distinct.
@@ -75,26 +85,52 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
         return distinct;
     }
 
+    /**
+     * @param groupConcatOrderExpression Order expression.
+     * @param groupConcatOrderDesc Order descending flag.
+     */
+    public void setOder(GridSqlElement[] groupConcatOrderExpression, boolean[] groupConcatOrderDesc) {
+        this.groupConcatOrderExpression = groupConcatOrderExpression;
+        this.groupConcatOrderDesc = groupConcatOrderDesc;
+    }
+
+    /**
+     * @param groupConcatSeparator Separator expression.
+     */
+    public void setGroupConcatSeparator(GridSqlElement groupConcatSeparator) {
+        this.groupConcatSeparator = groupConcatSeparator;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        String text;
+        if (type == COUNT_ALL)
+            return "COUNT(*)";
 
-        switch (type) {
-            case GROUP_CONCAT:
-                throw new UnsupportedOperationException();
-
-            case COUNT_ALL:
-                return "COUNT(*)";
-
-            default:
-                text = type.name();
-
-                break;
-        }
+        StatementBuilder buff = new StatementBuilder(name() + "(");
 
         if (distinct)
-            return text + "(DISTINCT " + child().getSQL() + ")";
+            buff.append("DISTINCT ");
 
-        return text + StringUtils.enclose(child().getSQL());
+        buff.append(child().getSQL());
+
+        if (!F.isEmpty(groupConcatOrderExpression)) {
+            buff.append(" ORDER BY ");
+
+            for (int i = 0; i < groupConcatOrderExpression.length; ++i) {
+                buff.appendExceptFirst(", ");
+
+                buff.append(groupConcatOrderExpression[i].getSQL());
+
+                if (groupConcatOrderDesc[i])
+                    buff.append(" DESC");
+            }
+        }
+
+        if (groupConcatSeparator != null)
+            buff.append(" SEPARATOR " + groupConcatSeparator.getSQL());
+
+        buff.append(')');
+
+        return buff.toString();
     }
 }
