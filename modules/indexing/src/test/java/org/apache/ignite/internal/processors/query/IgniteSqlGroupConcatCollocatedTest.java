@@ -35,7 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests for correct distributed partitioned queries.
+ * Tests for GROUP_CONCAT aggregate function in collocated mode.
  */
 @SuppressWarnings("unchecked")
 public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {

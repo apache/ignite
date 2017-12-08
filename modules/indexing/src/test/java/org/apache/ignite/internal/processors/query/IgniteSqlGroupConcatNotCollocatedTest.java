@@ -35,7 +35,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests for correct distributed partitioned queries.
+ * Tests for GROUP_CONCAT aggregate function in not collocated mode.
  */
 @SuppressWarnings("unchecked")
 public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTest {
