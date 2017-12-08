@@ -17,6 +17,7 @@
 
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/connection.h"
+#include "ignite/odbc/odbc_error.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 namespace ignite
@@ -45,6 +46,13 @@ namespace ignite
                 LOG_MSG("Adding new record: " << message);
 
                 AddStatusRecord(sqlState, message, 0, 0);
+            }
+
+            void DiagnosableAdapter::AddStatusRecord(const OdbcError& err)
+            {
+                LOG_MSG("Adding new record: " << err.GetErrorMessage());
+
+                AddStatusRecord(err.GetStatus(), err.GetErrorMessage(), 0, 0);
             }
         }
     }

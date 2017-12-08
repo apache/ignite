@@ -45,8 +45,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 
 /**
  * JDBC result set implementation.
@@ -97,6 +99,7 @@ public class JdbcResultSet implements ResultSet {
      * @param cols Column names.
      * @param types Types.
      * @param fields Fields.
+     * @param finished Result set finished flag (the last result set).
      */
     JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
         List<String> types, Collection<List<?>> fields, boolean finished) {
@@ -146,9 +149,9 @@ public class JdbcResultSet implements ResultSet {
             boolean loc = nodeId == null;
 
             // Connections from new clients send queries with new tasks, so we have to continue in the same manner
-            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), null,
-                true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
-                conn.isDistributedJoins());
+            JdbcQueryTask qryTask = JdbcQueryTaskV2.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
+                null,true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                    conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
 
             try {
                 JdbcQueryTask.QueryResult res =
@@ -160,11 +163,8 @@ public class JdbcResultSet implements ResultSet {
 
                 return next();
             }
-            catch (IgniteSQLException e) {
-                throw e.toJdbcException();
-            }
             catch (Exception e) {
-                throw new SQLException("Failed to query Ignite.", e);
+                throw convertToSqlException(e, "Failed to query Ignite.");
             }
         }
 
@@ -184,11 +184,11 @@ public class JdbcResultSet implements ResultSet {
     /**
      * Marks result set as closed.
      * If this result set is associated with locally executed query then query cursor will also closed.
+     * @throws SQLException On error.
      */
     void closeInternal() throws SQLException  {
-        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null) {
+        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null)
             JdbcQueryTask.remove(uuid);
-        }
 
         closed = true;
     }
@@ -1494,13 +1494,13 @@ public class JdbcResultSet implements ResultSet {
             else if (cls == String.class)
                 return (T)String.valueOf(val);
             else
-                return (T)val;
+                return cls.cast(val);
         }
         catch (IndexOutOfBoundsException ignored) {
             throw new SQLException("Invalid column index: " + colIdx);
         }
         catch (ClassCastException ignored) {
-            throw new SQLException("Value is an not instance of " + cls.getName());
+            throw new SQLException("Value is an not instance of " + cls.getName(), SqlStateCode.CONVERSION_FAILED);
         }
     }
 
@@ -1511,7 +1511,7 @@ public class JdbcResultSet implements ResultSet {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Result set is closed.");
+            throw new SQLException("Result set is closed.", SqlStateCode.INVALID_CURSOR_STATE);
     }
 
     /**

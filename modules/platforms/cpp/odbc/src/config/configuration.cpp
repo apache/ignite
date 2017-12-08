@@ -44,6 +44,7 @@ namespace ignite
             const std::string Configuration::Key::pageSize          = "page_size";
             const std::string Configuration::Key::replicatedOnly    = "replicated_only";
             const std::string Configuration::Key::collocated        = "collocated";
+            const std::string Configuration::Key::lazy              = "lazy";
 
             const std::string Configuration::DefaultValue::dsn      = "Apache Ignite DSN";
             const std::string Configuration::DefaultValue::driver   = "Apache Ignite";
@@ -58,6 +59,7 @@ namespace ignite
             const bool Configuration::DefaultValue::enforceJoinOrder = false;
             const bool Configuration::DefaultValue::replicatedOnly   = false;
             const bool Configuration::DefaultValue::collocated       = false;
+            const bool Configuration::DefaultValue::lazy             = false;
 
             const ProtocolVersion& Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
 

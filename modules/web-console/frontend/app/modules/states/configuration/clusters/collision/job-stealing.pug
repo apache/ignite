@@ -56,8 +56,8 @@ div
                                 a.labelFormField(ng-click='tableStartEdit(backupItem, stealingAttributesTbl, $index)') {{item.name}} = {{item.value}}
                                 +btn-remove('tableRemove(backupItem, stealingAttributesTbl, $index)', '"Remove attribute"')
                             td.col-sm-12(ng-show='tableEditing(stealingAttributesTbl, $index)')
-                                +table-pair-edit('stealingAttributesTbl', 'cur', 'Attribute name', 'Attribute value', false, false, '{{::stealingAttributesTbl.focusId + $index}}', '$index', '=')
+                                +table-pair-edit('stealingAttributesTbl', 'cur', 'Attribute name', 'Attribute value', false, '{{::stealingAttributesTbl.focusId + $index}}', '$index', '=')
                     tfoot(ng-show='tableNewItemActive(stealingAttributesTbl)')
                         tr
                             td.col-sm-12
-                                +table-pair-edit('stealingAttributesTbl', 'new', 'Attribute name', 'Attribute value', false, false, '{{::stealingAttributesTbl.focusId + $index}}', '-1', '=')
+                                +table-pair-edit('stealingAttributesTbl', 'new', 'Attribute name', 'Attribute value', false, '{{::stealingAttributesTbl.focusId + $index}}', '-1', '=')

@@ -21,16 +21,27 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Set;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityKey;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -66,14 +77,17 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * @param qryEntity Query entity.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration() {
+    protected CacheConfiguration cacheConfiguration(QueryEntity qryEntity) {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        cache.setQueryEntities(Collections.singletonList(qryEntity));
 
         return cache;
     }
@@ -84,22 +98,49 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
         startGridsMultiThreaded(3);
 
-        IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",
-            String.class, Organization.class);
+        IgniteCache<String, Organization> orgCache = jcache(grid(0),
+            cacheConfiguration(new QueryEntity(String.class.getName(), Organization.class.getName())
+                .addQueryField("id", Integer.class.getName(), null)
+                .addQueryField("name", String.class.getName(), null)
+                .setIndexes(Arrays.asList(
+                    new QueryIndex("id"),
+                    new QueryIndex("name", false, "org_name_index")
+                ))), "org");
 
         assert orgCache != null;
 
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        IgniteCache<AffinityKey, Person> personCache = jcache(grid(0), cacheConfiguration(), "pers",
-            AffinityKey.class, Person.class);
+        LinkedHashMap<String, Boolean> persFields = new LinkedHashMap<>();
+
+        persFields.put("name", true);
+        persFields.put("age", false);
+
+        IgniteCache<AffinityKey, Person> personCache = jcache(grid(0), cacheConfiguration(
+            new QueryEntity(AffinityKey.class.getName(), Person.class.getName())
+                .addQueryField("name", String.class.getName(), null)
+                .addQueryField("age", Integer.class.getName(), null)
+                .addQueryField("orgId", Integer.class.getName(), null)
+                .setIndexes(Arrays.asList(
+                    new QueryIndex("orgId"),
+                    new QueryIndex().setFields(persFields)))
+            ), "pers");
 
         assert personCache != null;
 
         personCache.put(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            Statement stmt = conn.createStatement();
+
+            stmt.execute("CREATE TABLE TEST (ID INT, NAME VARCHAR(50), VAL VARCHAR(50), PRIMARY KEY (ID, NAME))");
+            stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50)) WITH WRAP_KEY");
+            stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
+            stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
+        }
     }
 
     /** {@inheritDoc} */
@@ -147,8 +188,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testGetTables() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
-
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
@@ -184,15 +223,43 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    public void testGetAllTables() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getTables(null, null, null, null);
+
+            Set<String> expectedTbls = new HashSet<>(Arrays.asList(
+                "org.ORGANIZATION",
+                "pers.PERSON",
+                "PUBLIC.TEST",
+                "PUBLIC.Quoted"));
+
+            Set<String> actualTbls = new HashSet<>(expectedTbls.size());
+
+            while(rs.next()) {
+                actualTbls.add(rs.getString("TABLE_SCHEM") + '.'
+                    + rs.getString("TABLE_NAME"));
+            }
+
+            assert expectedTbls.equals(actualTbls) : "expectedTbls=" + expectedTbls +
+                ", actualTbls" + actualTbls;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetColumns() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
+        final boolean primitivesInformationIsLostAfterStore = ignite(0).configuration().getMarshaller()
+            instanceof BinaryMarshaller;
 
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("pers");
 
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getColumns("", "pers", "Person", "%");
+            ResultSet rs = meta.getColumns("", "pers", "PERSON", "%");
 
             assert rs != null;
 
@@ -216,7 +283,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 } else if ("AGE".equals(name) || "ORGID".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
-                    assert rs.getInt("NULLABLE") == 0;
+                    assertEquals(primitivesInformationIsLostAfterStore ? 1 : 0, rs.getInt("NULLABLE"));
                 }
                 if ("_KEY".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == OTHER;
@@ -235,7 +302,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assert names.isEmpty();
             assert cnt == 3;
 
-            rs = meta.getColumns("", "org", "Organization", "%");
+            rs = meta.getColumns("", "org", "ORGANIZATION", "%");
 
             assert rs != null;
 
@@ -280,22 +347,243 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testMetadataResultSetClose() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
+    public void testGetAllColumns() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
 
-        try (Connection conn = DriverManager.getConnection(URL);
-             ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
-            int colCnt = tbls.getMetaData().getColumnCount();
+            ResultSet rs = meta.getColumns(null, null, null, null);
 
-            while (tbls.next()) {
-                for (int i = 0; i < colCnt; i++)
-                    tbls.getObject(i + 1);
+            Set<String> expectedCols = new HashSet<>(Arrays.asList(
+                "org.ORGANIZATION.ID",
+                "org.ORGANIZATION.NAME",
+                "pers.PERSON.ORGID",
+                "pers.PERSON.AGE",
+                "pers.PERSON.NAME",
+                "PUBLIC.TEST.ID",
+                "PUBLIC.TEST.NAME",
+                "PUBLIC.TEST.VAL",
+                "PUBLIC.Quoted.Id",
+                "PUBLIC.Quoted.Name"));
+
+            Set<String> actualCols = new HashSet<>(expectedCols.size());
+
+            while(rs.next()) {
+                actualCols.add(rs.getString("TABLE_SCHEM") + '.'
+                    + rs.getString("TABLE_NAME") + "."
+                    + rs.getString("COLUMN_NAME"));
             }
-        }
-        catch (Exception e) {
-            log.error("Unexpected exception", e);
 
-            fail();
+            assert expectedCols.equals(actualCols) : "expectedCols=" + expectedCols +
+                ", actualCols" + actualCols;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidCatalog() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getSchemas("q", null);
+
+            assert !rs.next() : "Results must be empty";
+
+            rs = meta.getTables("q", null, null, null);
+
+            assert !rs.next() : "Results must be empty";
+
+            rs = meta.getColumns("q", null, null, null);
+
+            assert !rs.next() : "Results must be empty";
+
+            rs = meta.getIndexInfo("q", null, null, false, false);
+
+            assert !rs.next() : "Results must be empty";
+
+            rs = meta.getPrimaryKeys("q", null, null);
+
+            assert !rs.next() : "Results must be empty";
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIndexMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL);
+             ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
+
+            int cnt = 0;
+
+            while (rs.next()) {
+                String idxName = rs.getString("INDEX_NAME");
+                String field = rs.getString("COLUMN_NAME");
+                String ascOrDesc = rs.getString("ASC_OR_DESC");
+
+                assert rs.getShort("TYPE") == DatabaseMetaData.tableIndexOther;
+
+                if ("PERSON_ORGID_ASC_IDX".equals(idxName)) {
+                    assert "ORGID".equals(field);
+                    assert "A".equals(ascOrDesc);
+                }
+                else if ("PERSON_NAME_ASC_AGE_DESC_IDX".equals(idxName)) {
+                    if ("NAME".equals(field))
+                        assert "A".equals(ascOrDesc);
+                    else if ("AGE".equals(field))
+                        assert "D".equals(ascOrDesc);
+                    else
+                        fail("Unexpected field: " + field);
+                }
+                else
+                    fail("Unexpected index: " + idxName);
+
+                cnt++;
+            }
+
+            assert cnt == 3;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAllIndexes() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            ResultSet rs = conn.getMetaData().getIndexInfo(null, null, null, false, false);
+
+            Set<String> expectedIdxs = new HashSet<>(Arrays.asList(
+                "org.ORGANIZATION.ORGANIZATION_ID_ASC_IDX",
+                "org.ORGANIZATION.ORG_NAME_INDEX",
+                "pers.PERSON.PERSON_ORGID_ASC_IDX",
+                "pers.PERSON.PERSON_NAME_ASC_AGE_DESC_IDX",
+                "PUBLIC.TEST.IDX",
+                "PUBLIC.Quoted.MyTestIndex quoted"));
+
+            Set<String> actualIdxs = new HashSet<>(expectedIdxs.size());
+
+            while(rs.next()) {
+                actualIdxs.add(rs.getString("TABLE_SCHEM") +
+                    '.' + rs.getString("TABLE_NAME") +
+                    '.' + rs.getString("INDEX_NAME"));
+            }
+
+            assert expectedIdxs.equals(actualIdxs) : "expectedIdxs=" + expectedIdxs +
+                ", actualIdxs" + actualIdxs;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryKeyMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL);
+             ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "PERSON")) {
+
+            int cnt = 0;
+
+            while (rs.next()) {
+                assert "_KEY".equals(rs.getString("COLUMN_NAME"));
+
+                cnt++;
+            }
+
+            assert cnt == 1;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAllPrimaryKeys() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            ResultSet rs = conn.getMetaData().getPrimaryKeys(null, null, null);
+
+            Set<String> expectedPks = new HashSet<>(Arrays.asList(
+                "org.ORGANIZATION.PK_org_ORGANIZATION._KEY",
+                "pers.PERSON.PK_pers_PERSON._KEY",
+                "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
+                "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
+                "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id"));
+
+            Set<String> actualPks = new HashSet<>(expectedPks.size());
+
+            while(rs.next()) {
+                actualPks.add(rs.getString("TABLE_SCHEM") +
+                    '.' + rs.getString("TABLE_NAME") +
+                    '.' + rs.getString("PK_NAME") +
+                    '.' + rs.getString("COLUMN_NAME"));
+            }
+
+            assert expectedPks.equals(actualPks) : "expectedPks=" + expectedPks +
+                ", actualPks" + actualPks;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testParametersMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setSchema("pers");
+
+            PreparedStatement stmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
+
+            ParameterMetaData meta = stmt.getParameterMetaData();
+
+            assert meta != null;
+
+            assert meta.getParameterCount() == 2;
+
+            assert meta.getParameterType(1) == Types.VARCHAR;
+            assert meta.isNullable(1) == ParameterMetaData.parameterNullableUnknown;
+            assert meta.getPrecision(1) == Integer.MAX_VALUE;
+
+            assert meta.getParameterType(2) == Types.INTEGER;
+            assert meta.isNullable(2) == ParameterMetaData.parameterNullableUnknown;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSchemasMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            ResultSet rs = conn.getMetaData().getSchemas();
+
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("PUBLIC", "pers", "org"));
+
+            Set<String> schemas = new HashSet<>();
+
+            while (rs.next()) {
+                schemas.add(rs.getString(1));
+
+                assert rs.getString(2) == null;
+            }
+
+            assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +
+                ". Expected schemas: " + expectedSchemas;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEmptySchemasMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            ResultSet rs = conn.getMetaData().getSchemas(null, "qqq");
+
+            assert !rs.next() : "Empty result set is expected";
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVersions() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            assert conn.getMetaData().getDatabaseProductVersion().equals(IgniteVersionUtils.VER.toString());
+            assert conn.getMetaData().getDriverVersion().equals(IgniteVersionUtils.VER.toString());
         }
     }
 
@@ -305,15 +593,12 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
-        @QuerySqlField(index = false)
         private final String name;
 
         /** Age. */
-        @QuerySqlField
         private final int age;
 
         /** Organization ID. */
-        @QuerySqlField
         private final int orgId;
 
         /**
@@ -338,11 +623,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
-        @QuerySqlField
         private final int id;
 
         /** Name. */
-        @QuerySqlField(index = false)
         private final String name;
 
         /**

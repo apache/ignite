@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -50,10 +49,6 @@ public class GridH2QueryContext {
 
     /** */
     private volatile boolean cleared;
-
-    /** Index snapshots. */
-    @GridToStringInclude
-    private Map<Long, Object> snapshots;
 
     /** */
     private List<GridReservable> reservations;
@@ -248,51 +243,6 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param idxId Index ID.
-     * @param snapshot Index snapshot.
-     */
-    public void putSnapshot(long idxId, Object snapshot) {
-        assert snapshot != null;
-        assert get() == null : "need to snapshot indexes before setting query context for correct visibility";
-
-        if (snapshot instanceof GridReservable && !((GridReservable)snapshot).reserve())
-            throw new IllegalStateException("Must be already reserved before.");
-
-        if (snapshots == null)
-            snapshots = new HashMap<>();
-
-        if (snapshots.put(idxId, snapshot) != null)
-            throw new IllegalStateException("Index already snapshoted.");
-    }
-
-    /**
-     * Clear taken snapshots.
-     */
-    public void clearSnapshots() {
-        if (F.isEmpty(snapshots))
-            return;
-
-        for (Object snapshot : snapshots.values()) {
-            if (snapshot instanceof GridReservable)
-                ((GridReservable)snapshot).release();
-        }
-
-        snapshots = null;
-    }
-
-    /**
-     * @param idxId Index ID.
-     * @return Index snapshot or {@code null} if none.
-     */
-    @SuppressWarnings("unchecked")
-    public <T> T getSnapshot(long idxId) {
-        if (snapshots == null)
-            return null;
-
-        return (T)snapshots.get(idxId);
-    }
-
-    /**
      * @param batchLookupId Batch lookup ID.
      * @param streams Range streams.
      */
@@ -360,13 +310,6 @@ public class GridH2QueryContext {
      */
     public int nextBatchLookupId() {
         return ++batchLookupIdGen;
-    }
-
-    /**
-     * @return If indexes were snapshotted before query execution.
-     */
-    public boolean hasIndexSnapshots() {
-        return snapshots != null;
     }
 
     /**
@@ -439,8 +382,6 @@ public class GridH2QueryContext {
      */
     public void clearContext(boolean nodeStop) {
         cleared = true;
-
-        clearSnapshots();
 
         List<GridReservable> r = reservations;
 

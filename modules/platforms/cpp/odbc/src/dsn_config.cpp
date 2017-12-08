@@ -106,6 +106,8 @@ namespace ignite
 
             bool collocated = ReadDsnBool(dsn, Configuration::Key::collocated, config.IsCollocated());
 
+            bool lazy = ReadDsnBool(dsn, Configuration::Key::lazy, config.IsLazy());
+
             std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
                 config.GetProtocolVersion().ToString().c_str());
 
@@ -122,6 +124,7 @@ namespace ignite
             config.SetEnforceJoinOrder(enforceJoinOrder);
             config.SetReplicatedOnly(replicatedOnly);
             config.SetCollocated(collocated);
+            config.SetLazy(lazy);
             config.SetProtocolVersion(version);
             config.SetPageSize(pageSize);
         }

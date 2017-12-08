@@ -778,7 +778,8 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                     break;
                 case 'ARRAY':
-                    imports.push(prop.typeClsName);
+                    if (!prop.varArg)
+                        imports.push(prop.typeClsName);
 
                     if (this._isBean(prop.typeClsName))
                         _.forEach(prop.items, (item) => imports.push(...this.collectBeanImports(item)));
@@ -1589,7 +1590,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
         const sb = new StringBuilder();
 
-        const imports = ['org.apache.ignite.Ignition', 'org.apache.ignite.Ignite'];
+        const imports = ['org.apache.ignite.Ignition'];
 
         if (demo) {
             imports.push('org.h2.tools.Server', 'java.sql.Connection', 'java.sql.PreparedStatement',
@@ -1604,6 +1605,9 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
             shortFactoryCls = this.javaTypes.shortClassName(factoryCls);
         }
+
+        if ((_.nonEmpty(clientNearCaches) || demo) && shortFactoryCls)
+            imports.push('org.apache.ignite.Ignite');
 
         sb.append(`package ${pkg};`)
             .emptyLine();

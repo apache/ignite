@@ -54,6 +54,7 @@ namespace ignite
                             ENFORCE_JOIN_ORDER_CHECK_BOX,
                             REPLICATED_ONLY_CHECK_BOX,
                             COLLOCATED_CHECK_BOX,
+                            LAZY_CHECK_BOX,
                             PROTOCOL_VERSION_LABEL,
                             PROTOCOL_VERSION_COMBO_BOX,
                             OK_BUTTON,
@@ -144,6 +145,9 @@ namespace ignite
 
                     /** Collocated CheckBox. */
                     std::auto_ptr<Window> collocatedCheckBox;
+
+                    /** Lazy CheckBox. */
+                    std::auto_ptr<Window> lazyCheckBox;
 
                     /** Protocol version edit field. */
                     std::auto_ptr<Window> protocolVersionLabel;

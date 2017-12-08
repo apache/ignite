@@ -75,4 +75,20 @@
             padding-bottom: 10px;
         }
     }
+
+    &.bssm-multiple {
+        .bssm-active-indicator {
+            display: initial;
+        }
+    }
+
+    &:not(.bssm-multiple) {
+        .bssm-active-indicator {
+            display: none;
+        }
+
+        & > li > .bssm-item-button__active {
+            background-color: #eeeeee;
+        }
+    }
 }

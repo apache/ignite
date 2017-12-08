@@ -24,9 +24,10 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener query metadata result.
+ * JDBC query metadata result.
  */
 public class JdbcQueryMetadataResult extends JdbcResult {
     /** Fields metadata. */
@@ -35,7 +36,7 @@ public class JdbcQueryMetadataResult extends JdbcResult {
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcQueryMetadataResult() {
+    JdbcQueryMetadataResult() {
         super(QRY_META);
     }
 
@@ -43,14 +44,14 @@ public class JdbcQueryMetadataResult extends JdbcResult {
      * @param queryId Query ID.
      * @param meta Query metadata.
      */
-    public JdbcQueryMetadataResult(long queryId, List<JdbcColumnMeta> meta){
+    JdbcQueryMetadataResult(long queryId, List<JdbcColumnMeta> meta){
         super(QRY_META);
 
         this.meta = meta;
     }
 
     /**
-     * @return Query result rows.
+     * @return Query result metadata.
      */
     public List<JdbcColumnMeta> meta() {
         return meta;
@@ -89,5 +90,10 @@ public class JdbcQueryMetadataResult extends JdbcResult {
                 meta.add(m);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcQueryMetadataResult.class, this);
     }
 }

@@ -165,12 +165,6 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
 
-//        long seed = System.currentTimeMillis();
-//
-//        info("Seed: " + seed + "L");
-//
-//        BPlusTree.rnd = new Random(seed);
-
         startGrids(gridCount());
 
         if (withClientNearCache()) {

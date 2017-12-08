@@ -117,15 +117,4 @@ BOOST_AUTO_TEST_CASE(StringUtfValid4ByteCodePoint)
     Ignition::StopAll(false);
 }
 
-BOOST_AUTO_TEST_CASE(GracefulDeathOnInvalidConfig)
-{
-    IgniteConfiguration cfg;
-
-    ignite_test::InitConfig(cfg, "invalid.xml");
-
-    BOOST_CHECK_THROW(Ignition::Start(cfg), IgniteError);
-
-    Ignition::StopAll(false);
-}
-
 BOOST_AUTO_TEST_SUITE_END()

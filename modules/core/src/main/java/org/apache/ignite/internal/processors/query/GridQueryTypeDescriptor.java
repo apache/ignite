@@ -33,6 +33,13 @@ public interface GridQueryTypeDescriptor {
     public String name();
 
     /**
+     * Gets schema name for type (database schema means here).
+     *
+     * @return Schema name.
+     */
+    public String schemaName();
+
+    /**
      * Gets table name for type.
      *
      * @return Table name.
@@ -160,4 +167,14 @@ public interface GridQueryTypeDescriptor {
      * @return value field alias.
      */
     @Nullable public String valueFieldAlias();
+
+    /**
+     * Performs validation of given key and value against configured constraints.
+     * Throws runtime exception if validation fails.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException, If failure happens.
+     */
+    public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException;
 }

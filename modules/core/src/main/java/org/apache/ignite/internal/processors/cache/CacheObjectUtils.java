@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.util.typedef.F;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Cache object utility methods.
@@ -34,9 +33,34 @@ public class CacheObjectUtils {
      * @param cpy Copy value flag.
      * @return Unwrapped object.
      */
+    public static Object unwrapBinaryIfNeeded(CacheObjectValueContext ctx, CacheObject o, boolean keepBinary, boolean cpy) {
+        return unwrapBinary(ctx, o, keepBinary, cpy);
+    }
+
+    /**
+     * @param o Object to unwrap.
+     * @param keepBinary Keep binary flag.
+     * @param cpy Copy value flag.
+     * @return Unwrapped object.
+     */
     public static Object unwrapBinaryIfNeeded(CacheObjectValueContext ctx, Object o, boolean keepBinary, boolean cpy) {
         if (o == null)
             return null;
+
+        // TODO has to be overloaded
+        if (o instanceof Map.Entry) {
+            Map.Entry entry = (Map.Entry)o;
+
+            Object key = entry.getKey();
+
+            Object uKey = unwrapBinary(ctx, key, keepBinary, cpy);
+
+            Object val = entry.getValue();
+
+            Object uVal = unwrapBinary(ctx, val, keepBinary, cpy);
+
+            return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
+        }
 
         return unwrapBinary(ctx, o, keepBinary, cpy);
     }
@@ -84,7 +108,10 @@ public class CacheObjectUtils {
         Map<Object, Object> map0 = BinaryUtils.newMap(map);
 
         for (Map.Entry<Object, Object> e : map.entrySet())
-            map0.put(unwrapBinary(ctx, e.getKey(), false, cpy), unwrapBinary(ctx, e.getValue(), false, cpy));
+            // TODO why don't we use keepBinary parameter here?
+            map0.put(
+                unwrapBinary(ctx, e.getKey(), false, cpy),
+                unwrapBinary(ctx, e.getValue(), false, cpy));
 
         return map0;
     }
@@ -103,7 +130,7 @@ public class CacheObjectUtils {
             col0 = new ArrayList<>(col.size());
 
         for (Object obj : col)
-            col0.add(unwrapBinary(ctx, obj, keepBinary, cpy));
+            col0.add(unwrapBinaryIfNeeded(ctx, obj, keepBinary, cpy));
 
         return col0;
     }
@@ -135,31 +162,25 @@ public class CacheObjectUtils {
      */
     @SuppressWarnings("unchecked")
     private static Object unwrapBinary(CacheObjectValueContext ctx, Object o, boolean keepBinary, boolean cpy) {
-        if (o instanceof Map.Entry) {
-            Map.Entry entry = (Map.Entry)o;
+        if (o == null)
+            return o;
 
-            Object key = entry.getKey();
+        while (BinaryUtils.knownCacheObject(o)) {
+            CacheObject co = (CacheObject)o;
 
-            Object uKey = unwrapBinary(ctx, key, keepBinary, cpy);
+            if (!co.isPlatformType() && keepBinary)
+                return o;
 
-            Object val = entry.getValue();
-
-            Object uVal = unwrapBinary(ctx, val, keepBinary, cpy);
-
-            return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
+            // It may be a collection of binaries
+            o = co.value(ctx, cpy);
         }
-        else if (BinaryUtils.knownCollection(o))
+
+        if (BinaryUtils.knownCollection(o))
             return unwrapKnownCollection(ctx, (Collection<Object>)o, keepBinary, cpy);
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
         else if (o instanceof Object[])
             return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
-        else if (o instanceof CacheObject) {
-            CacheObject co = (CacheObject)o;
-
-            if (!keepBinary || co.isPlatformType())
-                return unwrapBinary(ctx, co.value(ctx, cpy), keepBinary, cpy);
-        }
 
         return o;
     }

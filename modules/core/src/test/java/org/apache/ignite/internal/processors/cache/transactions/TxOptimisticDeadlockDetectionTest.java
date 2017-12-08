@@ -17,16 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -43,18 +40,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -62,7 +53,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
@@ -78,7 +68,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
+public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetectionTest {
     /** Ip finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -88,11 +78,11 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     /** Nodes count (actually two times more nodes will started: server + client). */
     private static final int NODES_CNT = 4;
 
-    /** No op transformer. */
-    private static final NoOpTransformer NO_OP_TRANSFORMER = new NoOpTransformer();
+    /** Ordinal start key. */
+    private static final Integer ORDINAL_START_KEY = 1;
 
-    /** Wrapping transformer. */
-    private static final WrappingTransformer WRAPPING_TRANSFORMER = new WrappingTransformer();
+    /** Custom start key. */
+    private static final IncrementalTestObject CUSTOM_START_KEY = new KeyObject(1);
 
     /** Client mode flag. */
     private static boolean client;
@@ -149,8 +139,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      */
     public void testDeadlocksPartitioned() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            doTestDeadlocks(createCache(PARTITIONED, syncMode, false), NO_OP_TRANSFORMER);
-            doTestDeadlocks(createCache(PARTITIONED, syncMode, false), WRAPPING_TRANSFORMER);
+            doTestDeadlocks(createCache(PARTITIONED, syncMode, false), ORDINAL_START_KEY);
+            doTestDeadlocks(createCache(PARTITIONED, syncMode, false), CUSTOM_START_KEY);
         }
     }
 
@@ -159,8 +149,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      */
     public void testDeadlocksPartitionedNear() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            doTestDeadlocks(createCache(PARTITIONED, syncMode, true), NO_OP_TRANSFORMER);
-            doTestDeadlocks(createCache(PARTITIONED, syncMode, true), WRAPPING_TRANSFORMER);
+            doTestDeadlocks(createCache(PARTITIONED, syncMode, true), ORDINAL_START_KEY);
+            doTestDeadlocks(createCache(PARTITIONED, syncMode, true), CUSTOM_START_KEY);
         }
     }
 
@@ -169,8 +159,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      */
     public void testDeadlocksReplicated() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            doTestDeadlocks(createCache(REPLICATED, syncMode, false), NO_OP_TRANSFORMER);
-            doTestDeadlocks(createCache(REPLICATED, syncMode, false), WRAPPING_TRANSFORMER);
+            doTestDeadlocks(createCache(REPLICATED, syncMode, false), ORDINAL_START_KEY);
+            doTestDeadlocks(createCache(REPLICATED, syncMode, false), CUSTOM_START_KEY);
         }
     }
 
@@ -207,20 +197,20 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /**
      * @param cache Cache.
-     * @param transformer Transformer closure.
+     * @param startKey Transformer Start key.
      * @throws Exception If failed.
      */
-    private void doTestDeadlocks(IgniteCache cache, IgniteClosure<Integer, Object> transformer) throws Exception {
+    private void doTestDeadlocks(IgniteCache cache, Object startKey) throws Exception {
         try {
             awaitPartitionMapExchange();
 
-            doTestDeadlock(3, false, true, true, transformer);
-            doTestDeadlock(3, false, false, false, transformer);
-            doTestDeadlock(3, false, false, true, transformer);
+            doTestDeadlock(3, true, true, startKey);
+            doTestDeadlock(3, false, false, startKey);
+            doTestDeadlock(3, false, true, startKey);
 
-            doTestDeadlock(4, false, true, true, transformer);
-            doTestDeadlock(4, false, false, false, transformer);
-            doTestDeadlock(4, false, false, true, transformer);
+            doTestDeadlock(4, true, true, startKey);
+            doTestDeadlock(4, false, false, startKey);
+            doTestDeadlock(4, false, true, startKey);
         }
         catch (Throwable e) {
             U.error(log, "Unexpected exception: ", e);
@@ -238,82 +228,77 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      */
     private void doTestDeadlock(
         final int txCnt,
-        final boolean loc,
         boolean lockPrimaryFirst,
         final boolean clientTx,
-        final IgniteClosure<Integer, Object> transformer
+        Object startKey
     ) throws Exception {
-        log.info(">>> Test deadlock [txCnt=" + txCnt + ", loc=" + loc + ", lockPrimaryFirst=" + lockPrimaryFirst +
-            ", clientTx=" + clientTx + ", transformer=" + transformer.getClass().getName() + ']');
+        log.info(">>> Test deadlock [txCnt=" + txCnt + ", lockPrimaryFirst=" + lockPrimaryFirst +
+            ", clientTx=" + clientTx + ", startKey=" + startKey + ']');
 
         TestCommunicationSpi.init(txCnt);
 
         final AtomicInteger threadCnt = new AtomicInteger();
 
-        final CyclicBarrier barrier = new CyclicBarrier(txCnt);
-
         final AtomicReference<TransactionDeadlockException> deadlockErr = new AtomicReference<>();
 
-        final List<List<Integer>> keySets = generateKeys(txCnt, loc, !lockPrimaryFirst);
+        final List<List<Object>> keySets = generateKeys(txCnt, startKey, !lockPrimaryFirst);
 
-        final Set<Integer> involvedKeys = new GridConcurrentHashSet<>();
-        final Set<Integer> involvedLockedKeys = new GridConcurrentHashSet<>();
+        final Set<Object> involvedKeys = new GridConcurrentHashSet<>();
+        final Set<Object> involvedLockedKeys = new GridConcurrentHashSet<>();
         final Set<IgniteInternalTx> involvedTxs = new GridConcurrentHashSet<>();
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 int threadNum = threadCnt.incrementAndGet();
 
-                Ignite ignite = loc ? ignite(0) : ignite(clientTx ? threadNum - 1 + txCnt : threadNum - 1);
+                Ignite ignite = ignite(clientTx ? threadNum - 1 + txCnt : threadNum - 1);
 
                 IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME);
 
-                List<Integer> keys = keySets.get(threadNum - 1);
+                List<Object> keys = keySets.get(threadNum - 1);
 
-                int txTimeout = 500 + txCnt * 100;
+                int txTimeout = 1000 + txCnt * 200;
 
                 try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
                     IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
 
                     involvedTxs.add(tx0);
 
-                    Integer key = keys.get(0);
+                    Object key = keys.get(0);
 
                     involvedKeys.add(key);
 
                     Object k;
 
                     log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode().id() +
-                        ", tx=" + tx.xid() + ", key=" + transformer.apply(key) + ']');
+                        ", tx=" + tx.xid() + ", key=" + key + ']');
 
-                    cache.put(transformer.apply(key), 0);
+                    cache.put(key, 0);
 
                     involvedLockedKeys.add(key);
-
-                    barrier.await();
 
                     key = keys.get(1);
 
                     ClusterNode primaryNode =
                         ((IgniteCacheProxy)cache).context().affinity().primaryByKey(key, NONE);
 
-                    List<Integer> primaryKeys =
-                        primaryKeys(grid(primaryNode).cache(CACHE_NAME), 5, key + (100 * threadNum));
+                    List<Object> primaryKeys = primaryKeys(
+                        grid(primaryNode).cache(CACHE_NAME), 5, incrementKey(key , (100 * threadNum)));
 
                     Map<Object, Integer> entries = new HashMap<>();
 
                     involvedKeys.add(key);
 
-                    entries.put(transformer.apply(key), 0);
+                    entries.put(key, 0);
 
-                    for (Integer i : primaryKeys) {
-                        involvedKeys.add(i);
+                    for (Object o : primaryKeys) {
+                        involvedKeys.add(o);
 
-                        entries.put(transformer.apply(i), 1);
+                        entries.put(o, 1);
 
-                        k = transformer.apply(i + 13);
+                        k = incrementKey(o, 13);
 
-                        involvedKeys.add(i + 13);
+                        involvedKeys.add(k);
 
                         entries.put(k, 2);
                     }
@@ -342,7 +327,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     }
                 }
             }
-        }, loc ? 2 : txCnt, "tx-thread");
+        }, txCnt, "tx-thread");
 
         try {
             fut.get();
@@ -359,55 +344,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         assertNotNull("Failed to detect deadlock", deadlockE);
 
-        boolean fail = false;
-
-        // Check transactions, futures and entry locks state.
-        for (int i = 0; i < NODES_CNT * 2; i++) {
-            Ignite ignite = ignite(i);
-
-            int cacheId = ((IgniteCacheProxy)ignite.cache(CACHE_NAME)).context().cacheId();
-
-            GridCacheSharedContext<Object, Object> cctx = ((IgniteKernal)ignite).context().cache().context();
-
-            IgniteTxManager txMgr = cctx.tm();
-
-            Collection<IgniteInternalTx> activeTxs = txMgr.activeTransactions();
-
-            for (IgniteInternalTx tx : activeTxs) {
-                Collection<IgniteTxEntry> entries = tx.allEntries();
-
-                for (IgniteTxEntry entry : entries) {
-                    if (entry.cacheId() == cacheId) {
-                        fail = true;
-
-                        U.error(log, "Transaction still exists: " + "\n" + tx.xidVersion() +
-                            "\n" + tx.nearXidVersion() + "\n nodeId=" + cctx.localNodeId() + "\n tx=" + tx);
-                    }
-                }
-            }
-
-            Collection<IgniteInternalFuture<?>> futs = txMgr.deadlockDetectionFutures();
-
-            assertTrue(futs.isEmpty());
-
-            GridCacheAdapter<Object, Integer> intCache = internalCache(i, CACHE_NAME);
-
-            GridCacheConcurrentMap map = intCache.map();
-
-            for (Integer key : involvedKeys) {
-                Object key0 = transformer.apply(key);
-
-                KeyCacheObject keyCacheObj = intCache.context().toCacheKeyObject(key0);
-
-                GridCacheMapEntry entry = map.getEntry(intCache.context(), keyCacheObj);
-
-                if (entry != null)
-                    assertNull("Entry still has locks " + entry, entry.mvccAllLocal());
-            }
-        }
-
-        if (fail)
-            fail("Some transactions still exist");
+        checkAllTransactionsCompleted(involvedKeys, NODES_CNT * 2, CACHE_NAME);
 
         // Check deadlock report
         String msg = deadlockE.getMessage();
@@ -416,117 +353,38 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             assertTrue(msg.contains(
                 "[txId=" + tx.xidVersion() + ", nodeId=" + tx.nodeId() + ", threadId=" + tx.threadId() + ']'));
 
-        for (Integer key : involvedKeys) {
+        for (Object key : involvedKeys) {
             if (involvedLockedKeys.contains(key))
-                assertTrue(msg.contains("[key=" + transformer.apply(key) + ", cache=" + CACHE_NAME + ']'));
+                assertTrue(msg.contains("[key=" + key + ", cache=" + CACHE_NAME + ']'));
             else
-                assertFalse(msg.contains("[key=" + transformer.apply(key)));
+                assertFalse(msg.contains("[key=" + key));
         }
     }
 
     /**
      * @param nodesCnt Nodes count.
-     * @param loc Local cache.
      */
-    private List<List<Integer>> generateKeys(int nodesCnt, boolean loc, boolean reverse) throws IgniteCheckedException {
-        List<List<Integer>> keySets = new ArrayList<>();
+    private <T> List<List<T>> generateKeys(int nodesCnt, T startKey, boolean reverse) throws IgniteCheckedException {
+        List<List<T>> keySets = new ArrayList<>();
 
-        if (loc) {
-            List<Integer> keys = primaryKeys(ignite(0).cache(CACHE_NAME), 2);
+        for (int i = 0; i < nodesCnt; i++) {
+            List<T> keys = new ArrayList<>(2);
 
-            keySets.add(new ArrayList<>(keys));
+            int n1 = i + 1;
+            int n2 = n1 + 1;
 
-            Collections.reverse(keys);
+            int i1 = n1 < nodesCnt ? n1 : n1 - nodesCnt;
+            int i2 = n2 < nodesCnt ? n2 : n2 - nodesCnt;
 
+            keys.add(primaryKey(ignite(i1).cache(CACHE_NAME), startKey));
+            keys.add(primaryKey(ignite(i2).cache(CACHE_NAME), startKey));
+
+            if (reverse)
+                Collections.reverse(keys);
             keySets.add(keys);
-        }
-        else {
-            for (int i = 0; i < nodesCnt; i++) {
-                List<Integer> keys = new ArrayList<>(2);
-
-                int n1 = i + 1;
-                int n2 = n1 + 1;
-
-                int i1 = n1 < nodesCnt ? n1 : n1 - nodesCnt;
-                int i2 = n2 < nodesCnt ? n2 : n2 - nodesCnt;
-
-                keys.add(primaryKey(ignite(i1).cache(CACHE_NAME)));
-                keys.add(primaryKey(ignite(i2).cache(CACHE_NAME)));
-
-                if (reverse)
-                    Collections.reverse(keys);
-
-                keySets.add(keys);
-            }
         }
 
         return keySets;
-    }
-
-    /**
-     *
-     */
-    private static class NoOpTransformer implements IgniteClosure<Integer, Object> {
-        /** {@inheritDoc} */
-        @Override public Object apply(Integer val) {
-            return val;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class WrappingTransformer implements IgniteClosure<Integer, Object> {
-        /** {@inheritDoc} */
-        @Override public Object apply(Integer val) {
-            return new KeyObject(val);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class KeyObject implements Serializable {
-        /** Id. */
-        private int id;
-
-        /** Name. */
-        private String name;
-
-        /**
-         * @param id Id.
-         */
-        public KeyObject(int id) {
-            this.id = id;
-            this.name = "KeyObject" + id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "KeyObject{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                '}';
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            KeyObject obj = (KeyObject)o;
-
-            return id == obj.id && name.equals(obj.name);
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return id;
-        }
     }
 
     /**

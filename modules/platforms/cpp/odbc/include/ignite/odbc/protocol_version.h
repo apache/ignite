@@ -31,8 +31,14 @@ namespace ignite
         class ProtocolVersion
         {
         public:
-            /** Current protocol version. */
+            /** Base protocol version. */
             static const ProtocolVersion VERSION_2_1_0;
+
+            /** Added "lazy" flag. */
+            static const ProtocolVersion VERSION_2_1_5;
+
+            /** Back-ported query timeout. Non-compatible with 2.3.X. */
+            static const ProtocolVersion VERSION_2_1_8;
 
             typedef std::set<ProtocolVersion> VersionSet;
 

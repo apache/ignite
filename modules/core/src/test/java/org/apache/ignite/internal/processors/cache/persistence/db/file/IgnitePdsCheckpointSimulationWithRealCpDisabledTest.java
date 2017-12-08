@@ -47,7 +47,9 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -235,8 +237,10 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     try {
                         DataPageIO.VERSIONS.latest().initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
 
-                        for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++)
+                        for (int i = PageIO.COMMON_HEADER_END + DataPageIO.ITEMS_OFF; i < mem.pageSize(); i++)
                             PageUtils.putByte(pageAddr, i, (byte)0xAB);
+
+                        PageIO.printPage(pageAddr, mem.pageSize());
                     }
                     finally {
                         mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
@@ -518,9 +522,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         PageMemoryEx mem = (PageMemoryEx) dbMgr.memoryPolicy(null).pageMemory();
 
-        ig.context().cache().context().database().checkpointReadLock();
-
         FullPageId[] pageIds = new FullPageId[100];
+
+        DummyPageIO pageIO = new DummyPageIO();
+
+        ig.context().cache().context().database().checkpointReadLock();
 
         try {
             for (int i = 0; i < pageIds.length; i++)
@@ -534,9 +540,9 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                     long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
-                    PageIO.setPageId(pageAddr, fullId.pageId());
-
                     try {
+                        pageIO.initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
+
                         assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
                     }
                     finally {
@@ -736,8 +742,22 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         Set<FullPageId> allocated = new HashSet<>();
 
+        IgniteCacheDatabaseSharedManager db = ig.context().cache().context().database();
+
+        PageIO pageIO = new DummyPageIO();
+
         for (int i = 0; i < TOTAL_PAGES; i++) {
-            FullPageId fullId = new FullPageId(mem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_DATA), cacheId);
+            FullPageId  fullId;
+
+            db.checkpointReadLock();
+            try {
+                fullId = new FullPageId(mem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_DATA), cacheId);
+
+                initPage(mem, pageIO, fullId);
+            }
+            finally {
+                db.checkpointReadUnlock();
+            }
 
             resMap.put(fullId, -1);
 
@@ -980,5 +1000,30 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    }
+
+    /**
+     * Initializes page.
+     * @param mem page memory implementation.
+     * @param pageIO page io implementation.
+     * @param fullId full page id.
+     * @throws IgniteCheckedException if error occurs.
+     */
+    private void initPage(PageMemory mem, PageIO pageIO, FullPageId fullId) throws IgniteCheckedException {
+        long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
+
+        try {
+            final long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
+
+            try {
+                pageIO.initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
+            }
+            finally {
+                mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
+            }
+        }
+        finally {
+            mem.releasePage(fullId.groupId(), fullId.pageId(), page);
+        }
     }
 }

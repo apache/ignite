@@ -16,7 +16,7 @@
  */
 
 export default class PageConfigureAdvancedController {
-    static $inject = ['PageConfigureAdvanced', '$scope'];
+    static $inject = ['$scope'];
 
     static menuItems = [
         { text: 'Clusters', sref: 'base.configuration.tabs.advanced.clusters' },
@@ -26,14 +26,11 @@ export default class PageConfigureAdvancedController {
         { text: 'Summary', sref: 'base.configuration.tabs.advanced.summary' }
     ];
 
-    constructor(PageConfigureAdvanced, $scope) {
-        Object.assign(this, {PageConfigureAdvanced, $scope});
+    constructor($scope) {
+        Object.assign(this, {$scope});
     }
 
     $onInit() {
         this.menuItems = this.constructor.menuItems;
-        this.$scope.$on('$stateChangeSuccess', (e, toState) => {
-            this.PageConfigureAdvanced.onStateEnterRedirect(toState);
-        });
     }
 }

@@ -105,6 +105,9 @@ namespace ignite
                 /** Executed flag. */
                 bool executed;
 
+                /** Fetched flag. */
+                bool fetched;
+
                 /** Requested types. */
                 std::vector<int8_t> types;
 

@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Schema.
         /// </returns>
         public static BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position, BinaryObjectHeader hdr, 
-            BinaryObjectSchema schema, Ignite ignite)
+            BinaryObjectSchema schema, IIgniteInternal ignite)
         {
             Debug.Assert(stream != null);
             Debug.Assert(schema != null);
@@ -252,9 +252,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the field ids.
         /// </summary>
-        private static int[] GetFieldIds(BinaryObjectHeader hdr, Ignite ignite)
+        private static int[] GetFieldIds(BinaryObjectHeader hdr, IIgniteInternal ignite)
         {
-            Debug.Assert(hdr.TypeId != BinaryUtils.TypeUnregistered);
+            Debug.Assert(hdr.TypeId != BinaryTypeId.Unregistered);
 
             int[] fieldIds = null;
 
@@ -268,13 +268,15 @@ namespace Apache.Ignite.Core.Impl.Binary
                 throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
                                                 "typeId=" + hdr.TypeId + ", schemaId=" + hdr.SchemaId + ']');
             }
+
             return fieldIds;
         }
 
         /// <summary>
         /// Reads the schema, maintains stream position.
         /// </summary>
-        public static int[] GetFieldIds(BinaryObjectHeader hdr, Ignite ignite, IBinaryStream stream, int objectPos)
+        public static int[] GetFieldIds(BinaryObjectHeader hdr, IIgniteInternal ignite, IBinaryStream stream, 
+            int objectPos)
         {
             Debug.Assert(stream != null);
 
@@ -309,7 +311,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the field ids.
         /// </summary>
-        private static int[] GetFieldIds(BinaryObjectHeader hdr, BinaryObjectSchema schema, Ignite ignite)
+        private static int[] GetFieldIds(BinaryObjectHeader hdr, BinaryObjectSchema schema, IIgniteInternal ignite)
         {
             return schema.Get(hdr.SchemaId) ?? GetFieldIds(hdr, ignite);
         }

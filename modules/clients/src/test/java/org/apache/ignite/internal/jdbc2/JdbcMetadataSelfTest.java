@@ -21,17 +21,27 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Set;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -61,9 +71,20 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        LinkedHashMap<String, Boolean> persFields = new LinkedHashMap<>();
+
+        persFields.put("name", true);
+        persFields.put("age", false);
+
         cfg.setCacheConfiguration(
-            cacheConfiguration("pers", AffinityKey.class, Person.class),
-            cacheConfiguration("org", String.class, Organization.class));
+            cacheConfiguration("pers").setQueryEntities(Arrays.asList(
+                new QueryEntity(AffinityKey.class, Person.class)
+                    .setIndexes(Arrays.asList(
+                        new QueryIndex("orgId"),
+                        new QueryIndex().setFields(persFields))))
+            ),
+            cacheConfiguration("org").setQueryEntities(Arrays.asList(
+                new QueryEntity(AffinityKey.class, Organization.class))));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -78,11 +99,9 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param name Name.
-     * @param clsK Class k.
-     * @param clsV Class v.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(@NotNull String name, Class<?> clsK, Class<?> clsV) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String name) {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
         cache.setName(name);
@@ -90,7 +109,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setAtomicityMode(TRANSACTIONAL);
-        cache.setIndexedTypes(clsK, clsV);
 
         return cache;
     }
@@ -194,7 +212,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getColumns("", "pers", "Person", "%");
+            ResultSet rs = meta.getColumns("", "pers", "PERSON", "%");
 
             assertNotNull(rs);
 
@@ -227,7 +245,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assertTrue(names.isEmpty());
             assertEquals(3, cnt);
 
-            rs = meta.getColumns("", "org", "Organization", "%");
+            rs = meta.getColumns("", "org", "ORGANIZATION", "%");
 
             assertNotNull(rs);
 
@@ -274,6 +292,126 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         }
         catch (Exception ignored) {
             fail();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIndexMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL);
+             ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
+
+            int cnt = 0;
+
+            while (rs.next()) {
+                String idxName = rs.getString("INDEX_NAME");
+                String field = rs.getString("COLUMN_NAME");
+                String ascOrDesc = rs.getString("ASC_OR_DESC");
+
+                assertEquals(DatabaseMetaData.tableIndexOther, rs.getInt("TYPE"));
+
+                if ("PERSON_ORGID_ASC_IDX".equals(idxName)) {
+                    assertEquals("ORGID", field);
+                    assertEquals("A", ascOrDesc);
+                }
+                else if ("PERSON_NAME_ASC_AGE_DESC_IDX".equals(idxName)) {
+                    if ("NAME".equals(field))
+                        assertEquals("A", ascOrDesc);
+                    else if ("AGE".equals(field))
+                        assertEquals("D", ascOrDesc);
+                    else
+                        fail("Unexpected field: " + field);
+                }
+                else
+                    fail("Unexpected index: " + idxName);
+
+                cnt++;
+            }
+
+            assertEquals(3, cnt);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryKeyMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL);
+             ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "PERSON")) {
+
+            int cnt = 0;
+
+            while (rs.next()) {
+                assertEquals("_KEY", rs.getString("COLUMN_NAME"));
+
+                cnt++;
+            }
+
+            assertEquals(1, cnt);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testParametersMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            conn.setSchema("pers");
+
+            PreparedStatement stmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
+
+            ParameterMetaData meta = stmt.getParameterMetaData();
+
+            assertNotNull(meta);
+
+            assertEquals(2, meta.getParameterCount());
+
+            assertEquals(Types.VARCHAR, meta.getParameterType(1));
+            assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+            assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+            assertEquals(Types.INTEGER, meta.getParameterType(2));
+            assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSchemasMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            ResultSet rs = conn.getMetaData().getSchemas();
+
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org"));
+
+            Set<String> schemas = new HashSet<>();
+
+            while (rs.next()) {
+                schemas.add(rs.getString(1));
+
+                assertNull(rs.getString(2));
+            }
+
+            assertEquals(expectedSchemas, schemas);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVersions() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            assertEquals("Apache Ignite", conn.getMetaData().getDatabaseProductName());
+            assertEquals(JdbcDatabaseMetadata.DRIVER_NAME, conn.getMetaData().getDriverName());
+            assertEquals(IgniteVersionUtils.VER.toString(), conn.getMetaData().getDatabaseProductVersion());
+            assertEquals(IgniteVersionUtils.VER.toString(), conn.getMetaData().getDriverVersion());
+            assertEquals(IgniteVersionUtils.VER.major(), conn.getMetaData().getDatabaseMajorVersion());
+            assertEquals(IgniteVersionUtils.VER.major(), conn.getMetaData().getDriverMajorVersion());
+            assertEquals(IgniteVersionUtils.VER.minor(), conn.getMetaData().getDatabaseMinorVersion());
+            assertEquals(IgniteVersionUtils.VER.minor(), conn.getMetaData().getDriverMinorVersion());
+            assertEquals(4, conn.getMetaData().getJDBCMajorVersion());
+            assertEquals(1, conn.getMetaData().getJDBCMinorVersion());
         }
     }
 

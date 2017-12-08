@@ -64,7 +64,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testSingleGridThreadExecutor() throws Exception {
-        ExecutorService exec = Executors.newSingleThreadExecutor(new IgniteThreadFactory("gridName"));
+        ExecutorService exec = Executors.newSingleThreadExecutor(new IgniteThreadFactory("gridName", "testThread"));
 
         exec.submit(new InterruptingRunnable()).get();
 
@@ -85,7 +85,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      * @throws ExecutionException If failed.
      */
     public void testGridThreadPoolExecutor() throws Exception {
-        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor(1, 1, 0, new LinkedBlockingQueue<Runnable>());
+        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor("", "", 1, 1, 0, new LinkedBlockingQueue<Runnable>());
 
         exec.submit(new InterruptingRunnable()).get();
 
@@ -101,7 +101,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      * @throws ExecutionException If failed.
      */
     public void testGridThreadPoolExecutorRejection() throws Exception {
-        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor(1, 1, 0, new LinkedBlockingQueue<Runnable>());
+        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor("", "", 1, 1, 0, new LinkedBlockingQueue<Runnable>());
 
         for (int i = 0; i < 10; i++)
             exec.submit(new TestRunnable());
@@ -141,8 +141,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
                         }
                     });
                 }
-            },
-            null
+            }
         );
 
         assert exec.prestartAllCoreThreads() == THREAD_CNT;

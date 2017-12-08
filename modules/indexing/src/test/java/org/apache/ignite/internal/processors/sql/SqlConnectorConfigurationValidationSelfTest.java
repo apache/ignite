@@ -38,8 +38,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * ODBC configuration validation tests.
+ * SQL connector configuration validation tests.
  */
+@SuppressWarnings("deprecation")
 public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstractTest {
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();

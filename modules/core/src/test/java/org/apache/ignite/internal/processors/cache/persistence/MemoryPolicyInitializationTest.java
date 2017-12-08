@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -37,7 +38,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
     private static final String CUSTOM_NON_DEFAULT_MEM_PLC_NAME = "custom_mem_plc";
 
     /** */
-    private static final long USER_CUSTOM_MEM_PLC_SIZE = 10 * 1024 * 1024;
+    private static final long USER_CUSTOM_MEM_PLC_SIZE = 89 * 1024 * 1024;
 
     /** */
     private static final long USER_DEFAULT_MEM_PLC_SIZE = 99 * 1024 * 1024;
@@ -217,7 +218,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
      * @param plcName Policy name.
      */
     private void verifyCacheMemoryPolicy(IgniteCache cache, String plcName) {
-        GridCacheContext ctx = U.field(cache, "ctx");
+        GridCacheContext ctx = ((IgniteCacheProxy) cache).context();
 
         assertEquals(plcName, ctx.memoryPolicy().config().getName());
     }

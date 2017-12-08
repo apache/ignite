@@ -183,7 +183,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Index already exists: IDX");
+        }, SQLException.class, "Index already exists: IDX");
     }
 
     /**
@@ -237,7 +237,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Index doesn't exist: IDX");
+        }, SQLException.class, "Index doesn't exist: IDX");
     }
 
     /**

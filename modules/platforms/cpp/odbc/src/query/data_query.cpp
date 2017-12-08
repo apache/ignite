@@ -18,6 +18,7 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/log.h"
+#include "ignite/odbc/odbc_error.h"
 #include "ignite/odbc/query/data_query.h"
 #include "ignite/odbc/query/batch_query.h"
 
@@ -27,12 +28,16 @@ namespace ignite
     {
         namespace query
         {
-            DataQuery::DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
-                const std::string& sql, const app::ParameterSet& params) :
+            DataQuery::DataQuery(diagnostic::Diagnosable& diag, Connection& connection, const std::string& sql,
+                const app::ParameterSet& params, int32_t& timeout) :
                 Query(diag, QueryType::DATA),
                 connection(connection),
                 sql(sql),
-                params(params)
+                params(params),
+                resultMeta(),
+                cursor(),
+                rowsAffected(0),
+                timeout(timeout)
             {
                 // No-op.
             }
@@ -125,7 +130,12 @@ namespace ignite
                 Row* row = cursor->GetRow();
 
                 if (!row)
-                    return SqlResult::AI_NO_DATA;
+                {
+                    diag.AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
+                        "Cursor has reached end of the result set.");
+
+                    return SqlResult::AI_ERROR;
+                }
 
                 SqlResult::Type result = row->ReadColumnToBuffer(columnIdx, buffer);
 
@@ -151,7 +161,7 @@ namespace ignite
 
                 SqlResult::Type result = SqlResult::AI_SUCCESS;
 
-                if (cursor->HasData())
+                if (!cursor->IsClosedRemotely())
                     result = MakeRequestClose();
 
                 if (result == SqlResult::AI_SUCCESS)
@@ -159,6 +169,8 @@ namespace ignite
                     cursor.reset();
 
                     resultMeta.clear();
+
+                    rowsAffected = 0;
                 }
 
                 return result;
@@ -171,24 +183,39 @@ namespace ignite
 
             int64_t DataQuery::AffectedRows() const
             {
-                // We are only support SELECT statements so we can not affect any row.
-                return 0;
+                return rowsAffected;
             }
 
             SqlResult::Type DataQuery::MakeRequestExecute()
             {
                 const std::string& schema = connection.GetSchema();
 
-                QueryExecuteRequest req(schema, sql, params);
+                QueryExecuteRequest req(schema, sql, params, timeout);
                 QueryExecuteResponse rsp;
 
                 try
                 {
-                    connection.SyncMessage(req, rsp);
+                    // Setting connection timeout to 1 second more than query timeout itself.
+                    int32_t connectionTimeout = timeout ? timeout + 1 : 0;
+
+                    bool success = connection.SyncMessage(req, rsp, connectionTimeout);
+
+                    if (!success)
+                    {
+                        diag.AddStatusRecord(SqlState::SHYT00_TIMEOUT_EXPIRED, "Query timeout expired");
+
+                        return SqlResult::AI_ERROR;
+                    }
+                }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
+
+                    return SqlResult::AI_ERROR;
                 }
                 catch (const IgniteError& err)
                 {
-                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
                     return SqlResult::AI_ERROR;
                 }
@@ -197,16 +224,18 @@ namespace ignite
                 {
                     LOG_MSG("Error: " << rsp.GetError());
 
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
 
                     return SqlResult::AI_ERROR;
                 }
 
-                cursor.reset(new Cursor(rsp.GetQueryId()));
-
                 resultMeta.assign(rsp.GetMeta().begin(), rsp.GetMeta().end());
 
-                LOG_MSG("Query id: " << cursor->GetQueryId());
+                rowsAffected = rsp.GetAffectedRows();
+
+                LOG_MSG("Query id: " << rsp.GetQueryId());
+                LOG_MSG("Affected Rows: " << rowsAffected);
+
                 for (size_t i = 0; i < resultMeta.size(); ++i)
                 {
                     LOG_MSG("\n[" << i << "] SchemaName:     " << resultMeta[i].GetSchemaName()
@@ -214,6 +243,15 @@ namespace ignite
                         <<  "\n[" << i << "] ColumnName:     " << resultMeta[i].GetColumnName()
                         <<  "\n[" << i << "] ColumnType:     " << static_cast<int32_t>(resultMeta[i].GetDataType()));
                 }
+
+                if (rowsAffected < 0)
+                {
+                    cursor.reset(new Cursor(rsp.GetQueryId()));
+
+                    rowsAffected = 0;
+                }
+                else
+                    cursor.reset();
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -227,9 +265,15 @@ namespace ignite
                 {
                     connection.SyncMessage(req, rsp);
                 }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
+
+                    return SqlResult::AI_ERROR;
+                }
                 catch (const IgniteError& err)
                 {
-                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
                     return SqlResult::AI_ERROR;
                 }
@@ -240,7 +284,7 @@ namespace ignite
                 {
                     LOG_MSG("Error: " << rsp.GetError());
 
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
 
                     return SqlResult::AI_ERROR;
                 }
@@ -259,9 +303,15 @@ namespace ignite
                 {
                     connection.SyncMessage(req, rsp);
                 }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
+
+                    return SqlResult::AI_ERROR;
+                }
                 catch (const IgniteError& err)
                 {
-                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
                     return SqlResult::AI_ERROR;
                 }
@@ -270,7 +320,7 @@ namespace ignite
                 {
                     LOG_MSG("Error: " << rsp.GetError());
 
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
 
                     return SqlResult::AI_ERROR;
                 }

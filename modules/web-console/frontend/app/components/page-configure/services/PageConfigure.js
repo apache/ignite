@@ -31,15 +31,17 @@ export default class PageConfigure {
     }
 
     onStateEnterRedirect(toState) {
-        if (toState.name !== 'base.configuration.tabs') return this.$q.resolve();
+        if (toState.name !== 'base.configuration.tabs')
+            return this.$q.resolve();
+
         return this.configuration.read()
-        .then((data) => {
-            this.loadList(data);
-            const nextState = data.clusters.length
-                ? 'base.configuration.tabs.advanced'
-                : 'base.configuration.tabs.basic';
-            return this.$state.go(nextState, null, {location: 'replace'});
-        });
+            .then((data) => {
+                this.loadList(data);
+
+                return this.$q.resolve(data.clusters.length
+                    ? 'base.configuration.tabs.advanced'
+                    : 'base.configuration.tabs.basic');
+            });
     }
 
     loadList(list) {

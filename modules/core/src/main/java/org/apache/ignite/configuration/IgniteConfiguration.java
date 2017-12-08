@@ -43,6 +43,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -74,6 +75,7 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
@@ -466,7 +468,11 @@ public class IgniteConfiguration {
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /** SQL connector configuration. */
-    private SqlConnectorConfiguration sqlConnCfg = new SqlConnectorConfiguration();
+    @Deprecated
+    private SqlConnectorConfiguration sqlConnCfg;
+
+    /** Client connector configuration. */
+    private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -512,6 +518,7 @@ public class IgniteConfiguration {
         classLdr = cfg.getClassLoader();
         clientFailureDetectionTimeout = cfg.getClientFailureDetectionTimeout();
         clientMode = cfg.isClientMode();
+        cliConnCfg = cfg.getClientConnectorConfiguration();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
         daemon = cfg.isDaemon();
@@ -2478,7 +2485,7 @@ public class IgniteConfiguration {
      * Gets configuration for ODBC.
      *
      * @return ODBC configuration.
-     * @deprecated Use {@link #getSqlConnectorConfiguration()} instead.
+     * @deprecated Use {@link #getClientConnectorConfiguration()} ()} instead.
      */
     @Deprecated
     public OdbcConfiguration getOdbcConfiguration() {
@@ -2490,7 +2497,7 @@ public class IgniteConfiguration {
      *
      * @param odbcCfg ODBC configuration.
      * @return {@code this} for chaining.
-     * @deprecated Use {@link #setSqlConnectorConfiguration(SqlConnectorConfiguration)} instead.
+     * @deprecated Use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
      */
     @Deprecated
     public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
@@ -2791,7 +2798,9 @@ public class IgniteConfiguration {
      *
      * @param sqlConnCfg SQL connector configuration.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setSqlConnectorConfiguration(SqlConnectorConfiguration sqlConnCfg) {
         this.sqlConnCfg = sqlConnCfg;
 
@@ -2802,9 +2811,32 @@ public class IgniteConfiguration {
      * Gets SQL connector configuration.
      *
      * @return SQL connector configuration.
+     * @deprecated Use {@link #getClientConnectorConfiguration()} instead.
      */
+    @Deprecated
     public SqlConnectorConfiguration getSqlConnectorConfiguration() {
         return sqlConnCfg;
+    }
+
+    /**
+     * Sets client connector configuration.
+     *
+     * @param cliConnCfg Client connector configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setClientConnectorConfiguration(@Nullable ClientConnectorConfiguration cliConnCfg) {
+        this.cliConnCfg = cliConnCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets client connector configuration.
+     *
+     * @return Client connector configuration.
+     */
+    @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
+        return cliConnCfg;
     }
 
     /** {@inheritDoc} */

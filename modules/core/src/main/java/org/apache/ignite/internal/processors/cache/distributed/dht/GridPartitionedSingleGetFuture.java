@@ -236,7 +236,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             final Collection<Integer> invalidParts = fut.invalidPartitions();
 
             if (!F.isEmpty(invalidParts)) {
-                AffinityTopologyVersion updTopVer = cctx.discovery().topologyVersionEx();
+                AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
                 assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology " +
                     "version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
@@ -442,7 +442,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     return true;
                 }
 
-                boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
+                boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().lastTopologyChangeVersion());
 
                 // Entry not found, complete future with null result if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {

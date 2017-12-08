@@ -28,29 +28,36 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 
 /**
- *
+ * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation}. <br>
+ * This Data entry was not converted to key, value pair during record deserialization.
  */
 public class LazyDataEntry extends DataEntry {
     /** */
     private GridCacheSharedContext cctx;
 
-    /** */
+    /** Data Entry key type code. See {@link CacheObject} for built-in value type codes */
     private byte keyType;
 
-    /** */
+    /** Key value bytes. */
     private byte[] keyBytes;
 
-    /** */
+    /** Data Entry Value type code. See {@link CacheObject} for built-in value type codes */
     private byte valType;
 
-    /** */
+    /** Value value bytes. */
     private byte[] valBytes;
 
     /**
+     * @param cctx Shared context.
      * @param cacheId Cache ID.
+     * @param keyType Object type code for Key.
+     * @param keyBytes Data Entry Key value bytes.
+     * @param valType Object type code for Value.
+     * @param valBytes Data Entry Value value bytes.
      * @param op Operation.
      * @param nearXidVer Near transaction version.
      * @param writeVer Write version.
+     * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
      */
@@ -113,4 +120,25 @@ public class LazyDataEntry extends DataEntry {
 
         return val;
     }
+
+    /** @return Data Entry Key type code. See {@link CacheObject} for built-in value type codes */
+    public byte getKeyType() {
+        return keyType;
+    }
+
+    /** @return Key value bytes. */
+    public byte[] getKeyBytes() {
+        return keyBytes;
+    }
+
+    /** @return Data Entry Value type code. See {@link CacheObject} for built-in value type codes */
+    public byte getValType() {
+        return valType;
+    }
+
+    /** @return Value value bytes. */
+    public byte[] getValBytes() {
+        return valBytes;
+    }
+
 }

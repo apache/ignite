@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Split forward page record.
@@ -89,27 +90,50 @@ public class SplitForwardPageRecord extends PageDeltaRecord {
         return RecordType.BTREE_FORWARD_PAGE_SPLIT;
     }
 
+    /**
+     *
+     */
     public long forwardId() {
         return fwdId;
     }
 
+    /**
+     *
+     */
     public int ioType() {
         return ioType;
     }
 
+    /**
+     *
+     */
     public int ioVersion() {
         return ioVer;
     }
 
+    /**
+     *
+     */
     public long sourcePageId() {
         return srcPageId;
     }
 
+    /**
+     *
+     */
     public int middleIndex() {
         return mid;
     }
 
+    /**
+     *
+     */
     public int count() {
         return cnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SplitForwardPageRecord.class, this, "super", super.toString());
     }
 }

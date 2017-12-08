@@ -22,8 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -34,6 +32,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.h2.H2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -51,9 +52,11 @@ import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.schema.SchemaObject;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
+import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -61,7 +64,6 @@ import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
  * H2 Table implementation.
@@ -71,7 +73,7 @@ public class GridH2Table extends TableBase {
     private final GridCacheContext cctx;
 
     /** */
-    private final GridH2RowDescriptor desc;
+    private final H2RowDescriptor desc;
 
     /** */
     private volatile ArrayList<Index> idxs;
@@ -95,16 +97,10 @@ public class GridH2Table extends TableBase {
     private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap8<>();
 
     /** */
-    private final AtomicReferenceArray<Object[]> actualSnapshot;
-
-    /** */
     private IndexColumn affKeyCol;
 
     /** */
     private final LongAdder8 size = new LongAdder8();
-
-    /** */
-    private final boolean snapshotEnabled;
 
     /** */
     private final H2RowFactory rowFactory;
@@ -118,6 +114,9 @@ public class GridH2Table extends TableBase {
     /** Identifier as string. */
     private final String identifierStr;
 
+    /** Flag remove index or not when table will be destroyed. */
+    private volatile boolean rmIndex;
+
     /**
      * Creates table.
      *
@@ -127,7 +126,7 @@ public class GridH2Table extends TableBase {
      * @param idxsFactory Indexes factory.
      * @param cctx Cache context.
      */
-    public GridH2Table(CreateTableData createTblData, @Nullable GridH2RowDescriptor desc, H2RowFactory rowFactory,
+    public GridH2Table(CreateTableData createTblData, H2RowDescriptor desc, H2RowFactory rowFactory,
         GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
         super(createTblData);
 
@@ -136,7 +135,7 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.cctx = cctx;
 
-        if (desc != null && desc.context() != null && !desc.context().customAffinityMapper()) {
+        if (desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
 
             String affKey = desc.type().affinityKey();
@@ -144,8 +143,12 @@ public class GridH2Table extends TableBase {
             int affKeyColId = -1;
 
             if (affKey != null) {
-                if (doesColumnExist(affKey))
+                if (doesColumnExist(affKey)) {
                     affKeyColId = getColumn(affKey).getColumnId();
+
+                    if (desc.isKeyColumn(affKeyColId))
+                        affKeyColId = KEY_COL;
+                }
                 else
                     affinityColExists = false;
             }
@@ -186,17 +189,9 @@ public class GridH2Table extends TableBase {
         else
             idxs.add(0, new GridH2PrimaryScanIndex(this, index(0), null));
 
-        snapshotEnabled = desc == null || desc.snapshotableIndex();
-
         pkIndexPos = hasHashIndex ? 2 : 1;
 
         sysIdxsCnt = idxs.size();
-
-        final int segments = desc != null ? desc.context().config().getQueryParallelism() :
-            // Get index segments count from PK index. Null desc can be passed from tests.
-            index(pkIndexPos).segmentsCount();
-
-        actualSnapshot = snapshotEnabled ? new AtomicReferenceArray<Object[]>(Math.max(segments, 1)) : null;
 
         lock = new ReentrantReadWriteLock();
     }
@@ -259,76 +254,7 @@ public class GridH2Table extends TableBase {
             throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
         }
 
-        if (snapshotInLock()) {
-            final GridH2QueryContext qctx = GridH2QueryContext.get();
-
-            assert qctx != null;
-
-            snapshotIndexes(null, qctx.segment());
-        }
-
         return false;
-    }
-
-    /**
-     * @return {@code True} If we must snapshot and release index snapshots in {@link #lock(Session, boolean, boolean)}
-     * and {@link #unlock(Session)} methods.
-     */
-    private boolean snapshotInLock() {
-        if (!snapshotEnabled)
-            return false;
-
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        // On MAP queries with distributed joins we lock tables before the queries.
-        return qctx == null || qctx.type() != MAP || !qctx.hasIndexSnapshots();
-    }
-
-    /**
-     * @param qctx Query context.
-     * @param segment id of index segment to be snapshoted.
-     */
-    public void snapshotIndexes(GridH2QueryContext qctx, int segment) {
-        if (!snapshotEnabled)
-            return;
-
-        Object[] segmentSnapshot;
-
-        // Try to reuse existing snapshots outside of the lock.
-        for (long waitTime = 200; ; waitTime *= 2) { // Increase wait time to avoid starvation.
-            segmentSnapshot = actualSnapshot.get(segment);
-
-            if (segmentSnapshot != null) { // Reuse existing snapshot without locking.
-                segmentSnapshot = doSnapshotIndexes(segment, segmentSnapshot, qctx);
-
-                if (segmentSnapshot != null)
-                    return; // Reused successfully.
-            }
-
-            if (tryLock(true, waitTime))
-                break;
-        }
-
-        try {
-            ensureNotDestroyed();
-
-            // Try again inside of the lock.
-            segmentSnapshot = actualSnapshot.get(segment);
-
-            if (segmentSnapshot != null) // Try reusing.
-                segmentSnapshot = doSnapshotIndexes(segment, segmentSnapshot, qctx);
-
-            if (segmentSnapshot == null) { // Reuse failed, produce new snapshots.
-                segmentSnapshot = doSnapshotIndexes(segment,null, qctx);
-
-                assert segmentSnapshot != null;
-
-                actualSnapshot.set(segment, segmentSnapshot);
-            }
-        }
-        finally {
-            unlock(true);
-        }
     }
 
     /**
@@ -364,27 +290,6 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * @param exclusive Exclusive lock.
-     * @param waitMillis Milliseconds to wait for the lock.
-     * @return Whether lock was acquired.
-     */
-    private boolean tryLock(boolean exclusive, long waitMillis) {
-        Lock l = exclusive ? lock.writeLock() : lock.readLock();
-
-        try {
-            if (!l.tryLock(waitMillis, TimeUnit.MILLISECONDS))
-                return false;
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
-        }
-
-        return true;
-    }
-
-    /**
      * Release table lock.
      *
      * @param exclusive Exclusive flag.
@@ -401,55 +306,6 @@ public class GridH2Table extends TableBase {
     private void ensureNotDestroyed() {
         if (destroyed)
             throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
-    }
-
-    /**
-     * Must be called inside of write lock because when using multiple indexes we have to ensure that all of them have
-     * the same contents at snapshot taking time.
-     *
-     * @param segment id of index segment snapshot.
-     * @param segmentSnapshot snapshot to be reused.
-     * @param qctx Query context.
-     * @return New indexes data snapshot.
-     */
-    @SuppressWarnings("unchecked")
-    private Object[] doSnapshotIndexes(int segment, Object[] segmentSnapshot, GridH2QueryContext qctx) {
-        assert snapshotEnabled;
-
-        //TODO: make HashIndex snapshotable or remove it at all?
-        if (segmentSnapshot == null) // Nothing to reuse, create new snapshots.
-            segmentSnapshot = new Object[idxs.size() - pkIndexPos];
-
-        // Take snapshots on all except first which is scan.
-        for (int i = pkIndexPos, len = idxs.size(); i < len; i++) {
-            Object s = segmentSnapshot[i - pkIndexPos];
-
-            boolean reuseExisting = s != null;
-
-            if (!(idxs.get(i) instanceof GridH2IndexBase))
-                continue;
-
-            s = index(i).takeSnapshot(s, qctx);
-
-            if (reuseExisting && s == null) { // Existing snapshot was invalidated before we were able to reserve it.
-                // Release already taken snapshots.
-                if (qctx != null)
-                    qctx.clearSnapshots();
-
-                for (int j = pkIndexPos; j < i; j++)
-                    if ((idxs.get(j) instanceof GridH2IndexBase))
-                        index(j).releaseSnapshot();
-
-                // Drop invalidated snapshot.
-                actualSnapshot.compareAndSet(segment, segmentSnapshot, null);
-
-                return null;
-            }
-
-            segmentSnapshot[i - pkIndexPos] = s;
-        }
-
-        return segmentSnapshot;
     }
 
     /** {@inheritDoc} */
@@ -475,7 +331,7 @@ public class GridH2Table extends TableBase {
 
                     // We have to call destroy here if we are who has removed this index from the table.
                     if (idx instanceof GridH2IndexBase)
-                        ((GridH2IndexBase)idx).destroy();
+                        ((GridH2IndexBase)idx).destroy(rmIndex);
                 }
             }
 
@@ -511,11 +367,20 @@ public class GridH2Table extends TableBase {
 
             for (int i = 1, len = idxs.size(); i < len; i++)
                 if (idxs.get(i) instanceof GridH2IndexBase)
-                    index(i).destroy();
+                    index(i).destroy(rmIndex);
         }
         finally {
             unlock(true);
         }
+    }
+
+    /**
+     * If flag {@code True}, index will be destroyed when table {@link #destroy()}.
+     *
+     * @param rmIndex Flag indicate remove index on destroy or not.
+     */
+    public void setRemoveIndexOnDestroy(boolean rmIndex){
+        this.rmIndex = rmIndex;
     }
 
     /** {@inheritDoc} */
@@ -525,29 +390,7 @@ public class GridH2Table extends TableBase {
         if (exclusive == null)
             return;
 
-        if (snapshotInLock())
-            releaseSnapshots();
-
         unlock(exclusive);
-    }
-
-    /**
-     * Releases snapshots.
-     */
-    public void releaseSnapshots() {
-        if (!snapshotEnabled)
-            return;
-
-        releaseSnapshots0(idxs);
-    }
-
-    /**
-     * @param idxs Indexes.
-     */
-    private void releaseSnapshots0(ArrayList<Index> idxs) {
-        // Release snapshots on all except first which is scan and second which is hash.
-        for (int i = 2, len = idxs.size(); i < len; i++)
-            ((GridH2IndexBase)idxs.get(i)).releaseSnapshot();
     }
 
     /**
@@ -699,10 +542,6 @@ public class GridH2Table extends TableBase {
                 else
                     return false;
             }
-
-            // The snapshot is not actual after update.
-            if (actualSnapshot != null)
-                actualSnapshot.set(pk.segmentForRow(row), null);
 
             return true;
         }
@@ -1118,5 +957,57 @@ public class GridH2Table extends TableBase {
         }
 
         return null;
+    }
+
+    /**
+     * Add new columns to this table.
+     *
+     * @param cols Columns to add.
+     * @param ifNotExists Ignore this command if {@code cols} has size of 1 and column with given name already exists.
+     */
+    public void addColumns(List<QueryField> cols, boolean ifNotExists) {
+        assert !ifNotExists || cols.size() == 1;
+
+        lock(true);
+
+        try {
+            int pos = columns.length;
+
+            Column[] newCols = new Column[columns.length + cols.size()];
+
+            // First, let's copy existing columns to new array
+            System.arraycopy(columns, 0, newCols, 0, columns.length);
+
+            // And now, let's add new columns
+            for (QueryField col : cols) {
+                if (doesColumnExist(col.name())) {
+                    if (ifNotExists && cols.size() == 1)
+                        return;
+                    else
+                        throw new IgniteSQLException("Column already exists [tblName=" + getName() +
+                            ", colName=" + col.name() + ']');
+                }
+
+                try {
+                    Column c = new Column(col.name(), DataType.getTypeFromClass(Class.forName(col.typeName())));
+
+                    c.setNullable(col.isNullable());
+
+                    newCols[pos++] = c;
+                }
+                catch (ClassNotFoundException e) {
+                    throw new IgniteSQLException("H2 data type not found for class: " + col.typeName(), e);
+                }
+            }
+
+            setColumns(newCols);
+
+            desc.refreshMetadataFromTypeDescriptor();
+
+            setModified();
+        }
+        finally {
+            unlock(true);
+        }
     }
 }

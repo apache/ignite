@@ -32,6 +32,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,6 +47,9 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final int MAX_MEMORY_SIZE = 10 * 1024 * 1024;
+
+    /** */
+    private static final PageIO PAGE_IO = new DummyPageIO();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -226,6 +230,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
                     assertNotNull(pageAddr);
 
                     try {
+                        PAGE_IO.initNewPage(pageAddr, id.pageId(), mem.pageSize());
+
                         long updId = PageIdUtils.rotatePageId(id.pageId());
 
                         PageIO.setPageId(pageAddr, updId);
@@ -334,7 +340,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         long pageAddr = mem.writeLock(-1, pageId, page);
 
         try {
-            PageIO.setPageId(pageAddr, pageId);
+            PAGE_IO.initNewPage(pageAddr, pageId, mem.pageSize());
 
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++)
                 PageUtils.putByte(pageAddr, i, (byte)val);
@@ -355,7 +361,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
         long pageAddr = mem.readLock(-1, pageId, page);
 
-        assert(pageAddr != 0);
+        assert (pageAddr != 0);
 
         try {
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++) {

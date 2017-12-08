@@ -129,6 +129,69 @@ namespace ignite
                     /** Value. */
                     T val;
                 };
+
+                /**
+                 * Query bytes array argument class.
+                 */
+                class QueryInt8ArrayArgument : public QueryArgumentBase
+                {
+                public:
+                    /**
+                     * Constructor.
+                     *
+                     * @param src Array.
+                     * @param len Array length.
+                     */
+                    QueryInt8ArrayArgument(const int8_t* src, int32_t len) :
+                        val(src, src + len)
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Copy constructor.
+                     *
+                     * @param other Other instance.
+                     */
+                    QueryInt8ArrayArgument(const QueryInt8ArrayArgument& other) :
+                        val(other.val)
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Assignment operator.
+                     *
+                     * @param other Other instance.
+                     * @return *this.
+                     */
+                    QueryInt8ArrayArgument& operator=(const QueryInt8ArrayArgument& other)
+                    {
+                        if (this != &other)
+                            val = other.val;
+
+                        return *this;
+                    }
+
+                    virtual ~QueryInt8ArrayArgument()
+                    {
+                        // No-op.
+                    }
+
+                    virtual QueryArgumentBase* Copy() const
+                    {
+                        return new QueryInt8ArrayArgument(*this);
+                    }
+
+                    virtual void Write(ignite::binary::BinaryRawWriter& writer)
+                    {
+                        writer.WriteInt8Array(&val[0], static_cast<int32_t>(val.size()));
+                    }
+
+                private:
+                    /** Value. */
+                    std::vector<int8_t> val;
+                };
             }
         }
     }

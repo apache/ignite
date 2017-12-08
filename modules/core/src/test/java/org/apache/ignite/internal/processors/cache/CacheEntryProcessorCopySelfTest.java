@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -149,7 +150,15 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            CacheObject obj = ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(0).peekVisibleValue();
+            GridCacheAdapter ca = (GridCacheAdapter)((IgniteCacheProxy)cache).internalProxy().delegate();
+
+            GridCacheEntryEx entry = ca.entryEx(0);
+
+            entry.unswap();
+
+            CacheObject obj = entry.peekVisibleValue();
+
+            ca.context().evicts().touch(entry, AffinityTopologyVersion.NONE);
 
             int actCnt = cnt.get();
 
