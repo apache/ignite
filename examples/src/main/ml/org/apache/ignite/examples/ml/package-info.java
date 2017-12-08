@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
-
-import org.apache.ignite.ml.math.Vector;
-
-import static org.junit.Assert.assertTrue;
-
-/** Utilities for k-means tests. */
-class KMeansUtil {
-    /** */
-    static void checkIsInEpsilonNeighbourhood(Vector[] v1s, Vector[] v2s, double epsilon) {
-        for (int i = 0; i < v1s.length; i++) {
-            assertTrue("Not in epsilon neighbourhood (index " + i + ") ",
-                v1s[i].minus(v2s[i]).kNorm(2) < epsilon);
-        }
-    }
-}
+/**
+ * <!-- Package description. -->
+ * Machine learning examples.
+ */
+package org.apache.ignite.examples.ml;

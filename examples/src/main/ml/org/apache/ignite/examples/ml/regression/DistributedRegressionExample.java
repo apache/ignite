@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.math.regression;
+package org.apache.ignite.examples.ml.regression;
 
 import java.util.Arrays;
 import org.apache.ignite.Ignite;

@@ -307,14 +307,14 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      * @return Client instance to use to connect to AWS.
      */
     private AmazonS3Client createAmazonS3Client() {
-        AmazonS3Client cli = cfg != null
+        AmazonS3Client cln = cfg != null
             ? (cred != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(credProvider, cfg))
             : (cred != null ? new AmazonS3Client(cred) : new AmazonS3Client(credProvider));
 
         if (!F.isEmpty(bucketEndpoint))
-            cli.setEndpoint(bucketEndpoint);
+            cln.setEndpoint(bucketEndpoint);
 
-        return cli;
+        return cln;
     }
 
     /**

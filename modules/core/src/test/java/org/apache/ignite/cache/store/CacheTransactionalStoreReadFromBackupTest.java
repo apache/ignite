@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
+package org.apache.ignite.cache.store;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
-import static org.junit.Assert.assertTrue;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
-/** Utilities for k-means tests. */
-class KMeansUtil {
-    /** */
-    static void checkIsInEpsilonNeighbourhood(Vector[] v1s, Vector[] v2s, double epsilon) {
-        for (int i = 0; i < v1s.length; i++) {
-            assertTrue("Not in epsilon neighbourhood (index " + i + ") ",
-                v1s[i].minus(v2s[i]).kNorm(2) < epsilon);
-        }
+/**
+ *
+ */
+public class CacheTransactionalStoreReadFromBackupTest extends CacheStoreReadFromBackupTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }

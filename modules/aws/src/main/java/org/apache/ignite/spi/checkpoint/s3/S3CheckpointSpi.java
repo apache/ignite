@@ -76,6 +76,7 @@ import org.jetbrains.annotations.Nullable;
  *      <li>Client configuration (see {@link #setClientConfiguration(ClientConfiguration)})</li>
  *      <li>Bucket endpoint (see {@link #setBucketEndpoint(String)})</li>
  *      <li>Server side encryption algorithm (see {@link #setSSEAlgorithm(String)})</li>
+ * <li>{@link #setBucketEndpoint(String)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * {@link S3CheckpointSpi} can be configured as follows:
@@ -273,7 +274,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
      * For information about possible endpoint names visit
      * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>
      *
-     * @param bucketEndpoint Bucket endpoint, for example, s3.us-east-2.amazonaws.com.
+     * @param bucketEndpoint Bucket endpoint, for example, {@code }s3.us-east-2.amazonaws.com.
      * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)

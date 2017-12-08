@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Decision trees examples.
+ * Contains cache configurations for columnbased decision tree trainer with some related logic.
  */
-package org.apache.ignite.examples.ml.math.trees;
+package org.apache.ignite.ml.trees.trainers.columnbased.caches;
