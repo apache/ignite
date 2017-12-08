@@ -92,8 +92,10 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param near Near flag.
      */
     private void initialize(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near)
-        throws IgniteCheckedException {
+        throws Exception {
         createSqlCache(node(), cacheConfiguration(mode, atomicityMode, near));
+
+        awaitPartitionMapExchange();
 
         grid(IDX_CLI_NEAR_ONLY).getOrCreateNearCache(CACHE_NAME, new NearCacheConfiguration<>());
 
