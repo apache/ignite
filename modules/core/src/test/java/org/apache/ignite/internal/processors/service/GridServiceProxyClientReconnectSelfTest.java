@@ -78,9 +78,13 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
             }
         }, EventType.EVT_CLIENT_NODE_RECONNECTED);
 
-        stopGrid("server");
+        if (tcpDiscovery()) {
+            stopGrid("server");
 
-        startGrid("server");
+            startGrid("server");
+        }
+        else
+            reconnectClient(log, client);
 
         assert latch.await(10, TimeUnit.SECONDS);
 

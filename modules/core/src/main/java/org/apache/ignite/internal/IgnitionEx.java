@@ -2290,6 +2290,7 @@ public class IgnitionEx {
 
                 ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
 
+                zkSpi.setSessionTimeout(20_000);
                 zkSpi.setZkConnectionString(zkCluster.getConnectString());
 
                 myCfg.setDiscoverySpi(zkSpi);

@@ -1090,7 +1090,9 @@ public abstract class GridAbstractTest extends TestCase {
             for (Ignite g : srvs)
                 stopGrid(g.name(), cancel, false);
 
-            assert G.allGrids().isEmpty();
+            List<Ignite> nodes = G.allGrids();
+
+            assert nodes.isEmpty() : nodes;
         }
         finally {
             IgniteProcessProxy.killAll(); // In multi-JVM case.

@@ -2220,7 +2220,7 @@ public class ZookeeperDiscoveryImpl {
     private <T> T unmarshalZip(byte[] bytes) throws IgniteCheckedException {
         assert bytes != null && bytes.length > 0;
 
-        return U.unmarshalZip(marsh, bytes, null);
+        return U.unmarshalZip(marsh, bytes, U.resolveClassLoader(spi.ignite().configuration()));
     }
 
     /**
@@ -2511,7 +2511,7 @@ public class ZookeeperDiscoveryImpl {
                 return;
 
             try {
-                assert rc == 0 : rc;
+                assert rc == 0 : KeeperException.Code.get(rc);
 
                 checkIsCoordinator(rc, children);
 
