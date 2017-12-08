@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils.BackupPostProcessingClosure;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -125,6 +127,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     /** */
     @GridToStringInclude
     private ClusterNode node;
+
+    /** Post processing closure. */
+    private volatile BackupPostProcessingClosure postProcessingClos;
 
     /**
      * @param cctx Context.
@@ -268,6 +273,17 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 trackable = true;
 
                 cctx.mvcc().addFuture(this, futId);
+            }
+
+            boolean needVer = this.needVer;
+
+            final BackupPostProcessingClosure postClos = CU.createBackupPostProcessingClosure(topVer, log, cctx, key, readThrough, skipVals);
+
+            if (postClos != null) {
+                // Need version to correctly store value.
+                needVer = true;
+
+                postProcessingClos = postClos;
             }
 
             GridCacheMessage req;
@@ -491,6 +507,12 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         else {
             if (skipVals)
                 setSkipValueResult(res.containsValue(), null);
+            else if (readThrough && res0 instanceof CacheVersionedValue) {
+                // Could be versioned value for store in backup.
+                CacheVersionedValue verVal = (CacheVersionedValue)res0;
+
+                setResult(verVal.value(), verVal.version());
+            }
             else
                 setResult((CacheObject)res0, null);
         }
@@ -629,6 +651,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             assert !skipVals;
 
             if (val != null) {
+                if (postProcessingClos != null)
+                    postProcessingClos.apply(val, ver);
+
                 if (!keepCacheObjects) {
                     Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
 
