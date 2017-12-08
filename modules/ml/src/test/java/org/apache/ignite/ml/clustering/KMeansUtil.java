@@ -21,10 +21,10 @@ import org.apache.ignite.ml.math.Vector;
 
 import static org.junit.Assert.assertTrue;
 
-/** Base test for k-means algorithms. */
-public class KMeansUtil {
+/** Utilities for k-means tests. */
+class KMeansUtil {
     /** */
-    public static void checkIsInEpsilonNeighbourhood(Vector[] v1s, Vector[] v2s, double epsilon) {
+    static void checkIsInEpsilonNeighbourhood(Vector[] v1s, Vector[] v2s, double epsilon) {
         for (int i = 0; i < v1s.length; i++) {
             assertTrue("Not in epsilon neighbourhood (index " + i + ") ",
                 v1s[i].minus(v2s[i]).kNorm(2) < epsilon);

@@ -815,6 +815,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackOsInfo();
         ackLanguageRuntime();
         ackRemoteManagement();
+        ackLogger();
         ackVmArguments(rtBean);
         ackClassPaths(rtBean);
         ackSystemProperties();
@@ -1982,6 +1983,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     * Acks Logger configuration.
+     */
+    private void ackLogger() {
+        assert log != null;
+
+        if (log.isInfoEnabled())
+            log.info("Logger: " + log.getLoggerInfo() );
+    }
+
+    /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
      */
     private void ackAsciiLogo() {
@@ -2024,6 +2035,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 if (fileName != null)
                     U.quiet(false, "  ^-- Logging to file '" + fileName + '\'');
+
+                U.quiet(false, "  ^-- Logging by '" + log.getLoggerInfo() + '\'');
 
                 U.quiet(false,
                     "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite.{sh|bat}",
