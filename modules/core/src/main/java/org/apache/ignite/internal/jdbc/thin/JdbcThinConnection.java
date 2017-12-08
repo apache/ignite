@@ -51,17 +51,6 @@ import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_AUTO_CLOSE_SERVER_CURSORS;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_LAZY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_REPLICATED_ONLY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_RCV_BUF;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DELAY;
 
 /**
  * JDBC connection implementation.
@@ -102,19 +91,25 @@ public class JdbcThinConnection implements Connection {
     /** Jdbc metadata. Cache the JDBC object on the first access */
     private JdbcThinDatabaseMetadata metadata;
 
+    /** Connection properties. */
+    private ConnectionProperties connProps;
+
     /**
      * Creates new connection.
      *
      * @param url Connection URL.
-     * @param props Additional properties.
      * @param schema Schema name.
+     * @param props Connection properties.
      * @throws SQLException In case Ignite client failed to start.
      */
-    public JdbcThinConnection(String url, Properties props, String schema) throws SQLException {
+    public JdbcThinConnection(String url, String schema, Properties props) throws SQLException {
         assert url != null;
-        assert props != null;
 
         this.url = url;
+
+        connProps = new ConnectionPropertiesImpl();
+
+        ((ConnectionPropertiesImpl)connProps).init(props);
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
@@ -122,32 +117,16 @@ public class JdbcThinConnection implements Connection {
 
         this.schema = normalizeSchema(schema);
 
-        String host = extractHost(props);
-        int port = extractPort(props);
-
-        boolean distributedJoins = extractBoolean(props, PROP_DISTRIBUTED_JOINS, false);
-        boolean enforceJoinOrder = extractBoolean(props, PROP_ENFORCE_JOIN_ORDER, false);
-        boolean collocated = extractBoolean(props, PROP_COLLOCATED, false);
-        boolean replicatedOnly = extractBoolean(props, PROP_REPLICATED_ONLY, false);
-        boolean autoCloseServerCursor = extractBoolean(props, PROP_AUTO_CLOSE_SERVER_CURSORS, false);
-        boolean lazyExec = extractBoolean(props, PROP_LAZY, false);
-
-        int sockSndBuf = extractIntNonNegative(props, PROP_SOCK_SND_BUF, 0);
-        int sockRcvBuf = extractIntNonNegative(props, PROP_SOCK_RCV_BUF, 0);
-
-        boolean tcpNoDelay  = extractBoolean(props, PROP_TCP_NO_DELAY, true);
-
         try {
-            cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder, collocated, replicatedOnly,
-                autoCloseServerCursor, lazyExec, sockSndBuf, sockRcvBuf, tcpNoDelay);
+            cliIo = new JdbcThinTcpIo(connProps);
 
             cliIo.start();
         }
         catch (Exception e) {
             cliIo.close();
 
-            throw new SQLException("Failed to connect to Ignite cluster [host=" + host + ", port=" + port + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Failed to connect to Ignite cluster [host=" + connProps.getHost() +
+                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 
@@ -168,7 +147,7 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability);
+        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, schema);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -197,7 +176,7 @@ public class JdbcThinConnection implements Connection {
         if (sql == null)
             throw new SQLException("SQL string cannot be null.");
 
-        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability);
+        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability, schema);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -592,7 +571,7 @@ public class JdbcThinConnection implements Connection {
     @Override public void setSchema(String schema) throws SQLException {
         ensureNotClosed();
 
-        this.schema = schema;
+        this.schema = normalizeSchema(schema);
     }
 
     /** {@inheritDoc} */
@@ -651,7 +630,7 @@ public class JdbcThinConnection implements Connection {
      * @return Auto close server cursors flag.
      */
     boolean autoCloseServerCursor() {
-        return cliIo.autoCloseServerCursor();
+        return connProps.isAutoCloseServerCursor();
     }
 
     /**
@@ -677,120 +656,6 @@ public class JdbcThinConnection implements Connection {
             close();
 
             throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
-        }
-    }
-
-    /**
-     * Extract host.
-     *
-     * @param props Properties.
-     * @return Host.
-     * @throws SQLException If failed.
-     */
-    private static String extractHost(Properties props) throws SQLException {
-        String host = props.getProperty(PROP_HOST);
-
-        if (host != null)
-            host = host.trim();
-
-        if (F.isEmpty(host))
-            throw new SQLException("Host name is empty.", SqlStateCode.CLIENT_CONNECTION_FAILED);
-
-        return host;
-    }
-
-    /**
-     * Extract port.
-     *
-     * @param props Properties.
-     * @return Port.
-     * @throws SQLException If failed.
-     */
-    private static int extractPort(Properties props) throws SQLException {
-        String portStr = props.getProperty(PROP_PORT);
-
-        if (portStr == null)
-            return JdbcThinUtils.DFLT_PORT;
-
-        int port;
-
-        try {
-            port = Integer.parseInt(portStr);
-
-            if (port <= 0 || port > 0xFFFF)
-                throw new SQLException("Invalid port: " + portStr, SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
-        catch (NumberFormatException e) {
-            throw new SQLException("Invalid port: " + portStr, SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
-
-        return port;
-    }
-
-    /**
-     * Extract boolean property.
-     *
-     * @param props Properties.
-     * @param propName Property name.
-     * @param dfltVal Default value.
-     * @return Value.
-     * @throws SQLException If failed.
-     */
-    private static boolean extractBoolean(Properties props, String propName, boolean dfltVal) throws SQLException {
-        String strVal = props.getProperty(propName);
-
-        if (strVal == null)
-            return dfltVal;
-
-        if (Boolean.TRUE.toString().equalsIgnoreCase(strVal))
-            return true;
-        else if (Boolean.FALSE.toString().equalsIgnoreCase(strVal))
-            return false;
-        else
-            throw new SQLException("Failed to parse boolean property [name=" + JdbcThinUtils.trimPrefix(propName) +
-                ", value=" + strVal + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
-    }
-
-    /**
-     * Extract non-negative int property.
-     *
-     * @param props Properties.
-     * @param propName Property name.
-     * @param dfltVal Default value.
-     * @return Value.
-     * @throws SQLException If failed.
-     */
-    private static int extractIntNonNegative(Properties props, String propName, int dfltVal) throws SQLException {
-        int res = extractInt(props, propName, dfltVal);
-
-        if (res < 0)
-            throw new SQLException("Property cannot be negative [name=" + JdbcThinUtils.trimPrefix(propName) +
-                ", value=" + res + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
-
-        return res;
-    }
-
-    /**
-     * Extract int property.
-     *
-     * @param props Properties.
-     * @param propName Property name.
-     * @param dfltVal Default value.
-     * @return Value.
-     * @throws SQLException If failed.
-     */
-    private static int extractInt(Properties props, String propName, int dfltVal) throws SQLException {
-        String strVal = props.getProperty(propName);
-
-        if (strVal == null)
-            return dfltVal;
-
-        try {
-            return Integer.parseInt(strVal);
-        }
-        catch (NumberFormatException e) {
-            throw new SQLException("Failed to parse int property [name=" + JdbcThinUtils.trimPrefix(propName) +
-                ", value=" + strVal + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
         }
     }
 

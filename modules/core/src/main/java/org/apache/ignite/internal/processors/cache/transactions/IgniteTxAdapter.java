@@ -1116,8 +1116,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                             nearXidVersion(),
                             writeVersion(),
                             participatingNodes,
-                            remote() ? nodeId() : null,
-                            U.currentTimeMillis()
+                            remote() ? nodeId() : null
                     );
 
                     try {

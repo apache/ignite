@@ -457,10 +457,16 @@ public class GridSqlQueryParser {
     private static final String PARAM_ATOMICITY = "ATOMICITY";
 
     /** */
-    private static final String PARAM_CACHE_GROUP = "CACHEGROUP";
+    private static final String PARAM_CACHE_GROUP_OLD = "CACHEGROUP";
 
     /** */
-    private static final String PARAM_AFFINITY_KEY = "AFFINITYKEY";
+    private static final String PARAM_AFFINITY_KEY_OLD = "AFFINITYKEY";
+
+    /** */
+    private static final String PARAM_CACHE_GROUP = "CACHE_GROUP";
+
+    /** */
+    private static final String PARAM_AFFINITY_KEY = "AFFINITY_KEY";
 
     /** */
     private static final String PARAM_WRITE_SYNC = "WRITE_SYNCHRONIZATION_MODE";
@@ -473,6 +479,15 @@ public class GridSqlQueryParser {
 
     /** */
     private static final String PARAM_VAL_TYPE = "VALUE_TYPE";
+
+    /** */
+    private static final String PARAM_WRAP_KEY = "WRAP_KEY";
+
+    /** */
+    public static final String PARAM_WRAP_VALUE = "WRAP_VALUE";
+
+    /** Data region name. */
+    public static final String PARAM_DATA_REGION = "DATA_REGION";
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -1007,7 +1022,8 @@ public class GridSqlQueryParser {
             pkCols.add(gridCol.columnName());
         }
 
-        int valColsNum = cols.size() - pkCols.size();
+        int keyColsNum = pkCols.size();
+        int valColsNum = cols.size() - keyColsNum;
 
         if (valColsNum == 0)
             throw new IgniteSQLException("Table must have at least one non PRIMARY KEY column.",
@@ -1052,6 +1068,44 @@ public class GridSqlQueryParser {
                 processExtraParam(e.getKey(), e.getValue(), res);
         }
 
+        // Process key wrapping.
+        Boolean wrapKey = res.wrapKey();
+
+        if (wrapKey != null && !wrapKey) {
+            if (keyColsNum > 1) {
+                throw new IgniteSQLException(PARAM_WRAP_KEY + " cannot be false when composite primary key exists.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(res.keyTypeName())) {
+                throw new IgniteSQLException(PARAM_WRAP_KEY + " cannot be false when " + PARAM_KEY_TYPE + " is set.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+        }
+
+        boolean wrapKey0 = (res.wrapKey() != null && res.wrapKey()) || !F.isEmpty(res.keyTypeName()) || keyColsNum > 1;
+
+        res.wrapKey(wrapKey0);
+
+        // Process value wrapping.
+        Boolean wrapVal = res.wrapValue();
+
+        if (wrapVal != null && !wrapVal) {
+            if (valColsNum > 1) {
+                throw new IgniteSQLException(PARAM_WRAP_VALUE + " cannot be false when multiple non-primary key " +
+                    "columns exist.", IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(res.valueTypeName())) {
+                throw new IgniteSQLException(PARAM_WRAP_VALUE + " cannot be false when " + PARAM_VAL_TYPE + " is set.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            res.wrapValue(false);
+        }
+        else
+            res.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+
         if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
             throw new IgniteSQLException("Key and value type names " +
                 "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);
@@ -1059,7 +1113,7 @@ public class GridSqlQueryParser {
         if (res.affinityKey() == null) {
             LinkedHashSet<String> pkCols0 = res.primaryKeyColumns();
 
-            if (!F.isEmpty(pkCols0) && pkCols0.size() == 1)
+            if (!F.isEmpty(pkCols0) && pkCols0.size() == 1 && wrapKey0)
                 res.affinityKey(pkCols0.iterator().next());
         }
 
@@ -1269,6 +1323,7 @@ public class GridSqlQueryParser {
 
                 break;
 
+            case PARAM_CACHE_GROUP_OLD:
             case PARAM_CACHE_GROUP:
                 ensureNotEmpty(name, val);
 
@@ -1276,6 +1331,7 @@ public class GridSqlQueryParser {
 
                 break;
 
+            case PARAM_AFFINITY_KEY_OLD:
             case PARAM_AFFINITY_KEY:
                 ensureNotEmpty(name, val);
 
@@ -1333,6 +1389,24 @@ public class GridSqlQueryParser {
                         "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): " + val, IgniteQueryErrorCode.PARSING);
 
                 res.writeSynchronizationMode(writeSyncMode);
+
+                break;
+
+            case PARAM_WRAP_KEY: {
+                res.wrapKey(F.isEmpty(val) || Boolean.parseBoolean(val));
+
+                break;
+            }
+
+            case PARAM_WRAP_VALUE:
+                res.wrapValue(F.isEmpty(val) || Boolean.parseBoolean(val));
+
+                break;
+
+            case PARAM_DATA_REGION:
+                ensureNotEmpty(name, val);
+
+                res.dataRegionName(val);
 
                 break;
 

@@ -45,6 +45,9 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        //protection if test failed to finish, e.g. by error
+        stopAllGrids();
+
         assert deleteDefaultDBWorkDirectory() : "Couldn't delete DB work directory.";
     }
 

@@ -34,12 +34,18 @@ include /app/helpers/jade/mixins
         .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
             .col-sm-6
                 //- Since ignite 2.0
-                div(ng-if='$ctrl.available("2.0.0")')
-                    .settings-row
+                .settings-row(ng-if='$ctrl.available("2.0.0")')
                         +checkbox('Onheap cache enabled', model + '.onheapCacheEnabled', '"OnheapCacheEnabled"', 'Checks if the on-heap cache is enabled for the off-heap based page memory')
-                    .settings-row
-                        +text('Memory policy name:', model + '.memoryPolicyName', '"MemoryPolicyName"', 'false', 'default',
-                            'Name of memory policy configuration for this cache')
+
+                //- Since ignite 2.0 deprecated in ignite 2.3
+                .settings-row(ng-if='$ctrl.available(["2.0.0", "2.3.0"])')
+                    +text('Memory policy name:', model + '.memoryPolicyName', '"MemoryPolicyName"', 'false', 'default',
+                        'Name of memory policy configuration for this cache')
+
+                //- Since ignite 2.3
+                .settings-row(ng-if='$ctrl.available("2.3.0")')
+                    +text('Data region name:', model + '.dataRegionName', '"DataRegionName"', 'false', 'default',
+                        'Name of data region configuration for this cache')
 
                 //- Removed in ignite 2.0
                 div(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')

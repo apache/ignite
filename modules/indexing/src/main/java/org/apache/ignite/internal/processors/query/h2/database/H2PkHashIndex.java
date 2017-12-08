@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -85,7 +85,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, final SearchRow lower, final SearchRow upper) {
         IndexingQueryFilter f = threadLocalFilter();
-        IgniteBiPredicate<Object, Object> p = null;
+        IndexingQueryCacheFilter p = null;
 
         if (f != null) {
             String cacheName = getTable().cacheName();
@@ -131,12 +131,28 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putx(GridH2Row row) {
+        // Should not be called directly. Rows are inserted into underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("putx");
+    }
+
+    /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         // Should not be called directly. Rows are removed from underlying cache data stores.
 
         assert false;
 
         throw DbException.getUnsupportedException("remove");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removex(SearchRow row) {
+        // Should not be called directly. Rows are removed from underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("removex");
     }
 
     /** {@inheritDoc} */
@@ -179,13 +195,13 @@ public class H2PkHashIndex extends GridH2IndexBase {
         final GridCursor<? extends CacheDataRow> cursor;
 
         /** */
-        final IgniteBiPredicate<Object, Object> filter;
+        final IndexingQueryCacheFilter filter;
 
         /**
          * @param cursor Cursor.
          * @param filter Filter.
          */
-        private H2Cursor(GridCursor<? extends CacheDataRow> cursor, IgniteBiPredicate<Object, Object> filter) {
+        private H2Cursor(GridCursor<? extends CacheDataRow> cursor, IndexingQueryCacheFilter filter) {
             assert cursor != null;
 
             this.cursor = cursor;
@@ -197,11 +213,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
             try {
                 CacheDataRow dataRow = cursor.get();
 
-                GridH2Row row = tbl.rowDescriptor().createRow(dataRow.key(), dataRow.partition(), dataRow.value(), dataRow.version(), 0);
-
-                row.link(dataRow.link());
-
-                return row;
+                return tbl.rowDescriptor().createRow(dataRow);
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
@@ -222,17 +234,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
                     CacheDataRow dataRow = cursor.get();
 
-                    GridH2Row row = tbl.rowDescriptor().createRow(dataRow.key(), dataRow.partition(), dataRow.value(), dataRow.version(), 0);
-
-                    row.link(dataRow.link());
-
-                    Object key = row.getValue(0).getObject();
-                    Object val = row.getValue(1).getObject();
-
-                    assert key != null;
-                    assert val != null;
-
-                    if (filter.apply(key, val))
+                    if (filter.applyPartition(dataRow.partition()))
                         return true;
                 }
 

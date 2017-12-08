@@ -87,7 +87,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -283,8 +282,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return /*cacheId*/ 4 + /*pageId*/ 8;
 
             case SWITCH_SEGMENT_RECORD:
-                // CRC is not loaded for switch segment.
-                return -CRC_SIZE;
+                return 0;
 
             case TX_RECORD:
                 return txRecordSerializer.sizeOfTxRecord((TxRecord)record);
@@ -384,16 +382,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 for (int i = 0; i < entryCnt; i++)
                     entries.add(readDataEntry(in));
 
-                res = new DataRecord(entries);
+                res = new DataRecord(entries, 0L);
 
                 break;
 
             case HEADER_RECORD:
                 long magic = in.readLong();
 
-                if (magic != HeaderRecord.MAGIC)
-                    throw new EOFException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.MAGIC) +
-                            ", actual=" + U.hexLong(magic) + ']');
+                if (magic != HeaderRecord.REGULAR_MAGIC && magic != HeaderRecord.COMPACTED_MAGIC)
+                    throw new EOFException("Magic is corrupted [actual=" + U.hexLong(magic) + ']');
 
                 int ver = in.readInt();
 
@@ -912,7 +909,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case HEADER_RECORD:
-                buf.putLong(HeaderRecord.MAGIC);
+                buf.putLong(HeaderRecord.REGULAR_MAGIC);
 
                 buf.putInt(((HeaderRecord)record).version());
 
@@ -1322,7 +1319,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param buf Buffer to write to.
      * @param entry Data entry.
      */
-    private static void putDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
+    static void putDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
         buf.putInt(entry.cacheId());
 
         if (!entry.key().putValue(buf))
@@ -1390,7 +1387,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param in Input to read from.
      * @return Read entry.
      */
-    private DataEntry readDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    DataEntry readDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         int cacheId = in.readInt();
 
         int keySize = in.readInt();

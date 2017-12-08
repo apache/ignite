@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -55,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         protected virtual IBinaryNameMapper GetNameMapper()
         {
-            return BinaryBasicNameMapper.FullNameInstance;
+            return new BinaryBasicNameMapper {IsSimpleName = false};
         }
 
         /// <summary>
@@ -100,6 +99,44 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Test key existence.
             Assert.IsTrue(cache.ContainsKey(1));
             Assert.IsTrue(cache.ContainsKey(3));
+        }
+
+        /// <summary>
+        /// Tests the NotNull constraint.
+        /// </summary>
+        [Test]
+        public void TestNotNull()
+        {
+            var cfg = new CacheConfiguration("not_null", new QueryEntity(typeof(int), typeof(Foo))
+            {
+                Fields = new[]
+                {
+                    new QueryField("id", typeof(int)) {NotNull = true}, 
+                    new QueryField("name", typeof(string)) 
+                }
+            });
+
+            var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
+
+            var ex = Assert.Throws<IgniteException>(() => cache.QueryFields(new SqlFieldsQuery(
+                "insert into foo(_key, name) values (?, ?)", 1, "bar")).GetAll());
+
+            Assert.AreEqual("Null value is not allowed for column 'ID'", ex.Message);
+        }
+
+        /// <summary>
+        /// Tests the NotNull constraint.
+        /// </summary>
+        [Test]
+        public void TestNotNullAttribute()
+        {
+            var cfg = new CacheConfiguration("not_null_attr", new QueryEntity(typeof(int), typeof(Foo)));
+            var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
+
+            var ex = Assert.Throws<IgniteException>(() => cache.QueryFields(new SqlFieldsQuery(
+                "insert into foo(_key, id) values (?, ?)", 1, 2)).GetAll());
+
+            Assert.AreEqual("Null value is not allowed for column 'NAME'", ex.Message);
         }
 
         /// <summary>
@@ -340,10 +377,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(key, cache.Single().Key);
 
             // Compare keys in binary form.
-            var binKey = cache.Ignite.GetBinary().ToBinary<BinaryObject>(key);
-            var binKeyRes = cache.WithKeepBinary<BinaryObject, string>().Single().Key;
+            var binKey = cache.Ignite.GetBinary().ToBinary<IBinaryObject>(key);
+            var binKeyRes = cache.WithKeepBinary<IBinaryObject, string>().Single().Key;
 
-            Assert.AreEqual(binKey.Header, binKeyRes.Header);
             Assert.AreEqual(binKey, binKeyRes);
 
             // Get by key to verify identity.
@@ -388,7 +424,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private class Foo
         {
             [QuerySqlField] public int Id { get; set; }
-            [QuerySqlField] public string Name { get; set; }
+            [QuerySqlField(NotNull = true)] public string Name { get; set; }
         }
 
         /// <summary>

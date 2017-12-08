@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -84,8 +84,8 @@ public class IgniteWalIteratorFactory {
         this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
         this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
         this.keepBinary = keepBinary;
-        this.ioFactory = new PersistentStoreConfiguration().getFileIOFactory();
-        new MemoryConfiguration().setPageSize(pageSize); // just for validate
+        this.ioFactory = new DataStorageConfiguration().getFileIOFactory();
+        new DataStorageConfiguration().setPageSize(pageSize); // just for validate
     }
 
     /**
@@ -122,7 +122,7 @@ public class IgniteWalIteratorFactory {
         this.log = log;
         this.pageSize = pageSize;
         this.ioFactory = ioFactory;
-        new MemoryConfiguration().setPageSize(pageSize); // just for validate
+        new DataStorageConfiguration().setPageSize(pageSize); // just for validate
     }
 
     /**
@@ -134,7 +134,7 @@ public class IgniteWalIteratorFactory {
      * according its boundaries.
      */
     public IgniteWalIteratorFactory(@NotNull final IgniteLogger log, int pageSize) {
-        this(log, new PersistentStoreConfiguration().getFileIOFactory(), pageSize);
+        this(log, new DataStorageConfiguration().getFileIOFactory(), pageSize);
     }
 
     /**

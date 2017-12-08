@@ -19,10 +19,14 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 
 /**
@@ -46,12 +50,44 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
         if (record instanceof HeaderRecord)
             throw new UnsupportedOperationException("Getting size of header records is forbidden since version 2 of serializer");
 
-        return delegateSerializer.size(record);
+        switch (record.type()) {
+            case DATA_RECORD:
+                return delegateSerializer.size(record) + 8/*timestamp*/;
+
+            case SNAPSHOT:
+                return 8 + 1;
+
+            default:
+                return delegateSerializer.size(record);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
-        return delegateSerializer.readRecord(type, in);
+    @Override public WALRecord readRecord(
+        WALRecord.RecordType type,
+        ByteBufferBackedDataInput in
+    ) throws IOException, IgniteCheckedException {
+        switch (type) {
+            case DATA_RECORD:
+                int entryCnt = in.readInt();
+                long timeStamp = in.readLong();
+
+                List<DataEntry> entries = new ArrayList<>(entryCnt);
+
+                for (int i = 0; i < entryCnt; i++)
+                    entries.add(delegateSerializer.readDataEntry(in));
+
+                return new DataRecord(entries, timeStamp);
+
+            case SNAPSHOT:
+                long snpId = in.readLong();
+                byte full = in.readByte();
+
+                return new SnapshotRecord(snpId, full == 1);
+
+            default:
+                return delegateSerializer.readRecord(type, in);
+        }
     }
 
     /** {@inheritDoc} */
@@ -59,6 +95,28 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
         if (record instanceof HeaderRecord)
             throw new UnsupportedOperationException("Writing header records is forbidden since version 2 of serializer");
 
-        delegateSerializer.writeRecord(record, buf);
+        switch (record.type()) {
+            case DATA_RECORD:
+                DataRecord dataRec = (DataRecord)record;
+
+                buf.putInt(dataRec.writeEntries().size());
+                buf.putLong(dataRec.timestamp());
+
+                for (DataEntry dataEntry : dataRec.writeEntries())
+                    RecordDataV1Serializer.putDataEntry(buf, dataEntry);
+
+                break;
+
+            case SNAPSHOT:
+                SnapshotRecord snpRec = (SnapshotRecord)record;
+
+                buf.putLong(snpRec.getSnapshotId());
+                buf.put(snpRec.isFull() ? (byte)1 : 0);
+
+                break;
+
+            default:
+                delegateSerializer.writeRecord(record, buf);
+        }
     }
 }

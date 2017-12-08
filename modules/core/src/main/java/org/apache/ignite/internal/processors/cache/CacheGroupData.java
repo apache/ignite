@@ -59,14 +59,18 @@ public class CacheGroupData implements Serializable {
     /** */
     private long flags;
 
+    /** Persistence enabled flag. */
+    private final boolean persistenceEnabled;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param grpName Group name.
-     * @param grpId  Group ID.
+     * @param grpId Group ID.
      * @param rcvdFrom Node ID cache group received from.
      * @param startTopVer Start version for dynamically started group.
      * @param deploymentId Deployment ID.
      * @param caches Cache group caches.
+     * @param persistenceEnabled Persistence enabled flag.
      */
     CacheGroupData(
         CacheConfiguration cacheCfg,
@@ -76,7 +80,8 @@ public class CacheGroupData implements Serializable {
         @Nullable AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
         Map<String, Integer> caches,
-        long flags) {
+        long flags,
+        boolean persistenceEnabled) {
         assert cacheCfg != null;
         assert grpId != 0 : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
@@ -89,6 +94,7 @@ public class CacheGroupData implements Serializable {
         this.deploymentId = deploymentId;
         this.caches = caches;
         this.flags = flags;
+        this.persistenceEnabled = persistenceEnabled;
     }
 
     /**
@@ -138,6 +144,13 @@ public class CacheGroupData implements Serializable {
      */
     Map<String, Integer> caches() {
         return caches;
+    }
+
+    /**
+     * @return Persistence enabled flag.
+     */
+    public boolean persistenceEnabled() {
+        return persistenceEnabled;
     }
 
     /** {@inheritDoc} */

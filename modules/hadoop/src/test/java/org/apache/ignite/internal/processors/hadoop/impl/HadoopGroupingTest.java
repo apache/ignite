@@ -127,7 +127,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
         }
 
         grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 2),
-            createJobInfo(job.getConfiguration())).get(30000);
+            createJobInfo(job.getConfiguration(), null)).get(30000);
 
         assertTrue(HadoopGroupingTestState.values().isEmpty());
     }

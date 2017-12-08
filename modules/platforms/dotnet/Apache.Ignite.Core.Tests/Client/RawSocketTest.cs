@@ -20,11 +20,11 @@ namespace Apache.Ignite.Core.Tests.Client
     using System;
     using System.Net;
     using System.Net.Sockets;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -52,9 +52,9 @@ namespace Apache.Ignite.Core.Tests.Client
             // Cache get.
             SendRequest(sock, stream =>
             {
-                stream.WriteShort(1); // OP_GET
+                stream.WriteShort(1000); // OP_GET
                 stream.WriteLong(1); // Request id.
-                var cacheId = BinaryUtils.GetStringHashCode(cache.Name);
+                var cacheId = BinaryUtils.GetStringHashCodeLowerCase(cache.Name);
                 stream.WriteInt(cacheId);
                 stream.WriteByte(0); // Flags (withSkipStore, etc)
 
@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual(11, requestId);
 
                 var status = reader.ReadInt();
-                Assert.AreEqual((int) ClientStatus.InvalidOpCode, status);
+                Assert.AreEqual((int) ClientStatusCode.InvalidOpCode, status);
 
                 var err = reader.ReadObject<string>();
                 Assert.AreEqual("Invalid request op code: -1", err);

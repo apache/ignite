@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -47,10 +48,9 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -68,6 +68,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -112,7 +113,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private int walSegmentSize;
 
-    /** Logger only. */
+    /** Log only. */
     private boolean logOnly;
 
     /** {@inheritDoc} */
@@ -134,34 +135,30 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
         dbCfg.setPageSize(4 * 1024);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg.setMaxSize(1024 * 1024 * 1024);
+        memPlcCfg.setPersistenceEnabled(true);
 
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        dbCfg.setDefaultDataRegionConfiguration(memPlcCfg);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        dbCfg.setWalRecordIteratorBufferSize(1024 * 1024);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
-
-        pCfg.setWalRecordIteratorBufferSize(1024 * 1024);
-
-        pCfg.setWalHistorySize(2);
+        dbCfg.setWalHistorySize(2);
 
         if (logOnly)
-            pCfg.setWalMode(WALMode.LOG_ONLY);
+            dbCfg.setWalMode(WALMode.LOG_ONLY);
 
         if (walSegmentSize != 0)
-            pCfg.setWalSegmentSize(walSegmentSize);
+            dbCfg.setWalSegmentSize(walSegmentSize);
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         cfg.setMarshaller(null);
 
@@ -575,9 +572,11 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             for (int i = 0; i < 100; i++)
                 cache.put(i, new IndexedObject(i));
 
+            final Object consistentId = ignite.cluster().localNode().consistentId();
+
             stopGrid(1);
 
-            final File cacheDir = cacheDir("partitioned", ignite.context().discovery().consistentId().toString());
+            final File cacheDir = cacheDir("partitioned", consistentId.toString());
 
             final boolean renamed = cacheDir.renameTo(new File(cacheDir.getParent(), "cache-partitioned0"));
 
@@ -605,14 +604,15 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @return Cache dir.
      * @throws IgniteCheckedException If fail.
      */
-    private File cacheDir(final String cacheName, String consId) throws IgniteCheckedException {
-        consId = consId.replaceAll("[\\.:]", "_");
+    private File cacheDir(final String cacheName, final String consId) throws IgniteCheckedException {
+        final String subfolderName
+            = PdsConsistentIdProcessor.genNewStyleSubfolderName(0, UUID.fromString(consId));
 
         final File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
         assert dbDir.exists();
 
-        final File consIdDir = new File(dbDir.getAbsolutePath(), consId);
+        final File consIdDir = new File(dbDir.getAbsolutePath(), subfolderName);
 
         assert consIdDir.exists();
 
@@ -971,7 +971,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                         delta.applyDelta(sharedCtx
                                 .database()
-                                .memoryPolicy(null)
+                                .dataRegion(null)
                                 .pageMemory(),
 
                                 ((DirectBuffer)buf1).address());
@@ -985,7 +985,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             info("Done apply...");
 
-            PageMemoryEx pageMem = (PageMemoryEx)db.memoryPolicy(null).pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx)db.dataRegion(null).pageMemory();
 
             for (Map.Entry<FullPageId, byte[]> entry : rolledPages.entrySet()) {
                 FullPageId fullId = entry.getKey();

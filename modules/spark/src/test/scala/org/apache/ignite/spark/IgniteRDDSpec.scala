@@ -350,9 +350,6 @@ case class WithObjectField(
  * Constants and utility methods.
  */
 object IgniteRDDSpec {
-    /** IP finder for the test. */
-    val IP_FINDER = new TcpDiscoveryVmIpFinder(true)
-
     /** Cache name for the pairs (String, Entity). */
     val ENTITY_CACHE_NAME = "entity"
 
@@ -384,9 +381,15 @@ object IgniteRDDSpec {
     def configuration(igniteInstanceName: String, client: Boolean): IgniteConfiguration = {
         val cfg = new IgniteConfiguration
 
+        cfg.setLocalHost("127.0.0.1")
+
         val discoSpi = new TcpDiscoverySpi
 
-        discoSpi.setIpFinder(IgniteRDDSpec.IP_FINDER)
+        val ipFinder = new TcpDiscoveryVmIpFinder()
+
+        ipFinder.setAddresses(List("127.0.0.1:47500..47504"))
+
+        discoSpi.setIpFinder(ipFinder)
 
         cfg.setDiscoverySpi(discoSpi)
 

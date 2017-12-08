@@ -45,10 +45,11 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExp
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -108,7 +109,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     ) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            FileWriteAheadLogManager.forVersion(sharedCtx, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION),
+            new RecordSerializerFactoryImpl(sharedCtx),
             ioFactory,
             BUF_SIZE);
         this.keepBinary = keepBinary;
@@ -136,7 +137,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             @NotNull File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            FileWriteAheadLogManager.forVersion(sharedCtx, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION),
+            new RecordSerializerFactoryImpl(sharedCtx),
             ioFactory,
             BUF_SIZE);
 
@@ -185,12 +186,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * Header record and its position is checked. WAL position is used to determine real index.
      * File index from file name is ignored.
      *
-     * @param allFiles files to scan
-     * @return list of file descriptors with checked header records, file index is set
-     * @throws IgniteCheckedException if IO error occurs
+     * @param allFiles files to scan.
+     * @return list of file descriptors with checked header records, having correct file index is set
      */
     private List<FileWriteAheadLogManager.FileDescriptor> scanIndexesFromFileHeaders(
-        @Nullable final File[] allFiles) throws IgniteCheckedException {
+        @Nullable final File[] allFiles) {
         if (allFiles == null || allFiles.length == 0)
             return Collections.emptyList();
 
@@ -198,7 +198,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         for (File file : allFiles) {
             if (file.length() < HEADER_RECORD_SIZE)
-                continue;
+                continue;  //filter out this segment as it is too short
 
             FileWALPointer ptr;
 
@@ -211,17 +211,24 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 // Header record must be agnostic to the serializer version.
                 final int type = in.readUnsignedByte();
 
-                if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
-                    throw new SegmentEofException("Reached logical end of the segment", null);
+                if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE) {
+                    if (log.isInfoEnabled())
+                        log.info("Reached logical end of the segment for file " + file);
+
+                    continue; //filter out this segment
+                }
                 ptr = RecordV1Serializer.readPosition(in);
             }
             catch (IOException e) {
-                throw new IgniteCheckedException("Failed to scan index from file [" + file + "]", e);
+                U.warn(log, "Failed to scan index from file [" + file + "]. Skipping this file during iteration", e);
+
+                continue; //filter out this segment
             }
 
             resultingDescs.add(new FileWriteAheadLogManager.FileDescriptor(file, ptr.index()));
         }
         Collections.sort(resultingDescs);
+
         return resultingDescs;
     }
 
@@ -305,7 +312,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             postProcessedEntries.add(postProcessedEntry);
         }
-        return new DataRecord(postProcessedEntries);
+        return new DataRecord(postProcessedEntries, dataRec.timestamp());
     }
 
     /**
@@ -329,12 +336,17 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         if (dataEntry instanceof LazyDataEntry) {
             final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
+
             key = processor.toKeyCacheObject(fakeCacheObjCtx,
                 lazyDataEntry.getKeyType(),
                 lazyDataEntry.getKeyBytes());
-            val = processor.toCacheObject(fakeCacheObjCtx,
-                lazyDataEntry.getValType(),
-                lazyDataEntry.getValBytes());
+
+            final byte type = lazyDataEntry.getValType();
+
+            val = type == 0 ? null :
+                processor.toCacheObject(fakeCacheObjCtx,
+                    type,
+                    lazyDataEntry.getValBytes());
         }
         else {
             key = dataEntry.key();

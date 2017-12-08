@@ -125,6 +125,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 "GroupIndex1", "GroupIndex2", "GroupIndex3"
             }, fields.Select(x => x.Name));
 
+            Assert.IsTrue(fields.Single(x => x.Name == "SqlField").NotNull);
+            Assert.IsFalse(fields.Single(x => x.Name == "IndexedField1").NotNull);
+
             var idx = qe.Indexes.ToArray();
 
             Assert.AreEqual(QueryIndexType.Sorted, idx[0].IndexType);
@@ -314,7 +317,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         private class AttributeTest
         {
-            [QuerySqlField]
+            [QuerySqlField(NotNull = true)]
             public double SqlField { get; set; }
 
             [QuerySqlField(IsIndexed = true, Name = "IndexedField1", IsDescending = true, IndexInlineSize = 513)]

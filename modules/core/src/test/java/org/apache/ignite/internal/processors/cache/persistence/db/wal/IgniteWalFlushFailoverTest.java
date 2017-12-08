@@ -20,14 +20,14 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
@@ -42,7 +42,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import java.nio.file.OpenOption;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -83,23 +82,15 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration()
-                .setName("dfltMemPlc")
-                .setInitialSize(2 * 1024L * 1024L * 1024L);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
+            .setFileIOFactory(new FailingFileIOFactory())
+            .setWalMode(WALMode.BACKGROUND)
+            // Setting WAL Segment size to high values forces flushing by timeout.
+            .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration()
-                .setMemoryPolicies(memPlcCfg)
-                .setDefaultMemoryPolicyName(memPlcCfg.getName());
-
-        cfg.setMemoryConfiguration(memCfg);
-
-        PersistentStoreConfiguration storeCfg = new PersistentStoreConfiguration()
-                .setFileIOFactory(new FailingFileIOFactory())
-                .setWalMode(WALMode.BACKGROUND)
-                // Setting WAL Segment size to high values forces flushing by timeout.
-                .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
-
-        cfg.setPersistentStoreConfiguration(storeCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -129,16 +120,17 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      */
     private void flushingErrorTest() throws Exception {
         final IgniteEx grid = startGrid(0);
-        grid.active(true);
-
-        IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
-
-        final int iterations = 100;
 
         try {
+            grid.active(true);
+
+            IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
+
+            final int iterations = 100;
+
             for (int i = 0; i < iterations; i++) {
                 Transaction tx = grid.transactions().txStart(
-                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
+                    TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
 
                 cache.put(i, "testValue" + i);
 
@@ -153,8 +145,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         // We should await successful stop of node.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return grid.context().gateway().getState() == GridKernalState.STOPPED;
             }
         }, getTestTimeout());

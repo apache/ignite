@@ -209,6 +209,11 @@ class VisorCacheCommand {
     def cache(args: String) {
         if (!isConnected)
             adviseToConnect()
+        else if (!isActive) {
+            warn("Can not perform the operation because the cluster is inactive.",
+                "Note, that the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes join the cluster.",
+                "To activate the cluster execute following command: top -active.")
+        }
         else {
             var argLst = parseArgs(args)
 
@@ -328,12 +333,12 @@ class VisorCacheCommand {
                         ad.getMode,
                         ad.getNodes.size(),
                         (
-                            "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapSize) +
-                                " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapSize + ")",
-                            "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapSize) +
-                                " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapSize) + ")",
-                            "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapSize) +
-                                " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapSize + ")"
+                            "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) +
+                                " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapPrimarySize + ")",
+                            "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) +
+                                " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapPrimarySize) + ")",
+                            "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapPrimarySize) +
+                                " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapPrimarySize + ")"
                             ),
                         (
                             "min: " + ad.getMinimumHits,
@@ -385,13 +390,13 @@ class VisorCacheCommand {
 
                     csT += ("Name(@)", cacheNameVar)
                     csT += ("Nodes", m.size())
-                    csT += ("Total size Min/Avg/Max", (ad.getMinimumHeapSize + ad.getMinimumOffHeapSize) + " / " +
-                        formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapSize) + " / " +
-                        (ad.getMaximumHeapSize + ad.getMaximumOffHeapSize))
+                    csT += ("Total size Min/Avg/Max", (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) + " / " +
+                        formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) + " / " +
+                        (ad.getMaximumHeapSize + ad.getMaximumOffHeapPrimarySize))
                     csT += ("  Heap size Min/Avg/Max", ad.getMinimumHeapSize + " / " +
                         formatDouble(ad.getAverageHeapSize) + " / " + ad.getMaximumHeapSize)
-                    csT += ("  Off-heap size Min/Avg/Max", ad.getMinimumOffHeapSize + " / " +
-                        formatDouble(ad.getAverageOffHeapSize) + " / " + ad.getMaximumOffHeapSize)
+                    csT += ("  Off-heap size Min/Avg/Max", ad.getMinimumOffHeapPrimarySize + " / " +
+                        formatDouble(ad.getAverageOffHeapPrimarySize) + " / " + ad.getMaximumOffHeapPrimarySize)
 
                     val ciT = VisorTextTable()
 
@@ -408,9 +413,9 @@ class VisorCacheCommand {
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
                             (
-                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapEntriesCount()),
+                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapPrimaryEntriesCount),
                                 "  Heap: " + cm.getHeapEntriesCount,
-                                "  Off-Heap: " + cm.getOffHeapEntriesCount(),
+                                "  Off-Heap: " + cm.getOffHeapPrimaryEntriesCount,
                                 "  Off-Heap Memory: " + formatMemory(cm.getOffHeapAllocatedSize)
                             ),
                             (
@@ -644,12 +649,12 @@ class VisorCacheCommand {
                 mkCacheName(ad.getName),
                 ad.getMode,
                 (
-                    "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapSize) +
-                        " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapSize + ")",
-                    "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapSize) +
-                        " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapSize) + ")",
-                    "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapSize) +
-                        " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapSize + ")"
+                    "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) +
+                        " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapPrimarySize + ")",
+                    "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) +
+                        " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapPrimarySize) + ")",
+                    "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapPrimarySize) +
+                        " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapPrimarySize + ")"
                 ))
         })
 

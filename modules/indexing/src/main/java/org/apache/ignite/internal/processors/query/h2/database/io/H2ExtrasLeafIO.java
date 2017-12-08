@@ -33,7 +33,7 @@ import org.h2.result.SearchRow;
 /**
  * Leaf page for H2 row references.
  */
-public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
+public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkIO {
     /** Payload size. */
     private final int payloadSize;
 
@@ -81,7 +81,7 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
     @Override public void storeByOffset(long pageAddr, int off, SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
-        assert row0.link != 0;
+        assert row0.link() != 0;
 
         List<InlineIndexHelper> inlineIdxs = InlineIndexHelper.getCurrentInlineIndexes();
 
@@ -100,7 +100,7 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
             fieldOff += size;
         }
 
-        PageUtils.putLong(pageAddr, off + payloadSize, row0.link);
+        PageUtils.putLong(pageAddr, off + payloadSize, row0.link());
     }
 
     /** {@inheritDoc} */
@@ -126,12 +126,8 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
         return ((H2Tree)tree).getRowFactory().getRow(link);
     }
 
-    /**
-     * @param pageAddr Page address.
-     * @param idx Index.
-     * @return Link to row.
-     */
-    private long getLink(long pageAddr, int idx) {
+    /** {@inheritDoc} */
+    @Override public long getLink(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + payloadSize);
     }
 }

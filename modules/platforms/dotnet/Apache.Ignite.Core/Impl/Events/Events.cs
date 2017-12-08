@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public void RecordLocal(IEvent evt)
         {
-            throw new NotImplementedException("IGNITE-1410");
+            throw new NotSupportedException("IGNITE-1410");
         }
 
         /** <inheritDoc /> */

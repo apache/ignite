@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const string CacheName = "cache";
 
         /** Path to XML configuration. */
-        private const string CfgPath = "config\\cache-query.xml";
+        private const string CfgPath = "Config\\cache-query.xml";
 
         /** Maximum amount of items in cache. */
         private const int MaxItemCnt = 100;
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         protected virtual IBinaryNameMapper GetNameMapper()
         {
-            return BinaryBasicNameMapper.FullNameInstance;
+            return new BinaryBasicNameMapper {IsSimpleName = false};
         }
 
         /// <summary>
@@ -687,8 +687,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var entity = Cache().GetConfiguration().QueryEntities.Single();
 
-            Assert.AreEqual(typeof(int), entity.Fields.Single(x => x.Name == "age").FieldType);
-            Assert.AreEqual(typeof(string), entity.Fields.Single(x => x.Name == "name").FieldType);
+            var ageField = entity.Fields.Single(x => x.Name == "age");
+            Assert.AreEqual(typeof(int), ageField.FieldType);
+            Assert.IsFalse(ageField.NotNull);
+            Assert.IsFalse(ageField.IsKeyField);
+
+            var nameField = entity.Fields.Single(x => x.Name == "name");
+            Assert.AreEqual(typeof(string), nameField.FieldType);
+            Assert.IsTrue(nameField.NotNull);
+            Assert.IsFalse(nameField.IsKeyField);
         }
 
         /// <summary>
@@ -747,6 +754,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests query timeouts.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestSqlQueryTimeout()
         {
             var cache = Cache();
@@ -766,6 +774,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests fields query timeouts.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestSqlFieldsQueryTimeout()
         {
             var cache = Cache();

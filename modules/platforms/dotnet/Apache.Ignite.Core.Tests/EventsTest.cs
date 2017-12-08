@@ -314,7 +314,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestRecordLocal()
         {
-            Assert.Throws<NotImplementedException>(() => _grid1.GetEvents().RecordLocal(new MyEvent()));
+            Assert.Throws<NotSupportedException>(() => _grid1.GetEvents().RecordLocal(new MyEvent()));
         }
 
         /// <summary>

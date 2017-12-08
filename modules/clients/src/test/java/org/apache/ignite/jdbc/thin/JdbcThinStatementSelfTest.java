@@ -104,7 +104,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(URL);
 
-        conn.setSchema(DEFAULT_CACHE_NAME);
+        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
         stmt = conn.createStatement();
 
@@ -444,6 +444,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     public void testExecuteQueryMultipleOnlyDml() throws Exception {
         conn.setSchema(null);
 
+        Statement stmt0 = conn.createStatement();
+
         int stmtCnt = 10;
 
         StringBuilder sql = new StringBuilder("drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
@@ -451,24 +453,24 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         for (int i = 0; i < stmtCnt; ++i)
             sql.append("insert into test (ID, NAME) values (" + i + ", 'name_" + i +"'); ");
 
-        assert !stmt.execute(sql.toString());
+        assert !stmt0.execute(sql.toString());
 
         // DROP TABLE statement
-        assert stmt.getResultSet() == null;
-        assert stmt.getUpdateCount() == 0;
+        assert stmt0.getResultSet() == null;
+        assert stmt0.getUpdateCount() == 0;
 
         // CREATE TABLE statement
-        assert stmt.getResultSet() == null;
-        assert stmt.getUpdateCount() == 0;
+        assert stmt0.getResultSet() == null;
+        assert stmt0.getUpdateCount() == 0;
 
         for (int i = 0; i < stmtCnt; ++i) {
-            assert stmt.getMoreResults();
+            assert stmt0.getMoreResults();
 
-            assert stmt.getResultSet() == null;
-            assert stmt.getUpdateCount() == 1;
+            assert stmt0.getResultSet() == null;
+            assert stmt0.getUpdateCount() == 1;
         }
 
-        assert !stmt.getMoreResults();
+        assert !stmt0.getMoreResults();
     }
 
     /**
@@ -476,6 +478,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testExecuteQueryMultipleMixed() throws Exception {
         conn.setSchema(null);
+
+        Statement stmt0 = conn.createStatement();
 
         int stmtCnt = 10;
 
@@ -488,29 +492,29 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
                 sql.append(" select * from test where id < " + i + "; ");
         }
 
-        assert !stmt.execute(sql.toString());
+        assert !stmt0.execute(sql.toString());
 
         // DROP TABLE statement
-        assert stmt.getResultSet() == null;
-        assert stmt.getUpdateCount() == 0;
+        assert stmt0.getResultSet() == null;
+        assert stmt0.getUpdateCount() == 0;
 
         // CREATE TABLE statement
-        assert stmt.getResultSet() == null;
-        assert stmt.getUpdateCount() == 0;
+        assert stmt0.getResultSet() == null;
+        assert stmt0.getUpdateCount() == 0;
 
         boolean notEmptyResult = false;
 
         for (int i = 0; i < stmtCnt; ++i) {
-            assert stmt.getMoreResults();
+            assert stmt0.getMoreResults();
 
             if (i % 2 == 0) {
-                assert stmt.getResultSet() == null;
-                assert stmt.getUpdateCount() == 1;
+                assert stmt0.getResultSet() == null;
+                assert stmt0.getUpdateCount() == 1;
             }
             else {
-                assert stmt.getUpdateCount() == -1;
+                assert stmt0.getUpdateCount() == -1;
 
-                ResultSet rs = stmt.getResultSet();
+                ResultSet rs = stmt0.getResultSet();
 
                 int rowsCnt = 0;
 
@@ -526,7 +530,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         assert notEmptyResult;
 
-        assert !stmt.getMoreResults();
+        assert !stmt0.getMoreResults();
     }
 
     /**

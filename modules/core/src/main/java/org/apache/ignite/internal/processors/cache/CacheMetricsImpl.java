@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -227,7 +228,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getHeapEntriesCount() {
         try {
-            return cctx.cache().localSize(ONHEAP_PEEK_MODES);
+            return cctx.cache().localSizeLong(ONHEAP_PEEK_MODES);
         }
         catch (IgniteCheckedException ignored) {
             return 0;
@@ -716,6 +717,36 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ccfg != null && ccfg.isWriteThrough();
     }
 
+    /**
+     * Checks whether cache topology is valid for operations.
+     *
+     * @param read {@code True} if validating read operations, {@code false} if validating write.
+     * @return Valid ot not.
+     */
+    private boolean isValidForOperation(boolean read) {
+        if (cctx.isLocal())
+            return true;
+
+        try {
+            GridDhtTopologyFuture fut = cctx.shared().exchange().lastFinishedFuture();
+
+            return (fut != null && fut.validateCache(cctx, false, read, null, null) == null);
+        }
+        catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForReading() {
+        return isValidForOperation(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForWriting() {
+        return isValidForOperation(false);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean isStoreByValue() {
         CacheConfiguration ccfg = cctx.config();
@@ -803,11 +834,21 @@ public class CacheMetricsImpl implements CacheMetrics {
      *
      */
     public void startRebalance(long delay){
-        rebalanceStartTime.addAndGet(delay + U.currentTimeMillis());
+        rebalanceStartTime.set(delay + U.currentTimeMillis());
     }
 
     /** {@inheritDoc} */
     @Override public long estimateRebalancingFinishTime() {
+        return getEstimatedRebalancingFinishTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rebalancingStartTime() {
+        return rebalanceStartTime.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingFinishTime() {
         long rate = rebalancingKeysRate.getRate();
 
         return rate <= 0 ? -1L :
@@ -815,7 +856,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long rebalancingStartTime() {
+    @Override public long getRebalancingStartTime() {
         return rebalanceStartTime.get();
     }
 
