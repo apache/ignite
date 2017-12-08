@@ -274,7 +274,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     @NotNull private Pointer bufferPtr(ByteBuffer buf) {
         long alignedPointer = GridUnsafe.bufferAddress(buf);
 
-        if (alignedPointer % fsBlockSize != 0) {
+        if ((alignedPointer + buf.position()) % fsBlockSize != 0) {
             //todo warning
         }
 

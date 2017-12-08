@@ -92,7 +92,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         }
         else {
             if (log.isInfoEnabled())
-                log.info("Unable to determine block size, direct IO library is not available on current system " +
+                log.info("Direct IO library is not available on current system " +
                     "[" + System.getProperty("os.version") + "]. Direct IO is disabled");
         }
 

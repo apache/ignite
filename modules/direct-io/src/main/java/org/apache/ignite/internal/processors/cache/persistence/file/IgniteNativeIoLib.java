@@ -22,6 +22,9 @@ import com.sun.jna.NativeLong;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -35,8 +38,12 @@ public class IgniteNativeIoLib {
     static {
         if (Platform.isLinux()) {
             try {
-                Native.register(Platform.C_LIBRARY_NAME);
-                jnaAvailable = true;
+                if (checkLinuxVersion()) {
+                    Native.register(Platform.C_LIBRARY_NAME);
+                    jnaAvailable = true;
+                }
+                else
+                    jnaAvailable = false;
             }
             catch (Exception e) {
                 e.printStackTrace();
@@ -47,6 +54,52 @@ public class IgniteNativeIoLib {
         else {
             jnaAvailable = false;
         }
+    }
+
+    /**
+     *
+     * O_DIRECT  support was added under Linux in kernel version 2.4.10.
+     * @return {@code true} if O_DIRECT is supported, kernel version >= 2.4.10
+     */
+    private static boolean checkLinuxVersion() {
+
+        String osVer = System.getProperty("os.version");
+
+        if (osVer == null)
+            return false;
+
+        List<Integer> verComps = new ArrayList<>();
+
+        for (StringTokenizer tokenizer = new StringTokenizer(osVer, ".-"); tokenizer.hasMoreTokens(); ) {
+            String verComp = tokenizer.nextToken();
+            if (verComp.matches("\\d*")) {
+                verComps.add(Integer.parseInt(verComp));
+            }
+
+        }
+
+        if (verComps.isEmpty())
+            return false;
+
+        final int versionIdx = 0;
+        final int majorRevIdx = 1;
+        final int minorRevIdx = 2;
+
+        if (verComps.get(versionIdx) > 2) {
+            return true;
+        }
+        else if (verComps.get(versionIdx) == 2) {
+            int compsCnt = verComps.size();
+            if (compsCnt > majorRevIdx && verComps.get(majorRevIdx) > 4) {
+                return true;
+            }
+            else if (compsCnt > minorRevIdx
+                && verComps.get(majorRevIdx) == 4
+                && verComps.get(minorRevIdx) >= 10) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static final int O_RDONLY = 00;
@@ -88,7 +141,8 @@ public class IgniteNativeIoLib {
             if (log.isInfoEnabled()) {
                 log.info("Page size configuration for storage path [" + storageDir + "]: " + pcAlign);
             }
-            fsBlockSize = (int)LCM(fsBlockSize, pcAlign);
+            if (pcAlign > 0)
+                fsBlockSize = pcAlign;
 
             int pageSize = getpagesize();
 
@@ -112,8 +166,11 @@ public class IgniteNativeIoLib {
                 log.info("Selected FS block size : " + fsBlockSize);
             }
         }
-        else if (ex != null) {
-            U.warn(log, "Failed to initialize O_DIRECT support", ex);
+        else {
+            log.info("JNA support ");
+            if (ex != null) {
+                U.warn(log, "Failed to initialize O_DIRECT support", ex);
+            }
         }
 
         return fsBlockSize;
