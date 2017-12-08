@@ -44,6 +44,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * AWS S3-based IP finder.
@@ -60,6 +61,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
  * <ul>
  *      <li>Client configuration (see {@link #setClientConfiguration(ClientConfiguration)})</li>
  *      <li>Shared flag (see {@link #setShared(boolean)})</li>
+ *      <li>Bucket endpoint (see {@link #setBucketEndpoint(String)})</li>
  * </ul>
  * <p>
  * The finder will create S3 bucket with configured name. The bucket will contain entries named
@@ -97,6 +99,9 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** Bucket name. */
     private String bucketName;
+
+    /** Bucket endpoint */
+    private @Nullable String bucketEndpoint;
 
     /** Init guard. */
     @GridToStringExclude
@@ -299,9 +304,14 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      * @return Client instance to use to connect to AWS.
      */
     private AmazonS3Client createAmazonS3Client() {
-        return cfg != null
+        AmazonS3Client cli = cfg != null
             ? (cred != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(credProvider, cfg))
             : (cred != null ? new AmazonS3Client(cred) : new AmazonS3Client(credProvider));
+
+        if (!F.isEmpty(bucketEndpoint))
+            cli.setEndpoint(bucketEndpoint);
+
+        return cli;
     }
 
     /**
@@ -313,6 +323,22 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     @IgniteSpiConfiguration(optional = false)
     public TcpDiscoveryS3IpFinder setBucketName(String bucketName) {
         this.bucketName = bucketName;
+
+        return this;
+    }
+
+    /**
+     * Sets bucket endpoint for IP finder.
+     * If the endpoint is not set then IP finder will go to each region to find a corresponding bucket.
+     * For information about possible endpoint names visit
+     * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>
+     *
+     * @param bucketEndpoint Bucket endpoint, for example, s3.us-east-2.amazonaws.com.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoveryS3IpFinder setBucketEndpoint(String bucketEndpoint) {
+        this.bucketEndpoint = bucketEndpoint;
 
         return this;
     }
