@@ -25,21 +25,27 @@ import com.jcraft.jsch.Session;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterStartNodeResultImpl;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_USER_NAME;
 
@@ -57,13 +63,25 @@ public class StartNodeCallableImpl implements StartNodeCallable {
     private static final String WINDOWS_ENCODING = "IBM866";
 
     /** Default start script path for Windows. */
-    private static final String DFLT_SCRIPT_WIN = "bin\\ignite.bat -v";
+    private static final String DFLT_SCRIPT_WIN = "bin\\ignite.bat -v -np";
 
     /** Default start script path for Linux. */
     private static final String DFLT_SCRIPT_LINUX = "bin/ignite.sh -v";
 
     /** Date format for log file name. */
     private static final SimpleDateFormat FILE_NAME_DATE_FORMAT = new SimpleDateFormat("MM-dd-yyyy--HH-mm-ss");
+
+    /** Used to register successful node start in log */
+    private static final String SUCCESSFUL_START_MSG = "Successfully bound to TCP port";
+
+    /**  */
+    private static final long EXECUTE_WAIT_TIME = 1000;
+
+    /**  */
+    private static final long NODE_START_CHECK_PERIOD = 2000;
+
+    /**  */
+    private static final long NODE_START_CHECK_LIMIT = 5;
 
     /** Specification. */
     private final IgniteRemoteStartSpecification spec;
@@ -73,13 +91,18 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
     /** Logger. */
     @LoggerResource
-    private IgniteLogger log;
+    private transient IgniteLogger log;
+
+    /** Ignite. */
+    @IgniteInstanceResource
+    private transient Ignite ignite;
 
     /**
      * Required by Externalizable.
      */
     public StartNodeCallableImpl() {
         spec = null;
+
         timeout = 0;
 
         assert false;
@@ -95,6 +118,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
         assert spec != null;
 
         this.spec = spec;
+
         this.timeout = timeout;
     }
 
@@ -138,29 +162,45 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             if (cfg == null)
                 cfg = "";
 
-            String id = UUID.randomUUID().toString();
+            String id = FILE_NAME_DATE_FORMAT.format(new Date()) + '-' + UUID.randomUUID().toString().substring(0, 8);
 
-            String scriptOutputFileName = FILE_NAME_DATE_FORMAT.format(new Date()) + '-' + id.substring(0, 8) + ".log";
+            String scriptOutputFileName = id + ".log";
+
+            int spaceIdx = script.indexOf(' ');
+
+            String scriptPath = spaceIdx > -1 ? script.substring(0, spaceIdx) : script;
+
+            String scriptArgs = spaceIdx > -1 ? script.substring(spaceIdx + 1) : "";
+
+            String rmtLogArgs = buildRemoteLogArguments(spec.username(), spec.host());
+
+            String scriptOutputDir;
 
             if (win) {
-                int spaceIdx = script.indexOf(' ');
-
-                String scriptPath = spaceIdx > -1 ? script.substring(0, spaceIdx) : script;
-                String scriptArgs = spaceIdx > -1 ? script.substring(spaceIdx + 1) : "";
-                String rmtLogArgs = buildRemoteLogArguments(spec.username(), spec.host());
                 String tmpDir = env(ses, "%TEMP%", "C:\\Windows\\Temp", WINDOWS_ENCODING);
-                String scriptOutputDir = tmpDir + "\\ignite-startNodes";
 
-                shell(ses, "mkdir " + scriptOutputDir);
+                scriptOutputDir = tmpDir + "\\ignite-startNodes";
+            } else { // Assume Unix.
+                String tmpDir = env(ses, "$TMPDIR", "/tmp/");
 
+                scriptOutputDir = tmpDir + "ignite-startNodes";
+            }
+
+            String scriptOutputPath = scriptOutputDir + separator + scriptOutputFileName;
+
+            shell(ses, "mkdir " + scriptOutputDir);
+
+            String findSuccess;
+
+            if (win) {
                 String scriptFileName = scriptOutputDir + "\\" + id + ".bat";
 
                 String createScript = new SB()
-                    .a("echo \"").a(igniteHome).a('\\').a(scriptPath).a("\"")
-                    .a(" ").a(scriptArgs)
+                    .a("echo \"").a(igniteHome).a('\\').a(scriptPath).a("\" ")
+                    .a(scriptArgs)
                     .a(!cfg.isEmpty() ? " \"" : "").a(cfg).a(!cfg.isEmpty() ? "\"" : "")
                     .a(rmtLogArgs)
-                    .a(" ^> ").a(scriptOutputDir).a("\\").a(scriptOutputFileName).a(" ^2^>^&^1")
+                    .a(" ^> ").a(scriptOutputPath).a(" ^2^>^&^1")
                     .a(" > ").a(scriptFileName)
                     .toString();
 
@@ -168,47 +208,36 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
                 shell(ses, createScript);
 
-                String createTask = new SB()
-                    .a("schtasks /create /f /sc onstart")
-                    .a(" /ru ").a(spec.username())
-                    .a(" /rp ").a(spec.password())
-                    .a(" /tn ").a(id)
-                    .a(" /np /tr \"").a(scriptFileName).a("\"")
-                    .toString();
+                try {
+                    String createTask = new SB()
+                        .a("schtasks /create /f /sc onstart")
+                        .a(" /ru ").a(spec.username())
+                        .a(" /rp ").a(spec.password())
+                        .a(" /tn ").a(id)
+                        .a(" /np /tr \"").a(scriptFileName).a("\"")
+                        .toString();
 
-                info("Create task with command: " + createTask, spec.logger(), log);
+                    info("Create task with command: " + createTask, spec.logger(), log);
 
-                shell(ses, createTask);
+                    shell(ses, createTask);
 
-                String runTask = new SB()
-                    .a("schtasks /run /i")
-                    .a(" /tn ").a(id)
-                    .toString();
+                    String runTask = "schtasks /run /i /tn " + id;
 
-                info("Run task with command: " + runTask, spec.logger(), log);
+                    info("Run task with command: " + runTask, spec.logger(), log);
 
-                shell(ses, runTask);
+                    shell(ses, runTask);
+                }
+                finally {
+                    String deleteTask = "schtasks /delete /f /tn " + id;
 
-                String deleteTask = new SB()
-                    .a("schtasks /delete /f")
-                    .a(" /tn ").a(id)
-                    .toString();
+                    info("Delete task with command: " + deleteTask, spec.logger(), log);
 
-                info("Delete task with command: " + deleteTask, spec.logger(), log);
+                    shell(ses, deleteTask);
+                }
 
-                shell(ses, deleteTask);
+                findSuccess = "find \"" + SUCCESSFUL_START_MSG + "\" " + scriptOutputPath;
             }
             else { // Assume Unix.
-                int spaceIdx = script.indexOf(' ');
-
-                String scriptPath = spaceIdx > -1 ? script.substring(0, spaceIdx) : script;
-                String scriptArgs = spaceIdx > -1 ? script.substring(spaceIdx + 1) : "";
-                String rmtLogArgs = buildRemoteLogArguments(spec.username(), spec.host());
-                String tmpDir = env(ses, "$TMPDIR", "/tmp/");
-                String scriptOutputDir = tmpDir + "ignite-startNodes";
-
-                shell(ses, "mkdir " + scriptOutputDir);
-
                 // Mac os don't support ~ in double quotes. Trying get home path from remote system.
                 if (igniteHome.startsWith("~")) {
                     String homeDir = env(ses, "$HOME", "~");
@@ -226,12 +255,26 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                     .a(" > ").a(scriptOutputDir).a("/").a(scriptOutputFileName).a(" 2>& 1 &")
                     .toString();
 
-                    info("Starting remote node with SSH command: " + startNodeCmd, spec.logger(), log);
+                info("Starting remote node with SSH command: " + startNodeCmd, spec.logger(), log);
 
-                    shell(ses, startNodeCmd);
+                shell(ses, startNodeCmd);
+
+                findSuccess = "grep \"" + SUCCESSFUL_START_MSG + "\" " + scriptOutputPath;
             }
 
-            return new ClusterStartNodeResultImpl(spec.host(), true, null);
+            for (int i = 0; i < NODE_START_CHECK_LIMIT; ++i) {
+                Thread.sleep(NODE_START_CHECK_PERIOD);
+
+                String res = exec(ses, findSuccess, win ? WINDOWS_ENCODING : null);
+
+                info("Find result: " + res, spec.logger(), log);
+
+                if (res != null && res.contains(SUCCESSFUL_START_MSG))
+                    return new ClusterStartNodeResultImpl(spec.host(), true, null);
+            }
+
+            return new ClusterStartNodeResultImpl(spec.host(), false, "Remote node could not start. " +
+                "See log for details: " + scriptOutputPath);
         }
         catch (IgniteInterruptedCheckedException e) {
             return new ClusterStartNodeResultImpl(spec.host(), false, e.getMessage());
@@ -265,7 +308,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             try (PrintStream out = new PrintStream(ch.getOutputStream(), true)) {
                 out.println(cmd);
 
-                U.sleep(1000);
+                U.sleep(EXECUTE_WAIT_TIME);
             }
         }
         finally {
@@ -300,7 +343,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      * @throws JSchException In case of SSH error.
      */
     private String env(Session ses, String name, String dflt) throws JSchException {
-        return env(ses, name, dflt, Charset.defaultCharset().name());
+        return env(ses, name, dflt, null);
     }
 
     /**
@@ -309,7 +352,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      * @param ses SSH session.
      * @param name environment variable name.
      * @param dflt default value.
-     * @param encoding Process output encoding.
+     * @param encoding Process output encoding, {@code null} for default charset encoding.
      * @return environment variable value.
      * @throws JSchException In case of SSH error.
      */
@@ -332,7 +375,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      * @throws IOException If failed.
      */
     private String exec(Session ses, String cmd) throws JSchException, IOException {
-        return exec(ses, cmd, Charset.defaultCharset().name());
+        return exec(ses, cmd, null);
     }
 
     /**
@@ -340,7 +383,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      *
      * @param ses SSH session.
      * @param cmd environment variable name.
-     * @param encoding Process output encoding.
+     * @param encoding Process output encoding, {@code null} for default charset encoding.
      * @return environment variable value.
      * @throws JSchException In case of SSH error.
      * @throws IOException If failed.
@@ -355,9 +398,62 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             ch.connect();
 
+            if (encoding == null)
+                encoding = Charset.defaultCharset().name();
+
+            IgniteEx grid = (IgniteEx)ignite;
+
+            GridTimeoutProcessor proc = grid.context().timeout();
+
+            GridTimeoutObject to = new GridTimeoutObject() {
+
+                /**  */
+                private final IgniteUuid id = IgniteUuid.randomUuid();
+
+                /**  */
+                private final long endTime = U.currentTimeMillis() + EXECUTE_WAIT_TIME;
+
+                /**  */
+                private final Thread thread = Thread.currentThread();
+
+                @Override public IgniteUuid timeoutId() {
+                    return id;
+                }
+
+                @Override public long endTime() {
+                    return endTime;
+                }
+
+                @Override public void onTimeout() {
+                    thread.interrupt();
+                }
+            };
+
+            proc.addTimeoutObject(to);
+
+            SB out = new SB();
+
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(ch.getInputStream(), encoding))) {
-                return reader.readLine();
+                String line;
+
+                boolean nl = false;
+
+                while ((line = reader.readLine()) != null) {
+                    if (nl)
+                        out.a('\n');
+
+                    out.a(line);
+
+                    nl = true;
+                }
             }
+            catch (InterruptedIOException ignore) {
+            }
+            finally {
+                proc.removeTimeoutObject(to);
+            }
+
+            return out.toString();
         }
         finally {
             if (ch != null && ch.isConnected())
