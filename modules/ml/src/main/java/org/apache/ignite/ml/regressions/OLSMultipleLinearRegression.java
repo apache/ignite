@@ -18,11 +18,11 @@ package org.apache.ignite.ml.regressions;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.decompositions.QRDSolver;
 import org.apache.ignite.ml.math.decompositions.QRDecomposition;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.functions.Functions;
-import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
@@ -51,7 +51,7 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  */
 public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegression {
     /** Cached QR decomposition of X matrix */
-    private QRDecomposition qr = null;
+    private QRDSolver solver = null;
 
     /** Singularity threshold for QR decomposition */
     private final double threshold;
@@ -94,7 +94,8 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      */
     @Override public void newSampleData(double[] data, int nobs, int nvars, Matrix like) {
         super.newSampleData(data, nobs, nvars, like);
-        qr = new QRDecomposition(getX(), threshold);
+        QRDecomposition qr = new QRDecomposition(getX(), threshold);
+        solver = new QRDSolver(qr.getQ(), qr.getR());
     }
 
     /**
@@ -118,24 +119,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      * @throws NullPointerException unless method {@code newSampleData} has been called beforehand.
      */
     public Matrix calculateHat() {
-        // Create augmented identity matrix
-        // No try-catch or advertised NotStrictlyPositiveException - NPE above if n < 3
-        Matrix q = qr.getQ();
-        Matrix augI = MatrixUtil.like(q, q.columnSize(), q.columnSize());
-
-        int n = augI.columnSize();
-        int p = qr.getR().columnSize();
-
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                if (i == j && i < p)
-                    augI.setX(i, j, 1d);
-                else
-                    augI.setX(i, j, 0d);
-
-        // Compute and return Hat matrix
-        // No DME advertised - args valid if we get here
-        return q.times(augI).times(q.transpose());
+        return solver.calculateHat();
     }
 
     /**
@@ -226,7 +210,8 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      */
     @Override protected void newXSampleData(Matrix x) {
         super.newXSampleData(x);
-        qr = new QRDecomposition(getX());
+        QRDecomposition qr = new QRDecomposition(getX());
+        solver = new QRDSolver(qr.getQ(), qr.getR());
     }
 
     /**
@@ -241,7 +226,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      * @throws NullPointerException if the data for the model have not been loaded
      */
     @Override protected Vector calculateBeta() {
-        return qr.solve(getY());
+        return solver.solve(getY());
     }
 
     /**
@@ -262,11 +247,11 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      * @throws NullPointerException if the data for the model have not been loaded
      */
     @Override protected Matrix calculateBetaVariance() {
-        int p = getX().columnSize();
+        return solver.calculateBetaVariance(getX().columnSize());
+    }
 
-        Matrix rAug = MatrixUtil.copy(qr.getR().viewPart(0, p, 0, p));
-        Matrix rInv = rAug.inverse();
-
-        return rInv.times(rInv.transpose());
+    /** */
+    QRDSolver solver() {
+        return solver;
     }
 }
