@@ -30,7 +30,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  *
  */
-public class IgniteNativeNoPersistence extends GridCommonAbstractTest {
+public class IgniteNativeNoPersistenceTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

@@ -176,7 +176,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
             }
         });
 
-        pageStore.pageStoreFileIoFactory(factory, backupIoFactory);
+        pageStore.setPageStoreFileIOFactories(factory, backupIoFactory);
 
         return factory.managedAlignedBuffers();
     }

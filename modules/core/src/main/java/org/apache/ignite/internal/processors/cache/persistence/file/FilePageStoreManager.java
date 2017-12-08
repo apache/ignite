@@ -659,13 +659,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param factory File IO factory to override default, may be used for blocked read-write.
-     * @param backupIoFactory File IO factory for reading V1 page store and for fast touching page files (non blocking).
+     * @param pageStoreFileIoFactory File IO factory to override default, may be used for blocked read-write.
+     * @param pageStoreV1FileIoFactory File IO factory for reading V1 page store and for fast touching page files (non blocking).
      */
-    public void pageStoreFileIoFactory(FileIOFactory factory,
-        FileIOFactory backupIoFactory) {
-        this.pageStoreFileIoFactory = factory;
-        this.pageStoreV1FileIoFactory = backupIoFactory;
+    public void setPageStoreFileIOFactories(final FileIOFactory pageStoreFileIoFactory,
+        final FileIOFactory pageStoreV1FileIoFactory) {
+        this.pageStoreFileIoFactory = pageStoreFileIoFactory;
+        this.pageStoreV1FileIoFactory = pageStoreV1FileIoFactory;
     }
 
     /**
@@ -675,9 +675,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return pageStoreFileIoFactory;
     }
 
-
     /**
-     * @return Page size in bytes.
+     * @return Durable memory page size in bytes.
      */
     public int pageSize() {
         return dsCfg.getPageSize();
