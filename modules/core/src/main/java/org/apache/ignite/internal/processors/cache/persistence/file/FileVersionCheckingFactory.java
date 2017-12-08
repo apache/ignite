@@ -37,16 +37,24 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     /** Factory to provide I/O interfaces for read/write operations with files. */
     private final FileIOFactory fileIOFactory;
 
+    /** Factory to provide I/O interfaces for read/write operations with files. This is backup factory for V1 page store. */
+    private FileIOFactory storV1FileIoFactory;
+
     /** Memory configuration. */
     private final DataStorageConfiguration memCfg;
 
     /**
-     * @param fileIOFactory File io factory.
+     * @param fileIOFactory File IO factory.
+     * @param storV1FileIoFactory File IO factory for V1 page store and for version checking.
      * @param memCfg Memory configuration.
      */
     public FileVersionCheckingFactory(
-        FileIOFactory fileIOFactory, DataStorageConfiguration memCfg) {
+        FileIOFactory fileIOFactory,
+        FileIOFactory storV1FileIoFactory,
+        DataStorageConfiguration memCfg) {
+
         this.fileIOFactory = fileIOFactory;
+        this.storV1FileIoFactory = storV1FileIoFactory;
         this.memCfg = memCfg;
     }
 
@@ -55,7 +63,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         if (!file.exists())
             return createPageStore(type, file, latestVersion());
 
-        try (FileIO fileIO = fileIOFactory.create(file)) {
+        try (FileIO fileIO = storV1FileIoFactory.create(file)) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)
@@ -101,10 +109,10 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param file File.
      * @param ver Version.
      */
-    public FilePageStore createPageStore(byte type, File file, int ver) throws IgniteCheckedException {
+    public FilePageStore createPageStore(byte type, File file, int ver) {
         switch (ver) {
             case FilePageStore.VERSION:
-                return new FilePageStore(type, file, fileIOFactory, memCfg);
+                return new FilePageStore(type, file, storV1FileIoFactory, memCfg);
 
             case FilePageStoreV2.VERSION:
                 return new FilePageStoreV2(type, file, fileIOFactory, memCfg);

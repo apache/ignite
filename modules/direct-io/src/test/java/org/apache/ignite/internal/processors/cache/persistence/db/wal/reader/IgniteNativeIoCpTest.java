@@ -18,21 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import com.google.common.base.Strings;
-import java.nio.ByteBuffer;
-import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffer;
-import org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffersDirectFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.jsr166.ConcurrentHashMap8;
 
 public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
 

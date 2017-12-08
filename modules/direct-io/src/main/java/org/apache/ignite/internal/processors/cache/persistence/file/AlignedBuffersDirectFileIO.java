@@ -42,7 +42,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     private final File file;
 
     private ThreadLocal<ByteBuffer> tblOnePageAligned;
-    private ConcurrentHashMap8<Long, String> managedAlignedBuffers;
+    private ConcurrentHashMap8<Long, Thread> managedAlignedBuffers;
 
     private int fd = -1;
 
@@ -52,7 +52,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         final File file,
         final OpenOption[] modes,
         final ThreadLocal<ByteBuffer> tblOnePageAligned,
-        final ConcurrentHashMap8<Long, String> managedAlignedBuffers) throws IOException {
+        final ConcurrentHashMap8<Long, Thread> managedAlignedBuffers) throws IOException {
 
         this.fsBlockSize = fsBlockSize;
         this.pageSize = pageSize;
@@ -103,7 +103,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         }
 
         final boolean useTlb = size == pageSize;
-        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffer.allocate(fsBlockSize, size);
+        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
 
         try {
 
@@ -111,13 +111,13 @@ public class AlignedBuffersDirectFileIO implements FileIO {
             if (loaded < 0)
                 return loaded;
 
-            AlignedBuffer.copyMemory(alignedBuf, destBuf);
+            AlignedBuffers.copyMemory(alignedBuf, destBuf);
 
             return moveBufPosition(destBuf, loaded);
         }
         finally {
             if (!useTlb)
-                AlignedBuffer.free(alignedBuf);
+                AlignedBuffers.free(alignedBuf);
         }
     }
 
@@ -137,7 +137,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         }
 
         final boolean useTlb = size == pageSize;
-        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffer.allocate(fsBlockSize, size);
+        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
 
         try {
 
@@ -145,13 +145,13 @@ public class AlignedBuffersDirectFileIO implements FileIO {
             if (loaded < 0)
                 return loaded;
 
-            AlignedBuffer.copyMemory(alignedBuf, destBuf);
+            AlignedBuffers.copyMemory(alignedBuf, destBuf);
 
             return moveBufPosition(destBuf, loaded);
         }
         finally {
             if (!useTlb)
-                AlignedBuffer.free(alignedBuf);
+                AlignedBuffers.free(alignedBuf);
         }
     }
 
@@ -173,9 +173,9 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         }
 
         final boolean useTlb = size == pageSize;
-        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffer.allocate(fsBlockSize, size);
+        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
         try {
-            AlignedBuffer.copyMemory(srcBuf, alignedBuf);
+            AlignedBuffers.copyMemory(srcBuf, alignedBuf);
 
             final int written = writeAligned(alignedBuf);
 
@@ -183,7 +183,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         }
         finally {
             if (!useTlb)
-                AlignedBuffer.free(alignedBuf);
+                AlignedBuffers.free(alignedBuf);
         }
     }
 
@@ -198,9 +198,9 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         }
 
         final boolean useTlb = size == pageSize;
-        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffer.allocate(fsBlockSize, size);
+        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
         try {
-            AlignedBuffer.copyMemory(srcBuf, alignedBuf);
+            AlignedBuffers.copyMemory(srcBuf, alignedBuf);
 
             final int written = writeAligned(alignedBuf, position);
 
@@ -208,7 +208,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         }
         finally {
             if (!useTlb)
-                AlignedBuffer.free(alignedBuf);
+                AlignedBuffers.free(alignedBuf);
         }
     }
 
@@ -338,7 +338,6 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public long size() throws IOException {
         return file.length();
-        // throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */

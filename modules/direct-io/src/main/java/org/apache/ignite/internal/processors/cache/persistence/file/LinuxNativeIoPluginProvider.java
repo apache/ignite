@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -41,7 +42,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 public class LinuxNativeIoPluginProvider implements PluginProvider {
 
-    @Nullable private ConcurrentHashMap8<Long, String> managedBuffers;
+    @Nullable private ConcurrentHashMap8<Long, Thread> managedBuffers;
     private IgniteLogger log;
 
     public LinuxNativeIoPluginProvider() {
@@ -75,13 +76,22 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
     }
 
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if(managedBuffers!=null) {
-            log.info("Direct IO buffer "+ managedBuffers.size());
-            for (Map.Entry<Long, String> next : managedBuffers.entrySet()) {
-                log.info("Direct IO buffer "+ next);
-            }
-            for (Long next : managedBuffers.keySet()) {
-                AlignedBuffer.free(next);
+        if (managedBuffers != null) {
+            log.info("Direct IO buffers to be freed: " + managedBuffers.size());
+            for (Map.Entry<Long, Thread> next : managedBuffers.entrySet()) {
+
+                Thread th = next.getValue();
+                boolean thAlive = th.isAlive();
+                Long addr = next.getKey();
+                String thName = th.getName();
+
+                if (log.isInfoEnabled())
+                    log.info("Direct IO buffer addr=" + addr + " T:" + thName + " alive " + thAlive);
+
+                if (thAlive)
+                    AlignedBuffers.free(addr);
+                else
+                    U.warn(log, "Can't free buffer for alive thread: " + thName);
             }
         }
     }
@@ -114,7 +124,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
         return new LinuxNativeIoPlugin();
     }
 
-    @Nullable private ConcurrentHashMap8<Long, String> setupDirect(IgniteEx ignite) {
+    @Nullable private ConcurrentHashMap8<Long, Thread> setupDirect(IgniteEx ignite) {
         final GridCacheSharedContext<Object, Object> cacheCtx = ignite.context().cache().context();
         final IgnitePageStoreManager ignitePageStoreManager = cacheCtx.pageStore();
 
@@ -126,12 +136,13 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
 
         final FilePageStoreManager pageStore = (FilePageStoreManager)ignitePageStoreManager;
 
+        final FileIOFactory backupIoFactory = pageStore.getPageStoreFileIoFactory();
         final AlignedBuffersDirectFileIOFactory factory = new AlignedBuffersDirectFileIOFactory(
             ignite.log(),
             pageStore.workDir(),
             pageStore.pageSize(),
-            pageStore.getPageStoreFileIoFactory());
-        final ConcurrentHashMap8<Long, String> buffers = factory.managedAlignedBuffers();
+            backupIoFactory);
+        final ConcurrentHashMap8<Long, Thread> buffers = factory.managedAlignedBuffers();
         if (factory.isDirectIoAvailable()) {
             GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)cacheCtx.database();
 
@@ -142,7 +153,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
                 }
             });
 
-            pageStore.pageStoreFileIoFactory(factory);
+            pageStore.pageStoreFileIoFactory(factory, backupIoFactory);
         }
 
         return buffers;

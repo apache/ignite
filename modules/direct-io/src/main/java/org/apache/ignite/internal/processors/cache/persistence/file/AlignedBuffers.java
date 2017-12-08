@@ -24,7 +24,10 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.GridUnsafe;
 import sun.nio.ch.DirectBuffer;
 
-public class AlignedBuffer {
+/**
+ *
+ */
+public class AlignedBuffers {
     public static ByteBuffer allocate(int fsBlockSize, int capacity) {
         assert fsBlockSize > 0;
         assert capacity > 0;
@@ -46,19 +49,22 @@ public class AlignedBuffer {
         IgniteNativeIoLib.free(new Pointer(address));
     }
 
-    static void copyMemory(ByteBuffer sourceBuffer, ByteBuffer destAligned) {
+    static void copyMemory(ByteBuffer src, ByteBuffer dest) {
         //todo check bounds
+        int size = src.remaining();
 
-        int size = sourceBuffer.remaining();
-
-        if (sourceBuffer instanceof DirectBuffer)
-            GridUnsafe.copyMemory(
-                GridUnsafe.bufferAddress(sourceBuffer),
-                GridUnsafe.bufferAddress(destAligned),
-                size);
+        if (src instanceof DirectBuffer && dest instanceof DirectBuffer) {
+            GridUnsafe.copyMemory(GridUnsafe.bufferAddress(src), GridUnsafe.bufferAddress(dest), size);
+        }
+        else if (!(src instanceof DirectBuffer) && dest instanceof DirectBuffer) {
+            new Pointer(GridUnsafe.bufferAddress(dest)).write(0, src.array(), src.arrayOffset(), size);
+        }
+        else if ((src instanceof DirectBuffer) && !(dest instanceof DirectBuffer)) {
+            new Pointer(GridUnsafe.bufferAddress(src)).read(0, dest.array(), dest.arrayOffset(), size);
+        }
         else {
-            Pointer pointer = new Pointer(GridUnsafe.bufferAddress(destAligned));
-            pointer.write(0, sourceBuffer.array(), sourceBuffer.arrayOffset(), size);
+            throw new UnsupportedOperationException("Unable to copy memory from [" + src.getClass() + "]" +
+                " to [" + dest.getClass() + "]");
         }
     }
 }

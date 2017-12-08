@@ -122,7 +122,7 @@ public class FilePageStoreTest {
         DataStorageConfiguration cfg = new DataStorageConfiguration();
         cfg.setPageSize(pageSize);
 
-        FileVersionCheckingFactory factory = new FileVersionCheckingFactory(ioFactory, cfg);
+        FileVersionCheckingFactory factory = new FileVersionCheckingFactory(ioFactory, new RandomAccessFileIOFactory(), cfg);
         File file = new File("store.dat");
         System.err.println(file.getAbsolutePath());
 

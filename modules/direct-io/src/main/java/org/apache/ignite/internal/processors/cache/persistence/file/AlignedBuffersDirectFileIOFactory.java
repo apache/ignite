@@ -52,7 +52,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
     private ThreadLocal<ByteBuffer> tblOnePageAligned;
 
     /** Managed aligned buffers. */
-    private final ConcurrentHashMap8<Long, String> managedAlignedBuffers = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap8<Long, Thread> managedAlignedBuffers = new ConcurrentHashMap8<>();
 
     public AlignedBuffersDirectFileIOFactory(
         final IgniteLogger log,
@@ -107,9 +107,9 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
     @NotNull public ByteBuffer createManagedBuffer(int capacity) {
         assert !useBackupFactory : "Direct IO is disabled, aligned managed buffer creation is disabled now";
 
-        final ByteBuffer allocate = AlignedBuffer.allocate(fsBlockSize, capacity).order(ByteOrder.nativeOrder());
+        final ByteBuffer allocate = AlignedBuffers.allocate(fsBlockSize, capacity).order(ByteOrder.nativeOrder());
 
-        managedAlignedBuffers.put(GridUnsafe.bufferAddress(allocate), Thread.currentThread().getName());
+        managedAlignedBuffers.put(GridUnsafe.bufferAddress(allocate), Thread.currentThread());
 
         return allocate;
     }
@@ -136,7 +136,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         return !useBackupFactory;
     }
 
-    public ConcurrentHashMap8<Long, String> managedAlignedBuffers() {
+    public ConcurrentHashMap8<Long, Thread> managedAlignedBuffers() {
         return managedAlignedBuffers;
     }
 }
