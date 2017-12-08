@@ -32,7 +32,8 @@ import org.junit.runners.Suite;
     MathImplMainTestSuite.class,
     RegressionsTestSuite.class,
     ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class
+    DecisionTreesTestSuite.class,
+    LocalModelsTest.class
 })
 public class IgniteMLTestSuite {
     // No-op.
