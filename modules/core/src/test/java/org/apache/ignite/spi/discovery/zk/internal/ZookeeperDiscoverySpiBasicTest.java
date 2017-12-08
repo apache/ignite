@@ -65,6 +65,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -1531,6 +1532,21 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
             waitForTopology(i + 2);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void _testCommunicationFailure() throws Exception {
+        Ignite srv0 = startGrid(0);
+
+        Ignite srv1 = startGrid(1);
+
+        info("Close communication");
+
+        ((TcpCommunicationSpi)srv1.configuration().getCommunicationSpi()).simulateNodeFailure();
+
+        Thread.sleep(60_000);
     }
 
     /**

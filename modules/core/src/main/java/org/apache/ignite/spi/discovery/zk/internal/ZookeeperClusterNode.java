@@ -71,6 +71,9 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
     /** Internal discovery host names as strings. */
     private Collection<String> hostNames;
 
+    /** */
+    private long sesTimeout;
+
     /** Metrics provider. */
     private transient DiscoveryMetricsProvider metricsProvider;
 
@@ -97,10 +100,14 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
 
     /**
      * @param id Node ID.
+     * @param addrs Node addresses.
+     * @param hostNames Node host names.
      * @param ver Node version.
      * @param attrs Node attributes.
      * @param consistentId Consistent ID.
+     * @param sesTimeout Zookeeper session timeout.
      * @param client Client node flag.
+     * @param metricsProvider Metrics provider.
      */
     public ZookeeperClusterNode(
         UUID id,
@@ -109,6 +116,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
         IgniteProductVersion ver,
         Map<String, Object> attrs,
         Serializable consistentId,
+        long sesTimeout,
         boolean client,
         DiscoveryMetricsProvider metricsProvider
     ) {
@@ -121,6 +129,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
         this.addrs = addrs;
         this.hostNames = hostNames;
         this.consistentId = consistentId;
+        this.sesTimeout = sesTimeout;
         this.metricsProvider = metricsProvider;
 
         if (client)

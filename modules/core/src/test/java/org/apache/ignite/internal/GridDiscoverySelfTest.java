@@ -243,6 +243,8 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < NODES_CNT; i++)
                 stopGrid(i);
 
+            waitForTopology(1);
+
             final long topVer = discoMgr.topologyVersion();
 
             assert topVer == topVer0 + NODES_CNT * 2 : "Unexpected topology version: " + topVer;

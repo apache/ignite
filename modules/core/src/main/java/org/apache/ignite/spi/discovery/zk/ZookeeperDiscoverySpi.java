@@ -404,16 +404,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        if (impl != null) {
-            try {
-                impl.stop();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                throw new IgniteSpiException(e);
-            }
-        }
+        if (impl != null)
+            impl.stop();
     }
 
     /** {@inheritDoc} */
@@ -444,6 +436,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             locNodeVer,
             locNodeAttrs,
             consistentId,
+            sesTimeout,
             ignite.configuration().isClientMode(),
             metricsProvider);
 
