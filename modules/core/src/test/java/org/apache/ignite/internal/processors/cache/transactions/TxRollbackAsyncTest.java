@@ -40,6 +40,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
@@ -203,16 +204,34 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testSimple() throws Exception {
+    public void testAsyncRollbacks() throws Exception {
         final Ignite client = startClient();
 
-        testSimple0(client, 2);
+        testAsyncRollbacks0(client, 2);
     }
 
     /**
      *
      */
-    private void testSimple0(final Ignite node, int threadsCnt) throws Exception {
+    public void testNormalRollbacks() throws Exception {
+        final Ignite client = startClient();
+
+        Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1);
+        client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+
+        tx.rollback();
+
+        client.cache(CACHE_NAME).put(0, 1);
+
+        assertEquals(1, client.cache(CACHE_NAME).get(0));
+
+        checkFutures();
+    }
+
+    /**
+     *
+     */
+    private void testAsyncRollbacks0(final Ignite node, int threadsCnt) throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 
         final CountDownLatch readStartLatch = new CountDownLatch(1);
@@ -229,7 +248,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 if (idx0 == 0) {
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)){
-                        node.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+                        node.cache(CACHE_NAME).put(0, 0); // Own the lock.
 
                         readStartLatch.countDown();
 
@@ -239,18 +258,28 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     }
                 }
                 else {
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                        txs.add(tx);
+                    Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1);
+                    txs.add(tx);
 
-                        enqueueLatch.countDown();
+                    enqueueLatch.countDown();
 
-                        U.awaitQuiet(readStartLatch);
+                    U.awaitQuiet(readStartLatch);
 
-                        node.cache(CACHE_NAME).get(0); // Lock acquisition is queued.
+                    try {
+                        node.cache(CACHE_NAME).get(0); // Try own the lock.
+
+                        fail("Op must timeout");
                     }
-                    catch (CacheException e) {
-                        e.printStackTrace();
+                    catch (Exception e) {
+                        assertTrue(e.getMessage(), X.hasCause(e, TransactionRollbackException.class));
+                    }
 
+                    try {
+                        node.cache(CACHE_NAME).put(0, 1);
+
+                        fail("Op must fail");
+                    }
+                    catch (Exception e) {
                         assertTrue(e.getMessage(), X.hasCause(e, TransactionRollbackException.class));
                     }
                 }
@@ -260,6 +289,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         U.awaitQuiet(enqueueLatch);
 
         final Transaction tx0 = txs.remove(0);
+
+        // TODO FIXME if no timeout rollback has race with get. Get must throw an exception if tx already rolled back.
+        Thread.sleep(500);
 
         tx0.rollback();
 

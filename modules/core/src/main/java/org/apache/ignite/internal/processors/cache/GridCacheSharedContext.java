@@ -960,7 +960,9 @@ public class GridCacheSharedContext<K, V> {
     public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
         tx.txState().awaitLastFuture(this);
 
-        return tx.rollbackNearTxLocalAsync();
+        final GridNearTxLocal locTx = txMgr.userTx();
+
+        return tx.rollbackNearTxLocalAsync(locTx == tx, false);
     }
 
     /**
