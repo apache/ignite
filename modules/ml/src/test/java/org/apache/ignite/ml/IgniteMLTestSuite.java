@@ -34,7 +34,8 @@ import org.junit.runners.Suite;
     RegressionsTestSuite.class,
     ClusteringTestSuite.class,
     DecisionTreesTestSuite.class,
-    KNNTestSuite.class
+    KNNTestSuite.class,
+    LocalModelsTest.class
 })
 public class IgniteMLTestSuite {
     // No-op.

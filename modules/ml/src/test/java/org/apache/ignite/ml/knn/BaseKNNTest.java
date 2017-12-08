@@ -76,7 +76,7 @@ public class BaseKNNTest extends GridCommonAbstractTest {
         try {
             Path path = Paths.get(this.getClass().getClassLoader().getResource(rsrcPath).toURI());
             try {
-                return LabeledDataset.loadTxt(path, SEPARATOR, false, isFallOnBadData, FillMissingValueWith.ZERO);
+                return LabeledDataset.loadTxt(path, SEPARATOR, false, isFallOnBadData);
             }
             catch (IOException e) {
                 e.printStackTrace();

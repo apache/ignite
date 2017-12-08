@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.Function;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
 import org.apache.ignite.ml.clustering.KMeansModel;
 import org.apache.ignite.ml.knn.models.KNNModel;
@@ -28,8 +29,10 @@ import org.apache.ignite.ml.knn.models.KNNModelFormat;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModel;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModelFormat;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionTrainer;
 import org.apache.ignite.ml.structures.LabeledDataset;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -38,39 +41,68 @@ import org.junit.Test;
  */
 public class LocalModelsTest {
     /** */
-    private String mdlFilePath = "model.mlmod";
-
-    /**
-     *
-     */
-    @After
-    public void cleanUp() throws IOException {
-        Files.deleteIfExists(Paths.get(mdlFilePath));
-    }
-
-    /**
-     *
-     */
     @Test
-    public void importExportKMeansModelTest() {
-        Path mdlPath = Paths.get(mdlFilePath);
+    public void importExportKMeansModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            KMeansModel mdl = getClusterModel();
 
-        KMeansModel mdl = getClusterModel();
+            Exporter<KMeansModelFormat, String> exporter = new FileExporter<>();
 
-        Exporter<KMeansModelFormat, String> exporter = new FileExporter<>();
-        mdl.saveModel(exporter, mdlFilePath);
+            mdl.saveModel(exporter, mdlFilePath);
 
-        Assert.assertTrue(String.format("File %s not found.", mdlPath.toString()), Files.exists(mdlPath));
+            KMeansModelFormat load = exporter.load(mdlFilePath);
 
-        KMeansModelFormat load = exporter.load(mdlFilePath);
-        KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
+            Assert.assertNotNull(load);
 
-        Assert.assertTrue("", mdl.equals(importedMdl));
+            KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
+
+            Assert.assertTrue("", mdl.equals(importedMdl));
+
+            return null;
+        });
     }
 
-    /**
-     *
-     */
+    /** */
+    @Test
+    public void importExportOLSMultipleLinearRegressionModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            OLSMultipleLinearRegressionModel mdl = getAbstractMultipleLinearRegressionModel();
+
+            Exporter<OLSMultipleLinearRegressionModelFormat, String> exporter = new FileExporter<>();
+
+            mdl.saveModel(exporter, mdlFilePath);
+
+            OLSMultipleLinearRegressionModelFormat load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+
+            OLSMultipleLinearRegressionModel importedMdl = load.getOLSMultipleLinearRegressionModel();
+
+            Assert.assertTrue("", mdl.equals(importedMdl));
+
+            return null;
+        });
+    }
+
+    /** */
+    private void executeModelTest(Function<String, Void> code) throws IOException {
+        Path mdlPath = Files.createTempFile(null, null);
+
+        Assert.assertNotNull(mdlPath);
+
+        try {
+            String mdlFilePath = mdlPath.toAbsolutePath().toString();
+
+            Assert.assertTrue(String.format("File %s not found.", mdlFilePath), Files.exists(mdlPath));
+
+            code.apply(mdlFilePath);
+        }
+        finally {
+            Files.deleteIfExists(mdlPath);
+        }
+    }
+
+    /** */
     private KMeansModel getClusterModel() {
         KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
 
@@ -80,6 +112,24 @@ public class LocalModelsTest {
         DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {v1, v2});
 
         return clusterer.cluster(points, 1);
+    }
+
+    /** */
+    private OLSMultipleLinearRegressionModel getAbstractMultipleLinearRegressionModel() {
+        double[] data = new double[] {
+            0, 0, 0, 0, 0, 0, // IMPL NOTE values in this row are later replaced (with 1.0)
+            0, 2.0, 0, 0, 0, 0,
+            0, 0, 3.0, 0, 0, 0,
+            0, 0, 0, 4.0, 0, 0,
+            0, 0, 0, 0, 5.0, 0,
+            0, 0, 0, 0, 0, 6.0};
+
+        final int nobs = 6, nvars = 5;
+
+        OLSMultipleLinearRegressionTrainer trainer
+            = new OLSMultipleLinearRegressionTrainer(0, nobs, nvars, new DenseLocalOnHeapMatrix(1, 1));
+
+        return trainer.train(data);
     }
 
 
