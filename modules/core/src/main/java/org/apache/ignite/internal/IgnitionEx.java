@@ -44,6 +44,8 @@ import java.util.logging.Handler;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import org.apache.curator.test.InstanceSpec;
+import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -101,6 +103,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
@@ -152,6 +155,67 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_J
  * GridConfiguration cfg = new GridConfiguration();
  */
 public class IgnitionEx {
+    /** */
+    // TODO ZK
+    public static volatile boolean TEST_ZK = IgniteSystemProperties.getBoolean("TEST_ZK", false);
+
+    /** */
+    public static TestingCluster zkCluster;
+
+    synchronized static void startZk() {
+        if (TEST_ZK && zkCluster == null) {
+            System.out.println("Start ZK cluster for tests");
+
+            zkCluster = createTestingCluster(1);
+
+            try {
+                System.setProperty("zookeeper.forceSync", "false");
+                zkCluster.start();
+
+                System.out.println("ZK cluster started: " + zkCluster.getConnectString());
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static TestingCluster createTestingCluster(int instances) {
+        String tmpDir = System.getProperty("java.io.tmpdir");
+
+        List<InstanceSpec> specs = new ArrayList<>();
+
+        for (int i = 0; i < instances; i++) {
+            File file = new File(tmpDir, "apacheIgniteTestZk-" + i);
+
+            if (file.isDirectory())
+                deleteRecursively0(file);
+            else {
+                if (!file.mkdirs())
+                    throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
+            }
+
+
+            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500));
+        }
+
+        return new TestingCluster(specs);
+    }
+
+    private static void deleteRecursively0(File file) {
+        File[] files = file.listFiles();
+
+        if (files == null)
+            return;
+
+        for (File f : files) {
+            if (f.isDirectory())
+                deleteRecursively0(f);
+            else
+                f.delete();
+        }
+    }
+
     /** Default configuration path relative to Ignite home. */
     public static final String DFLT_CFG = "config/default-config.xml";
 
@@ -2220,6 +2284,16 @@ public class IgnitionEx {
             }
 
             initializeDataStorageConfiguration(myCfg);
+
+            if (TEST_ZK) {
+                startZk();
+
+                ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+
+                zkSpi.setZkConnectionString(zkCluster.getConnectString());
+
+                myCfg.setDiscoverySpi(zkSpi);
+            }
 
             return myCfg;
         }
