@@ -74,6 +74,7 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  * <li>{@link #setBucketNameSuffix(String)}</li>
  * <li>{@link #setClientConfiguration(ClientConfiguration)}</li>
+ * <li>{@link #setBucketEndpoint(String)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * {@link S3CheckpointSpi} can be configured as follows:
@@ -154,6 +155,9 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
 
     /** Bucket name (generated). */
     private String bucketName;
+
+    /** Bucket endpoint (set by user). */
+    private String bucketEndpoint;
 
     /** Amazon client configuration. */
     private ClientConfiguration cfg;
@@ -242,6 +246,22 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     }
 
     /**
+     * Sets bucket endpoint.
+     * Sample: s3.us-east-2.amazonaws.com.
+     * Possible endpoints are here: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region.
+     * If the endpoint is not set then S3CheckpointSpi will go to each region to find a corresponding bucket.
+     *
+     * @param bucketEndpoint Bucket endpoint.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public S3CheckpointSpi setBucketEndpoint(String bucketEndpoint) {
+        this.bucketEndpoint = bucketEndpoint;
+
+        return this;
+    }
+
+    /**
      * Sets Amazon client configuration.
      * <p>
      * For details refer to Amazon S3 API reference.
@@ -298,6 +318,9 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
 
         s3 = cfg != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(cred);
 
+        if (!F.isEmpty(bucketEndpoint))
+            s3.setEndpoint(bucketEndpoint);
+
         if (!s3.doesBucketExist(bucketName)) {
             try {
                 s3.createBucket(bucketName);
@@ -324,6 +347,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
             }
         }
 
+        String location = s3.getBucketLocation(bucketName);
         Collection<S3TimeData> s3TimeDataLst = new LinkedList<>();
 
         try {

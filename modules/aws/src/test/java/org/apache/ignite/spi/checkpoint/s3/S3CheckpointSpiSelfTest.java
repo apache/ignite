@@ -24,6 +24,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -55,7 +57,7 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
 
         spi.setAwsCredentials(cred);
 
-        spi.setBucketNameSuffix("unit-test-bucket");
+        spi.setBucketNameSuffix(getBucketNameSuffix());
 
         super.spiConfigure(spi);
     }
@@ -221,5 +223,25 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
      */
     private void assertWithRetries(GridAbsClosureX assertion) throws IgniteInterruptedCheckedException {
         GridTestUtils.retryAssert(log, 6, 5000, assertion);
+    }
+
+    /**
+     * Gets a Bucket name suffix
+     * Bucket name suffix should be unique for the host to parallel test run on one bucket.
+     * Please note that the final bucket name should not exceed 63 chars.
+     * @return bucketNameSuffix
+     */
+    static String getBucketNameSuffix() {
+        String bucketNameSuffix = null;
+        try {
+            bucketNameSuffix = IgniteS3TestSuite.getBucketName(
+                "unit-test-" + InetAddress.getLocalHost().getHostName().toLowerCase());
+        }
+        catch (UnknownHostException e) {
+            bucketNameSuffix = IgniteS3TestSuite.getBucketName(
+                "unit-test-rnd-" + (int)(Math.random() * 100));
+        }
+
+        return bucketNameSuffix;
     }
 }
