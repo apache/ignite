@@ -67,6 +67,11 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return memMetrics.getTotalAllocatedSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getDirtyPages() {
         return memMetrics.getDirtyPages();
     }
@@ -84,6 +89,11 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getPhysicalMemoryPages() {
         return memMetrics.getPhysicalMemoryPages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemorySize() {
+        return memMetrics.getPhysicalMemorySize();
     }
 
     /** {@inheritDoc} */

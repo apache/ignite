@@ -30,6 +30,9 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     private long totalAllocatedPages;
 
     /** */
+    private long totalAllocatedSize;
+
+    /** */
     private float allocationRate;
 
     /** */
@@ -54,6 +57,9 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     private long physicalMemoryPages;
 
     /** */
+    private long physicalMemorySize;
+
+    /** */
     private long checkpointBufferSize;
 
     /**
@@ -62,6 +68,7 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     public DataRegionMetricsSnapshot(DataRegionMetrics metrics) {
         name = metrics.getName();
         totalAllocatedPages = metrics.getTotalAllocatedPages();
+        totalAllocatedSize = metrics.getTotalAllocatedSize();
         allocationRate = metrics.getAllocationRate();
         evictionRate = metrics.getEvictionRate();
         largeEntriesPagesPercentage = metrics.getLargeEntriesPagesPercentage();
@@ -70,6 +77,7 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
         pageReplaceRate = metrics.getPagesReplaceRate();
         pageReplaceAge = metrics.getPagesReplaceAge();
         physicalMemoryPages = metrics.getPhysicalMemoryPages();
+        physicalMemorySize = metrics.getPhysicalMemorySize();
         checkpointBufferSize = metrics.getCheckpointBufferSize();
     }
 
@@ -81,6 +89,11 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
         return totalAllocatedPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return totalAllocatedSize;
     }
 
     /** {@inheritDoc} */
@@ -120,6 +133,11 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getPhysicalMemoryPages() {
+        return physicalMemoryPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemorySize() {
         return physicalMemoryPages;
     }
 

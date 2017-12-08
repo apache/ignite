@@ -64,6 +64,15 @@ public interface DataRegionMetrics {
     public long getTotalAllocatedPages();
 
     /**
+     * Gets a total size of memory allocated in the data region. When persistence is disabled, this
+     * metric shows the total size of pages in memory. When persistence is enabled, this metric shows the
+     * total size of pages in memory and on disk.
+     *
+     * @return Total size of memory allocated, in bytes.
+     */
+    public long getTotalAllocatedSize();
+
+    /**
      * Gets pages allocation rate of a memory region.
      *
      * @return Number of allocated pages per second.
@@ -127,6 +136,14 @@ public interface DataRegionMetrics {
      * @return Total number of pages loaded to RAM.
      */
     public long getPhysicalMemoryPages();
+
+    /**
+     * Gets total size of pages loaded to the RAM. When persistence is disabled, this metric is equal
+     * to {@link #getTotalAllocatedSize()}.
+     *
+     * @return Total size of pages loaded to RAM in bytes.
+     */
+    public long getPhysicalMemorySize();
 
     /**
      * Gets checkpoint buffer size.

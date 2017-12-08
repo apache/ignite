@@ -102,6 +102,13 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        assert pageMem != null;
+
+        return getTotalAllocatedPages() * pageMem.pageSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public float getAllocationRate() {
         if (!metricsEnabled)
             return 0;
@@ -171,6 +178,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         return pageMem.loadedPages();
     }
 
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemorySize() {
+        assert pageMem != null;
+
+        return getPhysicalMemoryPages() * pageMem.pageSize();
+    }
 
     /** {@inheritDoc} */
     @Override public long getCheckpointBufferSize() {
