@@ -22,22 +22,23 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -222,80 +223,215 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testAlreadyDoneConcurrent() throws Exception {
-        testAlreadyDone(false);
+    public void testConcurrent() throws Exception {
+        testAlreadyDone(false, true);
+        testAlreadyDone(false, false);
     }
 
     /**
      *
      */
-    public void testAlreadyDonePredisabled() throws Exception {
-        testAlreadyDone(true);
+    public void testConcurrentOnAlreadyChanged() throws Exception {
+        testAlreadyDone(true, true);
+        testAlreadyDone(true, false);
     }
 
     /**
      *
      */
-    private void testAlreadyDone(boolean alreadyDisabled) throws Exception {
-        final IgniteEx ignite = startGrid(1);
+    private void testAlreadyDone(boolean alreadyChanged, final boolean disable) throws Exception {
+        try {
+            final IgniteEx ignite1 = startGrid(1);
+            final IgniteEx ignite2 = startGrid(2);
+            final IgniteEx client3 = startGrid(3);
+            final IgniteEx ignite4 = startGrid(4);
+            final IgniteEx ignite5 = startGrid(5);
+
+            final List<IgniteEx> ignites = new LinkedList<>();
+
+            ignites.add(ignite1);
+            ignites.add(ignite2);
+            ignites.add(client3);
+            ignites.add(ignite4);
+            ignites.add(ignite5);
+
+            final Collection<GridCacheSharedContext> ctxs = new HashSet<>();
+
+            for (IgniteEx ignite : ignites)
+                ctxs.add(ignite.context().cache().context());
+
+            ignite1.active(true);
+
+            final int size = ignites.size() * 5;
+
+            if (alreadyChanged)
+                ignite1.context().cache().changeWalMode(Collections.singleton(CACHE1), disable, true).get();
+
+            Collection<Thread> threads = new HashSet<>();
+
+            for (int i = 0; i < size; i++) {
+                final int finalI = i;
+
+                Thread th = new Thread() {
+                    @Override public void run() {
+                        IgniteEx ignite = ignites.get(finalI % ignites.size());
+
+                        ignite.context().cache().changeWalMode(Collections.singleton(CACHE1), disable, true);
+                    }
+                };
+
+                threads.add(th);
+
+                th.start();
+            }
+
+            for (Thread th : threads)
+                th.join();
+
+            checkWal(ctxs, disable);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     *
+     */
+    public void testOriginatingNodeLeft() throws Exception {
+        testOriginatingLeft(false);
+    }
+
+    /**
+     *
+     */
+    public void testOriginatingClientLeft() throws Exception {
+        testOriginatingLeft(true);
+    }
+
+    /**
+     *
+     */
+    private void testOriginatingLeft(boolean client) throws Exception {
+        final IgniteEx ignite1 = startGrid(11);
+        final IgniteEx ignite2 = startGrid(12);
+        final IgniteEx ignite3 = startGrid(13);
+        final IgniteEx ignite4 = startGrid(14);
+        final IgniteEx ignite5 = startGrid(15);
+
+        final Collection<GridCacheSharedContext> ctxs = new HashSet<>();
+
+        ctxs.add(ignite1.context().cache().context());
+        ctxs.add(ignite2.context().cache().context());
+        ctxs.add(ignite3.context().cache().context());
+        ctxs.add(ignite4.context().cache().context());
+        ctxs.add(ignite5.context().cache().context());
+
+        int igniteId = client ? 3 : 1;
+
+        IgniteEx ignite = startGrid(igniteId);
+
+        if (client)
+            assertTrue(ignite.configuration().isClientMode());
 
         ignite.active(true);
 
-        final int size = 10;
+        requestWalModeCnangeAndFail(igniteId, true, ctxs);
 
-        final AtomicInteger duplicates = new AtomicInteger();
+        startGrid(igniteId);
 
-        if (alreadyDisabled)
-            ignite.cluster().disableWal(Collections.singleton(CACHE1));
+        requestWalModeCnangeAndFail(igniteId, false, ctxs);
+    }
 
-        Collection<Thread> threads = new HashSet<>();
+    /**
+     * @param igniteId Ignite id.
+     * @param disable Disable.
+     * @param ctxs Ctxs.
+     */
+    private void requestWalModeCnangeAndFail(final int igniteId, final boolean disable, final Collection<GridCacheSharedContext> ctxs)
+        throws InterruptedException, IgniteInterruptedCheckedException {
+        final CountDownLatch disableLatch = new CountDownLatch(1);
 
-        for (int i = 0; i < size; i++) {
-            Thread th = new Thread() {
-                @Override public void run() {
-                    IgniteInternalFuture fut =
-                        ignite.context().cache().changeWalMode(
-                            Collections.singleton(CACHE1),
-                            true,
-                            true);
+        new Thread() {
+            @Override public void run() {
+                grid(igniteId).context().cache().changeWalMode(Collections.singleton(CACHE1), disable, true);
 
-                    if (fut instanceof GridFinishedFuture)
-                        duplicates.incrementAndGet();
+                disableLatch.countDown();
+            }
+        }.start();
+
+        disableLatch.await();
+
+        stopGrid(igniteId, true);
+
+        checkWal(ctxs, disable);
+    }
+
+    /**
+     *
+     */
+    private void checkWal(final Collection<GridCacheSharedContext> ctxs, final boolean disable)
+        throws IgniteInterruptedCheckedException {
+        GridCacheSharedContext ctx0 = ctxs.iterator().next();
+
+        final int g1 = ctx0.cache().cacheDescriptor(CACHE1).groupId();
+
+        assertTrue(GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                for (GridCacheSharedContext ctx : ctxs)
+                    if (ctx.wal() != null && disable != ctx.wal().disabled(g1))
+                        return false;
+
+                return true;
+            }
+        }, 5000));
+
+        assertTrue(GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                try {
+                    // Make sure writes allowed
+                    for (GridCacheSharedContext ctx : ctxs)
+                        ctx.cache().getOrStartCache(CACHE1).put(1, 1);
                 }
-            };
+                catch (IgniteCheckedException e) {
+                    return false;
+                }
 
-            threads.add(th);
+                return true;
+            }
+        }, 5000));
 
-            th.start();
-        }
+        assertTrue(GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                for (GridCacheSharedContext ctx : ctxs) {
+                    final Map futs = U.field(ctx.cache(), "walModeChangeFuts");
 
-        for (Thread th : threads)
-            th.join();
+                    if (!futs.isEmpty())
+                        return false;
+                }
 
-        assertEquals(alreadyDisabled ? size : size - 1, duplicates.get());
+                return true;
+            }
+        }, 5000));
     }
 
     /**
      *
      */
     public void testCacheGroupsOps() throws Exception {
-        final Ignite ignite1 = startGrid(1);
-        final Ignite ignite2 = startGrid(2);
-        final Ignite client3 = startGrid(3);
+        final IgniteEx ignite1 = startGrid(1);
+        final IgniteEx ignite2 = startGrid(2);
+        final IgniteEx client3 = startGrid(3);
 
         assertTrue(client3.configuration().isClientMode());
 
         client3.active(true);
 
-        GridCacheSharedContext ctx1 = ((IgniteKernal)ignite1).context().cache().context();
-        GridCacheSharedContext ctx2 = ((IgniteKernal)ignite2).context().cache().context();
-        GridCacheSharedContext ctx3 = ((IgniteKernal)client3).context().cache().context();
-
         Collection<GridCacheSharedContext> ctxs = new HashSet<>();
 
-        ctxs.add(ctx1);
-        ctxs.add(ctx2);
-        ctxs.add(ctx3);
+        ctxs.add(ignite1.context().cache().context());
+        ctxs.add(ignite2.context().cache().context());
+        ctxs.add(client3.context().cache().context());
 
         Collection<Ignite> ignites = new LinkedHashSet<>();
 

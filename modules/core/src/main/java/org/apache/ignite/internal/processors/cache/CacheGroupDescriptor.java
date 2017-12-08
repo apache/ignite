@@ -127,7 +127,7 @@ public class CacheGroupDescriptor {
             (this.walMode == CacheGroupWalMode.ENABLE && walMode == CacheGroupWalMode.DISABLING) ||
             (this.walMode == CacheGroupWalMode.DISABLING && walMode == CacheGroupWalMode.DISABLE) ||
             (this.walMode == CacheGroupWalMode.DISABLE && walMode == CacheGroupWalMode.ENABLING) :
-            "Unexpected modification [current=" + this.walMode + " ,new=" + walMode + "]";
+            "Unexpected modification [current=" + this.walMode + ", new=" + walMode + "]";
 
         this.walMode = walMode;
     }

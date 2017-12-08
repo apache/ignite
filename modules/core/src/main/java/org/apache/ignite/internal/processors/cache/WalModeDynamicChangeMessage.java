@@ -36,6 +36,9 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
     /** */
     private static final byte PREPARE = 0x02;
 
+    /** Overwrite. */
+    private static final byte OVERRIDE = 0x04;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -64,6 +67,7 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
     WalModeDynamicChangeMessage(UUID uid,
         boolean disable,
         boolean prepare,
+        boolean override,
         GridIntList grpIds,
         UUID nodeId) {
         this.uid = uid;
@@ -75,6 +79,9 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
 
         if (prepare)
             flags |= PREPARE;
+
+        if (override)
+            flags |= OVERRIDE;
     }
 
     /**
@@ -103,6 +110,13 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
      */
     public boolean prepare() {
         return (flags & PREPARE) != 0;
+    }
+
+    /**
+     *
+     */
+    public boolean override() {
+        return (flags & OVERRIDE) != 0;
     }
 
     /** {@inheritDoc} */

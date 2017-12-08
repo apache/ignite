@@ -436,7 +436,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Enables Write Ahead Log for specified caches.
      *
      * @param cacheNames Collection of cache names.
-     *      * @param explicit Checks caches's cache groups contains only one cache
+     * @param explicit Checks caches's cache groups contains only one cache
      * @throws CacheException If error occurs.
      */
     public void enableWal(Collection<String> cacheNames, boolean explicit) throws IgniteException;
