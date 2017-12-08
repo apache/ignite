@@ -69,6 +69,8 @@
     <Compile Include="Result\BenchmarkConsoleResultWriter.cs" />
     <Compile Include="Result\BenchmarkFileResultWriter.cs" />
     <Compile Include="Result\IBenchmarkResultWriter.cs" />
+    <Compile Include="ThinClient\ThinClientGetBenchmark.cs" />
+    <Compile Include="ThinClient\ThinClientPutBenchmark.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
