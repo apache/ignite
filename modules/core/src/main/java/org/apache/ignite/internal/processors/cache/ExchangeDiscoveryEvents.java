@@ -155,6 +155,14 @@ public class ExchangeDiscoveryEvents {
     }
 
     /**
+     * @param evt Event.
+     * @return {@code True} if given event is {@link EventType#EVT_NODE_JOINED}.
+     */
+    public static boolean serverJoinEvent(DiscoveryEvent evt) {
+        return  (evt.type() == EVT_NODE_JOINED && !CU.clientNode(evt.eventNode()));
+    }
+
+    /**
      * @return Discovery data cache for last event.
      */
     public DiscoCache discoveryCache() {

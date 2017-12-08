@@ -1844,7 +1844,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         "the same name already exists): " + checkFile.getAbsolutePath());
                 else if (checkFile.length() != dsCfg.getWalSegmentSize() && mode == WALMode.DEFAULT)
                     throw new IgniteCheckedException("Failed to initialize WAL log segment " +
-                        "(WAL segment size change is not supported):" + checkFile.getAbsolutePath());
+                        "(WAL segment size change is not supported in 'DEFAULT' WAL mode) " +
+                        "[filePath=" + checkFile.getAbsolutePath() +
+                        ", fileSize=" + checkFile.length() +
+                        ", configSize=" + dsCfg.getWalSegments() + ']');
             }
             else if (create)
                 createFile(checkFile);

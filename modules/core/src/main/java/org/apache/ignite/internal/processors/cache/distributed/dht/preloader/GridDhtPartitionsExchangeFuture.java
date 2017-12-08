@@ -110,6 +110,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
+import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 
 /**
@@ -1540,7 +1542,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ExchangeDiscoveryEvents evts = exchCtx.events();
 
                 for (DiscoveryEvent evt : exchCtx.events().events()) {
-                    if (evts.serverLeftEvent(evt)) {
+                    if (serverLeftEvent(evt)) {
                         for (CacheGroupContext grp : cctx.cache().cacheGroups())
                             grp.affinityFunction().removeNode(evt.eventNode().id());
                     }
@@ -1555,7 +1557,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null) {
                 cctx.exchange().lastFinishedFuture(this);
 
-                logExchange();
+                if (exchCtx != null && (exchCtx.events().hasServerLeft() || exchCtx.events().hasServerJoin())) {
+                    ExchangeDiscoveryEvents evts = exchCtx.events();
+
+                    for (DiscoveryEvent evt : exchCtx.events().events()) {
+                        if (serverLeftEvent(evt) || serverJoinEvent(evt))
+                            logExchange(evt);
+                    }
+                }
+
             }
 
             return true;
@@ -1565,22 +1575,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Log exchange event.
      *
+     * @param evt Discovery event.
      */
-    private void logExchange() {
+    private void logExchange(DiscoveryEvent evt) {
         if (cctx.kernalContext().state().publicApiActiveState(false) && cctx.wal() != null) {
             if (((FileWriteAheadLogManager)cctx.wal()).serializerVersion() > 1)
                 try {
                     ExchangeRecord.Type type = null;
 
-                    if (firstDiscoEvt.type() == EVT_NODE_JOINED)
+                    if (evt.type() == EVT_NODE_JOINED)
                         type = ExchangeRecord.Type.JOIN;
-                    else if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
+                    else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
                         type = ExchangeRecord.Type.LEFT;
 
                     BaselineTopology blt = cctx.kernalContext().state().clusterState().baselineTopology();
 
-                    // todo handle merge exchange events
                     if (type != null && blt != null) {
                         Short constId = blt.consistentIdMapping().get(firstDiscoEvt.eventNode().consistentId());
 
