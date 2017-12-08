@@ -100,7 +100,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Bucket name. */
     private String bucketName;
 
-    /** Bucket endpoint, for instance, s3.us-east-2.amazonaws.com. */
+    /** Bucket endpoint */
     private @Nullable String bucketEndpoint;
 
     /** Init guard. */
@@ -258,9 +258,6 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
                 s3 = createAmazonS3Client();
 
-                if (!F.isEmpty(bucketEndpoint))
-                    s3.setEndpoint(bucketEndpoint);
-
                 if (!s3.doesBucketExist(bucketName)) {
                     try {
                         s3.createBucket(bucketName);
@@ -307,9 +304,14 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      * @return Client instance to use to connect to AWS.
      */
     private AmazonS3Client createAmazonS3Client() {
-        return cfg != null
+        AmazonS3Client cli = cfg != null
             ? (cred != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(credProvider, cfg))
             : (cred != null ? new AmazonS3Client(cred) : new AmazonS3Client(credProvider));
+
+        if (!F.isEmpty(bucketEndpoint))
+            cli.setEndpoint(bucketEndpoint);
+
+        return cli;
     }
 
     /**
@@ -327,11 +329,11 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /**
      * Sets bucket endpoint for IP finder.
-     * Sample: s3.us-east-2.amazonaws.com.
-     * Possible endpoints are here: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region.
-     * If the endpoint is not set then ipFinder will go to each region to find a corresponding bucket.
+     * If the endpoint is not set then IP finder will go to each region to find a corresponding bucket.
+     * For information about possible endpoint names visit
+     * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>
      *
-     * @param bucketEndpoint Bucket endpoint.
+     * @param bucketEndpoint Bucket endpoint, for example, s3.us-east-2.amazonaws.com.
      * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)

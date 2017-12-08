@@ -21,6 +21,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
@@ -100,17 +101,18 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
      * Gets Bucket name.
      * Bucket name should be unique for the host to parallel test run on one bucket.
      * Please note that the final bucket name should not exceed 63 chars.
-     * @return bucketName
+     *
+     * @return Bucket name.
      */
     static String getBucketName() {
-        String bucketName = null;
+        String bucketName;
         try {
             bucketName = IgniteS3TestSuite.getBucketName(
                 "ip-finder-unit-test-" + InetAddress.getLocalHost().getHostName().toLowerCase());
         }
         catch (UnknownHostException e) {
             bucketName = IgniteS3TestSuite.getBucketName(
-                "ip-finder-unit-test-rnd-" + (int)(Math.random() * 100));
+                "ip-finder-unit-test-rnd-" + ThreadLocalRandom.current().nextInt(100));
         }
 
         return bucketName;

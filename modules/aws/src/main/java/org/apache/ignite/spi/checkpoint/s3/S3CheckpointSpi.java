@@ -157,7 +157,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     private String bucketName;
 
     /** Bucket endpoint (set by user). */
-    private String bucketEndpoint;
+    private @Nullable String bucketEndpoint;
 
     /** Amazon client configuration. */
     private ClientConfiguration cfg;
@@ -176,6 +176,15 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
      */
     public String getBucketName() {
         return bucketName;
+    }
+
+    /**
+     * Gets S3 bucket endpoint to use.
+     *
+     * @return S3 bucket endpoint to use.
+     */
+    public @Nullable String getBucketEndpoint() {
+        return bucketEndpoint;
     }
 
     /**
@@ -247,11 +256,11 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
 
     /**
      * Sets bucket endpoint.
-     * Sample: s3.us-east-2.amazonaws.com.
-     * Possible endpoints are here: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region.
      * If the endpoint is not set then S3CheckpointSpi will go to each region to find a corresponding bucket.
+     * For information about possible endpoint names visit
+     * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>
      *
-     * @param bucketEndpoint Bucket endpoint.
+     * @param bucketEndpoint Bucket endpoint, for example, s3.us-east-2.amazonaws.com.
      * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
@@ -347,7 +356,6 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
             }
         }
 
-        String location = s3.getBucketLocation(bucketName);
         Collection<S3TimeData> s3TimeDataLst = new LinkedList<>();
 
         try {
@@ -755,6 +763,11 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
 
         /** {@inheritDoc} */
         @Override public String getBucketName() {
+            return S3CheckpointSpi.this.getBucketName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getBucketEndpoint() {
             return S3CheckpointSpi.this.getBucketName();
         }
 
