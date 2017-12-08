@@ -673,6 +673,18 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (inMemoryMode)
             return changeGlobalState0(activate, null, false);
 
+        BaselineTopology newBlt = compatibilityMode ? null :
+            calculateNewBaselineTopology(activate, baselineNodes, forceChangeBaselineTopology);
+
+        return changeGlobalState0(activate, newBlt, forceChangeBaselineTopology);
+    }
+
+    /**
+     *
+     */
+    private BaselineTopology calculateNewBaselineTopology(final boolean activate,
+        Collection<BaselineNode> baselineNodes,
+        boolean forceChangeBaselineTopology) {
         BaselineTopology newBlt;
 
         BaselineTopology currentBlt = globalState.baselineTopology();
@@ -699,7 +711,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         else
             newBlt = null;
 
-        return changeGlobalState0(activate, newBlt, forceChangeBaselineTopology);
+        return newBlt;
     }
 
     /** */
