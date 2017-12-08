@@ -431,20 +431,22 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             proc.addTimeoutObject(to);
 
-            SB out = new SB();
+            SB out = null;
 
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(ch.getInputStream(), encoding))) {
                 String line;
 
-                boolean nl = false;
+                boolean first = true;
 
                 while ((line = reader.readLine()) != null) {
-                    if (nl)
+                    if (first)
+                        out = new SB();
+                    else
                         out.a('\n');
 
                     out.a(line);
 
-                    nl = true;
+                    first = false;
                 }
             }
             catch (InterruptedIOException ignore) {
@@ -453,7 +455,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                 proc.removeTimeoutObject(to);
             }
 
-            return out.toString();
+            return out == null || out.length() == 0 ? null : out.toString();
         }
         finally {
             if (ch != null && ch.isConnected())
