@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -43,7 +42,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.CommandInterface;
@@ -1503,13 +1501,22 @@ public class GridSqlQueryParser {
     public boolean isLocalQuery(boolean replicatedOnlyQry) {
         boolean hasCaches = false;
 
-        for (GridH2Table tbl : allTables()) {
-            hasCaches = true;
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
 
-            GridCacheContext cctx = tbl.cache();
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
-            if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
-                return false;
+                if (tbl != null) {
+                    hasCaches = true;
+
+                    GridCacheContext cctx = tbl.cache();
+
+                    if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
+                        return false;
+                }
+            }
         }
 
         // For consistency with old logic, let's not force locality in absence of caches -
@@ -1524,11 +1531,16 @@ public class GridSqlQueryParser {
      *     or {@code null} if it does not involve partitioned caches.
      */
     public GridCacheContext getFirstPartitionedCache() {
-        for (GridH2Table tbl : allTables()) {
-            GridCacheContext cctx = tbl.cache();
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
 
-            if (cctx.isPartitioned())
-                return cctx;
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null && tbl.cache().isPartitioned())
+                    return tbl.cache();
+            }
         }
 
         return null;
@@ -1577,31 +1589,6 @@ public class GridSqlQueryParser {
             return parseAlterColumn((AlterTableAlterColumn)stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
-    }
-
-    /**
-     * @return Set of all tables encountered by this parser.
-     */
-    private Set<GridH2Table> allTables() {
-        if (allTables != null)
-            return allTables;
-
-        Set<GridH2Table> res = Collections.newSetFromMap(new IdentityHashMap<GridH2Table, Boolean>());
-
-        // check all involved caches
-        for (Object o : h2ObjToGridObj.values()) {
-            if (o instanceof GridSqlAlias)
-                o = GridSqlAlias.unwrap((GridSqlAst)o);
-
-            if (o instanceof GridSqlTable) {
-                GridH2Table tbl = ((GridSqlTable)o).dataTable();
-
-                if (tbl != null)
-                    res.add(tbl);
-            }
-        }
-
-        return (allTables = Collections.unmodifiableSet(res));
     }
 
     /**
