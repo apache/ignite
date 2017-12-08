@@ -1317,6 +1317,39 @@ public class GridNioServer<T> {
             }
         }
 
+        private void compact(GridSelectorNioSessionImpl ses, ByteBuffer buf, SessionWriteRequest req, boolean finished) {
+            if (buf.hasRemaining() || !finished) {
+                buf.compact();
+
+                ses.addMeta(NIO_OPERATION.ordinal(), req);
+            }
+            else
+                buf.clear();
+        }
+
+        private ByteBuffer prepareBufferWithFilters(GridSelectorNioSessionImpl ses, ByteBuffer buf) throws IOException {
+            int sesBufLimit = buf.limit();
+            int sesCap = buf.capacity();
+
+            buf.flip();
+
+            buf = applayFilters(ses, buf);
+
+            ByteBuffer sesBuf = ses.writeBuffer();
+
+            sesBuf.clear();
+
+            if (sesCap - buf.limit() < 0) {
+                int limit = sesBufLimit + (sesCap - buf.limit()) - 100;
+
+                ses.addMeta(WRITE_BUF_LIMIT, limit);
+
+                sesBuf.limit(limit);
+            }
+
+            return buf;
+        }
+
         /**
          * Processes write-ready event on the key.
          *
@@ -1330,20 +1363,23 @@ public class GridNioServer<T> {
 
             MessageWriter writer = getWriter(ses);
 
-            if (!lockFilters(ses, sockCh))
+            boolean haveFilters = sslFilter != null || netCompressFilter != null;
+
+            if (haveFilters && !lockFilters(ses, sockCh))
                 return;
 
             try {
-                checkSslNetBuffer(ses, sockCh);
+                if (haveFilters)
+                    checkSslNetBuffer(ses, sockCh);
 
                 ByteBuffer buf = ses.writeBuffer();
 
-                if (ses.meta(WRITE_BUF_LIMIT) != null)
+                if (haveFilters && ses.meta(WRITE_BUF_LIMIT) != null)
                     buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
 
                 SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-                while (true) {
+                do {
                     if (req == null) {
                         req = getSessionWriteRequest(ses);
 
@@ -1361,27 +1397,20 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    if (req != null)
+                    boolean finished;
+
+                    if (req != null) {
                         req = processRequests(ses, buf, req, writer);
+                        // if req != null then finished == false
+                        // if req == null then finished == true
+                        finished = req == null;
+                    } else
+                        finished = false;
 
-                    int sesBufLimit = buf.limit();
-                    int sesCap = buf.capacity();
-
-                    buf.flip();
-
-                    buf = applayFilters(ses, buf);
-
-                    ByteBuffer sesBuf = ses.writeBuffer();
-
-                    sesBuf.clear();
-
-                    if (sesCap - buf.limit() < 0) {
-                        int limit = sesBufLimit + (sesCap - buf.limit()) - 100;
-
-                        ses.addMeta(WRITE_BUF_LIMIT, limit);
-
-                        sesBuf.limit(limit);
-                    }
+                    if (haveFilters)
+                        prepareBufferWithFilters(ses, buf);
+                    else
+                        buf.flip();
 
                     assert buf.hasRemaining();
 
@@ -1389,18 +1418,22 @@ public class GridNioServer<T> {
 
                     ses.addMeta(NIO_OPERATION.ordinal(), req);
 
-                    if (buf.hasRemaining()) {
-                        ses.addMeta(BUF_META_KEY, buf);
+                    if (haveFilters) {
+                        if (buf.hasRemaining()) {
+                            ses.addMeta(BUF_META_KEY, buf);
 
-                        break;
-                    }
-                    else {
-                        buf = ses.writeBuffer();
+                            break;
+                        }
+                        else {
+                            buf = ses.writeBuffer();
 
-                        if (ses.meta(WRITE_BUF_LIMIT) != null)
-                            buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+                            if (ses.meta(WRITE_BUF_LIMIT) != null)
+                                buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+                        }
                     }
-                }
+                    else
+                        compact(ses, buf, req, finished);
+                } while (haveFilters);
             }
             finally {
                 unlockFilters(ses);
@@ -1497,10 +1530,11 @@ public class GridNioServer<T> {
         }
 
         private boolean lockFilters(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh) throws IOException {
-            boolean handshakeFinished = false;
+            assert ses != null;
+            assert sockCh != null;
 
             if (sslFilter != null) {
-                handshakeFinished = sslFilter.lock(ses);
+                boolean handshakeFinished = sslFilter.lock(ses);
 
                 writeSslSystem(ses, sockCh);
 
