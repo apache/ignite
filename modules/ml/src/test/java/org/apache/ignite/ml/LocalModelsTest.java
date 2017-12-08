@@ -132,35 +132,36 @@ public class LocalModelsTest {
         return trainer.train(data);
     }
 
-
-    /**
-     *
-     */
+    /** */
     @Test
-    public void importExportKNNModelTest() {
-        Path mdlPath = Paths.get("modelKnn.mlmod");
+    public void importExportKNNModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            double[][] mtx =
+                new double[][] {
+                    {1.0, 1.0},
+                    {1.0, 2.0},
+                    {2.0, 1.0},
+                    {-1.0, -1.0},
+                    {-1.0, -2.0},
+                    {-2.0, -1.0}};
+            double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
-        double[][] mtx =
-            new double[][] {
-                {1.0, 1.0},
-                {1.0, 2.0},
-                {2.0, 1.0},
-                {-1.0, -1.0},
-                {-1.0, -2.0},
-                {-2.0, -1.0}};
-        double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
+            LabeledDataset training = new LabeledDataset(mtx, lbs);
 
-        LabeledDataset training = new LabeledDataset(mtx, lbs);
+            KNNModel mdl = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
 
-        KNNModel mdl = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+            Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
 
-        Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
-        mdl.saveModel(exporter, "modelKnn.mlmod");
+            KNNModelFormat load = exporter.load(mdlFilePath);
 
-        Assert.assertTrue(String.format("File %s not found.", mdlPath.toString()), Files.exists(mdlPath));
-        KNNModelFormat load = exporter.load("modelKnn.mlmod");
-        KNNModel importedMdl = new KNNModel(load.getK(), load.getDistanceMeasure(), load.getStgy(), load.getTraining());
+            Assert.assertNotNull(load);
 
-        Assert.assertTrue("", mdl.equals(importedMdl));
+            KNNModel importedMdl = new KNNModel(load.getK(), load.getDistanceMeasure(), load.getStgy(), load.getTraining());
+
+            Assert.assertTrue("", mdl.equals(importedMdl));
+
+            return null;
+        });
     }
 }

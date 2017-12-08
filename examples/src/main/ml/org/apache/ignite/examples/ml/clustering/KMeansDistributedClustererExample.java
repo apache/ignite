@@ -24,7 +24,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.ml.math.matrix.SparseDistributedMatrixExample;
 import org.apache.ignite.ml.clustering.KMeansDistributedClusterer;
-import org.apache.ignite.ml.math.EuclideanDistance;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
