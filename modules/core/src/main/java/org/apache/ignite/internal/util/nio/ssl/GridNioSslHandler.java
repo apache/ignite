@@ -227,9 +227,9 @@ class GridNioSslHandler extends ReentrantLock {
 
                             if (fut != null)
                                 fut.onDone();
-
-                            parent.proceedSessionOpened(ses);
                         }
+
+                        parent.proceedSessionOpened(ses);
 
                         loop = false;
 
