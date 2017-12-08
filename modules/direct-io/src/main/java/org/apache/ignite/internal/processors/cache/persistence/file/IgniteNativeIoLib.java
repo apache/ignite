@@ -192,6 +192,8 @@ public class IgniteNativeIoLib {
 
     public static native NativeLong pread(int fd, Pointer buf, NativeLong count, NativeLong offset);
 
+    public static native NativeLong read(int fd, Pointer buf, NativeLong count);
+
     public static native int fsync(int fd);
 
     public static native int posix_memalign(PointerByReference memptr, NativeLong alignment, NativeLong size);

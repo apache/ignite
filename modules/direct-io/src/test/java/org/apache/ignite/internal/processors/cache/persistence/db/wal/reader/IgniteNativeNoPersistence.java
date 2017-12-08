@@ -18,23 +18,19 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import com.google.common.base.Strings;
-import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffer;
-import org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffersDirectFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentHashMap8;
 
-public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
+public class IgniteNativeNoPersistence extends GridCommonAbstractTest {
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
@@ -43,11 +39,6 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
         dsCfg.setPageSize(4 * 1024);
 
         DataRegionConfiguration regCfg = new DataRegionConfiguration();
-/*
-        regCfg.setName("dfltDataRegion");
-        regCfg.setInitialSize(1024 * 1024 * 1024);
-        regCfg.setMaxSize(1024 * 1024 * 1024);*/
-        regCfg.setPersistenceEnabled(true);
 
         dsCfg.setDefaultDataRegionConfiguration(regCfg);
 
@@ -78,16 +69,6 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
             cache.put(i, valueForKey(i));
 
         ignite.context().cache().context().database().waitForCheckpoint("test");
-
-        stopAllGrids();
-
-        IgniteEx igniteRestart = startGrid(0);
-        igniteRestart.active(true);
-
-        IgniteCache<Object, Object> cacheRestart = igniteRestart.getOrCreateCache("cache");
-
-        for (int i = 0; i < 1000; i++)
-            assertEquals(valueForKey(i), cacheRestart.get(i));
 
         stopAllGrids();
     }

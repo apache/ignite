@@ -89,7 +89,36 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destBuf) throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        int size = checkSizeIsPadded(destBuf.remaining());
+
+        fdCheckOpened();
+
+        //fast path, well known buffer, already aligned
+        if (isAligned(destBuf)) {
+            int loaded = readAligned(destBuf);
+            if (loaded < 0)
+                return loaded;
+
+            return moveBufPosition(destBuf, loaded);
+        }
+
+        final boolean useTlb = size == pageSize;
+        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffer.allocate(fsBlockSize, size);
+
+        try {
+
+            final int loaded = readAligned(alignedBuf);
+            if (loaded < 0)
+                return loaded;
+
+            AlignedBuffer.copyMemory(alignedBuf, destBuf);
+
+            return moveBufPosition(destBuf, loaded);
+        }
+        finally {
+            if (!useTlb)
+                AlignedBuffer.free(alignedBuf);
+        }
     }
 
     /** {@inheritDoc} */
@@ -245,6 +274,20 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         return rd;
     }
 
+
+    private int readAligned(ByteBuffer buf) throws IOException {
+        int rd = IgniteNativeIoLib.read(fdCheckOpened(), bufferPtr(buf), nl(buf.remaining())).intValue();
+
+        if (rd == 0)
+            return -1; //Tried to read past EOF for file
+
+        if (rd < 0)
+            throw new IOException("Error during reading file [" + file + "] " + ": " + getLastError());
+
+        return rd;
+    }
+
+
     private int writeAligned(ByteBuffer buf, long position) throws IOException {
         int wr = IgniteNativeIoLib.pwrite(fdCheckOpened(), bufferPtr(buf), nl(buf.remaining()), nl(position)).intValue();
 
@@ -294,7 +337,8 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public long size() throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        return file.length();
+        // throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
