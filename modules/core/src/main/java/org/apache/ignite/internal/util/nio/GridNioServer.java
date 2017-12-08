@@ -1408,7 +1408,7 @@ public class GridNioServer<T> {
                         finished = false;
 
                     if (haveFilters)
-                        prepareBufferWithFilters(ses, buf);
+                        buf = prepareBufferWithFilters(ses, buf);
                     else
                         buf.flip();
 
@@ -1436,7 +1436,8 @@ public class GridNioServer<T> {
                 } while (haveFilters);
             }
             finally {
-                unlockFilters(ses);
+                if (haveFilters)
+                    unlockFilters(ses);
             }
         }
 
