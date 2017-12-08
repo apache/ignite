@@ -19,23 +19,15 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -55,7 +47,6 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
 
     /** Logger. */
     private IgniteLogger log;
-    private String name;
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -73,7 +64,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
+    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         // No-op.
     }
 
@@ -83,16 +74,15 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(PluginContext ctx) throws IgniteCheckedException {
+    @Override public void start(PluginContext ctx) {
         final Ignite ignite = ctx.grid();
 
         log = ignite.log();
-        name = ignite.name();
         managedBuffers = setupDirect((IgniteEx)ignite);
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+    @Override public void stop(boolean cancel) {
         freeDirectBuffers();
     }
 
@@ -100,78 +90,32 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
      * Free direct thread local buffer allocated for Direct IO user's threads.
      */
     private void freeDirectBuffers() {
-        if (managedBuffers == null)
+        ConcurrentHashMap8<Long, Thread> buffers = managedBuffers;
+
+        if (buffers == null)
             return;
 
-        List<T2<Long, Thread>> remainedBuffers = new ArrayList<>(managedBuffers.size());
+        managedBuffers = null;
 
-        for (Map.Entry<Long, Thread> next : managedBuffers.entrySet()) {
-            remainedBuffers.add(new T2<>(next.getKey(), next.getValue()));
-        }
-        managedBuffers.clear();
+        if (log.isDebugEnabled())
+            log.debug("Direct IO buffers to be freed: " + buffers.size());
 
-        if (log.isInfoEnabled())
-            log.info("Direct IO buffers to be freed: " + remainedBuffers.size());
-
-        final List<T2<Long, Thread>> remainedForDaemon = cleanBuffers(remainedBuffers);
-
-        if (F.isEmpty(remainedForDaemon))
-            return;
-
-        Runnable runnable = new Runnable() {
-            @Override public void run() {
-                List<T2<Long, Thread>> remainedBuffers = remainedForDaemon;
-                do {
-                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
-
-                    remainedBuffers = cleanBuffers(remainedBuffers);
-                }
-                while (!F.isEmpty(remainedBuffers));
-            }
-        };
-
-        Thread cleanupDeamon = new Thread(runnable);
-
-        cleanupDeamon.setName("native-buffer-cleanup" + (this.name == null ? "" : "-" + this.name));
-        cleanupDeamon.setDaemon(true);
-        cleanupDeamon.start();
-    }
-
-    /**
-     * @param buf list of remained references
-     * @return remained buffer pointers or null
-     */
-    @Nullable private List<T2<Long, Thread>> cleanBuffers(@Nullable List<T2<Long, Thread>> buf) {
-        if (buf == null)
-            return null;
-
-        List<T2<Long, Thread>> remained = null;
-        for (T2<Long, Thread> next : buf) {
+        for (Map.Entry<Long, Thread> next : buffers.entrySet()) {
             Thread th = next.getValue();
-            boolean thAlive = th != null && th.isAlive();
             Long addr = next.getKey();
-            String thName = th != null ? th.getName() : "";
 
-            if (log.isInfoEnabled())
-                log.info(String.format("Direct IO buffer [address=%d; Thread=%s; alive=%s]", addr, thName, thAlive));
+            if (log.isDebugEnabled())
+                log.debug(String.format("Free Direct IO buffer [address=%d; Thread=%s; alive=%s]",
+                    addr, th != null ? th.getName() : "", th != null && th.isAlive()));
 
-            if (!thAlive) {
-                if (addr != null)
-                    AlignedBuffers.free(addr);
-            }
-            else {
-                U.warn(log, "Can't free buffer for alive thread: " + thName);
-                if (remained == null) {
-                    remained = new ArrayList<>(buf.size());
-                }
-                remained.add(next);
-            }
+            AlignedBuffers.free(addr);
         }
-        return remained;
+
+        buffers.clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void onIgniteStart() throws IgniteCheckedException {
+    @Override public void onIgniteStart() {
         // No-op.
     }
 
@@ -235,7 +179,6 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)cacheCtx.database();
 
         db.setThreadBuf(new ThreadLocal<ByteBuffer>() {
-            /** {@inheritDoc} */
             @Override protected ByteBuffer initialValue() {
                 return factory.createManagedBuffer(pageStore.pageSize());
             }

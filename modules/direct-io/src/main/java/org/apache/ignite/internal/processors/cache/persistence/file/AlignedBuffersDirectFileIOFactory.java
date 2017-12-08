@@ -126,6 +126,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
      */
     @NotNull public ByteBuffer createManagedBuffer(int size) {
         assert !useBackupFactory : "Direct IO is disabled, aligned managed buffer creation is disabled now";
+        assert managedAlignedBuffers != null : "Direct buffers not available";
 
         ByteBuffer allocate = AlignedBuffers.allocate(fsBlockSize, size).order(ByteOrder.nativeOrder());
 

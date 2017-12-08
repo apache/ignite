@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
+ * contributor license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
+package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
 import com.google.common.base.Strings;
+import java.sql.Time;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -28,18 +30,29 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Checks if Direct IO can be set up if no persistent store is configured
+ * Puts data into grid, waits for checkpoint to start and then verifies data
  */
-public class IgniteNativeNoPersistenceTest extends GridCommonAbstractTest {
+public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        configuration.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()));
+        DataRegionConfiguration regCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
 
-        return configuration;
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setPageSize(4 * 1024)
+            .setDefaultDataRegionConfiguration(regCfg)
+            .setCheckpointFrequency(TimeUnit.SECONDS.toMillis(10));
+
+        return cfg.setDataStorageConfiguration(dsCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        GridTestUtils.deleteDbFiles();
     }
 
     /** {@inheritDoc} */
@@ -50,19 +63,30 @@ public class IgniteNativeNoPersistenceTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks simple launch with native IO.
-     * @throws Exception if failed
+     * Checks if same data can be loaded after checkpoint.
+     * @throws Exception if failed.
      */
-    public void testDirectIoHandlesNoPersistentGrid() throws Exception {
+    public void testRecoveryAfterCpEnd() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.active(true);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache");
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 10000; i++)
             cache.put(i, valueForKey(i));
 
+        ignite.context().cache().context().database().waitForCheckpoint("test");
+
+        stopAllGrids();
+
+        IgniteEx igniteRestart = startGrid(0);
+        igniteRestart.active(true);
+
+        IgniteCache<Object, Object> cacheRestart = igniteRestart.getOrCreateCache("cache");
+
+        for (int i = 0; i < 10000; i++)
+            assertEquals(valueForKey(i), cacheRestart.get(i));
 
         stopAllGrids();
     }
