@@ -44,7 +44,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -127,6 +130,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
     /** */
     private UUID nodeId;
+
+    /** */
+    private boolean persistence;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -214,6 +220,16 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }, new int[]{EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT});
 
         cfg.setLocalEventListeners(lsnrs);
+
+        if (persistence) {
+            DataStorageConfiguration memCfg = new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).
+                    setPersistenceEnabled(true))
+                .setPageSize(1024)
+                .setWalMode(WALMode.LOG_ONLY);
+
+            cfg.setDataStorageConfiguration(memCfg);
+        }
 
         return cfg;
     }
@@ -308,6 +324,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        clearAckEveryEventSystemProperty();
+
         try {
             assertFalse("Unexpected error, see log for details", err);
 
@@ -318,8 +336,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
             stopAllGrids();
         }
-
-        clearAckEveryEventSystemProperty();
     }
 
     /**
@@ -1550,6 +1566,62 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testWithPersistence1() throws Exception {
+        startWithPersistence(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWithPersistence2() throws Exception {
+        startWithPersistence(true);
+    }
+
+    /**
+     * @param dfltConsistenId Default consistent ID flag.
+     * @throws Exception If failed.
+     */
+    private void startWithPersistence(boolean dfltConsistenId) throws Exception {
+        this.dfltConsistenId = dfltConsistenId;
+
+        persistence = true;
+
+        for (int i = 0; i < 3; i++) {
+            info("Iteration: " + i);
+
+            client = false;
+
+            startGridsMultiThreaded(4);
+
+            client = true;
+
+            startGridsMultiThreaded(4, 3);
+
+            waitForTopology(7);
+
+            stopGrid(1);
+
+            waitForTopology(6);
+
+            stopGrid(4);
+
+            waitForTopology(5);
+
+            stopGrid(0);
+
+            waitForTopology(4);
+
+            checkEventsConsistency();
+
+            stopAllGrids();
+
+            evts.clear();
+        }
+    }
+
+    /**
      * @param clients Clients.
      * @param c Closure to run.
      * @throws Exception If failed.
@@ -1710,6 +1782,13 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         err = false;
 
         evts.clear();
+
+        try {
+            GridTestUtils.deleteDbFiles();
+        }
+        catch (Exception e) {
+            error("Failed to delete DB files: " + e, e);
+        }
     }
 
     /**
@@ -1800,9 +1879,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    private void checkEventsConsistency() throws Exception {
+    private void checkEventsConsistency() {
         for (Map.Entry<UUID, Map<Long, DiscoveryEvent>> nodeEvtEntry : evts.entrySet()) {
             UUID nodeId = nodeEvtEntry.getKey();
             Map<Long, DiscoveryEvent> nodeEvts = nodeEvtEntry.getValue();
