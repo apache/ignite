@@ -36,7 +36,7 @@ public class BaseKNNTest extends GridCommonAbstractTest {
     private static final String SEPARATOR = "\t";
 
     /** Path to the Iris dataset. */
-    static final String KNN_IRIS_TXT = "knn/iris.txt";
+    static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
 
     /** Grid instance. */
     protected Ignite ignite;

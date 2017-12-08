@@ -33,19 +33,19 @@ import org.apache.ignite.ml.structures.LabeledVector;
 /** Tests behaviour of KNNClassificationTest. */
 public class LabeledDatasetTest extends BaseKNNTest {
     /** */
-    private static final String KNN_IRIS_TXT = "knn/iris.txt";
+    private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
 
     /** */
-    private static final String NO_DATA_TXT = "knn/no_data.txt";
+    private static final String NO_DATA_TXT = "datasets/knn/no_data.txt";
 
     /** */
-    private static final String EMPTY_TXT = "knn/empty.txt";
+    private static final String EMPTY_TXT = "datasets/knn/empty.txt";
 
     /** */
-    private static final String IRIS_INCORRECT_TXT = "knn/iris_incorrect.txt";
+    private static final String IRIS_INCORRECT_TXT = "datasets/knn/iris_incorrect.txt";
 
     /** */
-    private static final String IRIS_MISSED_DATA = "knn/missed_data.txt";
+    private static final String IRIS_MISSED_DATA = "datasets/knn/missed_data.txt";
 
 
     /** */
