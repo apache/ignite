@@ -249,6 +249,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                         node.cache(CACHE_NAME).get(0); // Lock acquisition is queued.
                     }
                     catch (CacheException e) {
+                        e.printStackTrace();
+
                         assertTrue(e.getMessage(), X.hasCause(e, TransactionRollbackException.class));
                     }
                 }

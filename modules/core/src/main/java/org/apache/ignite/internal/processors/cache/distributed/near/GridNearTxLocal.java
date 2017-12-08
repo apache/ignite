@@ -3280,16 +3280,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Rollback transaction asynchronously from current state.
-     *
-     * @return Future which completes when transaction is finished.
-     */
-    public IgniteInternalFuture<IgniteInternalTx> forceAsyncRollback() {
-        return state(MARKED_ROLLBACK, false) || (state() == MARKED_ROLLBACK) ?
-            rollbackNearTxLocalAsync(false, false) : finishFuture();
-    }
-
-    /**
      * Tries to set new lock future. Can fail if transaction has started to rollback concurrently.
      *
      * @param oldFut Old future.
@@ -3306,12 +3296,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         LOCK_FUT_UPD.set(this, null);
     }
 
-
     /**
-     * @param clearThreadMap {@code True} if rolled back asynchronously on timeout.
-     * Note: For such rollback should not clear thread map
-     * since thread started tx still should be able to see this tx.
-     * This prevents subsequent transaction operations.
+     * @param clearThreadMap {@code True} if needed to clear thread map.
+     * Note: For async rollbacks (from timeouts or another thread) should not clear thread map
+     * since thread started tx still should be able to see this tx to prevent subsequent operations.
      *
      * @return Rollback future.
      */
