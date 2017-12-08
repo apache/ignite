@@ -2398,7 +2398,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         expRes++;
                 }
 
-                if (expRes == res.size())
+                if (res.size() >= expRes)
                     res0 = createRegisterResults();
             }
 
@@ -2414,12 +2414,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             RoutineRegisterResults res0 = null;
 
             synchronized (res) {
-                if (res.containsKey(nodeId) || (topVer != null && res.size() == expRes))
+                if (res.containsKey(nodeId) || (topVer != null && res.size() >= expRes))
                     return;
 
                 res.put(nodeId, msg);
 
-                if (topVer != null && expRes == res.size())
+                if (topVer != null && res.size() >= expRes)
                     res0 = createRegisterResults();
             }
 

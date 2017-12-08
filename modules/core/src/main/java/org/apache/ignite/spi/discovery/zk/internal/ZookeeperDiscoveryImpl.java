@@ -2468,13 +2468,9 @@ public class ZookeeperDiscoveryImpl {
                 return;
 
             try {
-                if (evt.getType() == Event.EventType.NodeDeleted) {
+                if (evt.getType() == Event.EventType.NodeDeleted)
                     onPreviousNodeFail();
-                }
                 else {
-                    if (log.isInfoEnabled())
-                        log.info("Previous node watch event: " + evt);
-
                     if (evt.getType() != Event.EventType.None)
                         rtState.zkClient.existsAsync(evt.getPath(), this, this);
                 }
@@ -2492,8 +2488,6 @@ public class ZookeeperDiscoveryImpl {
                 return;
 
             try {
-                log.info("Previous node stat callback [rc=" + rc + ", path=" + path + ", stat=" + stat + ']');
-
                 assert rc == 0 || rc == KeeperException.Code.NONODE.intValue() : KeeperException.Code.get(rc);
 
                 if (rc == KeeperException.Code.NONODE.intValue() || stat == null)
