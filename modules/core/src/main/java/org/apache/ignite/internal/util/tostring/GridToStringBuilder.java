@@ -1567,4 +1567,30 @@ public class GridToStringBuilder {
 
         return cd;
     }
+
+    /**
+     * A version of Object.toString() method that never throws an Exception. If exception has been thrown,
+     * its cause is returned from this method.
+     *
+     * @param obj The object to convert to string.
+     * @return string representation of obj.
+     *         "null" if obj == null,
+     *         "&lt;exception in ....&gt;" error message in case of exception.
+     */
+    public static String excSafeToString(Object obj) {
+        if (obj == null)
+            return "<null>";
+
+        try {
+            return obj.getClass().getName() + '@' + obj.hashCode() + ':' + obj.toString();
+        }
+        catch (Exception e) {
+            try {
+                return "<exception in toString()  " + obj.getClass().getName() + '@' + obj.hashCode() + ".toString(): " + e.getCause() + '>';
+            }
+            catch (Exception e1) {
+                return "<exception in toString(): " + e1.getCause() + '>';
+            }
+        }
+    }
 }

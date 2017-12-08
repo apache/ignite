@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.property;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.lang.reflect.Method;
 
@@ -49,7 +50,8 @@ public class QueryReadOnlyMethodsAccessor implements QueryPropertyAccessor {
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to invoke getter method " +
-                "[type=" + getType() + ", property=" + propName + ']', e);
+                "[type=" + getType() + ", property=" + propName +
+                ", obj=" + S.excSafeToString(obj) + ", getter=" + getter + ']', e);
         }
     }
 

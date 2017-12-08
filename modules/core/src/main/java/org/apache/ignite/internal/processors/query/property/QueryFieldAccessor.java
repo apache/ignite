@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.property;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.lang.reflect.Field;
 
@@ -41,7 +42,8 @@ public class QueryFieldAccessor implements QueryPropertyAccessor {
             return fld.get(obj);
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to get field value", e);
+            throw new IgniteCheckedException("Failed to get field value" +
+                "[type=" + getType() + ", fld=" + fld + ", obj=" + S.excSafeToString(obj) + ']', e);
         }
     }
 
@@ -51,7 +53,9 @@ public class QueryFieldAccessor implements QueryPropertyAccessor {
             fld.set(obj, newVal);
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to set field value", e);
+            throw new IgniteCheckedException("Failed to set field value" +
+                "[type=" + getType() + ", fld=" + fld + ", obj=" + S.excSafeToString(obj) +
+                ", newVal='" + S.excSafeToString(newVal) + "']", e);
         }
     }
 

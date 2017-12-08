@@ -49,6 +49,8 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.MetadataStorage.MAX_IDX_NAME_LEN;
+
 /**
  * H2 Index over {@link BPlusTree}.
  */
@@ -94,9 +96,17 @@ public class H2TreeIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        name = (tbl.rowDescriptor() == null ? "" : tbl.rowDescriptor().type().typeId() + "_") + name;
+        if (tbl.rowDescriptor() != null) {
+            name = cctx.binaryMarshaller()
+                    ? Integer.toString(tbl.rowDescriptor().type().typeId())
+                    : mangleClassName(tbl.rowDescriptor().type().valueClass())
+                + "_" + name;
+        }
 
         name = BPlusTree.treeName(name, "H2Tree");
+
+        if (name.length() > MAX_IDX_NAME_LEN)
+            name = name.substring(name.length() - MAX_IDX_NAME_LEN);
 
         if (cctx.affinityNode()) {
             inlineIdxs = getAvailableInlineColumns(cols);
@@ -132,6 +142,36 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
 
         initDistributedJoinMessaging(tbl);
+    }
+
+    /**
+     * Mangles class name by convert it to a short human-understandable string as unique as possible.
+     *
+     * @param klazz Class to mangle the name.
+     * @return Mangled class name.
+     */
+    private static String mangleClassName(Class<?> klazz) {
+        assert klazz != null;
+
+        String name = klazz.getName();
+        String[] components = name.split("\\.");
+
+        assert components.length > 0;
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < components.length - 1; i++) {
+            assert !components[i].isEmpty();
+            sb.append(components[i].charAt(0));
+        }
+
+        int hc = name.hashCode();
+        hc = (hc & 0xFFFF) ^ (hc >>> 16);
+
+        sb.append(components[components.length - 1])
+            .append('.')
+            .append(Integer.toHexString(hc));
+
+        return sb.toString();
     }
 
     /**
