@@ -17,6 +17,14 @@
 
 package org.apache.ignite.ml.math.impls.storage.matrix;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -24,9 +32,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
@@ -36,11 +41,6 @@ import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.*;
-
 import static org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry.MAX_BLOCK_SIZE;
 
 /**
@@ -49,20 +49,24 @@ import static org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry.MAX_BLOCK_
 public class BlockVectorStorage extends CacheUtils implements VectorStorage, StorageConstants, DistributedStorage<VectorBlockKey> {
     /** Cache name used for all instances of {@link BlockVectorStorage}. */
     private static final String CACHE_NAME = "ML_BLOCK_SPARSE_MATRICES_CONTAINER";
+
     /** */
     private int blocks;
+
     /** Amount of columns in the vector. */
     private int size;
+
     /** Matrix uuid. */
     private UUID uuid;
+
     /** Block size about 8 KB of data. */
     private int maxBlockEdge = MAX_BLOCK_SIZE;
 
     /** Actual distributed storage. */
     private IgniteCache<
-            VectorBlockKey /* Matrix block number with uuid. */,
-            VectorBlockEntry /* Block of matrix, local sparse matrix. */
-            > cache = null;
+        VectorBlockKey /* Matrix block number with uuid. */,
+        VectorBlockEntry /* Block of matrix, local sparse matrix. */
+        > cache = null;
 
     /**
      *
@@ -79,17 +83,13 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         assert size > 0;
 
         this.size = size;
-
         this.blocks = size % maxBlockEdge == 0 ? size / maxBlockEdge : size / maxBlockEdge + 1;
 
         cache = newCache();
-
         uuid = UUID.randomUUID();
     }
 
-    /**
-     *
-     */
+    /** */
     public IgniteCache<VectorBlockKey, VectorBlockEntry> cache() {
         return cache;
     }
@@ -109,14 +109,6 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         return size;
     }
 
-
-    /**
-     * @return Blocks in row.
-     */
-    public int blocksInRow() {
-        return blocks;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
@@ -129,7 +121,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         blocks = in.readInt();
-        uuid = (UUID) in.readObject();
+        uuid = (UUID)in.readObject();
 
         cache = ignite().getOrCreateCache(in.readUTF());
     }
@@ -182,11 +174,10 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         return new VectorBlockKey(blockId, uuid, getAffinityKey(blockId));
     }
 
-
     /** {@inheritDoc} */
     @Override public Set<VectorBlockKey> getAllKeys() {
-        int maxIndex = size - 1;
-        long maxBlockId = getBlockId(maxIndex);
+        int maxIdx = size - 1;
+        long maxBlockId = getBlockId(maxIdx);
 
         Set<VectorBlockKey> keyset = new HashSet<>();
 
@@ -200,7 +191,6 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     @Override public String cacheName() {
         return CACHE_NAME;
     }
-
 
     /**
      * Get column for current block.
@@ -236,10 +226,10 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        BlockVectorStorage that = (BlockVectorStorage) obj;
+        BlockVectorStorage that = (BlockVectorStorage)obj;
 
         return size == that.size && uuid.equals(that.uuid)
-                && (cache != null ? cache.equals(that.cache) : that.cache == null);
+            && (cache != null ? cache.equals(that.cache) : that.cache == null);
     }
 
     /**
@@ -257,6 +247,9 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         return entry;
     }
 
+    /**
+     * Get empty block entry by the given block id.
+     */
     @NotNull
     private VectorBlockEntry getEmptyBlockEntry(long blockId) {
         VectorBlockEntry entry;
@@ -286,7 +279,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
      * Distributed matrix set.
      *
      * @param idx Row or column index.
-     * @param v   New value to set.
+     * @param v New value to set.
      */
     private void matrixSet(int idx, double v) {
         long blockId = getBlockId(idx);
@@ -308,7 +301,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
 
     /** */
     private long getBlockId(int x) {
-        return (long) x / maxBlockEdge;
+        return (long)x / maxBlockEdge;
     }
 
     /**
@@ -368,7 +361,8 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
      */
     @Override public double[] data() {
         double[] res = new double[this.size];
-        for (int i = 0; i < this.size; i++) res[i] = this.get(i);
+        for (int i = 0; i < this.size; i++)
+            res[i] = this.get(i);
         return res;
     }
 }

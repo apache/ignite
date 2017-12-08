@@ -187,7 +187,7 @@ public class MatrixUtil {
 
         for (int i = 0; i < rowsCnt; i++)
             for (int j = 0; j < colsCnt; j++)
-                res[i][j] = fArr[!isRowMode? i * colsCnt + j : j * rowsCnt + i];
+                res[i][j] = fArr[!isRowMode ? i * colsCnt + j : j * rowsCnt + i];
 
         return res;
     }
@@ -206,7 +206,7 @@ public class MatrixUtil {
 
         for (int i = 0; i < rowsCnt; i++)
             for (int j = 0; j < colsCnt; j++)
-                mtx.setX(i, j, fArr[!isRowMode? i * colsCnt + j : j * rowsCnt + i]);
+                mtx.setX(i, j, fArr[!isRowMode ? i * colsCnt + j : j * rowsCnt + i]);
     }
 
     /** */
@@ -227,7 +227,7 @@ public class MatrixUtil {
 
         for (int i = 0; i < iLim; i++)
             for (int j = 0; j < jLim; j++)
-                res[isRowMode? j * iLim + i : i * jLim + j] = arr[i][j];
+                res[isRowMode ? j * iLim + i : i * jLim + j] = arr[i][j];
 
         return res;
     }

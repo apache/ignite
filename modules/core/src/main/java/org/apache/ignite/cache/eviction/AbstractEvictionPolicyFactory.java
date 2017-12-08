@@ -20,12 +20,14 @@ package org.apache.ignite.cache.eviction;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE;
+
 /**
  * Common functionality implementation for eviction policies factories.
  */
 public abstract class AbstractEvictionPolicyFactory<T> implements Factory<T> {
     /** */
-    private int maxSize;
+    private int maxSize = DFLT_CACHE_SIZE;
 
     /** */
     private int batchSize = 1;

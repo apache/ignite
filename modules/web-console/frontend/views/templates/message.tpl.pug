@@ -25,4 +25,5 @@
             .modal-body(ng-show='content' style='overflow: auto; max-height: 300px;')
                 p(ng-bind-html='content.join("<br/>")' style='text-align: left; white-space: nowrap;')
             .modal-footer
+                .pull-left(ng-show='meta') {{meta}}
                 button.btn.btn-primary(id='confirm-btn-confirm' ng-click='$hide()') Ok
