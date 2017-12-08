@@ -27,8 +27,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ *
+ */
 public class IgniteNativeNoPersistence extends GridCommonAbstractTest {
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
@@ -43,18 +47,23 @@ public class IgniteNativeNoPersistence extends GridCommonAbstractTest {
         return configuration;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         GridTestUtils.deleteDbFiles();
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
     }
 
+    /**
+     * @throws Exception
+     */
     public void testRecoveryAfterCpEnd() throws Exception {
         IgniteEx ignite = startGrid(0);
 

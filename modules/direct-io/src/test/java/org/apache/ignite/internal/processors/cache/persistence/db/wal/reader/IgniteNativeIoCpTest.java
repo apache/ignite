@@ -36,10 +36,6 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
         dsCfg.setPageSize(4 * 1024);
 
         DataRegionConfiguration regCfg = new DataRegionConfiguration();
-/*
-        regCfg.setName("dfltDataRegion");
-        regCfg.setInitialSize(1024 * 1024 * 1024);
-        regCfg.setMaxSize(1024 * 1024 * 1024);*/
         regCfg.setPersistenceEnabled(true);
 
         dsCfg.setDefaultDataRegionConfiguration(regCfg);
@@ -48,18 +44,23 @@ public class IgniteNativeIoCpTest extends GridCommonAbstractTest {
         return configuration;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         GridTestUtils.deleteDbFiles();
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     public void testRecoveryAfterCpEnd() throws Exception {
         IgniteEx ignite = startGrid(0);
 

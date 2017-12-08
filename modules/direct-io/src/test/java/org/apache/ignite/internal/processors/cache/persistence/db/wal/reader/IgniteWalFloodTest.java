@@ -66,6 +66,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 public class IgniteWalFloodTest extends GridCommonAbstractTest {
     /** */
     private static final String HAS_CACHE = "HAS_CACHE";
+    /** Cache name. */
     public static final String CACHE_NAME = "partitioned";
 
     /** */
@@ -76,6 +77,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
     /** */
     private int walSegmentSize = 64 * 1024 * 1024;
+    /** Custom wal mode. */
     private WALMode customWalMode;
 
     /** {@inheritDoc} */

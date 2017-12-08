@@ -33,8 +33,15 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
+/**
+ * Direct native IO factory for block IO operations on aligned memory structures.<br>
+ * This limited functionality is used for page store operations.<br>
+ * <b>Note: </b> This type of IO not applicable for WAL or other files.<br> <br>
+ * This IO tries to minimize cache effects of the I/O (page caching by OS). <br> <br>
+ * In general this will degrade performance, but it is useful in special
+ * situations, such as when applications do their own caching.<br>
+ */
 public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -47,13 +54,26 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
     /** File system/os block size, negative value if library init was failed. */
     private final int fsBlockSize;
 
+    /** Use backup factory, {@code true} if direct IO setup failed. */
     private boolean useBackupFactory;
 
-    private ThreadLocal<ByteBuffer> tblOnePageAligned;
+    /** Thread local with buffers with capacity = one page {@code pageSize} and aligned using {@code fsBlockSize}. */
+    private ThreadLocal<ByteBuffer> tlbOnePageAligned;
 
-    /** Managed aligned buffers. */
+    /**
+     * Managed aligned buffers. This collection is used to free buffers, an for checking if buffer is known to be
+     * already aligned.
+     */
     private final ConcurrentHashMap8<Long, Thread> managedAlignedBuffers = new ConcurrentHashMap8<>();
 
+    /**
+     * Creates direct native IO factory.
+     *
+     * @param log Logger.
+     * @param storePath Storage path, used to check FS settings.
+     * @param pageSize durable memory page size.
+     * @param backupFactory fallback factory if init failed.
+     */
     public AlignedBuffersDirectFileIOFactory(
         final IgniteLogger log,
         final File storePath,
@@ -65,20 +85,22 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         this.backupFactory = backupFactory;
         fsBlockSize = IgniteNativeIoLib.getFsBlockSize(storePath.getAbsolutePath(), log);
 
-        this.useBackupFactory = true;
+        useBackupFactory = true;
         if (fsBlockSize > 0) {
             int blkSize = fsBlockSize;
 
             if (pageSize % blkSize != 0) {
-                U.warn(log, "Unable to apply DirectIO for page size [" + pageSize + "] bytes" +
-                    " on file system block size [" + blkSize + "]." +
-                    " For speeding up Ignite consider setting " + DataStorageConfiguration.class.getSimpleName()
-                    + ".setPageSize(" + blkSize + "). Direct IO is disabled");
+                U.warn(log,
+                    String.format("Unable to setup Direct IO for Ignite page size [%d] bytes" +
+                            " on file system block size [%d]." +
+                            " For speeding up Ignite consider setting %s.setPageSize(%d)." +
+                            " Direct IO is disabled",
+                        pageSize, blkSize, DataStorageConfiguration.class.getSimpleName(), blkSize));
             }
             else {
                 useBackupFactory = false;
 
-                tblOnePageAligned = new ThreadLocal<ByteBuffer>() {
+                tlbOnePageAligned = new ThreadLocal<ByteBuffer>() {
                     /** {@inheritDoc} */
                     @Override protected ByteBuffer initialValue() {
                         return createManagedBuffer(pageSize);
@@ -92,8 +114,8 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         }
         else {
             if (log.isInfoEnabled())
-                log.info("Direct IO library is not available on current system " +
-                    "[" + System.getProperty("os.version") + "]. Direct IO is disabled");
+                log.info("Direct IO library is not available on current operating system " +
+                    "[" + System.getProperty("os.version") + "]. Direct IO is not enabled.");
         }
 
     }
@@ -101,13 +123,13 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
     /**
      * <b>Note: </b> Use only if {@link #isDirectIoAvailable()}.
      *
-     * @param capacity buffer size to allocate.
+     * @param size buffer size to allocate.
      * @return new byte buffer.
      */
-    @NotNull public ByteBuffer createManagedBuffer(int capacity) {
+    @NotNull public ByteBuffer createManagedBuffer(int size) {
         assert !useBackupFactory : "Direct IO is disabled, aligned managed buffer creation is disabled now";
 
-        final ByteBuffer allocate = AlignedBuffers.allocate(fsBlockSize, capacity).order(ByteOrder.nativeOrder());
+        final ByteBuffer allocate = AlignedBuffers.allocate(fsBlockSize, size).order(ByteOrder.nativeOrder());
 
         managedAlignedBuffers.put(GridUnsafe.bufferAddress(allocate), Thread.currentThread());
 
@@ -121,22 +143,27 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-        if (useBackupFactory) {
+        if (useBackupFactory)
             return backupFactory.create(file, modes);
-        }
 
-        return new AlignedBuffersDirectFileIO(fsBlockSize, pageSize, file, modes, tblOnePageAligned, managedAlignedBuffers);
+        return new AlignedBuffersDirectFileIO(fsBlockSize, pageSize, file, modes, tlbOnePageAligned, managedAlignedBuffers, log);
 
     }
 
     /**
      * @return {@code true} if Direct IO can be used on current OS and file system settings
      */
-    public boolean isDirectIoAvailable() {
+    boolean isDirectIoAvailable() {
         return !useBackupFactory;
     }
 
-    public ConcurrentHashMap8<Long, Thread> managedAlignedBuffers() {
+    /**
+     * Managed aligned buffers and its associated threads. This collection is used to free buffers, an for checking if
+     * buffer is known to be already aligned.
+     *
+     * @return map address->thread.
+     */
+    ConcurrentHashMap8<Long, Thread> managedAlignedBuffers() {
         return managedAlignedBuffers;
     }
 }

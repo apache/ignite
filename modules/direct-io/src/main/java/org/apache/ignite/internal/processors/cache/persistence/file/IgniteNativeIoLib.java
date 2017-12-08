@@ -27,13 +27,48 @@ import java.util.List;
 import java.util.StringTokenizer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
-@SuppressWarnings("OctalInteger")
+/**
+ * Native IO library based on *nix C library, enabled for Linux, kernel version >= 2.4.10. <br>
+ * <br>
+ * Uses JNA library (https://github.com/java-native-access/jna) to access native calls. <br>
+ * <br>
+ * This file is partially based on code of Jaydio library (https://github.com/smacke/jaydio) <br>
+ * by Stephen Macke (smacke@illinois.edu). Jaydio library solves more general task of random access IO.<br>
+ */
+@SuppressWarnings({"OctalInteger", "WeakerAccess"})
 public class IgniteNativeIoLib {
+    /** Open for reading only. */
+    public static final int O_RDONLY = 00;
 
+    /** Open for writing only. */
+    public static final int O_WRONLY = 01;
+
+    /** Open for reading and writing. */
+    public static final int O_RDWR = 02;
+
+    /** File shall be created. If the file exists, this flag has no effect. */
+    public static final int O_CREAT = 0100;
+
+    /** If the file exists and is a regular file length shall be truncated to 0. */
+    public static final int O_TRUNC = 01000;
+
+    /** Try to minimize cache effects of the I/O to and from this file.  */
+    public static final int O_DIRECT = 040000;
+
+    /**
+     * Write operations on the file will complete according to the requirements of synchronized I/O file integrity
+     * completion. By the time write(2) (or similar) returns, the output data and associated file metadata have been
+     * transferred to the underlying hardware.
+     */
+    public static final int O_SYNC = 04000000;
+
+    /** JNA library available and initialized. Always {@code false} for non linux systems. */
     private static boolean jnaAvailable;
 
-    private static Exception ex = null;
+    /** JNA library initialization exception. To be logged to Ignite logger later. */
+    @Nullable private static Exception ex;
 
     static {
         if (Platform.isLinux()) {
@@ -51,9 +86,8 @@ public class IgniteNativeIoLib {
                 jnaAvailable = false;
             }
         }
-        else {
+        else
             jnaAvailable = false;
-        }
     }
 
     /**
@@ -62,151 +96,229 @@ public class IgniteNativeIoLib {
      * @return {@code true} if O_DIRECT is supported, kernel version >= 2.4.10
      */
     private static boolean checkLinuxVersion() {
-
-        String osVer = System.getProperty("os.version");
+        final String osVer = System.getProperty("os.version");
 
         if (osVer == null)
             return false;
 
-        List<Integer> verComps = new ArrayList<>();
+        final List<Integer> verIntComps = new ArrayList<>();
 
         for (StringTokenizer tokenizer = new StringTokenizer(osVer, ".-"); tokenizer.hasMoreTokens(); ) {
-            String verComp = tokenizer.nextToken();
-            if (verComp.matches("\\d*")) {
-                verComps.add(Integer.parseInt(verComp));
-            }
+            final String verComp = tokenizer.nextToken();
+
+            if (verComp.matches("\\d*"))
+                verIntComps.add(Integer.parseInt(verComp));
 
         }
 
-        if (verComps.isEmpty())
+        if (verIntComps.isEmpty())
             return false;
 
-        final int versionIdx = 0;
+        final int verIdx = 0;
         final int majorRevIdx = 1;
         final int minorRevIdx = 2;
 
-        if (verComps.get(versionIdx) > 2) {
+        if (verIntComps.get(verIdx) > 2)
             return true;
-        }
-        else if (verComps.get(versionIdx) == 2) {
-            int compsCnt = verComps.size();
-            if (compsCnt > majorRevIdx && verComps.get(majorRevIdx) > 4) {
+        else if (verIntComps.get(verIdx) == 2) {
+            int compsCnt = verIntComps.size();
+
+            if (compsCnt > majorRevIdx && verIntComps.get(majorRevIdx) > 4)
                 return true;
-            }
             else if (compsCnt > minorRevIdx
-                && verComps.get(majorRevIdx) == 4
-                && verComps.get(minorRevIdx) >= 10) {
+                && verIntComps.get(majorRevIdx) == 4
+                && verIntComps.get(minorRevIdx) >= 10)
                 return true;
-            }
         }
         return false;
     }
 
-    public static final int O_RDONLY = 00;
-    public static final int O_WRONLY = 01;
-    public static final int O_RDWR = 02;
-    public static final int O_CREAT = 0100;
-    public static final int O_TRUNC = 01000;
-    public static final int O_DIRECT = 040000;
-    public static final int O_SYNC = 04000000;
 
     /**
-     * Calculate Lowest Common Multiplier
+     * Calculate Lowest Common Multiplier.
+     * @param a first value.
+     * @param b second value.
      */
-    private static long LCM(long a, long b) {
-        return (a * b) / GCF(a, b);
+    private static long lcm(final long a, final long b) {
+        return (a * b) / gcf(a, b);
     }
 
     /**
-     * Calculate Greatest Common Factor
+     * Calculate Greatest Common Factor.
+     * @param a first value.
+     * @param b second value.
      */
-    private static long GCF(long a, long b) {
-        if (b == 0) {
+    private static long gcf(final long a, final long b) {
+        if (b == 0)
             return a;
-        }
-        else {
-            return (GCF(b, a % b));
-        }
+        else
+            return gcf(b, a % b);
     }
 
-    public static int getFsBlockSize(String storageDir, IgniteLogger log) {
+    /**
+     * Determines FS and OS block size. Returns file system block size for use with storageDir see "man 3 posix_memalign"
+     *
+     * @param storageDir storage path, base path to check (FS) configuration parameters.
+     * @param log Logger.
+     * @return <ul><li>FS block size to be used in Direct IO and memory alignments.</li>
+     * <li>or <tt>-1</tt> Operating System is not applicable for enabling Direct IO.</li>
+     * <li>and <tt>-1</tt> if failed to determine block size.</li>
+     * <li>and <tt>-1</tt> if JNA is not available or init failed.</li> </ul>
+     */
+    public static int getFsBlockSize(final String storageDir, final IgniteLogger log) {
+        if (ex != null) {
+            U.warn(log, "Failed to initialize O_DIRECT support at current OS: " + ex.getMessage(), ex);
+            return -1;
+        }
+
+        if (!jnaAvailable)
+            return -1;
+
         int fsBlockSize = -1;
+        final int _PC_REC_XFER_ALIGN = 0x11;
+        final int pcAlign = pathconf(storageDir, _PC_REC_XFER_ALIGN).intValue();
 
-        if (jnaAvailable) {
-            // get file system block size for use with workingDir
-            // see "man 3 posix_memalign" for why we do this
-            final int _PC_REC_XFER_ALIGN = 0x11;
+        if (pcAlign > 0)
+            fsBlockSize = pcAlign;
 
-            int pcAlign = pathconf(storageDir, _PC_REC_XFER_ALIGN).intValue();
-            if (log.isInfoEnabled()) {
-                log.info("Page size configuration for storage path [" + storageDir + "]: " + pcAlign);
-            }
-            if (pcAlign > 0)
-                fsBlockSize = pcAlign;
+        final int pageSize = getpagesize();
 
-            int pageSize = getpagesize();
+        fsBlockSize = (int)lcm(fsBlockSize, pageSize);
 
-            if (log.isInfoEnabled()) {
-                log.info("Linux memory page size: " + pageSize);
-            }
+        // just being completely paranoid: (512 is the rule for 2.6+ kernels)
+        fsBlockSize = (int)lcm(fsBlockSize, 512);
 
-            fsBlockSize = (int)LCM(fsBlockSize, pageSize);
+        if (log.isInfoEnabled())
+            log.info(String.format("Page size configuration for storage path [%s]: %d;" +
+                    " Linux memory page size: %d;" +
+                    " Selected FS block size : %d.",
+                storageDir, pcAlign, pageSize, fsBlockSize));
 
-            // just being completely paranoid:
-            // (512 is the rule for 2.6+ kernels as mentioned before)
-            fsBlockSize = (int)LCM(fsBlockSize, 512);
+        // lastly, a sanity check
+        if (fsBlockSize <= 0 || ((fsBlockSize & (fsBlockSize - 1)) != 0)) {
+            U.warn(log, "File system block size should be a power of two, was found to be " + fsBlockSize +
+                " Disabling O_DIRECT support");
 
-            // lastly, a sanity check
-            if (fsBlockSize <= 0 || ((fsBlockSize & (fsBlockSize - 1)) != 0)) {
-                U.warn(log, "file system block size should be a power of two, was found to be " + fsBlockSize);
-                U.warn(log, "Disabling O_DIRECT support");
-                return -1;
-            }
-            if (log.isInfoEnabled()) {
-                log.info("Selected FS block size : " + fsBlockSize);
-            }
+            return -1;
         }
-        else {
-            log.info("JNA support ");
-            if (ex != null) {
-                U.warn(log, "Failed to initialize O_DIRECT support", ex);
-            }
-        }
+
+        if (log.isInfoEnabled())
+            log.info("Selected FS block size : " + fsBlockSize);
 
         return fsBlockSize;
     }
 
+    /**
+     * Open a file. See "man 3 open".
+     *
+     * @param pathname pathname naming the file.
+     * @param flags flag/open options. Flags are constructed by a bitwise-inclusive OR of flags.
+     * @param mode create file mode creation mask.
+     * @return file descriptor.
+     */
     public static native int open(String pathname, int flags, int mode);
 
     /**
-     * See "man 2 close"
+     * See "man 2 close".
      *
-     * @param fd The file descriptor of the file to close
-     * @return 0 on success, -1 on error
+     * @param fd The file descriptor of the file to close.
+     * @return 0 on success, -1 on error.
      */
     public static native int close(int fd);
 
-    public static native NativeLong pwrite(int fd, Pointer buf, NativeLong count, NativeLong offset);
+    /**
+     * Writes up to {@code cnt} bytes to the buffer starting at {@code buf} to the file descriptor {@code fd} at offset
+     * {@code offset}. The file offset is not changed. See "man 2 pwrite".
+     *
+     * @param fd file descriptor.
+     * @param buf pointer to buffer with data.
+     * @param cnt bytes to write.
+     * @param off position in file to write data.
+     * @return the number of bytes written. Note that is not an error for a successful call to transfer fewer bytes than
+     * requested.
+     */
+    public static native NativeLong pwrite(int fd, Pointer buf, NativeLong cnt, NativeLong off);
 
-    public static native NativeLong write(int fd, Pointer buf, NativeLong count);
+    /**
+     * Writes up to {@code cnt} bytes to the buffer starting at {@code buf} to the file descriptor {@code fd}.
+     * The file offset is changed. See "man 2 write".
+     *
+     * @param fd file descriptor.
+     * @param buf pointer to buffer with data.
+     * @param cnt bytes to write.
+     * @return the number of bytes written. Note that is not an error for a successful call to transfer fewer bytes than
+     * requested.
+     */
+    public static native NativeLong write(int fd, Pointer buf, NativeLong cnt);
 
-    public static native NativeLong pread(int fd, Pointer buf, NativeLong count, NativeLong offset);
+    /**
+     * Reads up to {@code cnt} bytes from file descriptor {@code fd} at offset {@code off} (from the start of the file)
+     * into the buffer starting at {@code buf}. The file offset is not changed. See "man 2 pread".
+     *
+     * @param fd file descriptor.
+     * @param buf pointer to buffer to place the data.
+     * @param cnt bytes to read.
+     * @return On success, the number of bytes read is returned (zero indicates end of file), on error, -1 is returned,
+     * and errno is set appropriately.
+     */
+    public static native NativeLong pread(int fd, Pointer buf, NativeLong cnt, NativeLong off);
 
-    public static native NativeLong read(int fd, Pointer buf, NativeLong count);
+    /**
+     * Reads up to {@code cnt} bytes from file descriptor {@code fd} into the buffer starting at {@code buf}. The file
+     * offset is changed. See "man 2 read".
+     *
+     * @param fd file descriptor.
+     * @param buf pointer to buffer to place the data.
+     * @param cnt bytes to read.
+     * @return On success, the number of bytes read is returned (zero indicates end of file), on error, -1 is returned,
+     * and errno is set appropriately.
+     */
+    public static native NativeLong read(int fd, Pointer buf, NativeLong cnt);
 
+    /**
+     * Synchronize a file's in-core state with storage device. See "man 2 fsync".
+     * @param fd file descriptor.
+     * @return On success return zero. On error, -1 is returned, and errno is set appropriately.
+     */
     public static native int fsync(int fd);
 
+    /**
+     * Allocates size bytes and places the address of the allocated memory in {@code memptr}.
+     * The address of the allocated memory will be a multiple of {@code alignment}.
+     *
+     * See "man 3 posix_memalign".
+     * @param memptr out memory pointer.
+     * @param alignment memory alignment,  must be a power of two and a multiple of sizeof(void *).
+     * @param size size of buffer.
+     * @return returns zero on success, or one of the error values.
+     */
     public static native int posix_memalign(PointerByReference memptr, NativeLong alignment, NativeLong size);
 
+    /**
+     * Frees the memory space pointed to by ptr, which must have been returned by a previous call to native allocation
+     * methods. POSIX requires that memory obtained from {@link #posix_memalign} can be freed using free. See "man 3
+     * free".
+     *
+     * @param ptr pointer to free.
+     */
     public static native void free(Pointer ptr);
 
+    /**
+     * Function returns a string that describes the error code passed in the argument {@code errnum}. See "man 3
+     * strerror".
+     *
+     * @param errnum error code.
+     * @return displayable error information.
+     */
     public static native String strerror(int errnum);
 
     /**
-     * On many systems there are alignment restrictions, for example, on buffers used for direct block device I/O.
+     * Return path (FS) configuration parameter value. <br>
+     * Helps to determine alignment restrictions, for example, on buffers used for direct block device I/O. <br>
      * POSIX specifies the pathconf(path,_PC_REC_XFER_ALIGN) call that tells what alignment is needed.
      *
-     * @param path
+     * @param path base path to check settings.
+     * @param name variable name to query.
      */
     public static native NativeLong pathconf(String path, int name);
 

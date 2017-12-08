@@ -21,47 +21,70 @@ import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import sun.nio.ch.DirectBuffer;
 
 /**
- *
+ * Utility class for work with aligned buffers.
  */
+@SuppressWarnings("WeakerAccess")
 public class AlignedBuffers {
-    public static ByteBuffer allocate(int fsBlockSize, int capacity) {
+    /**
+     * Allocates align memory for use with O_DIRECT and returns native byte buffer.
+     * @param fsBlockSize alignment, FS ans OS block size.
+     * @param size capacity.
+     * @return byte buffer, to be released by {@link #free(ByteBuffer)}.
+     */
+    public static ByteBuffer allocate(final int fsBlockSize, final int size) {
         assert fsBlockSize > 0;
-        assert capacity > 0;
-        PointerByReference pointerToPointer = new PointerByReference();
+        assert size > 0;
+        final PointerByReference pointerToPointer = new PointerByReference();
 
-        // align memory for use with O_DIRECT
-        IgniteNativeIoLib.posix_memalign(pointerToPointer, new NativeLong(fsBlockSize), new NativeLong(capacity));
-        Pointer pointer = pointerToPointer.getValue();
-        long alignedPtr = Pointer.nativeValue(pointer);
+        final int rval = IgniteNativeIoLib.posix_memalign(pointerToPointer, new NativeLong(fsBlockSize), new NativeLong(size));
+        if (rval != 0)
+            throw new IgniteOutOfMemoryException("Failed to allocate memory: " + IgniteNativeIoLib.strerror(rval));
 
-        return GridUnsafe.wrapPointer(alignedPtr, capacity);
+        return GridUnsafe.wrapPointer(Pointer.nativeValue(pointerToPointer.getValue()), size);
     }
 
-    public static void free(ByteBuffer buffer) {
-        free(GridUnsafe.bufferAddress(buffer));
+    /**
+     * Frees the memory space used by direct buffer, which must have been returned by a previous call
+     * {@link #allocate(int, int)}.
+     *
+     * @param buf direct buffer to free.
+     */
+    public static void free(final ByteBuffer buf) {
+        free(GridUnsafe.bufferAddress(buf));
     }
 
-    public static void free(long address) {
-        IgniteNativeIoLib.free(new Pointer(address));
+    /**
+     * Frees the memory space pointed to by {@code addr} - address of buffer, which must have been returned by a
+     * previous call {@link #allocate(int, int)}.
+     *
+     * @param addr direct buffer address to free.
+     */
+    public static void free(final long addr) {
+        IgniteNativeIoLib.free(new Pointer(addr));
     }
 
-    static void copyMemory(ByteBuffer src, ByteBuffer dest) {
+    /**
+     * Copies memory between 2 heap/direct buffers. Both buffers can't be heap.
+     * Data is placed to the beginning of direct buffer.
+     *
+     * @param src source buffer, native or heap.
+     * @param dest destination buffer, native or heap. Data is coped to the beginning of buffer.
+     */
+    public static void copyMemory(final ByteBuffer src, final ByteBuffer dest) {
         //todo check bounds
         int size = src.remaining();
 
-        if (src instanceof DirectBuffer && dest instanceof DirectBuffer) {
+        if (src instanceof DirectBuffer && dest instanceof DirectBuffer)
             GridUnsafe.copyMemory(GridUnsafe.bufferAddress(src), GridUnsafe.bufferAddress(dest), size);
-        }
-        else if (!(src instanceof DirectBuffer) && dest instanceof DirectBuffer) {
+        else if (!(src instanceof DirectBuffer) && dest instanceof DirectBuffer)
             new Pointer(GridUnsafe.bufferAddress(dest)).write(0, src.array(), src.arrayOffset(), size);
-        }
-        else if ((src instanceof DirectBuffer) && !(dest instanceof DirectBuffer)) {
+        else if ((src instanceof DirectBuffer) && !(dest instanceof DirectBuffer))
             new Pointer(GridUnsafe.bufferAddress(src)).read(0, dest.array(), dest.arrayOffset(), size);
-        }
         else {
             throw new UnsupportedOperationException("Unable to copy memory from [" + src.getClass() + "]" +
                 " to [" + dest.getClass() + "]");

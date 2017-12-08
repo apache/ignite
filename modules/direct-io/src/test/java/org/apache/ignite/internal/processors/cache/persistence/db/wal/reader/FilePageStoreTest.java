@@ -40,6 +40,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffersDirectFileIO.getLastError;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.PAGE_ID_OFF;
 
+@Deprecated
 public class FilePageStoreTest {
 
     @Test
@@ -54,17 +55,13 @@ public class FilePageStoreTest {
 
         String pathname = file.getAbsolutePath();
 
-        //todo flags
         int flags = IgniteNativeIoLib.O_DIRECT;
-      //  if (readOnly) {
-            //flags |= OpenFlags.O_RDONLY;
-       // } else {
+
             flags |= IgniteNativeIoLib.O_RDWR | IgniteNativeIoLib.O_CREAT;
-      //  }
+
         int fd = IgniteNativeIoLib.open(pathname, flags, 00644);
-        if (fd < 0) {
+        if (fd < 0)
             throw new IOException("Error opening " + pathname + ", got " +  getLastError());
-        }
 
         NativeLong blockSize = new NativeLong(fsBlockSize);
         long capacity = pageSize;

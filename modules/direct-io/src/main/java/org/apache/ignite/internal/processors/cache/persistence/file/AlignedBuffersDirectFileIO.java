@@ -24,8 +24,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentHashMap8;
 import sun.nio.ch.DirectBuffer;
@@ -36,39 +41,58 @@ import sun.nio.ch.DirectBuffer;
  * Works only for Linux
  */
 public class AlignedBuffersDirectFileIO implements FileIO {
-
+    /** File system & linux block size. Minimal amount of data can be written using DirectIO. */
     private final int fsBlockSize;
+
+    /** Durable memory Page size. Can have greater value than {@link #fsBlockSize}. */
     private final int pageSize;
+
+    /** File. */
     private final File file;
 
-    private ThreadLocal<ByteBuffer> tblOnePageAligned;
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /** Thread local with buffers with capacity = one page {@link #pageSize} and aligned using {@link #fsBlockSize}. */
+    private ThreadLocal<ByteBuffer> tlbOnePageAligned;
+
+    /** Managed aligned buffers. Used to check if buffer is applicable for direct IO our data should be copied. */
     private ConcurrentHashMap8<Long, Thread> managedAlignedBuffers;
 
+    /** File descriptor. */
     private int fd = -1;
 
-    public AlignedBuffersDirectFileIO(
+    /**
+     * Creates Direct File IO.
+     *
+     * @param fsBlockSize FS/OS block size.
+     * @param pageSize Durable memory Page size.
+     * @param file File to open.
+     * @param modes Open options (flags).
+     * @param tlbOnePageAligned Thread local with buffers with capacity = one page {@code pageSize} and aligned using
+     * {@code fsBlockSize}.
+     * @param managedAlignedBuffers Managed aligned buffers map, used to check if buffer is known.
+     * @param log Logger.
+     * @throws IOException if file open failed.
+     */
+    AlignedBuffersDirectFileIO(
         final int fsBlockSize,
         final int pageSize,
         final File file,
         final OpenOption[] modes,
-        final ThreadLocal<ByteBuffer> tblOnePageAligned,
-        final ConcurrentHashMap8<Long, Thread> managedAlignedBuffers) throws IOException {
+        final ThreadLocal<ByteBuffer> tlbOnePageAligned,
+        final ConcurrentHashMap8<Long, Thread> managedAlignedBuffers,
+        final IgniteLogger log) throws IOException {
 
+        this.log = log;
         this.fsBlockSize = fsBlockSize;
         this.pageSize = pageSize;
         this.file = file;
-        this.tblOnePageAligned = tblOnePageAligned;
+        this.tlbOnePageAligned = tlbOnePageAligned;
         this.managedAlignedBuffers = managedAlignedBuffers;
 
-        //todo flags from modes
-        int flags = IgniteNativeIoLib.O_DIRECT;
-        //  if (readOnly) {
-        //flags |= OpenFlags.O_RDONLY;
-        // } else {
-        flags |= IgniteNativeIoLib.O_RDWR | IgniteNativeIoLib.O_CREAT;
-        //  }
+        final int flags = setupOpenFlags(modes, log);
         final String pathname = file.getAbsolutePath();
-
         final int fd = IgniteNativeIoLib.open(pathname, flags, 00644);
 
         if (fd < 0)
@@ -77,25 +101,57 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         this.fd = fd;
     }
 
+    /**
+     * Convert Java open options to native flags.
+     * @param modes java options.
+     * @param log logger.
+     * @return native flags with {@link IgniteNativeIoLib#O_DIRECT} enabled.
+     */
+    private static int setupOpenFlags(final OpenOption[] modes, final IgniteLogger log) {
+        int flags = IgniteNativeIoLib.O_DIRECT;
+        final List<OpenOption> openOptionList = Arrays.asList(modes);
+
+        for (OpenOption mode : openOptionList) {
+            if (mode == StandardOpenOption.READ) {
+                flags |= openOptionList.contains(StandardOpenOption.WRITE)
+                    ? IgniteNativeIoLib.O_RDWR
+                    : IgniteNativeIoLib.O_RDONLY;
+            }
+            else if (mode == StandardOpenOption.WRITE) {
+                flags |= openOptionList.contains(StandardOpenOption.READ)
+                    ? IgniteNativeIoLib.O_RDWR
+                    : IgniteNativeIoLib.O_WRONLY;
+            }
+            else if (mode == StandardOpenOption.CREATE)
+                flags |= IgniteNativeIoLib.O_CREAT;
+            else if (mode == StandardOpenOption.TRUNCATE_EXISTING)
+                flags |= IgniteNativeIoLib.O_TRUNC;
+            else if (mode == StandardOpenOption.SYNC)
+                flags |= IgniteNativeIoLib.O_SYNC;
+            else
+                log.error("Unsupported open option [" + mode + "]");
+        }
+
+        return flags;
+    }
+
     /** {@inheritDoc} */
     @Override public long position() throws IOException {
         throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
-    @Override public void position(long newPosition) throws IOException {
+    @Override public void position(final long newPosition) throws IOException {
         throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf) throws IOException {
-        int size = checkSizeIsPadded(destBuf.remaining());
+    @Override public int read(final ByteBuffer destBuf) throws IOException {
+        final int size = checkSizeIsPadded(destBuf.remaining());
 
-        fdCheckOpened();
+        if (isKnownAligned(destBuf)) {
+            final int loaded = readAligned(destBuf);
 
-        //fast path, well known buffer, already aligned
-        if (isAligned(destBuf)) {
-            int loaded = readAligned(destBuf);
             if (loaded < 0)
                 return loaded;
 
@@ -103,11 +159,11 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         }
 
         final boolean useTlb = size == pageSize;
-        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
+        final ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
 
         try {
-
             final int loaded = readAligned(alignedBuf);
+
             if (loaded < 0)
                 return loaded;
 
@@ -122,14 +178,12 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
-        int size = checkSizeIsPadded(destBuf.remaining());
+    @Override public int read(final ByteBuffer destBuf, final long position) throws IOException {
+        final int size = checkSizeIsPadded(destBuf.remaining());
 
-        fdCheckOpened();
+        if (isKnownAligned(destBuf)) {
+            final int loaded = readAligned(destBuf, position);
 
-        //fast path, well known buffer, already aligned
-        if (isAligned(destBuf)) {
-            int loaded = readAligned(destBuf, position);
             if (loaded < 0)
                 return loaded;
 
@@ -137,11 +191,11 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         }
 
         final boolean useTlb = size == pageSize;
-        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
+        final ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
 
         try {
-
             final int loaded = readAligned(alignedBuf, position);
+
             if (loaded < 0)
                 return loaded;
 
@@ -164,16 +218,15 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     @Override public int write(ByteBuffer srcBuf) throws IOException {
         int size = checkSizeIsPadded(srcBuf.remaining());
 
-        fdCheckOpened();
-
-        if (isAligned(srcBuf)) {
+        if (isKnownAligned(srcBuf)) {
             int written = writeAligned(srcBuf);
 
             return moveBufPosition(srcBuf, written);
         }
 
         final boolean useTlb = size == pageSize;
-        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
+        final ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
+
         try {
             AlignedBuffers.copyMemory(srcBuf, alignedBuf);
 
@@ -189,16 +242,17 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(final ByteBuffer srcBuf, final long position) throws IOException {
-        int size = checkSizeIsPadded(srcBuf.remaining());
+        final int size = checkSizeIsPadded(srcBuf.remaining());
 
-        if (isAligned(srcBuf)) {
-            int written = writeAligned(srcBuf, position);
+        if (isKnownAligned(srcBuf)) {
+            final int written = writeAligned(srcBuf, position);
 
             return moveBufPosition(srcBuf, written);
         }
 
         final boolean useTlb = size == pageSize;
-        final ByteBuffer alignedBuf = useTlb ? tblOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
+        final ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
+
         try {
             AlignedBuffers.copyMemory(srcBuf, alignedBuf);
 
@@ -213,9 +267,9 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     /**
-     * @param srcBuf
-     * @param bytes
-     * @return
+     * @param srcBuf buffer to change position.
+     * @param bytes number of bytes to move.
+     * @return position delta.
      */
     private int moveBufPosition(ByteBuffer srcBuf, int bytes) {
         srcBuf.position(srcBuf.position() + bytes);
@@ -224,13 +278,15 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     /**
-     * @param srcBuf buffer to check if it is known buffer
-     * @return true if this buffer was allocated with alignment, may be used directly
+     * Checks if we can run fast path, well known buffer is already aligned.
+     *
+     * @param srcBuf buffer to check if it is known buffer.
+     * @return {@code true} if this buffer was allocated with alignment, may be used directly.
      */
-    private boolean isAligned(ByteBuffer srcBuf) {
+    private boolean isKnownAligned(ByteBuffer srcBuf) {
         return srcBuf instanceof DirectBuffer
             && managedAlignedBuffers != null
-            && managedAlignedBuffers.contains(GridUnsafe.bufferAddress(srcBuf));
+            && managedAlignedBuffers.containsKey(GridUnsafe.bufferAddress(srcBuf));
     }
 
     /**
@@ -242,9 +298,10 @@ public class AlignedBuffersDirectFileIO implements FileIO {
      */
     private int checkSizeIsPadded(int size) throws IOException {
         if (size % fsBlockSize != 0)
-            throw new IOException("Unable to apply DirectIO for read/write buffer [" + size + "] bytes" +
-                " on file system block size [" + fsBlockSize + "]." +
-                " Set " + DataStorageConfiguration.class.getSimpleName() + ".setPageSize(" + fsBlockSize + ").");
+            throw new IOException(
+                String.format("Unable to apply DirectIO for read/write buffer [%d] bytes on file system block size [%d]." +
+                    " Consider setting %s.setPageSize(%d) or disable Direct IO.",
+                    size, fsBlockSize, DataStorageConfiguration.class.getSimpleName(), fsBlockSize));
 
         return size;
     }
@@ -257,68 +314,123 @@ public class AlignedBuffersDirectFileIO implements FileIO {
      */
     private int fdCheckOpened() throws IOException {
         if (fd < 0)
-            throw new IOException("Error " + file + " not opened");
+            throw new IOException(String.format("Error %s not opened", file));
 
         return fd;
     }
 
-    private int readAligned(ByteBuffer buf, long position) throws IOException {
-        int rd = IgniteNativeIoLib.pread(fdCheckOpened(), bufferPtr(buf), nl(buf.remaining()), nl(position)).intValue();
+    /**
+     * Read bytes from file using Native IO and aligned buffers.
+     *
+     * @param destBuf Destination aligned byte buffer.
+     * @param filePos Starting position of file.
+     * @return number of bytes read from file, or <tt>-1</tt> if tried to read past EOF for file.
+     * @throws IOException if reading failed.
+     */
+    private int readAligned(final ByteBuffer destBuf, final long filePos) throws IOException {
+        int rd = IgniteNativeIoLib.pread(fdCheckOpened(), bufferPtr(destBuf), nl(destBuf.remaining()), nl(filePos)).intValue();
 
         if (rd == 0)
-            return -1; //Tried to read past EOF for file
+            return -1;
 
         if (rd < 0)
-            throw new IOException("Error during reading file [" + file + "] " + ": " + getLastError());
+            throw new IOException(String.format("Error during reading file [%s] : %s", file, getLastError()));
 
         return rd;
     }
 
 
-    private int readAligned(ByteBuffer buf) throws IOException {
-        int rd = IgniteNativeIoLib.read(fdCheckOpened(), bufferPtr(buf), nl(buf.remaining())).intValue();
+    /**
+     * Read bytes from file using Native IO and aligned buffers.
+     *
+     * @param destBuf Destination aligned byte buffer.
+     * @return number of bytes read from file, or <tt>-1</tt> if tried to read past EOF for file.
+     * @throws IOException if reading failed.
+     */
+    private int readAligned(final ByteBuffer destBuf) throws IOException {
+        int rd = IgniteNativeIoLib.read(fdCheckOpened(), bufferPtr(destBuf), nl(destBuf.remaining())).intValue();
 
         if (rd == 0)
             return -1; //Tried to read past EOF for file
 
         if (rd < 0)
-            throw new IOException("Error during reading file [" + file + "] " + ": " + getLastError());
+            throw new IOException(String.format("Error during reading file [%s] : %s", file, getLastError()));
 
         return rd;
     }
 
-
-    private int writeAligned(ByteBuffer buf, long position) throws IOException {
-        int wr = IgniteNativeIoLib.pwrite(fdCheckOpened(), bufferPtr(buf), nl(buf.remaining()), nl(position)).intValue();
+    /**
+     * Writes the aligned native buffer starting at {@code buf} to the file at offset
+     * {@code filePos}. The file offset is not changed.
+     *
+     * @param buf pointer to buffer.
+     * @param filePos position in file to write data.
+     * @return the number of bytes written.
+     */
+    private int writeAligned(final ByteBuffer buf, final long filePos) throws IOException {
+        int wr = IgniteNativeIoLib.pwrite(fdCheckOpened(), bufferPtr(buf), nl(buf.remaining()), nl(filePos)).intValue();
 
         if (wr < 0)
-            throw new IOException("Error during writing file [" + file + "] to position [" + position + "]: " + getLastError());
+            throw new IOException(String.format("Error during writing file [%s] to position [%d]: %s",
+                file, filePos, getLastError()));
 
         return wr;
     }
 
+    /**
+     * Writes the aligned native buffer starting at {@code buf} to the file at offset
+     * {@code filePos}. The file offset is changed.
+     *
+     * @param buf pointer to buffer.
+     * @return the number of bytes written.
+     */
     private int writeAligned(ByteBuffer buf) throws IOException {
         int wr = IgniteNativeIoLib.write(fdCheckOpened(), bufferPtr(buf), nl(buf.remaining())).intValue();
 
         if (wr < 0)
-            throw new IOException("Error during writing file [" + file + "] " + ": " + getLastError());
+            throw new IOException(String.format("Error during writing file [%s] : %s", file, getLastError()));
 
         return wr;
     }
 
-    @NotNull private NativeLong nl(long position) {
-        return new NativeLong(position);
+    /**
+     * @param l value to box to native long.
+     * @return native long.
+     */
+    @NotNull private NativeLong nl(long l) {
+        return new NativeLong(l);
     }
 
+    /**
+     * Retrieve last error set by the OS as string. This corresponds to and <code>errno</code> on
+     * *nix platforms.
+     * @return displayable string with OS error info.
+     */
     public static String getLastError() {
         return IgniteNativeIoLib.strerror(Native.getLastError());
     }
 
+    /**
+     * Gets address in memory for direct aligned buffer. Produces warnings if data or offset seems to be not aligned.
+     *
+     * @param buf Direct aligned buffer.
+     * @return Buffer memory address.
+     */
     @NotNull private Pointer bufferPtr(ByteBuffer buf) {
-        long alignedPointer = GridUnsafe.bufferAddress(buf);
+        final long alignedPointer = GridUnsafe.bufferAddress(buf);
+        final int off = buf.position();
 
-        if ((alignedPointer + buf.position()) % fsBlockSize != 0) {
-            //todo warning
+        if ((alignedPointer) % fsBlockSize != 0) {
+            U.warn(log,
+                String.format("IO Buffer Pointer [%d] seems to be not aligned for FS block size [%d]. Direct IO may fail.",
+                    alignedPointer, fsBlockSize));
+        }
+
+        if ((alignedPointer + off) % fsBlockSize != 0) {
+            U.warn(log,
+                String.format("IO Buffer Pointer [%d] and/or offset [%d] seems to be not aligned for FS block size [%d]." +
+                        " Direct IO may fail.",
+                    alignedPointer, off, fsBlockSize));
         }
 
         return new Pointer(alignedPointer);
@@ -332,7 +444,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
         if (IgniteNativeIoLib.fsync(fdCheckOpened()) < 0)
-            throw new IOException("Error fsync()'ing " + file + ", got " + getLastError());
+            throw new IOException(String.format("Error fsync()'ing %s, got %s", file, getLastError()));
     }
 
     /** {@inheritDoc} */
@@ -348,7 +460,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         if (IgniteNativeIoLib.close(fdCheckOpened()) < 0)
-            throw new IOException("Error closing " + file + ", got " + getLastError());
+            throw new IOException(String.format("Error closing %s, got %s", file, getLastError()));
 
         fd = -1;
     }
