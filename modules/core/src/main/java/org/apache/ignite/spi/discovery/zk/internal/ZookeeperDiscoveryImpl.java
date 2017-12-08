@@ -718,7 +718,7 @@ public class ZookeeperDiscoveryImpl {
             join event after some timeout.
              */
             rtState.joinTimeoutObj = new CheckJoinStateTimeoutObject(
-                multipartPathName(joinDataPath, 0),
+                joinDataPath,
                 rtState);
 
             spi.getSpiContext().addTimeoutObject(rtState.joinTimeoutObj);
