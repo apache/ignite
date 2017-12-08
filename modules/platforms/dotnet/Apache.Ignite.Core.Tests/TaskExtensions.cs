@@ -15,29 +15,45 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Client
+namespace Apache.Ignite.Core.Tests
 {
-    using Apache.Ignite.Core.Client;
-    using NUnit.Framework;
+    using System;
+    using System.Threading.Tasks;
 
     /// <summary>
-    /// Tests for <see cref="IgniteClientConfiguration"/>.
+    /// Task extensions.
     /// </summary>
-    public class IgniteClientConfigurationTest
+    public static class TaskExtensions
     {
         /// <summary>
-        /// Tests the defaults.
+        /// Waits the result of a task, unwraps exceptions.
         /// </summary>
-        [Test]
-        public void TestDefaults()
+        /// <param name="task">The task.</param>
+        public static void WaitResult(this Task task)
         {
-            var cfg = new IgniteClientConfiguration();
+            try
+            {
+                task.Wait();
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.GetBaseException();
+            }
+        }
 
-            Assert.AreEqual(IgniteClientConfiguration.DefaultPort, cfg.Port);
-            Assert.AreEqual(IgniteClientConfiguration.DefaultSocketBufferSize, cfg.SocketReceiveBufferSize);
-            Assert.AreEqual(IgniteClientConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
-            Assert.AreEqual(IgniteClientConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
-            Assert.AreEqual(IgniteClientConfiguration.DefaultSocketTimeout, cfg.SocketTimeout);
+        /// <summary>
+        /// Gets the result of a task, unwraps exceptions.
+        /// </summary>
+        public static T GetResult<T>(this Task<T> task)
+        {
+            try
+            {
+                return task.Result;
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.GetBaseException();
+            }
         }
     }
 }

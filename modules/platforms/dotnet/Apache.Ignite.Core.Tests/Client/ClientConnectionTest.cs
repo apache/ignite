@@ -18,9 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -33,8 +36,8 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Fixture tear down.
         /// </summary>
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
+        [TearDown]
+        public void TearDown()
         {
             Ignition.StopAll(true);
         }
@@ -126,7 +129,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
 
-                Assert.AreEqual("Client handhsake failed: 'Unsupported version.'. " +
+                Assert.AreEqual("Client handshake failed: 'Unsupported version.'. " +
                                 "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
             }
         }
@@ -153,6 +156,112 @@ namespace Apache.Ignite.Core.Tests.Client
                 var ex = Assert.Throws<AggregateException>(() => Ignition.StartClient(clientCfg));
                 Assert.AreEqual("Failed to establish Ignite thin client connection, " +
                                 "examine inner exceptions for details.", ex.Message.Substring(0, 88));
+            }
+        }
+
+        /// <summary>
+        /// Tests that we get a proper exception when server disconnects (node shutdown, network issues, etc).
+        /// </summary>
+        [Test]
+        public void TestServerConnectionAborted()
+        {
+            var evt = new ManualResetEventSlim();
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var putGetTask = Task.Factory.StartNew(() =>
+            {
+                using (var client = StartClient())
+                {
+                    var cache = client.GetOrCreateCache<int, int>("foo");
+                    evt.Set();
+
+                    for (var i = 0; i < 100000; i++)
+                    {
+                        cache[i] = i;
+                        Assert.AreEqual(i, cache.GetAsync(i).Result);
+                    }
+                }
+            });
+
+            evt.Wait();
+            ignite.Dispose();
+
+            var ex = Assert.Throws<AggregateException>(() => putGetTask.Wait());
+            var baseEx = ex.GetBaseException();
+            var socketEx = baseEx as SocketException;
+
+            if (socketEx != null)
+            {
+                Assert.AreEqual(SocketError.ConnectionAborted, socketEx.SocketErrorCode);
+            }
+            else
+            {
+                Assert.Fail("Unexpected exception: " + ex);
+            }
+        }
+
+        /// <summary>
+        /// Tests the operation timeout.
+        /// </summary>
+        [Test]
+        public void TestOperationTimeout()
+        {
+            var bigString = new string('f', 10000);
+            var data = Enumerable.Range(1, 100000).ToDictionary(x => x, x => bigString);
+
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = GetClientConfiguration();
+            cfg.SocketTimeout = TimeSpan.FromMilliseconds(500);
+            var client = Ignition.StartClient(cfg);
+            var cache = client.CreateCache<int, string>("s");
+
+            // Async.
+            var task = cache.PutAllAsync(data);
+            Assert.IsFalse(task.IsCompleted);
+            var aex = Assert.Throws<AggregateException>(() => task.Wait());
+            Assert.AreEqual(SocketError.TimedOut, ((SocketException) aex.GetBaseException()).SocketErrorCode);
+
+            // Sync (reconnect for clean state).
+            client = Ignition.StartClient(cfg);
+            cache = client.GetCache<int, string>("s");
+            var ex = Assert.Throws<SocketException>(() => cache.PutAll(data));
+            Assert.AreEqual(SocketError.TimedOut, ex.SocketErrorCode);
+        }
+
+        /// <summary>
+        /// Tests the client dispose while operations are in progress.
+        /// </summary>
+        [Test]
+        public void TestClientDisposeWhileOperationsAreInProgress()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var ops = new List<Task>();
+
+            using (var client = StartClient())
+            {
+                var cache = client.GetOrCreateCache<int, int>("foo");
+                for (var i = 0; i < 100000; i++)
+                {
+                    ops.Add(cache.PutAsync(i, i));
+                }
+                ops.First().Wait();
+            }
+
+            var completed = ops.Count(x => x.Status == TaskStatus.RanToCompletion);
+            Assert.Greater(completed, 0, "Some tasks should have completed.");
+
+            var failed = ops.Where(x => x.Status == TaskStatus.Faulted).ToArray();
+            Assert.IsTrue(failed.Any(), "Some tasks should have failed.");
+
+            foreach (var task in failed)
+            {
+                var ex = task.Exception;
+                Assert.IsNotNull(ex);
+                var baseEx = ex.GetBaseException();
+                Assert.IsNotNull((object) (baseEx as SocketException) ?? baseEx as ObjectDisposedException, 
+                    ex.ToString());
             }
         }
 
