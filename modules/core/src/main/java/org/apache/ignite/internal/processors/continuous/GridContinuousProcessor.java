@@ -164,10 +164,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        discoProtoVer = ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi ? 1 : 2;
+
         if (ctx.config().isDaemon())
             return;
-
-        discoProtoVer = ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi ? 1 : 2;
 
         if (discoProtoVer == 2)
             routinesInfo = new ContinuousRoutinesInfo();
@@ -375,6 +375,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        if (ctx.isDaemon())
+            return;
+
         if (discoProtoVer == 2) {
             routinesInfo.collectJoiningNodeData(dataBag);
 
@@ -389,6 +392,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        if (ctx.isDaemon())
+            return;
+
         if (discoProtoVer == 2) {
             routinesInfo.collectGridNodeData(dataBag);
 
