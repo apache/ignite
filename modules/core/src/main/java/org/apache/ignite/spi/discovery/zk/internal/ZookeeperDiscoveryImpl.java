@@ -706,6 +706,7 @@ public class ZookeeperDiscoveryImpl {
                 ", instanceName=" + locNode.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) +
                 ", joinDataSize=" + joinDataBytes.length +
                 ", joinDataPartCnt=" + rtState.joinDataPartCnt +
+                ", consistentId=" + locNode.consistentId() +
                 ", initTime=" + (System.currentTimeMillis() - startTime) +
                 ", nodePath=" + rtState.locNodeZkPath + ']');
 
