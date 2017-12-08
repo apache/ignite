@@ -640,15 +640,31 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         GridDhtPartitionState partState = getPartState(state);
 
         if (isEmpty() && !grp.queriesEnabled() && getSize(state) == 0 &&
-            partState == RENTING && getReservations(state) == 0 && !groupReserved() &&
-            casState(state, EVICTED)) {
-            if (log.isDebugEnabled())
-                log.debug("Evicted partition: " + this);
+            partState == RENTING && getReservations(state) == 0 && !groupReserved()) {
+            if (reload) {
+                if (casState(state, MOVING)) {
+                    reload(false);
 
-            if (markForDestroy())
-                finishDestroy(updateSeq);
+                    if (log.isDebugEnabled())
+                        log.debug("Moved partition to MOVING state: " + this);
+
+                    return;
+                }
+            }
+            else {
+                if (casState(state, EVICTED)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Evicted partition: " + this);
+
+                    if (markForDestroy())
+                        finishDestroy(updateSeq);
+
+                    return;
+                }
+            }
         }
-        else if (partState == RENTING || shouldBeRenting())
+
+        if (partState == RENTING || shouldBeRenting())
             grp.preloader().evictPartitionAsync(this);
     }
 
@@ -752,10 +768,22 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 // Attempt to evict partition entries from cache.
                 clearAll();
 
-                if (isEmpty() && getSize(state) == 0 && casState(state, EVICTED)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Evicted partition: " + this);
-                    // finishDestroy() will be initiated by clearEvicting().
+                if (isEmpty() && getSize(state) == 0) {
+                    if (reload()) {
+                        if (casState(state, MOVING)) {
+                            reload(false);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Moved partition to MOVING state: " + this);
+                        }
+                    }
+                    else {
+                        if (casState(state, EVICTED)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Evicted partition: " + this);
+                            // finishDestroy() will be initiated by clearEvicting().
+                        }
+                    }
                 }
             }
             finally {

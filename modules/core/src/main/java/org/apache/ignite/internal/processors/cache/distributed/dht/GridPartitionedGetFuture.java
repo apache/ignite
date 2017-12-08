@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -130,13 +131,13 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         if (lockedTopVer != null) {
             canRemap = false;
 
-            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer);
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer, null);
         }
         else {
             topVer = topVer.topologyVersion() > 0 ? topVer :
                 canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
 
-            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer, null);
         }
 
         markInitialized();
@@ -224,7 +225,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        GetRemapContext remapCtx
     ) {
         Collection<ClusterNode> cacheNodes = CU.affinityNodes(cctx, topVer);
 
@@ -245,7 +247,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             return;
         }
 
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(cacheNodes.size());
+        final Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(cacheNodes.size());
 
         final int keysSize = keys.size();
 
@@ -297,21 +299,54 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
                 if (!F.isEmpty(invalidParts)) {
-                    Collection<KeyCacheObject> remapKeys = new ArrayList<>(keysSize);
+                    final Collection<KeyCacheObject> remapKeys = new ArrayList<>(keysSize);
 
                     for (KeyCacheObject key : keys) {
                         if (key != null && invalidParts.contains(cctx.affinity().partition(key)))
                             remapKeys.add(key);
                     }
 
-                    AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
+                    final AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
-                    assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology version did " +
-                        "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
-                        ", invalidParts=" + invalidParts + ']';
+                    if (updTopVer.compareTo(topVer) == 0) {
+                        // Remap on the same topology version must be limited.
+                        if (remapCtx == null)
+                            remapCtx = new GetRemapContext();
+
+                        long timeout = remapCtx.nextRetryInterval();
+
+                        if (timeout > 0) {
+                            U.warn(log, "Got invalid partitions for local node but topology version did not change " +
+                                "(will retry read in " + timeout + "ms) [futId=" + futureId() + ", topVer=" + topVer +
+                                ", invalidParts=" + invalidParts + ']');
+
+                            final GridFutureAdapter<Map<K, V>> f = new GridFutureAdapter<>();
+                            final GetRemapContext ctx0 = remapCtx;
+
+                            // Delay future completion until the timeout object is run.
+                            add(f);
+
+                            cctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(timeout) {
+                                @Override public void onTimeout() {
+                                    try {
+                                        map(remapKeys, mappings, updTopVer, ctx0);
+                                    }
+                                    finally {
+                                        f.onDone();
+                                    }
+                                }
+                            });
+                        }
+                        else
+                            onDone(null, new IgniteCheckedException("Got invalid partitions for local node " +
+                                "but topology version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
+                                ", invalidParts=" + invalidParts + ']'));
+
+                        return;
+                    }
 
                     // Remap recursively.
-                    map(remapKeys, mappings, updTopVer);
+                    map(remapKeys, mappings, updTopVer, null);
                 }
 
                 // Add new future.
@@ -715,7 +750,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
             // Try getting from existing nodes.
             if (!canRemap) {
-                map(keys.keySet(), F.t(node, keys), topVer);
+                map(keys.keySet(), F.t(node, keys), topVer, null);
 
                 onDone(Collections.<K, V>emptyMap());
             }
@@ -728,7 +763,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
                                 // Remap.
-                                map(keys.keySet(), F.t(node, keys), fut.get());
+                                map(keys.keySet(), F.t(node, keys), fut.get(), null);
 
                                 onDone(Collections.<K, V>emptyMap());
                             }
@@ -779,7 +814,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         @Override public boolean apply(KeyCacheObject key) {
                             return invalidParts.contains(cctx.affinity().partition(key));
                         }
-                    }), F.t(node, keys), topVer);
+                    }), F.t(node, keys), topVer, null);
 
                     onDone(createResultMap(res.entries()));
 
@@ -800,7 +835,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             @Override public boolean apply(KeyCacheObject key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }
-                        }), F.t(node, keys), topVer);
+                        }), F.t(node, keys), topVer, null);
 
                         onDone(createResultMap(res.entries()));
                     }

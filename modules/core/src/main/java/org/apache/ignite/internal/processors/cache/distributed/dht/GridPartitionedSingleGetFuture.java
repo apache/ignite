@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -62,8 +63,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  *
  */
-public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object> implements GridCacheFuture<Object>,
-    CacheGetFuture, IgniteDiagnosticAware {
+public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object> implements CacheGetFuture,
+    IgniteDiagnosticAware {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -200,14 +201,14 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             return;
         }
 
-        map(topVer);
+        map(topVer, null);
     }
 
     /**
      * @param topVer Topology version.
      */
     @SuppressWarnings("unchecked")
-    private void map(final AffinityTopologyVersion topVer) {
+    private void map(final AffinityTopologyVersion topVer, GetRemapContext remapCtx) {
         ClusterNode node = mapKeyToNode(topVer);
 
         if (node == null) {
@@ -235,14 +236,38 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             final Collection<Integer> invalidParts = fut.invalidPartitions();
 
             if (!F.isEmpty(invalidParts)) {
-                AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
+                final AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
-                assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology " +
-                    "version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
-                    ", invalidParts=" + invalidParts + ']';
+                if (updTopVer.compareTo(topVer) == 0) {
+                    // Remap on the same topology version must be limited.
+                    if (remapCtx == null)
+                        remapCtx = new GetRemapContext();
+
+                    long timeout = remapCtx.nextRetryInterval();
+
+                    if (timeout > 0) {
+                        U.warn(log, "Got invalid partitions for local node but topology version did not change " +
+                            "(will retry read in " + timeout + "ms) [futId=" + futureId() + ", topVer=" + topVer +
+                            ", invalidParts=" + invalidParts + ']');
+
+                        final GetRemapContext ctx0 = remapCtx;
+
+                        cctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(timeout) {
+                            @Override public void onTimeout() {
+                                map(updTopVer, ctx0);
+                            }
+                        });
+                    }
+                    else
+                        onDone(null, new IgniteCheckedException("Got invalid partitions for local node but topology " +
+                            "version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
+                            ", invalidParts=" + invalidParts + ']'));
+
+                    return;
+                }
 
                 // Remap recursively.
-                map(updTopVer);
+                map(updTopVer, null);
             }
             else {
                 fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
@@ -594,7 +619,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             }
             else
-                map(topVer);
+                map(topVer, null);
 
             return false;
         }
@@ -737,7 +762,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private void remap(final AffinityTopologyVersion topVer) {
         cctx.closures().runLocalSafe(new Runnable() {
             @Override public void run() {
-                map(topVer);
+                map(topVer, null);
             }
         });
     }

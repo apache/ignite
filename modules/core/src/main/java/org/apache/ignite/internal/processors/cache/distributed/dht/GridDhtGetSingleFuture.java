@@ -285,7 +285,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             else
                 return false;
         }
-        catch (GridDhtInvalidPartitionException ex) {
+        catch (GridDhtInvalidPartitionException ignore) {
             return false;
         }
     }

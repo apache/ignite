@@ -1951,9 +1951,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (haveHistory)
                         locPart.moving();
                     else {
-                        locPart.rent(false);
-
                         locPart.reload(true);
+
+                        locPart.rent(false);
 
                         result.add(ctx.localNodeId());
                     }
@@ -1961,7 +1961,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
                         "[nodeId=" + ctx.localNodeId() + ", cacheOrGroupName=" + grp.cacheOrGroupName() +
                         ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
-
                 }
             }
 

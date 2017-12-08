@@ -42,11 +42,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GetRemapContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -147,7 +149,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         if (lockedTopVer != null) {
             canRemap = false;
 
-            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer);
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer, null);
         }
         else {
             AffinityTopologyVersion mapTopVer = topVer;
@@ -158,7 +160,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     tx.topologyVersion();
             }
 
-            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), mapTopVer);
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), mapTopVer, null);
         }
 
         markInitialized();
@@ -201,7 +203,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param nodeId Sender.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridNearGetResponse res) {
+    @Override public void onResult(UUID nodeId, GridNearGetResponse res) {
         for (IgniteInternalFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
@@ -245,7 +247,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     private void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        final AffinityTopologyVersion topVer
+        final AffinityTopologyVersion topVer,
+        GetRemapContext remapCtx
     ) {
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
@@ -258,7 +261,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             return;
         }
 
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(affNodes.size());
+        final Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(affNodes.size());
 
         Map<KeyCacheObject, GridNearCacheEntry> savedEntries = null;
 
@@ -323,21 +326,54 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
                 if (!F.isEmpty(invalidParts)) {
-                    Collection<KeyCacheObject> remapKeys = new ArrayList<>(keysSize);
+                    final Collection<KeyCacheObject> remapKeys = new ArrayList<>(keysSize);
 
                     for (KeyCacheObject key : keys) {
                         if (key != null && invalidParts.contains(cctx.affinity().partition(key)))
                             remapKeys.add(key);
                     }
 
-                    AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
+                    final AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
-                    assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology version did " +
-                        "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
-                        ", invalidParts=" + invalidParts + ']';
+                    if (updTopVer.compareTo(topVer) == 0) {
+                        // Remap on the same topology version must be limited.
+                        if (remapCtx == null)
+                            remapCtx = new GetRemapContext();
+
+                        long timeout = remapCtx.nextRetryInterval();
+
+                        if (timeout > 0) {
+                            U.warn(log, "Got invalid partitions for local node but topology version did not change " +
+                                "(will retry read in " + timeout + "ms) [futId=" + futureId() + ", topVer=" + topVer +
+                                ", invalidParts=" + invalidParts + ']');
+
+                            final GridFutureAdapter<Map<K, V>> f = new GridFutureAdapter<>();
+                            final GetRemapContext ctx0 = remapCtx;
+
+                            // Delay future completion until the timeout object is run.
+                            add(f);
+
+                            cctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(timeout) {
+                                @Override public void onTimeout() {
+                                    try {
+                                        map(remapKeys, mappings, updTopVer, ctx0);
+                                    }
+                                    finally {
+                                        f.onDone();
+                                    }
+                                }
+                            });
+                        }
+                        else
+                            onDone(null, new IgniteCheckedException("Got invalid partitions for local node " +
+                                "but topology version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
+                                ", invalidParts=" + invalidParts + ']'));
+
+                        return;
+                    }
 
                     // Remap recursively.
-                    map(remapKeys, mappings, updTopVer);
+                    map(remapKeys, mappings, updTopVer, null);
                 }
 
                 // Add new future.
@@ -919,7 +955,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             // Try getting value from alive nodes.
             if (!canRemap) {
                 // Remap
-                map(keys.keySet(), F.t(node, keys), topVer);
+                map(keys.keySet(), F.t(node, keys), topVer, null);
 
                 onDone(Collections.<K, V>emptyMap());
             }
@@ -932,7 +968,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
                                 // Remap.
-                                map(keys.keySet(), F.t(node, keys), fut.get());
+                                map(keys.keySet(), F.t(node, keys), fut.get(), null);
 
                                 onDone(Collections.<K, V>emptyMap());
                             }
@@ -982,7 +1018,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         @Override public boolean apply(KeyCacheObject key) {
                             return invalidParts.contains(cctx.affinity().partition(key));
                         }
-                    }), F.t(node, keys), topVer);
+                    }), F.t(node, keys), topVer, null);
 
                     // It is critical to call onDone after adding futures to compound list.
                     onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
@@ -1003,7 +1039,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             @Override public boolean apply(KeyCacheObject key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }
-                        }), F.t(node, keys), readyTopVer);
+                        }), F.t(node, keys), readyTopVer, null);
 
                         // It is critical to call onDone after adding futures to compound list.
                         onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
