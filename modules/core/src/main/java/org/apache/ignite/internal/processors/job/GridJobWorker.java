@@ -425,10 +425,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param taskCls Task class.
      * @return {@code True} if job was successfully initialized.
      */
-    boolean initialize(GridDeployment dep, Class<?> taskCls) {
+    IgniteException initialize(GridDeployment dep, Class<?> taskCls) {
         assert dep != null;
 
         IgniteException ex = null;
+
+        boolean finishJob = false;
 
         try {
             if (job == null) {
@@ -452,8 +454,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to initialize job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
-
             ex = new IgniteException(e);
         }
         catch (Throwable e) {
@@ -461,15 +461,17 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             assert ex != null;
 
-            if (e instanceof Error)
+            if (e instanceof Error) {
+                finishJob = true;
                 throw e;
+            }
         }
         finally {
-            if (ex != null)
+            if (ex != null && finishJob)
                 finishJob(null, ex, true);
         }
 
-        return ex == null;
+        return ex;
     }
 
     /** {@inheritDoc} */

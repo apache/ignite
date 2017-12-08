@@ -395,6 +395,31 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @return Deployment class if found.
      */
     @Nullable public GridDeployment getGlobalDeployment(
+            DeploymentMode depMode,
+            String rsrcName,
+            String clsName,
+            String userVer,
+            UUID sndNodeId,
+            IgniteUuid clsLdrId,
+            Map<UUID, IgniteUuid> participants,
+            @Nullable IgnitePredicate<ClusterNode> nodeFilter) {
+        return getGlobalDeployment(depMode, rsrcName, clsName, userVer, sndNodeId, clsLdrId, participants,
+                nodeFilter, true);
+    }
+
+    /**
+     * @param depMode Deployment mode.
+     * @param rsrcName Resource name (could be task name).
+     * @param clsName Class name.
+     * @param userVer User version.
+     * @param sndNodeId Sender node ID.
+     * @param clsLdrId Class loader ID.
+     * @param participants Node class loader participant map.
+     * @param nodeFilter Node filter for class loader.
+     * @param reuse Reuse already initialized deployment.
+     * @return Deployment class if found.
+     */
+    @Nullable public GridDeployment getGlobalDeployment(
         DeploymentMode depMode,
         String rsrcName,
         String clsName,
@@ -402,8 +427,10 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         UUID sndNodeId,
         IgniteUuid clsLdrId,
         Map<UUID, IgniteUuid> participants,
-        @Nullable IgnitePredicate<ClusterNode> nodeFilter) {
-        if (locDep != null)
+        @Nullable IgnitePredicate<ClusterNode> nodeFilter,
+        boolean reuse) {
+
+        if (locDep != null && reuse)
             return locDep;
 
         String lambdaEnclosingClsName = U.lambdaEnclosingClassName(clsName);
@@ -432,8 +459,6 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         // from remote node simply because the class loader needs to be "shared".
         if (isPerVersionMode(meta.deploymentMode())) {
             meta.record(true);
-
-            boolean reuse = true;
 
             // Check local exclusions.
             if (!sndNodeId.equals(ctx.localNodeId())) {
@@ -490,6 +515,9 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
                     return locDep;
                 }
             }
+
+            if (log.isDebugEnabled())
+                log.debug("Initialize new shared mode deployment, reuse=" + reuse);
 
             return verStore.getDeployment(meta);
         }
