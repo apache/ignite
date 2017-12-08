@@ -194,7 +194,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         clientSpi.setInternalListener(lsnr);
 
-        lsnr.startBlock();
+        lsnr.startBlockJoin();
 
         final AtomicReference<IgniteInternalFuture> blockPutRef = new AtomicReference<>();
 
@@ -260,7 +260,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         log.info("Allow reconnect.");
 
-        lsnr.stopBlock();
+        lsnr.stopBlockJoin();
 
         assertTrue(reconnectLatch.await(5000, MILLISECONDS));
 
@@ -432,7 +432,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         clientSpi.setInternalListener(lsnr);
 
-        lsnr.startBlock();
+        lsnr.startBlockJoin();
 
         client.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -540,7 +540,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertTrue(putFailed.await(5000, MILLISECONDS));
 
-        lsnr.stopBlock();
+        lsnr.stopBlockJoin();
 
         waitReconnectEvent(reconnectLatch);
 

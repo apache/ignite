@@ -63,6 +63,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -676,7 +677,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             ((IgniteDiscoverySpi)ignite0.configuration().getDiscoverySpi()).setInternalListener(lsnr);
 
-            lsnr.blockCustomEvent();
+            lsnr.blockCustomEvent(CacheAffinityChangeMessage.class);
 
             stopGrid(1);
 
@@ -1420,7 +1421,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(2, 0), true);
 
-        lsnr.blockCustomEvent();
+        lsnr.blockCustomEvent(CacheAffinityChangeMessage.class);
 
         startServer(2, 3);
 
@@ -1469,7 +1470,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             checkAffinity(3, topVer(3, 1), false);
 
-            lsnr.blockCustomEvent();
+            lsnr.blockCustomEvent(CacheAffinityChangeMessage.class);
 
             stopNode(2, 4);
 
@@ -1547,7 +1548,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         blockSupplySend(spi, CACHE_NAME2);
 
-        lsnr.blockCustomEvent();
+        lsnr.blockCustomEvent(CacheAffinityChangeMessage.class);
 
         startServer(1, 2);
 

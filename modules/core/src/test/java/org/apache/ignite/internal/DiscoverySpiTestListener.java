@@ -18,13 +18,15 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
-import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -38,7 +40,7 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
     private volatile CountDownLatch joinLatch;
 
     /** */
-    private boolean blockCustomEvt;
+    private Set<Class<?>> blockCustomEvtCls;
 
     /** */
     private final Object mux = new Object();
@@ -55,14 +57,14 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
     /**
      *
      */
-    public void startBlock() {
+    public void startBlockJoin() {
         joinLatch = new CountDownLatch(1);
     }
 
     /**
      *
      */
-    public void stopBlock() {
+    public void stopBlockJoin() {
         joinLatch.countDown();
     }
 
@@ -88,10 +90,10 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
         this.log = log;
 
         synchronized (mux) {
-            if (blockCustomEvt) {
+            if (blockCustomEvtCls != null) {
                 DiscoveryCustomMessage msg0 = GridTestUtils.getFieldValue(msg, "delegate");
 
-                if (msg0 instanceof CacheAffinityChangeMessage) {
+                if (blockCustomEvtCls.contains(msg0.getClass())) {
                     log.info("Block custom message: " + msg0);
 
                     blockedMsgs.add(msg);
@@ -105,14 +107,19 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
 
         return true;
     }
+
     /**
-     *
+     * @param blockCustomEvtCls Event class to block.
      */
-    public void blockCustomEvent() {
+    public void blockCustomEvent(Class<?> cls0, Class<?> ... blockCustomEvtCls) {
         synchronized (mux) {
             assert blockedMsgs.isEmpty() : blockedMsgs;
 
-            blockCustomEvt = true;
+            this.blockCustomEvtCls = new HashSet<>();
+
+            this.blockCustomEvtCls.add(cls0);
+
+            Collections.addAll(this.blockCustomEvtCls, blockCustomEvtCls);
         }
     }
 
@@ -138,7 +145,7 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
         synchronized (this) {
             msgs = new ArrayList<>(blockedMsgs);
 
-            blockCustomEvt = false;
+            blockCustomEvtCls = null;
 
             blockedMsgs.clear();
         }

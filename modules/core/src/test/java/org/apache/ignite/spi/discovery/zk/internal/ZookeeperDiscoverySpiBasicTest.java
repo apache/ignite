@@ -1995,7 +1995,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
                 ((IgniteDiscoverySpi)client.configuration().getDiscoverySpi()).setInternalListener(lsnr);
 
-                lsnr.startBlock();
+                lsnr.startBlockJoin();
 
                 lsnrs.add(lsnr);
             }
@@ -2056,7 +2056,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             disconnectedC.run();
 
             for (DiscoverySpiTestListener lsnr : lsnrs)
-                lsnr.stopBlock();
+                lsnr.stopBlockJoin();
         }
 
         waitReconnectEvent(log, reconnectLatch);

@@ -785,7 +785,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
         DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 
         clientSpi.setInternalListener(lsnr);
-        lsnr.startBlock();
+        lsnr.startBlockJoin();
 
         final List<IgniteInternalFuture> futs = new ArrayList<>();
 
@@ -830,7 +830,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
             log.info("Allow reconnect.");
 
-            lsnr.stopBlock();
+            lsnr.stopBlockJoin();
 
             waitReconnectEvent(reconnectLatch);
 
@@ -855,7 +855,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
             }
         }
         finally {
-            lsnr.stopBlock();
+            lsnr.stopBlockJoin();
 
             for (IgniteInternalFuture fut : futs)
                 fut.cancel();
