@@ -229,13 +229,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
-                addDataRegion(memCfg, dataRegionCfg, true);
+                addDataRegion(memCfg, dataRegionCfg, dataRegionCfg.isPersistenceEnabled());
         }
 
         addDataRegion(
             memCfg,
             memCfg.getDefaultDataRegionConfiguration(),
-            true
+            memCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled()
         );
 
         addDataRegion(
@@ -245,7 +245,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memCfg.getSystemRegionMaxSize(),
                 CU.isPersistenceEnabled(memCfg)
             ),
-            true
+            CU.isPersistenceEnabled(memCfg)
         );
 
         dataRegionsInitialized = true;
