@@ -54,14 +54,14 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
     /**
      *
      */
-    public void finish() {
+    public void finish(boolean clearThreadMap) {
         try {
             if (commit) {
                 tx.state(PREPARING);
                 tx.state(PREPARED);
                 tx.state(COMMITTING);
 
-                tx.context().tm().fastFinishTx(tx, true);
+                tx.context().tm().fastFinishTx(tx, true, true);
 
                 tx.state(COMMITTED);
             }
@@ -70,7 +70,7 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
                 tx.state(PREPARED);
                 tx.state(ROLLING_BACK);
 
-                tx.context().tm().fastFinishTx(tx, false);
+                tx.context().tm().fastFinishTx(tx, false, clearThreadMap);
 
                 tx.state(ROLLED_BACK);
             }

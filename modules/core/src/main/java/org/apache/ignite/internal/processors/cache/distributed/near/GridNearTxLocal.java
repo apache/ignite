@@ -3219,7 +3219,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, true)))
                 return chainFinishFuture(finishFut, true);
 
-            fut0.finish();
+            fut0.finish(false);
 
             return fut0;
         }
@@ -3323,7 +3323,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
                 return chainFinishFuture(finishFut, false);
 
-            fut0.finish();
+            fut0.finish(clearThreadMap);
 
             return fut0;
         }
@@ -3355,10 +3355,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             });
 
-            if (lockFut instanceof GridDhtColocatedLockFuture)
-                ((GridDhtColocatedLockFuture)lockFut).onRollback(onTimeout ? timeoutException() : rollbackException());
-            else if (lockFut instanceof GridNearLockFuture)
-                ((GridNearLockFuture)lockFut).onRollback(onTimeout ? timeoutException() : rollbackException());
+            if (!onTimeout) {
+                if (lockFut instanceof GridDhtColocatedLockFuture)
+                    ((GridDhtColocatedLockFuture)lockFut).onRollback(rollbackException());
+                else if (lockFut instanceof GridNearLockFuture)
+                    ((GridNearLockFuture)lockFut).onRollback(rollbackException());
+            }
         }
         else
             retFut = fut0;
