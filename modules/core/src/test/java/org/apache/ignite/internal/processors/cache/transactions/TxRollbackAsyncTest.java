@@ -33,9 +33,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -299,7 +301,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     private void testAsyncRollbacks0(final Ignite node, int threadsCnt) throws Exception {
         final CountDownLatch readStartLatch = new CountDownLatch(1);
 
-        final CountDownLatch enqueueLatch = new CountDownLatch(threadsCnt - 1);
+        final CountDownLatch enqueueLatch = new CountDownLatch(threadsCnt);
 
         final CountDownLatch commitLatch = new CountDownLatch(1);
 
@@ -307,7 +309,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> lockFut = startLockThread(node, readStartLatch, commitLatch, 0);
 
-        final IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+        final IgniteInternalFuture<?> testFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1);
                 txs.add(tx);
@@ -338,14 +340,17 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         U.awaitQuiet(enqueueLatch);
 
-        final Transaction tx0 = txs.remove(0);
-
-        // TODO FIXME if no timeout rollback has race with get. Get must throw an exception if tx already rolled back.
         Thread.sleep(500);
 
-        tx0.rollback();
+        List<IgniteFuture<Void>> futs = new ArrayList<>();
 
-        fut.get();
+        for (Transaction tx : txs)
+            futs.add(tx.rollbackAsync());
+
+        for (IgniteFuture<Void> future : futs)
+            future.get();
+
+        testFut.get();
 
         commitLatch.countDown();
 
