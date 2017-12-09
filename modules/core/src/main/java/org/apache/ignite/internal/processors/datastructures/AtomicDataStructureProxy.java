@@ -89,8 +89,8 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
      * @return Datastructure name.
      */
     public String name() {
-            return name;
-        }
+        return name;
+    }
 
     /**
      * @return Key value.
