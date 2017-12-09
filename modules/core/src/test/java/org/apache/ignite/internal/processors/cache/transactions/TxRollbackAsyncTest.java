@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -42,10 +44,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.jsr166.LongAdder8;
 
+import static java.lang.Thread.sleep;
 import static java.util.Collections.synchronizedList;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -361,6 +367,117 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         checkFutures();
     }
 
+    /**
+     *
+     */
+    public void testMixedRollbackTypes() throws Exception {
+        final Ignite client = startClient();
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        final int threadsCnt = Runtime.getRuntime().availableProcessors() * 2;
+
+        final int keysCnt = 100;
+
+        final Random r = new Random();
+
+        final TransactionConcurrency[] TC_VALS = TransactionConcurrency.values();
+        final TransactionIsolation[] TI_VALS = TransactionIsolation.values();
+
+        final LongAdder8 completed = new LongAdder8();
+        final LongAdder8 failed = new LongAdder8();
+
+        IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                while(!stop.get()) {
+
+                    int nodeId = r.nextInt(GRID_CNT + 1);
+
+                    Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
+
+                    TransactionConcurrency conc = TC_VALS[r.nextInt(TC_VALS.length)];
+                    TransactionIsolation isolation = TI_VALS[r.nextInt(TI_VALS.length)];
+
+                    int k = r.nextInt(keysCnt);
+
+                    long timeout = r.nextInt(200) + 50;
+
+                    try (Transaction tx = node.transactions().txStart(conc, isolation, timeout, 1)) {
+                        final Long v = (Long)node.cache(CACHE_NAME).get(k);
+
+                        final int delay = r.nextInt(400);
+
+                        if (delay > 0)
+                            sleep(delay);
+
+                        node.cache(CACHE_NAME).put(k, v + 1);
+
+                        tx.commit();
+
+                        completed.add(1);
+                    }
+                    catch (Exception e) {
+                        failed.add(1);
+                    }
+                }
+            }
+        }, threadsCnt, "tx-thread");
+
+        final AtomicInteger nodeIdx = new AtomicInteger();
+
+        IgniteInternalFuture<?> rollbackFut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                int nodeId = nodeIdx.getAndIncrement();
+
+                while (!stop.get()) {
+                    try {
+                        sleep(r.nextInt(350) + 50);
+                    }
+                    catch (InterruptedException e) {
+                        return;
+                    }
+
+                    Collection<Transaction> transactions = grid(nodeId).transactions().localActiveTransactions();
+
+                    for (Transaction transaction : transactions)
+                        transaction.rollbackAsync();
+                }
+            }
+        }, G.allGrids().size(), "rollback-thread");
+
+        doSleep(10_000);
+
+        stop.set(true);
+
+        txFut.get();
+
+        rollbackFut.get();
+
+        log.info("Completed txs: " + completed.sum() + ", failed txs: " + failed.sum());
+
+        checkFutures();
+    }
+
+    /**
+     * Tests rollback of active local transactions.
+     */
+    public void testRollbackActiveTransactions() throws Exception {
+        final Ignite client = startClient();
+
+        final Collection<Transaction> transactions = client.transactions().localActiveTransactions();
+
+        for (Transaction transaction : transactions)
+            transaction.rollback();
+
+        assertTrue(client.transactions().localActiveTransactions().isEmpty());
+    }
+
+    /**
+     * @param node Node.
+     * @param lockedLatch Locked latch.
+     * @param commitLatch Commit latch.
+     * @param timeout Timeout.
+     */
     private IgniteInternalFuture<?> startLockThread(final Ignite node, final CountDownLatch lockedLatch,
         final CountDownLatch commitLatch, final int timeout) throws Exception {
         return multithreadedAsync(new Runnable() {
@@ -376,20 +493,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 }
             }
         }, 1, "tx-lock-thread");
-    }
-
-    /**
-     * Tests rollback of active local transactions.
-     */
-    public void testRollbackActiveTransactions() throws Exception {
-        final Ignite client = startClient();
-
-        final Collection<Transaction> transactions = client.transactions().localActiveTransactions();
-
-        for (Transaction transaction : transactions)
-            transaction.rollback();
-
-        assertTrue(client.transactions().localActiveTransactions().isEmpty());
     }
 
     /**

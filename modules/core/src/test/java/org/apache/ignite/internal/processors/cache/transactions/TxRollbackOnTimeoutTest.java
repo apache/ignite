@@ -453,7 +453,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                         cntr1.add(1);
                     }
                     catch (TransactionOptimisticException | InterruptedException e) {
-                        // Expected.
                         cntr3.add(1);
                     }
                     catch (TransactionTimeoutException e) {
