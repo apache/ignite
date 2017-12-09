@@ -85,17 +85,23 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
         log = ctx.logger(getClass());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Name.
+     */
     public String name() {
-            return name;
-        }
+        return name;
+    }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Key.
+     */
     public GridCacheInternalKey key() {
-            return key;
-        }
+        return key;
+    }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Removed flag.
+     */
     public boolean removed() {
         return rmvd;
     }
