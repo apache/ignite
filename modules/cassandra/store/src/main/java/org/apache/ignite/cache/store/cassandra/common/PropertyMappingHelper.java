@@ -17,8 +17,7 @@
 
 package org.apache.ignite.cache.store.cassandra.common;
 
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.Row;
+import com.datastax.driver.core.LocalDate;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -30,49 +29,50 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.ignite.cache.store.cassandra.handler.*;
 import org.apache.ignite.cache.store.cassandra.persistence.PojoFieldAccessor;
-import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 
 /**
  * Helper class providing bunch of methods to discover fields of POJO objects and
- * map builtin Java types to appropriate Cassandra types.
+ * map builtin Java types to appropriate type handlers.
  */
 public class PropertyMappingHelper {
     /** Bytes array Class type. */
     private static final Class BYTES_ARRAY_CLASS = (new byte[] {}).getClass();
 
-    /** Mapping from Java to Cassandra types. */
-    private static final Map<Class, DataType.Name> JAVA_TO_CASSANDRA_MAPPING = new HashMap<Class, DataType.Name>() {{
-        put(String.class, DataType.Name.TEXT);
-        put(Integer.class, DataType.Name.INT);
-        put(int.class, DataType.Name.INT);
-        put(Short.class, DataType.Name.INT);
-        put(short.class, DataType.Name.INT);
-        put(Long.class, DataType.Name.BIGINT);
-        put(long.class, DataType.Name.BIGINT);
-        put(Double.class, DataType.Name.DOUBLE);
-        put(double.class, DataType.Name.DOUBLE);
-        put(Boolean.class, DataType.Name.BOOLEAN);
-        put(boolean.class, DataType.Name.BOOLEAN);
-        put(Float.class, DataType.Name.FLOAT);
-        put(float.class, DataType.Name.FLOAT);
-        put(ByteBuffer.class, DataType.Name.BLOB);
-        put(BYTES_ARRAY_CLASS, DataType.Name.BLOB);
-        put(BigDecimal.class, DataType.Name.DECIMAL);
-        put(InetAddress.class, DataType.Name.INET);
-        put(Date.class, DataType.Name.TIMESTAMP);
-        put(UUID.class, DataType.Name.UUID);
-        put(BigInteger.class, DataType.Name.VARINT);
+    /** Mapping from Java to type handlers. */
+    private static final Map<Class, TypeHandler> JAVA_TO_CASSANDRA_MAPPING = new HashMap<Class, TypeHandler>() {{
+        put(String.class, TypeHandlerHelper.getInstanceFromClass(StringTypeHandler.class));
+        put(Integer.class, TypeHandlerHelper.getInstanceFromClass(IntegerTypeHandler.class));
+        put(int.class, TypeHandlerHelper.getInstanceFromClass(IntegerTypeHandler.class));
+        put(Short.class, TypeHandlerHelper.getInstanceFromClass(IntegerTypeHandler.class));
+        put(short.class, TypeHandlerHelper.getInstanceFromClass(IntegerTypeHandler.class));
+        put(Long.class, TypeHandlerHelper.getInstanceFromClass(LongTypeHandler.class));
+        put(long.class, TypeHandlerHelper.getInstanceFromClass(LongTypeHandler.class));
+        put(Double.class, TypeHandlerHelper.getInstanceFromClass(DoubleTypeHandler.class));
+        put(double.class, TypeHandlerHelper.getInstanceFromClass(DoubleTypeHandler.class));
+        put(Boolean.class, TypeHandlerHelper.getInstanceFromClass(BooleanTypeHandler.class));
+        put(boolean.class, TypeHandlerHelper.getInstanceFromClass(BooleanTypeHandler.class));
+        put(Float.class, TypeHandlerHelper.getInstanceFromClass(FloatTypeHandler.class));
+        put(float.class, TypeHandlerHelper.getInstanceFromClass(FloatTypeHandler.class));
+        put(ByteBuffer.class, TypeHandlerHelper.getInstanceFromClass(ByteBufferTypeHandler.class));
+        put(BYTES_ARRAY_CLASS, TypeHandlerHelper.getInstanceFromClass(ByteArrayTypeHandler.class));
+        put(BigDecimal.class, TypeHandlerHelper.getInstanceFromClass(BigDecimalTypeHandler.class));
+        put(InetAddress.class, TypeHandlerHelper.getInstanceFromClass(InetAddressTypeHandler.class));
+        put(Date.class, TypeHandlerHelper.getInstanceFromClass(DateTypeHandler.class));
+        put(UUID.class, TypeHandlerHelper.getInstanceFromClass(UUIDTypeHandler.class));
+        put(BigInteger.class, TypeHandlerHelper.getInstanceFromClass(BigIntegerTypeHandler.class));
+        put(LocalDate.class, TypeHandlerHelper.getInstanceFromClass(LocalDateTypeHandler.class));
     }};
 
     /**
-     * Maps Cassandra type to specified Java type.
+     * Maps java class to specified type handler.
      *
      * @param clazz java class.
      *
-     * @return Cassandra type.
+     * @return type handler.
      */
-    public static DataType.Name getCassandraType(Class clazz) {
+    public static TypeHandler getTypeHandler(Class clazz) {
         return JAVA_TO_CASSANDRA_MAPPING.get(clazz);
     }
 
@@ -109,71 +109,5 @@ public class PropertyMappingHelper {
         catch (Throwable e) {
             throw new IllegalArgumentException("POJO class " + clazz.getName() + " doesn't have '" + prop + "' property");
         }
-    }
-
-    /**
-     * Returns value of specific column in the row returned by CQL statement.
-     *
-     * @param row row returned by CQL statement.
-     * @param col column name.
-     * @param clazz java class to which column value should be casted.
-     * @param serializer serializer to use if column stores BLOB otherwise could be null.
-     *
-     * @return row column value.
-     */
-    public static Object getCassandraColumnValue(Row row, String col, Class clazz, Serializer serializer) {
-        if (String.class.equals(clazz))
-            return row.getString(col);
-
-        if (Integer.class.equals(clazz) || int.class.equals(clazz))
-            return row.getInt(col);
-
-        if (Short.class.equals(clazz) || short.class.equals(clazz))
-            return (short)row.getInt(col);
-
-        if (Long.class.equals(clazz) || long.class.equals(clazz))
-            return row.getLong(col);
-
-        if (Double.class.equals(clazz) || double.class.equals(clazz))
-            return row.getDouble(col);
-
-        if (Boolean.class.equals(clazz) || boolean.class.equals(clazz))
-            return row.getBool(col);
-
-        if (Float.class.equals(clazz) || float.class.equals(clazz))
-            return row.getFloat(col);
-
-        if (ByteBuffer.class.equals(clazz))
-            return row.getBytes(col);
-
-        if (PropertyMappingHelper.BYTES_ARRAY_CLASS.equals(clazz)) {
-            ByteBuffer buf = row.getBytes(col);
-
-            return buf == null ? null : buf.array();
-        }
-
-        if (BigDecimal.class.equals(clazz))
-            return row.getDecimal(col);
-
-        if (InetAddress.class.equals(clazz))
-            return row.getInet(col);
-
-        if (Date.class.equals(clazz))
-            return row.getTimestamp(col);
-
-        if (UUID.class.equals(clazz))
-            return row.getUUID(col);
-
-        if (BigInteger.class.equals(clazz))
-            return row.getVarint(col);
-
-        if (serializer == null) {
-            throw new IllegalStateException("Can't deserialize value from '" + col + "' Cassandra column, " +
-                "cause there is no BLOB serializer specified");
-        }
-
-        ByteBuffer buf = row.getBytes(col);
-
-        return buf == null ? null : serializer.deserialize(buf);
     }
 }

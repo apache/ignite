@@ -28,6 +28,8 @@ import com.datastax.driver.core.exceptions.ReadTimeoutException;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.apache.ignite.cache.store.cassandra.handler.TypeHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -157,20 +159,20 @@ public class CassandraHelper {
     }
 
     /**
-     * Checks if two Java classes are Cassandra compatible - mapped to the same Cassandra type.
+     * Checks if two Type Handlers are Cassandra compatible - mapped to the same Cassandra type.
      *
-     * @param type1 First type.
-     * @param type2 Second type.
-     * @return {@code true} if classes are compatible and {@code false} if not.
+     * @param type1 First handler.
+     * @param type2 Second handler.
+     * @return {@code true} if cassandra types are compatible and {@code false} if not.
      */
-    public static boolean isCassandraCompatibleTypes(Class type1, Class type2) {
+    public static boolean isCassandraCompatibleTypes(TypeHandler type1, TypeHandler type2) {
         if (type1 == null || type2 == null)
             return false;
 
-        DataType.Name t1 = PropertyMappingHelper.getCassandraType(type1);
-        DataType.Name t2 = PropertyMappingHelper.getCassandraType(type2);
+        String t1 = type1.getDDLType();
+        String t2 = type2.getDDLType();
 
-        return t1 != null && t2 != null && t1.equals(t2);
+        return t1.equals(t2);
     }
 }
 

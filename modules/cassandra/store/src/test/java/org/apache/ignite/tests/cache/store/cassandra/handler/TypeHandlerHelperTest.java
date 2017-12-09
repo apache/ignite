@@ -1,24 +1,26 @@
-package org.apache.ignite.tests.cache.store.cassandra.common;
+package org.apache.ignite.tests.cache.store.cassandra.handler;
 
+import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Row;
-import org.apache.ignite.cache.store.cassandra.common.TypeHandler;
-import org.apache.ignite.cache.store.cassandra.common.TypeHandlerHelper;
+import org.apache.ignite.cache.store.cassandra.handler.TypeHandler;
+import org.apache.ignite.cache.store.cassandra.handler.TypeHandlerHelper;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.*;
 
 
 public class TypeHandlerHelperTest {
-
-
     @Test
-    public void should_() {
+    public void should_create_and_cached_type_handler_object() {
         //given
         String handlerName = TestHandler1.class.getName();
         //when
         TypeHandler<?, ?> actual = TypeHandlerHelper.getInstanceFromClassName(handlerName);
+        TypeHandler<?, ?> secondActual = TypeHandlerHelper.getInstanceFromClassName(handlerName);
         //then
-        assertThat(actual).isInstanceOf(TestHandler1.class);
+        assertThat(actual)
+                .isInstanceOf(TestHandler1.class)
+                .isEqualTo(secondActual);
     }
 
     public static class TestHandler1 implements TypeHandler<String,Integer> {
@@ -39,8 +41,8 @@ public class TypeHandlerHelperTest {
         }
 
         @Override
-        public Class<Integer> getClazz() {
-            return Integer.class;
+        public String getDDLType() {
+            return DataType.Name.INT.toString();
         }
     }
 

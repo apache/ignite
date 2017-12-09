@@ -33,8 +33,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.common.CassandraHelper;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
-import org.apache.ignite.cache.store.cassandra.common.TypeHandler;
-import org.apache.ignite.cache.store.cassandra.common.TypeHandlerHelper;
+import org.apache.ignite.cache.store.cassandra.handler.TypeHandler;
+import org.apache.ignite.cache.store.cassandra.handler.TypeHandlerHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 import org.w3c.dom.Element;
@@ -57,7 +57,7 @@ public abstract class PersistenceSettings implements Serializable {
     /** Xml attribute specifying java class of the object to be persisted. */
     private static final String CLASS_ATTR = "class";
 
-    /** Xml attribute specifying handler java class to use. */
+    /** Xml attribute specifying type handler class to use. */
     private static final String HANDLER_CLASS_ATTR = "handlerClass";
 
     /** Persistence strategy to use. */
@@ -65,9 +65,8 @@ public abstract class PersistenceSettings implements Serializable {
 
     /** Java class of the object to be persisted. */
     private Class javaCls;
-    /**
-     * Type handler for own data type.
-     */
+
+    /** Type handler for own data type. */
     private TypeHandler typeHandler;
 
     /** Cassandra table column name where object should be persisted in
@@ -139,9 +138,8 @@ public abstract class PersistenceSettings implements Serializable {
 
         try {
             javaCls = el.hasAttribute(CLASS_ATTR) ? getClassInstance(el.getAttribute(CLASS_ATTR).trim()) : null;
-            if(javaCls == null && typeHandler != null) {
-                javaCls = typeHandler.getClazz();
-            }
+            if(typeHandler == null && PersistenceStrategy.PRIMITIVE == stgy)
+                typeHandler = PropertyMappingHelper.getTypeHandler(javaCls);
         }
         catch (Throwable e) {
             throw new IllegalArgumentException("Incorrect java class specified '" + el.getAttribute(CLASS_ATTR) + "' " +
@@ -154,9 +152,7 @@ public abstract class PersistenceSettings implements Serializable {
                 "specified could only be persisted using BLOB persistence strategy");
         }
 
-        if (PersistenceStrategy.PRIMITIVE == stgy &&
-            PropertyMappingHelper.getCassandraType(javaCls) == null &&
-            typeHandler == null) {
+        if (PersistenceStrategy.PRIMITIVE == stgy && typeHandler == null) {
             throw new IllegalArgumentException("Current implementation doesn't support persisting '" +
                 javaCls.getName() + "' object using PRIMITIVE strategy");
         }
@@ -316,8 +312,10 @@ public abstract class PersistenceSettings implements Serializable {
         if (PersistenceStrategy.BLOB == stgy)
             return "  \"" + col + "\" " + DataType.Name.BLOB.toString();
 
-        if (PersistenceStrategy.PRIMITIVE == stgy)
-            return "  \"" + col + "\" " + PropertyMappingHelper.getCassandraType(javaCls);
+        if (PersistenceStrategy.PRIMITIVE == stgy) {
+            String ddlType = typeHandler.getDDLType();
+            return "  \"" + col + "\" " + ddlType;
+        }
 
         List<PojoField> fields = getFields();
 
@@ -426,7 +424,8 @@ public abstract class PersistenceSettings implements Serializable {
                 }
 
                 if (field1.getColumn().equals(field2.getColumn())) {
-                    if (sameCols && !CassandraHelper.isCassandraCompatibleTypes(field1.getJavaClass(), field2.getJavaClass())) {
+                    if (sameCols
+                            && !CassandraHelper.isCassandraCompatibleTypes(field1.getTypeHandler(), field2.getTypeHandler())) {
                         throw new IllegalArgumentException("Field '" + field1.getName() + "' shares the same Cassandra table " +
                                 "column '" + field1.getColumn() + "' with field '" + field2.getName() + "', but their Java " +
                                 "classes are different. Fields sharing the same column should have the same " +

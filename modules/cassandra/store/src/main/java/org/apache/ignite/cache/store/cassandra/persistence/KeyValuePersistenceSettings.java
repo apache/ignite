@@ -35,6 +35,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.cassandra.common.CassandraHelper;
 import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
+import org.apache.ignite.cache.store.cassandra.handler.TypeHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.springframework.core.io.Resource;
 import org.w3c.dom.Document;
@@ -479,16 +480,16 @@ public class KeyValuePersistenceSettings implements Serializable {
         // Validating aliases compatibility - fields having different names, but mapped to the same Cassandra table column.
         if (valFields != null && !valFields.isEmpty()) {
             String keyColumn = keyPersistenceSettings.getColumn();
-            Class keyClass = keyPersistenceSettings.getJavaClass();
+            TypeHandler typeHandler = keyPersistenceSettings.getTypeHandler();
 
             if (keyColumn != null && !keyColumn.isEmpty()) {
                 for (PojoField valField : valFields) {
                     if (keyColumn.equals(valField.getColumn()) &&
-                            !CassandraHelper.isCassandraCompatibleTypes(keyClass, valField.getJavaClass())) {
+                            !CassandraHelper.isCassandraCompatibleTypes(typeHandler, valField.getTypeHandler())) {
                         throw new IllegalArgumentException("Value field '" + valField.getName() + "' shares the same " +
                                 "Cassandra table column '" + keyColumn + "' with key, but their Java classes are " +
                                 "different. Fields sharing the same column should have the same Java class as their " +
-                                "type or should be mapped to the same Cassandra primitive type.");
+                                "type or should be mapped to the same Cassandra primitive type or should have the same instance of type handlers.");
                     }
                 }
             }
@@ -497,12 +498,12 @@ public class KeyValuePersistenceSettings implements Serializable {
                 for (PojoField keyField : keyFields) {
                     for (PojoField valField : valFields) {
                         if (keyField.getColumn().equals(valField.getColumn()) &&
-                                !CassandraHelper.isCassandraCompatibleTypes(keyField.getJavaClass(), valField.getJavaClass())) {
+                                !CassandraHelper.isCassandraCompatibleTypes(keyField.getTypeHandler(), valField.getTypeHandler())) {
                             throw new IllegalArgumentException("Value field '" + valField.getName() + "' shares the same " +
                                     "Cassandra table column '" + keyColumn + "' with key field '" + keyField.getName() + "', " +
                                     "but their Java classes are different. Fields sharing the same column should have " +
                                     "the same Java class as their type or should be mapped to the same Cassandra " +
-                                    "primitive type.");
+                                    "primitive type or should have the same instance of type handlers.");
                         }
                     }
                 }

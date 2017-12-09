@@ -16,6 +16,6 @@
 -->
 
 <persistence keyspace="test1" table="primitive_test3">
-    <keyPersistence strategy="PRIMITIVE" handlerClass="org.apache.ignite.tests.handlers.LongToStringHandler" />
-    <valuePersistence class="java.lang.Long" strategy="PRIMITIVE"  handlerClass="org.apache.ignite.tests.handlers.StringToLongHandler" />
+    <keyPersistence strategy="PRIMITIVE" handlerClass="org.apache.ignite.tests.handlers.LongToStringTestTypeHandler" />
+    <valuePersistence class="java.lang.Long" strategy="PRIMITIVE"  handlerClass="org.apache.ignite.tests.handlers.StringToLongTestTypeHandler" />
 </persistence>

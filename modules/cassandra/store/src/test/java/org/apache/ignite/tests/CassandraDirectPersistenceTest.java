@@ -49,7 +49,8 @@ public class CassandraDirectPersistenceTest {
         if (CassandraHelper.useEmbeddedCassandra()) {
             try {
                 CassandraHelper.startEmbeddedCassandra(LOGGER);
-            } catch (Throwable e) {
+            }
+            catch (Throwable e) {
                 throw new RuntimeException("Failed to start embedded Cassandra instance", e);
             }
         }
@@ -71,13 +72,15 @@ public class CassandraDirectPersistenceTest {
     public static void tearDownClass() {
         try {
             CassandraHelper.dropTestKeyspaces();
-        } finally {
+        }
+        finally {
             CassandraHelper.releaseCassandraResources();
 
             if (CassandraHelper.useEmbeddedCassandra()) {
                 try {
                     CassandraHelper.stopEmbeddedCassandra();
-                } catch (Throwable e) {
+                }
+                catch (Throwable e) {
                     LOGGER.error("Failed to stop embedded Cassandra instance", e);
                 }
             }
@@ -89,21 +92,20 @@ public class CassandraDirectPersistenceTest {
     @SuppressWarnings("unchecked")
     public void primitiveStrategyTest() {
         CacheStore store1 = CacheStoreHelper.createCacheStore("longTypes",
-                new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store2 = CacheStoreHelper.createCacheStore("stringTypes",
-                new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-2.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-2.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store3 = CacheStoreHelper.createCacheStore("longStringTypes",
-                new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-3-handler.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-3-handler.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         Collection<CacheEntryImpl<Long, Long>> longEntries = TestsHelper.generateLongsEntries();
         Collection<CacheEntryImpl<String, String>> strEntries = TestsHelper.generateStringsEntries();
         Collection<CacheEntryImpl<Long, String>> longStrEntries = TestsHelper.generateLongStringEntries();
-
 
         Collection<Long> fakeLongKeys = TestsHelper.getKeys(longEntries);
         fakeLongKeys.add(-1L);
@@ -145,29 +147,29 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running real keys read tests");
 
-        Long longVal = (Long) store1.load(longEntries.iterator().next().getKey());
+        Long longVal = (Long)store1.load(longEntries.iterator().next().getKey());
         if (!longEntries.iterator().next().getValue().equals(longVal))
             throw new RuntimeException("Long values were incorrectly deserialized from Cassandra");
 
-        String strVal = (String) store2.load(strEntries.iterator().next().getKey());
+        String strVal = (String)store2.load(strEntries.iterator().next().getKey());
         if (!strEntries.iterator().next().getValue().equals(strVal))
             throw new RuntimeException("String values were incorrectly deserialized from Cassandra");
 
-        String longStrVal = (String) store3.load(longStrEntries.iterator().next().getKey());
+        String longStrVal = (String)store3.load(longStrEntries.iterator().next().getKey());
         if (!longStrEntries.iterator().next().getValue().equals(longStrVal))
             throw new RuntimeException("LongString values were incorrectly deserialized from Cassandra");
 
         LOGGER.info("Running fake keys read tests");
 
-        longVal = (Long) store1.load(-1L);
+        longVal = (Long)store1.load(-1L);
         if (longVal != null)
             throw new RuntimeException("Long value with fake key '-1' was found in Cassandra");
 
-        strVal = (String) store2.load("-1");
+        strVal = (String)store2.load("-1");
         if (strVal != null)
             throw new RuntimeException("String value with fake key '-1' was found in Cassandra");
 
-        longStrVal = (String) store3.load(-1L);
+        longStrVal = (String)store3.load(-1L);
         if (longStrVal != null)
             throw new RuntimeException("LongString value with fake key '-1' was found in Cassandra");
 
@@ -238,16 +240,16 @@ public class CassandraDirectPersistenceTest {
     @SuppressWarnings("unchecked")
     public void blobStrategyTest() {
         CacheStore store1 = CacheStoreHelper.createCacheStore("longTypes",
-                new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-1.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-1.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store2 = CacheStoreHelper.createCacheStore("personTypes",
-                new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-2.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-2.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store3 = CacheStoreHelper.createCacheStore("personTypes",
-                new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-3.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-3.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         Collection<CacheEntryImpl<Long, Long>> longEntries = TestsHelper.generateLongsEntries();
         Collection<CacheEntryImpl<Long, Person>> personEntries = TestsHelper.generateLongsPersonsEntries();
@@ -272,15 +274,15 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running single read operation tests");
 
-        Long longVal = (Long) store1.load(longEntries.iterator().next().getKey());
+        Long longVal = (Long)store1.load(longEntries.iterator().next().getKey());
         if (!longEntries.iterator().next().getValue().equals(longVal))
             throw new RuntimeException("Long values were incorrectly deserialized from Cassandra");
 
-        Person personVal = (Person) store2.load(personEntries.iterator().next().getKey());
+        Person personVal = (Person)store2.load(personEntries.iterator().next().getKey());
         if (!personEntries.iterator().next().getValue().equals(personVal))
             throw new RuntimeException("Person values were incorrectly deserialized from Cassandra");
 
-        personVal = (Person) store3.load(personEntries.iterator().next().getKey());
+        personVal = (Person)store3.load(personEntries.iterator().next().getKey());
         if (!personEntries.iterator().next().getValue().equals(personVal))
             throw new RuntimeException("Person values were incorrectly deserialized from Cassandra");
 
@@ -323,32 +325,32 @@ public class CassandraDirectPersistenceTest {
     @SuppressWarnings("unchecked")
     public void pojoStrategyTest() {
         CacheStore store1 = CacheStoreHelper.createCacheStore("longTypes",
-                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-1.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-1.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store2 = CacheStoreHelper.createCacheStore("personTypes",
-                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-2.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-2.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store3 = CacheStoreHelper.createCacheStore("personTypes",
-                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store4 = CacheStoreHelper.createCacheStore("persons",
-                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-4.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-4.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store5 = CacheStoreHelper.createCacheStore("persons-handler",
-                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-7-handler.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-7-handler.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore productStore = CacheStoreHelper.createCacheStore("product",
-                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/product.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/product.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore orderStore = CacheStoreHelper.createCacheStore("order",
-                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/order.xml"),
-                CassandraHelper.getAdminDataSrc());
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/order.xml"),
+            CassandraHelper.getAdminDataSrc());
 
         Collection<CacheEntryImpl<Long, Person>> entries1 = TestsHelper.generateLongsPersonsEntries();
         Collection<CacheEntryImpl<PersonId, Person>> entries2 = TestsHelper.generatePersonIdsPersonsEntries();
@@ -385,31 +387,31 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running single read operation tests");
 
-        Person person = (Person) store1.load(entries1.iterator().next().getKey());
+        Person person = (Person)store1.load(entries1.iterator().next().getKey());
         if (!entries1.iterator().next().getValue().equalsPrimitiveFields(person))
             throw new RuntimeException("Person values were incorrectly deserialized from Cassandra");
 
-        person = (Person) store2.load(entries2.iterator().next().getKey());
+        person = (Person)store2.load(entries2.iterator().next().getKey());
         if (!entries2.iterator().next().getValue().equalsPrimitiveFields(person))
             throw new RuntimeException("Person values were incorrectly deserialized from Cassandra");
 
-        person = (Person) store3.load(entries3.iterator().next().getKey());
+        person = (Person)store3.load(entries3.iterator().next().getKey());
         if (!entries3.iterator().next().getValue().equals(person))
             throw new RuntimeException("Person values were incorrectly deserialized from Cassandra");
 
-        person = (Person) store4.load(entries3.iterator().next().getKey());
+        person = (Person)store4.load(entries3.iterator().next().getKey());
         if (!entries3.iterator().next().getValue().equals(person))
             throw new RuntimeException("Person values were incorrectly deserialized from Cassandra");
 
-        person = (Person) store5.load(entries5.iterator().next().getKey());
+        person = (Person)store5.load(entries5.iterator().next().getKey());
         if (!entries5.iterator().next().getValue().equals(person))
             throw new RuntimeException("Person values were incorrectly deserialized from Cassandra");
 
-        Product product = (Product) productStore.load(productEntries.iterator().next().getKey());
+        Product product = (Product)productStore.load(productEntries.iterator().next().getKey());
         if (!productEntries.iterator().next().getValue().equals(product))
             throw new RuntimeException("Product values were incorrectly deserialized from Cassandra");
 
-        ProductOrder order = (ProductOrder) orderStore.load(orderEntries.iterator().next().getKey());
+        ProductOrder order = (ProductOrder)orderStore.load(orderEntries.iterator().next().getKey());
         if (!orderEntries.iterator().next().getValue().equals(order))
             throw new RuntimeException("Order values were incorrectly deserialized from Cassandra");
 
@@ -508,11 +510,11 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running single read operation tests");
 
-        SimplePerson person = (SimplePerson) store5.load(entries5.iterator().next().getKey());
+        SimplePerson person = (SimplePerson)store5.load(entries5.iterator().next().getKey());
         if (!entries5.iterator().next().getValue().equalsPrimitiveFields(person))
             throw new RuntimeException("SimplePerson values were incorrectly deserialized from Cassandra");
 
-        person = (SimplePerson) store6.load(entries6.iterator().next().getKey());
+        person = (SimplePerson)store6.load(entries6.iterator().next().getKey());
         if (!entries6.iterator().next().getValue().equalsPrimitiveFields(person))
             throw new RuntimeException("SimplePerson values were incorrectly deserialized from Cassandra");
 
@@ -551,19 +553,19 @@ public class CassandraDirectPersistenceTest {
         Transaction sessionTx = new TestTransaction();
 
         CacheStore productStore = CacheStoreHelper.createCacheStore("product",
-                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/product.xml"),
-                CassandraHelper.getAdminDataSrc(), new TestCacheSession("product", sessionTx, sessionProps));
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/product.xml"),
+            CassandraHelper.getAdminDataSrc(), new TestCacheSession("product", sessionTx, sessionProps));
 
         CacheStore orderStore = CacheStoreHelper.createCacheStore("order",
-                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/order.xml"),
-                CassandraHelper.getAdminDataSrc(), new TestCacheSession("order", sessionTx, sessionProps));
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/order.xml"),
+            CassandraHelper.getAdminDataSrc(), new TestCacheSession("order", sessionTx, sessionProps));
 
         List<CacheEntryImpl<Long, Product>> productEntries = TestsHelper.generateProductEntries();
         Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> ordersPerProduct =
                 TestsHelper.generateOrdersPerProductEntries(productEntries, 2);
 
-        Collection<Long> productIds = TestsHelper.getProductIds(productEntries);
-        Collection<Long> orderIds = TestsHelper.getOrderIds(ordersPerProduct);
+        Collection<Long> productIds =  TestsHelper.getProductIds(productEntries);
+        Collection<Long> orderIds =  TestsHelper.getOrderIds(ordersPerProduct);
 
         LOGGER.info("Running POJO strategy transaction write tests");
 
@@ -582,8 +584,8 @@ public class CassandraDirectPersistenceTest {
                     "objects were already persisted into Cassandra");
         }
 
-        Map<Long, Product> products = (Map<Long, Product>) productStore.loadAll(productIds);
-        Map<Long, ProductOrder> orders = (Map<Long, ProductOrder>) orderStore.loadAll(orderIds);
+        Map<Long, Product> products = (Map<Long, Product>)productStore.loadAll(productIds);
+        Map<Long, ProductOrder> orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);
 
         if ((products != null && !products.isEmpty()) || (orders != null && !orders.isEmpty())) {
             throw new RuntimeException("Single write operation test failed. Transaction wasn't committed yet, but " +
@@ -595,8 +597,8 @@ public class CassandraDirectPersistenceTest {
         //noinspection deprecation
         productStore.sessionEnd(true);
 
-        Product product1 = (Product) productStore.load(product.getId());
-        ProductOrder order1 = (ProductOrder) orderStore.load(order.getId());
+        Product product1 = (Product)productStore.load(product.getId());
+        ProductOrder order1 = (ProductOrder)orderStore.load(order.getId());
 
         if (product1 == null || order1 == null) {
             throw new RuntimeException("Single write operation test failed. Transaction was committed, but " +
@@ -608,8 +610,8 @@ public class CassandraDirectPersistenceTest {
                     "objects were incorrectly persisted/loaded to/from Cassandra");
         }
 
-        products = (Map<Long, Product>) productStore.loadAll(productIds);
-        orders = (Map<Long, ProductOrder>) orderStore.loadAll(orderIds);
+        products = (Map<Long, Product>)productStore.loadAll(productIds);
+        orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);
 
         if (products == null || products.isEmpty() || orders == null || orders.isEmpty()) {
             throw new RuntimeException("Single write operation test failed. Transaction was committed, but " +
@@ -655,8 +657,8 @@ public class CassandraDirectPersistenceTest {
             }
         }
 
-        products = (Map<Long, Product>) productStore.loadAll(productIds);
-        orders = (Map<Long, ProductOrder>) orderStore.loadAll(orderIds);
+        products = (Map<Long, Product>)productStore.loadAll(productIds);
+        orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);
 
         if ((products != null && !products.isEmpty()) || (orders != null && !orders.isEmpty())) {
             throw new RuntimeException("Bulk write operation test failed. Transaction wasn't committed yet, but " +
@@ -669,7 +671,7 @@ public class CassandraDirectPersistenceTest {
         orderStore.sessionEnd(true);
 
         for (CacheEntryImpl<Long, Product> entry : productEntries) {
-            product = (Product) productStore.load(entry.getKey());
+            product = (Product)productStore.load(entry.getKey());
 
             if (!entry.getValue().equals(product)) {
                 throw new RuntimeException("Bulk write operation test failed. Transaction was committed, but " +
@@ -679,7 +681,7 @@ public class CassandraDirectPersistenceTest {
 
         for (Long productId : ordersPerProduct.keySet()) {
             for (CacheEntryImpl<Long, ProductOrder> entry : ordersPerProduct.get(productId)) {
-                order = (ProductOrder) orderStore.load(entry.getKey());
+                order = (ProductOrder)orderStore.load(entry.getKey());
 
                 if (!entry.getValue().equals(order)) {
                     throw new RuntimeException("Bulk write operation test failed. Transaction was committed, but " +
@@ -688,8 +690,8 @@ public class CassandraDirectPersistenceTest {
             }
         }
 
-        products = (Map<Long, Product>) productStore.loadAll(productIds);
-        orders = (Map<Long, ProductOrder>) orderStore.loadAll(orderIds);
+        products = (Map<Long, Product>)productStore.loadAll(productIds);
+        orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);
 
         if (products == null || products.isEmpty() || orders == null || orders.isEmpty()) {
             throw new RuntimeException("Bulk write operation test failed. Transaction was committed, but " +
@@ -747,8 +749,8 @@ public class CassandraDirectPersistenceTest {
                     "objects were already deleted from Cassandra");
         }
 
-        products = (Map<Long, Product>) productStore.loadAll(productIds);
-        orders = (Map<Long, ProductOrder>) orderStore.loadAll(orderIds);
+        products = (Map<Long, Product>)productStore.loadAll(productIds);
+        orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);
 
         if (products.size() != productIds.size() || orders.size() != orderIds.size()) {
             throw new RuntimeException("Single delete operation test failed. Transaction wasn't committed yet, but " +
@@ -765,8 +767,8 @@ public class CassandraDirectPersistenceTest {
                     "objects were not deleted from Cassandra");
         }
 
-        products = (Map<Long, Product>) productStore.loadAll(productIds);
-        orders = (Map<Long, ProductOrder>) orderStore.loadAll(orderIds);
+        products = (Map<Long, Product>)productStore.loadAll(productIds);
+        orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);
 
         if (products.get(deletedProduct.getId()) != null || orders.get(deletedOrder.getId()) != null) {
             throw new RuntimeException("Single delete operation test failed. Transaction was committed, but " +
@@ -782,8 +784,8 @@ public class CassandraDirectPersistenceTest {
         productStore.deleteAll(productIds);
         orderStore.deleteAll(orderIds);
 
-        products = (Map<Long, Product>) productStore.loadAll(productIds);
-        orders = (Map<Long, ProductOrder>) orderStore.loadAll(orderIds);
+        products = (Map<Long, Product>)productStore.loadAll(productIds);
+        orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);
 
         if (products == null || products.isEmpty() || orders == null || orders.isEmpty()) {
             throw new RuntimeException("Bulk delete operation test failed. Transaction wasn't committed yet, but " +
@@ -795,8 +797,8 @@ public class CassandraDirectPersistenceTest {
         //noinspection deprecation
         productStore.sessionEnd(true);
 
-        products = (Map<Long, Product>) productStore.loadAll(productIds);
-        orders = (Map<Long, ProductOrder>) orderStore.loadAll(orderIds);
+        products = (Map<Long, Product>)productStore.loadAll(productIds);
+        orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);
 
         if ((products != null && !products.isEmpty()) || (orders != null && !orders.isEmpty())) {
             throw new RuntimeException("Bulk delete operation test failed. Transaction was committed, but " +

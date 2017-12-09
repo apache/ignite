@@ -29,8 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
-import org.apache.ignite.cache.store.cassandra.common.TypeHandler;
+import org.apache.ignite.cache.store.cassandra.handler.TypeHandler;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 
 /**
@@ -385,12 +384,8 @@ public class PersistenceController {
         Class clazz = settings.getJavaClass();
         String col = settings.getColumn();
 
-        if (PersistenceStrategy.PRIMITIVE == stg) {
-            if(settings.getTypeHandler() != null) {
-                return settings.getTypeHandler().toJavaType(row, col);
-            }
-            return PropertyMappingHelper.getCassandraColumnValue(row, col, clazz, null);
-        }
+        if (PersistenceStrategy.PRIMITIVE == stg)
+            return settings.getTypeHandler().toJavaType(row, col);
 
         if (PersistenceStrategy.BLOB == stg)
             return settings.getSerializer().deserialize(row.getBytes(col));
@@ -420,6 +415,7 @@ public class PersistenceController {
      * array starting from specified offset.
      *
      * @param stgy Persistence strategy to use.
+     * @param typeHandler type handler to use for java complex type.
      * @param serializer Serializer to use for BLOBs.
      * @param fields Fields who's values should be extracted.
      * @param obj Object instance who's field values should be extracted.
@@ -428,13 +424,12 @@ public class PersistenceController {
      *
      * @return next offset
      */
-    private int bindValues(PersistenceStrategy stgy, TypeHandler primitiveHandler, Serializer serializer, List<PojoField> fields, Object obj,
+    private int bindValues(PersistenceStrategy stgy, TypeHandler typeHandler, Serializer serializer, List<PojoField> fields, Object obj,
                            Object[] values, int offset) {
         if (PersistenceStrategy.PRIMITIVE == stgy) {
-            if(primitiveHandler != null) {
-                obj = primitiveHandler.toCassandraPrimitiveType(obj);
-            } else if (PropertyMappingHelper.getCassandraType(obj.getClass()) == null ||
-                obj.getClass().equals(ByteBuffer.class) || obj instanceof byte[]) {
+            if(typeHandler != null) {
+                obj = typeHandler.toCassandraPrimitiveType(obj);
+            } else if (obj.getClass().equals(ByteBuffer.class) || obj instanceof byte[]) {
                 throw new IllegalArgumentException("Couldn't deserialize instance of class '" +
                     obj.getClass().getName() + "' using PRIMITIVE strategy. Please use BLOB strategy for this case.");
             }

@@ -91,7 +91,7 @@ Attributes:
                2) column [optional] - Cassandra table column name. If not specified lowercase
                   POJO field name will be used.
             -->
-            <field name="companyCode" column="company" handlerClass="org.apache.ignite.tests.handlers.StringToLongHandler" />
+            <field name="companyCode" column="company" handlerClass="org.apache.ignite.tests.handlers.StringToLongTestTypeHandler" />
             <field name="departmentCode" column="department" />
         </partitionKey>
 
@@ -114,7 +114,7 @@ Attributes:
                   POJO field name will be used.
                3) sort   [optional] - specifies sort order (**asc** or **desc**)
             -->
-            <field name="personNumber" column="number" sort="desc" handlerClass="org.apache.ignite.tests.handlers.LongToStringHandler" />
+            <field name="personNumber" column="number" sort="desc" handlerClass="org.apache.ignite.tests.handlers.LongToStringTestTypeHandler" />
         </clusterKey>
     </keyPersistence>
 
@@ -163,11 +163,11 @@ Attributes:
         -->
         <field name="personNumber" column="person_number" />
         <field name="firstName" column="first_name" />
-        <field name="lastName" column="last_name" handlerClass="org.apache.ignite.tests.handlers.StringToLongHandler" />
+        <field name="lastName" column="last_name" handlerClass="org.apache.ignite.tests.handlers.StringToLongTestTypeHandler" />
         <field name="fullName" />
         <field name="age" />
         <field name="married" index="true"/>
-        <field name="height" handlerClass="org.apache.ignite.tests.handlers.LongToStringHandler" />
+        <field name="height" handlerClass="org.apache.ignite.tests.handlers.LongToStringTestTypeHandler" />
         <field name="weight" />
         <field name="birthDate" column="birth_date" />
         <field name="phones" />
