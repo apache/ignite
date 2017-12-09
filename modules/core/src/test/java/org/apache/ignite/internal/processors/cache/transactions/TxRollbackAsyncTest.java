@@ -370,7 +370,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testMixedRollbackTypes() throws Exception {
+    public void testMixedAsyncRollbackTypes() throws Exception {
         final Ignite client = startClient();
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -430,12 +430,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 int nodeId = nodeIdx.getAndIncrement();
 
                 while (!stop.get()) {
-                    try {
-                        sleep(r.nextInt(350) + 50);
-                    }
-                    catch (InterruptedException e) {
-                        return;
-                    }
+                    doSleep(r.nextInt(300) + 300);
 
                     Collection<Transaction> transactions = grid(nodeId).transactions().localActiveTransactions();
 

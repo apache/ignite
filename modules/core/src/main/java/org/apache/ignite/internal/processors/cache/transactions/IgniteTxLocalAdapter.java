@@ -1304,12 +1304,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         checkInternal(key);
 
-        TransactionState state = state();
-
-        assert state == TransactionState.ACTIVE || remainingTime() == -1 :
-            "Invalid tx state for adding entry [op=" + op + ", val=" + val + ", entry=" + entry + ", filter=" +
-                Arrays.toString(filter) + ", txCtx=" + cctx.tm().txContextVersion() + ", tx=" + this + ']';
-
         IgniteTxEntry old = entry(key);
 
         // Keep old filter if already have one (empty filter is always overridden).
