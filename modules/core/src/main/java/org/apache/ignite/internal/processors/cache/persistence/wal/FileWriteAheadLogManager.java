@@ -31,11 +31,9 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.sql.Time;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -90,12 +88,14 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -1047,7 +1047,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             createFile(first);
         }
         else
-            checkFiles(0, false, null);
+            checkFiles(0, false, null, null);
     }
 
     /**
@@ -1189,6 +1189,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         private NavigableMap<Long, Integer> reserved = new TreeMap<>();
 
+        /** Formatted index. */
+        private int formatted;
+
         /**
          * Maps absolute segment index to locks counter. Lock on segment protects from archiving segment and may
          * come from {@link RecordsIterator} during WAL replay. Map itself is guarded by <code>this</code>.
@@ -1292,8 +1295,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     while (curAbsWalIdx == -1 && !stopped)
                         wait();
 
-                    if (curAbsWalIdx != 0 && lastAbsArchivedIdx == -1)
-                        changeLastArchivedIndexAndWakeupCompressor(curAbsWalIdx - 1);
+                    // If the archive directory is empty, we can be sure that there were no WAL segments archived.
+                    // This is ensured by the check in truncate() which will leave at least one file there
+                    // once it was archived.
                 }
 
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
@@ -1381,6 +1385,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     notifyAll();
 
                     while (curAbsWalIdx - lastAbsArchivedIdx > dsCfg.getWalSegments() && cleanException == null)
+                        wait();
+
+                    // Wait for formatter so that we do not open an empty file in DEFAULT mode.
+                    while (curAbsWalIdx % dsCfg.getWalSegments() > formatted)
                         wait();
 
                     return curAbsWalIdx;
@@ -1509,11 +1517,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * {@link FileWriteAheadLogManager#checkOrPrepareFiles()}
          */
         private void allocateRemainingFiles() throws IgniteCheckedException {
-            checkFiles(1, true, new IgnitePredicate<Integer>() {
-                @Override public boolean apply(Integer integer) {
-                    return !checkStop();
+            checkFiles(
+                1,
+                true,
+                new IgnitePredicate<Integer>() {
+                    @Override public boolean apply(Integer integer) {
+                        return !checkStop();
+                    }
+                },
+                new CI1<Integer>() {
+                    @Override public void apply(Integer idx) {
+                        synchronized (FileArchiver.this) {
+                            formatted = idx;
+
+                            FileArchiver.this.notifyAll();
+                        }
+                    }
                 }
-            });
+            );
         }
     }
 
@@ -1834,7 +1855,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @param p Predicate Exit condition.
      * @throws IgniteCheckedException if validation or create file fail.
      */
-    private void checkFiles(int startWith, boolean create, IgnitePredicate<Integer> p) throws IgniteCheckedException {
+    private void checkFiles(
+        int startWith,
+        boolean create,
+        @Nullable IgnitePredicate<Integer> p,
+        @Nullable IgniteInClosure<Integer> completionCallback
+    ) throws IgniteCheckedException {
         for (int i = startWith; i < dsCfg.getWalSegments() && (p == null || (p != null && p.apply(i))); i++) {
             File checkFile = new File(walWorkDir, FileDescriptor.fileName(i));
 
@@ -1851,6 +1877,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
             else if (create)
                 createFile(checkFile);
+
+            if (completionCallback != null)
+                completionCallback.apply(i);
         }
     }
 
@@ -3047,7 +3076,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected ReadFileHandle advanceSegment(
-            @Nullable final ReadFileHandle curWalSegment) throws IgniteCheckedException {
+            @Nullable final ReadFileHandle curWalSegment
+        ) throws IgniteCheckedException {
             if (curWalSegment != null) {
                 curWalSegment.close();
 
@@ -3100,7 +3130,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
             else
                 nextHandle.workDir = !readArchive;
-
 
             curRec = null;
             return nextHandle;
