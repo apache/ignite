@@ -29,6 +29,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.text.MessageFormat;
+import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,6 +39,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -67,6 +69,9 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsReservation;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -125,6 +130,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -138,18 +144,21 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Insert;
+import org.h2.command.dml.Select;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.server.web.WebServer;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
@@ -161,6 +170,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
@@ -331,6 +342,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private final GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
         new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
+
+    /** */
+    private final ConcurrentMap<ReservationKey, GridReservable> reservations = new ConcurrentHashMap8<>();
 
     /** */
     private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = new IgniteInClosure<IgniteInternalFuture<?>>() {
@@ -840,14 +854,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     public GridQueryFieldsResult queryLocalSqlFields(final String schemaName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
-        final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
+        final int timeout, final GridQueryCancel cancel, final int[] parts) throws IgniteCheckedException {
         final Connection conn = connectionForSchema(schemaName);
 
         H2Utils.setupConnection(conn, false, enforceJoinOrder);
 
         final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
 
-        Prepared p = GridSqlQueryParser.prepared(stmt);
+        final Prepared p = GridSqlQueryParser.prepared(stmt);
 
         if (DmlStatementsProcessor.isDmlStatement(p)) {
             SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
@@ -873,19 +887,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Cannot prepare query metadata", e);
         }
 
-        final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
-            .filter(filter).distributedJoinMode(OFF);
-
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
                 assert GridH2QueryContext.get() == null;
-
-                GridH2QueryContext.set(ctx);
 
                 GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL_FIELDS,
                     schemaName, U.currentTimeMillis(), cancel, true);
 
                 runs.putIfAbsent(run.id(), run);
+
+                List<Integer> cacheIds = collectCacheIds(p);
+
+                AffinityTopologyVersion topVer = readyTopologyVersion();
+
+                List<GridReservable> reserved = new ArrayList<>();
+
+                if (!reservePartitions(cacheIds, topVer, parts, reserved))
+                    throw new IgniteCheckedException("Failed to reserve partitions for [cacheIds=" + cacheIds +
+                        ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');
+
+                GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
+                    .filter(filter)
+                    .distributedJoinMode(OFF)
+                    .reservations(reserved);
+
+                GridH2QueryContext.set(ctx);
 
                 try {
                     ResultSet rs = executeSqlQueryWithTimer(stmt, conn, qry, params, timeout, cancel);
@@ -894,6 +920,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
                 finally {
                     GridH2QueryContext.clearThreadLocal();
+
+                    ctx.clearContext(false);
 
                     runs.remove(run.id());
                 }
@@ -1103,7 +1131,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Object[] args = qry.getArgs();
 
         final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, F.asList(args), filter,
-            qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
+            qry.isEnforceJoinOrder(), qry.getTimeout(), cancel, qry.getPartitions());
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
@@ -1191,8 +1219,43 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2Utils.setupConnection(conn, false, false);
 
-        GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter)
-            .distributedJoinMode(OFF));
+        List<Integer> cacheIds = Collections.singletonList(tbl.cache().cacheId());
+
+        AffinityTopologyVersion topVer = readyTopologyVersion();
+
+        List<GridReservable> reserved = new ArrayList<>();
+
+        int[] parts = null;
+
+        if (filter != null) {
+            String name = tbl.cache().name();
+
+            IndexingQueryCacheFilter cacheFilter = filter.forCache(name);
+
+            if (cacheFilter != null) {
+                int partitions = tbl.cache().topology().partitions();
+
+                List<Integer> filteredParts = new ArrayList<>(partitions);
+
+                for (int i = 0; i < partitions; i++) {
+                    if (cacheFilter.applyPartition(i))
+                        filteredParts.add(i);
+                }
+
+                parts = U.toIntArray(filteredParts);
+            }
+        }
+
+        if (!reservePartitions(cacheIds, topVer, parts, reserved))
+            throw new IgniteCheckedException("Failed to reserve partitions for [cacheIds=" + cacheIds +
+                ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');
+
+        GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
+            .filter(filter)
+            .distributedJoinMode(OFF)
+            .reservations(reserved);
+
+        GridH2QueryContext.set(ctx);
 
         GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL, schemaName,
             U.currentTimeMillis(), null, true);
@@ -1206,6 +1269,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         finally {
             GridH2QueryContext.clearThreadLocal();
+
+            ctx.clearContext(false);
 
             runs.remove(run.id());
         }
@@ -2369,7 +2434,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2Schema schema = schemas.get(schemaName);
 
         if (schema != null) {
-            mapQryExec.onCacheStop(cacheName);
+            onCacheStop(cacheName);
             dmlProc.onCacheStop(cacheName);
 
             // Remove this mapping only after callback to DML proc - it needs that mapping internally
@@ -2575,6 +2640,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Extracts cache identifiers from {@link Prepared}.
+     *
+     * @param p Prepared statement.
+     * @return Relevant cache identifiers for the given prepared statement.
+     */
+    public List<Integer> collectCacheIds(Prepared p) {
+        List<Integer> cacheIds = new ArrayList<>();
+
+        if (p != null && p instanceof Select) {
+            Select select = (Select) p;
+
+            Set<Table> tbls = select.getTables();
+
+            for (Table tbl : tbls) {
+                if (tbl instanceof GridH2Table)
+                    cacheIds.add(((GridH2Table)tbl).cacheId());
+            }
+        }
+
+        return cacheIds;
+    }
+
+
+    /**
      * Collect cache identifiers from two-step query.
      *
      * @param mainCacheId Id of main cache.
@@ -2608,6 +2697,163 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             checkCacheIndexSegmentation(cacheIds);
 
             return cacheIds;
+        }
+    }
+
+    /**
+     * @param cacheIds Cache IDs.
+     * @param topVer Topology version.
+     * @param explicitParts Explicit partitions list.
+     * @param reserved Reserved list.
+     * @return {@code true} If all the needed partitions successfully reserved.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean reservePartitions(
+        @Nullable List<Integer> cacheIds,
+        AffinityTopologyVersion topVer,
+        final int[] explicitParts,
+        List<GridReservable> reserved
+    ) throws IgniteCheckedException {
+        assert topVer != null;
+
+        if (F.isEmpty(cacheIds))
+            return true;
+
+        Collection<Integer> partIds = wrap(explicitParts);
+
+        for (int i = 0; i < cacheIds.size(); i++) {
+            GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheIds.get(i));
+
+            if (cctx == null) // Cache was not found, probably was not deployed yet.
+                return false;
+
+            if (cctx.isLocal() || !cctx.rebalanceEnabled())
+                continue;
+
+            // For replicated cache topology version does not make sense.
+            final ReservationKey grpKey = new ReservationKey(cctx.name(), cctx.isReplicated() ? null : topVer);
+
+            GridReservable r = reservations.get(grpKey);
+
+            if (explicitParts == null && r != null) { // Try to reserve group partition if any and no explicits.
+                if (r != ReplicatedReservation.INSTANCE) {
+                    if (!r.reserve())
+                        return false; // We need explicit partitions here -> retry.
+
+                    reserved.add(r);
+                }
+            }
+            else { // Try to reserve partitions one by one.
+                int partsCnt = cctx.affinity().partitions();
+
+                if (cctx.isReplicated()) { // Check all the partitions are in owning state for replicated cache.
+                    if (r == null) { // Check only once.
+                        for (int p = 0; p < partsCnt; p++) {
+                            GridDhtLocalPartition part = partition(cctx, p);
+
+                            // We don't need to reserve partitions because they will not be evicted in replicated caches.
+                            if (part == null || part.state() != OWNING)
+                                return false;
+                        }
+
+                        // Mark that we checked this replicated cache.
+                        reservations.putIfAbsent(grpKey, ReplicatedReservation.INSTANCE);
+                    }
+                }
+                else { // Reserve primary partitions for partitioned cache (if no explicit given).
+                    if (explicitParts == null)
+                        partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
+
+                    for (int partId : partIds) {
+                        GridDhtLocalPartition part = partition(cctx, partId);
+
+                        if (part == null || part.state() != OWNING || !part.reserve())
+                            return false;
+
+                        reserved.add(part);
+
+                        // Double check that we are still in owning state and partition contents are not cleared.
+                        if (part.state() != OWNING)
+                            return false;
+                    }
+
+                    if (explicitParts == null) {
+                        // We reserved all the primary partitions for cache, attempt to add group reservation.
+                        GridDhtPartitionsReservation grp = new GridDhtPartitionsReservation(topVer, cctx, "SQL");
+
+                        if (grp.register(reserved.subList(reserved.size() - partIds.size(), reserved.size()))) {
+                            if (reservations.putIfAbsent(grpKey, grp) != null)
+                                throw new IllegalStateException("Reservation already exists.");
+
+                            grp.onPublish(new CI1<GridDhtPartitionsReservation>() {
+                                @Override public void apply(GridDhtPartitionsReservation r) {
+                                    reservations.remove(grpKey, r);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param p Partition ID.
+     * @return Partition.
+     */
+    private GridDhtLocalPartition partition(GridCacheContext<?, ?> cctx, int p) {
+        return cctx.topology().localPartition(p, NONE, false);
+    }
+
+    /**
+     * @param ints Integers.
+     * @return Collection wrapper.
+     */
+    private static Collection<Integer> wrap(final int[] ints) {
+        if (ints == null)
+            return null;
+
+        if (ints.length == 0)
+            return Collections.emptySet();
+
+        return new AbstractCollection<Integer>() {
+            @SuppressWarnings("NullableProblems")
+            @Override public Iterator<Integer> iterator() {
+                return new Iterator<Integer>() {
+                    /** */
+                    private int i = 0;
+
+                    @Override public boolean hasNext() {
+                        return i < ints.length;
+                    }
+
+                    @Override public Integer next() {
+                        return ints[i++];
+                    }
+
+                    @Override public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+
+            @Override public int size() {
+                return ints.length;
+            }
+        };
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public void onCacheStop(String cacheName) {
+        // Drop group reservations.
+        for (ReservationKey grpKey : reservations.keySet()) {
+            if (F.eq(grpKey.cacheName(), cacheName))
+                reservations.remove(grpKey);
         }
     }
 

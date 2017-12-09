@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep;
+package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Mapper reservation key.
  */
-public class MapReservationKey {
+public class ReservationKey {
     /** Cache name. */
     private final String cacheName;
 
@@ -36,7 +36,7 @@ public class MapReservationKey {
      * @param cacheName Cache name.
      * @param topVer Topology version.
      */
-    public MapReservationKey(String cacheName, AffinityTopologyVersion topVer) {
+    public ReservationKey(String cacheName, AffinityTopologyVersion topVer) {
         this.cacheName = cacheName;
         this.topVer = topVer;
     }
@@ -56,7 +56,7 @@ public class MapReservationKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        MapReservationKey other = (MapReservationKey)o;
+        ReservationKey other = (ReservationKey)o;
 
         return F.eq(cacheName, other.cacheName) && F.eq(topVer, other.topVer);
 

@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep;
+package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 
 /**
  * Mapper fake reservation object for replicated caches.
  */
-class MapReplicatedReservation implements GridReservable {
+public class ReplicatedReservation implements GridReservable {
     /** */
-    static final MapReplicatedReservation INSTANCE = new MapReplicatedReservation();
+    static final ReplicatedReservation INSTANCE = new ReplicatedReservation();
 
     /** {@inheritDoc} */
     @Override public boolean reserve() {

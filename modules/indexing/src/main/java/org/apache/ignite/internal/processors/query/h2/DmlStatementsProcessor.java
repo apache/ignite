@@ -295,7 +295,7 @@ public class DmlStatementsProcessor {
             final ArrayList<List<?>> data = new ArrayList<>(plan.rowsNum);
 
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()), plan.selectQry,
-                F.asList(args), null, false, 0, null);
+                F.asList(args), null, false, 0, null, null);
 
             QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -401,7 +401,8 @@ public class DmlStatementsProcessor {
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQry,
-                F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
+                F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel,
+                fieldsQry.getPartitions());
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
