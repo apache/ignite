@@ -379,6 +379,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final int keysCnt = 100;
 
+        for (int k = 0; k < keysCnt; k++)
+            grid(0).cache(CACHE_NAME).put(k, (long)0);
+
         final Random r = new Random();
 
         final TransactionConcurrency[] TC_VALS = TransactionConcurrency.values();
@@ -386,11 +389,11 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final LongAdder8 completed = new LongAdder8();
         final LongAdder8 failed = new LongAdder8();
+        final LongAdder8 rolledBack = new LongAdder8();
 
         IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 while(!stop.get()) {
-
                     int nodeId = r.nextInt(GRID_CNT + 1);
 
                     Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
@@ -407,8 +410,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                         final int delay = r.nextInt(400);
 
-                        if (delay > 0)
-                            sleep(delay);
+                        sleep(delay);
 
                         node.cache(CACHE_NAME).put(k, v + 1);
 
@@ -432,15 +434,20 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 while (!stop.get()) {
                     doSleep(r.nextInt(300) + 300);
 
-                    Collection<Transaction> transactions = grid(nodeId).transactions().localActiveTransactions();
+                    Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
-                    for (Transaction transaction : transactions)
+                    Collection<Transaction> transactions = node.transactions().localActiveTransactions();
+
+                    for (Transaction transaction : transactions) {
+                        rolledBack.add(1);
+
                         transaction.rollbackAsync();
+                    }
                 }
             }
         }, G.allGrids().size(), "rollback-thread");
 
-        doSleep(10_000);
+        doSleep(60_000);
 
         stop.set(true);
 
@@ -448,7 +455,10 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         rollbackFut.get();
 
-        log.info("Completed txs: " + completed.sum() + ", failed txs: " + failed.sum());
+        log.info("Completed txs: " + completed.sum() + ", failed txs: " + failed.sum() +
+            ", rolled back: " + rolledBack.sum());
+
+        assertTrue(completed.sum() > 0 && failed.sum() > 0 && rolledBack.sum() > 0);
 
         checkFutures();
     }
