@@ -1593,7 +1593,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     BaselineTopology blt = cctx.kernalContext().state().clusterState().baselineTopology();
 
                     if (type != null && blt != null) {
-                        Short constId = blt.consistentIdMapping().get(firstDiscoEvt.eventNode().consistentId());
+                        Short constId = blt.consistentIdMapping().get(evt.eventNode().consistentId());
 
                         if (constId != null)
                             cctx.wal().log(new ExchangeRecord(constId, type));
