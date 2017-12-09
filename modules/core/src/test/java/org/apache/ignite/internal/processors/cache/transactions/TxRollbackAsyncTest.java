@@ -204,20 +204,20 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testAsyncRollbacks() throws Exception {
-        final Ignite client = startClient();
-
-        testAsyncRollbacks0(client, 2);
-    }
-
-    /**
-     *
-     */
     public void testNormalRollbacks() throws Exception {
         final Ignite client = startClient();
 
+        // Normal rollback after put.
         Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1);
+
         client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+
+        tx.rollback();
+
+        assertNull(client.cache(CACHE_NAME).get(0));
+
+        // Normal rollback before put.
+        tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1);
 
         tx.rollback();
 
@@ -226,6 +226,15 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         assertEquals(1, client.cache(CACHE_NAME).get(0));
 
         checkFutures();
+    }
+
+    /**
+     *
+     */
+    public void testAsyncRollbacks() throws Exception {
+        final Ignite client = startClient();
+
+        testAsyncRollbacks0(client, 2);
     }
 
     /**

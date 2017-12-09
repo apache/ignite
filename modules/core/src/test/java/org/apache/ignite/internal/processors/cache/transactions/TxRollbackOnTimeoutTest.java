@@ -303,7 +303,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    try (Transaction tx = node1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 5000, 2)) {
+                    try (Transaction tx = node1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 2)) {
                         node1.cache(CACHE_NAME).put(1, 10);
 
                         l.countDown();

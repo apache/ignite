@@ -1348,6 +1348,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param tx Transaction to finish.
      * @param commit {@code True} if transaction is committed, {@code false} if rolled back.
+     * @param clearThreadMap {@code True} if need remove tx from thread map.
      */
     public void fastFinishTx(GridNearTxLocal tx, boolean commit, boolean clearThreadMap) {
         assert tx != null;

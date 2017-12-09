@@ -3333,15 +3333,19 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false)))
             return chainFinishFuture(finishFut, false);
 
-        final GridFutureAdapter<IgniteInternalTx> retFut;
-
+        // If having active lock.
         if (!updateLockFuture(null, ROLLBACK_FUTURE)) {
             // Must wait for current lock future to finish.
-            retFut = new GridFutureAdapter<>();
+            final GridFutureAdapter retFut = new GridFutureAdapter<>();
 
             // Chain-finish futures.
             lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                    // Finish after lock future completion to allow deadlock detection.
+                    if (onTimeout)
+                        finishAsync(fut0, clearThreadMap);
+
+                    // Complete return future
                     fut0.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
                         @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
                             try {
@@ -3360,11 +3364,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     ((GridDhtColocatedLockFuture)lockFut).onRollback(rollbackException());
                 else if (lockFut instanceof GridNearLockFuture)
                     ((GridNearLockFuture)lockFut).onRollback(rollbackException());
-            }
-        }
-        else
-            retFut = fut0;
 
+                finishAsync(fut0, clearThreadMap);
+            }
+
+            return retFut;
+        }
+        else {
+            finishAsync(fut0, clearThreadMap);
+
+            return fut0;
+        }
+    }
+
+    private void finishAsync(final GridNearTxFinishFuture fut0, final boolean clearThreadMap) {
         cctx.mvcc().addFuture(fut0, fut0.futureId());
 
         IgniteInternalFuture<?> prepFut = this.prepFut;
@@ -3398,8 +3411,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             });
         }
-
-        return retFut;
     }
 
     /** {@inheritDoc} */

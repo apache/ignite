@@ -52,7 +52,7 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
     }
 
     /**
-     *
+     * @param clearThreadMap {@code True} if need remove tx from thread map.
      */
     public void finish(boolean clearThreadMap) {
         try {
