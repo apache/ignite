@@ -55,11 +55,15 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /**
  * Tests an ability to async rollback near transactions.
  */
 public class TxRollbackAsyncTest extends GridCommonAbstractTest {
+    /** */
+    public static final int DURATION = 60_000;
+
     /** */
     public static final int ROLLBACK_TIMEOUT = 500;
 
@@ -265,7 +269,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final List<Transaction> txs = synchronizedList(new ArrayList<Transaction>());
 
-        IgniteInternalFuture<?> lockFut = startLockThread(client, lockedLatch, commitLatch, 0);
+        IgniteInternalFuture<?> lockFut = startLockThread(client, lockedLatch, commitLatch, 0, true);
 
         final IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -315,7 +319,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final List<Transaction> txs = synchronizedList(new ArrayList<Transaction>());
 
-        IgniteInternalFuture<?> lockFut = startLockThread(node, readStartLatch, commitLatch, 0);
+        IgniteInternalFuture<?> lockFut = startLockThread(node, readStartLatch, commitLatch, 0, true);
 
         final IgniteInternalFuture<?> testFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -372,6 +376,59 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    public void testConcurrentRollback() throws Exception {
+        CountDownLatch lockLatch = new CountDownLatch(1);
+
+        CountDownLatch commitLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> lockFut = startLockThread(grid(0), lockLatch, commitLatch, 0, false);
+
+        U.awaitQuiet(lockLatch);
+
+        IgniteEx node = grid(1);
+
+        final Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1);
+
+        final CountDownLatch sync = new CountDownLatch(THREADS_CNT);
+
+        IgniteInternalFuture<?> rollbackFut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                doSleep(100);
+
+                sync.countDown();
+                U.awaitQuiet(sync);
+
+                tx.rollback();
+            }
+        }, THREADS_CNT, "rollback-thread");
+
+        try {
+            node.cache(CACHE_NAME).get(0);
+
+            fail();
+        }
+        catch (Exception e) {
+            assertTrue(e.getMessage(), X.hasCause(e, TransactionRollbackException.class));
+        }
+
+        commitLatch.countDown();
+
+        lockFut.get();
+
+        rollbackFut.get();
+
+        // Rollback write tx.
+        Collection<Transaction> txs = grid(0).transactions().localActiveTransactions();
+
+        for (Transaction tx0 : txs)
+            tx0.rollback();
+
+        checkFutures();
+    }
+
+    /**
+     *
+     */
     public void testMixedAsyncRollbackTypes() throws Exception {
         final Ignite client = startClient();
 
@@ -415,7 +472,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                         for (int key : keys) {
                             v = (Long)node.cache(CACHE_NAME).get(key);
 
-                            assertNotNull("Expecting not null value: tx=" + tx + ", key=" + key + ", node=" + node, v);
+                            assertTrue("Expecting not null value for active transaction: tx=" + tx + ", key=" + key +
+                                ", node=" + node, v != null || tx.state() != ACTIVE);
                         }
 
                         final int delay = r.nextInt(400);
@@ -457,7 +515,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             }
         }, G.allGrids().size(), "rollback-thread");
 
-        doSleep(60_000);
+        doSleep(DURATION);
 
         stop.set(true);
 
@@ -494,18 +552,18 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      * @param timeout Timeout.
      */
     private IgniteInternalFuture<?> startLockThread(final Ignite node, final CountDownLatch lockedLatch,
-        final CountDownLatch commitLatch, final int timeout) throws Exception {
+        final CountDownLatch commitLatch, final int timeout, final boolean doCommit) throws Exception {
         return multithreadedAsync(new Runnable() {
             @Override public void run() {
-                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1)){
-                    node.cache(CACHE_NAME).put(0, 0); // Own the lock.
+                Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1);
+                node.cache(CACHE_NAME).put(0, 0); // Own the lock.
 
-                    lockedLatch.countDown();
+                lockedLatch.countDown();
 
-                    U.awaitQuiet(commitLatch);
+                U.awaitQuiet(commitLatch);
 
+                if (doCommit)
                     tx.commit();
-                }
             }
         }, 1, "tx-lock-thread");
     }
@@ -522,5 +580,10 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             assertTrue("Unexpected incomplete future: " + f, f.isDone());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return DURATION + 10_000;
     }
 }

@@ -137,7 +137,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "lockFut");
 
     /** */
-    private static final IgniteInternalFuture ROLLBACK_FUTURE = new GridFutureAdapter();
+    private static final IgniteInternalFuture ROLLBACK_FUT = new GridFutureAdapter();
 
     /** DHT mappings. */
     private IgniteTxMappings mappings;
@@ -3333,15 +3333,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false)))
             return chainFinishFuture(finishFut, false);
 
-        // If having active lock.
-        if (!updateLockFuture(null, ROLLBACK_FUTURE)) {
+        if (!updateLockFuture(null, ROLLBACK_FUT)) {
             // Must wait for current lock future to finish.
             final GridFutureAdapter retFut = new GridFutureAdapter<>();
 
             // Chain-finish futures.
             lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                    // Finish after lock future completion to allow deadlock detection.
+                    // We must wait until lock future will be finished because of deadlock detection.
                     if (onTimeout)
                         finishAsync(fut0, clearThreadMap);
 
@@ -3377,6 +3376,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
     }
 
+    /**
+     * Asynchronously finish a transaction.
+     */
     private void finishAsync(final GridNearTxFinishFuture fut0, final boolean clearThreadMap) {
         cctx.mvcc().addFuture(fut0, fut0.futureId());
 

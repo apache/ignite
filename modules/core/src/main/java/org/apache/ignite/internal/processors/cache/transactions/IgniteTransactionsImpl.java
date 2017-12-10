@@ -208,7 +208,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             }
         }, new IgnitePredicate<IgniteInternalTx>() {
             @Override public boolean apply(IgniteInternalTx tx) {
-                return tx instanceof GridNearTxLocal;
+                return tx.near();
             }
         });
     }

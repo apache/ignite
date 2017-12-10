@@ -36,11 +36,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionDeadlockException;
@@ -146,6 +148,13 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridLocalLockFuture.class);
+
+        if (tx != null && tx instanceof GridNearTxLocal && !((GridNearTxLocal)tx).updateLockFuture(null, this)) {
+            onError(new IgniteTxRollbackCheckedException("Failed to acquire lock because transaction " +
+                "has started to roll back [tx=" + CU.txString(tx) + ']'));
+
+            onComplete(false);
+        }
     }
 
     /**
@@ -436,6 +445,9 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
     private void onComplete(boolean success) {
         if (!success)
             undoLocks();
+
+        if (tx != null && tx instanceof GridNearTxLocal)
+            ((GridNearTxLocal)tx).updateLockFuture(this, null);
 
         if (onDone(success, err)) {
             if (log.isDebugEnabled())
