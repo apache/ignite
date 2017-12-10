@@ -84,7 +84,7 @@ class VisorConsole {
 
         if (hasArgFlag("?", argLst) || hasArgFlag("help", argLst)) {
             println("Usage:")
-            println(s"    $progName [? | -help]|[{-v}{-np} {-cfg=<path>}]|[{-b=<path>} {-e=command1;command2;...}]")
+            println(s"    $progName [? | -help]|[{-v}{-np} {-cfg=<path>}]|[{-b=<path>} {-e=command1;command2;...} -quiet]")
             println("    Where:")
             println("        ?, /help, -help      - show this message.")
             println("        -v                   - verbose mode (quiet by default).")
@@ -93,6 +93,7 @@ class VisorConsole {
             println("        -b=<path>            - batch mode with file.")
             println("        -e=cmd1;cmd2;...     - batch mode with commands.")
             println("        -nq                  - batch mode will not quit after execution (useful for alerts monitoring).")
+            println("        -quiet               - batch mode will not print inform message and node log.")
 
             visor.quit()
         }
@@ -100,14 +101,18 @@ class VisorConsole {
         argLst
     }
 
-    protected def buildReader(argLst: ArgList) = {
+    protected def buildReader(argLst: ArgList): ConsoleReader = {
         val cfgFile = argValue("cfg", argLst)
         val batchFile = argValue("b", argLst)
         val batchCommand = argValue("e", argLst)
         val noBatchQuit = hasArgName("nq", argLst)
+        val quiet = hasArgName("quiet", argLst)
 
         if (noBatchQuit && batchFile.isEmpty && batchCommand.isEmpty)
             visor.warn("Option \"-nq\" will be ignored because batch mode options \"-b\" or \"-e\" were not specified.")
+
+        if (quiet && batchFile.isEmpty && batchCommand.isEmpty)
+            visor.warn("Option \"-quiet\" will be ignored because batch mode options \"-b\" or \"-e\" were not specified.")
 
         cfgFile.foreach(cfg => {
             if (cfg.trim.isEmpty) {
@@ -153,6 +158,7 @@ class VisorConsole {
         val inputStream = batchStream match {
             case Some(cmd) =>
                 visor.batchMode = true
+                visor.quiet = quiet
 
                 val script = if (noBatchQuit) cmd else cmd + "\nquit\n"
 
@@ -179,7 +185,8 @@ class VisorConsole {
     }
 
     protected def mainLoop(reader: ConsoleReader) {
-        welcomeMessage()
+        if (!visor.quiet)
+            welcomeMessage()
 
         var ok = true
 
@@ -194,7 +201,7 @@ class VisorConsole {
         val buf = new StringBuilder
 
         while (ok) {
-            line = reader.readLine("visor> ")
+            line = reader.readLine(if (visor.quiet) null else "visor> ")
 
             ok = line != null
 
@@ -253,11 +260,11 @@ class VisorConsole {
      * Print banner, hint message on start.
      */
     protected def welcomeMessage() {
-        println("___    _________________________ ________" +  NL +
-                "__ |  / /____  _/__  ___/__  __ \\___  __ \\" +  NL +
-                "__ | / /  __  /  _____ \\ _  / / /__  /_/ /" +  NL +
-                "__ |/ /  __/ /   ____/ / / /_/ / _  _, _/" +  NL +
-                "_____/   /___/   /____/  \\____/  /_/ |_|" +  NL +
+        println("___    _________________________ ________" + NL +
+                "__ |  / /____  _/__  ___/__  __ \\___  __ \\" + NL +
+                "__ | / /  __  /  _____ \\ _  / / /__  /_/ /" + NL +
+                "__ |/ /  __/ /   ____/ / / /_/ / _  _, _/" + NL +
+                "_____/   /___/   /____/  \\____/  /_/ |_|" + NL +
                 NL +
                 "ADMIN CONSOLE" + NL +
                 copyright())
