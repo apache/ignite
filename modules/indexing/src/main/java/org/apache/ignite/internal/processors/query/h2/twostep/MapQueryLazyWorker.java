@@ -126,8 +126,11 @@ public class MapQueryLazyWorker extends GridWorker {
         else {
             GridH2QueryContext qctx = GridH2QueryContext.get();
 
-            if (qctx != null)
+            if (qctx != null) {
                 qctx.clearContext(false);
+
+                GridH2QueryContext.clearThreadLocal();
+            }
 
             isCancelled = true;
 
