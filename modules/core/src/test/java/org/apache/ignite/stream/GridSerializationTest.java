@@ -17,11 +17,10 @@
 
 package org.apache.ignite.stream;
 
-import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,13 +40,12 @@ public class GridSerializationTest extends GridCommonAbstractTest {
         IgniteConfiguration conf = super.getConfiguration(name);
         conf.setPeerClassLoadingEnabled(true);
         conf.setClientMode(isRemoteJvm());
-        conf.setDeploymentMode(DeploymentMode.CONTINUOUS);
 
         return conf;
     }
 
     @SuppressWarnings("unchecked")
-    public void testNewCallable() throws Exception {
+    public void testWrappedCallable() throws Exception {
         startGrid(0);
         try {
             IgniteEx client = startGrid(1);
@@ -59,7 +57,66 @@ public class GridSerializationTest extends GridCommonAbstractTest {
 
             Serializable instance = (Serializable) callableClass.newInstance();
 
-            IgniteCallable<String> wrappedCallable = new WrappedCallable(instance, loader);
+            IgniteCallable<String> wrappedCallable = new WrappedCallable(instance);
+            
+            String result = ((IgniteProcessProxy) client).remoteCompute().call(wrappedCallable);
+            Assert.assertEquals("here", result);
+        } finally {
+            stopAllGrids();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void testWrappedCallable2() throws Exception {
+        startGrid(0);
+        try {
+            IgniteEx client = startGrid(1);
+
+            GridTestClassLoader loader = new GridTestClassLoader();
+
+            Class<?> callableClass = loader.loadClass(REMOTE_CALLABLE_CLASS);
+
+            Serializable instance = (Serializable) callableClass.newInstance();
+
+            IgniteCallable<String> wrappedCallable = new WrappedCallable(instance);
+
+            String result = ((IgniteProcessProxy) client).remoteCompute().call(wrappedCallable);
+            Assert.assertEquals("here", result);
+        } finally {
+            stopAllGrids();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void testClassCallable() throws Exception {
+        startGrid(0);
+        try {
+            IgniteEx client = startGrid(1);
+
+            URL[] classpath = {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
+            GridTestExternalClassLoader loader = new GridTestExternalClassLoader(classpath);
+
+            Class<?> callableClass = loader.loadClass(REMOTE_CALLABLE_CLASS);
+
+            IgniteCallable<String> wrappedCallable = new ClassCallable(callableClass);
+
+            String result = ((IgniteProcessProxy) client).remoteCompute().call(wrappedCallable);
+            Assert.assertEquals("here", result);
+        } finally {
+            stopAllGrids();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void testLoaderCallable() throws Exception {
+        startGrid(0);
+        try {
+            IgniteEx client = startGrid(1);
+
+            URL[] classpath = {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
+            GridTestExternalClassLoader loader = new GridTestExternalClassLoader(classpath);
+
+            IgniteCallable<String> wrappedCallable = new LoaderCallable(loader);
 
             String result = ((IgniteProcessProxy) client).remoteCompute().call(wrappedCallable);
             Assert.assertEquals("here", result);
@@ -73,36 +130,63 @@ public class GridSerializationTest extends GridCommonAbstractTest {
         return true;
     }
 
-    private static class WrappedCallable implements IgniteCallable, GridPeerDeployAware {
+    private static class WrappedCallable implements IgniteCallable {
 
-        private final Serializable field;
+        private final Serializable callable;
 
-        private final ClassLoader classLdr;
-
-        public WrappedCallable(Serializable f, ClassLoader cl) {
-            this.field = f;
-
-            this.classLdr = cl;
+        WrappedCallable(Serializable callable) {
+            this.callable = callable;
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Object call() throws Exception {
-            System.out.println(field);
-
-            return ((IgniteCallable<String>) field).call();
-        }
-
-        @Override
-        public Class<?> deployClass() {
-            return this.getClass();
-        }
-
-        @Override
-        public ClassLoader classLoader() {
-            return this.classLdr;
+            return ((IgniteCallable<?>) callable).call();
         }
 
     }
+
+    private static class ClassCallable implements IgniteCallable {
+
+        private final Class<?> callableClass;
+
+        ClassCallable(Class<?> callableClass) {
+            this.callableClass = callableClass;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public Object call() throws Exception {
+
+            IgniteCallable<String> instance = (IgniteCallable<String>) callableClass.newInstance();
+            System.out.println(instance.call());
+
+            return instance.call();
+        }
+    }
+
+    private static class LoaderCallable implements IgniteCallable {
+
+        private final ClassLoader loader;
+
+        LoaderCallable(ClassLoader loader) {
+            this.loader = loader;
+        }
+
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public Object call() throws Exception {
+
+            System.out.println(loader);
+            Class<?> callableClass = loader.loadClass(REMOTE_CALLABLE_CLASS);
+            IgniteCallable<String> instance = (IgniteCallable<String>) callableClass.newInstance();
+            System.out.println(instance.call());
+
+            return instance.call();
+        }
+
+    }
+
 
 }
