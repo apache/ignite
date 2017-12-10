@@ -73,6 +73,11 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * Lazy query release partitions test.
      *
@@ -82,6 +87,8 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
         Ignite node1 = startGrid(0);
 
         IgniteCache<Integer, Person> cache = node1.cache(PERSON_CACHE);
+
+        cache.clear();
 
         Affinity<Integer> aff = node1.affinity(PERSON_CACHE);
 
@@ -116,6 +123,46 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
         }
 
         assertEquals("Wrong result set size", partsFilled, resCntr);
+    }
+
+    /**
+     * Lazy query release partitions on cursor close test.
+     *
+     * @throws Exception If failed.
+     */
+    public void testLazyQueryPartitionsReleaseOnClose() throws Exception {
+        Ignite node1 = startGrid(0);
+
+        IgniteCache<Integer, Person> cache = node1.cache(PERSON_CACHE);
+
+        cache.clear();
+
+        Affinity<Integer> aff = node1.affinity(PERSON_CACHE);
+
+        int partsFilled = fillAllPartitions(cache, aff);
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("select name, age from person")
+            .setLazy(true)
+            .setPageSize(1);
+
+        FieldsQueryCursor<List<?>> qryCursor = cache.query(qry);
+
+        Iterator<List<?>> it = qryCursor.iterator();
+
+        if (it.hasNext())
+            it.next();
+        else
+            fail("No query results.");
+
+        startGrid(1);
+
+        // Close cursor. Partitions should be released now.
+        qryCursor.close();
+
+        //This timeout value was chosen experimentally. Grid rebalancing should already be finished before time is out.
+        Thread.sleep(5000);
+
+        assertEquals("Wrong result set size", partsFilled, cache.query(qry).getAll().size());
     }
 
     /**
