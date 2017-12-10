@@ -35,7 +35,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -45,7 +44,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
@@ -240,13 +238,17 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      *
      */
     public void testAsyncRollbacks() throws Exception {
-        final Ignite client = startClient();
+        startClient();
 
-        testAsyncRollbacks0(client, 2);
+        assertEquals(GRID_CNT + 1, G.allGrids().size());
+
+        for (Ignite ignite : G.allGrids())
+            testAsyncRollbacks0(ignite, THREADS_CNT);
     }
 
     /**
-     *
+     * Test a transaction which is rolled back in empty state.
+     * All subsequent operations must fail.
      */
     public void testRollbackEmptyTx() throws Exception {
         final Ignite client = startClient();
@@ -375,9 +377,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final int threadsCnt = Runtime.getRuntime().availableProcessors() * 2;
-
         final int keysCnt = 100;
+
+        final int txSize = 10;
 
         for (int k = 0; k < keysCnt; k++)
             grid(0).cache(CACHE_NAME).put(k, (long)0);
@@ -401,18 +403,26 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     TransactionConcurrency conc = TC_VALS[r.nextInt(TC_VALS.length)];
                     TransactionIsolation isolation = TI_VALS[r.nextInt(TI_VALS.length)];
 
-                    int k = r.nextInt(keysCnt);
-
                     long timeout = r.nextInt(200) + 50;
 
-                    try (Transaction tx = node.transactions().txStart(conc, isolation, timeout, 1)) {
-                        final Long v = (Long)node.cache(CACHE_NAME).get(k);
+                    try (Transaction tx = node.transactions().txStart(conc, isolation, timeout, txSize)) {
+                        int[] keys = new int[txSize];
+
+                        for (int i = 0; i < keys.length; i++)
+                            keys[i] = r.nextInt(keysCnt);
+
+                        Long v = null;
+                        for (int key : keys) {
+                            v = (Long)node.cache(CACHE_NAME).get(key);
+
+                            assertNotNull("Expecting not null value: tx=" + tx + ", key=" + key + ", node=" + node, v);
+                        }
 
                         final int delay = r.nextInt(400);
 
                         sleep(delay);
 
-                        node.cache(CACHE_NAME).put(k, v + 1);
+                        node.cache(CACHE_NAME).put(keys[txSize - 1], v + 1);
 
                         tx.commit();
 
@@ -423,7 +433,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     }
                 }
             }
-        }, threadsCnt, "tx-thread");
+        }, THREADS_CNT, "tx-thread");
 
         final AtomicInteger nodeIdx = new AtomicInteger();
 
