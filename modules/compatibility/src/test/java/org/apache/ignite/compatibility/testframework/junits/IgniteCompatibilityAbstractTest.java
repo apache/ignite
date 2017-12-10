@@ -26,14 +26,17 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compatibility.testframework.junits.logger.ListenedGridTestLog4jLogger;
 import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.Nullable;
@@ -225,6 +228,8 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
             ignite = super.startGrid(igniteInstanceName, cfg, ctx);
 
+            IgniteProcessProxy.localeJvmGrid(ignite);
+
             assert ignite.configuration().getNodeId() == nodeId : "Started node has unexpected node id.";
 
             assert ignite.cluster().node(syncNodeId) != null : "Node has not joined [id=" + nodeId + "]";
@@ -241,7 +246,23 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     /** {@inheritDoc} */
     @Override protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
         if (isRemoteJvm(igniteInstanceName))
-            throw new UnsupportedOperationException("Operation isn't supported yet for remotes nodes, use stopAllGrids() instead.");
+            try {
+                final UUID igniteInstanceId = IgniteProcessProxy.ignite(igniteInstanceName).getId();
+
+                IgniteProcessProxy.kill(igniteInstanceName);
+
+                if (locJvmInstance != null) {
+                    GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                        @Override public boolean apply() {
+                            return locJvmInstance.cluster().node(igniteInstanceId) == null;
+                        }
+                    }, 5000L);
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to stop remote ignite instance [instance=" + igniteInstanceName + ']'
+                    , e);
+            }
         else {
             super.stopGrid(igniteInstanceName, cancel, awaitTop);
 

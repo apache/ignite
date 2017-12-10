@@ -111,7 +111,7 @@ public class IgniteProcessProxy implements IgniteEx {
     private final transient IgniteConfiguration cfg;
 
     /** Local JVM grid. */
-    private final transient Ignite locJvmGrid;
+    private static volatile Ignite locJvmGrid;
 
     /** Logger. */
     private final transient IgniteLogger log;
@@ -884,5 +884,12 @@ public class IgniteProcessProxy implements IgniteEx {
         @Override public ClusterNode call() throws Exception {
             return ((IgniteEx)ignite).localNode();
         }
+    }
+
+    /**
+     * @param jvmGrid New local JVM grid.
+     */
+    public static void localeJvmGrid(Ignite jvmGrid) {
+        locJvmGrid = jvmGrid;
     }
 }
