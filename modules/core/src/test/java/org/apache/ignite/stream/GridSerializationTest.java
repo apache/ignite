@@ -49,9 +49,7 @@ public class GridSerializationTest extends GridCommonAbstractTest {
         startGrid(0);
         try {
             IgniteEx client = startGrid(1);
-
-            URL[] classpath = {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
-            GridTestExternalClassLoader loader = new GridTestExternalClassLoader(classpath);
+            ClassLoader loader = getExternalClassLoader();
 
             Class<?> callableClass = loader.loadClass(REMOTE_CALLABLE_CLASS);
 
@@ -93,8 +91,7 @@ public class GridSerializationTest extends GridCommonAbstractTest {
         try {
             IgniteEx client = startGrid(1);
 
-            URL[] classpath = {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
-            GridTestExternalClassLoader loader = new GridTestExternalClassLoader(classpath);
+            ClassLoader loader = getExternalClassLoader();
 
             Class<?> callableClass = loader.loadClass(REMOTE_CALLABLE_CLASS);
 
@@ -113,8 +110,7 @@ public class GridSerializationTest extends GridCommonAbstractTest {
         try {
             IgniteEx client = startGrid(1);
 
-            URL[] classpath = {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
-            GridTestExternalClassLoader loader = new GridTestExternalClassLoader(classpath);
+            ClassLoader loader = getExternalClassLoader();
 
             IgniteCallable<String> wrappedCallable = new LoaderCallable(loader);
 
