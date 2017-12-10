@@ -401,6 +401,7 @@
                             .ui-grid-column-resizer {
                                 right: -1px;
                                 opacity: 0;
+                                z-index: 1000;
                             }
                         }
                     }

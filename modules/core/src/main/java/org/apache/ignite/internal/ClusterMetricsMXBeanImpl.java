@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 
@@ -297,7 +302,6 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
         return metrics().getTotalJobsExecutionTime();
     }
 
-
     /** {@inheritDoc} */
     @Override public long getTotalIdleTime() {
         return metrics().getTotalIdleTime();
@@ -351,6 +355,71 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return metrics().getTotalNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalServerNodes() {
+        return cluster.forServers().nodes().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalClientNodes() {
+        return cluster.forClients().nodes().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTopologyVersion() {
+        return cluster.ignite().cluster().topologyVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int countNodes(String attrName, String attrVal, boolean srv, boolean client) {
+        int cnt = 0;
+
+        for (ClusterNode node : nodesList(srv, client)) {
+            Object val = node.attribute(attrName);
+
+            if (val != null && val.toString().equals(attrVal))
+                ++cnt;
+        }
+
+        return cnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Object, Integer> groupNodes(String attrName, boolean srv, boolean client) {
+        Map<Object, Integer> attrGroups = new HashMap<>();
+
+        for (ClusterNode node : nodesList(srv, client)) {
+            Object attrVal = node.attribute(attrName);
+
+            if (attrVal != null) {
+                Integer cnt = attrGroups.get(attrVal);
+
+                attrGroups.put(attrVal, cnt == null ? 1 : ++cnt);
+            }
+        }
+
+        return attrGroups;
+    }
+
+    /**
+     * Get list with the specified node types.
+     *
+     * @param srv {@code True} to include server nodes.
+     * @param client {@code True} to include client nodes.
+     * @return List with the specified node types.
+     */
+    private List<ClusterNode> nodesList(boolean srv, boolean client) {
+        List<ClusterNode> nodes = new ArrayList<>();
+
+        if (srv)
+            nodes.addAll(cluster.forServers().nodes());
+
+        if (client)
+            nodes.addAll(cluster.forClients().nodes());
+
+        return nodes;
     }
 
     /** {@inheritDoc} */

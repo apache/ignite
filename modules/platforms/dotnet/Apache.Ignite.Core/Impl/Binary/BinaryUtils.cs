@@ -1559,10 +1559,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             err = null;
 
-            if (reader.ReadBoolean())
-                return reader.ReadObject<object>();
+            if (reader.ReadBoolean()) // success indication
+                return reader.ReadObject<object>(); 
 
-            err = reader.ReadBoolean()
+            err = reader.ReadBoolean() // native error indication
                 ? reader.ReadObject<object>()
                 : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString(),
                                               reader.ReadString());
