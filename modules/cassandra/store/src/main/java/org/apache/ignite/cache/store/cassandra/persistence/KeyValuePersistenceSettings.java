@@ -487,9 +487,9 @@ public class KeyValuePersistenceSettings implements Serializable {
                     if (keyColumn.equals(valField.getColumn()) &&
                             !CassandraHelper.isCassandraCompatibleTypes(typeHandler, valField.getTypeHandler())) {
                         throw new IllegalArgumentException("Value field '" + valField.getName() + "' shares the same " +
-                                "Cassandra table column '" + keyColumn + "' with key, but their Java classes are " +
-                                "different. Fields sharing the same column should have the same Java class as their " +
-                                "type or should be mapped to the same Cassandra primitive type or should have the same instance of type handlers.");
+                                "Cassandra table column '" + keyColumn + "' with key, but their primitive types are " +
+                                "different. Fields sharing the same column " +
+                                "should be mapped to the same Cassandra primitive type.");
                     }
                 }
             }
@@ -501,9 +501,8 @@ public class KeyValuePersistenceSettings implements Serializable {
                                 !CassandraHelper.isCassandraCompatibleTypes(keyField.getTypeHandler(), valField.getTypeHandler())) {
                             throw new IllegalArgumentException("Value field '" + valField.getName() + "' shares the same " +
                                     "Cassandra table column '" + keyColumn + "' with key field '" + keyField.getName() + "', " +
-                                    "but their Java classes are different. Fields sharing the same column should have " +
-                                    "the same Java class as their type or should be mapped to the same Cassandra " +
-                                    "primitive type or should have the same instance of type handlers.");
+                                    "but their primitive types are different. Fields sharing the same column should be " +
+                                    "mapped to the same Cassandra primitive type.");
                         }
                     }
                 }
