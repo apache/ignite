@@ -97,10 +97,10 @@ public class H2TreeIndex extends GridH2IndexBase {
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
         if (tbl.rowDescriptor() != null) {
-            name = cctx.binaryMarshaller()
-                    ? Integer.toString(tbl.rowDescriptor().type().typeId())
-                    : mangleClassName(tbl.rowDescriptor().type().valueClass())
-                + "_" + name;
+            name = (cctx.binaryMarshaller()
+                        ? Integer.toString(tbl.rowDescriptor().type().typeId())
+                        : mangleClassName(tbl.rowDescriptor().type().valueClass()))
+                    + '_' + name;
         }
 
         name = BPlusTree.treeName(name, "H2Tree");
@@ -147,31 +147,38 @@ public class H2TreeIndex extends GridH2IndexBase {
     /**
      * Mangles class name by convert it to a short human-understandable string as unique as possible.
      *
+     * <p>Most difference comes in the prefix to speed up key comparison in
+     * {@link org.apache.ignite.internal.processors.cache.persistence.MetadataStorage}.
+     *
      * @param klazz Class to mangle the name.
      * @return Mangled class name.
      */
     private static String mangleClassName(Class<?> klazz) {
         assert klazz != null;
 
-        String name = klazz.getName();
-        String[] components = name.split("\\.");
+        return "0";
 
-        assert components.length > 0;
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < components.length - 1; i++) {
-            assert !components[i].isEmpty();
-            sb.append(components[i].charAt(0));
-        }
-
-        int hc = name.hashCode();
-        hc = (hc & 0xFFFF) ^ (hc >>> 16);
-
-        sb.append(components[components.length - 1])
-            .append('.')
-            .append(Integer.toHexString(hc));
-
-        return sb.toString();
+//        String name = klazz.getName();
+//
+//        StringBuilder sb = new StringBuilder();
+//
+//        int hc = name.hashCode();
+//        hc = (hc & 0xFFFF) ^ (hc >>> 16);
+//
+//        String[] components = name.split("[.$]");
+//        assert components.length > 0;
+//
+//        sb.append(Integer.toHexString(hc))
+//            .append('.')
+//            .append(components[components.length - 1])
+//            .append('.');
+//
+//        for (int i = 0; i < components.length - 1; i++) {
+//            assert !components[i].isEmpty();
+//            sb.append(components[i].charAt(0));
+//        }
+//
+//        return sb.toString();
     }
 
     /**
