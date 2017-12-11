@@ -91,11 +91,11 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
         IgniteCache<NamespaceRu.Key, NamespaceRu.Person> cache2 = grid().getOrCreateCache(ccfg2);
 
-        cache2.put(new NamespaceRu.Key(uuid), new NamespaceRu.Person(TEST_NAME2, 42));
+        cache2.put(new NamespaceRu.Key(uuid), new NamespaceRu.Person(32, TEST_NAME2));
 
-        stopGrid();
         cache1 = null;
         cache2 = null;
+        stopGrid();
         startGrid(getTestIgniteInstanceName());
         grid().active(true);
 
@@ -111,14 +111,14 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
         qry = new SqlFieldsQueryEx(
             "select * from " + QueryUtils.typeName(NamespaceRu.Person.class) + " where name = ?", true);
-        qry.setArgs(TEST_NAME2);
+        qry.setArgs(32);
 
-        assertEquals(TEST_NAME2, cache2.query(qry).getAll().get(0).get(0));
+        assertEquals(32, cache2.query(qry).getAll().get(0).get(0));
 
         qry = new SqlFieldsQueryEx(
             "select * from " + QueryUtils.typeName(NamespaceRu.Person.class), true);
 
-        assertEquals(TEST_NAME2, cache2.query(qry).getAll().get(0).get(0));
+        assertEquals(32, cache2.query(qry).getAll().get(0).get(0));
     }
 
     public static class NamespaceEn {
@@ -161,7 +161,7 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
         public static class Person implements Externalizable {
 
-            @QuerySqlField(index = true)
+            @QuerySqlField(index = true, inlineSize = 0)
             private String name;
 
             @QuerySqlField(index = true)
@@ -236,36 +236,36 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
         public static class Person implements Externalizable {
 
-            @QuerySqlField(index = true)
-            private String name;
+            @QuerySqlField(index = true, inlineSize = 0)
+            private int name;
 
-            @QuerySqlField(index = true)
-            private int age;
+            @QuerySqlField(index = true, inlineSize = 0)
+            private String age;
 
             public Person() {
             }
 
-            public Person(String name, int age) {
+            public Person(int name, String age) {
                 this.name = name;
                 this.age = age;
             }
 
-            public String getName() {
+            public int getName() {
                 return name;
             }
 
-            public int getAge() {
+            public String getAge() {
                 return age;
             }
 
             @Override public void writeExternal(ObjectOutput out) throws IOException {
-                out.writeUTF(name);
-                out.writeInt(age);
+                out.writeInt(name);
+                out.writeUTF(age);
             }
 
             @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-                name = in.readUTF();
-                age = in.readInt();
+                name = in.readInt();
+                age = in.readUTF();
             }
         }
     }
