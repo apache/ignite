@@ -15,41 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.discovery;
+package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.util.UUID;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO ZK
+ *
  */
-public interface IgniteDiscoverySpi extends DiscoverySpi {
-    /**
-     * @param nodeId Node ID.
-     * @return {@code True} if node joining or already joined topology.
-     */
-    public boolean knownNode(UUID nodeId);
+public class ZkInternalCommunicationErrorMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /**
-     *
-     * @return {@code True} if SPI supports client reconnect.
-     */
-    public boolean reconnectSupported();
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
+        return null;
+    }
 
-    /**
-     *
-     */
-    public void reconnect();
-
-    /**
-     *
-     */
-    public void simulateNodeFailure();
-
-    /**
-     * For TESTING only.
-     *
-     * @param lsnr Listener.
-     */
-    public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr);
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return false;
+    }
 }

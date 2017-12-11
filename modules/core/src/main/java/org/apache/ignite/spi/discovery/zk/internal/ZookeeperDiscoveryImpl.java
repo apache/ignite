@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -230,6 +231,41 @@ public class ZookeeperDiscoveryImpl {
         assert nodeId != null;
 
         return rtState.top.nodesById.get(nodeId);
+    }
+
+    /** */
+    private final AtomicReference<ZkCommunicationErrorProcessFuture> commErrProcFut = new AtomicReference<>();
+
+    /**
+     * @param nodeId Problem node ID
+     * @param err Connect error.
+     */
+    public void onCommunicationError(UUID nodeId, Exception err) {
+        ZookeeperClusterNode node = node(nodeId);
+
+        if (node == null)
+            return;
+
+        ZkCommunicationErrorProcessFuture fut = commErrProcFut.get();
+
+        if (fut == null || fut.isDone()) {
+            ZkCommunicationErrorProcessFuture newFut = new ZkCommunicationErrorProcessFuture(this, node.sessionTimeout());
+
+            if (commErrProcFut.compareAndSet(fut, newFut)) {
+                fut = newFut;
+
+                sendCustomMessage(new ZkInternalCommunicationErrorMessage());
+            }
+            else
+                fut = commErrProcFut.get();
+        }
+
+        try {
+            fut.nodeStatusFuture(nodeId).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException(e);
+        }
     }
 
     /**
@@ -2013,6 +2049,11 @@ public class ZookeeperDiscoveryImpl {
 
             if (pingFut != null)
                 pingFut.onDone(false);
+
+            ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
+
+            if (commErrFut != null)
+                commErrFut.onNodeFailed(failedNode.id());
 
             final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
