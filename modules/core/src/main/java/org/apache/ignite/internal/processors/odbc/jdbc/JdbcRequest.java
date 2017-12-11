@@ -60,13 +60,6 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Get schemas metadata request. */
     static final byte META_SCHEMAS = 12;
 
-    /** Commit an implicit transaction. */
-    static final byte COMMIT = 13;
-
-    /** Rollback an implicit transaction. */
-    static final byte ROLLBACK = 14;
-
-
     /** Request type. */
     private byte type;
 
@@ -159,12 +152,6 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
                 req = new JdbcMetaSchemasRequest();
 
                 break;
-
-            case COMMIT:
-                return JdbcCommitRequest.INSTANCE;
-
-            case ROLLBACK:
-                return JdbcRollbackRequest.INSTANCE;
 
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');
