@@ -109,7 +109,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     {
         try {
             nestedTx = new EnumProperty<>(NestedTxMode.class,
-                "nestedTransactions", "Ignite node IP to connect", NestedTxMode.ERROR, false);
+                "nestedTransactions", "Ignite node IP to connect", NestedTxMode.DEFAULT, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

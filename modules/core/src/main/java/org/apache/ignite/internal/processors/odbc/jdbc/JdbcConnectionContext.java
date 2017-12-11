@@ -107,7 +107,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
 
         boolean skipReducerOnUpdate = false;
 
-        NestedTxMode nestedTxMode = NestedTxMode.ERROR;
+        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
 
         if (ver.compareTo(VER_2_3_0) >= 0) {
             skipReducerOnUpdate = reader.readBoolean();

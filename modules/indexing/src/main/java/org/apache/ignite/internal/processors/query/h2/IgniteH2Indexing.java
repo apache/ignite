@@ -57,6 +57,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -155,8 +156,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
@@ -868,7 +867,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public GridQueryFieldsResult queryLocalSqlFields(final String schemaName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
-        checkTransactionType();
+        // Check presence of external non SQL transaction.
+        if (mvccEnabled())
+            sqlUserTx();
 
         final Connection conn = connectionForSchema(schemaName);
 
@@ -1486,17 +1487,42 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return Collections.singletonList(res);
             }
             else if (cmd instanceof SqlBeginTransactionCommand) {
-                GridNearTxLocal tx = userTx();
+                if (!mvccEnabled())
+                    throw new IgniteSQLException("MVCC must be enabled in order to start transactions.",
+                        IgniteQueryErrorCode.MVCC_DISABLED);
+
+                GridNearTxLocal tx = sqlUserTx();
 
                 if (tx != null) {
                     assert tx.sql();
 
-                    // TODO handle auto commit / nested mode
-                }
+                    if (nestedTxMode == null)
+                        nestedTxMode = NestedTxMode.DEFAULT;
 
-                if (!ctx.grid().configuration().isMvccEnabled())
-                    throw new IgniteSQLException("MVCC must be enabled in order to start transactions.",
-                        IgniteQueryErrorCode.MVCC_DISABLED);
+                    switch (nestedTxMode) {
+                        case COMMIT:
+                            tx.commit();
+
+                            ctx.query().sqlUserTxStart();
+
+                            break;
+
+                        case IGNORE:
+                            log.warning("Transaction has already been started, ignoring BEGIN command.");
+
+                            break;
+
+                        case ERROR:
+                            throw new IgniteSQLException("Transaction has already been started.",
+                                IgniteQueryErrorCode.TRANSACTION_EXISTS);
+
+                        default:
+                            throw new AssertionError("Unexpected nested transaction handling mode: " +
+                                nestedTxMode.name());
+                    }
+                }
+                else
+                    ctx.query().sqlUserTxStart();
             }
             else if (cmd instanceof SqlCommitTransactionCommand) {
                 GridNearTxLocal tx = ctx.cache().context().tm().userTx();
@@ -1533,13 +1559,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
         boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts,
         boolean autoCommit, NestedTxMode nestedTxMode) {
-        checkTransactionType();
+        boolean mvccEnabled = mvccEnabled();
+
+        GridNearTxLocal tx = mvccEnabled ? sqlUserTx() : null;
 
         List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry, autoCommit,
             nestedTxMode);
 
         if (res != null)
             return res;
+
+        // We should open transaction if autoCommit is false
+        if (mvccEnabled && !autoCommit && tx == null)
+            tx = ctx.query().sqlUserTxStart();
 
         Connection c = connectionForSchema(schemaName);
 
@@ -1685,15 +1717,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // It is a DML statement if we did not create a twoStepQuery.
                 if (twoStepQry == null) {
                     if (DmlStatementsProcessor.isDmlStatement(prepared)) {
-                        try {
-                            res.add(dmlProc.updateSqlFieldsDistributed(schemaName, c, prepared,
-                                qry.copy().setSql(sqlQry).setArgs(args), cancel));
+                        SqlFieldsQuery qryToRun = qry.copy().setSql(sqlQry).setArgs(args);
 
-                            continue;
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
-                                ", params=" + Arrays.deepToString(args) + "]", e);
+                        // Do not open new transaction if MVCC is disabled,
+                        // or auto commit is disabled, or if there's a transaction started with BEGIN.
+                        if (!mvccEnabled || !autoCommit || tx != null)
+                            res.add(runDmlStatement(schemaName, c, prepared, qryToRun, cancel));
+                        else {
+                            try (GridNearTxLocal autoCommitTx = ctx.query().sqlUserTxStart()) {
+                                QueryCursorImpl<List<?>> stmtRes =
+                                    runDmlStatement(schemaName, c, prepared, qryToRun, cancel);
+
+                                autoCommitTx.commit();
+
+                                res.add(stmtRes);
+                            }
                         }
                     }
 
@@ -1748,6 +1786,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @param schemaName Schema name.
+     * @param c H2 connection.
+     * @param prepared Prepared statement.
+     * @param qry Query.
+     * @param cancel Query cancel state holder.
+     * @return DML run result.
+     */
+    private QueryCursorImpl<List<?>> runDmlStatement(String schemaName, Connection c, Prepared prepared,
+        SqlFieldsQuery qry, GridQueryCancel cancel) {
+        try {
+            return dmlProc.updateSqlFieldsDistributed(schemaName, c, prepared, qry, cancel);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException("Failed to execute DML statement [stmt=" + qry.getSql() +
+                ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
+        }
+    }
+
+    /**
+     * @return Whether MVCC is enabled or not on {@link IgniteConfiguration}.
+     */
+    private boolean mvccEnabled() {
+        return ctx.grid().configuration().isMvccEnabled();
+    }
+
+    /**
      * @param qry Statement.
      * @return Whether we should attempt to natively parse this statement.
      */
@@ -1762,29 +1826,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Throw an exception if there's a non SQL transaction started.
+     * @return Currently started SQL transaction, or {@code null} if none started.
+     * @throws IgniteSQLException if there's a non SQL transaction started.
      */
-    private void checkTransactionType() {
-        GridNearTxLocal tx = userTx();
+    @Nullable private GridNearTxLocal sqlUserTx() throws IgniteSQLException {
+        GridNearTxLocal tx = ctx.cache().context().tm().userTx();
 
         if (tx != null && !tx.sql())
             throw new IgniteSQLException("Only transaction started via SQL may be committed via SQL.",
                 IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
-    }
 
-    /**
-     * @return Currently started transaction, or {@code null} if none started.
-     */
-    private GridNearTxLocal userTx() {
-        return ctx.cache().context().tm().userTx();
-    }
-
-    /**
-     * @return Newly started SQL transaction.
-     */
-    private GridNearTxLocal sqlUserTxStart() {
-        return ctx.cache().transactions().txStartSql(TransactionConcurrency.PESSIMISTIC,
-            TransactionIsolation.REPEATABLE_READ);
+        return tx;
     }
 
     /**

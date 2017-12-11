@@ -38,7 +38,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -795,6 +794,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testNativeSql() throws Exception {
+
+
         try (Connection conn = DriverManager.getConnection(URL)) {
             // null query text
             GridTestUtils.assertThrows(log,
@@ -900,7 +901,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Transaction cannot rollback in auto-commit mode"
+                "Transaction cannot be rolled back explicitly in auto-commit mode."
             );
 
             conn.setAutoCommit(false);

@@ -248,7 +248,7 @@ public class SqlKeyword {
 
         Set<String> nativeKeywords = new HashSet<>();
 
-        nativeKeywords.addAll(Arrays.asList(INDEX, TRANSACTION, BEGIN, COMMIT, ROLLBACK));
+        nativeKeywords.addAll(Arrays.asList(INDEX, BEGIN, COMMIT, ROLLBACK));
 
         NATIVE_KEYWORDS = Collections.unmodifiableSet(nativeKeywords);
     }

@@ -20,13 +20,16 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC implicit transaction commit request.
+ * JDBC implicit transaction rollback request.
  */
 public class JdbcRollbackRequest extends JdbcRequest {
+    /** */
+    public final static JdbcRollbackRequest INSTANCE = new JdbcRollbackRequest();
+
     /**
      * Constructor.
      */
-    JdbcRollbackRequest() {
+    private JdbcRollbackRequest() {
         super(ROLLBACK);
     }
 

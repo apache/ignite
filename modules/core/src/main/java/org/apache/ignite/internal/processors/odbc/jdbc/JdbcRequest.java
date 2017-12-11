@@ -161,14 +161,10 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
                 break;
 
             case COMMIT:
-                req = new JdbcCommitRequest();
-
-                break;
+                return JdbcCommitRequest.INSTANCE;
 
             case ROLLBACK:
-                req = new JdbcRollbackRequest();
-
-                break;
+                return JdbcRollbackRequest.INSTANCE;
 
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');

@@ -112,7 +112,7 @@ public class JdbcThinConnection implements Connection {
         ((ConnectionPropertiesImpl)connProps).init(props);
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
-        autoCommit = false;
+        autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
         this.schema = normalizeSchema(schema);
@@ -232,10 +232,12 @@ public class JdbcThinConnection implements Connection {
     @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
         ensureNotClosed();
 
-        if (autoCommit)
-            throw new SQLFeatureNotSupportedException("autocommit=true is not supported.");
+        // Do nothing if resulting value doesn't actually change.
+        if (autoCommit != this.autoCommit) {
+            doCommit();
 
-        this.autoCommit = autoCommit;
+            this.autoCommit = autoCommit;
+        }
     }
 
     /** {@inheritDoc} */
@@ -252,9 +254,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
 
-        try (Statement s = createStatement()) {
-            s.execute("COMMIT");
-        }
+        doCommit();
     }
 
     /** {@inheritDoc} */
@@ -266,6 +266,16 @@ public class JdbcThinConnection implements Connection {
 
         try (Statement s = createStatement()) {
             s.execute("ROLLBACK");
+        }
+    }
+
+    /**
+     * Send to the server {@code COMMIT} command.
+     * @throws SQLException if failed.
+     */
+    private void doCommit() throws SQLException {
+        try (Statement s = createStatement()) {
+            s.execute("COMMIT");
         }
     }
 

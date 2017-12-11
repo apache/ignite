@@ -25,8 +25,12 @@ public enum NestedTxMode {
     COMMIT,
 
     /** Warning will be printed to log, no new transaction will be started. */
-    WARN,
+    IGNORE,
 
     /** Exception will be thrown, previously started transaction will be rolled back. */
     ERROR,
+    ;
+
+    /** Default handling mode. */
+    public final static NestedTxMode DEFAULT = ERROR;
 }

@@ -23,10 +23,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC implicit transaction commit request.
  */
 public class JdbcCommitRequest extends JdbcRequest {
+    /** */
+    public final static JdbcCommitRequest INSTANCE = new JdbcCommitRequest();
+
     /**
      * Constructor.
      */
-    JdbcCommitRequest() {
+    private JdbcCommitRequest() {
         super(COMMIT);
     }
 
