@@ -1568,6 +1568,8 @@ public class ZookeeperDiscoveryImpl {
                             else {
                                 if (log.isDebugEnabled())
                                     log.debug("Ignore forcible node fail request for unknown node: " + msg0.nodeId);
+
+                                continue;
                             }
                         }
 
