@@ -51,6 +51,13 @@ public class PartitionAllocationMap {
     }
 
     /**
+     * @param fullPageId Full page id.
+     */
+    @Nullable public PagesAllocationRange get(FullPageId fullPageId) {
+        return map.get(createCachePartId(fullPageId));
+    }
+
+    /**
      * Extracts partition information from full page ID
      *
      * @param fullId page related to some cache

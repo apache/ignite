@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -199,13 +198,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (size > 0 || updCntr > 0) {
                 GridDhtPartitionState state = null;
 
+                // localPartition will not acquire writeLock here because create=false.
+                GridDhtLocalPartition part = null;
+
                 if (!grp.isLocal()) {
                     if (beforeDestroy)
                         state = GridDhtPartitionState.EVICTED;
                     else {
-                        // localPartition will not acquire writeLock here because create=false.
-                        GridDhtLocalPartition part = grp.topology().localPartition(store.partId(),
-                            AffinityTopologyVersion.NONE, false, true);
+                        part = grp.topology().localPartition(store.partId(),
+                                AffinityTopologyVersion.NONE, false, true);
 
                         if (part != null && part.state() != GridDhtPartitionState.EVICTED)
                             state = part.state();
@@ -342,12 +343,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                         if (state == OWNING) {
                                             addPartition(
+                                                null,
                                                 ctx.partitionStatMap(),
                                                 metaPageAddr,
                                                 metaIo,
                                                 grpId,
                                                 PageIdAllocator.INDEX_PARTITION,
-                                                this.ctx.pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION));
+                                                this.ctx.pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION),
+                                                -1);
                                         }
                                     }
                                     finally {
@@ -362,13 +365,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             }
 
                             if (state == OWNING) {
+                                assert part != null;
+
                                 addPartition(
+                                    part,
                                     ctx.partitionStatMap(),
                                     partMetaPageAddr,
                                     io,
                                     grpId,
                                     store.partId(),
-                                    this.ctx.pageStore().pages(grpId, store.partId()));
+                                    this.ctx.pageStore().pages(grpId, store.partId()),
+                                    store.fullSize()
+                                );
                             }
                             else if (state == MOVING || state == RENTING) {
                                 if (ctx.partitionStatMap().forceSkipIndexPartition(grpId)) {
@@ -427,31 +435,37 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
+     * @param part
      * @param map Map to add values to.
      * @param metaPageAddr Meta page address
      * @param io Page Meta IO
      * @param cacheId Cache ID.
-     * @param partId Partition ID. Or {@link PageIdAllocator#INDEX_PARTITION} for index partition
      * @param currAllocatedPageCnt total number of pages allocated for partition <code>[partition, cacheId]</code>
      */
     private static void addPartition(
-        final PartitionAllocationMap map,
-        final long metaPageAddr,
-        final PageMetaIO io,
-        final int cacheId,
-        final int partId,
-        final int currAllocatedPageCnt
+            GridDhtLocalPartition part,
+            final PartitionAllocationMap map,
+            final long metaPageAddr,
+            final PageMetaIO io,
+            final int cacheId,
+            final int partId,
+            final int currAllocatedPageCnt,
+            final int partSize
     ) {
-        if (currAllocatedPageCnt <= 1)
-            return;
+        if (part != null)
+            part.reserve();
+        else
+            assert partId == PageIdAllocator.INDEX_PARTITION : partId;
 
         assert PageIO.getPageId(metaPageAddr) != 0;
 
         int lastAllocatedPageCnt = io.getLastAllocatedPageCount(metaPageAddr);
 
+        int curPageCnt = lastAllocatedPageCnt == 0 && partSize == 0 ? 0 : currAllocatedPageCnt;
+
         map.put(
             new GroupPartitionId(cacheId, partId),
-            new PagesAllocationRange(lastAllocatedPageCnt, currAllocatedPageCnt));
+            new PagesAllocationRange(lastAllocatedPageCnt, curPageCnt));
     }
 
     /** {@inheritDoc} */
