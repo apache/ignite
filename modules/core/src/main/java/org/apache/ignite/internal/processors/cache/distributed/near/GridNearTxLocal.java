@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -3280,20 +3281,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Tries to set new lock future. Can fail if transaction has started to rollback concurrently.
+     * Atomically updates lock future.
      *
      * @param oldFut Old future.
      * @param newFut New future.
+     *
+     * @return {@code true} If future was changed.
      */
     public boolean updateLockFuture(IgniteInternalFuture<Boolean> oldFut, IgniteInternalFuture<Boolean> newFut) {
         return LOCK_FUT_UPD.compareAndSet(this, oldFut, newFut);
-    }
-
-    /**
-     * Clears current lock future.
-     */
-    public void clearLockFuture() {
-        LOCK_FUT_UPD.set(this, null);
     }
 
     /**
@@ -3333,47 +3329,59 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false)))
             return chainFinishFuture(finishFut, false);
 
-        if (!updateLockFuture(null, ROLLBACK_FUT)) {
-            // Must wait for current lock future to finish.
-            final GridFutureAdapter retFut = new GridFutureAdapter<>();
+        IgniteInternalFuture<Boolean> lockFut0 = lockFut;
 
-            // Chain-finish futures.
-            lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                    // We must wait until lock future will be finished because of deadlock detection.
-                    if (onTimeout)
+        if (updateLockFuture(null, ROLLBACK_FUT))
+            lockFut0 = null;
+
+        if (lockFut0 != null) {
+            if (onTimeout) {
+                // Must wait for current lock future to finish.
+                final GridFutureAdapter retFut = new GridFutureAdapter<>();
+
+                // Chain-finish futures.
+                lockFut0.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                        // If timeout we must wait for lock future finished because of deadlock detection.
                         finishAsync(fut0, clearThreadMap);
 
-                    // Complete return future
-                    fut0.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                            try {
-                                retFut.onDone(fut.get());
-                            }
-                            catch (IgniteCheckedException e) {
-                                retFut.onDone(GridNearTxLocal.this, e);
-                            }
-                        }
-                    });
-                }
-            });
+                        // Complete return future
+                        fut0.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
+                            @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                try {
+                                    retFut.onDone(fut.get());
+                                }
+                                catch (GridClosureException e) {
+                                    retFut.onDone(e.unwrap());
+                                }
+                                catch (IgniteCheckedException | RuntimeException e) {
+                                    retFut.onDone(e);
+                                }
+                                catch (Error e) {
+                                    retFut.onDone(e);
 
-            if (!onTimeout) {
-                if (lockFut instanceof GridDhtColocatedLockFuture)
-                    ((GridDhtColocatedLockFuture)lockFut).onRollback(rollbackException());
-                else if (lockFut instanceof GridNearLockFuture)
-                    ((GridNearLockFuture)lockFut).onRollback(rollbackException());
+                                    throw e;
+                                }
+                            }
+                        });
+                    }
+                });
 
-                finishAsync(fut0, clearThreadMap);
+                return retFut;
             }
+            else {
+                if (lockFut0 instanceof GridDhtColocatedLockFuture)
+                    ((GridDhtColocatedLockFuture)lockFut0).onRollback(rollbackException());
+                else if (lockFut0 instanceof GridNearLockFuture)
+                    ((GridNearLockFuture)lockFut0).onRollback(rollbackException());
 
-            return retFut;
+                assert lockFut0.isDone();
+            }
         }
-        else {
-            finishAsync(fut0, clearThreadMap);
 
-            return fut0;
-        }
+        finishAsync(fut0, clearThreadMap);
+
+        return fut0;
     }
 
     /**
@@ -3847,8 +3855,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             synchronized (this) {
                 try {
-                    while (!done())
-                        wait();
+                    while(true) {
+                        if (!done())
+                            wait(1000);
+                        else
+                            break;
+                    }
+
+//                    while (!done())
+//                        wait();
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();

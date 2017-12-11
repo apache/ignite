@@ -706,10 +706,10 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      *
      * @param err Lock removal reason.
      */
-    public void onRollback(Throwable err) {
+    public boolean onRollback(Throwable err) {
         onError(err);
 
-        onComplete(false, true);
+        return onComplete(false, false);
     }
 
     /**
