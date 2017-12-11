@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,8 +15,25 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Decision trees examples.
- */
-package org.apache.ignite.examples.ml.math.trees;
+namespace Apache.Ignite.Core.Tests.ApiParity
+{
+    using Apache.Ignite.Core.Transactions;
+    using NUnit.Framework;
+
+    /// <summary>
+    /// Tests that <see cref="ITransactionMetrics"/> has all APIs from Java Ignite interface.
+    /// </summary>
+    public class TransactionMetricsParityTest
+    {
+        /// <summary>
+        /// Tests the API parity.
+        /// </summary>
+        [Test]
+        public void TestTransactionMetrics()
+        {
+            ParityTest.CheckInterfaceParity(
+                @"modules\core\src\main\java\org\apache\ignite\transactions\TransactionMetrics.java",
+                typeof(ITransactionMetrics));
+        }
+    }
+}
