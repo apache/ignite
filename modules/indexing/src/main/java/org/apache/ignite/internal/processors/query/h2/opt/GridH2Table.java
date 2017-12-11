@@ -57,6 +57,7 @@ import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex.getReverseIndexName;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
@@ -560,7 +561,9 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public Index addIndex(Session ses, String idxName, int idxId, IndexColumn[] cols, IndexType idxType,
         boolean create, String idxComment) {
-        return commitUserIndex(ses, idxName);
+        commitUserIndex(ses, idxName);
+
+        return commitUserIndex(ses, getReverseIndexName(idxName));
     }
 
     /**
@@ -584,6 +587,12 @@ public class GridH2Table extends TableBase {
             }
 
             Index oldTmpIdx = tmpIdxs.put(idx.getName(), (GridH2IndexBase)idx);
+
+            if (idx instanceof H2TreeIndex) {
+                H2TreeIndex reversedIdx = ((H2TreeIndex)idx).createReversedCopy();
+
+                tmpIdxs.put(reversedIdx.getName(), reversedIdx);
+            }
 
             assert oldTmpIdx == null;
         }
