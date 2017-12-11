@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -76,7 +77,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
 
     /** Lock owner thread. */
     @GridToStringInclude
-    private long threadId;
+    private TxThreadId threadId = new TxThreadId();
 
     /** Keys locked so far. */
     @GridToStringExclude
@@ -135,7 +136,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
 
         ignoreInterrupts();
 
-        threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
+        threadId = tx == null ? new TxThreadId(Thread.currentThread().getId(), true) : tx.threadId();
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
@@ -245,7 +246,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
      */
     private boolean locked(GridCacheEntryEx cached) throws GridCacheEntryRemovedException {
         // Reentry-aware check.
-        return (cached.lockedLocally(lockVer) || (cached.lockedByThread(threadId))) &&
+        return (cached.lockedLocally(lockVer) || (cached.lockedByThread(threadId.value()))) &&
             filter(cached); // If filter failed, lock is failed.
     }
 
@@ -260,7 +261,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         throws GridCacheEntryRemovedException {
         // Add local lock first, as it may throw GridCacheEntryRemovedException.
         GridCacheMvccCandidate c = entry.addLocal(
-            threadId,
+            threadId.copy(),
             lockVer,
             null,
             null,

@@ -1140,7 +1140,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     // Check if lock is being explicitly acquired by the same thread.
                     if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
-                        entry.lockedByThread(threadId, xidVer)) {
+                        entry.lockedByThread(threadId.value(), xidVer)) {
                         throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
                             "externally held [key=" + CU.value(cacheKey, cacheCtx, false) +
                             ", entry=" + entry +
@@ -2785,7 +2785,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @Override protected void updateExplicitVersion(IgniteTxEntry txEntry, GridCacheEntryEx entry)
         throws GridCacheEntryRemovedException {
         if (entry.detached()) {
-            GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId(), entry.txKey());
+            GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId().value(), entry.txKey());
 
             if (cand != null && !xidVersion().equals(cand.version())) {
                 GridCacheVersion candVer = cand.version();
@@ -2869,7 +2869,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (pessimistic())
             throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions.");
 
-        if (threadId() != Thread.currentThread().getId())
+        if (threadId().valueSafely() != Thread.currentThread().getId())
             throw new IgniteCheckedException("Only thread started transaction can suspend it.");
 
         synchronized (this) {
@@ -4079,7 +4079,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param threadId new owner of transaction.
      */
     public void threadId(long threadId) {
-        this.threadId = threadId;
+        this.threadId.value(threadId);
     }
 
     /**
@@ -4185,7 +4185,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxLocal.class, this,
-            "thread", IgniteUtils.threadName(threadId),
+            "thread", IgniteUtils.threadName(threadId.valueSafely()),
             "mappings", mappings,
             "super", super.toString());
     }

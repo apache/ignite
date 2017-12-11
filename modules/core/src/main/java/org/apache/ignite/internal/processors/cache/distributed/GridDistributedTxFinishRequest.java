@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
@@ -119,8 +120,8 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     /**
      * @param xidVer Transaction ID.
      * @param futId future ID.
-     * @param threadId Thread ID.
      * @param commitVer Commit version.
+     * @param threadId Thread ID.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
      * @param sys System transaction flag.
@@ -137,7 +138,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         IgniteUuid futId,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable GridCacheVersion commitVer,
-        long threadId,
+        TxThreadId threadId,
         boolean commit,
         boolean invalidate,
         boolean sys,
@@ -159,7 +160,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.futId = futId;
         this.topVer = topVer;
         this.commitVer = commitVer;
-        this.threadId = threadId;
+        this.threadId = threadId.valueSafely();
         this.commit = commit;
         this.invalidate = invalidate;
         this.sys = sys;

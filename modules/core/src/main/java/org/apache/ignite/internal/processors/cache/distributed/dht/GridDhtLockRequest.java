@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -128,7 +129,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         int cacheId,
         UUID nodeId,
         GridCacheVersion nearXidVer,
-        long threadId,
+        TxThreadId threadId,
         IgniteUuid futId,
         IgniteUuid miniId,
         GridCacheVersion lockVer,

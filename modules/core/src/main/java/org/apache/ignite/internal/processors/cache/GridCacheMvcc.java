@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -315,7 +316,7 @@ public final class GridCacheMvcc {
                     if (first.owner()) {
                         // If reentry, add at the beginning. Note that
                         // no reentry happens for DHT-local candidates.
-                        if (!cand.dhtLocal() && first.threadId() == cand.threadId()) {
+                        if (!cand.dhtLocal() && first.threadIdSafely() == cand.threadIdSafely()) {
                             assert !first.serializable();
 
                             cand.setOwner();
@@ -583,7 +584,7 @@ public final class GridCacheMvcc {
      */
     @Nullable public GridCacheMvccCandidate addLocal(
         GridCacheEntryEx parent,
-        long threadId,
+        TxThreadId threadId,
         GridCacheVersion ver,
         long timeout,
         boolean reenter,
@@ -626,7 +627,7 @@ public final class GridCacheMvcc {
         GridCacheEntryEx parent,
         @Nullable UUID nearNodeId,
         @Nullable GridCacheVersion nearVer,
-        long threadId,
+        TxThreadId threadId,
         GridCacheVersion ver,
         long timeout,
         @Nullable GridCacheVersion serOrder,
@@ -643,7 +644,7 @@ public final class GridCacheMvcc {
         if (!dhtLoc && !reenter) {
             GridCacheMvccCandidate owner = localOwner();
 
-            if (owner != null && owner.threadId() == threadId)
+            if (owner != null && owner.threadIdSafely() == threadId.valueSafely())
                 return null;
         }
 
@@ -654,7 +655,7 @@ public final class GridCacheMvcc {
                 GridCacheMvccCandidate owner = localOwner();
 
                 // Only proceed if this is a re-entry.
-                if (owner == null || owner.threadId() != threadId)
+                if (owner == null || owner.threadIdSafely() != threadId.valueSafely())
                     return null;
             }
         }
@@ -709,7 +710,7 @@ public final class GridCacheMvcc {
         GridCacheEntryEx parent,
         UUID nodeId,
         @Nullable UUID otherNodeId,
-        long threadId,
+        TxThreadId threadId,
         GridCacheVersion ver,
         boolean tx,
         boolean implicitSingle,
@@ -752,7 +753,7 @@ public final class GridCacheMvcc {
     public GridCacheMvccCandidate addNearLocal(GridCacheEntryEx parent,
         UUID nodeId,
         @Nullable UUID otherNodeId,
-        long threadId,
+        TxThreadId threadId,
         GridCacheVersion ver,
         boolean tx,
         boolean implicitSingle,
@@ -1327,10 +1328,10 @@ public final class GridCacheMvcc {
      * @param threadId Thread ID.
      * @return Remote candidate.
      */
-    @Nullable public GridCacheMvccCandidate localCandidate(UUID nodeId, long threadId) {
+    @Nullable public GridCacheMvccCandidate localCandidate(UUID nodeId, TxThreadId threadId) {
         if (locs != null)
             for (GridCacheMvccCandidate c : locs)
-                if (c.nodeId().equals(nodeId) && c.threadId() == threadId)
+                if (c.nodeId().equals(nodeId) && c.threadId() == threadId.value())
                     return c;
 
         return null;
@@ -1419,7 +1420,7 @@ public final class GridCacheMvcc {
             for (int i = 0; i < owners.size(); i++) {
                 GridCacheMvccCandidate owner = owners.candidate(i);
 
-                if (owner.threadId() == threadId && owner.nodeId().equals(cctx.nodeId()) &&
+                if (owner.threadIdSafely() == threadId && owner.nodeId().equals(cctx.nodeId()) &&
                     (allowDhtLoc || !owner.dhtLocal()) && !U.containsObjectArray(exclude, owner.version()))
                     return true;
             }

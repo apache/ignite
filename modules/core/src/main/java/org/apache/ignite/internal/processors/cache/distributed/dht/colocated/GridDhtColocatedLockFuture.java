@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -111,7 +112,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** Lock owner thread. */
     @GridToStringInclude
-    private final long threadId;
+    private TxThreadId threadId = new TxThreadId();
 
     /** Keys to lock. */
     @GridToStringInclude
@@ -225,7 +226,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         ignoreInterrupts();
 
-        threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
+        threadId = tx == null ? new TxThreadId(Thread.currentThread().getId(), true) : tx.threadId();
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
@@ -313,7 +314,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     @Nullable private GridCacheMvccCandidate addEntry(GridDistributedCacheEntry entry) throws IgniteCheckedException {
         IgniteTxKey txKey = entry.txKey();
 
-        GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId, txKey);
+        GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId.value(), txKey);
 
         if (inTx()) {
             if (cand != null) {
@@ -335,7 +336,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     cctx.localNodeId(),
                     null,
                     null,
-                    threadId,
+                    threadId.copy(),
                     lockVer,
                     true,
                     txEntry.locked(),
@@ -355,7 +356,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     cctx.localNodeId(),
                     null,
                     null,
-                    threadId,
+                    threadId.copy(),
                     lockVer,
                     true,
                     false,
@@ -371,7 +372,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             else
                 cand = cand.reenter();
 
-            cctx.mvcc().addExplicitLock(threadId, cand, topVer);
+            cctx.mvcc().addExplicitLock(threadId.value(), cand, topVer);
         }
 
         return cand;
@@ -386,7 +387,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     private void undoLocks(boolean dist, boolean rollback) {
         // Transactions will undo during rollback.
         if (dist && tx == null)
-            cctx.colocated().removeLocks(threadId, lockVer, keys);
+            cctx.colocated().removeLocks(threadId.value(), lockVer, keys);
         else {
             if (rollback && tx != null) {
                 if (tx.setRollbackOnly()) {
@@ -719,7 +720,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         }
 
         // Obtain the topology version to use.
-        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
+        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId.value());
 
         // If there is another system transaction in progress, use it's topology version to prevent deadlock.
         if (topVer == null && tx != null && tx.system())
@@ -1012,7 +1013,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                     cctx.cacheId(),
                                     topVer,
                                     cctx.nodeId(),
-                                    threadId,
+                                    threadId.copy(),
                                     futId,
                                     lockVer,
                                     inTx(),
@@ -1147,11 +1148,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
             IgniteInternalFuture<?> txSync = null;
 
+
             if (inTx())
-                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId());
+                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId().valueSafely());
 
             if (txSync == null || txSync.isDone()) {
                 try {
+                    req.threadId().undefined(true);
                     cctx.io().send(node, req, cctx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
@@ -1170,6 +1173,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 txSync.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         try {
+                            req.threadId().undefined(true);
                             cctx.io().send(node, req, cctx.ioPolicy());
 
                             if (msgLog.isDebugEnabled()) {
@@ -1213,7 +1217,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         IgniteInternalFuture<Exception> fut = cctx.colocated().lockAllAsync(cctx,
             tx,
-            threadId,
+            threadId.copy(),
             lockVer,
             topVer,
             keys,
@@ -1256,7 +1260,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     }
                     else {
                         for (KeyCacheObject key : keys)
-                            cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
+                            cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId.value());
                     }
 
                     try {
@@ -1296,7 +1300,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (!cctx.affinity().primaryByKey(cctx.localNode(), key, topVer)) {
                 // Remove explicit locks added so far.
                 for (KeyCacheObject k : keys)
-                    cctx.mvcc().removeExplicitLock(threadId, cctx.txKey(k), lockVer);
+                    cctx.mvcc().removeExplicitLock(threadId.value(), cctx.txKey(k), lockVer);
 
                 return false;
             }
@@ -1663,7 +1667,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                             log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
                     }
                     else
-                        cctx.mvcc().markExplicitOwner(cctx.txKey(k), threadId);
+                        cctx.mvcc().markExplicitOwner(cctx.txKey(k), threadId.value());
 
                     if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                         cctx.events().addEvent(cctx.affinity().partition(k),
@@ -1702,7 +1706,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             undoLocks(false, false);
 
             for (KeyCacheObject key : GridDhtColocatedLockFuture.this.keys)
-                cctx.mvcc().removeExplicitLock(threadId, cctx.txKey(key), lockVer);
+                cctx.mvcc().removeExplicitLock(threadId.value(), cctx.txKey(key), lockVer);
 
             mapOnTopology(true, new Runnable() {
                 @Override public void run() {

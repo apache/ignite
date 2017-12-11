@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
@@ -72,7 +73,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     public GridNearTxFinishRequest(
         IgniteUuid futId,
         GridCacheVersion xidVer,
-        long threadId,
+        TxThreadId threadId,
         boolean commit,
         boolean invalidate,
         boolean sys,

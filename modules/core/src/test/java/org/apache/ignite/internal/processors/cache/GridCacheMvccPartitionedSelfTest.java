@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -802,7 +803,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         return mvcc.addLocal(e,
             nodeId,
             null,
-            1,
+            new TxThreadId(1, false),
             ver,
             0,
             serOrder,
@@ -840,7 +841,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate cand1 = mvcc.addLocal(e,
             nodeId,
             null,
-            1,
+            new TxThreadId(1, false),
             version(1),
             0,
             null,
@@ -856,7 +857,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate cand2 = mvcc.addLocal(e,
             nodeId,
             null,
-            1,
+            new TxThreadId(1, false),
             version(2),
             0,
             new GridCacheVersion(0, 0, 1),
@@ -896,7 +897,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate cand1 = mvcc.addLocal(e,
             nodeId,
             null,
-            1,
+            new TxThreadId(1, false),
             ver1,
             0,
             serOrder1,
@@ -912,7 +913,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate cand2 = mvcc.addLocal(e,
             nodeId,
             null,
-            2,
+            new TxThreadId(2, false),
             ver2,
             0,
             serOrder2,
@@ -928,7 +929,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate cand3 = mvcc.addLocal(e,
             nodeId,
             null,
-            3,
+            new TxThreadId(3, false),
             ver3,
             0,
             serOrder3,
@@ -944,7 +945,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate cand4 = mvcc.addLocal(e,
             nodeId,
             null,
-            4,
+            new TxThreadId(4, false),
             ver4,
             0,
             serOrder4,

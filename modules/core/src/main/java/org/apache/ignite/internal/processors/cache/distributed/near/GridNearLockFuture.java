@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -104,7 +105,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
     /** Lock owner thread. */
     @GridToStringInclude
-    private long threadId;
+    private TxThreadId threadId = new TxThreadId();
 
     /** Keys to lock. */
     @GridToStringInclude
@@ -227,7 +228,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         ignoreInterrupts();
 
-        threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
+        threadId = tx == null ? new TxThreadId(Thread.currentThread().getId(), true) : tx.threadId();
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
@@ -312,7 +313,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      */
     private boolean locked(GridCacheEntryEx cached) throws GridCacheEntryRemovedException {
         // Reentry-aware check (If filter failed, lock is failed).
-        return cached.lockedLocallyByIdOrThread(lockVer, threadId) && filter(cached);
+        return cached.lockedLocallyByIdOrThread(lockVer, threadId.value()) && filter(cached);
     }
 
     /**
@@ -338,7 +339,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         // Add local lock first, as it may throw GridCacheEntryRemovedException.
         GridCacheMvccCandidate c = entry.addNearLocal(
             dhtNodeId,
-            threadId,
+            threadId.copy(),
             lockVer,
             topVer,
             timeout,
@@ -1041,7 +1042,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                                 if (cand != null) {
                                     if (tx == null && !cand.reentry())
-                                        cctx.mvcc().addExplicitLock(threadId,cand,topVer);
+                                        cctx.mvcc().addExplicitLock(threadId.value(),cand,topVer);
 
                                     IgniteBiTuple<GridCacheVersion, CacheObject> val = entry.versionedValue();
 
@@ -1087,7 +1088,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 cctx.cacheId(),
                                                 topVer,
                                                 cctx.nodeId(),
-                                                threadId,
+                                                threadId.copy(),
                                                 futId,
                                                 lockVer,
                                                 inTx(),
@@ -1365,13 +1366,14 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             IgniteInternalFuture<?> txSync = null;
 
             if (inTx())
-                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId());
+                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId().valueSafely());
 
             if (txSync == null || txSync.isDone()) {
                 try {
                     if (log.isDebugEnabled())
                         log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
+                    req.threadId().undefined(true);
                     cctx.io().send(node, req, cctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ex) {
@@ -1385,6 +1387,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                             if (log.isDebugEnabled())
                                 log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
+                            req.threadId().undefined(true);
                             cctx.io().send(node, req, cctx.ioPolicy());
                         }
                         catch (ClusterTopologyCheckedException ex) {

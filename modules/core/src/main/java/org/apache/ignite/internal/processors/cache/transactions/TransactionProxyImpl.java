@@ -158,7 +158,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         if (async)
             save(tx.threadId());
 
-        return tx.threadId();
+        return tx.threadId().value();
     }
 
     /** {@inheritDoc} */

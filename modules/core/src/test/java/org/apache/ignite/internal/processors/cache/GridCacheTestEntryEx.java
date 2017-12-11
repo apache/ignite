@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDh
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -144,7 +145,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean tx) {
         return mvcc.addLocal(
             this,
-            threadId,
+            new TxThreadId(threadId, false),
             ver,
             timeout,
             reenter,
@@ -165,7 +166,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      */
     GridCacheMvccCandidate addRemote(UUID nodeId, long threadId, GridCacheVersion ver,
                                      boolean tx) {
-        return mvcc.addRemote(this, nodeId, null, threadId, ver, tx, true, false);
+        return mvcc.addRemote(this, nodeId, null, new TxThreadId(threadId, false), ver, tx, true, false);
     }
 
     /**
@@ -179,7 +180,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      */
     GridCacheMvccCandidate addNearLocal(UUID nodeId, long threadId, GridCacheVersion ver,
         boolean tx) {
-        return mvcc.addNearLocal(this, nodeId, null, threadId, ver, tx, true, false);
+        return mvcc.addNearLocal(this, nodeId, null, new TxThreadId(threadId, false), ver, tx, true, false);
     }
 
     /**

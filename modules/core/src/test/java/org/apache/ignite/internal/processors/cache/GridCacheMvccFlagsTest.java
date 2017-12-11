@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -80,7 +81,7 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
             id,
             id,
             ver,
-            1,
+            new TxThreadId(1, false),
             ver,
             true,
             true,
@@ -121,7 +122,7 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
             id,
             id,
             ver,
-            1,
+            new TxThreadId(1, false),
             ver,
             false,
             false,

@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -122,7 +124,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         GridCacheVersion nearXidVer,
         IgniteUuid nearFutId,
         int nearMiniId,
-        long nearThreadId,
+        TxThreadId nearThreadId,
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
@@ -566,7 +568,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             GridNearTxFinishResponse res = new GridNearTxFinishResponse(
                 -1,
                 nearXidVer,
-                threadId,
+                threadId.valueSafely(),
                 nearFinFutId,
                 nearFinMiniId,
                 err);

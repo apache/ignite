@@ -1386,7 +1386,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         /** {@inheritDoc} */
         @Override public long threadId() {
-            return tx.threadId();
+            return tx.threadId().value();
         }
 
         /** {@inheritDoc} */

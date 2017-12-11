@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCa
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -448,7 +449,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override public GridCacheMvccCandidate addLocal(
-        long threadId,
+        TxThreadId threadId,
         GridCacheVersion ver,
         AffinityTopologyVersion topVer,
         long timeout,
@@ -486,7 +487,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      */
     @Nullable GridCacheMvccCandidate addNearLocal(
         @Nullable UUID dhtNodeId,
-        long threadId,
+        TxThreadId threadId,
         GridCacheVersion ver,
         AffinityTopologyVersion topVer,
         long timeout,
@@ -603,7 +604,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                 boolean emptyBefore = mvcc.isEmpty();
 
-                cand = mvcc.localCandidate(locId, Thread.currentThread().getId());
+                cand = mvcc.localCandidate(locId, new TxThreadId(Thread.currentThread().getId(), false));
 
                 assert cand == null || cand.nearLocal();
 

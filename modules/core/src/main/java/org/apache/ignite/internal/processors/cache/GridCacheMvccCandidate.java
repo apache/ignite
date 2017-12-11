@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -71,7 +72,7 @@ public class GridCacheMvccCandidate implements Externalizable,
 
     /** Thread ID. */
     @GridToStringInclude
-    private long threadId;
+    private TxThreadId threadId = new TxThreadId();
 
     /** Use flags approach to preserve space. */
     @GridToStringExclude
@@ -149,7 +150,7 @@ public class GridCacheMvccCandidate implements Externalizable,
         UUID nodeId,
         @Nullable UUID otherNodeId,
         @Nullable GridCacheVersion otherVer,
-        long threadId,
+        TxThreadId threadId,
         GridCacheVersion ver,
         boolean loc,
         boolean reentry,
@@ -233,7 +234,7 @@ public class GridCacheMvccCandidate implements Externalizable,
             nodeId,
             otherNodeId,
             otherVer,
-            threadId,
+            threadId.copy(),
             ver,
             local(),
             /*reentry*/true,
@@ -390,7 +391,11 @@ public class GridCacheMvccCandidate implements Externalizable,
      * @see Thread#getId()
      */
     public long threadId() {
-        return threadId;
+        return threadId.value();
+    }
+
+    public long threadIdSafely(){
+        return threadId.valueSafely();
     }
 
     /**
@@ -598,9 +603,10 @@ public class GridCacheMvccCandidate implements Externalizable,
             ver.writeExternal(out);
         }
 
-        out.writeLong(threadId);
+        out.writeLong(threadId.valueSafely());
         out.writeLong(id);
         out.writeShort(flags());
+        out.writeBoolean(threadId.undefined());
     }
 
     /** {@inheritDoc} */
@@ -613,7 +619,10 @@ public class GridCacheMvccCandidate implements Externalizable,
             ver.readExternal(in);
         }
 
-        threadId = in.readLong();
+        if(threadId == null)
+            threadId = new TxThreadId();
+
+        threadId.value(in.readLong());
         id = in.readLong();
 
         short flags = in.readShort();
@@ -621,6 +630,8 @@ public class GridCacheMvccCandidate implements Externalizable,
         mask(OWNER, OWNER.get(flags));
         mask(USED, USED.get(flags));
         mask(TX, TX.get(flags));
+
+        threadId.undefined(in.readBoolean());
     }
 
     /** {@inheritDoc} */

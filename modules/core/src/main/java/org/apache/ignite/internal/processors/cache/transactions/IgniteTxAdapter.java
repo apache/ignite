@@ -141,7 +141,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Thread ID. */
     @GridToStringInclude
-    protected long threadId;
+    protected TxThreadId threadId = new TxThreadId();
 
     /** Transaction start time. */
     @GridToStringInclude
@@ -311,7 +311,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         nodeId = cctx.discovery().localNode().id();
 
-        threadId = Thread.currentThread().getId();
+        threadId.value(Thread.currentThread().getId());
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, this);
@@ -349,7 +349,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     ) {
         this.cctx = cctx;
         this.nodeId = nodeId;
-        this.threadId = threadId;
+        this.threadId.value(threadId);
         this.xidVer = xidVer;
         this.startVer = startVer;
         this.sys = sys;
@@ -713,7 +713,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public long threadId() {
+    @Override public TxThreadId threadId() {
         return threadId;
     }
 
@@ -759,7 +759,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
         return local() && !cacheCtx.isDht() ?
-            entry.lockedByThread(threadId()) || (explicit != null && entry.lockedBy(explicit)) :
+            entry.lockedByThread(threadId().value()) || (explicit != null && entry.lockedBy(explicit)) :
             // If candidate is not there, then lock was explicit.
             // Otherwise, check if entry is owned by version.
             !entry.hasLockCandidate(xidVersion()) || entry.lockedBy(xidVersion());
@@ -775,7 +775,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
         return local() && !cacheCtx.isDht() ?
-            entry.lockedByThreadUnsafe(threadId()) || (explicit != null && entry.lockedByUnsafe(explicit)) :
+            entry.lockedByThreadUnsafe(threadId().value()) || (explicit != null && entry.lockedByUnsafe(explicit)) :
             // If candidate is not there, then lock was explicit.
             // Otherwise, check if entry is owned by version.
             !entry.hasLockCandidateUnsafe(xidVersion()) || entry.lockedByUnsafe(xidVersion());
@@ -1744,7 +1744,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         out.writeObject(xidVer);
         out.writeBoolean(invalidate);
         out.writeLong(timeout);
-        out.writeLong(threadId);
+        out.writeLong(threadId.valueSafely());
         out.writeLong(startTime);
 
         U.writeUuid(out, nodeId);
@@ -1761,7 +1761,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         xidVer = (GridCacheVersion)in.readObject();
         invalidate = in.readBoolean();
         timeout = in.readLong();
-        threadId = in.readLong();
+        threadId.value(in.readLong());
         startTime = in.readLong();
 
         nodeId = U.readUuid(in);
@@ -1782,7 +1782,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return new TxShadow(
             xidVer.asGridUuid(),
             nodeId,
-            threadId,
+            threadId.copy(),
             startTime,
             isolation,
             concurrency,
@@ -1822,7 +1822,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         private final UUID nodeId;
 
         /** Thread ID. */
-        private final long threadId;
+        private TxThreadId threadId = new TxThreadId();
 
         /** Start time. */
         private final long startTime;
@@ -1861,7 +1861,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
          * @param state Transaction state.
          * @param rollbackOnly Rollback-only flag.
          */
-        TxShadow(IgniteUuid xid, UUID nodeId, long threadId, long startTime, TransactionIsolation isolation,
+        TxShadow(IgniteUuid xid, UUID nodeId, TxThreadId threadId, long startTime, TransactionIsolation isolation,
             TransactionConcurrency concurrency, boolean invalidate, boolean implicit, long timeout,
             TransactionState state, boolean rollbackOnly) {
             this.xid = xid;
@@ -1893,7 +1893,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public long threadId() {
+        @Override public TxThreadId threadId() {
             return threadId;
         }
 

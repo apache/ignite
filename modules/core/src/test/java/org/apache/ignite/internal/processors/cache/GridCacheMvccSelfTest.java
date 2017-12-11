@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -93,7 +94,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
             UUID.randomUUID(),
             UUID.randomUUID(),
             version(1),
-            123,
+            new TxThreadId(123, false),
             version(2),
             /*local*/false,
             /*reentry*/false,

@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.transactions.TxThreadId;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -79,8 +80,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param miniId Mini future ID.
      * @param topVer Topology version.
      * @param xidVer Transaction ID.
-     * @param threadId Thread ID.
      * @param commitVer Commit version.
+     * @param threadId Thread ID.
      * @param isolation Transaction isolation.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
@@ -104,7 +105,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         @NotNull AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
-        long threadId,
+        TxThreadId threadId,
         TransactionIsolation isolation,
         boolean commit,
         boolean invalidate,
@@ -162,8 +163,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param miniId Mini future ID.
      * @param topVer Topology version.
      * @param xidVer Transaction ID.
-     * @param threadId Thread ID.
      * @param commitVer Commit version.
+     * @param threadId Thread ID.
      * @param isolation Transaction isolation.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
@@ -178,8 +179,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
-     * @param updateIdxs Partition update idxs.
      * @param addDepInfo Deployment info flag.
+     * @param updateIdxs Partition update idxs.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
@@ -188,7 +189,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         @NotNull AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
-        long threadId,
+        TxThreadId threadId,
         TransactionIsolation isolation,
         boolean commit,
         boolean invalidate,

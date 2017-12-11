@@ -877,7 +877,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param cand Candidate to remove.
      */
     public void removeExplicitLock(GridCacheMvccCandidate cand) {
-        GridCacheExplicitLockSpan span = pendingExplicit.get(cand.threadId());
+        GridCacheExplicitLockSpan span = pendingExplicit.get(cand.threadIdSafely());
 
         if (span == null)
             return;
