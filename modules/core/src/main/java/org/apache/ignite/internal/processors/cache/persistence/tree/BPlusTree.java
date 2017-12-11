@@ -187,7 +187,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 try {
                     long pageAddr = readLock(pageId, page); // No correctness guaranties.
                     if (pageAddr == 0)
-                        return "<Locked>";
+                        return "<Obsolete>";
 
                     try {
                         BPlusIO<L> io = io(pageAddr);
