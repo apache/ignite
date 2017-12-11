@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.sql.Connection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -113,6 +112,51 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
         }, 5000);
 
         assert res;
+    }
+
+    /**
+     * @throws Exception On failed.
+     */
+    public void testConnectionLeaksOnSqlException() throws Exception {
+        final Object monitor = new Object();
+
+        final CountDownLatch latch = new CountDownLatch(THREAD_CNT);
+
+        for (int i = 0; i < THREAD_CNT; i++) {
+            new Thread() {
+                @Override public void run() {
+                    try {
+                        // Execute invalid statement. Connection must be close.
+                        ((IgniteH2Indexing)grid(1).context().query().getIndexing()).executeStatement(CACHE_NAME, "select *");
+                    } catch (Exception e) {
+                        // No-op.
+                    }
+
+                    latch.countDown();
+
+                    synchronized (monitor) {
+                        try {
+                            monitor.wait();
+                        }
+                        catch (InterruptedException e) {
+                            // No-op;
+                        }
+                    }
+                }
+            }.start();
+        }
+
+        latch.await();
+
+        for (int i = 0; i < NODE_CNT; i++) {
+            Map<Thread, Connection> conns = perThreadConnections(i);
+
+            assertTrue(conns.isEmpty());
+        }
+
+        synchronized (monitor) {
+            monitor.notifyAll();
+        }
     }
 
     /**
