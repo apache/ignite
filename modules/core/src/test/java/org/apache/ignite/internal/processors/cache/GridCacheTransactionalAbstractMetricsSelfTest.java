@@ -456,7 +456,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
                 if (put) {
                     assertEquals(TX_CNT, cacheMetrics.getCacheTxCommits());
-                    assert cacheMetrics.getAverageTxCommitTime() >= TimeUnit.MILLISECONDS.toMicros(DELAY_MILLIS);
+                    assert cacheMetrics.getAverageTxCommitTime() > 0;
                 }
             }
             else {
@@ -504,7 +504,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
                 if (put) {
                     assertEquals(TX_CNT, cacheMetrics.getCacheTxRollbacks());
-                    assert cacheMetrics.getAverageTxRollbackTime() >= TimeUnit.MILLISECONDS.toMicros(DELAY_MILLIS);
+                    assert cacheMetrics.getAverageTxRollbackTime() > 0;
                 }
             }
             else {
@@ -585,14 +585,8 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
         final AtomicInteger txDeadlockErrCnt = new AtomicInteger();
 
         if (concurrency == TransactionConcurrency.OPTIMISTIC) {
-            if (!loc) {
-                // Transactions will be sync using discovery spi (for optimistic tx deadlock).
-                ((TestCommunicationSpi)grid(0).configuration().getCommunicationSpi()).syncTxOnPrepare(txCnt);
-            }
-            else {
-                // TODO IGNITE-6782 Undetected deadlock on LOCAL cache with OPTIMISTIC transactions.
-                return;
-            }
+            // Transactions will be sync using discovery spi (for optimistic tx deadlock).
+            ((TestCommunicationSpi)grid(0).configuration().getCommunicationSpi()).syncTxOnPrepare(txCnt);
         }
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {

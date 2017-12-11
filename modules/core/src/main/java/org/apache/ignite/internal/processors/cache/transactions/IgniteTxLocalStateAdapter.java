@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -32,12 +31,12 @@ public abstract class IgniteTxLocalStateAdapter implements IgniteTxLocalState {
      */
     protected final void onTxEnd(GridCacheContext cacheCtx, IgniteInternalTx tx, boolean commit) {
         if (cacheCtx.cache().configuration().isStatisticsEnabled()) {
-            long durationNanos = TimeUnit.MILLISECONDS.toNanos(U.currentTimeMillis() - tx.startTime());
-
+            // Convert start time from ms to ns.
             if (commit)
-                cacheCtx.cache().metrics0().onTxCommit(durationNanos);
+                cacheCtx.cache().metrics0().onTxCommit((U.currentTimeMillis() - tx.startTime()) * 1000);
             else
-                cacheCtx.cache().metrics0().onTxRollback(durationNanos, tx.timedOut(), tx.deadlocked());
+                cacheCtx.cache().metrics0().onTxRollback((U.currentTimeMillis() - tx.startTime()) * 1000,
+                    tx.timedOut(), tx.deadlocked());
         }
     }
 }

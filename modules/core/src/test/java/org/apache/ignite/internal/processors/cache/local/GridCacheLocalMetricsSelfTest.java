@@ -49,4 +49,14 @@ public class GridCacheLocalMetricsSelfTest extends GridCacheTransactionalAbstrac
     @Override protected int gridCount() {
         return GRID_CNT;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testOptimisticDeadlocks() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5440");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testOptimisticDeadlocksOnClient() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5440");
+    }
 }
