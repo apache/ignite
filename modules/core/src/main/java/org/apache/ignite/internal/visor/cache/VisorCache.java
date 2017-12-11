@@ -88,6 +88,9 @@ public class VisorCache extends VisorDataTransferObject {
     /** Cache metrics. */
     private VisorCacheMetrics metrics;
 
+    /** Cache system state. */
+    private boolean sys;
+
     /**
      * Create data transfer object for given cache.
      */
@@ -99,9 +102,10 @@ public class VisorCache extends VisorDataTransferObject {
      * Create data transfer object for given cache.
      *
      * @param ca Internal cache.
+     * @param collectMetrics Collect cache metrics flag.
      * @throws IgniteCheckedException If failed to create data transfer object.
      */
-    public VisorCache(IgniteEx ignite, GridCacheAdapter ca) throws IgniteCheckedException {
+    public VisorCache(IgniteEx ignite, GridCacheAdapter ca, boolean collectMetrics) throws IgniteCheckedException {
         assert ca != null;
 
         GridCacheContext cctx = ca.context();
@@ -119,28 +123,10 @@ public class VisorCache extends VisorDataTransferObject {
         partitions = ca.affinity().partitions();
         near = cctx.isNear();
 
-        metrics = new VisorCacheMetrics(ignite, name);
-    }
+        if (collectMetrics)
+            metrics = new VisorCacheMetrics(ignite, name);
 
-    /**
-     * @return New instance suitable to store in history.
-     */
-    public VisorCache history() {
-        VisorCache c = new VisorCache();
-
-        c.name = name;
-        c.mode = mode;
-        c.memorySize = memorySize;
-        c.indexesSize = indexesSize;
-        c.size = size;
-        c.nearSize = nearSize;
-        c.backupSize = backupSize;
-        c.primarySize = primarySize;
-        c.partitions = partitions;
-        c.metrics = metrics;
-        c.near = near;
-
-        return c;
+        sys = ignite.context().cache().systemCache(name);
     }
 
     /**
@@ -230,10 +216,71 @@ public class VisorCache extends VisorDataTransferObject {
     }
 
     /**
+     * @param metrics Cache metrics.
+     */
+    public void setMetrics(VisorCacheMetrics metrics) {
+        this.metrics = metrics;
+    }
+
+    /**
      * @return {@code true} if cache has near cache.
      */
     public boolean isNear() {
         return near;
+    }
+
+    /**
+     * @return System cache flag.
+     */
+    public boolean isSystem() {
+        return sys;
+    }
+
+    /**
+     * @return Number of entries in cache in heap and off-heap.
+     */
+    public long size() {
+        return size + (metrics != null ? metrics.getOffHeapEntriesCount() : 0L);
+    }
+
+    /**
+     * @return Memory size allocated in off-heap.
+     */
+    public long offHeapAllocatedSize() {
+        return metrics != null ? metrics.getOffHeapAllocatedSize() : 0L;
+    }
+
+    /**
+     * @return Number of entries in heap memory.
+     */
+    public long heapEntriesCount() {
+        return metrics != null ? metrics.getHeapEntriesCount() : 0L;
+    }
+
+    /**
+     * @return Number of primary cache entries stored in off-heap memory.
+     */
+    public long offHeapPrimaryEntriesCount() {
+        return metrics != null ? metrics.getOffHeapPrimaryEntriesCount() : 0L;
+    }
+
+    /**
+     * @return Number of backup cache entries stored in off-heap memory.
+     */
+    public long offHeapBackupEntriesCount() {
+        return metrics != null ? metrics.getOffHeapBackupEntriesCount() : 0L;
+    }
+
+    /**
+     * @return Number of cache entries stored in off-heap memory.
+     */
+    public long offHeapEntriesCount() {
+        return metrics != null ? metrics.getOffHeapEntriesCount() : 0L;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
@@ -250,6 +297,7 @@ public class VisorCache extends VisorDataTransferObject {
         out.writeInt(partitions);
         out.writeBoolean(near);
         out.writeObject(metrics);
+        out.writeBoolean(sys);
     }
 
     /** {@inheritDoc} */
@@ -266,6 +314,8 @@ public class VisorCache extends VisorDataTransferObject {
         partitions = in.readInt();
         near = in.readBoolean();
         metrics = (VisorCacheMetrics)in.readObject();
+
+        sys = protoVer > V1 ? in.readBoolean() : metrics != null && metrics.isSystem();
     }
 
     /** {@inheritDoc} */

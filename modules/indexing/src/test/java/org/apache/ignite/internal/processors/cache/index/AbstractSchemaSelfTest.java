@@ -38,6 +38,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -173,6 +175,8 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      */
     static void assertIndex(Ignite node, String cacheName, String tblName,
         String idxName, int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
+        awaitCompletion();
+
         node.cache(cacheName);
 
         IgniteEx node0 = (IgniteEx)node;
@@ -268,6 +272,8 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param idxName Index name.
      */
     static void assertNoIndex(Ignite node, String cacheName, String tblName, String idxName) {
+        awaitCompletion();
+
         node.cache(cacheName);
 
         try {
@@ -282,6 +288,18 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         }
         catch (SQLException e) {
             throw new AssertionError(e);
+        }
+    }
+
+    /**
+     * Await completion (hopefully) of pending operations.
+     */
+    private static void awaitCompletion() {
+        try {
+            U.sleep(100);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            fail();
         }
     }
 

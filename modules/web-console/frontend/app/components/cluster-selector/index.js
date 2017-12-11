@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Decision trees examples.
- */
-package org.apache.ignite.examples.ml.math.trees;
+import angular from 'angular';
+import component from './component';
+
+export default angular
+    .module('ignite-console.cluster-selector', [])
+    .component('clusterSelector', component);

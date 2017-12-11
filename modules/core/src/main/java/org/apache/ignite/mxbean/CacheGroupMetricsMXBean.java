@@ -33,7 +33,15 @@ public interface CacheGroupMetricsMXBean {
      * @return Cache group id.
      */
     @MXBeanDescription("Cache group id.")
-    public int getCacheGroupId();
+    public int getGroupId();
+
+    /**
+     * Gets cache group name.
+     *
+     * @return Cache group name.
+     */
+    @MXBeanDescription("Cache group name.")
+    public String getGroupName();
 
     /**
      * Gets list of cache names of this cache group.
