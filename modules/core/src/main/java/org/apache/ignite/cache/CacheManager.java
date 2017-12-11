@@ -359,6 +359,8 @@ public class CacheManager implements javax.cache.CacheManager {
                 unregisterCacheObject(cacheName, CACHE_STATISTICS);
 
             cfg.setStatisticsEnabled(enabled);
+
+            ignite.context().cache().enableStatistics(cacheName, enabled);
         }
         finally {
             kernalGateway.readUnlock();

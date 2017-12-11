@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.lang.management.ManagementFactory;
+import javax.cache.CacheManager;
+import javax.cache.Caching;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
@@ -69,9 +71,10 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @return MBean instance.
      */
-    private CacheMetricsMXBean mxBean(int nodeIdx, String cacheName) throws MalformedObjectNameException {
+    private CacheMetricsMXBean mxBean(int nodeIdx, String cacheName, Class<? extends CacheMetricsMXBean> clazz)
+        throws MalformedObjectNameException {
         ObjectName mbeanName = U.makeCacheMBeanName(getTestIgniteInstanceName(nodeIdx), cacheName,
-            CacheClusterMetricsMXBeanImpl.class.getName());
+            clazz.getName());
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
@@ -107,7 +110,7 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStatisticsEnableDisable() throws Exception {
+    public void testJmxStatisticsEnable() throws Exception {
         persistence = false;
 
         Ignite ig1 = startGrid(1);
@@ -121,8 +124,9 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
         ig1.getOrCreateCache(cacheCfg2);
 
-        CacheMetricsMXBean mxBeanCache1 = mxBean(1, CACHE1);
-        CacheMetricsMXBean mxBeanCache2 = mxBean(1, CACHE2);
+        CacheMetricsMXBean mxBeanCache1 = mxBean(1, CACHE1, CacheClusterMetricsMXBeanImpl.class);
+        CacheMetricsMXBean mxBeanCache2 = mxBean(1, CACHE2, CacheClusterMetricsMXBeanImpl.class);
+        CacheMetricsMXBean mxBeanCache1loc = mxBean(1, CACHE1, CacheLocalMetricsMXBeanImpl.class);
 
         mxBeanCache1.enableStatistics();
         mxBeanCache2.disableStatistics();
@@ -138,12 +142,59 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
         assertTrue(ig3.cache(CACHE1).metrics().isStatisticsEnabled());
         assertFalse(ig3.cache(CACHE2).metrics().isStatisticsEnabled());
+
+        mxBeanCache1loc.disableStatistics();
+
+        awaitPartitionMapExchange();
+
+        assertFalse(ig1.cache(CACHE1).metrics().isStatisticsEnabled());
+        assertFalse(ig2.cache(CACHE1).metrics().isStatisticsEnabled());
+        assertFalse(ig3.cache(CACHE1).metrics().isStatisticsEnabled());
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPdsStatisticsEnableDisable() throws Exception {
+    public void testCacheManagerStatisticsEnable() throws Exception {
+        CacheManager mgr1 = Caching.getCachingProvider().getCacheManager();
+        CacheManager mgr2 = Caching.getCachingProvider().getCacheManager();
+
+        CacheConfiguration cfg1 = new CacheConfiguration()
+            .setName(CACHE1)
+            .setGroupName(GROUP)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC);
+
+        mgr1.createCache(CACHE1, cfg1);
+
+        CacheConfiguration cfg2 = new CacheConfiguration(cfg1)
+            .setName(CACHE2)
+            .setStatisticsEnabled(true);
+
+        mgr1.createCache(CACHE2, cfg2);
+
+        awaitPartitionMapExchange();
+
+        assertFalse(mgr1.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
+        assertFalse(mgr2.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
+        assertTrue(mgr1.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
+        assertTrue(mgr2.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
+
+        mgr1.enableStatistics(CACHE1, true);
+        mgr2.enableStatistics(CACHE2, false);
+
+        awaitPartitionMapExchange();
+
+        assertTrue(mgr1.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
+        assertTrue(mgr2.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
+        assertFalse(mgr1.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
+        assertFalse(mgr2.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJmxPdsStatisticsEnable() throws Exception {
         persistence = true;
 
         Ignite ig1 = startGrid(1);
@@ -157,8 +208,8 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
         ig1.getOrCreateCache(cacheCfg2);
 
-        CacheMetricsMXBean mxBeanCache1 = mxBean(1, CACHE1);
-        CacheMetricsMXBean mxBeanCache2 = mxBean(1, CACHE2);
+        CacheMetricsMXBean mxBeanCache1 = mxBean(1, CACHE1, CacheClusterMetricsMXBeanImpl.class);
+        CacheMetricsMXBean mxBeanCache2 = mxBean(1, CACHE2, CacheClusterMetricsMXBeanImpl.class);
 
         mxBeanCache1.enableStatistics();
         mxBeanCache2.disableStatistics();

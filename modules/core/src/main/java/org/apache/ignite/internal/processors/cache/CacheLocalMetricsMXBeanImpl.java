@@ -415,11 +415,11 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public void enableStatistics() {
-        cache.configuration().setStatisticsEnabled(true);
+        cache.context().grid().context().cache().enableStatistics(cache.name(), true);
     }
 
     /** {@inheritDoc} */
     @Override public void disableStatistics() {
-        cache.configuration().setStatisticsEnabled(false);
+        cache.context().grid().context().cache().enableStatistics(cache.name(), false);
     }
 }
