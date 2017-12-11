@@ -156,6 +156,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     private static String mangleClassName(Class<?> klazz) {
         assert klazz != null;
 
+        // FIXME SHQ: uncomment
         return "0";
 
 //        String name = klazz.getName();
