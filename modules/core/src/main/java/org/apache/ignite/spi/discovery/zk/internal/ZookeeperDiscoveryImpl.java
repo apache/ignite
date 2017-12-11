@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -42,6 +43,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -2293,17 +2295,33 @@ public class ZookeeperDiscoveryImpl {
         busyLock.leaveBusy();
 
         if (err instanceof ZookeeperClientFailedException)
+            return; // Processed by ZookeeperClient listener.
+
+        Ignite ignite = spi.ignite();
+
+        if (connState == ConnectionState.STOPPED || ignite == null)
             return;
 
-        if (connState == ConnectionState.STOPPED)
-            return;
-
-        // TODO ZK
-        U.error(log, "Fatal error in ZookeeperDiscovery.", err);
+        U.error(log, "Fatal error in ZookeeperDiscovery. " +
+            "Stopping the node in order to prevent cluster wide instability.", err);
 
         onStop();
 
         stop0(err);
+
+        new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    IgnitionEx.stop(igniteInstanceName, true, true);
+
+                    U.log(log, "Stopped the node successfully in response to fatal error in ZookeeperDiscoverySpi.");
+                }
+                catch (Throwable e) {
+                    U.error(log, "Failed to stop the node successfully in response to fatal error in " +
+                        "ZookeeperDiscoverySpi.", e);
+                }
+            }
+        }, "node-stop-thread").start();
 
         if (err instanceof Error)
             throw (Error)err;
