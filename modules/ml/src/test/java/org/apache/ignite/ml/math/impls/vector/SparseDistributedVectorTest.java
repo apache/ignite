@@ -17,22 +17,18 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import org.apache.ignite.Ignite;
-
 import org.apache.ignite.internal.util.IgniteUtils;
-
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
-
-import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
-
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.junit.Ignore;
-
-import java.io.*;
-
 
 import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 
@@ -43,12 +39,16 @@ import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 public class SparseDistributedVectorTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
+
     /** Precision. */
     private static final double PRECISION = 0.0;
+
     /** Grid instance. */
     private Ignite ignite;
+
     /** Vector size */
     private final int size = MathTestConstants.STORAGE_SIZE;
+
     /** Vector for tests */
     private SparseDistributedVector sparseDistributedVector;
 
@@ -94,9 +94,9 @@ public class SparseDistributedVectorTest extends GridCommonAbstractTest {
         sparseDistributedVector = new SparseDistributedVector(size, StorageConstants.RANDOM_ACCESS_MODE);
 
         for (int i = 0; i < size; i++) {
-                double v = Math.random();
-                sparseDistributedVector.set(i, v);
-                assertEquals("Unexpected value for vector element[" + i + "]", v, sparseDistributedVector.get(i), PRECISION);
+            double v = Math.random();
+            sparseDistributedVector.set(i, v);
+            assertEquals("Unexpected value for vector element[" + i + "]", v, sparseDistributedVector.get(i), PRECISION);
         }
     }
 
@@ -131,23 +131,22 @@ public class SparseDistributedVectorTest extends GridCommonAbstractTest {
 
         sparseDistributedVector.assign(2.0);
         for (int i = 0; i < sparseDistributedVector.size(); i++)
-                assertEquals(UNEXPECTED_VAL, 2.0, sparseDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, 2.0, sparseDistributedVector.get(i), PRECISION);
 
         sparseDistributedVector.plus(3.0);
         for (int i = 0; i < sparseDistributedVector.size(); i++)
-                assertEquals(UNEXPECTED_VAL, 5.0, sparseDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, 5.0, sparseDistributedVector.get(i), PRECISION);
 
         sparseDistributedVector.times(2.0);
         for (int i = 0; i < sparseDistributedVector.size(); i++)
-                assertEquals(UNEXPECTED_VAL, 10.0, sparseDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, 10.0, sparseDistributedVector.get(i), PRECISION);
 
         sparseDistributedVector.divide(10.0);
         for (int i = 0; i < sparseDistributedVector.size(); i++)
-                assertEquals(UNEXPECTED_VAL, 1.0, sparseDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, 1.0, sparseDistributedVector.get(i), PRECISION);
 
-       // assertEquals(UNEXPECTED_VAL, sparseDistributedVector.rowSize() * sparseDistributedVector.columnSize(), sparseDistributedVector.sum(), PRECISION);
+        // assertEquals(UNEXPECTED_VAL, sparseDistributedVector.rowSize() * sparseDistributedVector.columnSize(), sparseDistributedVector.sum(), PRECISION);
     }
-
 
     /** */
     public void testMap() {
@@ -158,7 +157,7 @@ public class SparseDistributedVectorTest extends GridCommonAbstractTest {
 
         sparseDistributedVector.map(i -> 100.0);
         for (int i = 0; i < sparseDistributedVector.size(); i++)
-                assertEquals(UNEXPECTED_VAL, 100.0, sparseDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, 100.0, sparseDistributedVector.get(i), PRECISION);
     }
 
     /** */
@@ -167,12 +166,13 @@ public class SparseDistributedVectorTest extends GridCommonAbstractTest {
 
         sparseDistributedVector = new SparseDistributedVector(size, StorageConstants.RANDOM_ACCESS_MODE);
 
-        Vector copy = sparseDistributedVector.copy();
-        assertNotNull(copy);
-        for (int i = 0; i < size; i++)
-            assertEquals(UNEXPECTED_VAL, copy.get(i), sparseDistributedVector.get(i), PRECISION);
-    }
+        Vector cp = sparseDistributedVector.copy();
 
+        assertNotNull(cp);
+
+        for (int i = 0; i < size; i++)
+            assertEquals(UNEXPECTED_VAL, cp.get(i), sparseDistributedVector.get(i), PRECISION);
+    }
 
     /** */
     public void testLike() {
@@ -183,10 +183,9 @@ public class SparseDistributedVectorTest extends GridCommonAbstractTest {
         assertNotNull(sparseDistributedVector.like(1));
     }
 
-
     /** */
     private void initVector(Vector v) {
         for (int i = 0; i < v.size(); i++)
-                v.set(i, 1.0);
+            v.set(i, 1.0);
     }
 }

@@ -332,7 +332,7 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Matrix assign(double val) {
         if (sto.isArrayBased())
-                Arrays.fill(sto.data(), val);
+            Arrays.fill(sto.data(), val);
         else {
             int rows = rowSize();
             int cols = columnSize();
@@ -717,7 +717,7 @@ public abstract class AbstractMatrix implements Matrix {
         Vector res = new DenseLocalOnHeapVector(columnSize());
 
         for (int i = 0; i < columnSize(); i++)
-            res.setX(i, getX(row,i));
+            res.setX(i, getX(row, i));
 
         return res;
     }
@@ -740,9 +740,13 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Vector getCol(int col) {
         checkColumnIndex(col);
+
         Vector res;
-        if (isDistributed()) res = MatrixUtil.likeVector(this, rowSize());
-        else res = new DenseLocalOnHeapVector(rowSize());
+
+        if (isDistributed())
+            res = MatrixUtil.likeVector(this, rowSize());
+        else
+            res = new DenseLocalOnHeapVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
             res.setX(i, getX(i, col));
@@ -797,7 +801,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         Vector res = likeVector(rows);
 
-        Blas.gemv(1,this,vec,0,res);
+        Blas.gemv(1, this, vec, 0, res);
 
         return res;
     }
@@ -977,13 +981,19 @@ public abstract class AbstractMatrix implements Matrix {
         setX(row, col, f.apply(row, col, getX(row, col)));
     }
 
-
+    /**
+     * Return max amount of columns in 2d array.
+     *
+     * TODO: why this in this class, mb some util class?
+     *
+     * @param data Data.
+     */
     protected int getMaxAmountOfColumns(double[][] data) {
-        int maxAmountOfColumns = 0;
+        int maxAmountOfCols = 0;
 
         for (int i = 0; i < data.length; i++)
-            maxAmountOfColumns = Math.max(maxAmountOfColumns, data[i].length);
+            maxAmountOfCols = Math.max(maxAmountOfCols, data[i].length);
 
-        return maxAmountOfColumns;
+        return maxAmountOfCols;
     }
 }

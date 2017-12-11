@@ -17,6 +17,8 @@
 
 'use strict';
 
+const uuid = require('uuid/v4');
+
 // Fire me up!
 
 /**
@@ -82,19 +84,14 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
 
     class Cluster {
         constructor(top) {
-            let d = new Date().getTime();
+            const clusterName = top.clusterName;
 
-            this.id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-                const r = (d + Math.random() * 16) % 16 | 0;
-
-                d = Math.floor(d / 16);
-
-                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-            });
-
+            this.id = _.isEmpty(clusterName) ? `Cluster ${uuid().substring(0, 8).toUpperCase()}` : clusterName;
             this.nids = top.nids;
-
+            this.addresses = top.addresses;
+            this.clients = top.clients;
             this.clusterVersion = top.clusterVersion;
+            this.active = top.active;
         }
 
         isSameCluster(top) {
@@ -103,8 +100,18 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
 
         update(top) {
             this.clusterVersion = top.clusterVersion;
-
             this.nids = top.nids;
+            this.addresses = top.addresses;
+            this.clients = top.clients;
+            this.clusterVersion = top.clusterVersion;
+            this.active = top.active;
+        }
+
+        same(top) {
+            return _.difference(this.nids, top.nids).length === 0 &&
+                _.isEqual(this.addresses, top.addresses) &&
+                this.clusterVersion === top.clusterVersion &&
+                this.active === top.active;
         }
     }
 
@@ -192,10 +199,13 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
         }
 
         getOrCreateCluster(top) {
-            const cluster = _.find(this.clusters, (c) => c.isSameCluster(top));
+            let cluster = _.find(this.clusters, (c) => c.isSameCluster(top));
 
-            if (_.isNil(cluster))
-                this.clusters.push(new Cluster(top));
+            if (_.isNil(cluster)) {
+                cluster = new Cluster(top);
+
+                this.clusters.push(cluster);
+            }
 
             return cluster;
         }
@@ -230,8 +240,17 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                         this._browsersHnd.agentStats(token);
                     });
                 }
-                else
-                    cluster.update(top);
+                else {
+                    const changed = !cluster.same(top);
+
+                    if (changed) {
+                        cluster.update(top);
+
+                        _.forEach(tokens, (token) => {
+                            this._browsersHnd.clusterChanged(token, cluster);
+                        });
+                    }
+                }
             });
 
             sock.on('cluster:collector', (top) => {

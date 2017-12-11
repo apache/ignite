@@ -18,10 +18,7 @@
 package org.apache.ignite.ml.clustering;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,24 +27,17 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.EuclideanDistance;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
-import org.junit.Test;
-
-import static org.apache.ignite.ml.clustering.KMeansUtil.checkIsInEpsilonNeighbourhood;
 
 /**
- * This test is made to make sure that K-Means distributed clustering does not crush on distributed environment.
- * In {@link KMeansDistributedClustererTestMultiNode} we check logic of clustering (checks for clusters structures).
- * In this class we just check that clusterer does not crush. There are two separate tests because we cannot
+ * This test is made to make sure that K-Means distributed clustering does not crash on distributed environment.
+ * In {@link KMeansDistributedClustererTestSingleNode} we check logic of clustering (checks for clusters structures).
+ * In this class we just check that clusterer does not crash. There are two separate tests because we cannot
  * guarantee order in which nodes return results of intermediate computations and therefore algorithm can return
  * different results.
  */
@@ -84,7 +74,6 @@ public class KMeansDistributedClustererTestMultiNode extends GridCommonAbstractT
     }
 
     /** */
-    @Test
     public void testPerformClusterAnalysisDegenerate() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -100,10 +89,11 @@ public class KMeansDistributedClustererTestMultiNode extends GridCommonAbstractT
         points.setRow(1, v2);
 
         clusterer.cluster(points, 1);
+
+        points.destroy();
     }
 
     /** */
-    @Test
     public void testClusterizationOnDatasetWithObviousStructure() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -120,7 +110,7 @@ public class KMeansDistributedClustererTestMultiNode extends GridCommonAbstractT
         centers.put(6000, new DenseLocalOnHeapVector(new double[] {squareSideLen, squareSideLen}));
 
         SparseDistributedMatrix points = new SparseDistributedMatrix(ptsCnt, 2, StorageConstants.ROW_STORAGE_MODE,
-        StorageConstants.RANDOM_ACCESS_MODE);
+            StorageConstants.RANDOM_ACCESS_MODE);
 
         List<Integer> permutation = IntStream.range(0, ptsCnt).boxed().collect(Collectors.toList());
         Collections.shuffle(permutation, rnd);
@@ -129,7 +119,7 @@ public class KMeansDistributedClustererTestMultiNode extends GridCommonAbstractT
 
         for (Integer count : centers.keySet()) {
             for (int i = 0; i < count; i++) {
-                DenseLocalOnHeapVector pnt = (DenseLocalOnHeapVector)new DenseLocalOnHeapVector(2).assign(centers.get(count));
+                Vector pnt = new DenseLocalOnHeapVector(2).assign(centers.get(count));
                 // Perturbate point on random value.
                 pnt.map(val -> val + rnd.nextDouble() * squareSideLen / 100);
                 points.assignRow(permutation.get(totalCnt), pnt);
@@ -142,5 +132,7 @@ public class KMeansDistributedClustererTestMultiNode extends GridCommonAbstractT
         KMeansDistributedClusterer clusterer = new KMeansDistributedClusterer(dist, 3, 100, 1L);
 
         clusterer.cluster(points, 4);
+
+        points.destroy();
     }
 }

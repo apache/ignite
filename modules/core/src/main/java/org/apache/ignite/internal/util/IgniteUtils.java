@@ -9458,6 +9458,64 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Finds a non-static and non-abstract method from the class it parents.
+     *
+     * Method.getMethod() does not return non-public method.
+     *
+     * @param cls Target class.
+     * @param name Name of the method.
+     * @param paramTypes Method parameters.
+     * @return Method or {@code null}.
+     */
+    @Nullable public static Method findInheritableMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+        Method mtd = null;
+
+        Class<?> cls0 = cls;
+
+        while (cls0 != null) {
+            try {
+                mtd = cls0.getDeclaredMethod(name, paramTypes);
+
+                break;
+            }
+            catch (NoSuchMethodException e) {
+                cls0 = cls0.getSuperclass();
+            }
+        }
+
+        if (mtd == null)
+            return null;
+
+        mtd.setAccessible(true);
+
+        int mods = mtd.getModifiers();
+
+        if ((mods & (Modifier.STATIC | Modifier.ABSTRACT)) != 0)
+            return null;
+        else if ((mods & (Modifier.PUBLIC | Modifier.PROTECTED)) != 0)
+            return mtd;
+        else if ((mods & Modifier.PRIVATE) != 0)
+            return cls == cls0 ? mtd : null;
+        else {
+            ClassLoader clsLdr = cls.getClassLoader();
+
+            ClassLoader clsLdr0 = cls0.getClassLoader();
+
+            return clsLdr == clsLdr0 && packageName(cls).equals(packageName(cls0)) ? mtd : null;
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @return Package name.
+     */
+    private static String packageName(Class<?> cls) {
+        Package pkg = cls.getPackage();
+
+        return pkg == null ? "" : pkg.getName();
+    }
+
+    /**
      * @param cls The class to search.
      * @param name Name of a field to get.
      * @return Field or {@code null}.

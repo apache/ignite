@@ -57,7 +57,9 @@ namespace Apache.Ignite.Core.Impl.Common
                 throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvIgniteHome, home));
 
             if (log != null)
-                log.Debug("IgniteHome resolved to '{0}'", home);
+            {
+                log.Debug("IGNITE_HOME resolved to: {0}", home);
+            }
 
             return home;
         }

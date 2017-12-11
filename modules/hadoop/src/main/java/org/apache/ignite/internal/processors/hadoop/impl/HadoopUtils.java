@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedBytes;
+import java.io.DataInputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
@@ -27,6 +28,8 @@ import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.mapreduce.JobPriority;
 import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
@@ -211,10 +214,12 @@ public class HadoopUtils {
      * Creates JobInfo from hadoop configuration.
      *
      * @param cfg Hadoop configuration.
+     * @param credentials Credentials.
      * @return Job info.
      * @throws IgniteCheckedException If failed.
      */
-    public static HadoopDefaultJobInfo createJobInfo(Configuration cfg) throws IgniteCheckedException {
+    public static HadoopDefaultJobInfo createJobInfo(Configuration cfg, byte[] credentials)
+        throws IgniteCheckedException {
         JobConf jobConf = new JobConf(cfg);
 
         boolean hasCombiner = jobConf.get("mapred.combiner.class") != null
@@ -269,7 +274,8 @@ public class HadoopUtils {
         for (Map.Entry<String, String> entry : jobConf)
             props.put(entry.getKey(), entry.getValue());
 
-        return new HadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props);
+        return new HadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props,
+            credentials);
     }
 
     /**
@@ -393,5 +399,40 @@ public class HadoopUtils {
         }
 
         return len1 - len2;
+    }
+
+    /**
+     * Deserialization of Hadoop Writable object.
+     *
+     * @param writable Writable object to deserialize to.
+     * @param bytes byte array to deserialize.
+     */
+    public static void deserialize(Writable writable, byte[] bytes) throws IOException {
+        DataInputStream dataIn = new DataInputStream(new ByteArrayInputStream(bytes));
+
+        writable.readFields(dataIn);
+
+        dataIn.close();
+    }
+
+    /**
+     * Create UserGroupInformation for specified user and credentials.
+     *
+     * @param user User.
+     * @param credentialsBytes Credentials byte array.
+     */
+    public static UserGroupInformation createUGI(String user, byte[] credentialsBytes) throws IOException {
+        Credentials credentials = new Credentials();
+
+        HadoopUtils.deserialize(credentials, credentialsBytes);
+
+        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(user);
+
+        ugi.addCredentials(credentials);
+
+        if (credentials.numberOfTokens() > 0)
+            ugi.setAuthenticationMethod(UserGroupInformation.AuthenticationMethod.TOKEN);
+
+        return ugi;
     }
 }
