@@ -349,13 +349,13 @@ public class IgniteNativeIoLib {
      * {@code offset} and extending for {@code len} bytes (or until the end of the file if len is 0)
      * within the file referred to by fd.
      *
-     * See "man 2 posix_fadvise".
+     * See "man 2 posix_fadvise", and code sample http://elixir.free-electrons.com/linux/latest/source/mm/fadvise.c#L117
      *
      * @param fd file descriptor.
-     * @param offset region start.
+     * @param off region start.
      * @param len region end.
      * @param flag advice (option) to apply.
      * @return On success, zero is returned.  On error, an error number is returned.
      */
-    public static native int posix_fadvise(int fd, long offset, long len, int flag);
+    public static native int posix_fadvise(int fd, long off, long len, int flag);
 }
