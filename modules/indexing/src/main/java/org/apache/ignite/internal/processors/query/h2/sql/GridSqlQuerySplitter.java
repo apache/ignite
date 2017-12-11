@@ -2155,7 +2155,18 @@ public class GridSqlQuerySplitter {
                 break;
 
             case GROUP_CONCAT:
-                throw new IgniteException("GROUP_CONCAT is unsupported for not collocated data");
+                if (agg.distinct() || agg.hasGroupConcatOrder())
+                    throw new IgniteException("Clauses DISTINCT and ORDER BY are unsupported for GROUP_CONCAT " +
+                        "for not collocated data.");
+
+                mapAgg = agg;
+
+                rdcAgg = aggregate(false, agg.type())
+                    .setGroupConcatSeparator(agg.getGroupConcatSeparator())
+                    .resultType(GridSqlType.STRING)
+                    .addChild(column(mapAggAlias.alias()));
+
+                break;
 
             default:
                 throw new IgniteException("Unsupported aggregate: " + agg.type());

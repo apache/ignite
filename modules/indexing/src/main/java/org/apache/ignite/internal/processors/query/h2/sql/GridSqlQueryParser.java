@@ -1893,7 +1893,7 @@ public class GridSqlQueryParser {
             groupConcatOrderDesc[i] = o.descending;
         }
 
-        f.setOder(groupConcatOrderExpression, groupConcatOrderDesc);
+        f.setGroupConcatOrder(groupConcatOrderExpression, groupConcatOrderDesc);
     }
 
     /**

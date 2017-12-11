@@ -88,17 +88,37 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
     /**
      * @param groupConcatOrderExpression Order expression.
      * @param groupConcatOrderDesc Order descending flag.
+     * @return {@code this} for chaining.
      */
-    public void setOder(GridSqlElement[] groupConcatOrderExpression, boolean[] groupConcatOrderDesc) {
+    public GridSqlAggregateFunction setGroupConcatOrder(GridSqlElement[] groupConcatOrderExpression, boolean[] groupConcatOrderDesc) {
         this.groupConcatOrderExpression = groupConcatOrderExpression;
         this.groupConcatOrderDesc = groupConcatOrderDesc;
+
+        return this;
+    }
+
+    /**
+     * @return {@code true} in case GROUP_CONCAT function contains ORDER BY expressions.
+     */
+    public boolean hasGroupConcatOrder() {
+        return ! F.isEmpty(groupConcatOrderExpression);
     }
 
     /**
      * @param groupConcatSeparator Separator expression.
+     * @return {@code this} for chaining.
      */
-    public void setGroupConcatSeparator(GridSqlElement groupConcatSeparator) {
+    public GridSqlAggregateFunction setGroupConcatSeparator(GridSqlElement groupConcatSeparator) {
         this.groupConcatSeparator = groupConcatSeparator;
+
+        return this;
+    }
+
+    /**
+     * @return Separator expression.
+     */
+    public GridSqlElement getGroupConcatSeparator() {
+        return groupConcatSeparator;
     }
 
     /** {@inheritDoc} */

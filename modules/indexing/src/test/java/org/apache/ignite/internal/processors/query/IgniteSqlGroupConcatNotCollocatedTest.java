@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -99,16 +100,41 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTes
     /**
      *
      */
-    public void testGroupConcatException() {
+    public void testGroupConcatSimple() {
+        IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
+
+        List<List<Object>> res = c.query(
+            new SqlFieldsQuery("select grp, GROUP_CONCAT(str0) from Value group by grp")
+                .setCollocated(true)).getAll();
+
+        for (List<Object> row : res) {
+            int grp = (int)row.get(0);
+
+            String str = (String)row.get(1);
+
+            for (int i = 0; i < grp; ++i) {
+                String s = "" + (char)('A' + i + (grp == 1 ? 0 : (grp - 1) * grp / 2));
+
+                assertTrue("Invalid group_concat result: string doesn't contain value: " +
+                    "[str=" + str + ", val=" + s , str.contains(s));
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public void testGroupConcatDistributedException() {
         final IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() {
-                c.query(new SqlFieldsQuery("select grp, GROUP_CONCAT(str0) from Value group by grp")).getAll();
+                c.query(new SqlFieldsQuery("select grp, GROUP_CONCAT(str0 ORDER BY str0) from Value group by grp")).getAll();
 
                 return null;
             }
-        }, IgniteException.class, "GROUP_CONCAT is unsupported for not collocated data");
+        }, IgniteException.class, "Clauses DISTINCT and ORDER BY are unsupported for GROUP_CONCAT " +
+            "for not collocated data");
     }
 
     /**
