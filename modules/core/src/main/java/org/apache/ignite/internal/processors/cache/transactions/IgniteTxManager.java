@@ -1511,30 +1511,29 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * per-thread counter so that further awaitAck call will wait for finish response.
      *
      * @param rmtNodeId Remote node ID for which finish request is being sent.
-     * @param threadId Near tx thread ID.
-     */
-    public void beforeFinishRemote(UUID rmtNodeId, long threadId) {
+     * @param tx Transaction.
+     **/
+    public void beforeFinishRemote(UUID rmtNodeId, GridNearTxLocal tx) {
         if (finishSyncDisabled)
             return;
 
         assert txFinishSync != null;
 
-        txFinishSync.onFinishSend(rmtNodeId, threadId);
+        txFinishSync.onFinishSend(rmtNodeId, tx);
     }
 
     /**
      * Callback invoked when near finish response is received from remote node.
-     *
-     * @param rmtNodeId Remote node ID from which response is received.
-     * @param threadId Near tx thread ID.
+     *  @param rmtNodeId Remote node ID from which response is received.
+     * @param ver Transaction version.
      */
-    public void onFinishedRemote(UUID rmtNodeId, long threadId) {
+    public void onFinishedRemote(UUID rmtNodeId, GridCacheVersion ver) {
         if (finishSyncDisabled)
             return;
 
         assert txFinishSync != null;
 
-        txFinishSync.onAckReceived(rmtNodeId, threadId);
+        txFinishSync.onAckReceived(rmtNodeId, ver);
     }
 
     /**
@@ -1542,7 +1541,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param rmtNodeId Remote node ID.
      * @param threadId Near tx thread ID.
-     * @return {@code null} if ack was received or future that will be completed when ack is received.
+     * @return {@code null} If ack was received or future that will be completed when ack is received.
      */
     @Nullable public IgniteInternalFuture<?> awaitFinishAckAsync(UUID rmtNodeId, long threadId) {
         if (finishSyncDisabled)
