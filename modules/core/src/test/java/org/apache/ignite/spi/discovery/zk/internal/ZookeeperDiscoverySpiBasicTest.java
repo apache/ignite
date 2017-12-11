@@ -1568,6 +1568,47 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testPing() throws Exception {
+        sesTimeout = 5000;
+
+        startGrids(3);
+
+        final ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(1));
+
+        final UUID nodeId = ignite(2).cluster().localNode().id();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                assertTrue(spi.pingNode(nodeId));
+            }
+        }, 32, "ping");
+
+        fut.get();
+
+        fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                spi.pingNode(nodeId);
+            }
+        }, 32, "ping");
+
+        U.sleep(100);
+
+        stopGrid(2);
+
+        fut.get();
+
+        fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                assertFalse(spi.pingNode(nodeId));
+            }
+        }, 32, "ping");
+
+        fut.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testWithPersistence1() throws Exception {
         startWithPersistence(false);
     }

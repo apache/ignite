@@ -266,6 +266,13 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
         id = newId;
     }
 
+    /**
+     * @return Session timeout.
+     */
+    long sessionTimeout() {
+        return sesTimeout;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
         return ver;
