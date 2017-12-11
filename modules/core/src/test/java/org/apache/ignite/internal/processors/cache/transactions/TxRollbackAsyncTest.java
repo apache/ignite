@@ -62,7 +62,7 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
  */
 public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
-    public static final int DURATION = 60_000;
+    public static final int DURATION = 15_000;
 
     /** */
     public static final int ROLLBACK_TIMEOUT = 500;
@@ -426,6 +426,27 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         checkFutures();
     }
 
+    public void testDebugTx() throws Exception {
+        final Ignite client = startClient();
+
+        final int keysCnt = 100;
+
+        final int txSize = 10;
+
+        for (int k = 0; k < keysCnt; k++)
+            grid(0).cache(CACHE_NAME).put(k, (long)0);
+
+        IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
+
+        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+            long v1 = (long)cache.get(0);
+            long v2 = (long)cache.get(1);
+            long v3 = (long)cache.get(2);
+
+            cache.put(0, v1 + 1);
+        }
+    }
+
     /**
      *
      */
@@ -455,12 +476,12 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 while(!stop.get()) {
                     int nodeId = r.nextInt(GRID_CNT + 1);
 
-                    Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
+                    Ignite node = client; // nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
                     TransactionConcurrency conc = PESSIMISTIC; // TC_VALS[r.nextInt(TC_VALS.length)];
                     TransactionIsolation isolation = REPEATABLE_READ; // TI_VALS[r.nextInt(TI_VALS.length)];
 
-                    long timeout = r.nextInt(200) + 50;
+                    long timeout = 0; // r.nextInt(200) + 50;
 
                     try (Transaction tx = node.transactions().txStart(conc, isolation, timeout, txSize)) {
                         int[] keys = new int[txSize];
@@ -582,8 +603,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return DURATION + 10_000;
-    }
+//    /** {@inheritDoc} */
+//    @Override protected long getTestTimeout() {
+//        return DURATION + 10_000;
+//    }
 }
