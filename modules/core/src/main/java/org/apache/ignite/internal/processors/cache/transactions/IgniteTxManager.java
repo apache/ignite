@@ -109,14 +109,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
-import static org.apache.ignite.transactions.TransactionState.ACTIVE;
-import static org.apache.ignite.transactions.TransactionState.COMMITTED;
-import static org.apache.ignite.transactions.TransactionState.COMMITTING;
-import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
-import static org.apache.ignite.transactions.TransactionState.PREPARED;
-import static org.apache.ignite.transactions.TransactionState.PREPARING;
-import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
-import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
+import static org.apache.ignite.transactions.TransactionState.*;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -316,10 +309,19 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
         txFinishSync.onDisconnected(reconnectFut);
 
-        for (IgniteInternalTx tx : idMap.values())
+        for (IgniteInternalTx tx : idMap.values()) {
             rollbackTx(tx, true);
-        for (IgniteInternalTx tx : nearIdMap.values())
+
+            tx.state(ROLLING_BACK);
+            tx.state(ROLLED_BACK);
+        }
+
+        for (IgniteInternalTx tx : nearIdMap.values()) {
             rollbackTx(tx, true);
+
+            tx.state(ROLLING_BACK);
+            tx.state(ROLLED_BACK);
+        }
 
         IgniteClientDisconnectedException err =
             new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected.");
