@@ -2403,7 +2403,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
 
                     ackWalModeDynamicChangeMessage(msg);
-
                 }
             }
         }
@@ -2456,19 +2455,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param msg Message.
      */
-    private void ackWalModeDynamicChangeMessage(WalModeDynamicChangeMessage msg) {
+    private void ackWalModeDynamicChangeMessage(final WalModeDynamicChangeMessage msg) {
         if (!sharedCtx.localNodeId().equals(msg.initiatingNodeId())) {
-            try {
-                sharedCtx.io().send(msg.initiatingNodeId(),
-                    new WalModeDynamicChangeAckMessage(msg.uid()), SYSTEM_POOL);
-            }
-            catch (ClusterTopologyCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send message, node failed: " + msg.initiatingNodeId());
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send message [node=" + msg.initiatingNodeId() + ']', e);
-            }
+            ctx.closure().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    try {
+                        sharedCtx.io().send(msg.initiatingNodeId(),
+                            new WalModeDynamicChangeAckMessage(msg.uid()), SYSTEM_POOL);
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send message, node failed: " + msg.initiatingNodeId());
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send message [node=" + msg.initiatingNodeId() + ']', e);
+                    }
+                }
+            }, SYSTEM_POOL);
         }
         else {
             WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
@@ -4422,7 +4425,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             log.info("Cluster wide WAL mode change operation prepare phase finished by node " +
                 "[nodeId=" + node.id() +
-                "cacheGrps=" + grpIds +
+                ", cacheGrps=" + grpIds +
                 ", action=" + (disable ? "disabling" : "enabling") +
                 ", initiatingNodeId=" + initiatingNodeId + "]");
 

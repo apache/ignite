@@ -49,7 +49,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Checks stop and destroy methods behavior.
+ * Checks cluster wide WAL mode change operation.
  */
 @SuppressWarnings("unchecked")
 public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
@@ -336,11 +336,11 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         ignite.active(true);
 
-        requestWalModeCnangeAndFail(igniteId, true, ctxs);
+        requestWalModeChangeAndFail(igniteId, true, ctxs);
 
         startGrid(igniteId);
 
-        requestWalModeCnangeAndFail(igniteId, false, ctxs);
+        requestWalModeChangeAndFail(igniteId, false, ctxs);
     }
 
     /**
@@ -348,7 +348,9 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
      * @param disable Disable.
      * @param ctxs Ctxs.
      */
-    private void requestWalModeCnangeAndFail(final int igniteId, final boolean disable, final Collection<GridCacheSharedContext> ctxs)
+    private void requestWalModeChangeAndFail(final int igniteId,
+        final boolean disable,
+        final Collection<GridCacheSharedContext> ctxs)
         throws InterruptedException, IgniteInterruptedCheckedException {
         final CountDownLatch disableLatch = new CountDownLatch(1);
 
