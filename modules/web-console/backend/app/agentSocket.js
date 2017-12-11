@@ -88,7 +88,7 @@ module.exports.factory = function(_) {
     class AgentSocket {
         /**
          * @param {Socket} socket Socket for interaction.
-         * @param {String} tokens Active tokens.
+         * @param {Array.<String>} tokens Agent tokens.
          * @param {String} demoEnabled Demo enabled.
          */
         constructor(socket, tokens, demoEnabled) {

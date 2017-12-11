@@ -15,15 +15,8 @@
  * limitations under the License.
  */
 
-import template from './cluster-select.pug';
-import './cluster-select.scss';
-import controller from './cluster-select.controller';
-
-export default [() => {
-    return {
-        restrict: 'E',
-        template,
-        controller,
-        controllerAs: 'ctrl'
-    };
-}];
+/**
+ * <!-- Package description. -->
+ * Contains cache configurations for columnbased decision tree trainer with some related logic.
+ */
+package org.apache.ignite.ml.trees.trainers.columnbased.caches;

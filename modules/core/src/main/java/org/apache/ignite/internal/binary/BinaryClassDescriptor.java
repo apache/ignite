@@ -741,7 +741,8 @@ public class BinaryClassDescriptor {
                         postWrite(writer);
 
                         // Check whether we need to update metadata.
-                        if (obj.getClass() != BinaryMetadata.class) {
+                        // The reason for this check is described in https://issues.apache.org/jira/browse/IGNITE-7138.
+                        if (obj.getClass() != BinaryMetadata.class && obj.getClass() != BinaryTreeMap.class) {
                             int schemaId = writer.schemaId();
 
                             if (schemaReg.schema(schemaId) == null) {
