@@ -2914,21 +2914,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvccCandidate candidate(UUID nodeId, long threadId)
-        throws GridCacheEntryRemovedException {
-        boolean loc = cctx.nodeId().equals(nodeId);
-
-        synchronized (this) {
-            checkObsolete();
-
-            GridCacheMvcc mvcc = mvccExtras();
-
-            return mvcc == null ? null : loc ? mvcc.localCandidate(threadId) :
-                mvcc.remoteCandidate(nodeId, threadId);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public synchronized GridCacheMvccCandidate localOwner() throws GridCacheEntryRemovedException {
         checkObsolete();
 

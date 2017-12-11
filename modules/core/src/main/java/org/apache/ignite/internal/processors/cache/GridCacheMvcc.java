@@ -1307,20 +1307,6 @@ public final class GridCacheMvcc {
     }
 
     /**
-     * @param nodeId Node ID.
-     * @param threadId Thread ID.
-     * @return Remote candidate.
-     */
-    @Nullable GridCacheMvccCandidate remoteCandidate(UUID nodeId, long threadId) {
-        if (rmts != null)
-            for (GridCacheMvccCandidate c : rmts)
-                if (c.nodeId().equals(nodeId) && c.threadId() == threadId)
-                    return c;
-
-        return null;
-    }
-
-    /**
      * Near local candidate.
      *
      * @param nodeId Node ID.

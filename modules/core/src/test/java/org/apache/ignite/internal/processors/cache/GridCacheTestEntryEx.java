@@ -753,7 +753,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public GridCacheMvccCandidate candidate(UUID nodeId, long threadId)
         throws GridCacheEntryRemovedException {
-        return mvcc.remoteCandidate(nodeId, threadId);
+        return mvcc.localCandidate(nodeId, threadId);
     }
 
     /**
