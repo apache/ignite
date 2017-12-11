@@ -20,9 +20,11 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
@@ -37,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     /// <summary>
     /// Client cache implementation.
     /// </summary>
-    internal sealed class CacheClient<TK, TV> : ICacheClient<TK, TV>
+    internal sealed class CacheClient<TK, TV> : ICacheClient<TK, TV>, ICacheInternal
     {
         /** Scan query filter platform code: .NET filter. */
         private const byte FilterPlatformDotnet = 2;
@@ -188,10 +190,17 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(sqlFieldsQuery, "sqlFieldsQuery");
             IgniteArgumentCheck.NotNull(sqlFieldsQuery.Sql, "sqlFieldsQuery.Sql");
 
-            return DoOutInOp(ClientOp.QuerySqlFields, w => WriteSqlFieldsQuery(w, sqlFieldsQuery),
-                s => new ClientFieldsQueryCursor(
-                    _ignite, s.ReadLong(), _keepBinary, s, ClientOp.QuerySqlFieldsCursorGetPage,
-                    ClientFieldsQueryCursor.ReadColumns(_marsh.StartUnmarshal(s))));
+            return DoOutInOp(ClientOp.QuerySqlFields,
+                w => WriteSqlFieldsQuery(w, sqlFieldsQuery),
+                s => GetFieldsCursor(s));
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<T> QueryFields<T>(SqlFieldsQuery sqlFieldsQuery, Func<IBinaryRawReader, int, T> readerFunc)
+        {
+            return DoOutInOp(ClientOp.QuerySqlFields, 
+                w => WriteSqlFieldsQuery(w, sqlFieldsQuery, false),
+                s => GetFieldsCursorNoColumnNames(s, readerFunc));
         }
 
         /** <inheritDoc /> */
@@ -361,6 +370,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
+        CacheConfiguration ICacheInternal.GetConfiguration()
+        {
+            return GetConfiguration().ToCacheConfiguration();
+        }
+
+        /** <inheritDoc /> */
         public ICacheClient<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
             if (_keepBinary)
@@ -378,6 +393,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             }
 
             return new CacheClient<TK1, TV1>(_ignite, _name, true);
+        }
+
+        /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
+        public T DoOutInOpExtension<T>(int extensionId, int opCode, Action<IBinaryRawWriter> writeAction,
+            Func<IBinaryRawReader, T> readFunc)
+        {
+            // Should not be called, there are no usages for thin client.
+            throw IgniteClient.GetClientNotSupportedException();
         }
 
         /// <summary>
@@ -492,7 +516,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Writes the SQL fields query.
         /// </summary>
-        private static void WriteSqlFieldsQuery(IBinaryRawWriter writer, SqlFieldsQuery qry)
+        private static void WriteSqlFieldsQuery(IBinaryRawWriter writer, SqlFieldsQuery qry,
+            bool includeColumns = true)
         {
             Debug.Assert(qry != null);
 
@@ -513,10 +538,33 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteBoolean(qry.Colocated);
             writer.WriteBoolean(qry.Lazy);
             writer.WriteTimeSpanAsLong(qry.Timeout);
+            writer.WriteBoolean(includeColumns);
 
-            // Always include field names.
-            writer.WriteBoolean(true);
+        }
 
+        /// <summary>
+        /// Gets the fields cursor.
+        /// </summary>
+        private ClientFieldsQueryCursor GetFieldsCursor(IBinaryStream s)
+        {
+            var cursorId = s.ReadLong();
+            var columnNames = ClientFieldsQueryCursor.ReadColumns(_marsh.StartUnmarshal(s));
+
+            return new ClientFieldsQueryCursor(_ignite, cursorId, _keepBinary, s,
+                ClientOp.QuerySqlFieldsCursorGetPage, columnNames);
+        }
+
+        /// <summary>
+        /// Gets the fields cursor.
+        /// </summary>
+        private ClientQueryCursorBase<T> GetFieldsCursorNoColumnNames<T>(IBinaryStream s,
+            Func<IBinaryRawReader, int, T> readerFunc)
+        {
+            var cursorId = s.ReadLong();
+            var columnCount = s.ReadInt();
+
+            return new ClientQueryCursorBase<T>(_ignite, cursorId, _keepBinary, s,
+                ClientOp.QuerySqlFieldsCursorGetPage, r => readerFunc(r, columnCount));
         }
 
         /// <summary>

@@ -64,6 +64,11 @@ public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * Asserts that the cache has appropriate status (indicated by the cache metrics).
      *
