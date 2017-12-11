@@ -319,7 +319,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             walArchiveDir = initDirectory(
                 dsCfg.getWalArchivePath(),
-                DataStorageConfiguration.DFLT_WAL_PATH, //todo switch back to compatible mode: DFLT_WAL_ARCHIVE_PATH
+                DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
                 resolveFolders.folderName(),
                 "write ahead log archive directory"
             );
