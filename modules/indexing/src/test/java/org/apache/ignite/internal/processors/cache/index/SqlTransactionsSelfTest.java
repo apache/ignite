@@ -27,6 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -85,14 +86,10 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that COMMIT without a transaction yields an exception.
+     * Test that COMMIT without a transaction yields nothing.
      */
     public void testCommitNoTransaction() {
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
-                execute(node(), "COMMIT");
-            }
-        }, IgniteQueryErrorCode.NO_TRANSACTION);
+        execute(node(), "COMMIT");
     }
 
     /**
@@ -117,14 +114,90 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to open a nested transaction yields an exception.
      */
-    public void testNestedTransaction() {
-        execute(node(), "BEGIN");
-
+    public void testDefaultNestedTxMode() {
         assertSqlException(new RunnableX() {
             @Override public void run() throws Exception {
-                execute(node(), "BEGIN");
+                nestedTxStart(true, null);
             }
         }, IgniteQueryErrorCode.TRANSACTION_EXISTS);
+    }
+
+    /**
+     * Test that attempting to open a nested transaction yields an exception.
+     */
+    public void testErrorNestedTxMode() {
+        assertSqlException(new RunnableX() {
+            @Override public void run() throws Exception {
+                nestedTxStart(true, NestedTxMode.ERROR);
+            }
+        }, IgniteQueryErrorCode.TRANSACTION_EXISTS);
+    }
+
+    /**
+     * Test that attempting to open a nested transaction yields nothing.
+     */
+    public void testIgnoreNestedTxMode() {
+        assertTrue(nestedTxStart(true, NestedTxMode.IGNORE));
+    }
+
+    /**
+     * Test that attempting to open a nested transaction yields nothing.
+     */
+    public void testCommitNestedTxMode() {
+        assertFalse(nestedTxStart(true, NestedTxMode.COMMIT));
+    }
+
+    /**
+     * Test that attempting to open a nested transaction yields an exception.
+     */
+    public void testDefaultNestedTxModeNoAutoCommit() {
+        assertSqlException(new RunnableX() {
+            @Override public void run() throws Exception {
+                nestedTxStart(false, null);
+            }
+        }, IgniteQueryErrorCode.TRANSACTION_EXISTS);
+    }
+
+    /**
+     * Test that attempting to open a nested transaction yields an exception.
+     */
+    public void testErrorNestedTxModeNoAutoCommit() {
+        assertSqlException(new RunnableX() {
+            @Override public void run() throws Exception {
+                nestedTxStart(false, NestedTxMode.ERROR);
+            }
+        }, IgniteQueryErrorCode.TRANSACTION_EXISTS);
+    }
+
+    /**
+     * Test that attempting to open a nested transaction yields nothing.
+     */
+    public void testIgnoreNestedTxModeNoAutoCommit() {
+        assertTrue(nestedTxStart(false, NestedTxMode.IGNORE));
+    }
+
+    /**
+     * Test that attempting to open a nested transaction yields nothing.
+     */
+    public void testCommitNestedTxModeNoAutoCommit() {
+        assertFalse(nestedTxStart(false, NestedTxMode.COMMIT));
+    }
+
+    /**
+     * @param autoCommit Auto commit flag.
+     * @param mode Mode to use.
+     * @return Whether transactions from both calls are the same.
+     */
+    private boolean nestedTxStart(boolean autoCommit, NestedTxMode mode) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("BEGIN");
+
+        queryProcessor(node()).querySqlFieldsNoCache(qry, true, true, autoCommit, mode).get(0).getAll();
+
+        GridNearTxLocal tx = node().context().cache().context().tm().userTx();
+
+        queryProcessor(node()).querySqlFieldsNoCache(qry, true, true, autoCommit, mode).get(0).getAll();
+
+        return (tx == node().context().cache().context().tm().userTx());
     }
 
     /**

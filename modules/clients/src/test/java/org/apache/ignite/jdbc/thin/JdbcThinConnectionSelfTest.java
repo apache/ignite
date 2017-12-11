@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -917,6 +918,16 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 }
             });
         }
+    }
+
+    public void testDefaultNestedTxMode() throws SQLException {
+        try (Connection c = DriverManager.getConnection(URL)) {
+
+        }
+    }
+
+    private static Connection connectWithNestedTxMode(NestedTxMode mode) throws SQLException {
+        return DriverManager.getConnection(URL + "/?nestedTransactions=" + mode.name());
     }
 
     /**

@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -116,5 +117,41 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
                 }
             }
         }, 8, "jdbc-transactions").get();
+    }
+
+    /**
+     *
+     * @throws SQLException
+     */
+    public void testNestedTxModes() throws SQLException {
+        try (Connection c = DriverManager.getConnection(URL + "/?nestedTransactionsMode=ignore")) {
+            try (Statement s = c.createStatement())  {
+                s.execute("BEGIN");
+
+                s.execute("BEGIN");
+            }
+        }
+
+        try (Connection c = DriverManager.getConnection(URL + "/?nestedTransactionsMode=coMMit")) {
+            try (Statement s = c.createStatement())  {
+                s.execute("BEGIN");
+
+                s.execute("BEGIN");
+            }
+        }
+
+        GridTestUtils.assertThrows(null, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try (Connection c = DriverManager.getConnection(URL + "/?nestedTransactionsMode=ERROR")) {
+                    try (Statement s = c.createStatement())  {
+                        s.execute("BEGIN");
+
+                        s.execute("BEGIN");
+                    }
+                }
+
+                throw new AssertionError();
+            }
+        }, SQLException.class, "Transaction has already been started.");
     }
 }

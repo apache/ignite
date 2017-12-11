@@ -109,7 +109,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     {
         try {
             nestedTx = new EnumProperty<>(NestedTxMode.class,
-                "nestedTransactions", "Ignite node IP to connect", NestedTxMode.DEFAULT, false);
+                "nestedTransactionsMode", "Ignite node IP to connect", NestedTxMode.DEFAULT, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -725,7 +725,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
             if (!F.isEmpty(str))
-                val = (T)Enum.valueOf(enumCls, str);
+                val = (T)Enum.valueOf(enumCls, str.toUpperCase());
         }
 
         /** {@inheritDoc} */
