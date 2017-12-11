@@ -56,7 +56,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA
  *                      <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
  *                          <property name="name" value="25MB_Region_Swapping"/>
  *                          <property name="initialSize" value="#{25 * 1024 * 1024}"/>
- *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
+ *                          <property name="maxSize" value="#{100 * 1024 * 1024}"/>
  *                          <property name="swapPath" value="db/swap"/>
  *                      </bean>
  *                  </list>
