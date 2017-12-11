@@ -1781,7 +1781,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         cancelledJobs.remove(worker.getJobId(), worker);
 
                     heldJobs.remove(worker.getJobId());
-                    
+
                     if (metricsUpdateFreq > -1L)
                         updateJobMetrics();
                 }
