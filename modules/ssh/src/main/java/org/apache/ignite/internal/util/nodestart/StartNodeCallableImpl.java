@@ -38,11 +38,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterStartNodeResultImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 
@@ -53,6 +54,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_USER_NAME;
  * SSH-based node starter.
  */
 public class StartNodeCallableImpl implements StartNodeCallable {
+
     /** Default Ignite home path for Windows (taken from environment variable). */
     private static final String DFLT_IGNITE_HOME_WIN = "%IGNITE_HOME%";
 
@@ -143,6 +145,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             boolean win = isWindows(ses);
 
+            info("Windows mode: " + win, spec.logger(), log);
+
             char separator = win ? '\\' : '/';
 
             spec.fixPaths(separator);
@@ -180,7 +184,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                 String tmpDir = env(ses, "%TEMP%", "C:\\Windows\\Temp", WINDOWS_ENCODING);
 
                 scriptOutputDir = tmpDir + "\\ignite-startNodes";
-            } else { // Assume Unix.
+            }
+            else { // Assume Unix.
                 String tmpDir = env(ses, "$TMPDIR", "/tmp/");
 
                 scriptOutputDir = tmpDir + "ignite-startNodes";
@@ -388,7 +393,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      * @throws JSchException In case of SSH error.
      * @throws IOException If failed.
      */
-    private String exec(Session ses, String cmd, String encoding) throws JSchException, IOException {
+    private String exec(Session ses, final String cmd, String encoding) throws JSchException, IOException {
         ChannelExec ch = null;
 
         try {
@@ -423,41 +428,34 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                     out.a(line);
 
                     if (first) {
-                        to = new GridTimeoutObject() {
-
-                            /**  */
-                            private final IgniteUuid id = IgniteUuid.randomUuid();
-
-                            /**  */
-                            private final long endTime = U.currentTimeMillis() + EXECUTE_WAIT_TIME;
+                        to = new GridTimeoutObjectAdapter(EXECUTE_WAIT_TIME) {
 
                             /**  */
                             private final Thread thread = Thread.currentThread();
 
-                            @Override public IgniteUuid timeoutId() {
-                                return id;
-                            }
-
-                            @Override public long endTime() {
-                                return endTime;
-                            }
-
                             @Override public void onTimeout() {
                                 thread.interrupt();
                             }
+
+                            @Override public String toString() {
+                                return S.toString("GridTimeoutObject", "cmd", cmd, "thread", thread);
+                            }
                         };
 
-                        proc.addTimeoutObject(to);
-                    }
-                    else
+                        assert proc.addTimeoutObject(to) : "Timeout object was not added: " + to;
+
                         first = false;
+                    }
                 }
             }
             catch (InterruptedIOException ignore) {
             }
             finally {
-                if (to != null)
-                    proc.removeTimeoutObject(to);
+                if (to != null) {
+                    boolean r = proc.removeTimeoutObject(to);
+
+                    assert r || to.endTime() <= U.currentTimeMillis() : "Timeout object was not removed: " + to;
+                }
             }
 
             return out == null ? null : out.toString();
