@@ -106,7 +106,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         DataRegionConfiguration regCfg = new DataRegionConfiguration();
 
         regCfg.setName("dfltMemPlc");
-        regCfg.setMaxSize(11 * 1024L * 1024 * 1024);
+        regCfg.setMaxSize(10 * 1024L * 1024 * 1024);
         regCfg.setPersistenceEnabled(true);
 
         dsCfg.setDefaultDataRegionConfiguration(regCfg);
@@ -270,7 +270,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
     public void testContinuousPutMultithreaded() throws Exception {
         try {
-            System.setProperty(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, "true");
+            System.setProperty(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, "false");
 
             customWalMode = WALMode.BACKGROUND;
             final IgniteEx ignite = startGrid(1);
@@ -279,7 +279,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
             final IgniteCache<Object, IndexedObject> cache = ignite.cache(CACHE_NAME);
             int totalRecs = CONTINUOUS_PUT_RECS_CNT;
-            final int threads = 10;
+            final int threads = 16;
 
             final int recsPerThread = totalRecs / threads;
             final Collection<Callable<?>> tasks = new ArrayList<>();
