@@ -67,13 +67,15 @@ import org.jetbrains.annotations.Nullable;
  * <h2 class="header">Mandatory</h2>
  * This SPI has one mandatory configuration parameter:
  * <ul>
- * <li>{@link #setAwsCredentials(AWSCredentials)}</li>
+ *      <li>AWS credentials (see {@link #setAwsCredentials(AWSCredentials)}
  * </ul>
  * <h2 class="header">Optional</h2>
  * This SPI has following optional configuration parameters:
  * <ul>
- * <li>{@link #setBucketNameSuffix(String)}</li>
- * <li>{@link #setClientConfiguration(ClientConfiguration)}</li>
+ *      <li>Bucket name suffix (see {@link #setBucketNameSuffix(String)})</li>
+ *      <li>Client configuration (see {@link #setClientConfiguration(ClientConfiguration)})</li>
+ *      <li>Bucket endpoint (see {@link #setBucketEndpoint(String)})</li>
+ *      <li>Server side encryption algorithm (see {@link #setSSEAlgorithm(String)})</li>
  * <li>{@link #setBucketEndpoint(String)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
@@ -159,6 +161,9 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /** Bucket endpoint (set by user). */
     private @Nullable String bucketEndpoint;
 
+    /** Server side encryption algorithm */
+    private @Nullable String sseAlg;
+
     /** Amazon client configuration. */
     private ClientConfiguration cfg;
 
@@ -185,6 +190,15 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
      */
     public @Nullable String getBucketEndpoint() {
         return bucketEndpoint;
+    }
+
+    /**
+     * Gets S3 server-side encryption algorithm.
+     *
+     * @return S3 server-side encryption algorithm to use.
+     */
+    public @Nullable String getSSEAlgorithm() {
+        return sseAlg;
     }
 
     /**
@@ -271,6 +285,21 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     }
 
     /**
+     * Sets server-side encryption algorithm for Amazon S3-managed encryption keys.
+     * For information about possible S3-managed encryption keys visit
+     * <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>.
+     *
+     * @param sseAlg Server-side encryption algorithm, for example, AES256 or SSES3.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public S3CheckpointSpi setSSEAlgorithm(String sseAlg) {
+        this.sseAlg = sseAlg;
+
+        return this;
+    }
+
+    /**
      * Sets Amazon client configuration.
      * <p>
      * For details refer to Amazon S3 API reference.
@@ -312,6 +341,8 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
             log.debug(configInfo("awsCredentials", cred));
             log.debug(configInfo("clientConfiguration", cfg));
             log.debug(configInfo("bucketNameSuffix", bucketNameSuffix));
+            log.debug(configInfo("bucketEndpoint", bucketEndpoint));
+            log.debug(configInfo("SSEAlgorithm", sseAlg));
         }
 
         if (cfg == null)
@@ -560,6 +591,9 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
 
         meta.setContentLength(buf.length);
 
+        if (!F.isEmpty(sseAlg))
+            meta.setSSEAlgorithm(sseAlg);
+
         s3.putObject(bucketName, data.getKey(), new ByteArrayInputStream(buf), meta);
     }
 
@@ -769,6 +803,11 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
         /** {@inheritDoc} */
         @Override public String getBucketEndpoint() {
             return S3CheckpointSpi.this.getBucketName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSSEAlgorithm() {
+            return S3CheckpointSpi.this.getSSEAlgorithm();
         }
 
         /** {@inheritDoc} */
