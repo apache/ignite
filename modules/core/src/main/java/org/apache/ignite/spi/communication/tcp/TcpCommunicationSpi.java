@@ -1150,7 +1150,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return {@code True} if network compressing enabled.
      */
     private boolean isNetworkCompressingEnabled() {
-//        System.out.println("MY check"+ Arrays.toString(Thread.currentThread().getStackTrace()));
         return ignite.configuration().isNetworkCompressingEnabled();
     }
 
@@ -3476,17 +3475,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             ByteBuffer buf;
 
-            if (isSslEnabled()) {
-                assert sslMeta != null;
+            if (isSslEnabled() || isNetworkCompressingEnabled()) {
+                ByteBuffer sslAppBuf = null;
 
-                sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuf, ByteOrder.nativeOrder(), log);
+                if (isSslEnabled()) {
+                    assert sslMeta != null;
 
-                if (!sslHnd.handshake())
-                    throw new HandshakeException("SSL handshake is not completed.");
+                    sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuf, ByteOrder.nativeOrder(), log);
 
-                ByteBuffer handBuff = sslHnd.applicationBuffer();
+                    if (!sslHnd.handshake())
+                        throw new HandshakeException("SSL handshake is not completed.");
 
-                if (handBuff.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
+                    sslAppBuf = sslHnd.applicationBuffer();
+                }
+
+                if (isNetworkCompressingEnabled()) {
+                    assert compressMeta != null;
+
+                    compressHnd = new BlockingCompressHandler(compressMeta.compressEngine(), directBuf, ByteOrder.nativeOrder(), log);
+
+                    assert compressHnd.applicationBuffer().remaining() == 0;
+                }
+
+                if (sslAppBuf == null || sslAppBuf.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
                     buf = ByteBuffer.allocate(1000);
 
                     int read = ch.read(buf);
@@ -3496,40 +3507,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     buf.flip();
 
-                    buf = sslHnd.decode(buf);
-                    if (isNetworkCompressingEnabled()) {
-                        compressHnd = new BlockingCompressHandler(compressMeta.compressEngine(), directBuf, ByteOrder.nativeOrder(), log);
+                    if (isSslEnabled())
+                        buf = sslHnd.decode(buf);
+
+                    if (isNetworkCompressingEnabled())
                         buf = compressHnd.decode(buf);
-                    }
                 }
                 else {
-                    buf = handBuff;
+                    buf = sslAppBuf;
 
-                    if (isNetworkCompressingEnabled()) {
-                        compressHnd = new BlockingCompressHandler(compressMeta.compressEngine(), directBuf, ByteOrder.nativeOrder(), log);
+                    if (isNetworkCompressingEnabled())
                         buf = compressHnd.decode(buf);
-                    }
                 }
-            }
-            else if (isNetworkCompressingEnabled()) {
-                compressHnd = new BlockingCompressHandler(compressMeta.compressEngine(), directBuf, ByteOrder.nativeOrder(), log);
-
-                ByteBuffer handBuff = compressHnd.applicationBuffer();
-
-                if (handBuff.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
-                    buf = ByteBuffer.allocate(1000);
-
-                    int read = ch.read(buf);
-
-                    if (read == -1)
-                        throw new HandshakeException("Failed to read remote node ID (connection closed).");
-
-                    buf.flip();
-
-                    buf = compressHnd.decode(buf);
-                }
-                else
-                    buf = handBuff;
             }
             else {
                 buf = ByteBuffer.allocate(NodeIdMessage.MESSAGE_FULL_SIZE);
@@ -3552,22 +3541,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             else if (log.isDebugEnabled())
                 log.debug("Received remote node ID: " + rmtNodeId0);
 
+            ByteBuffer hdrBuf = ByteBuffer.wrap(U.IGNITE_HEADER);
+
+            if (isNetworkCompressingEnabled()) {
+                assert  compressHnd != null;
+
+                hdrBuf = compressHnd.compress(hdrBuf);
+            }
+
             if (isSslEnabled()) {
                 assert sslHnd != null;
 
-                if (isNetworkCompressingEnabled()) {
-                    assert  compressHnd != null;
-
-                    ch.write(sslHnd.encrypt(compressHnd.compress(ByteBuffer.wrap(U.IGNITE_HEADER))));
-                } else
-                    ch.write(sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
+                hdrBuf = sslHnd.encrypt(hdrBuf);
             }
-            else if (isNetworkCompressingEnabled()) {
-                assert compressHnd != null;
 
-                ch.write(compressHnd.compress(ByteBuffer.wrap(U.IGNITE_HEADER)));
-            } else
-                ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
+            ch.write(hdrBuf);
 
             ClusterNode locNode = getLocalNode();
 
@@ -3608,51 +3596,43 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 buf.flip();
 
+                if (isNetworkCompressingEnabled()) {
+                    assert compressHnd != null;
+
+                    buf = compressHnd.compress(buf);
+                }
+
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    if (isNetworkCompressingEnabled()) {
-                        assert compressHnd != null;
-
-                        ch.write(sslHnd.encrypt(compressHnd.compress(buf)));
-                    }
-                    else
-                        ch.write(sslHnd.encrypt(buf));
+                    buf = sslHnd.encrypt(buf);
                 }
-                else if (isNetworkCompressingEnabled()) {
-                    assert compressHnd != null;
 
-                    ch.write(compressHnd.compress(buf));
-                } else
-                    ch.write(buf);
+                ch.write(buf);
             }
             else {
+                ByteBuffer nodeIdBuf = ByteBuffer.wrap(nodeIdMessage().nodeIdBytesWithType);
+
+                if (isNetworkCompressingEnabled()) {
+                    assert compressHnd != null;
+
+                    nodeIdBuf = compressHnd.compress(nodeIdBuf);
+                }
+
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    if (isNetworkCompressingEnabled()) {
-                        assert compressHnd != null;
-
-                        ch.write(sslHnd.encrypt(compressHnd.compress(ByteBuffer.wrap(nodeIdMessage().nodeIdBytesWithType))));
-                    }
-                    else
-                        ch.write(sslHnd.encrypt(ByteBuffer.wrap(nodeIdMessage().nodeIdBytesWithType)));
+                    nodeIdBuf = sslHnd.encrypt(nodeIdBuf);
                 }
-                else if (isNetworkCompressingEnabled()) {
-                    assert compressHnd != null;
 
-                    ch.write(compressHnd.compress(ByteBuffer.wrap(nodeIdMessage().nodeIdBytesWithType)));
-                } else
-                    ch.write(ByteBuffer.wrap(nodeIdMessage().nodeIdBytesWithType));
+                ch.write(nodeIdBuf);
             }
 
             if (recovery != null) {
                 if (log.isDebugEnabled())
                     log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
 
-                if (isSslEnabled()) {
-                    assert sslHnd != null;
-
+                if (isSslEnabled() || isNetworkCompressingEnabled()) {
                     buf = ByteBuffer.allocate(1000);
                     buf.order(ByteOrder.nativeOrder());
 
@@ -3667,63 +3647,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 "(connection closed).");
 
                         buf.flip();
+
+                        ByteBuffer decode0 = null;
+
+                        if (isSslEnabled()) {
+                            assert sslHnd != null;
+
+                            decode0 = sslHnd.decode(buf);
+                        }
 
                         if (isNetworkCompressingEnabled()) {
                             assert compressHnd != null;
 
-                            ByteBuffer decode0 = compressHnd.decode(sslHnd.decode(buf));
-
-                            i += decode0.remaining();
-
-                            decode = appendAndResizeIfNeeded(decode, decode0);
-
-                            buf.clear();
+                            decode0 = compressHnd.decode(decode0 == null ? buf : decode0);
                         }
-                        else {
-                            ByteBuffer decode0 = sslHnd.decode(buf);
 
-                            i += decode0.remaining();
-
-                            decode = appendAndResizeIfNeeded(decode, decode0);
-
-                            buf.clear();
-                        }
-                    }
-
-                    decode.flip();
-
-                    rcvCnt = decode.getLong(Message.DIRECT_TYPE_SIZE);
-
-                    if (decode.limit() > RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE) {
-                        decode.position(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
-
-                        sslMeta.decodedBuffer(decode);
-                    }
-
-                    ByteBuffer inBuf = sslHnd.inputBuffer();
-
-                    if (inBuf.position() > 0)
-                        sslMeta.encodedBuffer(inBuf);
-                }
-                else if (isNetworkCompressingEnabled()) {
-                    assert compressHnd != null;
-
-                    buf = ByteBuffer.allocate(1000);
-                    buf.order(ByteOrder.nativeOrder());
-
-                    ByteBuffer decode = ByteBuffer.allocate(2 * buf.capacity());
-                    decode.order(ByteOrder.nativeOrder());
-
-                    for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
-                        int read = ch.read(buf);
-
-                        if (read == -1)
-                            throw new HandshakeException("Failed to read remote node recovery handshake " +
-                                "(connection closed).");
-
-                        buf.flip();
-
-                        ByteBuffer decode0 = compressHnd.decode(buf);
+                        assert decode0 != null;
 
                         i += decode0.remaining();
 
@@ -3739,13 +3678,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (decode.limit() > RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE) {
                         decode.position(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
 
-                        compressMeta.decodedBuffer(decode);
+                        if (isNetworkCompressingEnabled())
+                            compressMeta.decodedBuffer(decode);
+                        else if (isSslEnabled())
+                            sslMeta.decodedBuffer(decode);
                     }
 
-                    ByteBuffer inBuf = compressHnd.inputBuffer();
+                    if (isSslEnabled()) {
+                        ByteBuffer inBuf = sslHnd.inputBuffer();
 
-                    if (inBuf.position() > 0)
-                        compressMeta.encodedBuffer(inBuf);
+                        if (inBuf.position() > 0)
+                            sslMeta.encodedBuffer(inBuf);
+                    }
+
+                    if (isNetworkCompressingEnabled()) {
+                        ByteBuffer inBuf = compressHnd.inputBuffer();
+
+                        if (inBuf.position() > 0)
+                            compressMeta.encodedBuffer(inBuf);
+                    }
                 }
                 else {
                     buf = ByteBuffer.allocate(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);

@@ -234,13 +234,13 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
     @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
         GridNioCompressHandler hnd = compressHandler(ses);
 
-        hnd.lock();
+//        hnd.lock();
 
         try {
             return shutdownSession(ses, hnd);
         }
         finally {
-            hnd.unlock();
+//            hnd.unlock();
         }
     }
 
@@ -254,7 +254,7 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
      */
     private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioCompressHandler hnd)
         throws IgniteCheckedException {
-        hnd.writeNetBuffer(null);
+//        hnd.writeNetBuffer(null);
 
         return proceedSessionClose(ses);
     }
