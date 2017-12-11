@@ -339,7 +339,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             }
             else {
                 MiniFuture fut = new MiniFuture(n, mappedKeys, topVer,
-                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, readThrough, skipVals));
+                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, expiryPlc, readThrough, skipVals));
 
                 GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),
