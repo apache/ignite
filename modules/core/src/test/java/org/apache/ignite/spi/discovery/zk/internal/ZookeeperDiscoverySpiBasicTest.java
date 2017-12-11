@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
+import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -560,6 +561,108 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         c0.allowConnect();
 
         assertTrue(l.await(10, TimeUnit.SECONDS));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSegmentation2() throws Exception {
+        sesTimeout = 2000;
+
+        Ignite node0 = startGrid(0);
+
+        final CountDownLatch l = new CountDownLatch(1);
+
+        node0.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event event) {
+                l.countDown();
+
+                return false;
+            }
+        }, EventType.EVT_NODE_SEGMENTED);
+
+        try {
+            zkCluster.close();
+
+            assertTrue(l.await(10, TimeUnit.SECONDS));
+        }
+        finally {
+            zkCluster = createTestingCluster(ZK_SRVS);
+
+            zkCluster.start();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSegmentation3() throws Exception {
+        sesTimeout = 5000;
+
+        Ignite node0 = startGrid(0);
+
+        final CountDownLatch l = new CountDownLatch(1);
+
+        node0.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event event) {
+                l.countDown();
+
+                return false;
+            }
+        }, EventType.EVT_NODE_SEGMENTED);
+
+        List<TestingZooKeeperServer> srvs = zkCluster.getServers();
+
+        assertEquals(3, srvs.size());
+
+        try {
+            srvs.get(0).stop();
+            srvs.get(1).stop();
+
+            assertTrue(l.await(20, TimeUnit.SECONDS));
+        }
+        finally {
+            zkCluster.close();
+
+            zkCluster = createTestingCluster(ZK_SRVS);
+
+            zkCluster.start();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQuorumRestore() throws Exception {
+        sesTimeout = 15_000;
+
+        startGrids(3);
+
+        waitForTopology(3);
+
+        List<TestingZooKeeperServer> srvs = zkCluster.getServers();
+
+        assertEquals(3, srvs.size());
+
+        try {
+            srvs.get(0).stop();
+            srvs.get(1).stop();
+
+            U.sleep(2000);
+
+            srvs.get(1).restart();
+
+            startGrid(4);
+
+            waitForTopology(4);
+        }
+        finally {
+            zkCluster.close();
+
+            zkCluster = createTestingCluster(ZK_SRVS);
+
+            zkCluster.start();
+        }
     }
 
     /**
