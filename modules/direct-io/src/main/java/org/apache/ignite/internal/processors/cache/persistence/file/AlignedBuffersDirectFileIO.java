@@ -62,6 +62,12 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     /** File descriptor. */
     private int fd = -1;
 
+    /** Number of instances to cache */
+    private static final int CACHED_LONGS = 512;
+
+    /** Native long cache, not volatile write because values once created are not mutable. */
+    private static final NativeLong nativeLongCache[] = new NativeLong[CACHED_LONGS];
+
     /**
      * Creates Direct File IO.
      *
@@ -398,11 +404,25 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     /**
-     * @param l value to box to native long.
+     * @param value value to box to native long.
      * @return native long.
      */
-    @NotNull private NativeLong nl(long l) {
-        return new NativeLong(l);
+    @NotNull private NativeLong nl(long value) {
+        if (value % pageSize == 0 && value < CACHED_LONGS * pageSize) {
+            int cacheIdx = (int)(value / pageSize);
+
+            NativeLong curCached = nativeLongCache[cacheIdx];
+
+            if (curCached != null)
+                return curCached;
+
+            NativeLong nl = new NativeLong(value);
+
+            nativeLongCache[cacheIdx] = nl;
+
+            return nl;
+        }
+        return new NativeLong(value);
     }
 
     /**

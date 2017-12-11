@@ -72,6 +72,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "partitioned";
     public static final int OBJECT_SIZE = 40000;
+    public static final int CONTINUOUS_PUT_RECS_CNT = 200_000;
 
     /** */
     private boolean setWalArchAndWorkToSameValue = false;
@@ -82,7 +83,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
     /** */
     private int walSegmentSize = 64 * 1024 * 1024;
     /** Custom wal mode. */
-    private WALMode customWalMode;
+    protected WALMode customWalMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -95,6 +96,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setNodeFilter(new RemoteNodeFilter());
         ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
+        ccfg.setName(CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -105,15 +107,17 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         DataRegionConfiguration regCfg = new DataRegionConfiguration();
 
         regCfg.setName("dfltMemPlc");
-        regCfg.setMaxSize(4 * 1024L * 1024 * 1024);
+        regCfg.setMaxSize(11 * 1024L * 1024 * 1024);
         regCfg.setPersistenceEnabled(true);
 
         dsCfg.setDefaultDataRegionConfiguration(regCfg);
 
+        dsCfg.setWriteThrottlingEnabled(true);
+
         if (walSegmentSize != 0)
             dsCfg.setWalSegmentSize(walSegmentSize);
 
-        dsCfg.setCheckpointFrequency(1 * 1000);
+        dsCfg.setCheckpointFrequency(5 * 1000);
 
         //dsCfg.setCheckpointPageBufferSize(1024L * 1024 * 1024);
 
@@ -153,7 +157,6 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-
         stopAllGrids();
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
@@ -270,13 +273,13 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         try {
             System.setProperty(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, "true");
 
-            customWalMode = WALMode.LOG_ONLY;
+            customWalMode = WALMode.BACKGROUND;
             final IgniteEx ignite = startGrid(1);
 
             ignite.active(true);
 
             final IgniteCache<Object, IndexedObject> cache = ignite.cache(CACHE_NAME);
-            int totalRecs = 400_000;
+            int totalRecs = CONTINUOUS_PUT_RECS_CNT;
             final int threads = 10;
 
             final int recsPerThread = totalRecs / threads;
@@ -301,49 +304,51 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
             watchdog.start();
             GridTestUtils.runMultiThreaded(tasks, "put-thread");
-            watchdog.stop();
             stopGrid(1);
+            watchdog.stop();
 
             System.out.println("Please clear page cache");
             Thread.sleep(10000);
 
-
-            final Ignite restartedIgnite = startGrid(1);
-
-            restartedIgnite.active(true);
-
-            final IgniteCache<Integer, IndexedObject> restartedCache = restartedIgnite.cache(CACHE_NAME);
-
-
-            final ProgressWatchdog watchdog2= new ProgressWatchdog();
-
-            watchdog2.operationComplete = "Verified";
-            watchdog2.operation = "get";
-
-            final Collection<Callable<?>> tasksR = new ArrayList<>();
-            tasksR.clear();
-            for (int j = 0; j < threads; j++) {
-                final int finalJ = j;
-                tasksR.add(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        for (int i = finalJ * recsPerThread; i < ((finalJ + 1) * recsPerThread); i++) {
-                            IndexedObject object = restartedCache.get(i);
-                            int actVal = object.iVal;
-                            TestCase.assertEquals(i, actVal);
-                            watchdog2.reportProgress(1);
-                        }
-                        return null;
-                    }
-                });
-            }
-
-            watchdog2.start();
-            GridTestUtils.runMultiThreaded(tasksR, "get-thread");
-            watchdog2.stop();
+            runVerification(threads, recsPerThread);
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    protected void runVerification(int threads, final int recsPerThread) throws Exception {
+        final Ignite restartedIgnite = startGrid(1);
+
+        restartedIgnite.active(true);
+
+        final IgniteCache<Integer, IndexedObject> restartedCache = restartedIgnite.cache(CACHE_NAME);
+
+        final ProgressWatchdog watchdog2= new ProgressWatchdog();
+
+        watchdog2.operationComplete = "Verified";
+        watchdog2.operation = "get";
+
+        final Collection<Callable<?>> tasksR = new ArrayList<>();
+        tasksR.clear();
+        for (int j = 0; j < threads; j++) {
+            final int finalJ = j;
+            tasksR.add(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    for (int i = finalJ * recsPerThread; i < ((finalJ + 1) * recsPerThread); i++) {
+                        IndexedObject object = restartedCache.get(i);
+                        int actVal = object.iVal;
+                        TestCase.assertEquals(i, actVal);
+                        watchdog2.reportProgress(1);
+                    }
+                    return null;
+                }
+            });
+        }
+
+        watchdog2.start();
+        GridTestUtils.runMultiThreaded(tasksR, "get-thread");
+        watchdog2.stop();
     }
 
     private void verifyByChunk(int threads, int recsPerThread,
@@ -471,7 +476,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class IndexedObject {
+    protected static class IndexedObject {
         /** */
         @QuerySqlField(index = true)
         private int iVal;

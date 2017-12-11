@@ -79,14 +79,22 @@ public class AlignedBuffers {
      * @param dest destination buffer, native or heap. Data is coped to the beginning of buffer.
      */
     public static void copyMemory(ByteBuffer src, ByteBuffer dest) {
-        //todo check bounds
         int size = src.remaining();
 
-        if (src instanceof DirectBuffer && dest instanceof DirectBuffer)
+        if (src.position() != 0)
+            throw new IllegalArgumentException("Copy memory applicable only for rewinded buffers: src buffer is in invalid state");
+
+        if (dest.position() != 0)
+            throw new IllegalArgumentException("Copy memory applicable only for rewinded buffers: dst buffer is in invalid state");
+
+        if (size < dest.capacity())
+            throw new IllegalStateException("Unable to copy memory, destination buffer is too short");
+
+        if (src.isDirect() && dest.isDirect())
             GridUnsafe.copyMemory(GridUnsafe.bufferAddress(src), GridUnsafe.bufferAddress(dest), size);
-        else if (!(src instanceof DirectBuffer) && dest instanceof DirectBuffer)
+        else if (!(src.isDirect()) && dest.isDirect())
             new Pointer(GridUnsafe.bufferAddress(dest)).write(0, src.array(), src.arrayOffset(), size);
-        else if ((src instanceof DirectBuffer) && !(dest instanceof DirectBuffer))
+        else if ((src.isDirect()) && !(dest.isDirect()))
             new Pointer(GridUnsafe.bufferAddress(src)).read(0, dest.array(), dest.arrayOffset(), size);
         else {
             throw new UnsupportedOperationException("Unable to copy memory from [" + src.getClass() + "]" +
