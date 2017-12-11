@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
     private static final String TEST_NAME = "Naum Prikhodiaschiy";
-    private static final String TEST_NAME2 = "Mozgobaum";
+    private static final String TEST_NAME2 = "Eha Tamm";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName, IgniteTestResources rsrcs)
@@ -66,13 +66,14 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrid(getTestIgniteInstanceName());
-        grid().active(true);
     }
 
     public void testOptimizedMarshallerIndex() throws Exception {
 
         UUID uuid = UUID.randomUUID();
+
+        startGrid(getTestIgniteInstanceName());
+        grid().active(true);
 
         // Cache 1
         CacheConfiguration ccfg1 = cacheConfiguration("PersonEn");
@@ -91,6 +92,15 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
         IgniteCache<NamespaceRu.Key, NamespaceRu.Person> cache2 = grid().getOrCreateCache(ccfg2);
 
         cache2.put(new NamespaceRu.Key(uuid), new NamespaceRu.Person(TEST_NAME2, 42));
+
+        stopGrid();
+        cache1 = null;
+        cache2 = null;
+        startGrid(getTestIgniteInstanceName());
+        grid().active(true);
+
+        cache1 = grid().getOrCreateCache(ccfg1);
+        cache2 = grid().getOrCreateCache(ccfg2);
 
         // Check
         SqlFieldsQueryEx qry = new SqlFieldsQueryEx(
