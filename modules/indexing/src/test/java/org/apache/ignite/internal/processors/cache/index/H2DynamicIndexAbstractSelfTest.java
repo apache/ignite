@@ -29,14 +29,12 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -228,25 +226,6 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1_ESCAPED + "\""));
 
         assertColumnValues("someVal", "val1", "val3");
-    }
-
-    /**
-     * Verifies that code that handles single-key lookup works correctly.
-     */
-    public void testFindOneUsedForSingleKeyLookup() {
-        IgniteCache<KeyClass, ValueClass> cache = cache();
-
-        assertColumnValues("val1", "val2", "val3");
-
-        KeyClass filter = new KeyClass(2);
-
-        FieldsQueryCursor<List<?>> cursor = cache.query(new SqlFieldsQueryEx(
-            "SELECT \"id\", \"" + FIELD_NAME_1_ESCAPED + "\" FROM \"" + TBL_NAME_ESCAPED + "\" WHERE _key = ?",
-            true).setArgs(filter));
-
-        List<List<?>> selectedRows = cursor.getAll();
-
-        assertEquals(1, selectedRows.size());
     }
 
     /**

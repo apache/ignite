@@ -181,12 +181,12 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                 GridH2Row row = tree.findOne(lower, filter);
 
-                return (row == null) ? EMPTY_CURSOR : new SingletonCursor(row);
+                return (row == null) ? EMPTY_CURSOR : new SingleRowCursor(row);
             }
             else {
-                GridCursor<GridH2Row> gridCursor = tree.find(lower, upper, filter);
+                GridCursor<GridH2Row> cursor = tree.find(lower, upper, filter);
 
-                return new H2Cursor(gridCursor);
+                return new H2Cursor(cursor);
             }
         }
         catch (IgniteCheckedException e) {
@@ -288,9 +288,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            BPlusTree.TreeRowClosure<SearchRow, GridH2Row> rowClo = partitionRowFilterClo();
+            BPlusTree.TreeRowClosure<SearchRow, GridH2Row> filter = filterClosure();
 
-            return tree.size(rowClo);
+            return tree.size(filter);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -358,9 +358,9 @@ public class H2TreeIndex extends GridH2IndexBase {
         IndexingQueryFilter filter) {
 
         try {
-            IndexingQueryCacheFilter partitionFilter = partitionFilter(filter);
+            IndexingQueryCacheFilter pf = partitionFilter(filter);
 
-            GridCursor<GridH2Row> range = t.find(first, last, partitionFilter);
+            GridCursor<GridH2Row> range = t.find(first, last, pf);
 
             if (range == null)
                 range = GridH2IndexBase.EMPTY_CURSOR;
@@ -480,7 +480,7 @@ public class H2TreeIndex extends GridH2IndexBase {
      *
      * @return The filter, which returns true for rows owned by this cache.
      */
-    @Nullable private BPlusTree.TreeRowClosure<SearchRow, GridH2Row> partitionRowFilterClo() {
+    @Nullable private BPlusTree.TreeRowClosure<SearchRow, GridH2Row> filterClosure() {
         final IndexingQueryCacheFilter filter = partitionFilter(threadLocalFilter());
 
         return filter != null ? new PartitionFilterTreeRowClosure(filter) : null;
@@ -508,53 +508,4 @@ public class H2TreeIndex extends GridH2IndexBase {
             return false;
         }
     };
-    /** A cursor that iterates over a single row. */
-    public static class SingletonCursor implements Cursor {
-
-
-        /** The row to return. */
-        private final GridH2Row row;
-
-        /** Current position of the iterator. */
-        private boolean isAtFirstRow;
-
-        /** Creates a singleton cursor with the specified row.
-         * @param row The row to return.
-         */
-        public SingletonCursor(GridH2Row row) {
-            this.row = row;
-            this.isAtFirstRow = false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Row get() {
-            if (!isAtFirstRow)
-                DbException.convert(new NoSuchElementException("next() has to be called before get()"));
-
-            return row;
-        }
-
-        /** {@inheritDoc} */
-        @Override public SearchRow getSearchRow() {
-            return get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            if (isAtFirstRow)
-                return false;
-
-            isAtFirstRow = true;
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean previous() {
-            if (isAtFirstRow)
-                return true;
-
-            isAtFirstRow = false;
-            return true;
-        }
-    }
 }
