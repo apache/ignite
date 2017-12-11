@@ -198,6 +198,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
@@ -279,7 +280,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private static final Object STOP_RECONNECT = new Object();
 
     static {
-        LongJVMPauseDetector.start();
+        if (!getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, false))
+            LongJVMPauseDetector.start();
     }
 
     /** */

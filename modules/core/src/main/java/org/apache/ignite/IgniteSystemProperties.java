@@ -752,13 +752,16 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
-    /** Ignite STW detector precision. */
+    /** Ignite JVM pause detector disabled. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_DISABLED = "IGNITE_JVM_PAUSE_DETECTOR_DISABLED";
+
+    /** Ignite JVM pause detector precision. */
     public static final String IGNITE_JVM_PAUSE_DETECTOR_PRECISION = "IGNITE_JVM_PAUSE_DETECTOR_PRECISION";
 
-    /** Ignite STW detector threshold. */
+    /** Ignite JVM pause detector threshold. */
     public static final String IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD = "IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD";
 
-    /** Ignite STW detector last events count. */
+    /** Ignite JVM pause detector last events count. */
     public static final String IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT = "IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT";
 
     /**
