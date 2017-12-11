@@ -81,7 +81,7 @@ def sendHttpRequest = { requestMethod, urlString, user, pwd, postData, contentTy
 
     HttpURLConnection conn = (HttpURLConnection)url.openConnection();
 
-    String encoded = new sun.misc.BASE64Encoder().encode("$user:$pwd".getBytes());
+    String encoded = new String(Base64.getEncoder().encode("$user:$pwd".getBytes()), java.nio.charset.StandardCharsets.ISO_8859_1);
 
     conn.setRequestProperty("Authorization", "Basic " + encoded);
 

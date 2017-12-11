@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.rest;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import sun.misc.BASE64Encoder;
 
 /**
  *
@@ -87,11 +88,11 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
 
-            BASE64Encoder enc = new BASE64Encoder();
+            Base64.Encoder enc = Base64.getEncoder();
 
             md.update(s.getBytes());
 
-            String hash = enc.encode(md.digest());
+            String hash = new String(enc.encode(md.digest()), StandardCharsets.ISO_8859_1);
 
             return ts + ":" + hash;
         }
