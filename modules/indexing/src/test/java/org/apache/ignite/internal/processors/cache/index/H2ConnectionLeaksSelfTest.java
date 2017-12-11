@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.sql.Connection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -32,16 +34,27 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for leaks JdbcConnection on SqlFieldsQuery execute.
  */
-public class InternalJdbcConnectionLeaksOnSqlFieldsQueryTest extends GridCommonAbstractTest {
+public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
+    /** Nodes count. */
+    private static final int NODE_CNT = 2;
+
+    /** Keys count. */
+    private static final int KEY_CNT = 100;
+
     /** Threads count. */
-    private static final int THREADS_COUNT = 10000;
+    private static final int THREAD_CNT = 100;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(2);
+        Ignite node = startGrids(NODE_CNT);
+
+        IgniteCache<Long, String> cache = node.cache(CACHE_NAME);
+
+        for (int i = 0; i < KEY_CNT; i++)
+            cache.put((long)i, String.valueOf(i));
     }
 
     /** {@inheritDoc} */
@@ -51,7 +64,8 @@ public class InternalJdbcConnectionLeaksOnSqlFieldsQueryTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
+        CacheConfiguration<Long, String> ccfg = new CacheConfiguration<Long, String>().setName(CACHE_NAME)
+            .setIndexedTypes(Long.class, String.class);
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -69,34 +83,43 @@ public class InternalJdbcConnectionLeaksOnSqlFieldsQueryTest extends GridCommonA
     public void testConnectionLeaks() throws Exception {
         final IgniteCache cache = grid(1).cache(CACHE_NAME);
 
-        final CountDownLatch c = new CountDownLatch(THREADS_COUNT);
+        final CountDownLatch latch = new CountDownLatch(THREAD_CNT);
 
-        for (int i = 0; i < THREADS_COUNT; i++) {
+        for (int i = 0; i < THREAD_CNT; i++) {
             new Thread() {
                 @Override public void run() {
-                    SqlFieldsQuery qry = new SqlFieldsQuery("select 1").setLocal(false);
+                    SqlFieldsQuery qry = new SqlFieldsQuery("select * from String").setLocal(false);
 
-                    final QueryCursor cur = cache.query(qry);
+                    cache.query(qry).getAll();
 
-                    cur.getAll().size();
-
-                    cur.close();
-
-                    c.countDown();
+                    latch.countDown();
                 }
             }.start();
         }
 
-        c.await();
+        latch.await();
 
-        final Map<Thread, Connection> conns = GridTestUtils.getFieldValue(grid(1).context().query().getIndexing(), "conns");
-
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return conns.size() == 1;
+                for (int i = 0; i < NODE_CNT; i++) {
+                    Map<Thread, Connection> conns = perThreadConnections(i);
+
+                    if (conns.isEmpty())
+                        return false;
+                }
+
+                return true;
             }
         }, 5000);
 
-        assertEquals("Invalid opened connection count", 1, conns.size());
+        assert res;
+    }
+
+    /**
+     * @param nodeIdx Node index.
+     * @return Per-thread connections.
+     */
+    private Map<Thread, Connection> perThreadConnections(int nodeIdx) {
+        return ((IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing()).perThreadConnections();
     }
 }
