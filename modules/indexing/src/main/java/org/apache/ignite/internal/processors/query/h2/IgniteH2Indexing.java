@@ -2036,8 +2036,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             Thread t = entry.getKey();
 
-            // We have to hold at least one connection to save Ignite schemas & caches state.
-            if (t.getState() == Thread.State.TERMINATED && conns.size() > 1) {
+            if (t.getState() == Thread.State.TERMINATED) {
                 U.close(entry.getValue(), log);
 
                 it.remove();
