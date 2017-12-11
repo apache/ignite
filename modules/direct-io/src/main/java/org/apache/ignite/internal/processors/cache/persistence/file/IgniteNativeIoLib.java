@@ -64,6 +64,12 @@ public class IgniteNativeIoLib {
      */
     public static final int O_SYNC = 04000000;
 
+    /**
+     * The specified data will not be accessed in the near future. See fadvise.h and "man 2 posix_fadvise".
+    */
+    public static final int POSIX_FADV_DONTNEED = 4;
+
+
     /** JNA library available and initialized. Always {@code false} for non linux systems. */
     private static boolean jnaAvailable;
 
@@ -208,6 +214,13 @@ public class IgniteNativeIoLib {
     }
 
     /**
+     * @return Flag indicating JNA library available and initialized. Always {@code false} for non linux systems.
+     */
+    public static boolean isJnaAvailable() {
+        return jnaAvailable;
+    }
+
+    /**
      * Open a file. See "man 3 open".
      *
      * @param pathname pathname naming the file.
@@ -327,4 +340,22 @@ public class IgniteNativeIoLib {
      * allocation and file mapping
      */
     public static native int getpagesize();
+
+    /**
+     * Allows to announce an intention to access file data in a specific pattern in the future, thus allowing the
+     * kernel to perform appropriate optimizations.
+     *
+     * The advice applies to a (not necessarily existent) region starting at
+     * {@code offset} and extending for {@code len} bytes (or until the end of the file if len is 0)
+     * within the file referred to by fd.
+     *
+     * See "man 2 posix_fadvise".
+     *
+     * @param fd file descriptor.
+     * @param offset region start.
+     * @param len region end.
+     * @param flag advice (option) to apply.
+     * @return On success, zero is returned.  On error, an error number is returned.
+     */
+    public static native int posix_fadvise(int fd, long offset, long len, int flag);
 }

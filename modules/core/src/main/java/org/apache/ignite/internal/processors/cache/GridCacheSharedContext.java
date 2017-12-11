@@ -104,8 +104,8 @@ public class GridCacheSharedContext<K, V> {
     /** Deployment manager. */
     private GridCacheDeploymentManager<K, V> depMgr;
 
-    /** Write ahead log manager. */
-    private IgniteWriteAheadLogManager walMgr;
+    /** Write ahead log manager. {@code Null} if persistence is not enabled. */
+    @Nullable private IgniteWriteAheadLogManager walMgr;
 
     /** Database manager. */
     private IgniteCacheDatabaseSharedManager dbMgr;
@@ -170,6 +170,7 @@ public class GridCacheSharedContext<K, V> {
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
      * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
+     * @param walMgr WAL manager. {@code Null} if persistence is not enabled.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
@@ -184,7 +185,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
         @Nullable IgnitePageStoreManager pageStoreMgr,
-        IgniteWriteAheadLogManager walMgr,
+        @Nullable IgniteWriteAheadLogManager walMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,

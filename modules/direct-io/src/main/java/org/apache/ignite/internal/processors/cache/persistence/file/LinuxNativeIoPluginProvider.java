@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
+import java.io.FileDescriptor;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
@@ -28,6 +30,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -173,6 +178,16 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
             pageStore.pageSize(),
             backupIoFactory);
 
+        final FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)cacheCtx.wal();
+
+        if (walMgr != null && IgniteNativeIoLib.isJnaAvailable()) {
+            walMgr.setCreateWalFileListener(new IgniteInClosure<FileIO>() {
+                @Override public void apply(FileIO fileIO) {
+                    adviceFileDontNeed(fileIO, walMgr.maxWalSegmentSize());
+                }
+            });
+        }
+
         if (!factory.isDirectIoAvailable())
             return null;
 
@@ -187,5 +202,37 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
         pageStore.setPageStoreFileIOFactories(factory, backupIoFactory);
 
         return factory.managedAlignedBuffers();
+    }
+
+    /**
+     * Apply advice: The specified data will not be accessed in the near future.
+     *
+     * Useful for WAL segments to indicate file content won't be loaded.
+     *
+     * @param fileIO file to advice.
+     * @param size expected size of file.
+     */
+    private void adviceFileDontNeed(FileIO fileIO, long size)   {
+        try {
+            if(fileIO instanceof RandomAccessFileIO) {
+                RandomAccessFileIO channelIo = (RandomAccessFileIO)fileIO;
+
+                FileChannel ch = U.field(channelIo, "ch");
+
+                FileDescriptor fd = U.field(ch, "fd");
+
+                int fdValue = U.field(fd, "fd");
+
+                int retVal = IgniteNativeIoLib.posix_fadvise(fdValue, 0, size, IgniteNativeIoLib.POSIX_FADV_DONTNEED);
+
+                if (retVal != 0) {
+                    U.warn(log, "Unable to apply fadvice on WAL file descriptor [fd=" + fdValue + "]:" +
+                        IgniteNativeIoLib.strerror(retVal));
+                }
+            }
+        }
+        catch (Exception e) {
+            U.warn(log, "Unable to advice on WAL file descriptor: [" + e.getMessage() + "]", e);
+        }
     }
 }

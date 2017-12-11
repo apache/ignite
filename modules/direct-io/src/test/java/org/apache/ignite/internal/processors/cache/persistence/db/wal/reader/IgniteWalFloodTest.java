@@ -65,14 +65,13 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
-@Deprecated
 public class IgniteWalFloodTest extends GridCommonAbstractTest {
     /** */
     private static final String HAS_CACHE = "HAS_CACHE";
     /** Cache name. */
     public static final String CACHE_NAME = "partitioned";
     public static final int OBJECT_SIZE = 40000;
-    public static final int CONTINUOUS_PUT_RECS_CNT = 200_000;
+    public static final int CONTINUOUS_PUT_RECS_CNT = 400_000;
 
     /** */
     private boolean setWalArchAndWorkToSameValue = false;
