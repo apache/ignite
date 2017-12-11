@@ -288,6 +288,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void onKernalStop() {
         super.onKernalStop();
 
