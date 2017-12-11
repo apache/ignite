@@ -94,16 +94,21 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
         // Check
         SqlFieldsQueryEx qry = new SqlFieldsQueryEx(
-            "select * from " + QueryUtils.typeName(NamespaceEn.Person.class) + " where _key = ?", true);
-        qry.setArgs(new NamespaceEn.Key(uuid));
+            "select * from " + QueryUtils.typeName(NamespaceEn.Person.class) + " where name = ?", true);
+        qry.setArgs(TEST_NAME);
 
         assertEquals(TEST_NAME, cache1.query(qry).getAll().get(0).get(0));
 
         qry = new SqlFieldsQueryEx(
-            "select * from " + QueryUtils.typeName(NamespaceRu.Person.class) + " where _key = ?", true);
-        qry.setArgs(new NamespaceRu.Key(uuid));
+            "select * from " + QueryUtils.typeName(NamespaceRu.Person.class) + " where name = ?", true);
+        qry.setArgs(TEST_NAME2);
 
-        assertEquals(TEST_NAME, cache2.query(qry).getAll().get(0).get(0));
+        assertEquals(TEST_NAME2, cache2.query(qry).getAll().get(0).get(0));
+
+        qry = new SqlFieldsQueryEx(
+            "select * from " + QueryUtils.typeName(NamespaceRu.Person.class), true);
+
+        assertEquals(TEST_NAME2, cache2.query(qry).getAll().get(0).get(0));
     }
 
     public static class NamespaceEn {
