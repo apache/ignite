@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -82,9 +83,17 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         this.log = log;
         this.pageSize = pageSize;
         this.backupFactory = backupFactory;
-        fsBlockSize = IgniteNativeIoLib.getFsBlockSize(storePath.getAbsolutePath(), log);
 
         useBackupFactory = true;
+        fsBlockSize = IgniteNativeIoLib.getFsBlockSize(storePath.getAbsolutePath(), log);
+
+        if(!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, true)) {
+            if (log.isInfoEnabled()) {
+                log.info("Direct IO is explicitly disabled by system property");
+            }
+            return;
+        }
+
         if (fsBlockSize > 0) {
             int blkSize = fsBlockSize;
 

@@ -26,6 +26,8 @@ import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,6 +37,7 @@ import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -45,7 +48,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -69,6 +71,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
     private static final String HAS_CACHE = "HAS_CACHE";
     /** Cache name. */
     public static final String CACHE_NAME = "partitioned";
+    public static final int OBJECT_SIZE = 40000;
 
     /** */
     private boolean setWalArchAndWorkToSameValue = false;
@@ -99,18 +102,18 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
         dsCfg.setPageSize(4 * 1024);
 
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
+        DataRegionConfiguration regCfg = new DataRegionConfiguration();
 
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setMaxSize(MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE * 2);
-        memPlcCfg.setPersistenceEnabled(true);
+        regCfg.setName("dfltMemPlc");
+        regCfg.setMaxSize(4 * 1024L * 1024 * 1024);
+        regCfg.setPersistenceEnabled(true);
 
-        dsCfg.setDefaultDataRegionConfiguration(memPlcCfg);
+        dsCfg.setDefaultDataRegionConfiguration(regCfg);
 
         if (walSegmentSize != 0)
             dsCfg.setWalSegmentSize(walSegmentSize);
 
-        dsCfg.setCheckpointFrequency(10 * 1000);
+        dsCfg.setCheckpointFrequency(1 * 1000);
 
         //dsCfg.setCheckpointPageBufferSize(1024L * 1024 * 1024);
 
@@ -176,7 +179,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
          */
         private HugeIndexedObject(int iVal) {
             super(iVal);
-            int sz = 40000;
+            int sz = OBJECT_SIZE;
             data = new byte[sz];
             for (int i = 0; i < sz; i++)
                 data[i] = (byte)('A' + (i % 10));
@@ -198,6 +201,9 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         private final LongAdder8 longAdder8 = new LongAdder8();
 
         private ScheduledExecutorService svc = Executors.newScheduledThreadPool(1);
+        private String operationComplete = "Written";
+        private String operation = "put";
+
 
         public void start() {
             final AtomicLong prevCnt = new AtomicLong();
@@ -212,8 +218,12 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
                     final long averagePutPerSec = totalCnt * 1000 / elapsedMs;
                     final long currPutPerSec = ((totalCnt - prevCnt.getAndSet(totalCnt)) * 1000) / (elapsedMs - prevMsElapsed.getAndSet(elapsedMs));
                     final String fileNameWithDump  = currPutPerSec == 0 ? reactNoProgress(msStart) : "";
-                    X.println(" >> Written " + totalCnt + ", time " + elapsedMs + " ms," +
-                        " Average put " + averagePutPerSec + "/sec, current put " + currPutPerSec + "/sec " + fileNameWithDump);
+                    X.println(" >> " +
+                        operationComplete +
+                        " " + totalCnt + ", time " + elapsedMs + " ms," +
+                        " Average " +
+                        operation + " " + averagePutPerSec + " recs/sec, current " +
+                        operation + " " + currPutPerSec + " recs/sec " + fileNameWithDump);
 
                 }
             }, checkPeriodSec, checkPeriodSec, TimeUnit.SECONDS);
@@ -256,12 +266,17 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         }
     }
 
-    public void ignoreTestContinuousPutMultithreaded() throws Exception {
+    public void testContinuousPutMultithreaded() throws Exception {
         try {
+            System.setProperty(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, "true");
+
+            customWalMode = WALMode.LOG_ONLY;
             final IgniteEx ignite = startGrid(1);
 
+            ignite.active(true);
+
             final IgniteCache<Object, IndexedObject> cache = ignite.cache(CACHE_NAME);
-            int totalRecs = 200_000;
+            int totalRecs = 400_000;
             final int threads = 10;
 
             final int recsPerThread = totalRecs / threads;
@@ -289,19 +304,73 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
             watchdog.stop();
             stopGrid(1);
 
+            System.out.println("Please clear page cache");
+            Thread.sleep(10000);
+
+
             final Ignite restartedIgnite = startGrid(1);
 
-            final IgniteCache<Object, IndexedObject> restartedCache = restartedIgnite.cache(CACHE_NAME);
+            restartedIgnite.active(true);
 
-            // Check.
-            for (int i = 0; i < recsPerThread * threads; i++) {
-                TestCase.assertEquals(i, restartedCache.get(i).iVal);
-                if (i % 1000 == 0)
-                    X.println(" >> Verified: " + i);
+            final IgniteCache<Integer, IndexedObject> restartedCache = restartedIgnite.cache(CACHE_NAME);
+
+
+            final ProgressWatchdog watchdog2= new ProgressWatchdog();
+
+            watchdog2.operationComplete = "Verified";
+            watchdog2.operation = "get";
+
+            final Collection<Callable<?>> tasksR = new ArrayList<>();
+            tasksR.clear();
+            for (int j = 0; j < threads; j++) {
+                final int finalJ = j;
+                tasksR.add(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        for (int i = finalJ * recsPerThread; i < ((finalJ + 1) * recsPerThread); i++) {
+                            IndexedObject object = restartedCache.get(i);
+                            int actVal = object.iVal;
+                            TestCase.assertEquals(i, actVal);
+                            watchdog2.reportProgress(1);
+                        }
+                        return null;
+                    }
+                });
             }
+
+            watchdog2.start();
+            GridTestUtils.runMultiThreaded(tasksR, "get-thread");
+            watchdog2.stop();
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    private void verifyByChunk(int threads, int recsPerThread,
+        IgniteCache<Integer, IndexedObject> restartedCache) {
+        int verifyChunk = 100;
+
+        int totalRecsToVerify = recsPerThread * threads;
+        int chunks = totalRecsToVerify / verifyChunk;
+
+        for (int c = 0; c < chunks; c++) {
+
+            TreeSet<Integer> keys = new TreeSet<>();
+
+            for (int i = 0; i < verifyChunk; i++) {
+                keys.add(i + c * verifyChunk);
+            }
+
+            Map<Integer, IndexedObject> values = restartedCache.getAll(keys);
+            for (Map.Entry<Integer, IndexedObject> next : values.entrySet()) {
+                Integer key = next.getKey();
+                int actVal = values.get(next.getKey()).iVal;
+                int i = key.intValue();
+                TestCase.assertEquals(i, actVal);
+                if (i % 1000 == 0)
+                    X.println(" >> Verified: " + i);
+            }
+
         }
     }
 
