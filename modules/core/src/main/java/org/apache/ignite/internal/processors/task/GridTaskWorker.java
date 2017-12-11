@@ -1476,6 +1476,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param nodeId Node ID.
      */
     void onNodeLeft(UUID nodeId) {
+        if (getSession().getTaskName().toLowerCase().contains("stopgrid"))
+            finishTask(null, null);
+
         Collection<GridJobExecuteResponse> resList = null;
 
         synchronized (mux) {
