@@ -21,31 +21,24 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
 
 /**
- * TcpDiscoveryS3IpFinder tests bucket endpoint for IP finder.
- * For information about possible endpoint names visit
- * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>.
+ * TcpDiscoveryS3IpFinder tests server-side encryption algorithm for Amazon S3-managed encryption keys.
+ * For information about possible S3-managed encryption keys visit
+ * <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>.
  */
-public class TcpDiscoveryS3IpFinderBucketEndpointSelfTest extends TcpDiscoveryS3IpFinderAbstractSelfTest {
+public class TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest extends TcpDiscoveryS3IpFinderAbstractSelfTest {
     /**
      * Constructor.
      *
      * @throws Exception If any error occurs.
      */
-    public TcpDiscoveryS3IpFinderBucketEndpointSelfTest() throws Exception {
-        bucketEndpoint = "s3.us-east-2.amazonaws.com";
+    public TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest() throws Exception {
+        SSEAlgorithm = "AES256";
     }
 
     /** {@inheritDoc} */
     @Override protected void setAwsCredentials(TcpDiscoveryS3IpFinder finder) {
         finder.setAwsCredentials(new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
             IgniteS3TestSuite.getSecretKey()));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void setBucketName(TcpDiscoveryS3IpFinder finder) {
-        super.setBucketName(finder);
-
-        finder.setBucketName(getBucketName() + "-e");
     }
 
     /** {@inheritDoc} */
