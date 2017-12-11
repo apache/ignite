@@ -1141,12 +1141,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     // Check if lock is being explicitly acquired by the same thread.
                     if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
                         entry.lockedByThread(threadId, xidVer)) {
-                        throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
-                            "externally held [key=" + CU.value(cacheKey, cacheCtx, false) +
-                            ", entry=" + entry +
-                            ", xidVer=" + xidVer +
-                            ", threadId=" + threadId +
-                            ", locNodeId=" + cctx.localNodeId() + ']');
+                        throw new RuntimeException("[txs]Acquired by the other tx ver");
                     }
 
                     CacheObject old = null;
