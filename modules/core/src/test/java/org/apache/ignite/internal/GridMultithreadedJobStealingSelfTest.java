@@ -147,7 +147,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         final int jobsPerTask = 4;
 
-        jobExecutedLatch = new CountDownLatch(threadsNum);
+        jobExecutedLatch = new CountDownLatch(2);
 
         final IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             /** */
@@ -297,7 +297,8 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @Override public Serializable execute() {
             try {
-                jobExecutedLatch.countDown();
+                if (jobExecutedLatch != null)
+                    jobExecutedLatch.countDown();
 
                 Long sleep = argument(0);
 
