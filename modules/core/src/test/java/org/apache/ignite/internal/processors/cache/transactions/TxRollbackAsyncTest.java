@@ -80,7 +80,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     private static final int GRID_CNT = 3;
 
     /** */
-    public static final int THREADS_CNT = Runtime.getRuntime().availableProcessors() * 2;
+    public static final int THREADS_CNT = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -464,6 +464,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final Random r = new Random();
 
+        r.setSeed(0);
+
         final TransactionConcurrency[] TC_VALS = TransactionConcurrency.values();
         final TransactionIsolation[] TI_VALS = TransactionIsolation.values();
 
@@ -499,6 +501,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                         final int delay = r.nextInt(400);
 
+                        log.info("Tx sleep: " + delay);
+
                         sleep(delay);
 
                         node.cache(CACHE_NAME).put(keys[txSize - 1], v + 1);
@@ -521,9 +525,13 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 int nodeId = nodeIdx.getAndIncrement();
 
                 while (!stop.get()) {
-                    doSleep(r.nextInt(300) + 300);
+                    int sleep = r.nextInt(300) + 300;
 
-                    Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
+                    log.info("Rollback sleep: " + sleep);
+
+                    doSleep(sleep);
+
+                    Ignite node = client; // nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
                     Collection<Transaction> transactions = node.transactions().localActiveTransactions();
 
@@ -534,7 +542,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     }
                 }
             }
-        }, G.allGrids().size(), "rollback-thread");
+        }, 1, "rollback-thread");
 
         doSleep(DURATION);
 
