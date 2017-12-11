@@ -69,6 +69,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
@@ -76,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -857,18 +857,31 @@ public class IgniteProcessProxy implements IgniteEx {
         /** Cancel. */
         private final boolean cancel;
 
+        /** Stop not started. */
+        private final boolean stopNotStarted;
+
         /**
          * @param igniteInstanceName Ignite instance name.
          * @param cancel Cancel.
          */
         public StopGridTask(String igniteInstanceName, boolean cancel) {
+            this(igniteInstanceName, cancel, true);
+        }
+
+        /**
+         * @param igniteInstanceName Ignite instance name.
+         * @param cancel Cancel.
+         * @param stopNotStarted If {@code True} and node start did not finish then interrupts starting thread.
+         */
+        public StopGridTask(String igniteInstanceName, boolean cancel, boolean stopNotStarted) {
             this.igniteInstanceName = igniteInstanceName;
             this.cancel = cancel;
+            this.stopNotStarted = stopNotStarted;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            G.stop(igniteInstanceName, cancel);
+            IgnitionEx.stop(igniteInstanceName, cancel, stopNotStarted);
         }
     }
 
