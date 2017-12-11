@@ -21,7 +21,7 @@ import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.FuzzyCMeansModelFormat;
-import org.apache.ignite.ml.math.DistanceMeasure;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
 
 /** This class incapsulates result of clusterization. */

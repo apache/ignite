@@ -19,7 +19,7 @@ package org.apache.ignite.ml;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import org.apache.ignite.ml.math.DistanceMeasure;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
 
 /**
