@@ -25,6 +25,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -35,6 +36,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests non collocated join with replicated cache.
  */
+@SuppressWarnings("unused")
 public class IgniteCacheReplicatedJoinSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String REP_CACHE_NAME = "repCache";
@@ -46,7 +48,7 @@ public class IgniteCacheReplicatedJoinSelfTest extends GridCommonAbstractTest {
     public static final int REP_CNT = 3;
 
     /** */
-    public static final int PART_CNT = 10_000;
+    public static final int PART_CNT = 100;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -54,18 +56,22 @@ public class IgniteCacheReplicatedJoinSelfTest extends GridCommonAbstractTest {
 
         cfg.setClientMode("client".equals(igniteInstanceName));
 
-        final CacheConfiguration<Integer, PartValue> ccfg1 = new CacheConfiguration<>(PART_CACHE_NAME);
+        CacheConfiguration<Integer, PartValue> ccfg1 = new CacheConfiguration<>(PART_CACHE_NAME);
+
         ccfg1.setCacheMode(PARTITIONED);
         ccfg1.setAtomicityMode(TRANSACTIONAL);
         ccfg1.setWriteSynchronizationMode(FULL_SYNC);
         ccfg1.setIndexedTypes(Integer.class, PartValue.class);
+        ccfg1.setSqlSchema(QueryUtils.DFLT_SCHEMA);
 
-        final CacheConfiguration<Integer, RepValue> ccfg2 = new CacheConfiguration<>(REP_CACHE_NAME);
+        CacheConfiguration<Integer, RepValue> ccfg2 = new CacheConfiguration<>(REP_CACHE_NAME);
+
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, REP_CNT));
         ccfg2.setCacheMode(REPLICATED);
         ccfg2.setAtomicityMode(TRANSACTIONAL);
         ccfg2.setWriteSynchronizationMode(FULL_SYNC);
         ccfg2.setIndexedTypes(Integer.class, RepValue.class);
+        ccfg2.setSqlSchema(QueryUtils.DFLT_SCHEMA);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 
@@ -83,37 +89,26 @@ public class IgniteCacheReplicatedJoinSelfTest extends GridCommonAbstractTest {
         final Ignite client = startGrid("client");
 
         for (int i = 0; i < REP_CNT; i++)
-            client.cache(REP_CACHE_NAME).put(i, new RepValue(i, "rep" + i));
+            client.cache(REP_CACHE_NAME).put(i, new RepValue(i));
 
         for (int i = 0; i < PART_CNT; i++)
-            client.cache(PART_CACHE_NAME).put(i, new PartValue(i, "part" + i, ((i + 1) % REP_CNT)));
+            client.cache(PART_CACHE_NAME).put(i, new PartValue(i, ((i + 1) % REP_CNT)));
 
         final FieldsQueryCursor<List<?>> qry = client.cache(PART_CACHE_NAME).
-            query(new SqlFieldsQuery("select PartValue._VAL, r._VAL from PartValue, \"repCache\".RepValue as r where PartValue.repId=r.id"));
+            query(new SqlFieldsQuery("select * from PartValue p, RepValue r where p.repId=r.id"));
 
         final List<List<?>> all = qry.getAll();
 
-        assertEquals(10_000, all.size());
-
-        for (List<?> objects : all) {
-            final PartValue pv = (PartValue)objects.get(0);
-            final RepValue rv = (RepValue)objects.get(1);
-
-            assertNotNull(rv);
-
-            assertEquals(rv.getId(), pv.getRepId());
-        }
+        assertEquals(PART_CNT, all.size());
     }
 
-    /** */
+    /**
+     * Value for PARTITIONED cache.
+     */
     public static class PartValue {
         /** Id. */
         @QuerySqlField
         private int id;
-
-        /** Name. */
-        @QuerySqlField
-        private String name;
 
         /** Rep id. */
         @QuerySqlField
@@ -121,83 +116,27 @@ public class IgniteCacheReplicatedJoinSelfTest extends GridCommonAbstractTest {
 
         /**
          * @param id Id.
-         * @param name Name.
          * @param repId Rep id.
          */
-        public PartValue(int id, String name, int repId) {
+        public PartValue(int id, int repId) {
             this.id = id;
-            this.name = name;
-            this.repId = repId;
-        }
-
-        /** */
-        public int getId() {
-            return id;
-        }
-
-        /** */
-        public void setId(int id) {
-            this.id = id;
-        }
-
-        /** */
-        public String getName() {
-            return name;
-        }
-
-        /** */
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        /** */
-        public int getRepId() {
-            return repId;
-        }
-
-        /** */
-        public void setRepId(int repId) {
             this.repId = repId;
         }
     }
 
-    /** */
+    /**
+     * Value for REPLICATED cache.
+     */
     public static class RepValue {
         /** Id. */
         @QuerySqlField
         private int id;
 
-        /** Name. */
-        @QuerySqlField
-        private String name;
-
         /**
          * @param id Id.
-         * @param name Name.
          */
-        public RepValue(int id, String name) {
+        public RepValue(int id) {
             this.id = id;
-            this.name = name;
-        }
-
-        /** */
-        public int getId() {
-            return id;
-        }
-
-        /** */
-        public void setId(int id) {
-            this.id = id;
-        }
-
-        /** */
-        public String getName() {
-            return name;
-        }
-
-        /** */
-        public void setName(String name) {
-            this.name = name;
         }
     }
 }
