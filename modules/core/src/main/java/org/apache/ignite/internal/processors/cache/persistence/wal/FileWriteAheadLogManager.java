@@ -1021,7 +1021,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 int size = dsCfg.getWalSegmentSize();
 
                 fileIO.write(ByteBuffer.wrap(new byte[1]), size - 1);
-                fileIO.force();
+
+                if (mode == WALMode.DEFAULT)
+                    fileIO.force();
             }
 
             FileWriteHandle hnd = new FileWriteHandle(
