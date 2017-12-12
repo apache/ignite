@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml;
-
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-
 /**
- * Ignite benchmark that performs ML Grid operations.
- * Todo: IGNITE-7097, complete implementation of this benchmark.
+ * <!-- Package description. -->
+ * ML Grid regression benchmarks.
  */
-@SuppressWarnings("unused")
-public class IgniteSparseDistributedMatrixMulBenchmark extends IgniteAbstractMatrixMulBenchmark {
-    /** {@inheritDoc} */
-    @Override Matrix newMatrix(int rowSize, int colSize) {
-        return new SparseDistributedMatrix(rowSize, colSize,
-            StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
-    }
-}
+package org.apache.ignite.yardstick.ml.regression;

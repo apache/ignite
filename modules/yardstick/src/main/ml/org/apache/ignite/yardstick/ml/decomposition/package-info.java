@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml;
-
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-
 /**
- * Ignite benchmark that performs ML Grid operations.
+ * <!-- Package description. -->
+ * ML Grid decomposition benchmarks.
  */
-@SuppressWarnings("unused")
-public class IgniteDenseLocalOnHeapMatrixMulBenchmark extends IgniteAbstractMatrixMulBenchmark {
-    /** {@inheritDoc} */
-    @Override Matrix newMatrix(int rowSize, int colSize) {
-        return new DenseLocalOnHeapMatrix(rowSize, colSize);
-    }
-}
+package org.apache.ignite.yardstick.ml.decomposition;

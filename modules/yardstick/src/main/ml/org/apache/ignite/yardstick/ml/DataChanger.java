@@ -25,29 +25,29 @@ import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
  * Helps to ensure use of meaningfully different data in repeated invocations of benchmarked code in
  * {@link IgniteAbstractBenchmark#test(Map)} method.
  */
-class DataChanger {
+public class DataChanger {
     /** */
     private static final AtomicInteger changer = new AtomicInteger(0);
 
     /**
      * @return Positive "seed" to mutate data.
      */
-    static double next() {
+    public static double next() {
         return (changer.incrementAndGet() % 17) + 1;
     }
 
     /** */
-    static class Scale {
+    public static class Scale {
         /** */
         private final double scale;
 
         /** */
-        Scale() {
+        public Scale() {
             this.scale = DataChanger.next();
         }
 
         /** */
-        double[][] mutate(double[][] orig) {
+        public double[][] mutate(double[][] orig) {
             for (int i = 0; i < orig.length; i++)
                 orig[i] = mutate(orig[i]);
 
@@ -55,7 +55,7 @@ class DataChanger {
         }
 
         /** */
-        double[] mutate(double[] orig) {
+        public double[] mutate(double[] orig) {
             for (int i = 0; i < orig.length; i++)
                 orig[i] *= scale;
 

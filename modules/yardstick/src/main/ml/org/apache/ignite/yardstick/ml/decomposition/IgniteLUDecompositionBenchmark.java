@@ -15,54 +15,61 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml;
+package org.apache.ignite.yardstick.ml.decomposition;
 
 import java.util.Map;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.decompositions.CholeskyDecomposition;
+import org.apache.ignite.ml.math.decompositions.LUDecomposition;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.ml.DataChanger;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
  */
 @SuppressWarnings("unused")
-public class IgniteCholeskyDecompositionBenchmark extends IgniteAbstractBenchmark {
+public class IgniteLUDecompositionBenchmark extends IgniteAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        runCholeskyDecomposition();
+        runLUDecomposition();
 
         return true;
     }
 
     /**
-     * Based on CholeskyDecompositionTest.
+     * Based on LUDecompositionTest.
      */
-    private void runCholeskyDecomposition() {
-        final DataChanger.Scale scale = new DataChanger.Scale();
+    private void runLUDecomposition() {
+        Matrix testMatrix = new DenseLocalOnHeapMatrix(new DataChanger.Scale().mutate(new double[][] {
+            {2.0d, 1.0d, 1.0d, 0.0d},
+            {4.0d, 3.0d, 3.0d, 1.0d},
+            {8.0d, 7.0d, 9.0d, 5.0d},
+            {6.0d, 7.0d, 9.0d, 8.0d}}));
 
-        Matrix m = new DenseLocalOnHeapMatrix(scale.mutate(new double[][] {
-            {2.0d, -1.0d, 0.0d},
-            {-1.0d, 2.0d, -1.0d},
-            {0.0d, -1.0d, 2.0d}
-        }));
+        LUDecomposition dec1 = new LUDecomposition(new PivotedMatrixView(testMatrix));
 
-        CholeskyDecomposition dec = new CholeskyDecomposition(m);
+        dec1.solve(new DenseLocalOnHeapVector(testMatrix.rowSize()));
 
-        dec.getL();
-        dec.getLT();
+        dec1.destroy();
 
-        Matrix bs = new DenseLocalOnHeapMatrix(scale.mutate(new double[][] {
-            {4.0, -6.0, 7.0},
-            {1.0, 1.0, 1.0}
-        })).transpose();
-        dec.solve(bs);
+        LUDecomposition dec2 = new LUDecomposition(new PivotedMatrixView(testMatrix));
 
-        Vector b = new DenseLocalOnHeapVector(scale.mutate(new double[] {4.0, -6.0, 7.0}));
-        dec.solve(b);
+        dec2.solve(new DenseLocalOnHeapMatrix(testMatrix.rowSize(), testMatrix.rowSize()));
 
-        dec.destroy();
+        dec2.destroy();
+
+        LUDecomposition dec3 = new LUDecomposition(testMatrix);
+
+        dec3.getL();
+
+        dec3.getU();
+
+        dec3.getP();
+
+        dec3.getPivot();
+
+        dec3.destroy();
     }
 }

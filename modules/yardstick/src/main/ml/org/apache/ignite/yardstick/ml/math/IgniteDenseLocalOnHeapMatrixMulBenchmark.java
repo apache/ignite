@@ -15,44 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml;
+package org.apache.ignite.yardstick.ml.math;
 
-import java.util.Map;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.decompositions.SingularValueDecomposition;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
  */
 @SuppressWarnings("unused")
-public class IgniteSingularValueDecompositionBenchmark extends IgniteAbstractBenchmark {
+public class IgniteDenseLocalOnHeapMatrixMulBenchmark extends IgniteAbstractMatrixMulBenchmark {
     /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        runSingularValueDecomposition();
-
-        return true;
-    }
-
-    /**
-     * Based on SingularValueDecompositionTest#basicTest.
-     */
-    private void runSingularValueDecomposition() {
-        Matrix m = new DenseLocalOnHeapMatrix(new DataChanger.Scale().mutate(new double[][] {
-            {2.0d, -1.0d, 0.0d},
-            {-1.0d, 2.0d, -1.0d},
-            {0.0d, -1.0d, 2.0d}
-        }));
-
-        SingularValueDecomposition dec = new SingularValueDecomposition(m);
-
-        Matrix s = dec.getS();
-        Matrix u = dec.getU();
-        Matrix v = dec.getV();
-
-        u.times(s).times(v.transpose());
-
-        dec.destroy();
+    @Override Matrix newMatrix(int rowSize, int colSize) {
+        return new DenseLocalOnHeapMatrix(rowSize, colSize);
     }
 }

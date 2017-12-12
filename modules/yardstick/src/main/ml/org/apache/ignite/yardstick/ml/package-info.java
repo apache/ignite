@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml;
-
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
-
 /**
- * Ignite benchmark that performs ML Grid operations.
+ * <!-- Package description. -->
+ * ML Grid benchmarks.
  */
-@SuppressWarnings("unused")
-public class IgniteSparseLocalMatrixMulBenchmark extends IgniteAbstractMatrixMulBenchmark {
-    /** {@inheritDoc} */
-    @Override Matrix newMatrix(int rowSize, int colSize) {
-        return new SparseLocalOnHeapMatrix(rowSize, colSize);
-    }
-}
+package org.apache.ignite.yardstick.ml;

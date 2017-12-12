@@ -15,35 +15,55 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml;
+package org.apache.ignite.yardstick.ml.decomposition;
 
 import java.util.Map;
-import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
-import org.apache.ignite.ml.math.EuclideanDistance;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.decompositions.CholeskyDecomposition;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.ml.DataChanger;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
  */
 @SuppressWarnings("unused")
-public class IgniteKMeansLocalClustererBenchmark extends IgniteAbstractBenchmark {
+public class IgniteCholeskyDecompositionBenchmark extends IgniteAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        final DataChanger.Scale scale = new DataChanger.Scale();
-
-        // IMPL NOTE originally taken from KMeansLocalClustererTest
-        KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
-
-        double[] v1 = scale.mutate(new double[] {1959, 325100});
-        double[] v2 = scale.mutate(new double[] {1960, 373200});
-
-        DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {
-            v1,
-            v2});
-
-        clusterer.cluster(points, 1);
+        runCholeskyDecomposition();
 
         return true;
+    }
+
+    /**
+     * Based on CholeskyDecompositionTest.
+     */
+    private void runCholeskyDecomposition() {
+        final DataChanger.Scale scale = new DataChanger.Scale();
+
+        Matrix m = new DenseLocalOnHeapMatrix(scale.mutate(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
+            {0.0d, -1.0d, 2.0d}
+        }));
+
+        CholeskyDecomposition dec = new CholeskyDecomposition(m);
+
+        dec.getL();
+        dec.getLT();
+
+        Matrix bs = new DenseLocalOnHeapMatrix(scale.mutate(new double[][] {
+            {4.0, -6.0, 7.0},
+            {1.0, 1.0, 1.0}
+        })).transpose();
+        dec.solve(bs);
+
+        Vector b = new DenseLocalOnHeapVector(scale.mutate(new double[] {4.0, -6.0, 7.0}));
+        dec.solve(b);
+
+        dec.destroy();
     }
 }

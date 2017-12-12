@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml;
+package org.apache.ignite.yardstick.ml.regression;
 
 import java.util.Map;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.ml.DataChanger;
 
 /**
  * Ignite benchmark that performs ML Grid operations.

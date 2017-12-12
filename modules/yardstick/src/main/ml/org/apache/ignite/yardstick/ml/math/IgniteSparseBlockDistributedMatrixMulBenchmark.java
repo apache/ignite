@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml;
+package org.apache.ignite.yardstick.ml.math;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;

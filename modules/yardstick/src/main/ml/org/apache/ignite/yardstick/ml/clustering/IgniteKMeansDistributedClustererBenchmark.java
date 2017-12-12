@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml;
+package org.apache.ignite.yardstick.ml.clustering;
 
 import java.util.Map;
 import org.apache.ignite.Ignite;
@@ -26,6 +26,7 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.ml.DataChanger;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
