@@ -15,15 +15,22 @@
  * limitations under the License.
  */
 
-export csv from './csv.svg';
-export cross from './cross.svg';
-export gear from './gear.svg';
-export clock from './clock.svg';
-export manual from './manual.svg';
-export download from './download.svg';
-export filter from './filter.svg';
-export search from './search.svg';
-export refresh from './refresh.svg';
-export sort from './sort.svg';
-export info from './info.svg';
-export connectedClusters from './connectedClusters.svg';
+export default class {
+    static $inject = ['AgentManager'];
+
+    constructor(agentMgr) {
+        Object.assign(this, { agentMgr });
+
+        this.connectedClusters = 0;
+    }
+
+    $onInit() {
+        this.connectedClusters$ = this.agentMgr.connectionSbj
+            .do(({ clusters }) => this.connectedClusters = clusters.length)
+            .subscribe();
+    }
+
+    $onDestroy() {
+        this.connectedClusters$.unsubscribe();
+    }
+}
