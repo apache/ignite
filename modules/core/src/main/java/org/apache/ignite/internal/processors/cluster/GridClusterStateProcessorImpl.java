@@ -611,7 +611,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(
         final boolean activate,
-        Collection<BaselineNode> baselineNodes,
+        Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology
     ) {
         if (inMemoryMode)
@@ -625,6 +625,23 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
         if (currentBlt != null)
             newBltId = activate ? currentBlt.id() + 1 : currentBlt.id();
+
+        if (baselineNodes != null && !baselineNodes.isEmpty()) {
+            List<BaselineNode> baselineNodes0 = new ArrayList<>();
+
+            for (BaselineNode node : baselineNodes) {
+                if (node instanceof ClusterNode) {
+                    ClusterNode clusterNode = (ClusterNode) node;
+
+                    if (!clusterNode.isClient() && !clusterNode.isDaemon())
+                        baselineNodes0.add(node);
+                }
+                else
+                    baselineNodes0.add(node);
+            }
+
+            baselineNodes = baselineNodes0;
+        }
 
         if (forceChangeBaselineTopology)
             newBlt = BaselineTopology.build(baselineNodes, newBltId);

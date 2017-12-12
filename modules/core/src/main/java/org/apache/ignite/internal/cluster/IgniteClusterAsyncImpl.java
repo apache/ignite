@@ -317,7 +317,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public void setBaselineTopology(Collection<BaselineNode> baselineTop) {
+    @Override public void setBaselineTopology(Collection<? extends BaselineNode> baselineTop) {
 
     }
 

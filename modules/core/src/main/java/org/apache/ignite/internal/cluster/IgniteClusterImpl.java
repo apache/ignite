@@ -340,7 +340,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public void setBaselineTopology(Collection<BaselineNode> baselineTop) {
+    @Override public void setBaselineTopology(Collection<? extends BaselineNode> baselineTop) {
         guard();
 
         try {
@@ -367,7 +367,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /**
      * Executes validation checks of cluster state and BaselineTopology before changing BaselineTopology to new one.
      */
-    private void validateBeforeBaselineChange(Collection<BaselineNode> baselineTop) {
+    private void validateBeforeBaselineChange(Collection<? extends BaselineNode> baselineTop) {
         if (!ctx.state().clusterState().active())
             throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
 
@@ -388,7 +388,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** */
-    @Nullable private Collection<Object> onlineBaselineNodesRequestedForRemoval(Collection<BaselineNode> newBlt) {
+    @Nullable private Collection<Object> onlineBaselineNodesRequestedForRemoval(Collection<? extends BaselineNode> newBlt) {
         BaselineTopology blt = ctx.state().clusterState().baselineTopology();
         Set<Object> bltConsIds;
 

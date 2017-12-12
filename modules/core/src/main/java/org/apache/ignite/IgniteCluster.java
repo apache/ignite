@@ -447,7 +447,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @param baselineTop A collection of nodes to be included to the baseline topology.
      */
-    public void setBaselineTopology(Collection<BaselineNode> baselineTop);
+    public void setBaselineTopology(Collection<? extends BaselineNode> baselineTop);
 
     /**
      * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds
