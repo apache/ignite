@@ -225,9 +225,6 @@ public class ZookeeperDiscoveryImpl {
      * @param err Connect error.
      */
     public void onCommunicationConnectionError(ClusterNode node0, Exception err) {
-        if (true)
-            return;
-
         ZookeeperClusterNode node = node(node0.id());
 
         if (node == null)
@@ -236,12 +233,14 @@ public class ZookeeperDiscoveryImpl {
         ZkCommunicationErrorProcessFuture fut = commErrProcFut.get();
 
         if (fut == null || fut.isDone()) {
-            ZkCommunicationErrorProcessFuture newFut = new ZkCommunicationErrorProcessFuture(this, node.sessionTimeout());
+            ZkCommunicationErrorProcessFuture newFut = new ZkCommunicationErrorProcessFuture(
+                this,
+                node.sessionTimeout() + 1000);
 
             if (commErrProcFut.compareAndSet(fut, newFut)) {
                 fut = newFut;
 
-                sendCustomMessage(new ZkInternalCommunicationErrorMessage());
+                spi.getSpiContext().addTimeoutObject(fut);
             }
             else
                 fut = commErrProcFut.get();
@@ -2255,7 +2254,7 @@ public class ZookeeperDiscoveryImpl {
     /**
      * @param c Closure to run.
      */
-    private void runInWorkerThread(Runnable c) {
+    void runInWorkerThread(Runnable c) {
         IgniteThreadPoolExecutor pool;
 
         synchronized (stateMux) {
