@@ -1709,6 +1709,7 @@ public class GridCacheUtils {
      * @param log Logger.
      * @param cctx Cache context.
      * @param key Key.
+     * @param expiryPlc Expiry policy.
      * @param readThrough Read through.
      * @param skipVals Skip values.
      */
@@ -1717,6 +1718,7 @@ public class GridCacheUtils {
         final IgniteLogger log,
         final GridCacheContext cctx,
         final @Nullable KeyCacheObject key,
+        final @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean readThrough,
         boolean skipVals
     ) {
@@ -1735,8 +1737,8 @@ public class GridCacheUtils {
                         entry.initialValue(
                             val,
                             ver,
-                            0,
-                            0,
+                            expiryPlc == null ? 0 : expiryPlc.forCreate(),
+                            expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
                             false,
                             topVer,
                             GridDrType.DR_BACKUP,

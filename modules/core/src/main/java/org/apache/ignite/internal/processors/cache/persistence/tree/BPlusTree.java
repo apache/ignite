@@ -121,6 +121,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         private boolean keys = true;
 
+        /** {@inheritDoc} */
         @Override protected List<Long> getChildren(final Long pageId) {
             if (pageId == null || pageId == 0L)
                 return null;
@@ -131,11 +132,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 try {
                     long pageAddr = readLock(pageId, page); // No correctness guaranties.
 
+                    if (pageAddr == 0)
+                        return null;
+
                     try {
                         BPlusIO io = io(pageAddr);
 
                         if (io.isLeaf())
-                            return null;
+                            return Collections.emptyList();
 
                         int cnt = io.getCount(pageAddr);
 
@@ -172,6 +176,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             }
         }
 
+        /** {@inheritDoc} */
         @Override protected String formatTreeNode(final Long pageId) {
             if (pageId == null)
                 return ">NPE<";
@@ -183,6 +188,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 long page = acquirePage(pageId);
                 try {
                     long pageAddr = readLock(pageId, page); // No correctness guaranties.
+                    if (pageAddr == 0)
+                        return "<Obsolete>";
+
                     try {
                         BPlusIO<L> io = io(pageAddr);
 
