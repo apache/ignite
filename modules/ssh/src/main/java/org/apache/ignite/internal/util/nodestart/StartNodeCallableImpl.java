@@ -364,7 +364,10 @@ public class StartNodeCallableImpl implements StartNodeCallable {
     private String env(Session ses, String name, String dflt, String encoding) throws JSchException {
         try {
             String res = exec(ses, "echo " + name, encoding);
-            return res == null || res.isEmpty() ? dflt : res;
+            if (res == null)
+                return dflt;
+            res = res.trim();
+            return res.isEmpty() ? dflt : res;
         }
         catch (IOException ignored) {
             return dflt;
