@@ -423,11 +423,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         if (mapping != null) {
                             assert !hasFutures() : futures();
 
-                            finish(1, mapping, commit);
+                            finish(1, mapping, commit, !clearThreadMap);
                         }
                     }
                     else
-                        finish(mappings.mappings(), commit);
+                        finish(mappings.mappings(), commit, !clearThreadMap);
                 }
 
                 markInitialized();
@@ -680,14 +680,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param mappings Mappings.
      * @param commit Commit flag.
      */
-    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit) {
+    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit, boolean useCompletedVer) {
         assert !hasFutures() : futures();
 
         int miniId = 0;
 
         // Create mini futures.
         for (GridDistributedTxMapping m : mappings)
-            finish(++miniId, m, commit);
+            finish(++miniId, m, commit, useCompletedVer);
     }
 
     /**
@@ -695,7 +695,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param m Mapping.
      * @param commit Commit flag.
      */
-    private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
+    private void finish(int miniId, GridDistributedTxMapping m, boolean commit, boolean useCompletedVer) {
         ClusterNode n = m.primary();
 
         assert !m.empty() : m;
@@ -706,7 +706,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             syncMode = FULL_SYNC;
 
         // Version to be added in completed versions on primary node.
-        GridCacheVersion completedVer = !commit && tx.timeout() > 0 ? tx.xidVersion() : null;
+        GridCacheVersion completedVer = !commit && useCompletedVer ? tx.xidVersion() : null;
 
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
@@ -747,7 +747,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             add(fut); // Append new future.
 
             if (tx.pessimistic())
-                cctx.tm().beforeFinishRemote(n.id(), tx.threadId());
+                cctx.tm().beforeFinishRemote(n.id(), tx.threadId(), tx.xidVersion());
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
