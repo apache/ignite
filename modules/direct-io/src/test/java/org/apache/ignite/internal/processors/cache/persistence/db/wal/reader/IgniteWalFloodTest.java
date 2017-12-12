@@ -32,8 +32,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import junit.framework.TestCase;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -50,7 +52,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -103,9 +108,10 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
         dsCfg.setPageSize(4 * 1024);
 
-        DataRegionConfiguration regCfg = new DataRegionConfiguration();
+        DataRegionConfiguration regCfg = new DataRegionConfiguration()
+            .setName("dfltMemPlc")
+            .setMetricsEnabled(true);
 
-        regCfg.setName("dfltMemPlc");
         regCfg.setMaxSize(10 * 1024L * 1024 * 1024);
         regCfg.setPersistenceEnabled(true);
 
@@ -205,7 +211,11 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         private ScheduledExecutorService svc = Executors.newScheduledThreadPool(1);
         private String operationComplete = "Written";
         private String operation = "put";
+        private Ignite ignite;
 
+        public ProgressWatchdog(Ignite ignite) {
+            this.ignite = ignite;
+        }
 
         public void start() {
             final AtomicLong prevCnt = new AtomicLong();
@@ -219,13 +229,44 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
                     final long totalCnt = longAdder8.longValue();
                     final long averagePutPerSec = totalCnt * 1000 / elapsedMs;
                     final long currPutPerSec = ((totalCnt - prevCnt.getAndSet(totalCnt)) * 1000) / (elapsedMs - prevMsElapsed.getAndSet(elapsedMs));
-                    final String fileNameWithDump  = currPutPerSec == 0 ? reactNoProgress(msStart) : "";
+                    final String fileNameWithDump = currPutPerSec == 0 ? reactNoProgress(msStart) : "";
+
+                    String defRegName = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
+                    long dirtyPages = -1;
+                    for (DataRegionMetrics m : ignite.dataRegionMetrics())
+                        if (m.getName().equals(defRegName))
+                            dirtyPages = m.getDirtyPages();
+
+
+
+                    long cpBufPages = 0;
+
+                    long cpWrittenPages;
+
+                    GridCacheSharedContext<Object, Object> cacheSctx = ((IgniteEx)ignite).context().cache().context();
+                    AtomicInteger cntr = ((GridCacheDatabaseSharedManager)(cacheSctx.database())).writtenPagesCounter();
+
+                    cpWrittenPages = cntr == null ? 0 : cntr.get();
+
+                    try {
+                        cpBufPages = ((PageMemoryImpl)cacheSctx.database()
+                            .dataRegion(defRegName).pageMemory()).checkpointBufferPagesCount();
+                    }
+                    catch (IgniteCheckedException e) {
+                        e.printStackTrace();
+                    }
+
+
                     X.println(" >> " +
                         operationComplete +
                         " " + totalCnt + ", time " + elapsedMs + " ms," +
                         " Average " +
                         operation + " " + averagePutPerSec + " recs/sec, current " +
-                        operation + " " + currPutPerSec + " recs/sec " + fileNameWithDump);
+                        operation + " " + currPutPerSec + " recs/sec " +
+                        "dirty=" + dirtyPages + ", " +
+                        "cpWrittenPages=" + cpWrittenPages + ", " +
+                        "cpBufPages=" + cpBufPages + " " +
+                        fileNameWithDump);
 
                 }
             }, checkPeriodSec, checkPeriodSec, TimeUnit.SECONDS);
@@ -280,12 +321,12 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
             final IgniteCache<Object, IndexedObject> cache = ignite.cache(CACHE_NAME);
             int totalRecs = CONTINUOUS_PUT_RECS_CNT;
-            final int threads = 10;
+            final int threads = 4;
 
             final int recsPerThread = totalRecs / threads;
             final Collection<Callable<?>> tasks = new ArrayList<>();
 
-            final ProgressWatchdog watchdog = new ProgressWatchdog();
+            final ProgressWatchdog watchdog = new ProgressWatchdog(ignite);
 
             for (int j = 0; j < threads; j++) {
                 final IgniteCache<Object, IndexedObject> finalCache = cache;
@@ -324,7 +365,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
         final IgniteCache<Integer, IndexedObject> restartedCache = restartedIgnite.cache(CACHE_NAME);
 
-        final ProgressWatchdog watchdog2= new ProgressWatchdog();
+        final ProgressWatchdog watchdog2= new ProgressWatchdog(restartedIgnite);
 
         watchdog2.operationComplete = "Verified";
         watchdog2.operation = "get";
@@ -402,7 +443,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
             final int recsPerThread = totalRecs / threads;
             final Collection<Callable<?>> tasks = new ArrayList<>();
 
-            final ProgressWatchdog watchdog = new ProgressWatchdog();
+            final ProgressWatchdog watchdog = new ProgressWatchdog(ignite);
 
             for (int j = 0; j < threads; j++) {
                 final IgniteCache<Object, IndexedObject> finalCache = cache;
