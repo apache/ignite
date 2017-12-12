@@ -20,7 +20,7 @@ package org.apache.ignite.yardstick.ml;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.clustering.KMeansDistributedClusterer;
-import org.apache.ignite.ml.math.EuclideanDistance;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -29,7 +29,7 @@ import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
- * Todo: enable this benchmark per IGNITE-7118.
+ * Todo: IGNITE-7118, enable this benchmark.
  */
 @SuppressWarnings("unused")
 public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBenchmark {
