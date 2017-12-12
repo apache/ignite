@@ -2016,14 +2016,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public boolean checkIndexedColumnsEquality(GridCacheContext cctx, GridQueryTypeDescriptor rowsType,
-        CacheDataRow newRow,  @Nullable CacheDataRow prevRow)
+        CacheDataRow newRow,  CacheDataRow prevRow)
         throws IgniteCheckedException {
         assert rowsType != null;
         assert newRow != null;
-        assert newRow.key().equals(prevRow.key());
+        assert prevRow != null;
 
-        if (prevRow == null)
-            return false;
+        assert newRow.key().equals(prevRow.key());
 
         String cacheName = cctx.name();
 

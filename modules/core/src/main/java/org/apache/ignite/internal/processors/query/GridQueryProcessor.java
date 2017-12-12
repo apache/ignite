@@ -1769,25 +1769,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return {@code true} if indexed columns are equal.
      */
     public boolean checkIndexedColumnsEquality(GridCacheContext cctx, CacheDataRow newRow,
-        @Nullable CacheDataRow prevRow) throws IgniteCheckedException {
+        CacheDataRow prevRow) throws IgniteCheckedException {
         assert cctx != null;
         assert newRow != null;
-        assert prevRow == null || newRow.key().equals(prevRow.key());
+        assert prevRow != null;
+        assert newRow.key().equals(prevRow.key());
 
-        if (prevRow == null)
-            return false;
+        if (idx == null)
+            return true;
 
         String cacheName = cctx.name();
 
         CacheObjectContext coctx = cctx.cacheObjectContext();
 
-        QueryTypeDescriptorImpl newDesc = typeByValue(cacheName, coctx, newRow.key(), newRow.value(), true);
-        QueryTypeDescriptorImpl prevDesc = typeByValue(cacheName, coctx, prevRow.key(), prevRow.value(), true);
+        QueryTypeDescriptorImpl newDesc = typeByValue(cacheName, coctx, newRow.key(), newRow.value(), false);
+        QueryTypeDescriptorImpl prevDesc = typeByValue(cacheName, coctx, prevRow.key(), prevRow.value(), false);
 
         if (newDesc == null || newDesc != prevDesc)
             return false;
 
-        return getIndexing().checkIndexedColumnsEquality(cctx, newDesc, newRow, prevRow);
+        return idx.checkIndexedColumnsEquality(cctx, newDesc, newRow, prevRow);
     }
 
     /**

@@ -322,5 +322,5 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public boolean checkIndexedColumnsEquality(GridCacheContext cctx, GridQueryTypeDescriptor rowsType,
-        CacheDataRow newRow, @Nullable CacheDataRow prevRow) throws IgniteCheckedException;
+        CacheDataRow newRow, CacheDataRow prevRow) throws IgniteCheckedException;
 }
