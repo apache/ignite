@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottle;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -247,15 +248,19 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
                     AtomicInteger cntr = ((GridCacheDatabaseSharedManager)(cacheSctx.database())).writtenPagesCounter();
 
                     cpWrittenPages = cntr == null ? 0 : cntr.get();
-
+                    double threshold = 0;
                     try {
-                        cpBufPages = ((PageMemoryImpl)cacheSctx.database()
-                            .dataRegion(defRegName).pageMemory()).checkpointBufferPagesCount();
+                        PageMemoryImpl pageMemory = (PageMemoryImpl)cacheSctx.database()
+                            .dataRegion(defRegName).pageMemory();
+                        cpBufPages = pageMemory.checkpointBufferPagesCount();
+
+                        PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
+
+                        threshold = (double)U.field(throttle, "lastDirtyRatioThreshold");
                     }
                     catch (IgniteCheckedException e) {
                         e.printStackTrace();
                     }
-
 
                     X.println(" >> " +
                         operationComplete +
@@ -266,6 +271,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
                         "dirty=" + dirtyPages + ", " +
                         "cpWrittenPages=" + cpWrittenPages + ", " +
                         "cpBufPages=" + cpBufPages + " " +
+                        "threshold=" + threshold + " " +
                         fileNameWithDump);
 
                 }
