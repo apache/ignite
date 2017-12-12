@@ -156,30 +156,27 @@ public class H2TreeIndex extends GridH2IndexBase {
     private static String mangleClassName(Class<?> klazz) {
         assert klazz != null;
 
-        // FIXME SHQ: uncomment
-        return "0";
+        String name = klazz.getName();
 
-//        String name = klazz.getName();
-//
-//        StringBuilder sb = new StringBuilder();
-//
-//        int hc = name.hashCode();
-//        hc = (hc & 0xFFFF) ^ (hc >>> 16);
-//
-//        String[] components = name.split("[.$]");
-//        assert components.length > 0;
-//
-//        sb.append(Integer.toHexString(hc))
-//            .append('.')
-//            .append(components[components.length - 1])
-//            .append('.');
-//
-//        for (int i = 0; i < components.length - 1; i++) {
-//            assert !components[i].isEmpty();
-//            sb.append(components[i].charAt(0));
-//        }
-//
-//        return sb.toString();
+        StringBuilder sb = new StringBuilder();
+
+        int hc = name.hashCode();
+        hc = (hc & 0xFFFF) ^ (hc >>> 16);
+
+        String[] components = name.split("[.$]");
+        assert components.length > 0;
+
+        sb.append(Integer.toHexString(hc))
+            .append('.')
+            .append(components[components.length - 1])
+            .append('.');
+
+        for (int i = 0; i < components.length - 1; i++) {
+            assert !components[i].isEmpty();
+            sb.append(components[i].charAt(0));
+        }
+
+        return sb.toString();
     }
 
     /**
