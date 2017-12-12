@@ -15,8 +15,23 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.math.exceptions.knn;
+
+import org.apache.ignite.IgniteException;
+
 /**
- * <!-- Package description. -->
- * Decision trees examples.
+ * Shows empty filename.
  */
-package org.apache.ignite.examples.ml.math.trees;
+public class EmptyFileException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * Creates new exception.
+     *
+     * @param filename Name of the file without content.
+     */
+    public EmptyFileException(String filename) {
+        super("Empty file with filename " +  filename);
+    }
+}

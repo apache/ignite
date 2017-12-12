@@ -29,7 +29,6 @@ import './modules/states/signin.state';
 import './modules/states/logout.state';
 import './modules/states/password.state';
 import './modules/states/configuration.state';
-// import './modules/states/profile.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
 
@@ -130,6 +129,7 @@ import uiGridHovering from './components/ui-grid-hovering';
 import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
 import clusterSelector from './components/cluster-selector';
+import connectedClusters from './components/connected-clusters';
 import igniteFormField from './components/ignite-form-field';
 
 import pageProfile from './components/page-profile';
@@ -212,6 +212,7 @@ angular.module('ignite-console', [
     AngularStrapSelect.name,
     listEditable.name,
     clusterSelector.name,
+    connectedClusters.name,
     pageProfile.name,
     breadcrumbs.name,
     igniteFormField.name,
