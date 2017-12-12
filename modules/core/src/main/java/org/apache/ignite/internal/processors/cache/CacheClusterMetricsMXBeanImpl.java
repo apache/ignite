@@ -415,11 +415,21 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public void enableStatistics() {
-        cache.context().grid().context().cache().enableStatistics(cache.name(), true);
+        try {
+            cache.context().grid().context().cache().enableStatistics(cache.name(), true);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void disableStatistics() {
-        cache.context().grid().context().cache().enableStatistics(cache.name(), false);
+        try {
+            cache.context().grid().context().cache().enableStatistics(cache.name(), false);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 }

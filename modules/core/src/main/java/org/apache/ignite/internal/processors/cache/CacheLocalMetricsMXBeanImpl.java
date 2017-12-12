@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 
 /**
@@ -415,11 +416,21 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public void enableStatistics() {
-        cache.context().grid().context().cache().enableStatistics(cache.name(), true);
+        try {
+            cache.context().grid().context().cache().enableStatistics(cache.name(), true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void disableStatistics() {
-        cache.context().grid().context().cache().enableStatistics(cache.name(), false);
+        try {
+            cache.context().grid().context().cache().enableStatistics(cache.name(), false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 }

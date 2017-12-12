@@ -360,7 +360,12 @@ public class CacheManager implements javax.cache.CacheManager {
 
             cfg.setStatisticsEnabled(enabled);
 
-            ignite.context().cache().enableStatistics(cacheName, enabled);
+            try {
+                ignite.context().cache().enableStatistics(cacheName, enabled);
+            }
+            catch (IgniteCheckedException e) {
+                throw CU.convertToCacheException(e);
+            }
         }
         finally {
             kernalGateway.readUnlock();
