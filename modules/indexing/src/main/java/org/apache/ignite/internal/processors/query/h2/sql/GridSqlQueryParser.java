@@ -95,7 +95,6 @@ import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
-import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
@@ -1088,24 +1087,12 @@ public class GridSqlQueryParser {
         final boolean wrapKey0;
 
         if (!F.isEmpty(res.keyTypeName())) {
-            Class<?> c = U.classForName(res.keyTypeName(), null, true);
+            Class<?> c = U.isJdk(res.keyTypeName()) ? U.classForName(res.keyTypeName(), null, true) : null;
 
             if (c != null && QueryUtils.isSqlType(c)) {
                 if (keyColsNum != 1)
                     throw new IgniteSQLException(PARAM_KEY_TYPE + " may not point at SQL type " +
                         "when multiple key columns are defined.", IgniteQueryErrorCode.PARSING);
-
-                GridSqlColumn pkCol = cols.get(pkIdxCols[0].columnName);
-
-                String clsName = DataType.getTypeClassName(pkCol.resultType().type());
-
-                if (!F.eq(clsName, res.keyTypeName()))
-                    throw new IgniteSQLException(PARAM_KEY_TYPE + " points at SQL type " +
-                        "different from the type of primary key column.", IgniteQueryErrorCode.PARSING);
-
-                // We've detected that the user has supplied key type name matching name of actual data type
-                // of the only primary key column, therefore let's ignore key type name and fall back to flat key.
-                res.keyTypeName(null);
 
                 wrapKey0 = false;
             }
@@ -1136,34 +1123,12 @@ public class GridSqlQueryParser {
             wrapVal0 = false;
         }
         else if (!F.isEmpty(res.valueTypeName())) {
-            Class<?> c = U.classForName(res.valueTypeName(), null, true);
+            Class<?> c = U.isJdk(res.valueTypeName()) ? U.classForName(res.valueTypeName(), null, true) : null;
 
             if (c != null && QueryUtils.isSqlType(c)) {
                 if (valColsNum != 1)
                     throw new IgniteSQLException(PARAM_VAL_TYPE + " may not point at SQL type " +
                         "when multiple value columns are defined.", IgniteQueryErrorCode.PARSING);
-
-                GridSqlColumn valCol = null;
-
-                for (GridSqlColumn col : cols.values()) {
-                    if (!pkCols.contains(col.columnName())) {
-                        valCol = col;
-
-                        break;
-                    }
-                }
-
-                assert valCol != null;
-
-                String clsName = DataType.getTypeClassName(valCol.resultType().type());
-
-                if (!F.eq(clsName, res.valueTypeName()))
-                    throw new IgniteSQLException(PARAM_VAL_TYPE + " points at SQL type " +
-                        "different from the type of value column.", IgniteQueryErrorCode.PARSING);
-
-                // We've detected that the user has supplied value type name matching name of actual data type
-                // of the only value column, therefore let's ignore value type name and fall back to flat value.
-                res.valueTypeName(null);
 
                 wrapVal0 = false;
             }

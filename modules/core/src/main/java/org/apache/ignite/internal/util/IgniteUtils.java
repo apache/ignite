@@ -6124,7 +6124,17 @@ public abstract class IgniteUtils {
 
         String s = cls.getName();
 
-        return s.startsWith("java.") || s.startsWith("javax.");
+        return isJdk(s);
+    }
+
+    /**
+     * Check if given class is of JDK type.
+     *
+     * @param s Class name to check.
+     * @return {@code True} if class is JDK type.
+     */
+    public static boolean isJdk(String s) {
+        return primitiveMap.containsKey(s) || s.startsWith("java.") || s.startsWith("javax.");
     }
 
     /**
