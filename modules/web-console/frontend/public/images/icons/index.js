@@ -30,3 +30,4 @@ export checkmark from './checkmark.svg';
 export alert from './alert.svg';
 export attention from './attention.svg';
 export connectedClusters from './connectedClusters.svg';
+export attention from './attention.svg';
