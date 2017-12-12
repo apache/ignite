@@ -42,6 +42,15 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import java.util.ArrayList;
+import java.util.List;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -124,32 +133,6 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * Try to guess request capacity.
-     *
-     * @param req Request.
-     * @return Expected capacity.
-     */
-    private static int guessCapacity(JdbcRequest req) {
-        int cap;
-
-        if (req instanceof JdbcBatchExecuteRequest) {
-            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
-
-            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
-        }
-        else if (req instanceof JdbcQueryCloseRequest)
-            cap = QUERY_CLOSE_MSG_SIZE;
-        else if (req instanceof JdbcQueryMetadataRequest)
-            cap = QUERY_META_MSG_SIZE;
-        else if (req instanceof JdbcQueryFetchRequest)
-            cap = QUERY_FETCH_MSG_SIZE;
-        else
-            cap = DYNAMIC_SIZE_MSG_CAP;
-
-        return cap;
-    }
-
-    /**
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
@@ -166,6 +149,8 @@ public class JdbcThinTcpIo {
 
                 sock.setSoTimeout(1000);
 
+        if (connProps.getSocketSendBuffer() != 0)
+            sock.setSendBufferSize(connProps.getSocketSendBuffer());
                 ((SSLSocket)sock).setUseClientMode(true);
                 ((SSLSocket)sock).startHandshake();
             }
@@ -177,6 +162,8 @@ public class JdbcThinTcpIo {
         else {
             sock = new Socket();
 
+        if (connProps.getSocketReceiveBuffer() != 0)
+            sock.setReceiveBufferSize(connProps.getSocketReceiveBuffer());
             try {
                 sock.connect(new InetSocketAddress(connProps.getHost(), connProps.getPort()));
             }
@@ -186,6 +173,7 @@ public class JdbcThinTcpIo {
             }
         }
 
+        sock.setTcpNoDelay(connProps.isTcpNoDelay());
         if (connProps.getSocketSendBuffer() != 0)
             sock.setSendBufferSize(connProps.getSocketSendBuffer());
 
@@ -195,11 +183,16 @@ public class JdbcThinTcpIo {
         sock.setTcpNoDelay(connProps.isTcpNoDelay());
 
         try {
+            sock.connect(new InetSocketAddress(connProps.getHost(), connProps.getPort()));
+
             endpoint = new IpcClientTcpEndpoint(sock);
 
             out = new BufferedOutputStream(endpoint.outputStream());
             in = new BufferedInputStream(endpoint.inputStream());
         }
+        catch (IOException | IgniteCheckedException e) {
+            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
+                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         catch (IgniteCheckedException e) {
             throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
                 ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
@@ -219,7 +212,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
+        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(ver.major());
         writer.writeShort(ver.minor());
@@ -289,7 +282,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
+        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(VER_2_1_0.major());
         writer.writeShort(VER_2_1_0.minor());
@@ -351,6 +344,32 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Try to guess request capacity.
+     *
+     * @param req Request.
+     * @return Expected capacity.
+     */
+    private static int guessCapacity(JdbcRequest req) {
+        int cap;
+
+        if (req instanceof JdbcBatchExecuteRequest) {
+            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
+
+            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
+        }
+        else if (req instanceof JdbcQueryCloseRequest)
+            cap = QUERY_CLOSE_MSG_SIZE;
+        else if (req instanceof JdbcQueryMetadataRequest)
+            cap = QUERY_META_MSG_SIZE;
+        else if (req instanceof JdbcQueryFetchRequest)
+            cap = QUERY_FETCH_MSG_SIZE;
+        else
+            cap = DYNAMIC_SIZE_MSG_CAP;
+
+        return cap;
+    }
+
+    /**
      * @param req JDBC request bytes.
      * @throws IOException On error.
      */
@@ -374,7 +393,7 @@ public class JdbcThinTcpIo {
     private byte[] read() throws IOException {
         byte[] sizeBytes = read(4);
 
-        int msgSize = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
+        int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
             | ((0xFF & sizeBytes[1]) << 8) + (0xFF & sizeBytes[0]));
 
         return read(msgSize);
@@ -385,7 +404,7 @@ public class JdbcThinTcpIo {
      * @return Read bytes.
      * @throws IOException On error.
      */
-    private byte[] read(int size) throws IOException {
+    private byte [] read(int size) throws IOException {
         int off = 0;
 
         byte[] data = new byte[size];

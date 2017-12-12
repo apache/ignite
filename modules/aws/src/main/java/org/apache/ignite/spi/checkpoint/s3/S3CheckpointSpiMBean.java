@@ -34,6 +34,12 @@ public interface S3CheckpointSpiMBean extends IgniteSpiManagementMBean {
     public String getBucketName();
 
     /**
+     * @return S3 bucket endpoint.
+     */
+    @MXBeanDescription("S3 bucket endpoint.")
+    public String getBucketEndpoint();
+
+    /**
      * @return S3 access key.
      */
     @MXBeanDescription("S3 access key.")

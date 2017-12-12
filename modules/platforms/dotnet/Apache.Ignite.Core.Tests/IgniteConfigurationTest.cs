@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -99,6 +100,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new QueryIndex());
             CheckDefaultValueAttributes(new DataStorageConfiguration());
             CheckDefaultValueAttributes(new DataRegionConfiguration());
+            CheckDefaultValueAttributes(new CacheClientConfiguration());
         }
 
         /// <summary>
@@ -149,7 +151,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.WorkDirectory.Trim('\\'), resCfg.WorkDirectory.Trim('\\'));
                 Assert.AreEqual(cfg.JvmClasspath, resCfg.JvmClasspath);
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
-                Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
+                Assert.AreEqual(cfg.JvmDllPath, resCfg.JvmDllPath);
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
                 Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
                 Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
@@ -236,7 +238,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(sql.TcpNoDelay, resSql.TcpNoDelay);
                 Assert.AreEqual(sql.ThreadPoolSize, resSql.ThreadPoolSize);
 
-                TestUtils.AssertReflectionEqual(cfg.DataStorageConfiguration, resCfg.DataStorageConfiguration);
+                AssertExtensions.ReflectionEqual(cfg.DataStorageConfiguration, resCfg.DataStorageConfiguration);
             }
         }
 
@@ -249,6 +251,7 @@ namespace Apache.Ignite.Core.Tests
             // When Spring XML is used, .NET overrides Spring.
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
+                DataStorageConfiguration = null,
                 SpringConfigUrl = @"config\spring-test.xml",
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
                 MetricsHistorySize = 57
@@ -493,6 +496,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultIsActiveOnStart, cfg.IsActiveOnStart);
             Assert.AreEqual(IgniteConfiguration.DefaultClientConnectorConfigurationEnabled, 
                 cfg.ClientConnectorConfigurationEnabled);
+            Assert.AreEqual(IgniteConfiguration.DefaultRedirectJavaConsoleOutput, cfg.RedirectJavaConsoleOutput);
 
             // Thread pools.
             Assert.AreEqual(IgniteConfiguration.DefaultManagementThreadPoolSize, cfg.ManagementThreadPoolSize);
