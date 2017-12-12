@@ -14,25 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.distances;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
- * Calculates the L<sub>2</sub> (Euclidean) distance between two points.
+ * Calculates the L<sub>1</sub> (sum of abs) distance between two points.
  */
-public class EuclideanDistance implements DistanceMeasure {
+public class ManhattanDistance implements DistanceMeasure {
     /** Serializable version identifier. */
-    private static final long serialVersionUID = 1717556319784040040L;
+    private static final long serialVersionUID = 8989556319784040040L;
 
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b)
         throws CardinalityException {
-        return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
+        return MatrixUtil.localCopyOf(a).minus(b).kNorm(1.0);
     }
 
     /** {@inheritDoc} */

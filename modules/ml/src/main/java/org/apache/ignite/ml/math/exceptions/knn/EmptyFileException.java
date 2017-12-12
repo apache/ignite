@@ -14,25 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math;
 
-import java.io.Externalizable;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
+package org.apache.ignite.ml.math.exceptions.knn;
+
+import org.apache.ignite.IgniteException;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Interface for distance measures of n-dimensional vectors.
+ * Shows empty filename.
  */
-public interface DistanceMeasure extends Externalizable {
+public class EmptyFileException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Compute the distance between two n-dimensional vectors.
-     * <p>
-     * The two vectors are required to have the same dimension.
+     * Creates new exception.
      *
-     * @param a the first vector
-     * @param b the second vector
-     * @return the distance between the two vectors
-     * @throws CardinalityException if the array lengths differ.
+     * @param filename Name of the file without content.
      */
-    public double compute(Vector a, Vector b) throws CardinalityException;
+    public EmptyFileException(String filename) {
+        super("Empty file with filename " +  filename);
+    }
 }
