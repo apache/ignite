@@ -2543,10 +2543,10 @@ public class GridNioServer<T> {
 
                 if (directBuf) {
                     if (ses.writeBuffer() != null)
-                        ((DirectBuffer)ses.writeBuffer()).cleaner().clean();
+                        U.cleanDirectBuffer(ses.writeBuffer());
 
                     if (ses.readBuffer() != null)
-                        ((DirectBuffer)ses.readBuffer()).cleaner().clean();
+                        U.cleanDirectBuffer(ses.readBuffer());
                 }
 
                 // Shutdown input and output so that remote client will see correct socket close.
