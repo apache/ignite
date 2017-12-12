@@ -478,36 +478,26 @@ public class GridReduceQueryExecutor {
             if (F.isEmpty(extraNodes))
                 throw new CacheException("Failed to find data nodes for cache: " + extraCacheName);
 
+            boolean disjoint;
+
             if (extraCctx.isReplicated()) {
                 if (isReplicatedOnly) {
                     nodes.retainAll(extraNodes);
 
-                    if (map.isEmpty()) {
-                        if (isPreloadingActive(cacheIds))
-                            return null; // Retry.
-                        else
-                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                                ", cache2=" + extraCacheName + "]");
-                    }
+                    disjoint = map.isEmpty();
                 }
-                else {
-                    if (!extraNodes.containsAll(nodes)) {
-                        if (isPreloadingActive(cacheIds))
-                            return null; // Retry.
-                        else
-                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                                ", cache2=" + extraCacheName + "]");
-                    }
-                }
+                else
+                    disjoint = !extraNodes.containsAll(nodes);
             }
-            else {
-                if (!extraNodes.equals(nodes)) {
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
-                }
+            else
+                disjoint = !extraNodes.equals(nodes);
+
+            if (disjoint) {
+                if (isPreloadingActive(cacheIds))
+                    return null; // Retry.
+                else
+                    throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                        ", cache2=" + extraCacheName + "]");
             }
         }
 

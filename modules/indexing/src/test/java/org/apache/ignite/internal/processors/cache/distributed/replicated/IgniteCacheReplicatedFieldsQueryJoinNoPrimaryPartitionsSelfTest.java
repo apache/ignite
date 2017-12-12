@@ -33,10 +33,10 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Tests non collocated join with replicated cache.
+ * Tests non-collocated join with REPLICATED cache and no primary partitions for that cache on some nodes.
  */
 @SuppressWarnings("unused")
-public class IgniteCacheReplicatedJoinSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheReplicatedFieldsQueryJoinNoPrimaryPartitionsSelfTest extends GridCommonAbstractTest {
     /** Client node name. */
     public static final String NODE_CLI = "client";
 
