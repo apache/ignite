@@ -1980,6 +1980,34 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Check the node is alive and not failed.
+     *
+     * @param nodeId Message sender ID.
+     * @return True if a message should be ignored.
+     */
+    private boolean ignoreNodeMessage(UUID nodeId) {
+        if (ring.node(nodeId) == null) {
+            if (log.isDebugEnabled())
+                log.debug("Ignore message, node is not alive [nodeId=" + nodeId + ']');
+
+            return true;
+        }
+
+        synchronized (mux) {
+            for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
+                if (failedNode.id().equals(nodeId)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Ignore message, node is in fail list [nodeId=" + nodeId + ']');
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Adds failed nodes specified in the received message to the local failed nodes list.
      *
      * @param msg Message.
@@ -1990,28 +2018,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (msgFailedNodes != null) {
             UUID sndId = msg.senderNodeId();
 
-            if (sndId != null) {
-                if (ring.node(sndId) == null) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Ignore message failed nodes, sender node is not alive [nodeId=" + sndId +
-                            ", failedNodes=" + msgFailedNodes + ']');
-                    }
+            if (sndId != null && ignoreNodeMessage(sndId)) {
+                if (log.isDebugEnabled())
+                    log.debug("Ignore message failed nodes [failedNodes=" + msgFailedNodes + ']');
 
-                    return;
-                }
-
-                synchronized (mux) {
-                    for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
-                        if (failedNode.id().equals(sndId)) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Ignore message failed nodes, sender node is in fail list [nodeId=" + sndId +
-                                    ", failedNodes=" + msgFailedNodes + ']');
-                            }
-
-                            return;
-                        }
-                    }
-                }
+                return;
             }
 
             for (UUID nodeId : msgFailedNodes) {
@@ -5693,35 +5704,44 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (debugMode && recordable(msg))
                             debugLog(msg, "Message has been received: " + msg);
 
-                        int ret = processInplaceMessage(msg);
+                        int ret = processMessageInplace(msg);
+
+                        boolean ignoreMessage = false;
 
                         switch (ret) {
-                            case 0:
+                            case 0: // message was not processed
                                 break;
 
-                            case 1:
+                            case 1: // message was fully processed, continue serving the socket
                                 continue;
 
-                            case 2:
+                            case 2: // message was fully processed and the socket should be closed
                                 return;
 
+                            case 3: // message should be ignored, reply to the sender and continue serving the socket
+                                ignoreMessage = true;
+
+                                break;
+
                             default:
-                                assert false : "Unexpected processInplaceMessage() return: " + ret;
-                        }
-
-                        if (msg instanceof TcpDiscoveryRingLatencyCheckMessage) {
-                            if (log.isInfoEnabled())
-                                log.info("Latency check message has been read: " + msg.id());
-
-                            ((TcpDiscoveryRingLatencyCheckMessage)msg).onRead();
+                                assert false : "Unexpected processMessageInplace() return: " + ret;
                         }
 
                         TcpDiscoveryClientMetricsUpdateMessage metricsUpdateMsg = null;
 
-                        if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
-                            metricsUpdateMsg = (TcpDiscoveryClientMetricsUpdateMessage)msg;
-                        else
-                            msgWorker.addMessage(msg);
+                        if (!ignoreMessage) {
+                            if (msg instanceof TcpDiscoveryRingLatencyCheckMessage) {
+                                if (log.isInfoEnabled())
+                                    log.info("Latency check message has been read: " + msg.id());
+
+                                ((TcpDiscoveryRingLatencyCheckMessage)msg).onRead();
+                            }
+
+                            if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                                metricsUpdateMsg = (TcpDiscoveryClientMetricsUpdateMessage)msg;
+                            else
+                                msgWorker.addMessage(msg);
+                        }
 
                         // Send receipt back.
                         if (clientMsgWrk != null) {
@@ -6410,10 +6430,11 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param msg Discovery message.
          *
-         * @return 0 - message was not processed, 1 - message was processed, continue serving the socket,
-         * 2 - message was processed and the socket should be closed.
+         * @return 0 - message was not processed, 1 - message was fully processed, continue serving the socket,
+         * 2 - message was fully processed and the socket should be closed,
+         * 3 - message should be ignored, reply to the sender and continue serving the socket.
          */
-        private int processInplaceMessage(TcpDiscoveryAbstractMessage msg) throws IOException {
+        private int processMessageInplace(TcpDiscoveryAbstractMessage msg) throws IOException {
             if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
                 spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
@@ -6480,6 +6501,40 @@ class ServerImpl extends TcpDiscoveryImpl {
                     clientWorker.pingResult(true);
 
                 return 1;
+            }
+            else if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                TcpDiscoveryNodeAddedMessage addMsg = (TcpDiscoveryNodeAddedMessage) msg;
+
+                synchronized (mux) {
+                    if (spiState == CONNECTING && locNode.internalOrder() != addMsg.node().internalOrder()) {
+                        Collection<TcpDiscoveryNode> top = addMsg.topology();
+
+                        if (top != null && !top.isEmpty())
+                            return 0;
+                    }
+                }
+
+                // Skip message processing and close the socket
+                return 2;
+            }
+            else if (msg instanceof TcpDiscoveryStatusCheckMessage)
+                // Skip ignoreNodeMessage() check and add the message to the queue
+                return 0;
+
+            else if (ignoreNodeMessage(nodeId)) {
+                if (msg instanceof TcpDiscoveryMetricsUpdateMessage ||
+                    msg instanceof  TcpDiscoveryClientMetricsUpdateMessage) {
+                    if (log.isDebugEnabled())
+                        log.debug("Ignore the message [nodeId=" + nodeId + ", msg=" + msg);
+
+                    // Skip message processing and keep the socket opened
+                    return 3;
+                }
+
+                U.warn(log, "Ignore the message and disconnect [nodeId=" + nodeId + ", msg=" + msg);
+
+                // Skip message processing and close the socket
+                return 2;
             }
 
             return 0;
