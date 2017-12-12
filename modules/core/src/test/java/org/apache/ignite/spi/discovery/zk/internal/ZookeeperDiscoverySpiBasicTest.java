@@ -1582,7 +1582,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             @Override public Void call() throws Exception {
                 ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(SRVS));
 
-                spi.reconnect();
+                spi.clientReconnect();
 
                 return null;
             }

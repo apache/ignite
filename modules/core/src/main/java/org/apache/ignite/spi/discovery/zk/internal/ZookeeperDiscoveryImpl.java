@@ -81,7 +81,7 @@ import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
 /**
- * TODO ZK: check if compression makes sense.
+ *
  */
 public class ZookeeperDiscoveryImpl {
     /** */
@@ -221,11 +221,14 @@ public class ZookeeperDiscoveryImpl {
     private final AtomicReference<ZkCommunicationErrorProcessFuture> commErrProcFut = new AtomicReference<>();
 
     /**
-     * @param nodeId Problem node ID
+     * @param node0 Problem node ID
      * @param err Connect error.
      */
-    public void onCommunicationError(UUID nodeId, Exception err) {
-        ZookeeperClusterNode node = node(nodeId);
+    public void onCommunicationConnectionError(ClusterNode node0, Exception err) {
+        if (true)
+            return;
+
+        ZookeeperClusterNode node = node(node0.id());
 
         if (node == null)
             return;
@@ -245,7 +248,7 @@ public class ZookeeperDiscoveryImpl {
         }
 
         try {
-            fut.nodeStatusFuture(nodeId).get();
+            fut.nodeStatusFuture(node.id()).get();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException(e);

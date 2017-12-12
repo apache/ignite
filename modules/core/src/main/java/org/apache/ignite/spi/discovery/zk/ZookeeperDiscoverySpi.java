@@ -175,18 +175,28 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     }
 
     /** {@inheritDoc} */
-    @Override public boolean reconnectSupported() {
+    @Override public boolean clientReconnectSupported() {
         return !clientReconnectDisabled;
     }
 
     /** {@inheritDoc} */
-    @Override public void reconnect() {
+    @Override public void clientReconnect() {
         impl.reconnect();
     }
 
     /** {@inheritDoc} */
     @Override public boolean knownNode(UUID nodeId) {
         return impl.knownNode(nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean supportsCommunicationErrorResolve() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCommunicationConnectionError(ClusterNode node, Exception err) {
+        impl.onCommunicationConnectionError(node, err);
     }
 
     /** {@inheritDoc} */

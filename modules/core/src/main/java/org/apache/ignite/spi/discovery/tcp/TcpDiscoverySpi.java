@@ -2090,21 +2090,29 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return ignite().configuration().getSslContextFactory() != null;
     }
 
-    /**
-     * Force reconnect to cluster.
-     *
-     * @throws IgniteSpiException If failed.
-     */
-    public void reconnect() throws IgniteSpiException {
+    /** {@inheritDoc} */
+    public void clientReconnect() throws IgniteSpiException {
         impl.reconnect();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean knownNode(UUID nodeId) {
         return getNode0(nodeId) != null;
     }
 
-    @Override public boolean reconnectSupported() {
+    /** {@inheritDoc} */
+    @Override public boolean clientReconnectSupported() {
         return !clientReconnectDisabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean supportsCommunicationErrorResolve() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCommunicationConnectionError(ClusterNode node, Exception err) {
+        throw new UnsupportedOperationException();
     }
 
     /**

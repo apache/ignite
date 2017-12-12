@@ -2200,7 +2200,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         return ctx.discovery().localNode().isClient() &&
             (spi instanceof IgniteDiscoverySpi) &&
-            ((IgniteDiscoverySpi)spi).reconnectSupported();
+            ((IgniteDiscoverySpi)spi).clientReconnectSupported();
     }
 
     /**
@@ -2213,7 +2213,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         DiscoverySpi discoverySpi = getSpi();
 
-        ((IgniteDiscoverySpi)discoverySpi).reconnect();
+        ((IgniteDiscoverySpi)discoverySpi).clientReconnect();
     }
 
     /**

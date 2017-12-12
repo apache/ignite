@@ -158,6 +158,11 @@ class ZkIgnitePaths {
         return clusterDir + "/" + path;
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @param prefixId Unique prefix ID.
+     * @return Path.
+     */
     String joiningNodeDataPath(UUID nodeId, UUID prefixId) {
         return joinDataDir + '/' + prefixId + ":" + nodeId.toString();
     }
@@ -216,6 +221,10 @@ class ZkIgnitePaths {
         return UUID.fromString(idStr);
     }
 
+    /**
+     * @param path Event path.
+     * @return Event unique prefix.
+     */
     static String customEventPrefix(String path) {
         // <uuid prefix>:<node id>:<partCnt>|<seq>
 
@@ -239,14 +248,31 @@ class ZkIgnitePaths {
         return partCnt;
     }
 
+    /**
+     * @param prefix Prefix.
+     * @param nodeId Node ID.
+     * @param partCnt Parts count.
+     * @return Path.
+     */
     String createCustomEventPath(String prefix, UUID nodeId, int partCnt) {
         return customEvtsDir + "/" + prefix + ":" + nodeId + ":" + String.format("%04d", partCnt) + '|';
     }
 
+    /**
+     * @param prefix Prefix.
+     * @param nodeId Node ID.
+     * @return Path.
+     */
     String customEventPartsBasePath(String prefix, UUID nodeId) {
         return customEvtsPartsDir + "/" + prefix + ":" + nodeId + ":";
     }
 
+    /**
+     * @param prefix Prefix.
+     * @param nodeId Node ID.
+     * @param part Part number.
+     * @return Path.
+     */
     String customEventPartPath(String prefix, UUID nodeId, int part) {
         return customEventPartsBasePath(prefix, nodeId) + String.format("%04d", part);
     }

@@ -22,7 +22,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 /**
- *
+ * For TESTING only.
  */
 public interface IgniteDiscoverySpiInternalListener {
     /**
@@ -31,8 +31,10 @@ public interface IgniteDiscoverySpiInternalListener {
     public void beforeJoin(IgniteLogger log);
 
     /**
+     * @param spi SPI instance.
      * @param log Logger.
      * @param msg Custom message.
+     * @return {@code False} to cancel event send.
      */
     public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg);
 }

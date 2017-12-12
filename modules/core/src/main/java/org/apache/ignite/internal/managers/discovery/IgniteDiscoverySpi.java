@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 /**
@@ -34,15 +35,15 @@ public interface IgniteDiscoverySpi extends DiscoverySpi {
      *
      * @return {@code True} if SPI supports client reconnect.
      */
-    public boolean reconnectSupported();
+    public boolean clientReconnectSupported();
 
     /**
      *
      */
-    public void reconnect();
+    public void clientReconnect();
 
     /**
-     *
+     * For TESTING only.
      */
     public void simulateNodeFailure();
 
@@ -52,4 +53,15 @@ public interface IgniteDiscoverySpi extends DiscoverySpi {
      * @param lsnr Listener.
      */
     public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr);
+
+    /**
+     * @return {@code True} if supports communication error resolve.
+     */
+    public boolean supportsCommunicationErrorResolve();
+
+    /**
+     * @param node Problem node.
+     * @param err Connection error.
+     */
+    public void onCommunicationConnectionError(ClusterNode node, Exception err);
 }

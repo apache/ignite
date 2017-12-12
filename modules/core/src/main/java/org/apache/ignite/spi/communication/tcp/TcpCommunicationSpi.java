@@ -3352,7 +3352,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     "operating system firewall is disabled on local and remote hosts) " +
                     "[addrs=" + addrs + ']');
 
-            if (enableForcibleNodeKill) {
+
+            boolean commErrResolve = false;
+
+            if (connectionError(errs)) {
+                DiscoverySpi discoverySpi = ignite.configuration().getDiscoverySpi();
+
+                if (discoverySpi instanceof IgniteDiscoverySpi) {
+                    IgniteDiscoverySpi discoverySpi0 = (IgniteDiscoverySpi)discoverySpi;
+
+                    if (discoverySpi0.supportsCommunicationErrorResolve()) {
+                        commErrResolve = true;
+
+                        discoverySpi0.onCommunicationConnectionError(node, errs);
+                    }
+                }
+            }
+
+            if (!commErrResolve && enableForcibleNodeKill) {
                 if (getSpiContext().node(node.id()) != null
                     && (CU.clientNode(node) ||  !CU.clientNode(getLocalNode())) &&
                     connectionError(errs)) {
