@@ -51,8 +51,8 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
         disco.setIpFinder(IP_FINDER);
 
         // Set parameters for fast ping failure.
-        disco.setSocketTimeout(100);
-        disco.setNetworkTimeout(100);
+        disco.setSocketTimeout(500);
+        disco.setNetworkTimeout(500);
         disco.setReconnectCount(2);
 
         cfg.setDiscoverySpi(disco);

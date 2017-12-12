@@ -195,17 +195,19 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         log.info("New nodes should not register stopped listeners.");
 
-        startGrid(serverCount() + 1);
-
-        srv.message().send(topic, "msg4");
-
         locLsnr.latch = new CountDownLatch(1);
         latch = new CountDownLatch(1);
 
-        assertTrue(locLsnr.latch.await(5000, MILLISECONDS));
-        assertFalse(latch.await(3000, MILLISECONDS));
+        startGrid(serverCount() + 1);
+        try {
+            srv.message().send(topic, "msg4");
 
-        stopGrid(serverCount() + 1);
+            assertTrue(locLsnr.latch.await(5000, MILLISECONDS));
+            assertFalse(latch.await(3000, MILLISECONDS));
+        }
+        finally {
+            stopGrid(serverCount() + 1);
+        }
     }
 
     /**
