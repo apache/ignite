@@ -79,6 +79,8 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
     public static final String CACHE_NAME = "partitioned";
     public static final int OBJECT_SIZE = 40000;
     public static final int CONTINUOUS_PUT_RECS_CNT = 400_000;
+    public static final String PUT_THREAD = "put-thread";
+    public static final String GET_THREAD = "get-thread";
 
     /** */
     protected boolean setWalArchAndWorkToSameValue;
@@ -201,7 +203,9 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
         final StringBuilder dump = new StringBuilder();
         for (ThreadInfo threadInfo : threadInfos) {
-            dump.append(threadInfo.toString());
+            String name = threadInfo.getThreadName();
+            if (name.contains("checkpoint-runner") || name.contains(GET_THREAD) || name.contains(PUT_THREAD))
+                dump.append(threadInfo.toString());
         }
         return dump.toString();
     }
@@ -231,7 +235,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
                     final long totalCnt = longAdder8.longValue();
                     final long averagePutPerSec = totalCnt * 1000 / elapsedMs;
                     final long currPutPerSec = ((totalCnt - prevCnt.getAndSet(totalCnt)) * 1000) / (elapsedMs - prevMsElapsed.getAndSet(elapsedMs));
-                    final String fileNameWithDump = currPutPerSec == 0 ? reactNoProgress(msStart) : "";
+                    final String fileNameWithDump = currPutPerSec < averagePutPerSec/10 ? reactNoProgress(msStart) : "";
 
                     String defRegName = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
                     long dirtyPages = -1;
@@ -355,7 +359,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
             }
 
             watchdog.start();
-            GridTestUtils.runMultiThreaded(tasks, "put-thread");
+            GridTestUtils.runMultiThreaded(tasks, PUT_THREAD);
             stopGrid(1);
             watchdog.stop();
 
@@ -399,7 +403,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         }
 
         watchdog2.start();
-        GridTestUtils.runMultiThreaded(tasksR, "get-thread");
+        GridTestUtils.runMultiThreaded(tasksR, GET_THREAD);
         watchdog2.stop();
     }
 
