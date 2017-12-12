@@ -425,12 +425,12 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
     }
 
     public void testPutRemoveMultithread() throws Exception {
-        setWalArchAndWorkToSameValue = false;
+        setWalArchAndWorkToSameValue = true;
 
         //if (!setWalArchAndWorkToSameValue)
         //    assertNull(getConfiguration("").getDataStorageConfiguration().getWalArchivePath());
 
-        customWalMode = WALMode.DEFAULT;
+        customWalMode = WALMode.LOG_ONLY;
 
         try {
             final IgniteEx ignite = startGrid(1);
