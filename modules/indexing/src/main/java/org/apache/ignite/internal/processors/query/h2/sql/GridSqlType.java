@@ -50,7 +50,7 @@ public final class GridSqlType {
 
     /** */
     public static final GridSqlType STRING = new GridSqlType(Value.STRING, 0, 0,
-        -1, "STRING");
+        -1, "VARCHAR");
 
     /** */
     public static final GridSqlType RESULT_SET = new GridSqlType(Value.RESULT_SET, 0,

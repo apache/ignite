@@ -238,10 +238,12 @@ public class GridSqlQueryParser {
     private static final Getter<Aggregate, Expression> ON = getter(Aggregate.class, "on");
 
     /** */
-    private static final Getter<Aggregate, Expression> GROUP_CONCAT_SEPARATOR = getter(Aggregate.class, "groupConcatSeparator");
+    private static final Getter<Aggregate, Expression> GROUP_CONCAT_SEPARATOR = getter(Aggregate.class,
+        "groupConcatSeparator");
 
     /** */
-    private static final Getter<Aggregate, ArrayList<SelectOrderBy>> GROUP_CONCAT_ORDER_LIST = getter(Aggregate.class, "groupConcatOrderList");
+    private static final Getter<Aggregate, ArrayList<SelectOrderBy>> GROUP_CONCAT_ORDER_LIST = getter(Aggregate.class,
+        "groupConcatOrderList");
 
     /** */
     private static final Getter<RangeTable, Expression> RANGE_MIN = getter(RangeTable.class, "min");
@@ -1830,7 +1832,8 @@ public class GridSqlQueryParser {
             int typeId = TYPE.get((Aggregate)expression);
 
             if (GridSqlAggregateFunction.isValidType(typeId)) {
-                GridSqlAggregateFunction res = new GridSqlAggregateFunction(DISTINCT.get((Aggregate)expression), typeId);
+                GridSqlAggregateFunction res = new GridSqlAggregateFunction(
+                    DISTINCT.get((Aggregate)expression), typeId);
 
                 Expression on = ON.get((Aggregate)expression);
 

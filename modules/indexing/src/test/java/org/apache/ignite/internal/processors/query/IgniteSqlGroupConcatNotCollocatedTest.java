@@ -129,7 +129,8 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTes
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() {
-                c.query(new SqlFieldsQuery("select grp, GROUP_CONCAT(str0 ORDER BY str0) from Value group by grp")).getAll();
+                c.query(new SqlFieldsQuery("select grp, GROUP_CONCAT(str0 ORDER BY str0) " +
+                    "from Value group by grp")).getAll();
 
                 return null;
             }

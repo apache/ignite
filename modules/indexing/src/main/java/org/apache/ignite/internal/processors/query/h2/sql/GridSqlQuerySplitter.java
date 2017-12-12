@@ -38,7 +38,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -60,6 +62,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TR
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CAST;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.COUNT;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.GROUP_CONCAT;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.MAX;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.MIN;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.SUM;
@@ -2155,13 +2158,14 @@ public class GridSqlQuerySplitter {
                 break;
 
             case GROUP_CONCAT:
-                if (agg.distinct() || agg.hasGroupConcatOrder())
-                    throw new IgniteException("Clauses DISTINCT and ORDER BY are unsupported for GROUP_CONCAT " +
-                        "for not collocated data.");
+                if (agg.distinct() || agg.hasGroupConcatOrder()) {
+                    throw new IgniteSQLException("Clauses DISTINCT and ORDER BY are unsupported for GROUP_CONCAT " +
+                        "for not collocated data.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
 
                 mapAgg = agg;
 
-                rdcAgg = aggregate(false, agg.type())
+                rdcAgg = aggregate(false, GROUP_CONCAT)
                     .setGroupConcatSeparator(agg.getGroupConcatSeparator())
                     .resultType(GridSqlType.STRING)
                     .addChild(column(mapAggAlias.alias()));

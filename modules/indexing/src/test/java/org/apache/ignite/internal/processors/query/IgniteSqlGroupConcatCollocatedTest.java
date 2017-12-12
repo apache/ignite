@@ -136,7 +136,8 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
         expected.put(6, "id#15=P; id#16=Q; id#17=R; id#18=S; id#19=T; id#20=U");
 
         List<List<Object>> res = c.query(
-            new SqlFieldsQuery("select grp, GROUP_CONCAT(strId || '=' || str0 ORDER BY id SEPARATOR '; ') from Value group by grp")
+            new SqlFieldsQuery("select grp, GROUP_CONCAT(strId || '=' || str0 ORDER BY id SEPARATOR '; ')" +
+                " from Value group by grp")
                 .setCollocated(true)).getAll();
 
         HashMap<Integer, String> resMap = resultMap(res);

@@ -86,13 +86,13 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
     }
 
     /**
-     * @param groupConcatOrderExpression Order expression.
-     * @param groupConcatOrderDesc Order descending flag.
+     * @param orderExpression Order expression.
+     * @param orderDesc Order descending flag.
      * @return {@code this} for chaining.
      */
-    public GridSqlAggregateFunction setGroupConcatOrder(GridSqlElement[] groupConcatOrderExpression, boolean[] groupConcatOrderDesc) {
-        this.groupConcatOrderExpression = groupConcatOrderExpression;
-        this.groupConcatOrderDesc = groupConcatOrderDesc;
+    public GridSqlAggregateFunction setGroupConcatOrder(GridSqlElement[] orderExpression, boolean[] orderDesc) {
+        groupConcatOrderExpression = orderExpression;
+        groupConcatOrderDesc = orderDesc;
 
         return this;
     }
@@ -105,11 +105,11 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
     }
 
     /**
-     * @param groupConcatSeparator Separator expression.
+     * @param separator Separator expression.
      * @return {@code this} for chaining.
      */
-    public GridSqlAggregateFunction setGroupConcatSeparator(GridSqlElement groupConcatSeparator) {
-        this.groupConcatSeparator = groupConcatSeparator;
+    public GridSqlAggregateFunction setGroupConcatSeparator(GridSqlElement separator) {
+        groupConcatSeparator = separator;
 
         return this;
     }
@@ -135,6 +135,8 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
 
         if (!F.isEmpty(groupConcatOrderExpression)) {
             buff.append(" ORDER BY ");
+
+            buff.resetCount();
 
             for (int i = 0; i < groupConcatOrderExpression.length; ++i) {
                 buff.appendExceptFirst(", ");
