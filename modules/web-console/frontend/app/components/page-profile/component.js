@@ -15,22 +15,10 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
+import template from './template.pug';
+import controller from './controller';
 
-export default angular
-    .module('ignite-console.page-profile', [
-        'ignite-console.user'
-    ])
-    .config(['$stateProvider', ($stateProvider) => {
-        // set up the states
-        $stateProvider.state('base.settings.profile', {
-            url: '/profile',
-            component: 'pageProfile',
-            permission: 'profile',
-            tfMetaTags: {
-                title: 'User profile'
-            }
-        });
-    }])
-    .component('pageProfile', component);
+export default {
+    template,
+    controller
+};
