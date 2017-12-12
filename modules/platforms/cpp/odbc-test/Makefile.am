@@ -81,7 +81,7 @@ ignite_odbc_tests_SOURCES = \
     src/api_robustness_test.cpp \
     src/attributes_test.cpp \
     src/errors_test.cpp \
-	src/odbc_test_suite \
+	src/odbc_test_suite.cpp \
 	src/types_test.cpp \
     ../odbc/src/cursor.cpp \
     ../odbc/src/config/connection_info.cpp \
