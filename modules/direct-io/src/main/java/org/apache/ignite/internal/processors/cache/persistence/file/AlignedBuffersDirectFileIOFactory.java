@@ -88,9 +88,9 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         fsBlockSize = IgniteNativeIoLib.getFsBlockSize(storePath.getAbsolutePath(), log);
 
         if(!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, true)) {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Direct IO is explicitly disabled by system property");
-            }
+
             return;
         }
 
@@ -113,8 +113,8 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
                 };
 
                 if (log.isInfoEnabled()) {
-                    log.info(String.format("Direct IO is enabled, using block size [%d]" +
-                        " and durable memory page size [%d]", blkSize, pageSize));
+                    log.info(String.format("Direct IO is enabled for block IO operations on aligned memory structures." +
+                        " [block size = %d, durable memory page size = %d]", blkSize, pageSize));
                 }
             }
         }

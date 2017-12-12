@@ -270,7 +270,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
     public void testContinuousPutMultithreaded() throws Exception {
         try {
-            System.setProperty(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, "false");
+            System.setProperty(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, "true");
 
             customWalMode = WALMode.BACKGROUND;
             final IgniteEx ignite = startGrid(1);
