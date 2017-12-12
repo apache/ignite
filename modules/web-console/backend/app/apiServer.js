@@ -17,12 +17,17 @@
 
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 // Fire me up!
+
+const Express = require('express');
 
 module.exports = {
     implements: 'api-server',
-    inject: ['require(fs)', 'require(path)', 'require(express)', 'settings', 'configure', 'routes'],
-    factory(fs, path, Express, settings, configure, routes) {
+    inject: ['settings', 'configure', 'routes'],
+    factory(settings, configure, routes) {
         /**
          * Connected agents manager.
          */
