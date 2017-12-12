@@ -15,43 +15,8 @@
  * limitations under the License.
  */
 
-$ignite-block-information: #fcfcfc;
-$ignite-block-information-border: #aab8c6;
-$ignite-block-information-icon: #4a6785;
-
-.block-information {
-    position: relative;
-
-    background: $ignite-block-information;
-
-    border-radius: 5px;
-    border: 1px solid $ignite-block-information-border;
-
-    margin: 20px 0;
-    padding: 10px 10px 0 30px;
-
-    font-family: Roboto;
-
-    > h3 {
-        margin-bottom: 10px;
-    }
-
-    > [ignite-icon] {
-        cursor: default;
-
-        color: $ignite-block-information-icon;
-
-        position: absolute;
-        top: 12px;
-        left: 10px;
-
-        font-size: 16px;
-
-        vertical-align: text-bottom
-    }
-
-    ul {
-        padding-left: 20px;
-    }
-}
-
+/**
+ * <!-- Package description. -->
+ * ML Grid decomposition benchmarks.
+ */
+package org.apache.ignite.yardstick.ml.decomposition;

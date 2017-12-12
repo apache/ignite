@@ -27,6 +27,7 @@ export refresh from './refresh.svg';
 export sort from './sort.svg';
 export info from './info.svg';
 export connectedClusters from './connectedClusters.svg';
+export attention from './attention.svg';
 export plus from './plus.svg';
 export copy from './copy.svg';
 export home from './home.svg';
