@@ -400,7 +400,7 @@ public class GridReduceQueryExecutor {
 
         // Explicit partitions mapping is not applicable to replicated cache.
         if (cctx.isReplicated()) {
-            for (ClusterNode clusterNode : cctx.affinity().assignment(topVer).primaryPartitionNodes())
+            for (ClusterNode clusterNode : cctx.affinity().assignment(topVer).nodes())
                 mapping.put(clusterNode, null);
 
             return mapping;
@@ -478,10 +478,30 @@ public class GridReduceQueryExecutor {
             if (F.isEmpty(extraNodes))
                 throw new CacheException("Failed to find data nodes for cache: " + extraCacheName);
 
-            if (isReplicatedOnly && extraCctx.isReplicated()) {
-                nodes.retainAll(extraNodes);
+            if (extraCctx.isReplicated()) {
+                if (isReplicatedOnly) {
+                    nodes.retainAll(extraNodes);
 
-                if (map.isEmpty()) {
+                    if (map.isEmpty()) {
+                        if (isPreloadingActive(cacheIds))
+                            return null; // Retry.
+                        else
+                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                                ", cache2=" + extraCacheName + "]");
+                    }
+                }
+                else {
+                    if (!extraNodes.containsAll(nodes)) {
+                        if (isPreloadingActive(cacheIds))
+                            return null; // Retry.
+                        else
+                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                                ", cache2=" + extraCacheName + "]");
+                    }
+                }
+            }
+            else {
+                if (!extraNodes.equals(nodes)) {
                     if (isPreloadingActive(cacheIds))
                         return null; // Retry.
                     else
@@ -489,24 +509,6 @@ public class GridReduceQueryExecutor {
                             ", cache2=" + extraCacheName + "]");
                 }
             }
-            else if (!isReplicatedOnly && extraCctx.isReplicated()) {
-                if (!extraNodes.containsAll(nodes))
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
-            }
-            else if (!isReplicatedOnly && !extraCctx.isReplicated()) {
-                if (!extraNodes.equals(nodes))
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
-            }
-            else
-                throw new IllegalStateException();
         }
 
         return map;
