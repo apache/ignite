@@ -37,7 +37,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     private GridStringLogger strLog = new GridStringLogger();
 
     /** List of ip addresses. */
-    private List<String> ipAddrList = new ArrayList<>();
+    private List<String> sockAddrList = new ArrayList<>();
 
     /** Warning message that will be in log. */
     private static final String warningMsg = "Unavailable socket address in Windows OS [%s]. " +
@@ -82,9 +82,9 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
         }
 
         if (igniteInstanceName.contains("RightAddress"))
-            ipAddrList.add(rightAddr + rightPort);
+            sockAddrList.add(rightAddr + rightPort);
 
-        ipFinder.setAddresses(ipAddrList);
+        ipFinder.setAddresses(sockAddrList);
 
         spi.setIpFinder(ipFinder);
 
@@ -105,7 +105,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     public void testWrongAddressClientMode() throws Exception {
         logWarning = String.format(warningMsg, wrongAddr + wrongPort);
 
-        ipAddrList.add(wrongAddr + wrongPort);
+        sockAddrList.add(wrongAddr + wrongPort);
 
         try {
             startGrid("wrongAddress-client");
@@ -123,7 +123,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     public void testRightAddressWrongPortClientMode() throws Exception {
         logWarning = String.format(warningMsg, rightAddr + wrongPort);
 
-        ipAddrList.add(rightAddr + wrongPort);
+        sockAddrList.add(rightAddr + wrongPort);
 
         try {
             startGrid("wrongAddress-client");
@@ -156,7 +156,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     public void testWrongAddresses() throws Exception {
         logWarning = String.format(warningMsg, wrongAddr + wrongPort);
 
-        ipAddrList.add(wrongAddr + wrongPort);
+        sockAddrList.add(wrongAddr + wrongPort);
 
         startGrid("default");
 
@@ -169,7 +169,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     public void testRightAddressesWrongPort() throws Exception {
         logWarning = String.format(warningMsg, rightAddr + wrongPort);
 
-        ipAddrList.add(rightAddr + wrongPort);
+        sockAddrList.add(rightAddr + wrongPort);
 
         startGrid("default");
 
@@ -182,7 +182,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     public void testRightAddresses() throws Exception {
         logWarning = String.format(warningMsg, rightAddr + rightPort);
 
-        ipAddrList.add(rightAddr + rightPort);
+        sockAddrList.add(rightAddr + rightPort);
 
         startGrid("firstNode");
 
@@ -199,7 +199,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     public void testSmallSocketTimeout() throws Exception {
         logWarning = String.format(warningMsg, wrongAddr + wrongPort);
 
-        ipAddrList.add(wrongAddr + wrongPort);
+        sockAddrList.add(wrongAddr + wrongPort);
 
         startGrid("SmallSocketTimeout");
 
@@ -212,7 +212,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     public void testClientSmallSocketTimeout() throws Exception {
         logWarning = String.format(warningMsg, wrongAddr + wrongPort);
 
-        ipAddrList.add(wrongAddr + wrongPort);
+        sockAddrList.add(wrongAddr + wrongPort);
 
         try {
             startGrid("SmallSocketTimeout-client");
