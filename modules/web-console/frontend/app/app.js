@@ -129,6 +129,7 @@ import protectFromBsSelectRender from './components/protect-from-bs-select-rende
 import uiGridHovering from './components/ui-grid-hovering';
 import listEditable from './components/list-editable';
 import clusterSelector from './components/cluster-selector';
+import connectedClusters from './components/connected-clusters';
 
 import igniteServices from './services';
 
@@ -207,6 +208,7 @@ angular.module('ignite-console', [
     AngularStrapSelect.name,
     listEditable.name,
     clusterSelector.name,
+    connectedClusters.name,
     // Ignite modules.
     IgniteModules.name
 ])
