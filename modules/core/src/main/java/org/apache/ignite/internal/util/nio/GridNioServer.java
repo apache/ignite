@@ -1357,11 +1357,20 @@ public class GridNioServer<T> {
          * @throws IOException If write failed.
          */
         @Override protected void processWrite(SelectionKey key) throws IOException {
-            if (sslFilter == null && netCompressFilter == null) {
+            if (sslFilter != null || netCompressFilter != null)
+                processWriteSsl(key);
+            else
                 processWrite0(key);
-                return;
-            }
+        }
 
+        /**
+         * Processes write-ready event on the key.
+         *
+         * @param key Key that is ready to be written.
+         * @throws IOException If write failed.
+         */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        private void processWriteSsl(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
@@ -1443,107 +1452,47 @@ public class GridNioServer<T> {
             ByteBuffer buf = ses.writeBuffer();
             SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
-
-            if (writer == null) {
-                try {
-                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IOException("Failed to create message writer.", e);
-                }
-            }
+            MessageWriter writer = getWriter(ses);
 
             if (req == null) {
-                req = systemMessage(ses);
+                req = getSessionWriteRequest(ses);
 
-                if (req == null) {
-                    req = ses.pollFuture();
+                if (req == null && buf.position() == 0) {
+                    if (ses.procWrite.get()) {
+                        ses.procWrite.set(false);
 
-                    if (req == null && buf.position() == 0) {
-                        if (ses.procWrite.get()) {
-                            ses.procWrite.set(false);
-
-                            if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                            }
-                            else
-                                ses.procWrite.set(true);
-                        }
-
-                        return;
+                        if (ses.writeQueue().isEmpty())
+                            disableWriteFlag(key);
+                        else
+                            ses.procWrite.set(true);
                     }
+
+                    return;
                 }
             }
 
-            Message msg;
-            boolean finished = false;
-
-            if (req != null) {
-                msg = (Message)req.message();
-
-                assert msg != null : req;
-
-                if (writer != null)
-                    writer.setCurrentWriteClass(msg.getClass());
-
-                finished = msg.writeTo(buf, writer);
-
-                if (finished && writer != null)
-                    writer.reset();
-            }
+            boolean finished = req == null ? false : writeMessage(req, buf, writer);
 
             // Fill up as many messages as possible to write buffer.
             while (finished) {
+                if (writer != null)
+                    writer.reset();
+
                 req.onMessageWritten();
 
-                req = systemMessage(ses);
-
-                if (req == null)
-                    req = ses.pollFuture();
+                req = getSessionWriteRequest(ses);
 
                 if (req == null)
                     break;
 
-                msg = (Message)req.message();
-
-                assert msg != null;
-
-                if (writer != null)
-                    writer.setCurrentWriteClass(msg.getClass());
-
-                finished = msg.writeTo(buf, writer);
-
-                if (finished && writer != null)
-                    writer.reset();
+                finished = writeMessage(req, buf, writer);
             }
 
             buf.flip();
 
             assert buf.hasRemaining();
 
-            if (!skipWrite) {
-                int cnt = sockCh.write(buf);
-
-                if (log.isTraceEnabled())
-                    log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                if (metricsLsnr != null)
-                    metricsLsnr.onBytesSent(cnt);
-
-                ses.bytesSent(cnt);
-                onWrite(cnt);
-            }
-            else {
-                // For test purposes only (skipWrite is set to true in tests only).
-                try {
-                    U.sleep(50);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new IOException("Thread has been interrupted.", e);
-                }
-            }
+            writeOrSkip(ses, buf, sockCh);
 
             if (buf.hasRemaining() || !finished) {
                 buf.compact();
