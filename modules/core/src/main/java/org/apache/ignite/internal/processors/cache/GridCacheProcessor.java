@@ -310,8 +310,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return msg0;
         }
-        else if (msg instanceof CacheConfigurationChangeMessage)
-            return new CacheConfigurationChangeTask((CacheConfigurationChangeMessage)msg);
+        else if (msg instanceof CacheStatisticsChangeMessage)
+            return new CacheStatisticsChangeTask((CacheStatisticsChangeMessage)msg);
 
         return null;
     }
@@ -348,10 +348,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             sharedCtx.affinity().sendClientCacheChangesMessage(task0);
         }
-        else if (task instanceof CacheConfigurationChangeTask) {
-            CacheConfigurationChangeTask task0 = (CacheConfigurationChangeTask)task;
+        else if (task instanceof CacheStatisticsChangeTask) {
+            CacheStatisticsChangeTask task0 = (CacheStatisticsChangeTask)task;
 
-            cachesInfo.onCacheConfigurationChange(task0.message());
+            cachesInfo.onCacheStatisticsChange(task0.message());
         }
         else
             U.warn(log, "Unsupported custom exchange task: " + task);
@@ -4021,9 +4021,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to enable/disable statistics for cache cluster wide, "
                     + "some nodes don't support this feature [node=" + n.id() + ", v=" + n.version() + "].");
 
-        CacheConfigurationChangeMessage msg = new CacheConfigurationChangeMessage(cacheName);
-
-        msg.statisticEnabled(enabled);
+        CacheStatisticsChangeMessage msg = new CacheStatisticsChangeMessage(cacheName, enabled);
 
         ctx.grid().context().discovery().sendCustomEvent(msg);
     }

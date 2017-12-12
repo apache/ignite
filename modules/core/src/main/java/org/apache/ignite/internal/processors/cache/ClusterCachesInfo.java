@@ -388,7 +388,7 @@ class ClusterCachesInfo {
     /**
      * @param msg Message.
      */
-    public void onCacheConfigurationChange(CacheConfigurationChangeMessage msg) {
+    public void onCacheStatisticsChange(CacheStatisticsChangeMessage msg) {
         String cacheName = msg.cacheName();
 
         IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
@@ -396,7 +396,7 @@ class ClusterCachesInfo {
         if (cache == null)
             log.warning("Failed to change cache configuration, cache not found [cacheName=" + cacheName + ']');
         else
-            cache.configuration().setStatisticsEnabled(msg.statisticEnabled());
+            cache.configuration().setStatisticsEnabled(msg.enabled());
 
         DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
@@ -404,7 +404,7 @@ class ClusterCachesInfo {
             log.warning("Failed to change cache descriptor configuration, cache not found [cacheName="
                 + cacheName + ']');
         else
-            desc.cacheConfiguration().setStatisticsEnabled(msg.statisticEnabled());
+            desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
     }
 
     /**
