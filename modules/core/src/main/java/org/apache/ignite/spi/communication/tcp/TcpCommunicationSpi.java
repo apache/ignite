@@ -1834,7 +1834,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      *
      * @return Map containing sender nodes and respective counts.
      */
-    public Map<String, Long> getReceivedMessagesByNode() {
+    public Map<UUID, Long> getReceivedMessagesByNode() {
         return metricsLsnr.receivedMessagesByNode();
     }
 
@@ -1852,8 +1852,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      *
      * @return Map containing receiver nodes and respective counts.
      */
-    public Map<String, Long> getSentMessagesByNode() {
-        return metricsLsnr.receivedMessagesByNode();
+    public Map<UUID, Long> getSentMessagesByNode() {
+        return metricsLsnr.sentMessagesByNode();
     }
 
     /** {@inheritDoc} */
@@ -5170,22 +5170,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /** {@inheritDoc} */
         @Override public Map<String, Long> getReceivedMessagesByType() {
-            return TcpCommunicationSpi.this.metricsLsnr.receivedMessagesByType();
+            return TcpCommunicationSpi.this.getReceivedMessagesByType();
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Long> getReceivedMessagesByNode() {
-            return TcpCommunicationSpi.this.metricsLsnr.receivedMessagesByNode();
+        @Override public Map<UUID, Long> getReceivedMessagesByNode() {
+            return TcpCommunicationSpi.this.getReceivedMessagesByNode();
         }
 
         /** {@inheritDoc} */
         @Override public Map<String, Long> getSentMessagesByType() {
-            return TcpCommunicationSpi.this.metricsLsnr.sentMessagesByType();
+            return TcpCommunicationSpi.this.getSentMessagesByType();
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Long> getSentMessagesByNode() {
-            return TcpCommunicationSpi.this.metricsLsnr.sentMessagesByNode();
+        @Override public Map<UUID, Long> getSentMessagesByNode() {
+            return TcpCommunicationSpi.this.getSentMessagesByNode();
         }
 
         /** {@inheritDoc} */
