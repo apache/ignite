@@ -31,11 +31,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -53,6 +55,9 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
     /** */
     private static final String GROUP = "group1";
+
+    /** Wait condition timeout. */
+    private static final long WAIT_CONDITION_TIMEOUT = 3_000L;
 
     /** Persistence. */
     private boolean persistence = false;
@@ -108,13 +113,13 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
+     * @param persistence Persistence.
      */
-    public void testJmxStatisticsEnable() throws Exception {
-        persistence = false;
+    private void testJmxStatisticsEnable(boolean persistence) throws Exception {
+        this.persistence = persistence;
 
-        Ignite ig1 = startGrid(1);
-        Ignite ig2 = startGrid(2);
+        final Ignite ig1 = startGrid(1);
+        final Ignite ig2 = startGrid(2);
 
         CacheConfiguration cacheCfg2 = new CacheConfiguration(ig1.cache(CACHE1).getConfiguration(
             CacheConfiguration.class));
@@ -122,34 +127,73 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         cacheCfg2.setName(CACHE2);
         cacheCfg2.setStatisticsEnabled(true);
 
-        ig1.getOrCreateCache(cacheCfg2);
+        ig2.getOrCreateCache(cacheCfg2);
 
-        CacheMetricsMXBean mxBeanCache1 = mxBean(1, CACHE1, CacheClusterMetricsMXBeanImpl.class);
-        CacheMetricsMXBean mxBeanCache2 = mxBean(1, CACHE2, CacheClusterMetricsMXBeanImpl.class);
-        CacheMetricsMXBean mxBeanCache1loc = mxBean(1, CACHE1, CacheLocalMetricsMXBeanImpl.class);
+        CacheMetricsMXBean mxBeanCache1 = mxBean(2, CACHE1, CacheClusterMetricsMXBeanImpl.class);
+        CacheMetricsMXBean mxBeanCache2 = mxBean(2, CACHE2, CacheClusterMetricsMXBeanImpl.class);
+        CacheMetricsMXBean mxBeanCache1loc = mxBean(2, CACHE1, CacheLocalMetricsMXBeanImpl.class);
 
         mxBeanCache1.enableStatistics();
         mxBeanCache2.disableStatistics();
 
-        awaitPartitionMapExchange();
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ig1.cache(CACHE1).metrics().isStatisticsEnabled()
+                    && ig2.cache(CACHE1).metrics().isStatisticsEnabled()
+                    && !ig1.cache(CACHE2).metrics().isStatisticsEnabled()
+                    && !ig2.cache(CACHE2).metrics().isStatisticsEnabled();
+            }
+        }, WAIT_CONDITION_TIMEOUT));
 
-        assertTrue(ig1.cache(CACHE1).metrics().isStatisticsEnabled());
-        assertTrue(ig2.cache(CACHE1).metrics().isStatisticsEnabled());
-        assertFalse(ig1.cache(CACHE2).metrics().isStatisticsEnabled());
-        assertFalse(ig2.cache(CACHE2).metrics().isStatisticsEnabled());
+        stopGrid(1);
 
-        Ignite ig3 = startGrid(3);
+        final Ignite ig3 = startGrid(3);
 
-        assertTrue(ig3.cache(CACHE1).metrics().isStatisticsEnabled());
-        assertFalse(ig3.cache(CACHE2).metrics().isStatisticsEnabled());
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ig3.cache(CACHE1).metrics().isStatisticsEnabled()
+                    && !ig3.cache(CACHE2).metrics().isStatisticsEnabled();
+            }
+        }, WAIT_CONDITION_TIMEOUT));
 
         mxBeanCache1loc.disableStatistics();
 
-        awaitPartitionMapExchange();
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !ig2.cache(CACHE1).metrics().isStatisticsEnabled()
+                    && !ig3.cache(CACHE1).metrics().isStatisticsEnabled();
+            }
+        }, WAIT_CONDITION_TIMEOUT));
 
-        assertFalse(ig1.cache(CACHE1).metrics().isStatisticsEnabled());
-        assertFalse(ig2.cache(CACHE1).metrics().isStatisticsEnabled());
-        assertFalse(ig3.cache(CACHE1).metrics().isStatisticsEnabled());
+        mxBeanCache1.enableStatistics();
+        mxBeanCache2.enableStatistics();
+
+        // Start node 1 again.
+        final Ignite ig4 = startGrid(1);
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ig2.cache(CACHE1).metrics().isStatisticsEnabled()
+                    && ig3.cache(CACHE1).metrics().isStatisticsEnabled()
+                    && ig4.cache(CACHE1).metrics().isStatisticsEnabled()
+                    && ig2.cache(CACHE2).metrics().isStatisticsEnabled()
+                    && ig3.cache(CACHE2).metrics().isStatisticsEnabled()
+                    && ig4.cache(CACHE2).metrics().isStatisticsEnabled();
+            }
+        }, WAIT_CONDITION_TIMEOUT));
+    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJmxNoPdsStatisticsEnable() throws Exception {
+        testJmxStatisticsEnable(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJmxPdsStatisticsEnable() throws Exception {
+        testJmxStatisticsEnable(true);
     }
 
     /**
@@ -173,64 +217,25 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
         mgr1.createCache(CACHE2, cfg2);
 
-        awaitPartitionMapExchange();
-
-        assertFalse(mgr1.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
-        assertFalse(mgr2.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
-        assertTrue(mgr1.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
-        assertTrue(mgr2.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !mgr1.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
+                    && !mgr2.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
+                    && mgr1.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
+                    && mgr2.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled();
+            }
+        }, WAIT_CONDITION_TIMEOUT));
 
         mgr1.enableStatistics(CACHE1, true);
         mgr2.enableStatistics(CACHE2, false);
 
-        awaitPartitionMapExchange();
-
-        assertTrue(mgr1.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
-        assertTrue(mgr2.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
-        assertFalse(mgr1.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
-        assertFalse(mgr2.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testJmxPdsStatisticsEnable() throws Exception {
-        persistence = true;
-
-        Ignite ig1 = startGrid(1);
-        Ignite ig2 = startGrid(2);
-
-        CacheConfiguration cacheCfg2 = new CacheConfiguration(ig1.cache(CACHE1).getConfiguration(
-            CacheConfiguration.class));
-
-        cacheCfg2.setName(CACHE2);
-        cacheCfg2.setStatisticsEnabled(false);
-
-        ig1.getOrCreateCache(cacheCfg2);
-
-        CacheMetricsMXBean mxBeanCache1 = mxBean(1, CACHE1, CacheClusterMetricsMXBeanImpl.class);
-        CacheMetricsMXBean mxBeanCache2 = mxBean(1, CACHE2, CacheClusterMetricsMXBeanImpl.class);
-
-        mxBeanCache1.enableStatistics();
-        mxBeanCache2.disableStatistics();
-
-        awaitPartitionMapExchange();
-
-        assertTrue(ig1.cache(CACHE1).metrics().isStatisticsEnabled());
-        assertTrue(ig2.cache(CACHE1).metrics().isStatisticsEnabled());
-        assertFalse(ig1.cache(CACHE2).metrics().isStatisticsEnabled());
-        assertFalse(ig2.cache(CACHE2).metrics().isStatisticsEnabled());
-
-        stopGrid(2);
-
-        mxBeanCache1.disableStatistics();
-        mxBeanCache2.enableStatistics();
-
-        ig2 = startGrid(2);
-
-        assertFalse(ig1.cache(CACHE1).metrics().isStatisticsEnabled());
-        assertFalse(ig2.cache(CACHE1).metrics().isStatisticsEnabled());
-        assertTrue(ig1.cache(CACHE2).metrics().isStatisticsEnabled());
-        assertTrue(ig2.cache(CACHE2).metrics().isStatisticsEnabled());
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return mgr1.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
+                    && mgr2.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
+                    && !mgr1.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
+                    && !mgr2.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled();
+            }
+        }, WAIT_CONDITION_TIMEOUT));
     }
 }

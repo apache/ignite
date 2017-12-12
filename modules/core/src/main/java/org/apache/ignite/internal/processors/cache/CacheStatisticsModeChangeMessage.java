@@ -26,9 +26,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache statistics flag change discovery message.
+ * Cache statistics mode change discovery message.
  */
-public class CacheStatisticsChangeMessage implements DiscoveryCustomMessage {
+public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +44,7 @@ public class CacheStatisticsChangeMessage implements DiscoveryCustomMessage {
     /**
      * @param cacheName Cache name.
      */
-    public CacheStatisticsChangeMessage(String cacheName, boolean enabled) {
+    public CacheStatisticsModeChangeMessage(String cacheName, boolean enabled) {
         this.cacheName = cacheName;
         this.enabled = enabled;
     }
@@ -86,6 +86,6 @@ public class CacheStatisticsChangeMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheStatisticsChangeMessage.class, this);
+        return S.toString(CacheStatisticsModeChangeMessage.class, this);
     }
 }

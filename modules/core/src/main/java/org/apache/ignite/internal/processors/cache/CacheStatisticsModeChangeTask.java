@@ -20,16 +20,16 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Cache statistics flag change task for exchange worker.
+ * Cache statistics mode change task for exchange worker.
  */
-public class CacheStatisticsChangeTask implements CachePartitionExchangeWorkerTask {
+public class CacheStatisticsModeChangeTask implements CachePartitionExchangeWorkerTask {
     /** Discovery message. */
-    private final CacheStatisticsChangeMessage msg;
+    private final CacheStatisticsModeChangeMessage msg;
 
     /**
      * @param msg Message.
      */
-    public CacheStatisticsChangeTask(CacheStatisticsChangeMessage msg) {
+    public CacheStatisticsModeChangeTask(CacheStatisticsModeChangeMessage msg) {
         assert msg != null;
 
         this.msg = msg;
@@ -43,12 +43,12 @@ public class CacheStatisticsChangeTask implements CachePartitionExchangeWorkerTa
     /**
      * @return Message.
      */
-    public CacheStatisticsChangeMessage message() {
+    public CacheStatisticsModeChangeMessage message() {
         return msg;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheStatisticsChangeTask.class, this);
+        return S.toString(CacheStatisticsModeChangeTask.class, this);
     }
 }
