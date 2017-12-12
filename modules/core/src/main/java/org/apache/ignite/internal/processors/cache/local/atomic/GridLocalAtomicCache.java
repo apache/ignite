@@ -340,7 +340,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final boolean deserializeBinary,
         boolean recovery,
         final boolean skipVals,
-        boolean canRemap,
         final boolean needVer
     ) {
         A.notNull(keys, "keys");
@@ -543,7 +542,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             /*force primary*/false,
             expiry,
             skipVals,
-            /*can remap*/true,
             needVer).get();
     }
 
@@ -832,7 +830,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CacheEntryPredicate[] filters = CU.filterArray(filter);
 
-        ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
+        ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
 
         if (writeThrough && keys.size() > 1) {
             return updateWithBatch(op,

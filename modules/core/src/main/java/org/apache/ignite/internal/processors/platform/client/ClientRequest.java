@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 
 /**
  * Thin client request.
  */
-public class ClientRequest implements SqlListenerRequest {
+public class ClientRequest implements ClientListenerRequest {
     /** Request id. */
     private final long reqId;
 
@@ -37,6 +36,15 @@ public class ClientRequest implements SqlListenerRequest {
         reqId = reader.readLong();
     }
 
+    /**
+     * Constructor.
+     *
+     * @param reqId Request id.
+     */
+    public ClientRequest(long reqId) {
+        this.reqId = reqId;
+    }
+
     /** {@inheritDoc} */
     @Override public long requestId() {
         return reqId;
@@ -47,7 +55,7 @@ public class ClientRequest implements SqlListenerRequest {
      *
      * @return Response.
      */
-    public ClientResponse process(GridKernalContext ctx) {
+    public ClientResponse process(ClientConnectionContext ctx) {
         return new ClientResponse(reqId);
     }
 }

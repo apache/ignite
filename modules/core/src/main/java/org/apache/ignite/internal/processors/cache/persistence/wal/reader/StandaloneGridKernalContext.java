@@ -26,8 +26,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
@@ -47,6 +48,8 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -61,7 +64,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
@@ -79,6 +82,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -90,6 +94,9 @@ import org.jetbrains.annotations.Nullable;
  * Dummy grid kernal context
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
+    /** Binary metadata file store folder. */
+    public static final String BINARY_META_FOLDER = "binary_meta";
+
     /** Config for fake Ignite instance. */
     private final IgniteConfiguration cfg;
 
@@ -106,7 +113,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     @Nullable private IgniteCacheObjectProcessor cacheObjProcessor;
 
     /** Marshaller context implementation. */
-    private MarshallerContextImpl marshallerContext;
+    private MarshallerContextImpl marshallerCtx;
 
     /**
      * @param log Logger.
@@ -118,25 +125,29 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
      */
     StandaloneGridKernalContext(IgniteLogger log,
-        @Nullable final File binaryMetadataFileStoreDir,
-        @Nullable final File marshallerMappingFileStoreDir) throws IgniteCheckedException {
+        @Nullable File binaryMetadataFileStoreDir,
+        @Nullable File marshallerMappingFileStoreDir) throws IgniteCheckedException {
         this.log = log;
 
         try {
-            pluginProc = new StandaloneIgnitePluginProcessor(
-                this, config());
+            pluginProc = new StandaloneIgnitePluginProcessor(this, config());
         }
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.marshallerContext = new MarshallerContextImpl(null);
+        this.marshallerCtx = new MarshallerContextImpl(null);
         this.cfg = prepareIgniteConfiguration();
-        this.cacheObjProcessor = binaryMetadataFileStoreDir != null ? binaryProcessor(this, binaryMetadataFileStoreDir) : null;
+
+        // Fake folder provided to perform processor startup on empty folder.
+        if (binaryMetadataFileStoreDir == null)
+            binaryMetadataFileStoreDir = new File(BINARY_META_FOLDER).getAbsoluteFile();
+
+        this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
         if (marshallerMappingFileStoreDir != null) {
-            marshallerContext.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
-            marshallerContext.onMarshallerProcessorStarted(this, null);
+            marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
+            marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
     }
 
@@ -173,10 +184,14 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         final Marshaller marshaller = new BinaryMarshaller();
         cfg.setMarshaller(marshaller);
 
-        PersistentStoreConfiguration pstCfg = new PersistentStoreConfiguration();
-        cfg.setPersistentStoreConfiguration(pstCfg);
+        final DataStorageConfiguration pstCfg = new DataStorageConfiguration();
+        final DataRegionConfiguration regCfg = new DataRegionConfiguration();
+        regCfg.setPersistenceEnabled(true);
+        pstCfg.setDefaultDataRegionConfiguration(regCfg);
 
-        marshaller.setContext(marshallerContext);
+        cfg.setDataStorageConfiguration(pstCfg);
+
+        marshaller.setContext(marshallerCtx);
 
         return cfg;
     }
@@ -371,7 +386,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerProcessor sqlListener() {
+    @Override public ClientListenerProcessor sqlListener() {
         return null;
     }
 
@@ -392,11 +407,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridDiscoveryManager discovery() {
-        return new GridDiscoveryManager(StandaloneGridKernalContext.this) {
-            @Override public Object consistentId() {
-                return ""; // some non null value is required
-            }
-        };
+        return new GridDiscoveryManager(this);
     }
 
     /** {@inheritDoc} */
@@ -579,7 +590,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public MarshallerContextImpl marshallerContext() {
-        return marshallerContext;
+        return marshallerCtx;
     }
 
     /** {@inheritDoc} */
@@ -595,6 +606,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public PlatformProcessor platform() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PdsFoldersResolver pdsFolderResolver() {
+        return new PdsFoldersResolver() {
+            /** {@inheritDoc} */
+            @Override public PdsFolderSettings resolveFolders() {
+                return new PdsFolderSettings(new File("."), U.maskForFileName(""));
+            }
+        };
     }
 
     /** {@inheritDoc} */

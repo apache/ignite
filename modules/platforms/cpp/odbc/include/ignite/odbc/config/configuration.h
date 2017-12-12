@@ -82,6 +82,9 @@ namespace ignite
 
                     /** Connection attribute keyword for lazy attribute. */
                     static const std::string lazy;
+
+                    /** Connection attribute keyword for skipReducerOnUpdate attribute. */
+                    static const std::string skipReducerOnUpdate;
                 };
 
                 /** Default values for configuration. */
@@ -125,6 +128,9 @@ namespace ignite
 
                     /** Default value for lazy attribute. */
                     static const bool lazy;
+
+                    /** Default value for skipReducerOnUpdate attribute. */
+                    static const bool skipReducerOnUpdate;
                 };
 
                 /**
@@ -204,9 +210,9 @@ namespace ignite
                  *
                  * @return Data Source Name.
                  */
-                const std::string& GetDsn() const
+                const std::string& GetDsn(const std::string& dflt = DefaultValue::dsn) const
                 {
-                    return GetStringValue(Key::dsn, DefaultValue::dsn);
+                    return GetStringValue(Key::dsn, dflt);
                 }
 
                 /**
@@ -381,6 +387,26 @@ namespace ignite
                 void SetLazy(bool val)
                 {
                     SetBoolValue(Key::lazy, val);
+                }
+
+                /**
+                 * Check update on server flag.
+                 *
+                 * @return True if update on server.
+                 */
+                bool IsSkipReducerOnUpdate() const
+                {
+                    return GetBoolValue(Key::skipReducerOnUpdate, DefaultValue::skipReducerOnUpdate);
+                }
+
+                /**
+                 * Set update on server.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetSkipReducerOnUpdate(bool val)
+                {
+                    SetBoolValue(Key::skipReducerOnUpdate, val);
                 }
 
                 /**

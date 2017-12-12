@@ -46,7 +46,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
-import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
@@ -60,6 +59,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     /** Future timeout */
     private static final int FUT_TIMEOUT = 5000;
 
+    /** */
     private boolean client = false;
 
     /**
@@ -442,7 +442,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                         }
                     }, TransactionTimeoutException.class);
 
-                    assertEquals(MARKED_ROLLBACK, tx.state());
+                    assertEquals(ROLLED_BACK, tx.state());
 
                     tx.close();
                 }
@@ -476,7 +476,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                         }
                     }, TransactionTimeoutException.class);
 
-                    assertEquals(MARKED_ROLLBACK, tx.state());
+                    assertEquals(ROLLED_BACK, tx.state());
 
                     tx.close();
 

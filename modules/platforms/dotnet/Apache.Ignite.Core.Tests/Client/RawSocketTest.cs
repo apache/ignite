@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System;
     using System.Net;
     using System.Net.Sockets;
-    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Client
     /// <summary>
     /// Tests the thin client mode with a raw socket.
     /// </summary>
-    public class RawSocketTest
+    public class RawSocketTest : ClientTestBase
     {
         /// <summary>
         /// Tests the socket handshake connection.
@@ -38,53 +38,110 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestCacheGet()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            var ignite = Ignition.GetIgnite();
+
+            var marsh = ((Ignite) ignite).Marshaller;
+
+            // Create cache.
+            var cache = GetCache<string>();
+            cache[1] = "bar";
+
+            // Connect socket.
+            var sock = GetSocket();
+
+            // Cache get.
+            SendRequest(sock, stream =>
             {
-                SqlConnectorConfiguration = new SqlConnectorConfiguration()
-            };
+                stream.WriteShort(1000); // OP_GET
+                stream.WriteLong(1); // Request id.
+                var cacheId = BinaryUtils.GetStringHashCodeLowerCase(cache.Name);
+                stream.WriteInt(cacheId);
+                stream.WriteByte(0); // Flags (withSkipStore, etc)
 
-            using (var ignite = Ignition.Start(cfg))
+                var writer = marsh.StartMarshal(stream);
+
+                writer.WriteObject(1); // Key
+            });
+
+            var msg = ReceiveMessage(sock);
+
+            using (var stream = new BinaryHeapStream(msg))
             {
-                var marsh = ((Ignite) ignite).Marshaller;
+                var reader = marsh.StartUnmarshal(stream);
 
-                // Create cache.
-                var cacheCfg = new CacheConfiguration("foo", new QueryEntity(typeof(int), typeof(string)));
-                var cache = ignite.CreateCache<int, string>(cacheCfg);
-                cache[1] = "bar";
+                var requestId = reader.ReadLong();
+                Assert.AreEqual(1, requestId);
 
-                // Connect socket.
-                var sock = GetSocket(SqlConnectorConfiguration.DefaultPort);
-                Assert.IsTrue(sock.Connected);
+                var status = reader.ReadInt();
+                Assert.AreEqual(0, status); // Success.
 
-                DoHandshake(sock);
-
-                // Cache get.
-                SendRequest(sock, stream =>
-                {
-                    stream.WriteShort(1);  // OP_GET
-                    stream.WriteLong(1);  // Request id.
-                    var cacheId = BinaryUtils.GetStringHashCode(cache.Name);
-                    stream.WriteInt(cacheId);
-                    stream.WriteByte(0);  // Flags (withSkipStore, etc)
-
-                    var writer = marsh.StartMarshal(stream);
-
-                    writer.WriteObject(1);  // Key
-                });
-
-                var msg = ReceiveMessage(sock);
-                
-                using (var stream = new BinaryHeapStream(msg))
-                {
-                    var reader = marsh.StartUnmarshal(stream);
-
-                    var requestId = reader.ReadLong();
-                    Assert.AreEqual(1, requestId);
-
-                    var res = reader.ReadObject<string>();
-                    Assert.AreEqual(cache[1], res);
-                }
+                var res = reader.ReadObject<string>();
+                Assert.AreEqual(cache[1], res);
             }
+        }
+
+        /// <summary>
+        /// Tests invalid operation code.
+        /// </summary>
+        [Test]
+        public void TestInvalidOpCode()
+        {
+            // Connect socket.
+            var sock = GetSocket();
+
+            // Request invalid operation.
+            SendRequest(sock, stream =>
+            {
+                stream.WriteShort(-1);
+                stream.WriteLong(11);  // Request id.
+            });
+
+            var msg = ReceiveMessage(sock);
+
+            using (var stream = new BinaryHeapStream(msg))
+            {
+                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
+
+                var requestId = reader.ReadLong();
+                Assert.AreEqual(11, requestId);
+
+                var status = reader.ReadInt();
+                Assert.AreEqual((int) ClientStatusCode.InvalidOpCode, status);
+
+                var err = reader.ReadObject<string>();
+                Assert.AreEqual("Invalid request op code: -1", err);
+            }
+        }
+
+        /// <summary>
+        /// Tests invalid message (can't be parsed).
+        /// </summary>
+        [Test]
+        public void TestInvalidMessage()
+        {
+            // Connect socket.
+            var sock = GetSocket();
+
+            // Request invalid operation.
+            SendRequest(sock, stream => stream.WriteShort(-1));
+
+            var msg = ReceiveMessage(sock);
+
+            Assert.AreEqual(0, msg.Length);
+        }
+
+        /// <summary>
+        /// Gets the socket.
+        /// </summary>
+        /// <returns>Connected socket after handshake.</returns>
+        private static Socket GetSocket()
+        {
+            var sock = GetSocket(ClientConnectorConfiguration.DefaultPort);
+            Assert.IsTrue(sock.Connected);
+
+            DoHandshake(sock);
+
+            return sock;
         }
 
         /// <summary>

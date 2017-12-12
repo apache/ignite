@@ -61,6 +61,21 @@
 
                     color: $text-color;
                     line-height: 36px;
+
+                    &.ng-invalid:not(.ng-pristine),
+                    &.ng-invalid.ng-touched {
+                        border-color: $ignite-brand-primary;
+                        box-shadow: inset 0 1px 3px 0 rgba($ignite-brand-primary, .5);
+                    }
+
+                    &:focus {
+                        border-color: $ignite-brand-success;
+                        box-shadow: inset 0 1px 3px 0 rgba($ignite-brand-success, .5);
+                    }
+
+                    &:disabled {
+                        opacity: .5;
+                    }
                 }
 
                 & > input[type='number'] {

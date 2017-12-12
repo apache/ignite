@@ -17,18 +17,15 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
  * Cache get request.
  */
-public class ClientCacheGetRequest extends ClientCacheRequest {
-    /** Key. */
-    private final Object key;
-
+public class ClientCacheGetRequest extends ClientCacheKeyRequest {
     /**
      * Constructor.
      *
@@ -36,14 +33,12 @@ public class ClientCacheGetRequest extends ClientCacheRequest {
      */
     public ClientCacheGetRequest(BinaryRawReaderEx reader) {
         super(reader);
-
-        key = reader.readObjectDetached();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(GridKernalContext ctx) {
-        Object val = cache(ctx).get(key);
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        Object val = cache(ctx).get(key());
 
         return new ClientObjectResponse(requestId(), val);
     }

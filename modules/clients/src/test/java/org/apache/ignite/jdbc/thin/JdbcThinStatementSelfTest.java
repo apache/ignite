@@ -44,7 +44,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Statement test.
  */
-@SuppressWarnings("ThrowableNotThrown")
+@SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -92,7 +92,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         startGridsMultiThreaded(3);
 
-
         fillCache();
     }
 
@@ -105,7 +104,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(URL);
 
-        conn.setSchema(DEFAULT_CACHE_NAME);
+        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
         stmt = conn.createStatement();
 
@@ -414,22 +413,124 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testExecuteQueryMultipleResultSets() throws Exception {
-        assert !conn.getMetaData().supportsMultipleResultSets();
+    public void testExecuteQueryMultipleOnlyResultSets() throws Exception {
+        assert conn.getMetaData().supportsMultipleResultSets();
 
-        fail("https://issues.apache.org/jira/browse/IGNITE-6046");
+        int stmtCnt = 10;
 
-        final String sqlText = "select 1; select 1";
+        StringBuilder sql = new StringBuilder();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.executeQuery(sqlText);
-                }
-            },
-            SQLException.class,
-            "Multiple result sets"
-        );
+        for (int i = 0; i < stmtCnt; ++i)
+            sql.append("select ").append(i).append("; ");
+
+        assert stmt.execute(sql.toString());
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            assert stmt.getMoreResults();
+
+            ResultSet rs = stmt.getResultSet();
+
+            assert rs.next();
+            assert rs.getInt(1) == i;
+            assert !rs.next();
+        }
+
+        assert !stmt.getMoreResults();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExecuteQueryMultipleOnlyDml() throws Exception {
+        conn.setSchema(null);
+
+        Statement stmt0 = conn.createStatement();
+
+        int stmtCnt = 10;
+
+        StringBuilder sql = new StringBuilder("drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
+
+        for (int i = 0; i < stmtCnt; ++i)
+            sql.append("insert into test (ID, NAME) values (" + i + ", 'name_" + i +"'); ");
+
+        assert !stmt0.execute(sql.toString());
+
+        // DROP TABLE statement
+        assert stmt0.getResultSet() == null;
+        assert stmt0.getUpdateCount() == 0;
+
+        // CREATE TABLE statement
+        assert stmt0.getResultSet() == null;
+        assert stmt0.getUpdateCount() == 0;
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            assert stmt0.getMoreResults();
+
+            assert stmt0.getResultSet() == null;
+            assert stmt0.getUpdateCount() == 1;
+        }
+
+        assert !stmt0.getMoreResults();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExecuteQueryMultipleMixed() throws Exception {
+        conn.setSchema(null);
+
+        Statement stmt0 = conn.createStatement();
+
+        int stmtCnt = 10;
+
+        StringBuilder sql = new StringBuilder("drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            if (i % 2 == 0)
+                sql.append(" insert into test (ID, NAME) values (" + i + ", 'name_" + i + "'); ");
+            else
+                sql.append(" select * from test where id < " + i + "; ");
+        }
+
+        assert !stmt0.execute(sql.toString());
+
+        // DROP TABLE statement
+        assert stmt0.getResultSet() == null;
+        assert stmt0.getUpdateCount() == 0;
+
+        // CREATE TABLE statement
+        assert stmt0.getResultSet() == null;
+        assert stmt0.getUpdateCount() == 0;
+
+        boolean notEmptyResult = false;
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            assert stmt0.getMoreResults();
+
+            if (i % 2 == 0) {
+                assert stmt0.getResultSet() == null;
+                assert stmt0.getUpdateCount() == 1;
+            }
+            else {
+                assert stmt0.getUpdateCount() == -1;
+
+                ResultSet rs = stmt0.getResultSet();
+
+                int rowsCnt = 0;
+
+                while(rs.next())
+                    rowsCnt++;
+
+                assert rowsCnt <= (i + 1) / 2;
+
+                if (rowsCnt == (i + 1) / 2)
+                    notEmptyResult = true;
+            }
+        }
+
+        assert notEmptyResult;
+
+        assert !stmt0.getMoreResults();
     }
 
     /**
@@ -462,7 +563,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
                 }
             },
             SQLException.class,
-            "The query is not DML"
+            "Given statement type does not match that declared by JDBC driver"
         );
     }
 
@@ -776,11 +877,13 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     public void testGetMoreResults() throws Exception {
         assert !stmt.getMoreResults();
 
-        stmt.execute("select 1");
+        stmt.execute("select 1; ");
 
         ResultSet rs = stmt.getResultSet();
 
         assert !stmt.getMoreResults();
+
+        assert stmt.getResultSet() == null;
 
         assert rs.isClosed();
 
@@ -801,7 +904,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         assert !stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
         assert !stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS);
 
-        stmt.execute("select 1");
+        stmt.execute("select 1; ");
 
         ResultSet rs = stmt.getResultSet();
 
@@ -951,25 +1054,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCloseOnCompletion() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5344");
-
-        assert !stmt.isCloseOnCompletion() : "Default value of CloseOnCompletion is invalid";
-
-        stmt.execute("select 1");
-
-        stmt.closeOnCompletion();
-
-        assert stmt.isCloseOnCompletion();
-
-        stmt.getResultSet().close();
-
-        assert stmt.isClosed() : "Must be closed on complete";
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testCancel() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5439");
 
@@ -1016,7 +1100,10 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStatementTypeMismatchSelect() throws Exception {
+    public void testStatementTypeMismatchSelectForCachedQuery() throws Exception {
+        // Put query to cache.
+        stmt.executeQuery("select 1;");
+
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -1048,7 +1135,10 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         ResultSet rs = stmt.executeQuery("select val from test where _key=1");
 
-        assert rs.next();
+        boolean next = rs.next();
+
+        assert next;
+
         assert rs.getInt(1) == 1 : "The data must not be updated. " +
             "Because update statement is executed via 'executeQuery' method." +
             " Data [val=" + rs.getInt(1) + ']';

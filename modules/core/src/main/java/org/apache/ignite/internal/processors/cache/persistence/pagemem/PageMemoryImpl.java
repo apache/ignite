@@ -33,6 +33,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -56,7 +57,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -117,9 +119,6 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Dirty flag. */
     private static final long DIRTY_FLAG = 0x0100000000000000L;
 
-    /** Dirty flag. */
-    private static final long TMP_DIRTY_FLAG = 0x0200000000000000L;
-
     /** Invalid relative pointer value. */
     private static final long INVALID_REL_PTR = RELATIVE_PTR_MASK;
 
@@ -179,6 +178,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** State checker. */
     private final CheckpointLockStateChecker stateChecker;
 
+    /** Number of used pages in checkpoint buffer. */
+    private final AtomicInteger cpBufPagesCntr = new AtomicInteger(0);
+
     /** */
     private ExecutorService asyncRunner = new ThreadPoolExecutor(
         0,
@@ -217,6 +219,12 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Flush dirty page closure. When possible, will be called by evictPage(). */
     private final GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
 
+    /** Pages write throttle. */
+    private PagesWriteThrottle writeThrottle;
+
+    /** Write throttle enabled flag. */
+    private boolean throttleEnabled;
+
     /**  */
     private boolean pageEvictWarned;
 
@@ -224,7 +232,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private long[] sizes;
 
     /** */
-    private MemoryMetricsImpl memMetrics;
+    private DataRegionMetricsImpl memMetrics;
 
     /**
      * @param directMemoryProvider Memory allocator to use.
@@ -232,6 +240,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param pageSize Page size.
      * @param flushDirtyPage Callback invoked when a dirty page is evicted.
      * @param changeTracker Callback invoked to track changes in pages.
+     * @param throttleEnabled Write throttle enabled flag.
      */
     public PageMemoryImpl(
         DirectMemoryProvider directMemoryProvider,
@@ -241,7 +250,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPage,
         GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
         CheckpointLockStateChecker stateChecker,
-        MemoryMetricsImpl memMetrics
+        DataRegionMetricsImpl memMetrics,
+        boolean throttleEnabled
     ) {
         assert sharedCtx != null;
 
@@ -253,6 +263,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.flushDirtyPage = flushDirtyPage;
         this.changeTracker = changeTracker;
         this.stateChecker = stateChecker;
+        this.throttleEnabled = throttleEnabled;
 
         storeMgr = sharedCtx.pageStore();
         walMgr = sharedCtx.wal();
@@ -290,7 +301,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         DirectMemoryRegion cpReg = regions.get(regs - 1);
 
-        checkpointPool = new PagePool(regs - 1, cpReg);
+        checkpointPool = new PagePool(regs - 1, cpReg, cpBufPagesCntr);
 
         long checkpointBuf = cpReg.size();
 
@@ -305,11 +316,13 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             totalAllocated += reg.size();
 
-            segments[i] = new Segment(i, regions.get(i), checkpointPool.pages() / segments.length);
+            segments[i] = new Segment(i, regions.get(i), checkpointPool.pages() / segments.length, throttleEnabled);
 
             pages += segments[i].pages();
             totalTblSize += segments[i].tableSize();
         }
+
+        initWriteThrottle();
 
         if (log.isInfoEnabled())
             log.info("Started page memory [memoryAllocated=" + U.readableSize(totalAllocated, false) +
@@ -319,6 +332,21 @@ public class PageMemoryImpl implements PageMemoryEx {
                 ']');
     }
 
+    /**
+     *
+     */
+    private void initWriteThrottle() {
+        if (!(sharedCtx.database() instanceof GridCacheDatabaseSharedManager)) {
+            log.error("Write throttle can't start. Unexpected class of database manager: " +
+                sharedCtx.database().getClass());
+
+            throttleEnabled = false;
+        }
+
+        if (throttleEnabled)
+            writeThrottle = new PagesWriteThrottle(this, (GridCacheDatabaseSharedManager)sharedCtx.database());
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("OverlyStrongTypeCast")
     @Override public void stop() throws IgniteException {
@@ -326,6 +354,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             log.debug("Stopping page memory.");
 
         U.shutdownNow(getClass(), asyncRunner, log);
+
+        for (Segment seg : segments)
+            seg.close();
 
         directMemoryProvider.shutdown();
     }
@@ -393,6 +424,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             "flags = " + flags + ", partId = " + partId;
 
         long pageId = storeMgr.allocatePage(cacheId, partId, flags);
+
+        memMetrics.incrementTotalAllocatedPages();
 
         assert PageIdUtils.pageIndex(pageId) > 0; //it's crucial for tracking pages (zero page is super one)
 
@@ -564,8 +597,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (!restore) {
                     try {
                         ByteBuffer buf = wrapPointer(pageAddr, pageSize());
-
-                        memMetrics.updatePageReplaceRate();
 
                         storeMgr.read(cacheId, pageId, buf);
                     }
@@ -774,6 +805,18 @@ public class PageMemoryImpl implements PageMemoryEx {
         return true;
     }
 
+    /**
+     * @param dirtyRatioThreshold Throttle threshold.
+     */
+    boolean shouldThrottle(double dirtyRatioThreshold) {
+        for (Segment segment : segments) {
+            if (segment.shouldThrottle(dirtyRatioThreshold))
+                return true;
+        }
+
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException {
         Collection[] collections = new Collection[segments.length];
@@ -799,6 +842,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     @Override public void finishCheckpoint() {
         for (Segment seg : segments)
             seg.segCheckpointPages = null;
+
+        if (throttleEnabled)
+            writeThrottle.onFinishCheckpoint();
     }
 
     /** {@inheritDoc} */
@@ -1047,6 +1093,9 @@ public class PageMemoryImpl implements PageMemoryEx {
                 seg.readLock().lock();
 
                 try {
+                    if (seg.closed)
+                        continue;
+
                     total += seg.loadedPages.size();
                 }
                 finally {
@@ -1068,6 +1117,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.readLock().lock();
 
             try {
+                if (seg.closed)
+                    continue;
+
                 total += seg.acquiredPages();
             }
             finally {
@@ -1219,6 +1271,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         try {
             rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
+
+            if (throttleEnabled && !restore && markDirty && !dirty)
+                writeThrottle.onMarkDirty(isInCheckpoint(fullId));
         }
         catch (AssertionError ex) {
             StringBuilder sb = new StringBuilder(sysPageSize * 2);
@@ -1310,6 +1365,20 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /**
+     * Number of used pages in checkpoint buffer.
+     */
+    public int checkpointBufferPagesCount() {
+        return cpBufPagesCntr.get();
+    }
+
+    /**
+     * Number of used pages in checkpoint buffer.
+     */
+    public int checkpointBufferPagesSize() {
+        return checkpointPool.pages();
+    }
+
+    /**
      * This method must be called in synchronized context.
      *
      * @param absPtr Absolute pointer.
@@ -1385,6 +1454,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** Direct memory region. */
         protected final DirectMemoryRegion region;
 
+        /** Pool pages counter. */
+        protected final AtomicInteger pagesCntr;
+
         /** */
         protected long lastAllocatedIdxPtr;
 
@@ -1397,10 +1469,12 @@ public class PageMemoryImpl implements PageMemoryEx {
         /**
          * @param idx Index.
          * @param region Region
+         * @param pagesCntr Pages counter.
          */
-        protected PagePool(int idx, DirectMemoryRegion region) {
+        protected PagePool(int idx, DirectMemoryRegion region, AtomicInteger pagesCntr) {
             this.idx = idx;
             this.region = region;
+            this.pagesCntr = pagesCntr;
 
             long base = (region.address() + 7) & ~0x7;
 
@@ -1427,6 +1501,9 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @throws GridOffHeapOutOfMemoryException If failed to allocate new free page.
          */
         private long borrowOrAllocateFreePage(long pageId) throws GridOffHeapOutOfMemoryException {
+            if (pagesCntr != null)
+                pagesCntr.getAndIncrement();
+
             long relPtr = borrowFreePage();
 
             return relPtr != INVALID_REL_PTR ? relPtr : allocateFreePage(pageId);
@@ -1499,6 +1576,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             long absPtr = absolute(relPtr);
 
             assert !PageHeader.isAcquired(absPtr) : "Release pinned page: " + PageHeader.fullPageId(absPtr);
+
+            if (pagesCntr != null)
+                pagesCntr.getAndDecrement();
 
             while (true) {
                 long freePageRelPtrMasked = GridUnsafe.getLong(freePageListPtr);
@@ -1578,10 +1658,14 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** Maps partition (cacheId, partId) to its tag. Tag is 1-based incrementing partition file counter */
         private final Map<T2<Integer, Integer>, Integer> partTagMap = new HashMap<>();
 
+        /** */
+        private boolean closed;
+
         /**
          * @param region Memory region.
+         * @param throttlingEnabled Write throttling enabled flag.
          */
-        private Segment(int idx, DirectMemoryRegion region, int cpPoolPages) {
+        private Segment(int idx, DirectMemoryRegion region, int cpPoolPages, boolean throttlingEnabled) {
             long totalMemory = region.size();
 
             int pages = (int)(totalMemory / sysPageSize);
@@ -1596,9 +1680,23 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             DirectMemoryRegion poolRegion = region.slice(memPerTbl + 8);
 
-            pool = new PagePool(idx, poolRegion);
+            pool = new PagePool(idx, poolRegion, null);
 
-            maxDirtyPages = Math.min(pool.pages() * 2 / 3, cpPoolPages);
+            maxDirtyPages = throttlingEnabled ? pool.pages() * 3 / 4 : Math.min(pool.pages() * 2 / 3, cpPoolPages);
+        }
+
+        /**
+         * Closes the segment.
+         */
+        private void close() {
+            writeLock().lock();
+
+            try {
+                closed = true;
+            }
+            finally {
+                writeLock().unlock();
+            }
         }
 
         /**
@@ -1606,6 +1704,13 @@ public class PageMemoryImpl implements PageMemoryEx {
          */
         private boolean safeToUpdate() {
             return dirtyPages.size() < maxDirtyPages;
+        }
+
+        /**
+         * @param dirtyRatioThreshold Throttle threshold.
+         */
+        private boolean shouldThrottle(double dirtyRatioThreshold) {
+            return ((double)dirtyPages.size()) / pages() > dirtyRatioThreshold;
         }
 
         /**
@@ -1681,6 +1786,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (cpPages != null && cpPages.contains(fullPageId)) {
                     assert storeMgr != null;
 
+                    memMetrics.updatePageReplaceRate(U.currentTimeMillis() - PageHeader.readTimestamp(absPtr));
+
                     flushDirtyPage.applyx(
                         fullPageId,
                         wrapPointer(absPtr + PAGE_OVERHEAD, pageSize()),
@@ -1699,9 +1806,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 return false;
             }
-            else
+            else {
+                memMetrics.updatePageReplaceRate(U.currentTimeMillis() - PageHeader.readTimestamp(absPtr));
+
                 // Page was not modified, ok to evict.
                 return true;
+            }
         }
 
         /**
@@ -1717,7 +1827,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 pageEvictWarned = true;
 
                 U.warn(log, "Page evictions started, this will affect storage performance (consider increasing " +
-                    "MemoryConfiguration#setPageCacheSize).");
+                    "DataRegionConfiguration#setMaxSize).");
             }
 
             final ThreadLocalRandom rnd = ThreadLocalRandom.current();

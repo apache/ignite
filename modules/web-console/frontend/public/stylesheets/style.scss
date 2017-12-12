@@ -304,6 +304,14 @@ body > .wrapper > ui-view {
     }
 }
 
+.use-cache {
+    display: flex;
+
+    input[type="checkbox"] {
+        width: 20px;
+    }
+}
+
 .group-section {
     margin-top: 20px;
 }
@@ -2192,4 +2200,14 @@ html,body,.splash-screen {
 
 .demo-mode {
     padding-top: 30px;
+}
+
+// Fix for injecting svg icon into BS btn
+.btn--with-icon {
+    display: flex;
+    align-items: center;
+
+    span {
+        margin-left: 5px;
+    }
 }

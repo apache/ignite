@@ -91,7 +91,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
             user.adminChanging = true;
 
             AdminData.toggleAdmin(user)
-                .then(() => user.admin = !user.admin)
                 .finally(() => user.adminChanging = false);
         };
 

@@ -67,7 +67,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     /** Exceptions caught during collecting events from nodes. */
     private Map<UUID, VisorExceptionWrapper> evtsEx = new HashMap<>();
 
-    /** All memory metrics collected from nodes. */
+    /** All data region metrics collected from nodes. */
     private Map<UUID, Collection<VisorMemoryMetrics>> memoryMetrics = new HashMap<>();
 
     /** Exceptions caught during collecting memory metrics from nodes. */
@@ -169,7 +169,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     /**
      * @return All task monitoring state collected from nodes.
      */
-    public Map<UUID, Boolean> isTaskMonitoringEnabled() {
+    public Map<UUID, Boolean> getTaskMonitoringEnabled() {
         return taskMonitoringEnabled;
     }
 
@@ -188,7 +188,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     }
 
     /**
-     * @return All memory metrics collected from nodes.
+     * @return All data region metrics collected from nodes.
      */
     public Map<UUID, Collection<VisorMemoryMetrics>> getMemoryMetrics() {
         return memoryMetrics;
@@ -283,7 +283,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         unhandledEx.putAll(res.getUnhandledEx());
         gridNames.putAll(res.getGridNames());
         topVersions.putAll(res.getTopologyVersions());
-        taskMonitoringEnabled.putAll(res.isTaskMonitoringEnabled());
+        taskMonitoringEnabled.putAll(res.getTaskMonitoringEnabled());
         errCnts.putAll(res.getErrorCounts());
         evts.addAll(res.getEvents());
         evtsEx.putAll(res.getEventsEx());

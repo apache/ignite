@@ -21,27 +21,30 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerConnectionContext;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
+import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 
 /**
  * ODBC Connection Context.
  */
-public class JdbcConnectionContext implements SqlListenerConnectionContext {
+public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.1.0. */
-    private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
+    private static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
 
     /** Version 2.1.5: added "lazy" flag. */
-    private static final SqlListenerProtocolVersion VER_2_1_5 = SqlListenerProtocolVersion.create(2, 1, 5);
+    private static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
+
+    /** Version 2.3.1: added "multiple statements query" feature. */
+    public static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
 
     /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = VER_2_1_5;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_0;
 
     /** Supported versions. */
-    private static final Set<SqlListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
+    private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
 
     /** Context. */
     private final GridKernalContext ctx;
@@ -60,6 +63,7 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_1_5);
         SUPPORTED_VERS.add(VER_2_1_0);
     }
 
@@ -76,17 +80,17 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isVersionSupported(SqlListenerProtocolVersion ver) {
+    @Override public boolean isVersionSupported(ClientListenerProtocolVersion ver) {
         return SUPPORTED_VERS.contains(ver);
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerProtocolVersion currentVersion() {
+    @Override public ClientListenerProtocolVersion currentVersion() {
         return CURRENT_VER;
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
+    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
         assert SUPPORTED_VERS.contains(ver): "Unsupported JDBC protocol version.";
 
         boolean distributedJoins = reader.readBoolean();
@@ -100,19 +104,24 @@ public class JdbcConnectionContext implements SqlListenerConnectionContext {
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
 
-        handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
+        boolean skipReducerOnUpdate = false;
+
+        if (ver.compareTo(VER_2_3_0) >= 0)
+            skipReducerOnUpdate = reader.readBoolean();
+
+        handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, ver);
 
         parser = new JdbcMessageParser(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerRequestHandler handler() {
+    @Override public ClientListenerRequestHandler handler() {
         return handler;
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerMessageParser parser() {
+    @Override public ClientListenerMessageParser parser() {
         return parser;
     }
 

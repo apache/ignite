@@ -23,17 +23,16 @@ import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
+import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
 
 /**
  * JDBC driver thin implementation for In-Memory Data Grid.
@@ -131,18 +130,6 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 @SuppressWarnings("JavadocReference")
 public class IgniteJdbcThinDriver implements Driver {
-    /*
-     * Static initializer.
-     */
-    static {
-        try {
-            DriverManager.registerDriver(new IgniteJdbcThinDriver());
-        }
-        catch (SQLException e) {
-            throw new RuntimeException("Failed to register " + IgniteJdbcThinDriver.class.getName(), e);
-        }
-    }
-
     /** Major version. */
     private static final int MAJOR_VER = IgniteVersionUtils.VER.major();
 
@@ -168,7 +155,7 @@ public class IgniteJdbcThinDriver implements Driver {
 
         String schema = parseUrl(url, props);
 
-        return new JdbcThinConnection(url, props, schema);
+        return new JdbcThinConnection(url, schema, props);
     }
 
     /** {@inheritDoc} */
@@ -180,17 +167,7 @@ public class IgniteJdbcThinDriver implements Driver {
     @Override public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
         parseUrl(url, info);
 
-        List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
-            new JdbcDriverPropertyInfo("Hostname", info.getProperty(JdbcThinUtils.PROP_HOST), ""),
-            new JdbcDriverPropertyInfo("Port number", info.getProperty(JdbcThinUtils.PROP_PORT), ""),
-            new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(JdbcThinUtils.PROP_DISTRIBUTED_JOINS), ""),
-            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
-            new JdbcDriverPropertyInfo("Collocated", info.getProperty(JdbcThinUtils.PROP_COLLOCATED), ""),
-            new JdbcDriverPropertyInfo("Replicated only", info.getProperty(JdbcThinUtils.PROP_REPLICATED_ONLY), ""),
-            new JdbcDriverPropertyInfo("Lazy query execution flag", info.getProperty(JdbcThinUtils.PROP_LAZY),"")
-        );
-
-        return props.toArray(new DriverPropertyInfo[0]);
+        return ConnectionPropertiesImpl.getDriverPropertyInfo(info);
     }
 
     /** {@inheritDoc} */
@@ -285,7 +262,7 @@ public class IgniteJdbcThinDriver implements Driver {
             if (key.isEmpty() || val.isEmpty())
                 throw new SQLException("Invalid parameter format (key and value cannot be empty): " + param);
 
-            props.setProperty(JdbcThinUtils.PROP_PREFIX + key, val);
+            props.setProperty(PROP_PREFIX + key, val);
         }
     }
 }

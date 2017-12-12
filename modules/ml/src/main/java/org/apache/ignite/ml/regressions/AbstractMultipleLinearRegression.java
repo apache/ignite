@@ -355,4 +355,24 @@ public abstract class AbstractMultipleLinearRegression implements MultipleLinear
         return yVector.minus(xMatrix.times(b));
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        AbstractMultipleLinearRegression that = (AbstractMultipleLinearRegression)o;
+
+        return noIntercept == that.noIntercept && xMatrix.equals(that.xMatrix);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = xMatrix.hashCode();
+
+        res = 31 * res + (noIntercept ? 1 : 0);
+
+        return res;
+    }
 }

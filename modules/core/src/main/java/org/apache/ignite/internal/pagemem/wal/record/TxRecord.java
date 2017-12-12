@@ -17,56 +17,84 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.UUID;
+import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Logical data record indented for transaction (tx) related actions.<br>
  * This record is marker of begin, prepare, commit, and rollback transactions.
  */
-public class TxRecord extends WALRecord {
-    /**
-     * Tx action enum.
-     */
-    public enum TxAction {
-        /** Transaction begin. */
-        BEGIN,
+public class TxRecord extends TimeStampRecord {
+    /** Transaction state. */
+    private TransactionState state;
 
-        /** Transaction prepare. */
-        PREPARE,
-
-        /** Transaction commit. */
-        COMMIT,
-
-        /** Transaction rollback. */
-        ROLLBACK;
-
-        /** Available values. */
-        private static final TxAction[] VALS = TxAction.values();
-
-        /**
-         * Gets tx action value from ordinal.
-         *
-         * @param ord Ordinal.
-         * @return Value.
-         */
-        public static TxAction fromOrdinal(int ord) {
-            return ord < 0 || ord >= VALS.length ? null : VALS[ord];
-        }
-    }
-
-    /** */
-    private TxAction action;
-
-    /** Global transaction identifier within cluster, assigned by transaction coordinator */
+    /** Global transaction identifier within cluster, assigned by transaction coordinator. */
     private GridCacheVersion nearXidVer;
 
-    /** */
-    private GridCacheVersion dhtVer;
+    /** Transaction entries write topology version. */
+    private GridCacheVersion writeVer;
 
-    /** */
-    private UUID[] participatingNodeIds;
+    /**
+     * Transaction participating nodes.
+     *
+     * Structure:
+     * Primary node -> [Backup nodes...]
+     **/
+    @Nullable private Map<Object, Collection<Object>> participatingNodes;
+
+    /** If transaction is remote, primary node for this backup node. */
+    @Nullable private Object primaryNode;
+
+    /**
+     *
+     * @param state Transaction state.
+     * @param nearXidVer Transaction id.
+     * @param writeVer Transaction entries write topology version.
+     * @param participatingNodes Primary -> Backup nodes participating in transaction.
+     * @param primaryNode Primary node.
+     */
+    public TxRecord(
+        TransactionState state,
+        GridCacheVersion nearXidVer,
+        GridCacheVersion writeVer,
+        @Nullable Map<Object, Collection<Object>> participatingNodes,
+        @Nullable Object primaryNode
+    ) {
+        this.state = state;
+        this.nearXidVer = nearXidVer;
+        this.writeVer = writeVer;
+        this.participatingNodes = participatingNodes;
+        this.primaryNode = primaryNode;
+    }
+
+    /**
+     * @param state Transaction state.
+     * @param nearXidVer Transaction id.
+     * @param writeVer Transaction entries write topology version.
+     * @param participatingNodes Primary -> Backup nodes participating in transaction.
+     * @param primaryNode Primary node.
+     * @param timestamp TimeStamp.
+     */
+    public TxRecord(
+        TransactionState state,
+        GridCacheVersion nearXidVer,
+        GridCacheVersion writeVer,
+        @Nullable Map<Object, Collection<Object>> participatingNodes,
+        @Nullable Object primaryNode,
+        long timestamp
+    ) {
+        super(timestamp);
+
+        this.state = state;
+        this.nearXidVer = nearXidVer;
+        this.writeVer = writeVer;
+        this.participatingNodes = participatingNodes;
+        this.primaryNode = primaryNode;
+    }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
@@ -90,43 +118,57 @@ public class TxRecord extends WALRecord {
     /**
      * @return DHT version.
      */
-    public GridCacheVersion dhtVersion() {
-        return dhtVer;
+    public GridCacheVersion writeVersion() {
+        return writeVer;
     }
 
     /**
-     * @param dhtVer DHT version.
+     * @param writeVer DHT version.
      */
-    public void dhtVersion(GridCacheVersion dhtVer) {
-        this.dhtVer = dhtVer;
+    public void dhtVersion(GridCacheVersion writeVer) {
+        this.writeVer = writeVer;
     }
 
     /**
-     * @return Action.
+     * @return Transaction state.
      */
-    public TxAction action() {
-        return action;
+    public TransactionState state() {
+        return state;
     }
 
     /**
-     * @param action Action.
+     * @param state Transaction state.
      */
-    public void action(TxAction action) {
-        this.action = action;
+    public void state(TransactionState state) {
+        this.state = state;
     }
 
     /**
-     * @param participatingNodeIds Participating node IDs.
+     * @return Primary -> backup participating nodes.
      */
-    public void participatingNodeIds(UUID[] participatingNodeIds) {
-        this.participatingNodeIds = participatingNodeIds;
+    public Map<Object, Collection<Object>> participatingNodes() {
+        return participatingNodes;
     }
 
     /**
-     * @return Participating node IDs.
+     * @param participatingNodeIds Primary -> backup participating nodes.
      */
-    public UUID[] participatingNodeId() {
-        return participatingNodeIds;
+    public void participatingNodes(Map<Object, Collection<Object>> participatingNodeIds) {
+        this.participatingNodes = participatingNodeIds;
+    }
+
+    /**
+     * @return Is transaction remote for backup.
+     */
+    public boolean remote() {
+        return primaryNode != null;
+    }
+
+    /**
+     * @return Primary node for backup if transaction is remote.
+     */
+    @Nullable public Object primaryNode() {
+        return primaryNode;
     }
 
     /** {@inheritDoc} */

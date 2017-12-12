@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>2.3.0-SNAPSHOT</version>
+    <version>2.4.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -95,6 +95,7 @@
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
+        <module>modules/sqlline</module>
     </modules>
 
     <profiles>
@@ -103,6 +104,7 @@
             <modules> <!-- sorted alphabetically -->
                 <module>examples</module>
                 <module>modules/benchmarks</module>
+                <module>modules/compatibility</module>
                 <module>modules/geospatial</module>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
@@ -163,6 +165,13 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>compatibility</id>
+            <modules>
+                <module>modules/compatibility</module>
+            </modules>
         </profile>
 
         <profile>
@@ -457,6 +466,22 @@
                                     </descriptors>
                                     <outputDirectory>target/release-package-${ignite.edition}/bin</outputDirectory>
                                     <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>dependencies-sqlline</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-sqlline.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package-${ignite.edition}</outputDirectory>
+                                    <finalName>bin</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>

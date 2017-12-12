@@ -20,7 +20,6 @@ package org.apache.ignite.internal.pagemem.store;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -185,9 +184,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
 
     /**
      * @param cacheData Cache configuration.
+     * @param overwrite Whether stored configuration should be overwritten if it exists.
      * @throws IgniteCheckedException If failed.
      */
-    public void storeCacheData(StoredCacheData cacheData) throws IgniteCheckedException;
+    public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException;
     /**
      * @param grpId Cache group ID.
      * @return {@code True} if index store for given cache group existed before node started.

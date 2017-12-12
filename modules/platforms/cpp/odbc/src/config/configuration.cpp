@@ -32,34 +32,36 @@ namespace ignite
     {
         namespace config
         {
-            const std::string Configuration::Key::dsn               = "dsn";
-            const std::string Configuration::Key::driver            = "driver";
-            const std::string Configuration::Key::schema            = "schema";
-            const std::string Configuration::Key::address           = "address";
-            const std::string Configuration::Key::server            = "server";
-            const std::string Configuration::Key::port              = "port";
-            const std::string Configuration::Key::distributedJoins  = "distributed_joins";
-            const std::string Configuration::Key::enforceJoinOrder  = "enforce_join_order";
-            const std::string Configuration::Key::protocolVersion   = "protocol_version";
-            const std::string Configuration::Key::pageSize          = "page_size";
-            const std::string Configuration::Key::replicatedOnly    = "replicated_only";
-            const std::string Configuration::Key::collocated        = "collocated";
-            const std::string Configuration::Key::lazy              = "lazy";
+            const std::string Configuration::Key::dsn                    = "dsn";
+            const std::string Configuration::Key::driver                 = "driver";
+            const std::string Configuration::Key::schema                 = "schema";
+            const std::string Configuration::Key::address                = "address";
+            const std::string Configuration::Key::server                 = "server";
+            const std::string Configuration::Key::port                   = "port";
+            const std::string Configuration::Key::distributedJoins       = "distributed_joins";
+            const std::string Configuration::Key::enforceJoinOrder       = "enforce_join_order";
+            const std::string Configuration::Key::protocolVersion        = "protocol_version";
+            const std::string Configuration::Key::pageSize               = "page_size";
+            const std::string Configuration::Key::replicatedOnly         = "replicated_only";
+            const std::string Configuration::Key::collocated             = "collocated";
+            const std::string Configuration::Key::lazy                   = "lazy";
+            const std::string Configuration::Key::skipReducerOnUpdate    = "skip_reducer_on_update";
 
-            const std::string Configuration::DefaultValue::dsn      = "Apache Ignite DSN";
-            const std::string Configuration::DefaultValue::driver   = "Apache Ignite";
-            const std::string Configuration::DefaultValue::schema   = "PUBLIC";
-            const std::string Configuration::DefaultValue::address  = "";
-            const std::string Configuration::DefaultValue::server   = "";
+            const std::string Configuration::DefaultValue::dsn           = "Apache Ignite DSN";
+            const std::string Configuration::DefaultValue::driver        = "Apache Ignite";
+            const std::string Configuration::DefaultValue::schema        = "PUBLIC";
+            const std::string Configuration::DefaultValue::address       = "";
+            const std::string Configuration::DefaultValue::server        = "";
 
             const uint16_t Configuration::DefaultValue::port    = 10800;
             const int32_t Configuration::DefaultValue::pageSize = 1024;
 
-            const bool Configuration::DefaultValue::distributedJoins = false;
-            const bool Configuration::DefaultValue::enforceJoinOrder = false;
-            const bool Configuration::DefaultValue::replicatedOnly   = false;
-            const bool Configuration::DefaultValue::collocated       = false;
-            const bool Configuration::DefaultValue::lazy             = false;
+            const bool Configuration::DefaultValue::distributedJoins      = false;
+            const bool Configuration::DefaultValue::enforceJoinOrder      = false;
+            const bool Configuration::DefaultValue::replicatedOnly        = false;
+            const bool Configuration::DefaultValue::collocated            = false;
+            const bool Configuration::DefaultValue::lazy                  = false;
+            const bool Configuration::DefaultValue::skipReducerOnUpdate   = false;
 
             const ProtocolVersion& Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
 

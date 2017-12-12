@@ -47,9 +47,9 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -65,7 +65,7 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -161,7 +161,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private SqlListenerProcessor sqlListenerProc;
+    private ClientListenerProcessor sqlListenerProc;
 
     /** */
     @GridToStringInclude
@@ -378,6 +378,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     private volatile boolean disconnected;
 
+    /** PDS mode folder name resolver, also generates consistent ID in case new folder naming is used */
+    private PdsFoldersResolver pdsFolderRslvr;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -537,7 +540,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridCacheProcessor)
             cacheProc = (GridCacheProcessor)comp;
         else if (comp instanceof GridClusterStateProcessor)
-            stateProc =(GridClusterStateProcessor)comp;
+            stateProc = (GridClusterStateProcessor)comp;
         else if (comp instanceof GridTaskSessionProcessor)
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
@@ -568,8 +571,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
             qryProc = (GridQueryProcessor)comp;
-        else if (comp instanceof SqlListenerProcessor)
-            sqlListenerProc = (SqlListenerProcessor)comp;
+        else if (comp instanceof ClientListenerProcessor)
+            sqlListenerProc = (ClientListenerProcessor)comp;
         else if (comp instanceof DataStructuresProcessor)
             dataStructuresProc = (DataStructuresProcessor)comp;
         else if (comp instanceof ClusterProcessor)
@@ -577,9 +580,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof PlatformProcessor)
             platformProc = (PlatformProcessor)comp;
         else if (comp instanceof PoolProcessor)
-            poolProc = (PoolProcessor) comp;
+            poolProc = (PoolProcessor)comp;
         else if (comp instanceof GridMarshallerMappingProcessor)
             mappingProc = (GridMarshallerMappingProcessor)comp;
+        else if (comp instanceof PdsFoldersResolver)
+            pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
                 || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -825,7 +830,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerProcessor sqlListener() {
+    @Override public ClientListenerProcessor sqlListener() {
         return sqlListenerProc;
     }
 
@@ -1006,7 +1011,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    public Map<String, ? extends ExecutorService> customExecutors() {
+    @Override public Map<String, ? extends ExecutorService> customExecutors() {
         return customExecSvcs;
     }
 
@@ -1068,6 +1073,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      */
     void disconnected(boolean disconnected) {
         this.disconnected = disconnected;
+    }
+
+    /**{@inheritDoc}*/
+    @Override public PdsFoldersResolver pdsFolderResolver() {
+        return pdsFolderRslvr;
     }
 
     /** {@inheritDoc} */

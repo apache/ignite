@@ -22,9 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Net;
     using System.Net.Sockets;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -79,11 +77,13 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SqlConnectorConfiguration = new SqlConnectorConfiguration
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
                     Host = "localhost",
                     Port = 2000,
-                    PortRange = 1
+                    PortRange = 1,
+                    SocketSendBufferSize = 100,
+                    SocketReceiveBufferSize = 50
                 }
             };
 
@@ -109,6 +109,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.Throws<ArgumentNullException>(() => Ignition.StartClient(new IgniteClientConfiguration()));
         }
 
+#if !NETCOREAPP2_0
         /// <summary>
         /// Tests the incorrect protocol version error.
         /// </summary>
@@ -119,11 +120,39 @@ namespace Apache.Ignite.Core.Tests.Client
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 // ReSharper disable once ObjectCreationAsStatement
-                var ex = Assert.Throws<IgniteException>(() => new ClientSocket(GetClientConfiguration(),
-                    new ClientProtocolVersion(-1, -1, -1)));
+                var ex = Assert.Throws<IgniteClientException>(() =>
+                    new Impl.Client.ClientSocket(GetClientConfiguration(),
+                    new Impl.Client.ClientProtocolVersion(-1, -1, -1)));
+
+                Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
 
                 Assert.AreEqual("Client handhsake failed: 'Unsupported version.'. " +
                                 "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
+            }
+        }
+#endif
+
+        /// <summary>
+        /// Tests that connector can be disabled.
+        /// </summary>
+        [Test]
+        public void TestDisabledConnector()
+        {
+            var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientConnectorConfigurationEnabled = false
+            };
+
+            var clientCfg = new IgniteClientConfiguration
+            {
+                Host = "localhost"
+            };
+
+            using (Ignition.Start(servCfg))
+            {
+                var ex = Assert.Throws<AggregateException>(() => Ignition.StartClient(clientCfg));
+                Assert.AreEqual("Failed to establish Ignite thin client connection, " +
+                                "examine inner exceptions for details.", ex.Message.Substring(0, 88));
             }
         }
 

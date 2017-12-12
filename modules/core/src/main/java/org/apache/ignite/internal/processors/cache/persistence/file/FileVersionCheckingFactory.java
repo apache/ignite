@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 
 /**
  * Checks version in files if it's present on the disk, creates store with latest version otherwise.
@@ -38,14 +38,14 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     private final FileIOFactory fileIOFactory;
 
     /** Memory configuration. */
-    private final MemoryConfiguration memCfg;
+    private final DataStorageConfiguration memCfg;
 
     /**
      * @param fileIOFactory File io factory.
      * @param memCfg Memory configuration.
      */
     public FileVersionCheckingFactory(
-        FileIOFactory fileIOFactory, MemoryConfiguration memCfg) {
+        FileIOFactory fileIOFactory, DataStorageConfiguration memCfg) {
         this.fileIOFactory = fileIOFactory;
         this.memCfg = memCfg;
     }
@@ -55,7 +55,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         if (!file.exists())
             return createPageStore(type, file, latestVersion());
 
-        try (FileIO fileIO = fileIOFactory.create(file, "r")) {
+        try (FileIO fileIO = fileIOFactory.create(file)) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)

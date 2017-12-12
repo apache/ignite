@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Client
     /// Ignite thin client configuration.
     /// <para />
     /// Ignite thin client connects to a specific Ignite node with a socket and does not start JVM in process.
-    /// This configuration should correspond to <see cref="IgniteConfiguration.SqlConnectorConfiguration"/>
+    /// This configuration should correspond to <see cref="IgniteConfiguration.ClientConnectorConfiguration"/>
     /// on a target node.
     /// </summary>
     public class IgniteClientConfiguration

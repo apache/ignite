@@ -52,6 +52,9 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
     /** User name. */
     private String user;
 
+    /** Credentials. */
+    private byte[] credentials;
+
     /**
      * Default constructor required by {@link Externalizable}.
      */
@@ -69,12 +72,13 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
      * @param props All other properties of the job.
      */
     public HadoopDefaultJobInfo(String jobName, String user, boolean hasCombiner, int numReduces,
-        Map<String, String> props) {
+        Map<String, String> props, byte[] credentials) {
         this.jobName = jobName;
         this.user = user;
         this.hasCombiner = hasCombiner;
         this.numReduces = numReduces;
         this.props = props;
+        this.credentials = credentials;
     }
 
     /** {@inheritDoc} */
@@ -127,6 +131,11 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public byte[] credentials() {
+        return credentials;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, jobName);
         U.writeString(out, user);
@@ -135,6 +144,8 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
         out.writeInt(numReduces);
 
         IgfsUtils.writeStringMap(out, props);
+
+        U.writeByteArray(out, credentials);
     }
 
     /** {@inheritDoc} */
@@ -146,6 +157,8 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
         numReduces = in.readInt();
 
         props = IgfsUtils.readStringMap(in);
+
+        credentials = U.readByteArray(in);
     }
 
     /**

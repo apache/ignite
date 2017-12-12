@@ -27,6 +27,7 @@
 #include "ignite/odbc/config/connection_info.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
+#include "ignite/odbc/odbc_error.h"
 
 namespace ignite
 {
@@ -41,6 +42,19 @@ namespace ignite
         {
             friend class Environment;
         public:
+            /**
+             * Operation with timeout result.
+             */
+            struct OperationResult
+            {
+                enum T
+                {
+                    SUCCESS,
+                    FAIL,
+                    TIMEOUT
+                };
+            };
+
             /**
              * Destructor.
              */
@@ -96,15 +110,21 @@ namespace ignite
              *
              * @param data Data buffer.
              * @param len Data length.
+             * @param timeout Timeout.
+             * @return @c true on success, @c false on timeout.
+             * @throw OdbcError on error.
              */
-            void Send(const int8_t* data, size_t len);
+            bool Send(const int8_t* data, size_t len, int32_t timeout);
 
             /**
              * Receive next message.
              *
              * @param msg Buffer for message.
+             * @param timeout Timeout.
+             * @return @c true on success, @c false on timeout.
+             * @throw OdbcError on error.
              */
-            void Receive(std::vector<int8_t>& msg);
+            bool Receive(std::vector<int8_t>& msg, int32_t timeout);
 
             /**
              * Get name of the assotiated schema.
@@ -134,9 +154,43 @@ namespace ignite
 
             /**
              * Synchronously send request message and receive response.
+             * Uses provided timeout.
              *
              * @param req Request message.
              * @param rsp Response message.
+             * @param timeout Timeout.
+             * @return @c true on success, @c false on timeout.
+             * @throw OdbcError on error.
+             */
+            template<typename ReqT, typename RspT>
+            bool SyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
+            {
+                std::vector<int8_t> tempBuffer;
+
+                parser.Encode(req, tempBuffer);
+
+                bool success = Send(tempBuffer.data(), tempBuffer.size(), timeout);
+
+                if (!success)
+                    return false;
+
+                success = Receive(tempBuffer, timeout);
+
+                if (!success)
+                    return false;
+
+                parser.Decode(rsp, tempBuffer);
+
+                return true;
+            }
+
+            /**
+             * Synchronously send request message and receive response.
+             * Uses connection timeout.
+             *
+             * @param req Request message.
+             * @param rsp Response message.
+             * @throw OdbcError on error.
              */
             template<typename ReqT, typename RspT>
             void SyncMessage(const ReqT& req, RspT& rsp)
@@ -145,9 +199,15 @@ namespace ignite
 
                 parser.Encode(req, tempBuffer);
 
-                Send(tempBuffer.data(), tempBuffer.size());
+                bool success = Send(tempBuffer.data(), tempBuffer.size(), timeout);
 
-                Receive(tempBuffer);
+                if (!success)
+                    throw OdbcError(SqlState::SHYT01_CONNECTION_TIMEOUT, "Send operation timed out");
+
+                success = Receive(tempBuffer, timeout);
+
+                if (!success)
+                    throw OdbcError(SqlState::SHYT01_CONNECTION_TIMEOUT, "Receive operation timed out");
 
                 parser.Decode(rsp, tempBuffer);
             }
@@ -280,18 +340,20 @@ namespace ignite
              *
              * @param dst Buffer for data.
              * @param len Number of bytes to receive.
-             * @return Number of successfully received bytes.
+             * @param timeout Timeout.
+             * @return Operation result.
              */
-            size_t ReceiveAll(void* dst, size_t len);
+            OperationResult::T ReceiveAll(void* dst, size_t len, int32_t timeout);
 
             /**
              * Send specified number of bytes.
              *
              * @param data Data buffer.
              * @param len Data length.
-             * @return Number of successfully sent bytes.
+             * @param timeout Timeout.
+             * @return Operation result.
              */
-            size_t SendAll(const int8_t* data, size_t len);
+            OperationResult::T SendAll(const int8_t* data, size_t len, int32_t timeout);
 
             /**
              * Perform handshake request.
@@ -311,11 +373,17 @@ namespace ignite
             /** State flag. */
             bool connected;
 
+            /** Connection timeout in seconds. */
+            int32_t timeout;
+
             /** Message parser. */
             Parser parser;
 
             /** Configuration. */
             config::Configuration config;
+
+            /** Connection info. */
+            config::ConnectionInfo info;
         };
     }
 }

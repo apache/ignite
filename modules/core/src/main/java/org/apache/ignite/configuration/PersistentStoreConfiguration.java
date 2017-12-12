@@ -17,13 +17,17 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Configures Apache Ignite Persistent store.
+ * @deprecated Use {@link DataStorageConfiguration} instead.
  */
+@Deprecated
 public class PersistentStoreConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -82,6 +86,9 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
+    /** Default write throttling enabled. */
+    public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
+
     /** */
     private String persistenceStorePath;
 
@@ -137,7 +144,9 @@ public class PersistentStoreConfiguration implements Serializable {
     private boolean alwaysWriteFullPages = DFLT_WAL_ALWAYS_WRITE_FULL_PAGES;
 
     /** Factory to provide I/O interface for files */
-    private FileIOFactory fileIOFactory = new RandomAccessFileIOFactory();
+    private FileIOFactory fileIOFactory =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, false) ?
+            new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**
      * Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
@@ -156,6 +165,11 @@ public class PersistentStoreConfiguration implements Serializable {
      *  Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
      */
     private long walAutoArchiveAfterInactivity = -1;
+
+    /**
+     * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
+     */
+    private boolean writeThrottlingEnabled = DFLT_WRITE_THROTTLING_ENABLED;
 
     /**
      * Returns a path the root directory where the Persistent Store will persist data and indexes.
@@ -236,7 +250,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Sets a number of threads to use for the checkpointing purposes.
      *
-     * @param checkpointingThreads Number of checkpointing threads. One thread is used by default.
+     * @param checkpointingThreads Number of checkpointing threads. Four threads are used by default.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setCheckpointingThreads(int checkpointingThreads) {
@@ -393,6 +407,24 @@ public class PersistentStoreConfiguration implements Serializable {
      */
     public PersistentStoreConfiguration setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether write throttling is enabled.
+     */
+    public boolean isWriteThrottlingEnabled() {
+        return writeThrottlingEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether write throttling is enabled.
+     *
+     * @param writeThrottlingEnabled Write throttling enabled flag.
+     */
+    public PersistentStoreConfiguration setWriteThrottlingEnabled(boolean writeThrottlingEnabled) {
+        this.writeThrottlingEnabled = writeThrottlingEnabled;
 
         return this;
     }

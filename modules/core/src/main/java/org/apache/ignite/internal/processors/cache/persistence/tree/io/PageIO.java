@@ -557,7 +557,7 @@ public abstract class PageIO {
 
     /**
      * @param addr Address.
-     * @param pageSize
+     * @param pageSize Page size.
      * @param sb Sb.
      */
     protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException ;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.io.IOException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -26,14 +25,21 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -49,6 +55,9 @@ public class JdbcThinStatement implements Statement {
     /** JDBC Connection implementation. */
     protected JdbcThinConnection conn;
 
+    /** Schema name. */
+    private final String schema;
+
     /** Closed flag. */
     private boolean closed;
 
@@ -58,14 +67,8 @@ public class JdbcThinStatement implements Statement {
     /** Query timeout. */
     private int timeout;
 
-    /** Current result set. */
-    protected JdbcThinResultSet rs;
-
     /** Fetch size. */
     private int pageSize = DFLT_PAGE_SIZE;
-
-    /** Result set or update count has been already read. */
-    private boolean alreadyRead;
 
     /** Result set  holdability*/
     private final int resHoldability;
@@ -76,17 +79,25 @@ public class JdbcThinStatement implements Statement {
     /** Close this statement on result set close. */
     private boolean closeOnCompletion;
 
+    /** Result sets. */
+    protected List<JdbcThinResultSet> resultSets;
+
+    /** Current result index. */
+    protected int curRes;
+
     /**
      * Creates new statement.
      *
      * @param conn JDBC connection.
      * @param resHoldability Result set holdability.
+     * @param schema Schema name.
      */
-    JdbcThinStatement(JdbcThinConnection conn, int resHoldability) {
+    JdbcThinStatement(JdbcThinConnection conn, int resHoldability, String schema) {
         assert conn != null;
 
         this.conn = conn;
         this.resHoldability = resHoldability;
+        this.schema = schema;
     }
 
     /** {@inheritDoc} */
@@ -96,7 +107,7 @@ public class JdbcThinStatement implements Statement {
         ResultSet rs = getResultSet();
 
         if (rs == null)
-            throw new SQLException("The query isn't SELECT query: " + sql);
+            throw new SQLException("The query isn't SELECT query: " + sql, SqlStateCode.PARSING_EXCEPTION);
 
         return rs;
     }
@@ -111,34 +122,58 @@ public class JdbcThinStatement implements Statement {
     protected void execute0(JdbcStatementType stmtType, String sql, List<Object> args) throws SQLException {
         ensureNotClosed();
 
-        if (rs != null) {
-            rs.close0();
-
-            rs = null;
-        }
-
-        alreadyRead = false;
+        closeResults();
 
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
-        try {
-            JdbcQueryExecuteResult res = conn.io().queryExecute(stmtType, conn.getSchema(), pageSize, maxRows,
-                sql, args);
+        JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
+            maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
 
-            assert res != null;
+        assert res0 != null;
 
-            rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
-                res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount(), closeOnCompletion);
-        }
-        catch (IOException e) {
-            conn.close();
+        if (res0 instanceof JdbcQueryExecuteResult) {
+            JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-            throw new SQLException("Failed to query Ignite.", e);
+            resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.getQueryId(), pageSize,
+                res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
+                closeOnCompletion));
         }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite [err=\"" + e.getMessage() + "\"]", e);
+        else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
+            JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
+
+            List<JdbcResultInfo> resInfos = res.results();
+
+            resultSets = new ArrayList<>(resInfos.size());
+
+            boolean firstRes = true;
+
+            for(JdbcResultInfo rsInfo : resInfos) {
+                if (!rsInfo.isQuery()) {
+                    resultSets.add(new JdbcThinResultSet(this, -1, pageSize,
+                        true, Collections.<List<Object>>emptyList(), false,
+                        conn.autoCloseServerCursor(), rsInfo.updateCount(), closeOnCompletion));
+                }
+                else {
+                    if (firstRes) {
+                        firstRes = false;
+
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
+                            res.isLast(), res.items(), true,
+                            conn.autoCloseServerCursor(), -1, closeOnCompletion));
+                    }
+                    else {
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
+                            false, null, true,
+                            conn.autoCloseServerCursor(), -1, closeOnCompletion));
+                    }
+                }
+            }
         }
+        else
+            throw new SQLException("Unexpected result [res=" + res0 + ']');
+
+        assert resultSets.size() > 0 : "At least one results set is expected";
     }
 
     /** {@inheritDoc} */
@@ -158,10 +193,23 @@ public class JdbcThinStatement implements Statement {
         if (isClosed())
             return;
 
-        if (rs != null)
-            rs.close0();
+        closeResults();
 
         closed = true;
+    }
+
+    /**
+     * Close results.
+     * @throws SQLException On error.
+     */
+    private void closeResults() throws SQLException {
+        if (resultSets != null) {
+            for (JdbcThinResultSet rs : resultSets)
+                rs.close0();
+
+            resultSets = null;
+            curRes = 0;
+        }
     }
 
     /** {@inheritDoc} */
@@ -250,31 +298,39 @@ public class JdbcThinStatement implements Statement {
 
         execute0(JdbcStatementType.ANY_STATEMENT_TYPE, sql, null);
 
-        return rs.isQuery();
+        return resultSets.get(0).isQuery();
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getResultSet() throws SQLException {
-        JdbcThinResultSet rs = lastResultSet();
+        JdbcThinResultSet rs = nextResultSet();
 
-        ResultSet res = rs == null || !rs.isQuery() ? null : rs;
+        if (rs == null)
+            return null;
 
-        if (res != null)
-            alreadyRead = true;
+        if (!rs.isQuery()) {
+            curRes--;
 
-        return res;
+            return null;
+        }
+
+        return rs;
     }
 
     /** {@inheritDoc} */
     @Override public int getUpdateCount() throws SQLException {
-        JdbcThinResultSet rs = lastResultSet();
+        JdbcThinResultSet rs = nextResultSet();
 
-        int res = rs == null || rs.isQuery() ? -1 : (int)rs.updatedCount();
+        if (rs == null)
+            return -1;
 
-        if (res != -1)
-            alreadyRead = true;
+        if (rs.isQuery()) {
+            curRes--;
 
-        return res;
+            return -1;
+        }
+
+        return (int)rs.updatedCount();
     }
 
     /**
@@ -283,13 +339,13 @@ public class JdbcThinStatement implements Statement {
      * @return Result set or null.
      * @throws SQLException If failed.
      */
-    private JdbcThinResultSet lastResultSet() throws SQLException {
+    private JdbcThinResultSet nextResultSet() throws SQLException {
         ensureNotClosed();
 
-        if (rs == null || alreadyRead)
+        if (resultSets == null || curRes >= resultSets.size())
             return null;
-
-        return rs;
+        else
+            return resultSets.get(curRes++);
     }
 
     /** {@inheritDoc} */
@@ -366,32 +422,20 @@ public class JdbcThinStatement implements Statement {
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        if (rs != null) {
-            rs.close0();
-
-            rs = null;
-        }
-
-        alreadyRead = false;
+        closeResults();
 
         if (batch == null || batch.isEmpty())
             throw new SQLException("Batch is empty.");
 
         try {
-            JdbcBatchExecuteResult res = conn.io().batchExecute(conn.getSchema(), batch);
+            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch));
 
-            if (res.errorCode() != SqlListenerResponse.STATUS_SUCCESS)
-                throw new BatchUpdateException(res.errorMessage(), null, res.errorCode(), res.updateCounts());
+            if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
+                throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
+                    res.errorCode(), res.updateCounts());
+            }
 
             return res.updateCounts();
-        }
-        catch (IOException e) {
-            conn.close();
-
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
         }
         finally {
             batch = null;
@@ -409,22 +453,32 @@ public class JdbcThinStatement implements Statement {
     @Override public boolean getMoreResults(int curr) throws SQLException {
         ensureNotClosed();
 
-        switch (curr) {
-            case CLOSE_CURRENT_RESULT:
-            case CLOSE_ALL_RESULTS:
-                if (rs != null)
-                    rs.close();
+        if (resultSets != null) {
+            assert curRes <= resultSets.size() : "Invalid results state: [resultsCount=" + resultSets.size() +
+                ", curRes=" + curRes + ']';
 
-                break;
+            switch (curr) {
+                case CLOSE_CURRENT_RESULT:
+                    if (curRes > 0)
+                        resultSets.get(curRes - 1).close0();
 
-            case KEEP_CURRENT_RESULT:
-                break;
+                    break;
 
-            default:
-                throw new SQLException("Invalid 'current' parameter.");
+                case CLOSE_ALL_RESULTS:
+                    for (int i = 0; i < curRes; ++i)
+                        resultSets.get(i).close0();
+
+                    break;
+
+                case KEEP_CURRENT_RESULT:
+                    break;
+
+                default:
+                    throw new SQLException("Invalid 'current' parameter.");
+            }
         }
 
-        return false;
+        return (resultSets != null && curRes < resultSets.size());
     }
 
     /** {@inheritDoc} */
@@ -546,8 +600,10 @@ public class JdbcThinStatement implements Statement {
 
         closeOnCompletion = true;
 
-        if (rs != null)
-            rs.closeStatement(true);
+        if (resultSets != null) {
+            for (JdbcThinResultSet rs : resultSets)
+                rs.closeStatement(true);
+        }
     }
 
     /** {@inheritDoc} */
@@ -581,5 +637,26 @@ public class JdbcThinStatement implements Statement {
     protected void ensureNotClosed() throws SQLException {
         if (isClosed())
             throw new SQLException("Statement is closed.");
+    }
+
+    /**
+     * Used by statement on closeOnCompletion mode.
+     * @throws SQLException On error.
+     */
+    void closeIfAllResultsClosed() throws SQLException {
+        if (isClosed())
+            return;
+
+        boolean allRsClosed = true;
+
+        if (resultSets != null) {
+            for (JdbcThinResultSet rs : resultSets) {
+                if (!rs.isClosed())
+                    allRsClosed = false;
+            }
+        }
+
+        if (allRsClosed)
+            close();
     }
 }

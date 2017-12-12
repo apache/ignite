@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Resource;
@@ -209,9 +210,11 @@ namespace Apache.Ignite.Core
         /// Starts Ignite with given configuration.
         /// </summary>
         /// <returns>Started Ignite.</returns>
-        public static unsafe IIgnite Start(IgniteConfiguration cfg)
+        public static IIgnite Start(IgniteConfiguration cfg)
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
+
+            cfg = new IgniteConfiguration(cfg);  // Create a copy so that config can be modified and reused.
 
             lock (SyncRoot)
             {
@@ -224,11 +227,10 @@ namespace Apache.Ignite.Core
                 CheckServerGc(cfg, log);
 
                 // 2. Create context.
-                IgniteUtils.LoadDlls(cfg.JvmDllPath, log);
+                JvmDll.Load(cfg.JvmDllPath, log);
 
-                var cbs = new UnmanagedCallbacks(log);
-
-                IgniteManager.CreateJvmContext(cfg, cbs, log);
+                var cbs = IgniteManager.CreateJvmContext(cfg, log);
+                var env = cbs.Jvm.AttachCurrentThread();
                 log.Debug("JVM started.");
 
                 var gridName = cfg.IgniteInstanceName;
@@ -246,8 +248,8 @@ namespace Apache.Ignite.Core
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null);
-
+                    UU.IgnitionStart(env, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null, cbs.IgniteId,
+                        cfg.RedirectJavaConsoleOutput);
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
@@ -266,7 +268,7 @@ namespace Apache.Ignite.Core
 
                     return node;
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     // 1. Perform keys cleanup.
                     string name = _startup.Name;
@@ -281,7 +283,7 @@ namespace Apache.Ignite.Core
 
                     // 2. Stop Ignite node if it was started.
                     if (interopProc != null)
-                        UU.IgnitionStop(interopProc.Target.Context, gridName, true);
+                        UU.IgnitionStop(gridName, true);
 
                     // 3. Throw error further (use startup error if exists because it is more precise).
                     if (_startup.Error != null)
@@ -291,7 +293,14 @@ namespace Apache.Ignite.Core
                             _startup.Error);
                     }
 
-                    throw;
+                    var jex = ex as JavaException;
+
+                    if (jex == null)
+                    {
+                        throw;
+                    }
+
+                    throw ExceptionUtils.GetException(null, jex);
                 }
                 finally
                 {
@@ -452,7 +461,9 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="interopProc">Interop processor.</param>
         /// <param name="stream">Stream.</param>
-        internal static void OnStart(IUnmanagedTarget interopProc, IBinaryStream stream)
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "PlatformJniTarget is passed further")]
+        internal static void OnStart(GlobalRef interopProc, IBinaryStream stream)
         {
             try
             {
@@ -539,6 +550,7 @@ namespace Apache.Ignite.Core
                     {
                         Assembly assembly = Assembly.LoadFrom(s);
 
+                        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                         if (assembly != null)
                             continue;
                     }

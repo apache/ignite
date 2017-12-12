@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Performs a send-receive operation.
         /// </summary>
         public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc)
+            Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
             var requestId = Interlocked.Increment(ref _requestId);
 
@@ -88,13 +88,22 @@ namespace Apache.Ignite.Core.Impl.Client
                 var resRequestId = stream.ReadLong();
                 Debug.Assert(requestId == resRequestId);
 
-                if (readFunc != null)
-                {
-                    return readFunc(stream);
-                }
-            }
+                var statusCode = (ClientStatusCode) stream.ReadInt();
 
-            return default(T);
+                if (statusCode == ClientStatusCode.Success)
+                {
+                    return readFunc != null ? readFunc(stream) : default(T);
+                }
+
+                var msg = BinaryUtils.Marshaller.StartUnmarshal(stream).ReadString();
+
+                if (errorFunc != null)
+                {
+                    return errorFunc(statusCode, msg);
+                }
+
+                throw new IgniteClientException(msg, null, statusCode);
+            }
         }
 
         /// <summary>
@@ -130,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 var errMsg = BinaryUtils.Marshaller.Unmarshal<string>(stream);
 
-                throw new IgniteException(string.Format(
+                throw new IgniteClientException(string.Format(
                     "Client handhsake failed: '{0}'. Client version: {1}. Server version: {2}",
                     errMsg, version, serverVersion));
             }
@@ -159,7 +168,11 @@ namespace Apache.Ignite.Core.Impl.Client
                     
                     buf = new byte[size];
                     received = sock.Receive(buf);
-                    Debug.Assert(received == buf.Length);
+
+                    while (received < size)
+                    {
+                        received += sock.Receive(buf, received, size - received, SocketFlags.None);
+                    }
 
                     return buf;
                 }
@@ -188,6 +201,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Connects the socket.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", 
+            Justification = "Socket is returned from this method.")]
         private static Socket Connect(IgniteClientConfiguration cfg)
         {
             List<Exception> errors = null;
@@ -198,10 +213,18 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     var socket = new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
                     {
-                        SendBufferSize = cfg.SocketSendBufferSize,
-                        ReceiveBufferSize = cfg.SocketReceiveBufferSize,
                         NoDelay = cfg.TcpNoDelay
                     };
+
+                    if (cfg.SocketSendBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
+                    {
+                        socket.SendBufferSize = cfg.SocketSendBufferSize;
+                    }
+
+                    if (cfg.SocketReceiveBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
+                    {
+                        socket.ReceiveBufferSize = cfg.SocketReceiveBufferSize;
+                    }
 
                     socket.Connect(ipEndPoint);
 
