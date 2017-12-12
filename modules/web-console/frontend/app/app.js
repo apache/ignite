@@ -129,6 +129,7 @@ import protectFromBsSelectRender from './components/protect-from-bs-select-rende
 import uiGridHovering from './components/ui-grid-hovering';
 import listEditable from './components/list-editable';
 import clusterSelector from './components/cluster-selector';
+import connectedClusters from './components/connected-clusters';
 
 import igniteServices from './services';
 
@@ -136,6 +137,7 @@ import igniteServices from './services';
 import IgniteModules from 'IgniteModules/index';
 
 import baseTemplate from 'views/base.pug';
+import * as icons from '../public/images/icons';
 
 angular.module('ignite-console', [
     // Optional AngularJS modules.
@@ -206,6 +208,7 @@ angular.module('ignite-console', [
     AngularStrapSelect.name,
     listEditable.name,
     clusterSelector.name,
+    connectedClusters.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -323,4 +326,5 @@ angular.module('ignite-console', [
                 .catch(Messages.showError);
         };
     }
-]);
+])
+.run(['IgniteIcon', (IgniteIcon) => IgniteIcon.registerIcons(icons)]);

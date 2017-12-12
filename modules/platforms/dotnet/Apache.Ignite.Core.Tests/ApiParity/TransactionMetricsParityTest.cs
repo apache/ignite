@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,25 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math;
 
-import java.io.Externalizable;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
+namespace Apache.Ignite.Core.Tests.ApiParity
+{
+    using Apache.Ignite.Core.Transactions;
+    using NUnit.Framework;
 
-/**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Interface for distance measures of n-dimensional vectors.
- */
-public interface DistanceMeasure extends Externalizable {
-    /**
-     * Compute the distance between two n-dimensional vectors.
-     * <p>
-     * The two vectors are required to have the same dimension.
-     *
-     * @param a the first vector
-     * @param b the second vector
-     * @return the distance between the two vectors
-     * @throws CardinalityException if the array lengths differ.
-     */
-    public double compute(Vector a, Vector b) throws CardinalityException;
+    /// <summary>
+    /// Tests that <see cref="ITransactionMetrics"/> has all APIs from Java Ignite interface.
+    /// </summary>
+    public class TransactionMetricsParityTest
+    {
+        /// <summary>
+        /// Tests the API parity.
+        /// </summary>
+        [Test]
+        public void TestTransactionMetrics()
+        {
+            ParityTest.CheckInterfaceParity(
+                @"modules\core\src\main\java\org\apache\ignite\transactions\TransactionMetrics.java",
+                typeof(ITransactionMetrics));
+        }
+    }
 }
