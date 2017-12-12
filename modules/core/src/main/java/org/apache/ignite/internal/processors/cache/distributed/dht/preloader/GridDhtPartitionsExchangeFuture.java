@@ -597,9 +597,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     exchange = onCacheChangeRequest(crdNode);
                 }
                 else if (msg instanceof SnapshotDiscoveryMessage) {
-                    exchange = CU.clientNode(firstDiscoEvt.eventNode()) ?
-                        onClientNodeEvent(crdNode) :
-                        onServerNodeEvent(crdNode);
+                    exchange = onCustomMessageNoAffinityChange(crdNode);
                 }
                 else {
                     assert affChangeMsg != null : this;
@@ -917,6 +915,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !exchActions.clientOnlyExchange() : exchActions;
 
         cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+
+        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+    }
+
+    /**
+     * @param crd Coordinator flag.
+     * @return Exchange type.
+     */
+    private ExchangeType onCustomMessageNoAffinityChange(boolean crd) {
+        cctx.affinity().onCustomMessageNoAffinityChange(this, crd, exchActions);
 
         return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
     }
