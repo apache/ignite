@@ -1221,6 +1221,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return maxWalSegmentSize;
     }
 
+    /** */  //todo remove if it is not needed anymore
+    public int currentIndex() {
+        FileWriteHandle handle = currentHandle();
+        if (handle == null)
+            return -1;
+        return (int)handle.idx;
+    }
+
     /**
      * File archiver operates on absolute segment indexes. For any given absolute segment index N we can calculate
      * the work WAL segment: S(N) = N % dsCfg.walSegments.
@@ -2217,7 +2225,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * File handle for one log segment.
      */
     @SuppressWarnings("SignalWithoutCorrespondingAwait")
-    private class FileWriteHandle extends FileHandle {
+    public class FileWriteHandle extends FileHandle {
         /** */
         private final RecordSerializer serializer;
 

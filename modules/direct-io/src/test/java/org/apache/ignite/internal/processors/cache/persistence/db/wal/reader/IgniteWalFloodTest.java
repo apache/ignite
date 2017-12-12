@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottle;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -249,6 +250,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
                     cpWrittenPages = cntr == null ? 0 : cntr.get();
                     double threshold = 0;
+                    int idx = -1;
                     try {
                         PageMemoryImpl pageMemory = (PageMemoryImpl)cacheSctx.database()
                             .dataRegion(defRegName).pageMemory();
@@ -256,7 +258,10 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
                         PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
 
-                        threshold = (double)U.field(throttle, "lastDirtyRatioThreshold");
+                        threshold = U.field(throttle, "lastDirtyRatioThreshold");
+
+                        FileWriteAheadLogManager wal = (FileWriteAheadLogManager) cacheSctx.wal();
+                        idx = wal.currentIndex();
                     }
                     catch (IgniteCheckedException e) {
                         e.printStackTrace();
@@ -264,14 +269,14 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
                     X.println(" >> " +
                         operationComplete +
-                        " " + totalCnt + ", time " + elapsedMs + " ms," +
-                        " Average " +
-                        operation + " " + averagePutPerSec + " recs/sec, current " +
-                        operation + " " + currPutPerSec + " recs/sec " +
+                        " " + totalCnt + ", time " + elapsedMs + " ms, " +
+                        "Avg. " + operation + " " + averagePutPerSec + " recs/sec, " +
+                        "Cur. " + operation + " " + currPutPerSec + " recs/sec " +
                         "dirty=" + dirtyPages + ", " +
                         "cpWrittenPages=" + cpWrittenPages + ", " +
                         "cpBufPages=" + cpBufPages + " " +
                         "threshold=" + threshold + " " +
+                        "walIdx=" + idx + " " +
                         fileNameWithDump);
 
                 }
