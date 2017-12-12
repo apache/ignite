@@ -175,7 +175,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
 
         for (int i = 0; i < neighbors.length; i++) {
             LabeledVector neighbor = neighbors[i];
-            double clsLb = (double)neighbor.label(); // TODO: handle different types, not double only
+            double clsLb = (double)neighbor.label();
 
             double distance = cachedDistances != null ? cachedDistances[i] : distanceMeasure.compute(v, neighbor.features());
 
