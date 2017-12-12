@@ -18,13 +18,11 @@
 breadcrumbs {
     $side-margin: 5px;
 
-    &, .#{&}__links {
-        padding-left: $side-margin;
-        padding-right: $side-margin;
-        display: inline-flex;
-        align-items: center;        
-        flex-direction: row;
-    }
+    padding-left: $side-margin;
+    padding-right: $side-margin;
+    display: inline-flex;
+    align-items: center;
+    flex-direction: row;
 
     height: 26px;
     border-radius: 4px;
@@ -37,6 +35,10 @@ breadcrumbs {
 
     .#{&}__home {
         margin-left: $side-margin;
+        margin-right: $side-margin;
+        vertical-align: -1px;
+        width: 12px;
+        height: 12px;
     }
 
     [ui-sref] + [ui-sref]:before {

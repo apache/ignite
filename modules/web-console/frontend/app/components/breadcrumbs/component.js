@@ -17,11 +17,22 @@
 
 import template from './template.pug';
 import './style.scss';
-import home from './home.svg';
 
 export class Breadcrumbs {
-    constructor() {
-        this.home = home;
+    static $inject = ['$transclude', '$element'];
+    /**
+     * @param {ng.ITranscludeFunction} $transclude
+     * @param {JQLite} $element
+     */
+    constructor($transclude, $element) {
+        this.$transclude = $transclude;
+        this.$element = $element;
+    }
+    $postLink() {
+        this.$transclude((clone) => {
+            clone.first().prepend(this.$element.find('.breadcrumbs__home'));
+            this.$element.append(clone);
+        });
     }
 }
 
