@@ -392,11 +392,13 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final CountDownLatch rollbackLatch = new CountDownLatch(1);
 
+        final int loops = 100;
+
         IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 U.awaitQuiet(lockLatch);
 
-                for (int i = 0; i < 2; i++) {
+                for (int i = 0; i < loops; i++) {
                     try (Transaction tx = rNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
                         rollbackLatch.countDown();
 
@@ -419,7 +421,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 int i = 0;
 
-                while(i < 2) {
+                while(i < loops) {
                     for (Transaction tx : rNode.transactions().localActiveTransactions()) {
                         i++;
 
