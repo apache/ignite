@@ -52,11 +52,11 @@ public class GridCacheLocalMetricsSelfTest extends GridCacheTransactionalAbstrac
 
     /** {@inheritDoc} */
     @Override public void testOptimisticDeadlocks() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5440");
+        fail("https://issues.apache.org/jira/browse/IGNITE-6782");
     }
 
     /** {@inheritDoc} */
     @Override public void testOptimisticDeadlocksOnClient() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5440");
+        fail("https://issues.apache.org/jira/browse/IGNITE-6782");
     }
 }
