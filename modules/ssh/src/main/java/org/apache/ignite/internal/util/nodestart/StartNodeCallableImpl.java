@@ -180,15 +180,17 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             String scriptOutputDir;
 
-            if (win) {
-                String tmpDir = env(ses, "%TEMP%", "C:\\Windows\\Temp", WINDOWS_ENCODING);
+            String dfltLogDir = igniteHome + "/work/log";
 
-                scriptOutputDir = tmpDir + "\\ignite-startNodes";
+            if (win) {
+                String logDir = env(ses, "%TMPDIR%", dfltLogDir, WINDOWS_ENCODING);
+
+                scriptOutputDir = logDir + "\\ignite-startNodes";
             }
             else { // Assume Unix.
-                String tmpDir = env(ses, "$TMPDIR", "/tmp/");
+                String logDir = env(ses, "$TMPDIR", dfltLogDir);
 
-                scriptOutputDir = tmpDir + "ignite-startNodes";
+                scriptOutputDir = logDir + "/ignite-startNodes";
             }
 
             String scriptOutputPath = scriptOutputDir + separator + scriptOutputFileName;
