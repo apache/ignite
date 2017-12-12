@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -38,11 +37,14 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @SuppressWarnings("unused")
 public class IgniteCacheReplicatedJoinSelfTest extends GridCommonAbstractTest {
-    /** */
-    public static final String REP_CACHE_NAME = "repCache";
+    /** Client node name. */
+    public static final String NODE_CLI = "client";
 
     /** */
-    public static final String PART_CACHE_NAME = "partCache";
+    public static final String CACHE_PARTITIONED = "partitioned";
+
+    /** */
+    public static final String CACHE_REPLICATED = "replicated";
 
     /** */
     public static final int REP_CNT = 3;
@@ -52,11 +54,11 @@ public class IgniteCacheReplicatedJoinSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode("client".equals(igniteInstanceName));
+        cfg.setClientMode(F.eq(NODE_CLI, igniteInstanceName));
 
-        CacheConfiguration<Integer, PartValue> ccfg1 = new CacheConfiguration<>(PART_CACHE_NAME);
+        CacheConfiguration<Integer, PartValue> ccfg1 = new CacheConfiguration<>(CACHE_PARTITIONED);
 
         ccfg1.setCacheMode(PARTITIONED);
         ccfg1.setAtomicityMode(TRANSACTIONAL);
@@ -64,7 +66,7 @@ public class IgniteCacheReplicatedJoinSelfTest extends GridCommonAbstractTest {
         ccfg1.setIndexedTypes(Integer.class, PartValue.class);
         ccfg1.setSqlSchema(QueryUtils.DFLT_SCHEMA);
 
-        CacheConfiguration<Integer, RepValue> ccfg2 = new CacheConfiguration<>(REP_CACHE_NAME);
+        CacheConfiguration<Integer, RepValue> ccfg2 = new CacheConfiguration<>(CACHE_REPLICATED);
 
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, REP_CNT));
         ccfg2.setCacheMode(REPLICATED);
@@ -78,28 +80,35 @@ public class IgniteCacheReplicatedJoinSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**{@inheritDoc}  */
+    @Override protected void beforeTest() throws Exception {
+        startGridsMultiThreaded(3);
+
+        Ignite cli = startGrid(NODE_CLI);
+
+        for (int i = 0; i < REP_CNT; i++)
+            cli.cache(CACHE_REPLICATED).put(i, new RepValue(i));
+
+        for (int i = 0; i < PART_CNT; i++)
+            cli.cache(CACHE_PARTITIONED).put(i, new PartValue(i, ((i + 1) % REP_CNT)));
+    }
+
+    /**{@inheritDoc}  */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * Test non-colocated join.
      *
      * @throws Exception If failed.
      */
     public void testJoinNonCollocated() throws Exception {
-        startGridsMultiThreaded(3);
+        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT COUNT(*) FROM PartValue p, RepValue r WHERE p.repId=r.id");
 
-        final Ignite client = startGrid("client");
+        long cnt = (Long)grid(NODE_CLI).cache(CACHE_PARTITIONED).query(qry).getAll().get(0).get(0);
 
-        for (int i = 0; i < REP_CNT; i++)
-            client.cache(REP_CACHE_NAME).put(i, new RepValue(i));
-
-        for (int i = 0; i < PART_CNT; i++)
-            client.cache(PART_CACHE_NAME).put(i, new PartValue(i, ((i + 1) % REP_CNT)));
-
-        final FieldsQueryCursor<List<?>> qry = client.cache(PART_CACHE_NAME).
-            query(new SqlFieldsQuery("select * from PartValue p, RepValue r where p.repId=r.id"));
-
-        final List<List<?>> all = qry.getAll();
-
-        assertEquals(PART_CNT, all.size());
+        assertEquals(PART_CNT, cnt);
     }
 
     /**
