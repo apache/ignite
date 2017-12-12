@@ -127,18 +127,6 @@ public class ZookeeperDiscoveryImpl {
     private final GridFutureAdapter<Void> joinFut = new GridFutureAdapter<>();
 
     /** */
-    private final AliveNodeDataWatcher aliveNodeDataWatcher = new AliveNodeDataWatcher();
-
-    /** */
-    private final ZkWatcher watcher;
-
-    /** */
-    private final ZKChildrenCallback childrenCallback;
-
-    /** */
-    private final ZkDataCallback dataCallback;
-
-    /** */
     private final int evtsAckThreshold;
 
     /** */
@@ -196,10 +184,6 @@ public class ZookeeperDiscoveryImpl {
         this.lsnr = lsnr;
         this.exchange = exchange;
         this.clientReconnectEnabled = locNode.isClient() && !spi.isClientReconnectDisabled();
-
-        watcher = new ZkWatcher();
-        childrenCallback = new ZKChildrenCallback();
-        dataCallback = new ZkDataCallback();
 
         int evtsAckThreshold = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD, 5);
 
@@ -342,7 +326,7 @@ public class ZookeeperDiscoveryImpl {
                 return;
         }
 
-        rtState.zkClient.onCloseStart();
+        rtState.onCloseStart();
 
         busyLock.block();
 
@@ -764,6 +748,8 @@ public class ZookeeperDiscoveryImpl {
 
             final ZkRuntimeState rtState = this.rtState;
 
+            rtState.init(new ZkWatcher(rtState), new AliveNodeDataWatcher(rtState));
+
             ZookeeperClient zkClient = rtState.zkClient;
 
             final int OVERHEAD = 5;
@@ -818,9 +804,9 @@ public class ZookeeperDiscoveryImpl {
 
             spi.getSpiContext().addTimeoutObject(rtState.joinTimeoutObj);
 
-            zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback());
+            zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback(rtState));
 
-            zkClient.getDataAsync(zkPaths.evtsPath, watcher, dataCallback);
+            zkClient.getDataAsync(zkPaths.evtsPath, rtState.watcher, rtState.watcher);
         }
         catch (IgniteCheckedException | ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
@@ -968,7 +954,7 @@ public class ZookeeperDiscoveryImpl {
                 "locId=" + locNode.id() +
                 ", prevPath=" + prevE.getValue() + ']');
 
-            PreviousNodeWatcher watcher = new PreviousNodeWatcher();
+            PreviousNodeWatcher watcher = new PreviousNodeWatcher(rtState);
 
             rtState.zkClient.existsAsync(zkPaths.aliveNodesDir + "/" + prevE.getValue(), watcher, watcher);
         }
@@ -988,7 +974,7 @@ public class ZookeeperDiscoveryImpl {
         if (log.isInfoEnabled())
             log.info("Previous node failed, check is node new coordinator [locId=" + locNode.id() + ']');
 
-        rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback());
+        rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback(rtState));
     }
 
     /**
@@ -1023,8 +1009,8 @@ public class ZookeeperDiscoveryImpl {
             newClusterStarted(locInternalId);
         }
 
-        rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, watcher, childrenCallback);
-        rtState.zkClient.getChildrenAsync(zkPaths.customEvtsDir, watcher, childrenCallback);
+        rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, rtState.watcher, rtState.watcher);
+        rtState.zkClient.getChildrenAsync(zkPaths.customEvtsDir, rtState.watcher, rtState.watcher);
 
         for (String alivePath : aliveNodes)
             watchAliveNodeData(alivePath);
@@ -1039,7 +1025,7 @@ public class ZookeeperDiscoveryImpl {
         String path = zkPaths.aliveNodesDir + "/" + alivePath;
 
         if (!path.equals(rtState.locNodeZkPath))
-            rtState.zkClient.getDataAsync(path, aliveNodeDataWatcher, aliveNodeDataWatcher);
+            rtState.zkClient.getDataAsync(path, rtState.aliveNodeDataWatcher, rtState.aliveNodeDataWatcher);
     }
 
     /**
@@ -1940,7 +1926,7 @@ public class ZookeeperDiscoveryImpl {
     public void simulateNodeFailure() {
         zkClient().deleteIfExistsAsync(zkPaths.aliveNodesDir);
 
-        zkClient().onCloseStart();
+        rtState.onCloseStart();
 
         zkClient().close();
     }
@@ -2014,7 +2000,7 @@ public class ZookeeperDiscoveryImpl {
         if (failedNode.isLocal()) {
             U.warn(log, "Received EVT_NODE_FAILED for local node.");
 
-            zkClient().onCloseStart();
+            rtState.onCloseStart();
 
             if (locNode.isClient() && clientReconnectEnabled) {
                 boolean reconnect = false;
@@ -2315,8 +2301,7 @@ public class ZookeeperDiscoveryImpl {
 
         ZookeeperClient zkClient = rtState.zkClient;
 
-        if (zkClient != null)
-            zkClient.onCloseStart();
+        rtState.onCloseStart();
 
         busyLock.block();
 
@@ -2410,6 +2395,8 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void run() {
+            rtState.closing = true;
+
             busyLock.block();
 
             busyLock.unblock();
@@ -2455,45 +2442,136 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
-    private class ZkWatcher implements Watcher {
-        /** {@inheritDoc} */
-        @Override public void process(WatchedEvent evt) {
-            if (!busyLock.enterBusy())
-                return;
+    abstract class ZkCallabck {
+        /** */
+        final ZkRuntimeState rtState;
 
-            try {
-                if (evt.getType() == Event.EventType.NodeDataChanged) {
-                    if (evt.getPath().equals(zkPaths.evtsPath)) {
-                        if (!rtState.crd)
-                            rtState.zkClient.getDataAsync(evt.getPath(), this, dataCallback);
-                    }
-                    else
-                        U.warn(log, "Received NodeDataChanged for unexpected path: " + evt.getPath());
-                }
-                else if (evt.getType() == Event.EventType.NodeChildrenChanged) {
-                    if (evt.getPath().equals(zkPaths.aliveNodesDir))
-                        rtState.zkClient.getChildrenAsync(evt.getPath(), this, childrenCallback);
-                    else if (evt.getPath().equals(zkPaths.customEvtsDir))
-                        rtState.zkClient.getChildrenAsync(evt.getPath(), this, childrenCallback);
-                    else
-                        U.warn(log, "Received NodeChildrenChanged for unexpected path: " + evt.getPath());
-                }
+        /**
+         * @param rtState Runtime state.
+         */
+        ZkCallabck(ZkRuntimeState rtState) {
+            this.rtState = rtState;
+        }
 
-                busyLock.leaveBusy();
-            }
-            catch (Throwable e) {
-                onFatalError(busyLock, e);
-            }
+        /**
+         * @return {@code True} if is able to start processing.
+         */
+        final boolean onProcessStart() {
+            return !rtState.closing && busyLock.enterBusy();
+        }
+
+        /**
+         *
+         */
+        final void onProcessEnd() {
+            busyLock.leaveBusy();
+        }
+
+        /**
+         * @param e Error.
+         */
+        final void onProcessError(Throwable e) {
+            onFatalError(busyLock, e);
         }
     }
 
     /**
      *
      */
-    private class ZKChildrenCallback implements AsyncCallback.Children2Callback {
+    abstract class AbstractWatcher extends ZkCallabck implements Watcher {
+        /**
+         * @param rtState Runtime state.
+         */
+        AbstractWatcher(ZkRuntimeState rtState) {
+            super(rtState);
+        }
+
+        /** {@inheritDoc} */
+        @Override public final void process(WatchedEvent evt) {
+            if (!onProcessStart())
+                return;
+
+            try {
+                process0(evt);
+
+                onProcessEnd();
+            }
+            catch (Throwable e) {
+                onProcessError(e);
+            }
+        }
+
+        /**
+         * @param evt Event.
+         * @throws Exception If failed.
+         */
+        protected abstract void process0(WatchedEvent evt) throws Exception;
+    }
+
+    /**
+     *
+     */
+    abstract class AbstractChildrenCallback extends ZkCallabck implements AsyncCallback.Children2Callback {
+        /**
+         * @param rtState Runtime state.
+         */
+        AbstractChildrenCallback(ZkRuntimeState rtState) {
+            super(rtState);
+        }
+
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
-            if (!busyLock.enterBusy())
+            if (!onProcessStart())
+                return;
+
+            try {
+                processResult0(rc, path, ctx, children, stat);
+
+                onProcessEnd();
+            }
+            catch (Throwable e) {
+                onProcessError(e);
+            }
+        }
+
+        abstract void processResult0(int rc, String path, Object ctx, List<String> children, Stat stat)
+            throws Exception;
+    }
+
+    /**
+     *
+     */
+    private class ZkWatcher extends AbstractWatcher implements ZkRuntimeState.ZkWatcher {
+        /**
+         * @param rtState Runtime state.
+         */
+        ZkWatcher(ZkRuntimeState rtState) {
+            super(rtState);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void process0(WatchedEvent evt) {
+            if (evt.getType() == Event.EventType.NodeDataChanged) {
+                if (evt.getPath().equals(zkPaths.evtsPath)) {
+                    if (!rtState.crd)
+                        rtState.zkClient.getDataAsync(evt.getPath(), this, this);
+                }
+                else
+                    U.warn(log, "Received NodeDataChanged for unexpected path: " + evt.getPath());
+            }
+            else if (evt.getType() == Event.EventType.NodeChildrenChanged) {
+                if (evt.getPath().equals(zkPaths.aliveNodesDir))
+                    rtState.zkClient.getChildrenAsync(evt.getPath(), this, this);
+                else if (evt.getPath().equals(zkPaths.customEvtsDir))
+                    rtState.zkClient.getChildrenAsync(evt.getPath(), this, this);
+                else
+                    U.warn(log, "Received NodeChildrenChanged for unexpected path: " + evt.getPath());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
+            if (!onProcessStart())
                 return;
 
             try {
@@ -2506,21 +2584,16 @@ public class ZookeeperDiscoveryImpl {
                 else
                     U.warn(log, "Children callback for unexpected path: " + path);
 
-                busyLock.leaveBusy();
+                onProcessEnd();
             }
             catch (Throwable e) {
-                onFatalError(busyLock, e);
+                onProcessError(e);
             }
         }
-    }
 
-    /**
-     *
-     */
-    private class ZkDataCallback implements AsyncCallback.DataCallback {
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
-            if (!busyLock.enterBusy())
+            if (!onProcessStart())
                 return;
 
             try {
@@ -2533,10 +2606,10 @@ public class ZookeeperDiscoveryImpl {
                 else
                     U.warn(log, "Data callback for unknown path: " + path);
 
-                busyLock.leaveBusy();
+                onProcessEnd();
             }
             catch (Throwable e) {
-                onFatalError(busyLock, e);
+                onProcessError(e);
             }
         }
     }
@@ -2544,26 +2617,23 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
-    private class AliveNodeDataWatcher implements Watcher, AsyncCallback.DataCallback {
+    private class AliveNodeDataWatcher extends AbstractWatcher implements ZkRuntimeState.ZkAliveNodeDataWatcher {
+        /**
+         * @param rtState Runtime state.
+         */
+        AliveNodeDataWatcher(ZkRuntimeState rtState) {
+            super(rtState);
+        }
+
         /** {@inheritDoc} */
-        @Override public void process(WatchedEvent evt) {
-            if (!busyLock.enterBusy())
-                return;
-
-            try {
-                if (evt.getType() == Event.EventType.NodeDataChanged)
-                    rtState.zkClient.getDataAsync(evt.getPath(), this, this);
-
-                busyLock.leaveBusy();
-            }
-            catch (Throwable e) {
-                onFatalError(busyLock, e);
-            }
+        @Override public void process0(WatchedEvent evt) {
+            if (evt.getType() == Event.EventType.NodeDataChanged)
+                rtState.zkClient.getDataAsync(evt.getPath(), this, this);
         }
 
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
-            if (!busyLock.enterBusy())
+            if (!onProcessStart())
                 return;
 
             try {
@@ -2571,10 +2641,10 @@ public class ZookeeperDiscoveryImpl {
 
                 processResult0(rc, path, data);
 
-                busyLock.leaveBusy();
+                onProcessEnd();
             }
             catch (Throwable e) {
-                onFatalError(busyLock, e);
+                onProcessError(e);
             }
         }
 
@@ -2619,30 +2689,27 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
-    private class PreviousNodeWatcher implements Watcher, AsyncCallback.StatCallback {
+    private class PreviousNodeWatcher extends AbstractWatcher implements AsyncCallback.StatCallback {
+        /**
+         * @param rtState Runtime state.
+         */
+        PreviousNodeWatcher(ZkRuntimeState rtState) {
+            super(rtState);
+        }
+
         /** {@inheritDoc} */
-        @Override public void process(WatchedEvent evt) {
-            if (!busyLock.enterBusy())
-                return;
-
-            try {
-                if (evt.getType() == Event.EventType.NodeDeleted)
-                    onPreviousNodeFail();
-                else {
-                    if (evt.getType() != Event.EventType.None)
-                        rtState.zkClient.existsAsync(evt.getPath(), this, this);
-                }
-
-                busyLock.leaveBusy();
-            }
-            catch (Throwable e) {
-                onFatalError(busyLock, e);
+        @Override public void process0(WatchedEvent evt) {
+            if (evt.getType() == Event.EventType.NodeDeleted)
+                onPreviousNodeFail();
+            else {
+                if (evt.getType() != Event.EventType.None)
+                    rtState.zkClient.existsAsync(evt.getPath(), this, this);
             }
         }
 
         /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, Stat stat) {
-            if (!busyLock.enterBusy())
+            if (!onProcessStart())
                 return;
 
             try {
@@ -2651,10 +2718,10 @@ public class ZookeeperDiscoveryImpl {
                 if (rc == KeeperException.Code.NONODE.intValue() || stat == null)
                     onPreviousNodeFail();
 
-                busyLock.leaveBusy();
+                onProcessEnd();
             }
             catch (Throwable e) {
-                onFatalError(busyLock, e);
+                onProcessError(e);
             }
         }
     }
@@ -2662,22 +2729,19 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
-    class CheckCoordinatorCallback implements  AsyncCallback.Children2Callback {
+    class CheckCoordinatorCallback extends AbstractChildrenCallback {
+        /**
+         * @param rtState Runtime state.
+         */
+        CheckCoordinatorCallback(ZkRuntimeState rtState) {
+            super(rtState);
+        }
+
         /** {@inheritDoc} */
-        @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
-            if (!busyLock.enterBusy())
-                return;
+        @Override public void processResult0(int rc, String path, Object ctx, List<String> children, Stat stat) throws Exception {
+            assert rc == 0 : KeeperException.Code.get(rc);
 
-            try {
-                assert rc == 0 : KeeperException.Code.get(rc);
-
-                checkIsCoordinator(rc, children);
-
-                busyLock.leaveBusy();
-            }
-            catch (Throwable e) {
-                onFatalError(busyLock, e);
-            }
+            checkIsCoordinator(rc, children);
         }
     }
 

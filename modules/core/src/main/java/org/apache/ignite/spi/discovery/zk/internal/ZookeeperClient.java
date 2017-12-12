@@ -348,7 +348,8 @@ public class ZookeeperClient implements Watcher {
                 return zk.create(path, data, ZK_ACL, createMode);
             }
             catch (KeeperException.NodeExistsException e) {
-                log.info("Node already exists: " + path);
+                if (log.isDebugEnabled())
+                    log.debug("Node already exists: " + path);
 
                 return path;
             }
@@ -391,7 +392,8 @@ public class ZookeeperClient implements Watcher {
                         if (children.get(i).startsWith(checkPrefix)) {
                             String resPath = parentPath + "/" + child;
 
-                            log.info("Check before retry, node already created: " + resPath);
+                            if (log.isDebugEnabled())
+                                log.debug("Check before retry, node already created: " + resPath);
 
                             return resPath;
                         }
@@ -403,7 +405,8 @@ public class ZookeeperClient implements Watcher {
             catch (KeeperException.NodeExistsException e) {
                 assert !createMode.isSequential() : createMode;
 
-                log.info("Node already exists: " + path);
+                if (log.isDebugEnabled())
+                    log.debug("Node already exists: " + path);
 
                 return path;
             }

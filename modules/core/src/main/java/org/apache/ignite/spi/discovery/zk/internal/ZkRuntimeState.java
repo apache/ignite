@@ -18,11 +18,22 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
+import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.Watcher;
 
 /**
  *
  */
 class ZkRuntimeState {
+    /** */
+    ZkWatcher watcher;
+
+    /** */
+    ZkAliveNodeDataWatcher aliveNodeDataWatcher;
+
+    /** */
+    volatile boolean closing;
+
     /** */
     final boolean prevJoined;
 
@@ -67,5 +78,40 @@ class ZkRuntimeState {
      */
     ZkRuntimeState(boolean prevJoined) {
         this.prevJoined = prevJoined;
+    }
+
+    /**
+     * @param watcher Watcher.
+     * @param aliveNodeDataWatcher Alive nodes data watcher.
+     */
+    void init(ZkWatcher watcher, ZkAliveNodeDataWatcher aliveNodeDataWatcher) {
+        this.watcher = watcher;
+        this.aliveNodeDataWatcher = aliveNodeDataWatcher;
+    }
+
+    /**
+     *
+     */
+    void onCloseStart() {
+        closing = true;
+
+        ZookeeperClient zkClient = this.zkClient;
+
+        if (zkClient != null)
+            zkClient.onCloseStart();
+    }
+
+    /**
+     *
+     */
+    interface ZkWatcher extends Watcher, AsyncCallback.Children2Callback, AsyncCallback.DataCallback {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    interface ZkAliveNodeDataWatcher extends Watcher, AsyncCallback.DataCallback {
+        // No-op.
     }
 }
