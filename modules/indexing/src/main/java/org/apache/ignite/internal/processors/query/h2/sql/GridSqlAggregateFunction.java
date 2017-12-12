@@ -126,7 +126,7 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
         if (type == COUNT_ALL)
             return "COUNT(*)";
 
-        StatementBuilder buff = new StatementBuilder(name() + "(");
+        StatementBuilder buff = new StatementBuilder(name()).append('(');
 
         if (distinct)
             buff.append("DISTINCT ");
@@ -147,7 +147,7 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
         }
 
         if (groupConcatSeparator != null)
-            buff.append(" SEPARATOR " + groupConcatSeparator.getSQL());
+            buff.append(" SEPARATOR ").append(groupConcatSeparator.getSQL());
 
         buff.append(')');
 
