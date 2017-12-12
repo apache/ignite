@@ -76,7 +76,6 @@ import org.jetbrains.annotations.Nullable;
  *      <li>Client configuration (see {@link #setClientConfiguration(ClientConfiguration)})</li>
  *      <li>Bucket endpoint (see {@link #setBucketEndpoint(String)})</li>
  *      <li>Server side encryption algorithm (see {@link #setSSEAlgorithm(String)})</li>
- * <li>{@link #setBucketEndpoint(String)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * {@link S3CheckpointSpi} can be configured as follows:
