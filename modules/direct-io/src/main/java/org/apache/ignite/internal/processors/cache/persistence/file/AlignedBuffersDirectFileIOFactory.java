@@ -41,7 +41,6 @@ import static java.nio.file.StandardOpenOption.WRITE;
  * This IO tries to minimize cache effects of the I/O (page caching by OS). <br> <br>
  * In general this will degrade performance, but it is useful in special
  * situations, such as when applications do their own caching.<br>
- * <b>Note: </b> Only byte buffers rewinded to position 0 are supported now, as it is in page store.<br>
  */
 public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
     /** Logger. */
@@ -114,8 +113,8 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
                 };
 
                 if (log.isInfoEnabled()) {
-                    log.info(String.format("Direct IO is enabled for block IO operations on aligned memory structures" +
-                        " [block size = %d, durable memory page size=%d]", blkSize, pageSize));
+                    log.info(String.format("Direct IO is enabled for block IO operations on aligned memory structures." +
+                        " [block size = %d, durable memory page size = %d]", blkSize, pageSize));
                 }
             }
         }

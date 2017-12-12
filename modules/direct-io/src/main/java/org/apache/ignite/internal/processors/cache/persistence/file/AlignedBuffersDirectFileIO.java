@@ -22,6 +22,7 @@ import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import java.io.File;
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
@@ -41,6 +42,9 @@ import sun.nio.ch.DirectBuffer;
  * Works only for Linux
  */
 public class AlignedBuffersDirectFileIO implements FileIO {
+    /** Negative value for file offset: read/write starting from current file position */
+    private static final int FILE_POS_USE_CURRENT = -1;
+
     /** File system & linux block size. Minimal amount of data can be written using DirectIO. */
     private final int fsBlockSize;
 
@@ -154,63 +158,35 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destBuf) throws IOException {
-        int size = checkSizeIsPadded(destBuf.remaining());
-
-        if (isKnownAligned(destBuf)) {
-            int loaded = readAligned(destBuf);
-
-            if (loaded < 0)
-                return loaded;
-
-            return moveBufPosition(destBuf, loaded);
-        }
-
-        boolean useTlb = size == pageSize;
-        ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
-
-        try {
-            int loaded = readAligned(alignedBuf);
-
-            if (loaded < 0)
-                return loaded;
-
-            AlignedBuffers.copyMemory(alignedBuf, destBuf);
-
-            return moveBufPosition(destBuf, loaded);
-        }
-        finally {
-            if (!useTlb)
-                AlignedBuffers.free(alignedBuf);
-        }
+        return read(destBuf, FILE_POS_USE_CURRENT);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+    @Override public int read(ByteBuffer destBuf, long filePosition) throws IOException {
         int size = checkSizeIsPadded(destBuf.remaining());
 
-        if (isKnownAligned(destBuf)) {
-            int loaded = readAligned(destBuf, position);
-
-            if (loaded < 0)
-                return loaded;
-
-            return moveBufPosition(destBuf, loaded);
-        }
+        if (isKnownAligned(destBuf))
+            return readIntoAlignedBuffer(destBuf, filePosition);
 
         boolean useTlb = size == pageSize;
         ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
 
         try {
-            int loaded = readAligned(alignedBuf, position);
+            assert alignedBuf.position() == 0: "Temporary aligned buffer is in incorrect state: position is set incorrectly";
+            assert alignedBuf.limit() == size: "Temporary aligned buffer is in incorrect state: limit is set incorrectly";
 
-            if (loaded < 0)
-                return loaded;
+            int loaded = readIntoAlignedBuffer(alignedBuf, filePosition);
 
-            AlignedBuffers.copyMemory(alignedBuf, destBuf);
+            alignedBuf.flip();
 
-            return moveBufPosition(destBuf, loaded);
+            if (loaded > 0)
+                  destBuf.put(alignedBuf);
+
+            return loaded;
         }
         finally {
+            alignedBuf.clear();
+
             if (!useTlb)
                 AlignedBuffers.free(alignedBuf);
         }
@@ -218,80 +194,58 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(byte[] buf, int off, int len) throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        return read(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
-        int size = checkSizeIsPadded(srcBuf.remaining());
-
-        if (isKnownAligned(srcBuf)) {
-            int written = writeAligned(srcBuf);
-
-            return moveBufPosition(srcBuf, written);
-        }
-
-        boolean useTlb = size == pageSize;
-        ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
-
-        try {
-            AlignedBuffers.copyMemory(srcBuf, alignedBuf);
-
-            int written = writeAligned(alignedBuf);
-
-            return moveBufPosition(srcBuf, written);
-        }
-        finally {
-            if (!useTlb)
-                AlignedBuffers.free(alignedBuf);
-        }
+        return write(srcBuf, FILE_POS_USE_CURRENT);
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+    @Override public int write(ByteBuffer srcBuf, long filePosition) throws IOException {
         int size = checkSizeIsPadded(srcBuf.remaining());
 
-        if (isKnownAligned(srcBuf)) {
-            int written = writeAligned(srcBuf, position);
-
-            return moveBufPosition(srcBuf, written);
-        }
+        if (isKnownAligned(srcBuf))
+            return writeFromAlignedBuffer(srcBuf, filePosition);
 
         boolean useTlb = size == pageSize;
         ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
 
         try {
-            AlignedBuffers.copyMemory(srcBuf, alignedBuf);
+            assert alignedBuf.position() == 0 : "Temporary aligned buffer is in incorrect state: position is set incorrectly";
+            assert alignedBuf.limit() == size : "Temporary aligned buffer is in incorrect state: limit is set incorrectly";
 
-            int written = writeAligned(alignedBuf, position);
+            int initPos = srcBuf.position();
 
-            return moveBufPosition(srcBuf, written);
+            alignedBuf.put(srcBuf);
+            alignedBuf.flip();
+
+            srcBuf.position(initPos); // will update later from write results
+
+            int written = writeFromAlignedBuffer(alignedBuf, filePosition);
+
+            if (written > 0)
+                srcBuf.position(initPos + written);
+
+            return written;
         }
         finally {
+            alignedBuf.clear();
+
             if (!useTlb)
                 AlignedBuffers.free(alignedBuf);
         }
     }
 
     /**
-     * @param srcBuf buffer to change position.
-     * @param bytes number of bytes to move.
-     * @return position delta.
-     */
-    private int moveBufPosition(ByteBuffer srcBuf, int bytes) {
-        srcBuf.position(srcBuf.position() + bytes);
-
-        return bytes;
-    }
-
-    /**
-     * Checks if we can run fast path, well known buffer is already aligned.
+     * Checks if we can run fast path: we got well known buffer is already aligned.
      *
      * @param srcBuf buffer to check if it is known buffer.
      * @return {@code true} if this buffer was allocated with alignment, may be used directly.
      */
     private boolean isKnownAligned(ByteBuffer srcBuf) {
-        return srcBuf instanceof DirectBuffer
+        return srcBuf.isDirect()
             && managedAlignedBuffers != null
             && managedAlignedBuffers.containsKey(GridUnsafe.bufferAddress(srcBuf));
     }
@@ -331,39 +285,38 @@ public class AlignedBuffersDirectFileIO implements FileIO {
      * Read bytes from file using Native IO and aligned buffers.
      *
      * @param destBuf Destination aligned byte buffer.
-     * @param filePos Starting position of file.
+     * @param filePos Starting position of file. Providing {@link #FILE_POS_USE_CURRENT} means it is required
+     *     to read from current file position.
      * @return number of bytes read from file, or <tt>-1</tt> if tried to read past EOF for file.
      * @throws IOException if reading failed.
      */
-    private int readAligned(ByteBuffer destBuf, long filePos) throws IOException {
-        int rd = IgniteNativeIoLib.pread(fdCheckOpened(), bufferPtr(destBuf), nl(destBuf.remaining()),
-            nl(filePos)).intValue();
+    private int readIntoAlignedBuffer(ByteBuffer destBuf, long filePos) throws IOException {
+        int pos = destBuf.position();
+        int limit = destBuf.limit();
+        int toRead = pos <= limit ? limit - pos : 0;
 
-        if (rd == 0)
-            return -1;
+        if (toRead == 0)
+            return 0;
 
-        if (rd < 0)
-            throw new IOException(String.format("Error during reading file [%s] : %s", file, getLastError()));
+        if ((pos + toRead) > destBuf.capacity())
+            throw new BufferOverflowException();
 
-        return rd;
-    }
+        int rd;
+        Pointer ptr = bufferPtrAtPosition(destBuf, pos);
 
-
-    /**
-     * Read bytes from file using Native IO and aligned buffers.
-     *
-     * @param destBuf Destination aligned byte buffer.
-     * @return number of bytes read from file, or <tt>-1</tt> if tried to read past EOF for file.
-     * @throws IOException if reading failed.
-     */
-    private int readAligned(ByteBuffer destBuf) throws IOException {
-        int rd = IgniteNativeIoLib.read(fdCheckOpened(), bufferPtr(destBuf), nl(destBuf.remaining())).intValue();
+        if (filePos == FILE_POS_USE_CURRENT)
+            rd = IgniteNativeIoLib.read(fdCheckOpened(), ptr, nl(toRead)).intValue();
+        else
+            rd = IgniteNativeIoLib.pread(fdCheckOpened(), ptr, nl(toRead), nl(filePos)).intValue();
 
         if (rd == 0)
             return -1; //Tried to read past EOF for file
 
         if (rd < 0)
-            throw new IOException(String.format("Error during reading file [%s] : %s", file, getLastError()));
+            throw new IOException(String.format("Error during reading file [%s] from position [%s] : %s",
+                file, filePos == FILE_POS_USE_CURRENT ? "current" : Long.toString(filePos), getLastError()));
+
+        destBuf.position(pos + rd);
 
         return rd;
     }
@@ -372,33 +325,33 @@ public class AlignedBuffersDirectFileIO implements FileIO {
      * Writes the aligned native buffer starting at {@code buf} to the file at offset
      * {@code filePos}. The file offset is not changed.
      *
-     * @param buf pointer to buffer.
-     * @param filePos position in file to write data.
+     * @param srcBuf pointer to buffer.
+     * @param filePos position in file to write data. Providing {@link #FILE_POS_USE_CURRENT} means it is required
+     *     to read from current file position.
      * @return the number of bytes written.
      */
-    private int writeAligned(ByteBuffer buf, long filePos) throws IOException {
-        int wr = IgniteNativeIoLib.pwrite(fdCheckOpened(), bufferPtr(buf), nl(buf.remaining()), nl(filePos)).intValue();
+    private int writeFromAlignedBuffer(ByteBuffer srcBuf, long filePos) throws IOException {
+        int pos = srcBuf.position();
+        int limit = srcBuf.limit();
+        int toWrite = pos <= limit ? limit - pos : 0;
+
+        if (toWrite == 0)
+            return 0;
+
+        int wr;
+        Pointer ptr = bufferPtrAtPosition(srcBuf, pos);
+
+        if (filePos == FILE_POS_USE_CURRENT)
+            wr = IgniteNativeIoLib.write(fdCheckOpened(), ptr, nl(toWrite)).intValue();
+        else
+            wr = IgniteNativeIoLib.pwrite(fdCheckOpened(), ptr, nl(toWrite), nl(filePos)).intValue();
 
         if (wr < 0) {
-            throw new IOException(String.format("Error during writing file [%s] to position [%d]: %s",
-                file, filePos, getLastError()));
+            throw new IOException(String.format("Error during writing file [%s] to position [%s]: %s",
+                file, filePos == FILE_POS_USE_CURRENT ? "current" : Long.toString(filePos), getLastError()));
         }
 
-        return wr;
-    }
-
-    /**
-     * Writes the aligned native buffer starting at {@code buf} to the file at offset
-     * {@code filePos}. The file offset is changed.
-     *
-     * @param buf pointer to buffer.
-     * @return the number of bytes written.
-     */
-    private int writeAligned(ByteBuffer buf) throws IOException {
-        int wr = IgniteNativeIoLib.write(fdCheckOpened(), bufferPtr(buf), nl(buf.remaining())).intValue();
-
-        if (wr < 0)
-            throw new IOException(String.format("Error during writing file [%s] : %s", file, getLastError()));
+        srcBuf.position(pos + wr);
 
         return wr;
     }
@@ -435,30 +388,33 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     /**
-     * Gets address in memory for direct aligned buffer. Produces warnings if data or offset seems to be not aligned.
+     * Gets address in memory for direct aligned buffer taking into account its current {@code position()} as offset.
+     * Produces warnings if data or offset seems to be not aligned.
      *
      * @param buf Direct aligned buffer.
+     * @param pos position, used as offset for resulting pointer.
      * @return Buffer memory address.
      */
-    @NotNull private Pointer bufferPtr(ByteBuffer buf) {
+    @NotNull private Pointer bufferPtrAtPosition(ByteBuffer buf, int pos) {
         long alignedPointer = GridUnsafe.bufferAddress(buf);
 
-        if ((alignedPointer) % fsBlockSize != 0) {
-            U.warn(log, String.format("IO Buffer Pointer [%d] seems to be not aligned for FS block size [%d]. " +
-                "Direct IO may fail.", alignedPointer, fsBlockSize));
-        }
+        if (pos < 0)
+            throw new IllegalArgumentException();
 
-        if ((alignedPointer + buf.position()) % fsBlockSize != 0) {
+        if (pos > buf.capacity())
+            throw new BufferOverflowException();
+
+        if ((alignedPointer + pos) % fsBlockSize != 0) {
             U.warn(log, String.format("IO Buffer Pointer [%d] and/or offset [%d] seems to be not aligned " +
                 "for FS block size [%d]. Direct IO may fail.", alignedPointer, buf.position(), fsBlockSize));
         }
 
-        return new Pointer(alignedPointer);
+        return new Pointer(alignedPointer + pos);
     }
 
     /** {@inheritDoc} */
     @Override public void write(byte[] buf, int off, int len) throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        write(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */
