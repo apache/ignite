@@ -346,8 +346,8 @@ public class IgniteNativeIoLib {
      * kernel to perform appropriate optimizations.
      *
      * The advice applies to a (not necessarily existent) region starting at
-     * {@code offset} and extending for {@code len} bytes (or until the end of the file if len is 0)
-     * within the file referred to by fd.
+     * {@code off} and extending for {@code len} bytes (or until the end of the file if len is 0)
+     * within the file referred to by {@code fd}.
      *
      * See "man 2 posix_fadvise", and code sample http://elixir.free-electrons.com/linux/latest/source/mm/fadvise.c#L117
      *
@@ -355,7 +355,20 @@ public class IgniteNativeIoLib {
      * @param off region start.
      * @param len region end.
      * @param flag advice (option) to apply.
-     * @return On success, zero is returned.  On error, an error number is returned.
+     * @return On success, zero is returned. On error, an error number is returned.
      */
     public static native int posix_fadvise(int fd, long off, long len, int flag);
+
+    /**
+     * The function posix_fallocate() ensures that disk space is allocated for the file referred to by the file
+     * descriptor fd for the bytes in the range starting at offset and continuing for len bytes. After a
+     * successful call to posix_fallocate(), subsequent writes to bytes in the specified range are guaranteed
+     * not to fail because of lack of disk space.
+     *
+     * @param fd file descriptor.
+     * @param off region start.
+     * @param len region end.
+     * @return On success, zero is returned. On error, an error number is returned.
+     */
+    public static native int posix_fallocate(int fd, long off, long len);
 }
