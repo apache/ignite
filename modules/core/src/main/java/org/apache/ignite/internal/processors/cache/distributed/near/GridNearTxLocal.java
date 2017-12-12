@@ -3376,12 +3376,40 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return retFut;
             }
             else {
-                if (lockFut0 instanceof GridDhtColocatedLockFuture)
-                    ((GridDhtColocatedLockFuture)lockFut0).onRollback(rollbackException());
-                else if (lockFut0 instanceof GridNearLockFuture)
-                    ((GridNearLockFuture)lockFut0).onRollback(rollbackException());
+                final GridFutureAdapter retFut = new GridFutureAdapter<>();
 
-                assert lockFut0.isDone();
+                final IgniteInternalFuture<Boolean> lockFutFinal = lockFut0;
+
+                fut0.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                    @Override public void apply(IgniteInternalFuture fut) {
+                        // Complete lock lock future after rollback.
+                        if (lockFutFinal instanceof GridDhtColocatedLockFuture)
+                            ((GridDhtColocatedLockFuture)lockFutFinal).onRollback(rollbackException());
+                        else if (lockFutFinal instanceof GridNearLockFuture)
+                            ((GridNearLockFuture)lockFutFinal).onRollback(rollbackException());
+
+                        assert lockFutFinal.isDone();
+
+                        try {
+                            retFut.onDone(fut.get());
+                        }
+                        catch (GridClosureException e) {
+                            retFut.onDone(e.unwrap());
+                        }
+                        catch (IgniteCheckedException | RuntimeException e) {
+                            retFut.onDone(e);
+                        }
+                        catch (Error e) {
+                            retFut.onDone(e);
+
+                            throw e;
+                        }
+                    }
+                });
+
+                finishAsync(fut0, clearThreadMap);
+
+                return retFut;
             }
         }
 

@@ -423,6 +423,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     for (Transaction tx : rNode.transactions().localActiveTransactions()) {
                         i++;
 
+                        log.info("Rolledback: " + tx.xid());
+
                         tx.rollbackAsync();
                     }
                 }
