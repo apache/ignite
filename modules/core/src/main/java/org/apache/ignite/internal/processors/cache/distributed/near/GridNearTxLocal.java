@@ -3306,6 +3306,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
+        log.info("Starting rollback TRANSACTION " + xidVersion());
+
         if (!clearThreadMap) {
             if (state() == ACTIVE)
                 state(MARKED_ROLLBACK);
@@ -3316,14 +3318,31 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         NearTxFinishFuture fut = finishFut;
 
-        if (fut != null)
+        if (fut != null) {
+            log.info("Wait finish TRANSACTION " + xidVersion());
+
             return chainFinishFuture(finishFut, false);
+        }
+
+        IgniteInternalFuture<Boolean> lockFut0 = lockFut;
+
+        if (updateLockFuture(null, ROLLBACK_FUT))
+            lockFut0 = null;
 
         if (fastFinish()) {
+            log.info("fastFinish TRANSACTION " + xidVersion() + " " + state() + " " + lockFut);
+
+            if (lockFut0 != null) {
+                System.out.println();
+            }
+
             GridNearTxFastFinishFuture fut0;
 
-            if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
+            if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false))) {
+                log.info("fastFinish 2 TRANSACTION " + xidVersion() + " " + state());
+
                 return chainFinishFuture(finishFut, false);
+            }
 
             fut0.finish(clearThreadMap);
 
@@ -3332,13 +3351,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final GridNearTxFinishFuture fut0;
 
-        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false)))
+        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false))) {
+            log.info("Fail set finish TRANSACTION " + xidVersion());
+
             return chainFinishFuture(finishFut, false);
-
-        IgniteInternalFuture<Boolean> lockFut0 = lockFut;
-
-        if (updateLockFuture(null, ROLLBACK_FUT))
-            lockFut0 = null;
+        }
 
         if (lockFut0 != null) {
             if (onTimeout) {
@@ -3380,8 +3397,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 final IgniteInternalFuture<Boolean> lockFutFinal = lockFut0;
 
+                log.info("Before rollback TRANSACTION: " + xidVersion());
+
                 fut0.listen(new IgniteInClosure<IgniteInternalFuture>() {
                     @Override public void apply(IgniteInternalFuture fut) {
+                        log.info("After rollback TRANSACTION: " + xidVersion());
+
                         // Complete lock lock future after rollback.
                         if (lockFutFinal instanceof GridDhtColocatedLockFuture)
                             ((GridDhtColocatedLockFuture)lockFutFinal).onRollback(rollbackException());
@@ -3411,6 +3432,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 return retFut;
             }
+        }
+        else {
+            log.info("Null lock TRANSACTION: " + xidVersion());
         }
 
         finishAsync(fut0, clearThreadMap);

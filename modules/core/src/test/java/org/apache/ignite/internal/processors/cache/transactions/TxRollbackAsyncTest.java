@@ -34,10 +34,15 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -394,15 +399,32 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final int loops = 100;
 
+        final IgniteKernal k = (IgniteKernal)rNode;
+
+        final GridCacheSharedContext<Object, Object> ctx = k.context().cache().context();
+
+        final GridCacheContext<Object, Object> cctx = ctx.cacheContext(CU.cacheId(CACHE_NAME));
+
         IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 U.awaitQuiet(lockLatch);
 
                 for (int i = 0; i < loops; i++) {
+
+                    GridNearTxLocal locTx = ctx.tm().threadLocalTx(cctx);
+
+                    assertTrue((i == 0 && locTx == null) || locTx.isRollbackOnly());
+
+                    rollbackLatch.countDown();
+
                     try (Transaction tx = rNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                        rollbackLatch.countDown();
+                        log.info("Started TRANSACTION: " + ((TransactionProxyImpl)tx).tx().xidVersion());
 
                         rNode.cache(CACHE_NAME).get(0);
+
+                        locTx = ctx.tm().threadLocalTx(cctx);
+
+                        assertTrue(locTx.isRollbackOnly());
 
                         fail();
                     }
@@ -413,19 +435,21 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             }
         }, 1, "tx-thread");
 
-        Thread.sleep(100);
+        final AtomicBoolean stop = new AtomicBoolean();
 
         IgniteInternalFuture<?> rollbackFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 U.awaitQuiet(rollbackLatch);
 
+                doSleep(50);
+
                 int i = 0;
 
-                while(i < loops) {
+                while(!stop.get()) {
                     for (Transaction tx : rNode.transactions().localActiveTransactions()) {
                         i++;
 
-                        log.info("Rolledback: " + tx.xid());
+                        log.info("Rolled back TRANSACTION: " + ((TransactionProxyImpl)tx).tx().xidVersion());
 
                         tx.rollbackAsync();
                     }
@@ -433,13 +457,17 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             }
         }, 1, "rollback-thread");
 
+        doSleep(25000);
+
+        stop.set(true);
+
+        rollbackFut.get();
+
         txFut.get();
 
         commitLatch.countDown();
 
         lockFut.get();
-
-        rollbackFut.get();
 
         checkFutures();
     }
