@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 
 /** Standalone test to run verification on existent store */
-public class IgniteWalFloodVerifyTest  extends IgniteWalFloodTest {
+public class IgniteWalFloodVerifyTest extends IgniteWalFloodTest {
 
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op. //super.beforeTestsStarted();
@@ -40,9 +40,10 @@ public class IgniteWalFloodVerifyTest  extends IgniteWalFloodTest {
         try {
             System.setProperty(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, "true");
 
+            setWalArchAndWorkToSameValue = true;
             customWalMode = WALMode.LOG_ONLY;
 
-            final int threads = 10;
+            final int threads = 16;
 
             int recsPerThread = CONTINUOUS_PUT_RECS_CNT / threads;
             runVerification(threads, recsPerThread);

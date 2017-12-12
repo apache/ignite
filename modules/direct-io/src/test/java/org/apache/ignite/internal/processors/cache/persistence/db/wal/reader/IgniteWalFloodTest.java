@@ -79,7 +79,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
     public static final int CONTINUOUS_PUT_RECS_CNT = 400_000;
 
     /** */
-    private boolean setWalArchAndWorkToSameValue;
+    protected boolean setWalArchAndWorkToSameValue;
 
     /** */
     private String cacheName;
@@ -321,7 +321,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
             final IgniteCache<Object, IndexedObject> cache = ignite.cache(CACHE_NAME);
             int totalRecs = CONTINUOUS_PUT_RECS_CNT;
-            final int threads = 4;
+            final int threads = 32;
 
             final int recsPerThread = totalRecs / threads;
             final Collection<Callable<?>> tasks = new ArrayList<>();
