@@ -42,8 +42,9 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
     private double[][] dataRect2 = createAndFill(SIZE, SIZE / 2);
 
     /** */
+    @SuppressWarnings("unused")
     @IgniteInstanceResource
-    Ignite ignite;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
