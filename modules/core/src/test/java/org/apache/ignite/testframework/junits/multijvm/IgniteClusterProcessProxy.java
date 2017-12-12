@@ -326,7 +326,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void setBaselineTopology(Collection<BaselineNode> baselineTop) {
+    @Override public void setBaselineTopology(Collection<? extends BaselineNode> baselineTop) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
