@@ -122,6 +122,11 @@ public class JdbcThinConnection implements Connection {
 
             cliIo.start();
         }
+        catch (SQLException e) {
+            cliIo.close();
+
+            throw e;
+        }
         catch (Exception e) {
             cliIo.close();
 

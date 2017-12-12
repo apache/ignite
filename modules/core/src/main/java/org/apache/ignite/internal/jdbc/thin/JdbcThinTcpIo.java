@@ -42,15 +42,6 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import java.util.ArrayList;
-import java.util.List;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -145,13 +136,9 @@ public class JdbcThinTcpIo {
 
                 sock = sslSocketFactory.createSocket(connProps.getHost(), connProps.getPort());
 
-                System.out.println("+++" + sock.getSoTimeout());
-
-                sock.setSoTimeout(1000);
-
-        if (connProps.getSocketSendBuffer() != 0)
-            sock.setSendBufferSize(connProps.getSocketSendBuffer());
                 ((SSLSocket)sock).setUseClientMode(true);
+
+                System.out.println("+++ HANDSHAKE");
                 ((SSLSocket)sock).startHandshake();
             }
             catch (IOException e) {
@@ -162,8 +149,6 @@ public class JdbcThinTcpIo {
         else {
             sock = new Socket();
 
-        if (connProps.getSocketReceiveBuffer() != 0)
-            sock.setReceiveBufferSize(connProps.getSocketReceiveBuffer());
             try {
                 sock.connect(new InetSocketAddress(connProps.getHost(), connProps.getPort()));
             }
@@ -173,7 +158,6 @@ public class JdbcThinTcpIo {
             }
         }
 
-        sock.setTcpNoDelay(connProps.isTcpNoDelay());
         if (connProps.getSocketSendBuffer() != 0)
             sock.setSendBufferSize(connProps.getSocketSendBuffer());
 
@@ -183,16 +167,11 @@ public class JdbcThinTcpIo {
         sock.setTcpNoDelay(connProps.isTcpNoDelay());
 
         try {
-            sock.connect(new InetSocketAddress(connProps.getHost(), connProps.getPort()));
-
             endpoint = new IpcClientTcpEndpoint(sock);
 
             out = new BufferedOutputStream(endpoint.outputStream());
             in = new BufferedInputStream(endpoint.inputStream());
         }
-        catch (IOException | IgniteCheckedException e) {
-            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
-                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         catch (IgniteCheckedException e) {
             throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
                 ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);

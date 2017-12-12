@@ -17,21 +17,23 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
-public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinConnectionSSLToPlainServerTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -84,14 +86,17 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"EmptyTryBlock", "unused"})
-    public void testDefaults() throws Exception {
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true&" +
-            "clientCertificateKeyStoreUrl=modules/client/src/test/keystore/client.jks&" +
-            "clientCertificateKeyStorePassword=123456&" +
-            "trustCertificateKeyStoreUrl=modules/client/src/test/keystore/client.jks&" +
-            "trustCertificateKeyStorePassword=123456")) {
-            conn.setSchema("PUBLIC");
-        }
+    public void test() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true&" +
+                    "clientCertificateKeyStoreUrl=modules/client/src/test/keystore/client.jks&" +
+                    "clientCertificateKeyStorePassword=123456&" +
+                    "trustCertificateKeyStoreUrl=modules/client/src/test/keystore/client.jks&" +
+                    "trustCertificateKeyStorePassword=123456");
+
+                return null;
+            }
+        }, SQLException.class, "Failed to SSL connect to server");
     }
 }
