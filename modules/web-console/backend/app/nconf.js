@@ -17,6 +17,9 @@
 
 'use strict';
 
+const fs = require('fs');
+const nconf = require('nconf');
+
 // Fire me up!
 
 /**
@@ -24,8 +27,7 @@
  */
 module.exports = {
     implements: 'nconf',
-    inject: ['require(nconf)', 'require(fs)'],
-    factory(nconf, fs) {
+    factory() {
         nconf.env({separator: '_'}).argv();
 
         const dfltFile = 'config/settings.json';
