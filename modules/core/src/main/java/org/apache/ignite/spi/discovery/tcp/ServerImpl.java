@@ -6430,9 +6430,10 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param msg Discovery message.
          *
-         * @return 0 - message was not processed, 1 - message was fully processed, continue serving the socket,
-         * 2 - message was fully processed and the socket should be closed,
-         * 3 - message should be ignored, reply to the sender and continue serving the socket.
+         * @return 0 - message was not processed,
+         * 1 - message was fully processed, continue serving the socket,
+         * 2 - message was fully processed, the socket should be closed,
+         * 3 - message should be silently ignored, reply to the sender and continue serving the socket.
          */
         private int processMessageInplace(TcpDiscoveryAbstractMessage msg) throws IOException {
             if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
@@ -6502,21 +6503,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 return 1;
             }
-            else if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                TcpDiscoveryNodeAddedMessage addMsg = (TcpDiscoveryNodeAddedMessage) msg;
-
-                synchronized (mux) {
-                    if (spiState == CONNECTING && locNode.internalOrder() != addMsg.node().internalOrder()) {
-                        Collection<TcpDiscoveryNode> top = addMsg.topology();
-
-                        if (top != null && !top.isEmpty())
-                            return 0;
-                    }
-                }
-
-                // Skip message processing and close the socket
-                return 2;
-            }
             else if (msg instanceof TcpDiscoveryStatusCheckMessage)
                 // Skip ignoreNodeMessage() check and add the message to the queue
                 return 0;
@@ -6529,6 +6515,21 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     // Skip message processing and keep the socket opened
                     return 3;
+                }
+                else if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                    TcpDiscoveryNodeAddedMessage addMsg = (TcpDiscoveryNodeAddedMessage) msg;
+
+                    synchronized (mux) {
+                        if (spiState == CONNECTING && locNode.internalOrder() != addMsg.node().internalOrder()) {
+                            Collection<TcpDiscoveryNode> top = addMsg.topology();
+
+                            if (top != null && !top.isEmpty())
+                                return 0;
+                        }
+                    }
+
+                    // Skip message processing and close the socket
+                    return 2;
                 }
 
                 U.warn(log, "Ignore the message and disconnect [nodeId=" + nodeId + ", msg=" + msg);
