@@ -25,6 +25,8 @@ import java.util.TreeMap;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,9 +36,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class PartitionAllocationMap {
     /** Maps following pairs: (groupId, partId) -> (lastAllocatedCount, allocatedCount) */
+    @GridToStringInclude
     private final NavigableMap<GroupPartitionId, PagesAllocationRange> map = new TreeMap<>();
 
     /** Partitions forced to be skipped. */
+    @GridToStringInclude
     private final Set<GroupPartitionId> skippedParts = new HashSet<>();
 
     /**
@@ -134,5 +138,10 @@ public class PartitionAllocationMap {
      */
     public PagesAllocationRange put(GroupPartitionId key, PagesAllocationRange val) {
         return !skippedParts.contains(key) ? map.put(key, val) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionAllocationMap.class, this);
     }
 }
