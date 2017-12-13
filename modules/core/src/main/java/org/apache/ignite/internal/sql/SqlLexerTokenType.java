@@ -47,6 +47,9 @@ public enum SqlLexerTokenType {
     /** Semicolon. */
     SEMICOLON(';'),
 
+    /** Equals sign. */
+    EQUALS('='),
+
     /** End of string. */
     EOF;
 

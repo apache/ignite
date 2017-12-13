@@ -84,6 +84,15 @@ public class SqlLexer implements SqlLexerToken {
     }
 
     /**
+     * Gets the current token as SqlLexerToken object.
+     *
+     * @return The current token object.
+     */
+    public SqlLexerToken currentToken() {
+        return new SqlLexerLookAheadToken(sql, token, tokenPos, tokenTyp);
+    }
+
+    /**
      * Shift lexer to the next position.
      *
      * @return {@code True} if next token was found, {@code false} in case of end-of-file.

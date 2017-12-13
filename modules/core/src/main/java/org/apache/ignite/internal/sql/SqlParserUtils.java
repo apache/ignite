@@ -21,6 +21,8 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
 
+import java.util.Arrays;
+
 import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
@@ -223,6 +225,40 @@ public class SqlParserUtils {
         throw errorUnexpectedToken(lex, tokenTyp.asString());
     }
 
+    /** FIXME */
+    public static boolean skipOptionalEqSign(SqlLexer lex) {
+        if (lex.lookAhead().tokenType() == SqlLexerTokenType.EQUALS) {
+            lex.shift();
+            return true;
+        }
+        else
+            return false;
+    }
+
+    /** FIXME */
+    public static void parseOptionallyQuotedId(SqlLexer lex, String paramDesc, Setter<String> setter) {
+        SqlLexerToken nextTok = lex.lookAhead();
+
+        switch (nextTok.tokenType()) {
+            case QUOTED:
+                lex.shift();
+
+                setter.apply(lex.token(), true);
+
+                return;
+
+            case DEFAULT:
+                lex.shift();
+
+                setter.apply(lex.token(), false);
+
+                return;
+
+            default:
+                throw errorUnexpectedToken(nextTok, "[optionally quoted " + paramDesc + "]");
+        }
+    }
+
     /**
      * Create parse exception referring to current lexer position.
      *
@@ -358,6 +394,151 @@ public class SqlParserUtils {
         }
 
         throw error(token, msg.toString());
+    }
+
+    /** FIXME */
+    public static <T extends Enum<T>> T parseEnumIfSpecified(SqlLexer lex, Class<T> enumClass, T defaultVal) {
+        SqlLexerToken nextTok = lex.lookAhead();
+
+        if (nextTok.tokenType() == SqlLexerTokenType.DEFAULT) {
+            try {
+                T val = Enum.valueOf(enumClass, nextTok.token().trim().toUpperCase());
+
+                lex.shift();
+
+                return val;
+            }
+            catch(IllegalArgumentException e) {
+                // Fall through
+            }
+        }
+
+        return defaultVal;
+    }
+
+    /** FIXME */
+    public static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumClass) {
+        T val = parseEnumIfSpecified(lex, enumClass, null);
+
+        if (val != null)
+            return val;
+
+        throw errorUnexpectedToken(lex.lookAhead(), "[" + enumClass.getCanonicalName()
+            + " constant, one of " + Arrays.toString(enumClass.getEnumConstants()));
+    }
+
+    /** FIXME */
+    public static boolean parseBoolean(SqlLexer lex) {
+        if (matchesKeyword(lex, Boolean.TRUE.toString().toUpperCase())) {
+
+            lex.shift();
+
+            return true;
+        }
+
+        if (matchesKeyword(lex, Boolean.FALSE.toString().toUpperCase())) {
+
+            lex.shift();
+
+            return false;
+        }
+
+        throw errorUnexpectedToken(lex, "[boolean value: " + Boolean.FALSE + " or " + Boolean.TRUE + "]");
+    }
+
+    /** FIXME */
+    public static boolean parseOptionalStringParam(SqlLexer lex, String keyword, String description,
+        Setter<String> setter) {
+
+        if (!matchesKeyword(lex.lookAhead(), keyword))
+            return false;
+
+        lex.shift();
+
+        skipOptionalEqSign(lex);
+
+        parseOptionallyQuotedId(lex, description, setter);
+
+        return true;
+    }
+
+    /** FIXME */
+    public static <T extends Enum<T>> boolean parseOptionalEnumValue(SqlLexer lex, String token, Class<T> enumClass,
+        Setter<T> setter) {
+
+        if (matchesKeyword(lex.lookAhead(), token)) {
+            lex.shift();
+
+            skipOptionalEqSign(lex);
+
+            setter.apply(parseEnum(lex, enumClass), false);
+        }
+        else {
+            T val = parseEnumIfSpecified(lex, enumClass, null);
+
+            if (val == null)
+                return false;
+
+            setter.apply(val, false);
+        }
+
+        return true;
+    }
+
+    /** FIXME */
+    public static boolean parseOptionalIntValue(SqlLexer lex, String token,
+        Setter<Integer> setter) {
+
+        if (!matchesKeyword(lex.lookAhead(), token))
+            return false;
+
+        lex.shift();
+
+        SqlParserUtils.skipOptionalEqSign(lex);
+
+        setter.apply(parseInt(lex), false);
+
+        return true;
+    }
+
+    /** FIXME */
+    public static boolean parseOptionalBoolValue(SqlLexer lex, String trueToken, String falseToken,
+        Setter<Boolean> setter) {
+
+        SqlLexerToken nextTok = lex.lookAhead();
+
+        if (matchesKeyword(nextTok, trueToken)) {
+            lex.shift();
+
+            if (lex.lookAhead().tokenType() == SqlLexerTokenType.EQUALS) {
+                lex.shift();
+
+                setter.apply(SqlParserUtils.parseBoolean(lex), false);
+
+                return true;
+            }
+            else {
+                setter.apply(true, false);
+
+                return true;
+            }
+        }
+        else if (matchesKeyword(nextTok, falseToken)) {
+            setter.apply(false, false);
+
+            lex.shift();
+
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /** FIXME */
+    public interface Setter<T> {
+
+        void apply(T value, boolean isQuoted);
     }
 
     /**

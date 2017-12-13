@@ -27,8 +27,17 @@ import java.util.HashSet;
  * SQL keyword constants.
  */
 public class SqlKeyword {
+    /** Keyword: AFFINITY_KEY. */
+    public static final String AFFINITY_KEY = "AFFINITY_KEY";
+
+    /** Keyword: ATOMICITY. */
+    public static final String ATOMICITY = "ATOMICITY";
+
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
+
+    /** Keyword: BACKUPS. */
+    public static final String BACKUPS = "BACKUPS";
 
     /** Keyword: BIGINT */
     public static final String BIGINT = "BIGINT";
@@ -42,6 +51,12 @@ public class SqlKeyword {
     /** Keyword: BOOLEAN. */
     public static final String BOOLEAN = "BOOLEAN";
 
+    /** Keyword: CACHE_GROUP. */
+    public static final String CACHE_GROUP = "CACHE_GROUP";
+
+    /** Keyword: CACHE_NAME. */
+    public static final String CACHE_NAME = "CACHE_NAME";
+
     /** Keyword: CASCADE. */
     public static final String CASCADE = "CASCADE";
 
@@ -53,6 +68,9 @@ public class SqlKeyword {
 
     /** Keyword: CREATE. */
     public static final String CREATE = "CREATE";
+
+    /** Data region name. */
+    public static final String DATA_REGION = "DATA_REGION";
 
     /** Keyword: DATE. */
     public static final String DATE = "DATE";
@@ -120,6 +138,9 @@ public class SqlKeyword {
     /** Keyword: KEY. */
     public static final String KEY = "KEY";
 
+    /** Keyword: KEY_TYPE. */
+    public static final String KEY_TYPE = "KEY_TYPE";
+
     /** Keyword: LONGVARCHAR. */
     public static final String LONGVARCHAR = "LONGVARCHAR";
 
@@ -131,6 +152,12 @@ public class SqlKeyword {
 
     /** Keyword: NOT. */
     public static final String NOT = "NOT";
+
+    /** Keyword: NO_WRAP_KEY. */
+    public static final String NO_WRAP_KEY = "NO_WRAP_KEY";
+
+    /** Keyword: NO_WRAP_VALUE. */
+    public static final String NO_WRAP_VALUE = "NO_WRAP_VALUE";
 
     /** Keyword: NUMBER. */
     public static final String NUMBER = "NUMBER";
@@ -146,6 +173,9 @@ public class SqlKeyword {
 
     /** Keyword: ON. */
     public static final String ON = "ON";
+
+    /** Keyword: PARALLEL. */
+    public static final String PARALLEL = "PARALLEL";
 
     /** Keyword: PRECISION. */
     public static final String PRECISION = "PRECISION";
@@ -174,6 +204,9 @@ public class SqlKeyword {
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";
 
+    /** Keyword: TEMPLATE. */
+    public static final String TEMPLATE = "TEMPLATE";
+
     /** Keyword: TIME. */
     public static final String TIME = "TIME";
 
@@ -189,6 +222,9 @@ public class SqlKeyword {
     /** Keyword: UUID. */
     public static final String UUID = "UUID";
 
+    /** Keyword: VALUE_TYPE. */
+    public static final String VAL_TYPE = "VALUE_TYPE";
+
     /** Keyword: VARCHAR. */
     public static final String VARCHAR = "VARCHAR";
 
@@ -198,11 +234,18 @@ public class SqlKeyword {
     /** Keyword: VARCHAR_CASESENSITIVE. */
     public static final String VARCHAR_CASESENSITIVE = "VARCHAR_CASESENSITIVE";
 
+    /** Keyword: WRAP_KEY. */
+    public static final String WRAP_KEY = "WRAP_KEY";
+
+    /** Keyword: WRAP_VALUE. */
+    public static final String WRAP_VALUE = "WRAP_VALUE";
+
+    /** Keyword: WRITE_SYNC_MODE. */
+    public static final String WRITE_SYNC_MODE = "WRITE_SYNC_MODE";
+
     /** Keyword: YEAR. */
     public static final String YEAR = "YEAR";
 
-    /** Keyword: PARALLEL. */
-    public static final String PARALLEL = "PARALLEL";
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;
