@@ -389,21 +389,28 @@ class ClusterCachesInfo {
      * @param msg Message.
      */
     public void onCacheStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
-        String cacheName = msg.cacheName();
+        assert msg != null;
 
-        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
+        DynamicCacheDescriptor desc = registeredCaches.get(msg.cacheName());
 
-        DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
+        if (desc != null)
+            desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
+        else
+            log.warning("Failed to change cache descriptor configuration, cache not found [cacheName=" + msg.cacheName() + ']');
+    }
 
-        if (cache == null || desc == null) {
-            log.warning("Failed to change cache configuration, cache not found [cacheName=" + cacheName + ']');
+    /**
+     * @param msg Message.
+     */
+    public void processStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
+        assert msg != null;
 
-            return;
-        }
+        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(msg.cacheName());
 
-        cache.configuration().setStatisticsEnabled(msg.enabled());
-
-        desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
+        if (cache != null)
+            cache.configuration().setStatisticsEnabled(msg.enabled());
+        else
+            log.warning("Failed to change cache configuration, cache not found [cacheName=" + msg.cacheName() + ']');
     }
 
     /**

@@ -66,150 +66,6 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
     /** Persistence. */
     private boolean persistence = false;
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
-    }
-
-    /**
-     * Gets CacheGroupMetricsMXBean for given node and group name.
-     *
-     * @param nodeIdx Node index.
-     * @param cacheName Cache name.
-     * @return MBean instance.
-     */
-    private CacheMetricsMXBean mxBean(int nodeIdx, String cacheName, Class<? extends CacheMetricsMXBean> clazz)
-        throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeCacheMBeanName(getTestIgniteInstanceName(nodeIdx), cacheName,
-            clazz.getName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, CacheMetricsMXBean.class,
-            true);
-    }
-
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        CacheConfiguration cacheCfg = new CacheConfiguration()
-            .setName(CACHE1)
-            .setGroupName(GROUP)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC);
-
-        cfg.setCacheConfiguration(cacheCfg);
-
-        if (persistence)
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
-
-        return cfg;
-    }
-
-    /**
-     * Check cache statistics enabled/disabled flag for all nodes
-     *
-     * @param cacheName Cache name.
-     * @param enabled Enabled.
-     */
-    private boolean checkStatisticsMode(String cacheName, boolean enabled) {
-        for (Ignite ignite : G.allGrids())
-            if (ignite.cache(cacheName).metrics().isStatisticsEnabled() != enabled)
-                return false;
-
-        return true;
-    }
-
-    /**
-     * @param statisticsEnabledCache1 Statistics enabled for cache 1.
-     * @param statisticsEnabledCache2 Statistics enabled for cache 2.
-     */
-    private void assertCachesStatisticsMode(final boolean statisticsEnabledCache1, final boolean statisticsEnabledCache2) throws IgniteInterruptedCheckedException {
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return checkStatisticsMode(CACHE1, statisticsEnabledCache1)
-                    && checkStatisticsMode(CACHE2, statisticsEnabledCache2);
-            }
-        }, WAIT_CONDITION_TIMEOUT));
-    }
-
-    /**
-     * @param persistence Persistence.
-     */
-    private void testJmxStatisticsEnable(boolean persistence) throws Exception {
-        this.persistence = persistence;
-
-        Ignite ig1 = startGrid(1);
-        Ignite ig2 = startGrid(2);
-
-        CacheConfiguration cacheCfg2 = new CacheConfiguration(ig1.cache(CACHE1).getConfiguration(
-            CacheConfiguration.class));
-
-        cacheCfg2.setName(CACHE2);
-        cacheCfg2.setStatisticsEnabled(true);
-
-        IgniteCache cache1 = ig2.cache(CACHE1);
-        IgniteCache cache2 = ig2.getOrCreateCache(cacheCfg2);
-
-        CacheMetricsMXBean mxBeanCache1 = mxBean(2, CACHE1, CacheClusterMetricsMXBeanImpl.class);
-        CacheMetricsMXBean mxBeanCache2 = mxBean(2, CACHE2, CacheClusterMetricsMXBeanImpl.class);
-        CacheMetricsMXBean mxBeanCache1loc = mxBean(2, CACHE1, CacheLocalMetricsMXBeanImpl.class);
-
-        mxBeanCache1.enableStatistics();
-        mxBeanCache2.disableStatistics();
-
-        assertCachesStatisticsMode(true, false);
-
-        stopGrid(1);
-
-        startGrid(3);
-
-        assertCachesStatisticsMode(true, false);
-
-        mxBeanCache1loc.disableStatistics();
-
-        assertCachesStatisticsMode(false, false);
-
-        mxBeanCache1.enableStatistics();
-        mxBeanCache2.enableStatistics();
-
-        // Start node 1 again.
-        startGrid(1);
-
-        assertCachesStatisticsMode(true, true);
-
-        cache1.put(1, 1);
-        cache2.put(1, 1);
-
-        cache1.get(1);
-        cache2.get(1);
-
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                for (Ignite ignite : G.allGrids()) {
-                    CacheMetrics metrics1 = ignite.cache(CACHE1).metrics();
-                    CacheMetrics metrics2 = ignite.cache(CACHE2).metrics();
-
-                    if (metrics1.getCacheGets() < 1 || metrics2.getCacheGets() <1
-                        || metrics1.getCachePuts() < 1 || metrics2.getCachePuts() < 1)
-                        return false;
-                }
-
-                return true;
-            }
-        }, WAIT_CONDITION_TIMEOUT));
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -263,6 +119,155 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
                     && mgr2.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
                     && !mgr1.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
                     && !mgr2.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled();
+            }
+        }, WAIT_CONDITION_TIMEOUT));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
+    /**
+     * @param persistence Persistence.
+     */
+    private void testJmxStatisticsEnable(boolean persistence) throws Exception {
+        this.persistence = persistence;
+
+        Ignite ig1 = startGrid(1);
+        Ignite ig2 = startGrid(2);
+
+        CacheConfiguration cacheCfg2 = new CacheConfiguration(ig1.cache(CACHE1).getConfiguration(
+            CacheConfiguration.class));
+
+        cacheCfg2.setName(CACHE2);
+        cacheCfg2.setStatisticsEnabled(true);
+
+        ig2.getOrCreateCache(cacheCfg2);
+
+        CacheMetricsMXBean mxBeanCache1 = mxBean(2, CACHE1, CacheClusterMetricsMXBeanImpl.class);
+        CacheMetricsMXBean mxBeanCache2 = mxBean(2, CACHE2, CacheClusterMetricsMXBeanImpl.class);
+        CacheMetricsMXBean mxBeanCache1loc = mxBean(2, CACHE1, CacheLocalMetricsMXBeanImpl.class);
+
+        mxBeanCache1.enableStatistics();
+        mxBeanCache2.disableStatistics();
+
+        assertCachesStatisticsMode(true, false);
+
+        stopGrid(1);
+
+        startGrid(3);
+
+        assertCachesStatisticsMode(true, false);
+
+        mxBeanCache1loc.disableStatistics();
+
+        assertCachesStatisticsMode(false, false);
+
+        mxBeanCache1.enableStatistics();
+        mxBeanCache2.enableStatistics();
+
+        // Start node 1 again.
+        startGrid(1);
+
+        assertCachesStatisticsMode(true, true);
+
+        int gridIdx = 0;
+
+        for (Ignite ignite : G.allGrids()) {
+            gridIdx++;
+
+            ignite.cache(CACHE1).put(gridIdx, gridIdx);
+            ignite.cache(CACHE2).put(gridIdx, gridIdx);
+
+            ignite.cache(CACHE1).get(gridIdx);
+            ignite.cache(CACHE2).get(gridIdx);
+        }
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                int cnt = G.allGrids().size();
+
+                for (Ignite ignite : G.allGrids()) {
+                    CacheMetrics metrics1 = ignite.cache(CACHE1).metrics();
+                    CacheMetrics metrics2 = ignite.cache(CACHE2).metrics();
+
+                    if (metrics1.getCacheGets() < cnt || metrics2.getCacheGets() < cnt
+                        || metrics1.getCachePuts() < cnt || metrics2.getCachePuts() < cnt)
+                        return false;
+                }
+
+                return true;
+            }
+        }, 10_000L));
+    }
+
+    /**
+     * Gets CacheGroupMetricsMXBean for given node and group name.
+     *
+     * @param nodeIdx Node index.
+     * @param cacheName Cache name.
+     * @return MBean instance.
+     */
+    private CacheMetricsMXBean mxBean(int nodeIdx, String cacheName, Class<? extends CacheMetricsMXBean> clazz)
+        throws MalformedObjectNameException {
+        ObjectName mbeanName = U.makeCacheMBeanName(getTestIgniteInstanceName(nodeIdx), cacheName,
+            clazz.getName());
+
+        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        if (!mbeanSrv.isRegistered(mbeanName))
+            fail("MBean is not registered: " + mbeanName.getCanonicalName());
+
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, CacheMetricsMXBean.class,
+            true);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+
+        CacheConfiguration cacheCfg = new CacheConfiguration()
+            .setName(CACHE1)
+            .setGroupName(GROUP)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC);
+
+        cfg.setCacheConfiguration(cacheCfg);
+
+        if (persistence)
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
+
+        return cfg;
+    }
+
+    /**
+     * Check cache statistics enabled/disabled flag for all nodes
+     *
+     * @param cacheName Cache name.
+     * @param enabled Enabled.
+     */
+    private boolean checkStatisticsMode(String cacheName, boolean enabled) {
+        for (Ignite ignite : G.allGrids())
+            if (ignite.cache(cacheName).metrics().isStatisticsEnabled() != enabled)
+                return false;
+
+        return true;
+    }
+
+    /**
+     * @param enabled1 Statistics enabled for cache 1.
+     * @param enabled2 Statistics enabled for cache 2.
+     */
+    private void assertCachesStatisticsMode(final boolean enabled1, final boolean enabled2) throws IgniteInterruptedCheckedException {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return checkStatisticsMode(CACHE1, enabled1) && checkStatisticsMode(CACHE2, enabled2);
             }
         }, WAIT_CONDITION_TIMEOUT));
     }
