@@ -31,10 +31,17 @@ public class LabeledDatasetTestTrainPair implements Serializable {
     /** Data to keep train set. */
     private LabeledDataset train;
 
-    /** Data to keep test set */
+    /** Data to keep test set. */
     private LabeledDataset test;
 
-    /** NOTE: This method uses next algorithm with O(n log n) by calculations and O(n) by memory */
+    /**
+     * Creates two subsets of given dataset.
+     * <p>
+     * NOTE: This method uses next algorithm with O(n log n) by calculations and O(n) by memory.
+     * </p>
+     * @param dataset The dataset to split on train and test subsets.
+     * @param testPercentage The percentage of the test subset.
+     */
     public LabeledDatasetTestTrainPair(LabeledDataset dataset, double testPercentage) {
         assert testPercentage > 0.0;
         assert testPercentage < 1.0;
