@@ -36,12 +36,30 @@ public class GZipCompressEngine implements CompressEngine {
     private long bytesBefore = 0;
     private long bytesAfter = 0;
 
+    private static boolean compressSmall = false;
+    private static byte smallMsgSize = 127;
+    static {
+        assert smallMsgSize > 0;
+    }
+
     /** */
     public CompressEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+        int lenToCompress = src.remaining();
+
+        bytesBefore += lenToCompress;
+
+        if (compressSmall && lenToCompress < smallMsgSize) {
+            bytesAfter += lenToCompress + 1;
+
+            buf.put((byte)lenToCompress);
+            buf.put(src);
+
+            return OK;
+        }
+
         byte[] bytes = new byte[src.remaining()];
 
         src.get(bytes);
-        bytesBefore += bytes.length;
 
         try (
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -56,6 +74,8 @@ public class GZipCompressEngine implements CompressEngine {
         if (bytes.length + 4 > buf.remaining())
             return BUFFER_OVERFLOW;
 
+        if (compressSmall)
+            buf.put((byte)-1);
         buf.put(toArray(bytes.length));
         buf.put(bytes);
         bytesAfter += bytes.length;
@@ -71,12 +91,31 @@ public class GZipCompressEngine implements CompressEngine {
 
     /** */
     public CompressEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
-        if (src.remaining() == 0)
-            return BUFFER_UNDERFLOW;
-
         int initPos = src.position();
 
-        if (src.remaining() <= 5) {
+        if (compressSmall && src.remaining() == 0) {
+            src.position(initPos);
+
+            return BUFFER_UNDERFLOW;
+        }
+
+        byte flag = compressSmall ? src.get() : -1;
+        assert flag >= 0 || flag == -1;
+
+        if (compressSmall && flag != -1){
+            if (src.remaining() < flag) {
+                src.position(initPos);
+
+                return BUFFER_UNDERFLOW;
+            }
+
+            for (int i = 0; i < flag; i++)
+                buf.put(src.get());
+
+            return (src.remaining() == 0) ? BUFFER_UNDERFLOW : OK;
+        }
+
+        if (src.remaining() < 5) {
             src.position(initPos);
 
             return BUFFER_UNDERFLOW;

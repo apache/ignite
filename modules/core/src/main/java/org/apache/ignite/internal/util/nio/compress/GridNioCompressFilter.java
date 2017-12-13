@@ -87,7 +87,7 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
         GridCompressMeta compressMeta = ses.meta(COMPRESS_META.ordinal());
 
         if (compressMeta == null) {
-            engine = new GZipCompressEngine();
+            engine = new DeflaterCompressEngine();
 
             compressMeta = new GridCompressMeta();
 
