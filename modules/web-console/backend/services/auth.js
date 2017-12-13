@@ -21,18 +21,17 @@
 
 module.exports = {
     implements: 'services/auth',
-    inject: ['require(lodash)', 'mongo', 'settings', 'errors']
+    inject: ['mongo', 'settings', 'errors']
 };
 
 /**
- * @param _
  * @param mongo
  * @param settings
  * @param errors
  * @returns {AuthService}
  */
 
-module.exports.factory = (_, mongo, settings, errors) => {
+module.exports.factory = (mongo, settings, errors) => {
     class AuthService {
         /**
          * Generate token string.
