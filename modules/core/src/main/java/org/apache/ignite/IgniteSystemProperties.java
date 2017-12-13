@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
@@ -137,6 +138,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
 
     /**
+     * Setting this option to {@code true} will enable troubleshooting logger.
+     * Troubleshooting logger makes logging more verbose without enabling debug mode
+     * to provide more detailed logs without performance penalty.
+     */
+    public static final String IGNITE_TROUBLESHOOTING_LOGGER = "IGNITE_TROUBLESHOOTING_LOGGER";
+
+    /**
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
      */
     public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
@@ -148,6 +156,9 @@ public final class IgniteSystemProperties {
      * Set this property to {@code false} if no appenders should be added.
      */
     public static final String IGNITE_CONSOLE_APPENDER = "IGNITE_CONSOLE_APPENDER";
+
+    /** Maximum size for exchange history. Default value is {@code 1000}.*/
+    public static final String IGNITE_EXCHANGE_HISTORY_SIZE = "IGNITE_EXCHANGE_HISTORY_SIZE";
 
     /**
      * Name of the system property defining name of command line program.
@@ -308,6 +319,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT = "IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT";
 
     /**
+     * Atomic cache deferred update timeout.
+     */
+    public static final String IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT = "IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT";
+
+    /**
      * One phase commit deferred ack request timeout.
      */
     public static final String IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT =
@@ -378,6 +394,14 @@ public final class IgniteSystemProperties {
      * Default is {@code true}.
      */
     public static final String IGNITE_MBEAN_APPEND_CLASS_LOADER_ID = "IGNITE_MBEAN_APPEND_CLASS_LOADER_ID";
+
+    /**
+     * If property is set to {@code true}, then Ignite will disable MBeans registration.
+     * This may be helpful if MBeans are not allowed e.g. for security reasons.
+     *
+     * Default is {@code false}
+     */
+    public static final String IGNITE_MBEANS_DISABLED = "IGNITE_MBEANS_DISABLED";
 
     /**
      * Property controlling size of buffer holding last exception. Default value of {@code 1000}.
@@ -552,6 +576,39 @@ public final class IgniteSystemProperties {
             return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
         }
     };
+
+    /**
+     * Use local metadata cache instead of distributed one. May be used only when binary objects schema
+     * are not modified and all classes available on each node. Classes that implements Binarylizable are
+     * not supported.
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    public static final String IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE = "IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE";
+
+     /**
+     * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
+     * support service security permissions. In this case security permissions will be ignored
+     * (if they set).
+     * <p>
+     *     Default is {@code false}, which means that service security permissions will be respected.
+     * </p>
+     */
+    public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
+
+    /**
+     * If this property is set, a node will forcible fail a remote node when it fails to establish a communication
+     * connection.
+     */
+    public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
+
+    /** Ignite marshaller cache reread pause. */
+    public static final String IGNITE_MARSHALLER_CACHE_REREAD_PAUSE = "IGNITE_MARSHALLER_CACHE_REREAD_PAUSE";
+
+    /**
+     * Class name of the closure {@link IgniteClosure}<String, Throwable> that
+     * will be invoked once per topology and validates cache. If it returns or throws exception,
+     * that means cache is invalid.*/
+    public static final String IGNITE_CACHE_VALIDATOR = "IGNITE_CACHE_VALIDATOR";
 
     /**
      * Enforces singleton.

@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             Ignition.StopAll(true);
         }
-        
+
         /// <summary>
         /// Test basic session API.
         /// </summary>
@@ -97,13 +97,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 tx.Rollback();
             }
 
-            Assert.AreEqual(1, _dumps.Count);
-            var ops = _dumps.First();
-            Assert.AreEqual(1, ops.Count);
-
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.SesEnd && !op.Commit));
-
-            _dumps = new ConcurrentBag<ICollection<Operation>>();
+            // SessionEnd should not be called.
+            Assert.AreEqual(0, _dumps.Count);
 
             // 2. Test puts.
             using (var tx = ignite.GetTransactions().TxStart())
@@ -115,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             }
 
             Assert.AreEqual(1, _dumps.Count);
-            ops = _dumps.First();
+            var ops = _dumps.First();
             Assert.AreEqual(3, ops.Count);
 
             Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write && Cache1.Equals(op.CacheName) && 1.Equals(op.Key) && 1.Equals(op.Value)));
@@ -209,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 }
 
                 return (ICollection<Operation>) ops;
-            } 
+            }
         }
 
         /// <summary>
@@ -245,7 +240,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             /// Cache name.
             /// </summary>
             public string CacheName { get; private set; }
-            
+
             /// <summary>
             /// Operation type.
             /// </summary>

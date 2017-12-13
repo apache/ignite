@@ -19,8 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.logger.log4j.GridLog4jCorrectFileNameTest;
-import org.apache.ignite.logger.log4j.GridLog4jInitializedTest;
-import org.apache.ignite.logger.log4j.GridLog4jNotInitializedTest;
+import org.apache.ignite.logger.log4j.GridLog4jInitializationTest;
 
 /**
  * Log4j logging tests.
@@ -33,8 +32,7 @@ public class IgniteLog4jTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Log4j Logging Test Suite");
 
-        suite.addTest(new TestSuite(GridLog4jInitializedTest.class));
-        suite.addTest(new TestSuite(GridLog4jNotInitializedTest.class));
+        suite.addTest(new TestSuite(GridLog4jInitializationTest.class));
         suite.addTest(new TestSuite(GridLog4jCorrectFileNameTest.class));
 
         return suite;

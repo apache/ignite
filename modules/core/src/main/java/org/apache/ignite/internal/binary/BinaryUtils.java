@@ -65,8 +65,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 
 /**
  * Binary utils.
@@ -1193,13 +1193,15 @@ public class BinaryUtils {
         int scale = in.readInt();
         byte[] mag = doReadByteArray(in);
 
+        boolean negative = mag[0] < 0;
+
+        if (negative)
+            mag[0] &= 0x7F;
+
         BigInteger intVal = new BigInteger(mag);
 
-        if (scale < 0) {
-            scale &= 0x7FFFFFFF;
-
+        if (negative)
             intVal = intVal.negate();
-        }
 
         return new BigDecimal(intVal, scale);
     }

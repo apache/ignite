@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import templateUrl from './ui-ace-pojos.jade';
+import template from './ui-ace-pojos.pug';
 import controller from './ui-ace-pojos.controller';
 
 export default ['igniteUiAcePojos', [() => {
@@ -38,7 +38,7 @@ export default ['igniteUiAcePojos', [() => {
             pojos: '=ngModel'
         },
         link,
-        templateUrl,
+        template,
         controller,
         controllerAs: 'ctrl',
         require: ['?^igniteUiAceTabs']

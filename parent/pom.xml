@@ -116,6 +116,10 @@
         <osgi.embed.transitive>false</osgi.embed.transitive>
         <osgi.fail.ok>false</osgi.fail.ok>
 
+
+        <!-- will be changed by profile activation. allows to combine profiles. -->
+        <java8.folder>${project.build.sourceDirectory}</java8.folder>
+        <java8.test.folder>${project.build.testSourceDirectory}</java8.test.folder>
     </properties>
 
     <groupId>org.apache.ignite</groupId>
@@ -546,6 +550,11 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -557,6 +566,37 @@
                     <source>1.7</source>
                     <target>1.7</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${java8.folder}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-tests</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${java8.test.folder}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -817,6 +857,7 @@
                                         <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
+                                        <exclude>/src/test/resources/META-INF/services/org.apache.ignite.plugin.PluginProvider</exclude>
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
                                         <exclude>dev-tools/.gradle/**/*</exclude>
                                         <exclude>dev-tools/gradle/wrapper/**/*</exclude>
@@ -937,6 +978,8 @@
             </activation>
             <properties>
                 <javadoc.opts>-Xdoclint:none</javadoc.opts>
+                <java8.folder>${project.build.sourceDirectory}/../java8</java8.folder>
+                <java8.test.folder>${project.build.testSourceDirectory}/../java8</java8.test.folder>
             </properties>
             <build>
                 <plugins>

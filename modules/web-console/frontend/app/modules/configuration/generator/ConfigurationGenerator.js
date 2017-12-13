@@ -320,6 +320,18 @@ export default class IgniteConfigurationGenerator {
                     .boolProperty('allowDuplicateRegistrations');
 
                 break;
+
+            case 'Kubernetes':
+                ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder',
+                    'ipFinder', cluster.discovery.Kubernetes, clusterDflts.discovery.Kubernetes);
+
+                ipFinder.stringProperty('serviceName')
+                    .stringProperty('namespace')
+                    .stringProperty('masterUrl')
+                    .pathProperty('accountToken');
+
+                break;
+
             default:
                 // No-op.
         }

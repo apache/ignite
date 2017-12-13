@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.NoSuchFileException;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,7 +51,7 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.Viso
      * Arguments for {@link VisorFileBlockTask}
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class VisorFileBlockArg implements Serializable {
+    public static class VisorFileBlockArg implements Serializable, LessNamingBean {
         /** */
         private static final long serialVersionUID = 0L;
 

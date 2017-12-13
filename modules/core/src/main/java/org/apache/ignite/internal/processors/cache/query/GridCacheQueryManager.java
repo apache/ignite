@@ -1033,23 +1033,25 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws GridDhtUnreservedPartitionException If failed to reserve partition.
      */
     private GridIterator<IgniteBiTuple<K, V>> onheapIterator(
-        GridCacheQueryAdapter<?> qry,
+        final GridCacheQueryAdapter<?> qry,
         AffinityTopologyVersion topVer,
         final IgniteBiPredicate<K, V> keyValFilter,
-        boolean backups,
+        final boolean backups,
         final ExpiryPolicy plc,
         final boolean locNode) throws GridDhtUnreservedPartitionException {
-        Iterator<K> keyIter;
+        Iterator<? extends GridCacheEntryEx> entryIter;
 
         GridDhtLocalPartition locPart = null;
 
         Integer part = qry.partition();
 
-        if (part == null || cctx.isLocal()) {
-            // Performance optimization.
-            if (locNode && plc == null && !cctx.isLocal()) {
-                GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+        if (cctx.isLocal())
+            entryIter = cctx.local().allEntries().iterator();
+        else if (part == null) {
+            GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
+            // Performance optimization.
+            if (locNode && plc == null) {
                 final Iterator<Cache.Entry<K, V>> iter = cache.localEntriesIterator(true,
                     backups, cache.context().keepBinary(), topVer);
 
@@ -1099,12 +1101,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 };
             }
 
-            IgniteInternalCache<K, V> keepBinaryCache = cctx.cache().keepBinary();
-
-            keyIter = backups ? keepBinaryCache.keySetx().iterator() : keepBinaryCache.primaryKeySet().iterator();
+            entryIter = cache.localEntriesIteratorEx(true, backups, topVer);
         }
         else if (part < 0 || part >= cctx.affinity().partitions())
-            keyIter = new GridEmptyIterator<>();
+            return new GridEmptyIterator<>();
         else {
             final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
@@ -1115,28 +1115,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
                     "Partition can not be reserved.");
 
-            final GridDhtLocalPartition locPart0 = locPart;
-
-            keyIter = new Iterator<K>() {
-                private Iterator<KeyCacheObject> iter0 = locPart0.keySet().iterator();
-
-                @Override public boolean hasNext() {
-                    return iter0.hasNext();
-                }
-
-                @Override public K next() {
-                    return (K)iter0.next();
-                }
-
-                @Override public void remove() {
-                    iter0.remove();
-                }
-            };
+            entryIter = locPart.allEntries().iterator();
         }
 
         final GridDhtLocalPartition locPart0 = locPart;
 
-        return new PeekValueExpiryAwareIterator(keyIter, plc, topVer, keyValFilter, qry.keepBinary(), locNode, true) {
+        return new PeekValueExpiryAwareIterator(entryIter, plc, topVer, keyValFilter, qry.keepBinary(), locNode, true) {
             @Override protected void onClose() {
                 super.onClose();
 
@@ -1263,18 +1247,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         ExpiryPolicy expPlc,
         final boolean keepBinary,
         boolean locNode) {
-        Iterator<K> keyIter = new Iterator<K>() {
+        Iterator<? extends GridCacheEntryEx> keyIter = new Iterator<GridCacheEntryEx>() {
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
                 return it.hasNext();
             }
 
             /** {@inheritDoc} */
-            @Override public K next() {
+            @Override public GridCacheEntryEx next() {
                 try {
                     KeyCacheObject key = cctx.toCacheKeyObject(it.next().getKey());
 
-                    return (K)cctx.unwrapBinaryIfNeeded(key, keepBinary);
+                    final GridCacheEntryEx entryEx = cctx.cache().entryEx(key);
+
+                    return entryEx;
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -2190,8 +2176,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Gets cache queries detailed metrics.
-     * Detail metrics could be enabled by setting non-zero value via {@link CacheConfiguration#setQueryDetailMetricsSize(int)}
+     * Gets cache queries detailed metrics. Detail metrics could be enabled by setting non-zero value via {@link
+     * CacheConfiguration#setQueryDetailMetricsSize(int)}
      *
      * @return Cache queries metrics aggregated by query type and query text.
      */
@@ -3092,8 +3078,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private abstract static class CachedResult<R> extends GridFutureAdapter<IgniteSpiCloseableIterator<R>> {
         /** Absolute position of each recipient. */
         private final Map<Object, QueueIterator> recipients = new GridLeanMap<>(1);
+
         /** */
         private CircularQueue<R> queue;
+
         /** */
         private int pruned;
 
@@ -3530,10 +3518,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private IgniteCacheExpiryPolicy expiryPlc;
 
         /** */
-        private Iterator<K> keyIt;
+        private Iterator<? extends GridCacheEntryEx> entryIt;
 
         /**
-         * @param keyIt Key iterator.
+         * @param entryIter Key iterator.
          * @param plc Expiry policy.
          * @param topVer Topology version.
          * @param keyValFilter Key-value filter.
@@ -3541,8 +3529,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param locNode Local node.
          * @param heapOnly Heap only.
          */
-        private PeekValueExpiryAwareIterator(
-            Iterator<K> keyIt,
+        PeekValueExpiryAwareIterator(
+            Iterator<? extends GridCacheEntryEx> entryIter,
             ExpiryPolicy plc,
             AffinityTopologyVersion topVer,
             IgniteBiPredicate<K, V> keyValFilter,
@@ -3550,7 +3538,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             boolean locNode,
             boolean heapOnly
         ) {
-            this.keyIt = keyIt;
+            this.entryIt = entryIter;
             this.plc = plc;
             this.topVer = topVer;
             this.keyValFilter = keyValFilter;
@@ -3594,15 +3582,27 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private void advance() {
             IgniteBiTuple<K, V> next0 = null;
 
-            while (keyIt.hasNext()) {
+            while (entryIt.hasNext()) {
                 next0 = null;
 
-                K key = keyIt.next();
+                GridCacheEntryEx entry = entryIt.next();
 
+                if (entry.deleted())
+                    continue;
+
+                KeyCacheObject key = entry.key();
                 CacheObject val;
 
                 try {
-                    val = value(key);
+                    if (heapOnly)
+                        val = entry.peek(true, false, false, expiryPlc);
+                    else
+                        val = value(entry, entry.key());
+                }
+                catch (GridCacheEntryRemovedException ignore) {
+                    assert heapOnly;
+
+                    continue;
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
@@ -3665,23 +3665,29 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /**
+         * @param entry Entry.
          * @param key Key.
          * @return Value.
          * @throws IgniteCheckedException If failed to peek value.
          */
-        private CacheObject value(K key) throws IgniteCheckedException {
+        private CacheObject value(GridCacheEntryEx entry, KeyCacheObject key) throws IgniteCheckedException {
             while (true) {
                 try {
-                    GridCacheEntryEx entry = heapOnly ? cache.peekEx(key) : cache.entryEx(key);
+                    if (entry == null)
+                        entry = cache.entryEx(key);
 
-                    if (expiryPlc != null && !heapOnly)
+                    if (expiryPlc != null)
                         entry.unswap();
 
-                    return entry != null ? entry.peek(true, !heapOnly, !heapOnly, topVer, expiryPlc) : null;
+                    CacheObject cacheObj = entry.peek(true, true, true, topVer, expiryPlc);
+
+                    if (expiryPlc != null)
+                        cctx.evicts().touch(entry, topVer);
+
+                    return cacheObj;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    if (heapOnly)
-                        return null;
+                    entry = null;
                 }
             }
         }
