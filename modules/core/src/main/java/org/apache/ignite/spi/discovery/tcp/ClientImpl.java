@@ -1006,6 +1006,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 try {
                     InputStream in = sockStream.stream();
 
+                    // Not actually required, done in TcpDiscoverySpi.createSocket()
                     sock.setKeepAlive(true);
                     sock.setTcpNoDelay(true);
 
@@ -1430,6 +1431,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         InputStream in = sockStream.stream();
 
+                        // Not actually required, done in TcpDiscoverySpi.createSocket()
                         sock.setKeepAlive(true);
                         sock.setTcpNoDelay(true);
 

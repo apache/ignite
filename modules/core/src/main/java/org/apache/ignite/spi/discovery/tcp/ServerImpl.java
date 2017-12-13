@@ -3058,12 +3058,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +
-                                        ", forceSndPending=" + forceSndPending + ']');
+                                        ", forceSndPending=" + forceSndPending +
+                                        ", msgs=" + pendingMsgs.msgs.size() +
+                                        ", procCustomMsgs=" + pendingMsgs.procCustomMsgs.size() + ']');
 
                                 if (debugMode)
                                     debugLog(msg, "Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +
-                                        ", forceSndPending=" + forceSndPending + ']');
+                                        ", forceSndPending=" + forceSndPending +
+                                        ", msgs=" + pendingMsgs.msgs.size() +
+                                        ", procCustomMsgs=" + pendingMsgs.procCustomMsgs.size() + ']');
 
                                 for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                                     long tstamp = U.currentTimeMillis();
@@ -5681,6 +5685,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // Set socket options.
                     sock.setKeepAlive(true);
                     sock.setTcpNoDelay(true);
+                    sock.setSendBufferSize(TcpDiscoverySpi.DFLT_SOCK_BUF_SIZE);
+                    sock.setReceiveBufferSize(TcpDiscoverySpi.DFLT_SOCK_BUF_SIZE);
 
                     int timeout = sock.getSoTimeout();
 

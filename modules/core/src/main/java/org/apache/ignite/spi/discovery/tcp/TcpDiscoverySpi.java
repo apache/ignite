@@ -254,6 +254,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** Default size of topology snapshots history. */
     public static final int DFLT_TOP_HISTORY_SIZE = 1000;
 
+    /** Default socket send and receive buffer size. */
+    public static final int DFLT_SOCK_BUF_SIZE = 64 * 1024;
+
     /** Default socket operations timeout in milliseconds (value is <tt>5000ms</tt>). */
     public static final long DFLT_SOCK_TIMEOUT = 5000;
 
@@ -1328,7 +1331,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         sock.bind(new InetSocketAddress(locHost, 0));
 
+        // Set socket options.
         sock.setTcpNoDelay(true);
+        sock.setKeepAlive(true);
+        sock.setSendBufferSize(DFLT_SOCK_BUF_SIZE);
+        sock.setReceiveBufferSize(DFLT_SOCK_BUF_SIZE);
 
         return sock;
     }
