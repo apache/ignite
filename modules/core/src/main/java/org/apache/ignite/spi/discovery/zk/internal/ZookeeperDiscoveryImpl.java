@@ -93,6 +93,12 @@ public class ZookeeperDiscoveryImpl {
     static final String IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD = "IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD";
 
     /** */
+    private static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_EVTS = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_EVTS";
+
+    /** */
+    private static final String IGNITE_ZOOKEEPER_DISCOVERY_EVTS_THROTTLE = "IGNITE_ZOOKEEPER_DISCOVERY_EVTS_THROTTLE";
+
+    /** */
     final ZookeeperDiscoverySpi spi;
 
     /** */
@@ -1153,22 +1159,19 @@ public class ZookeeperDiscoveryImpl {
 
         TreeMap<Integer, String> alives = new TreeMap<>();
 
-        TreeMap<Long, ZookeeperClusterNode> curTop = new TreeMap<>(rtState.top.nodesByOrder);
-
-        boolean newEvts = false;
-
         for (String child : aliveNodes) {
             Integer internalId = ZkIgnitePaths.aliveInternalId(child);
 
             Object old = alives.put(internalId, child);
 
             assert old == null;
-
-            if (!rtState.top.nodesByInternalId.containsKey(internalId)) {
-                if (processJoinOnCoordinator(curTop, internalId, child))
-                    newEvts = true;
-            }
         }
+
+        TreeMap<Long, ZookeeperClusterNode> curTop = new TreeMap<>(rtState.top.nodesByOrder);
+
+        int newEvts = 0;
+
+        final int MAX_NEW_EVTS = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_MAX_EVTS, 100);
 
         List<ZookeeperClusterNode> failedNodes = null;
 
@@ -1183,15 +1186,74 @@ public class ZookeeperDiscoveryImpl {
 
                 generateNodeFail(curTop, failedNode);
 
-                newEvts = true;
+                newEvts++;
+
+                if (newEvts == MAX_NEW_EVTS) {
+                    saveAndProcessNewEvents();
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Delay alive nodes change process, max event threshold reached [newEvts=" + newEvts +
+                            ", totalEvts=" + rtState.evtsData.evts.size() + ']');
+                    }
+
+                    throttleNewEventsGeneration();
+
+                    rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, rtState.watcher, rtState.watcher);
+
+                    return;
+                }
             }
         }
 
-        if (newEvts)
+        for (Map.Entry<Integer, String> e : alives.entrySet()) {
+            Integer internalId = e.getKey();
+
+            if (!rtState.top.nodesByInternalId.containsKey(internalId)) {
+                if (processJoinOnCoordinator(curTop, internalId, e.getValue())) {
+                    newEvts++;
+
+                    if (newEvts == MAX_NEW_EVTS) {
+                        saveAndProcessNewEvents();
+
+                        if (log.isInfoEnabled()) {
+                            log.info("Delay alive nodes change process, max event threshold reached [newEvts=" + newEvts +
+                                ", totalEvts=" + rtState.evtsData.evts.size() + ']');
+                        }
+
+                        throttleNewEventsGeneration();
+
+                        rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, rtState.watcher, rtState.watcher);
+
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (newEvts > 0)
             saveAndProcessNewEvents();
 
         if (failedNodes != null)
             handleProcessedEventsOnNodesFail(failedNodes);
+    }
+
+    /**
+     *
+     */
+    private void throttleNewEventsGeneration() {
+        long delay = IgniteSystemProperties.getLong(IGNITE_ZOOKEEPER_DISCOVERY_EVTS_THROTTLE, 0);
+
+        if (delay > 0) {
+            if (log.isInfoEnabled())
+                log.info("Sleep delay before generate new events [delay=" + delay + ']');
+
+            try {
+                Thread.sleep(delay);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     /**
