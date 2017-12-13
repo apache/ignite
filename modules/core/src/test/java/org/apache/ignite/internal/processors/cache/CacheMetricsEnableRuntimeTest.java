@@ -25,13 +25,17 @@ import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -113,13 +117,40 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Check cache statistics enabled/disabled flag for all nodes
+     *
+     * @param cacheName Cache name.
+     * @param enabled Enabled.
+     */
+    private boolean checkStatisticsMode(String cacheName, boolean enabled) {
+        for (Ignite ignite : G.allGrids())
+            if (ignite.cache(cacheName).metrics().isStatisticsEnabled() != enabled)
+                return false;
+
+        return true;
+    }
+
+    /**
+     * @param statisticsEnabledCache1 Statistics enabled for cache 1.
+     * @param statisticsEnabledCache2 Statistics enabled for cache 2.
+     */
+    private void assertCachesStatisticsMode(final boolean statisticsEnabledCache1, final boolean statisticsEnabledCache2) throws IgniteInterruptedCheckedException {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return checkStatisticsMode(CACHE1, statisticsEnabledCache1)
+                    && checkStatisticsMode(CACHE2, statisticsEnabledCache2);
+            }
+        }, WAIT_CONDITION_TIMEOUT));
+    }
+
+    /**
      * @param persistence Persistence.
      */
     private void testJmxStatisticsEnable(boolean persistence) throws Exception {
         this.persistence = persistence;
 
-        final Ignite ig1 = startGrid(1);
-        final Ignite ig2 = startGrid(2);
+        Ignite ig1 = startGrid(1);
+        Ignite ig2 = startGrid(2);
 
         CacheConfiguration cacheCfg2 = new CacheConfiguration(ig1.cache(CACHE1).getConfiguration(
             CacheConfiguration.class));
@@ -127,7 +158,8 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         cacheCfg2.setName(CACHE2);
         cacheCfg2.setStatisticsEnabled(true);
 
-        ig2.getOrCreateCache(cacheCfg2);
+        IgniteCache cache1 = ig2.cache(CACHE1);
+        IgniteCache cache2 = ig2.getOrCreateCache(cacheCfg2);
 
         CacheMetricsMXBean mxBeanCache1 = mxBean(2, CACHE1, CacheClusterMetricsMXBeanImpl.class);
         CacheMetricsMXBean mxBeanCache2 = mxBean(2, CACHE2, CacheClusterMetricsMXBeanImpl.class);
@@ -136,52 +168,48 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         mxBeanCache1.enableStatistics();
         mxBeanCache2.disableStatistics();
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return ig1.cache(CACHE1).metrics().isStatisticsEnabled()
-                    && ig2.cache(CACHE1).metrics().isStatisticsEnabled()
-                    && !ig1.cache(CACHE2).metrics().isStatisticsEnabled()
-                    && !ig2.cache(CACHE2).metrics().isStatisticsEnabled();
-            }
-        }, WAIT_CONDITION_TIMEOUT));
+        assertCachesStatisticsMode(true, false);
 
         stopGrid(1);
 
-        final Ignite ig3 = startGrid(3);
+        startGrid(3);
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return ig3.cache(CACHE1).metrics().isStatisticsEnabled()
-                    && !ig3.cache(CACHE2).metrics().isStatisticsEnabled();
-            }
-        }, WAIT_CONDITION_TIMEOUT));
+        assertCachesStatisticsMode(true, false);
 
         mxBeanCache1loc.disableStatistics();
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return !ig2.cache(CACHE1).metrics().isStatisticsEnabled()
-                    && !ig3.cache(CACHE1).metrics().isStatisticsEnabled();
-            }
-        }, WAIT_CONDITION_TIMEOUT));
+        assertCachesStatisticsMode(false, false);
 
         mxBeanCache1.enableStatistics();
         mxBeanCache2.enableStatistics();
 
         // Start node 1 again.
-        final Ignite ig4 = startGrid(1);
+        startGrid(1);
+
+        assertCachesStatisticsMode(true, true);
+
+        cache1.put(1, 1);
+        cache2.put(1, 1);
+
+        cache1.get(1);
+        cache2.get(1);
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return ig2.cache(CACHE1).metrics().isStatisticsEnabled()
-                    && ig3.cache(CACHE1).metrics().isStatisticsEnabled()
-                    && ig4.cache(CACHE1).metrics().isStatisticsEnabled()
-                    && ig2.cache(CACHE2).metrics().isStatisticsEnabled()
-                    && ig3.cache(CACHE2).metrics().isStatisticsEnabled()
-                    && ig4.cache(CACHE2).metrics().isStatisticsEnabled();
+                for (Ignite ignite : G.allGrids()) {
+                    CacheMetrics metrics1 = ignite.cache(CACHE1).metrics();
+                    CacheMetrics metrics2 = ignite.cache(CACHE2).metrics();
+
+                    if (metrics1.getCacheGets() < 1 || metrics2.getCacheGets() <1
+                        || metrics1.getCachePuts() < 1 || metrics2.getCachePuts() < 1)
+                        return false;
+                }
+
+                return true;
             }
         }, WAIT_CONDITION_TIMEOUT));
     }
+
     /**
      * @throws Exception If failed.
      */
