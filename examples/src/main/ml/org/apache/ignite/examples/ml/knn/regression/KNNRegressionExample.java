@@ -51,7 +51,7 @@ public class KNNRegressionExample {
     private static final String SEPARATOR = ",";
 
     /** */
-    public static final String KNN_CLEARED_MACHINES_TXT = "knn/cleared_machines.txt";
+    public static final String KNN_CLEARED_MACHINES_TXT = "datasets/knn/cleared_machines.txt";
 
     /**
      * Executes example.
