@@ -240,7 +240,7 @@ object visor extends VisorTag {
 
     var batchMode: Boolean = false
 
-    /** Quiet mode to disable node log and information messages output. */
+    /** Quiet mode to disable internal node log and information messages output. */
     var quiet: Boolean = false
 
     def reader(reader: ConsoleReader) {

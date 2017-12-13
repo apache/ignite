@@ -31,6 +31,7 @@ import java.util.UUID;
 /**
  *
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final AffinityTopologyVersion topVer;
@@ -104,6 +105,20 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
             ids.add(nodes.get(i).id());
 
         return ids;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<ClusterNode> nodes() {
+        Set<ClusterNode> res = new HashSet<>();
+
+        for (int p = 0; p < assignment.size(); p++) {
+            List<ClusterNode> nodes = assignment.get(p);
+
+            if (!F.isEmpty(nodes))
+                res.addAll(nodes);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

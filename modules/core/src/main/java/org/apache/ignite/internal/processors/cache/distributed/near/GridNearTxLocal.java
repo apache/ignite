@@ -1696,6 +1696,82 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /**
      * @param cacheCtx Cache context.
+     * @param cacheIds Involved cache ids.
+     * @param parts Partitions.
+     * @param schema Schema name.
+     * @param qry Query string.
+     * @param params Query parameters.
+     * @param flags Flags.
+     * @param pageSize Fetch page size.
+     * @param timeout Timeout.
+     * @return Operation future.
+     */
+    public IgniteInternalFuture<Long> updateAsync(GridCacheContext cacheCtx,
+        int[] cacheIds, int[] parts, String schema, String qry, Object[] params,
+        int flags, int pageSize, long timeout) {
+        try {
+            beforePut(cacheCtx, false);
+
+            final IgniteInternalFuture<Long> fut = enlistQuery(cacheCtx, cacheIds, parts, schema, qry, params, flags, pageSize, timeout);
+
+            return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<Long>, Boolean>() {
+                @Override public Boolean applyx(IgniteInternalFuture<Long> fut0) throws IgniteCheckedException {
+                    return fut0.get() != null;
+                }
+            }), new PLC1<Long>(null) {
+                @Override protected Long postLock(Long val) throws IgniteCheckedException {
+                    return fut.get();
+                }
+            }));
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture(e);
+        }
+        catch (RuntimeException e) {
+            onException();
+
+            throw e;
+        }
+    }
+
+    private IgniteInternalFuture<Long> enlistQuery(final GridCacheContext cctx,
+        final int[] cacheIds, final int[] parts, final String schema, final String qry, final Object[] params,
+        final int flags, int pageSize, final long timeout) {
+        assert qry != null;
+
+        init();
+
+        try {
+            if (timeout == -1)
+                return new GridFinishedFuture<>(timeoutException());
+
+            assert pessimistic(); // TODO IGNITE-4191
+
+            addActiveCache(cctx, false);
+
+            GridNearTxQueryEnlistFuture fut = new GridNearTxQueryEnlistFuture(
+                cctx,
+                this,
+                cacheIds,
+                parts,
+                schema,
+                qry,
+                params,
+                flags,
+                pageSize,
+                timeout);
+
+            fut.map();
+
+            return fut;
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(e);
+        }
+    }
+
+    /**
+     * @param cacheCtx Cache context.
      * @param keys Keys to get.
      * @param deserializeBinary Deserialize binary flag.
      * @param skipVals Skip values flag.
@@ -3503,7 +3579,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
     private boolean fastFinish() {
-        return writeMap().isEmpty() && ((optimistic() && !serializable()) || readMap().isEmpty());
+        return writeMap().isEmpty()
+            && ((optimistic() && !serializable()) || readMap().isEmpty())
+            && (!mappings.single() && F.view(mappings.mappings(), CU.FILTER_QUERY_MAPPING).isEmpty());
     }
 
     /**

@@ -50,7 +50,6 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsReservation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
@@ -76,6 +75,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -416,26 +416,6 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * @param caches Cache IDs.
-     * @return The first found partitioned cache.
-     */
-    private GridCacheContext<?,?> findFirstPartitioned(List<Integer> caches) {
-        GridCacheSharedContext<?,?> sctx = ctx.cache().context();
-
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext<?,?> mainCctx = sctx.cacheContext(caches.get(i));
-
-            if (mainCctx == null)
-                throw new CacheException("Failed to find cache.");
-
-            if (!mainCctx.isLocal() && !mainCctx.isReplicated())
-                return mainCctx;
-        }
-
-        throw new IllegalStateException("Failed to find a partitioned cache.");
-    }
-
-    /**
      * @param node Node.
      * @param req Query request.
      */
@@ -458,7 +438,7 @@ public class GridMapQueryExecutor {
         final List<Integer> cacheIds = req.caches();
 
         int segments = explain || replicated || F.isEmpty(cacheIds) ? 1 :
-            findFirstPartitioned(cacheIds).config().getQueryParallelism();
+            CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
 
         final Object[] params = req.parameters();
 
@@ -814,7 +794,7 @@ public class GridMapQueryExecutor {
             final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
 
             if (!replicated && !F.isEmpty(cacheIds) &&
-                findFirstPartitioned(cacheIds).config().getQueryParallelism() > 1) {
+                CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism() > 1) {
                 fldsQry.setDistributedJoins(true);
 
                 local = false;

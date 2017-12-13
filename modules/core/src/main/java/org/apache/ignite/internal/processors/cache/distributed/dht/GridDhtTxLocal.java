@@ -159,7 +159,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         assert nearNodeId != null;
         assert nearFutId != null;
-        assert nearMiniId != 0;
         assert nearXidVer != null;
 
         this.nearNodeId = nearNodeId;

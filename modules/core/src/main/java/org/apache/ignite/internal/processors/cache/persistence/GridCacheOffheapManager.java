@@ -1358,6 +1358,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public MvccCoordinatorVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
+            throws IgniteCheckedException {
+            CacheDataStore delegate = init0(true);
+
+            if (delegate != null)
+                return delegate.findMaxMvccVersion(cctx, key);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public List<T2<Object, MvccCounter>> mvccFindAllVersions(GridCacheContext cctx, KeyCacheObject key)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);

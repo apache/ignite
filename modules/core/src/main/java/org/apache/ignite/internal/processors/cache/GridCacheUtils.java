@@ -66,6 +66,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
@@ -103,6 +104,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -312,6 +314,29 @@ public class GridCacheUtils {
 
         @Override public String toString() {
             return "FILTER_NEAR_CACHE_ENTRY";
+        }
+    };
+
+    /** Write filter. */
+    public static final IgnitePredicate FILTER_ENLISTED_ENTRY = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.queryEnlisted();
+        }
+
+        @Override public String toString() {
+            return "FILTER_ENLISTED_ENTRY";
+        }
+    };
+
+    /** Query mapped filter. */
+    public static final IgnitePredicate<GridDistributedTxMapping> FILTER_QUERY_MAPPING = new P1<GridDistributedTxMapping>() {
+
+        @Override public boolean apply(GridDistributedTxMapping m) {
+            return m.queryUpdate();
+        }
+
+        @Override public String toString() {
+            return "FILTER_QUERY_MAPPING";
         }
     };
 
@@ -580,6 +605,30 @@ public class GridCacheUtils {
 
             @Override public String toString() {
                 return "Bool reducer: " + bool;
+            }
+        };
+    }
+
+    /**
+     * @return Long reducer.
+     */
+    public static IgniteReducer<Long, Long> longReducer() {
+        return new IgniteReducer<Long, Long>() {
+            private final LongAdder8 res = new LongAdder8();
+
+            @Override public boolean collect(Long l) {
+                if(l != null)
+                    res.add(l);
+
+                return true;
+            }
+
+            @Override public Long reduce() {
+                return res.sum();
+            }
+
+            @Override public String toString() {
+                return "Long reducer: " + res;
             }
         };
     }
@@ -1699,6 +1748,7 @@ public class GridCacheUtils {
      * @param log Logger.
      * @param cctx Cache context.
      * @param key Key.
+     * @param expiryPlc Expiry policy.
      * @param readThrough Read through.
      * @param skipVals Skip values.
      */
@@ -1707,6 +1757,7 @@ public class GridCacheUtils {
         final IgniteLogger log,
         final GridCacheContext cctx,
         final @Nullable KeyCacheObject key,
+        final @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean readThrough,
         boolean skipVals
     ) {
@@ -1727,8 +1778,8 @@ public class GridCacheUtils {
                             val,
                             ver,
                             null,
-                            0,
-                            0,
+                            expiryPlc == null ? 0 : expiryPlc.forCreate(),
+                            expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
                             false,
                             topVer,
                             GridDrType.DR_BACKUP,
@@ -1851,6 +1902,44 @@ public class GridCacheUtils {
         }
 
         return false;
+    }
+
+    /**
+     * @param sctx Shared context.
+     * @param cacheIds Cache ids.
+     * @return First partitioned cache or {@code null} in case no partitioned cache ids are in list.
+     */
+    public static GridCacheContext<?, ?> firstPartitioned(GridCacheSharedContext<?, ?> sctx, int[] cacheIds) {
+        for (int i = 0; i < cacheIds.length; i++) {
+            GridCacheContext<?, ?> cctx = sctx.cacheContext(cacheIds[i]);
+
+            if (cctx == null)
+                throw new CacheException("Failed to find cache.");
+
+            if (!cctx.isLocal() && !cctx.isReplicated())
+                return cctx;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param sctx Shared context.
+     * @param cacheIds Cache ids.
+     * @return First partitioned cache or {@code null} in case no partitioned cache ids are in list.
+     */
+    public static GridCacheContext<?, ?> firstPartitioned(GridCacheSharedContext<?, ?> sctx, Iterable<Integer> cacheIds) {
+        for (Integer i : cacheIds) {
+            GridCacheContext<?, ?> cctx = sctx.cacheContext(i);
+
+            if (cctx == null)
+                throw new CacheException("Failed to find cache.");
+
+            if (!cctx.isLocal() && !cctx.isReplicated())
+                return cctx;
+        }
+
+        return null;
     }
 
     /**

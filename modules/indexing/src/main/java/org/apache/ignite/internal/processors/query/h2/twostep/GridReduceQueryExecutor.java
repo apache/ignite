@@ -405,7 +405,7 @@ public class GridReduceQueryExecutor {
 
         // Explicit partitions mapping is not applicable to replicated cache.
         if (cctx.isReplicated()) {
-            for (ClusterNode clusterNode : cctx.affinity().assignment(topVer).primaryPartitionNodes())
+            for (ClusterNode clusterNode : cctx.affinity().assignment(topVer).nodes())
                 mapping.put(clusterNode, null);
 
             return mapping;
@@ -483,35 +483,27 @@ public class GridReduceQueryExecutor {
             if (F.isEmpty(extraNodes))
                 throw new CacheException("Failed to find data nodes for cache: " + extraCacheName);
 
-            if (isReplicatedOnly && extraCctx.isReplicated()) {
-                nodes.retainAll(extraNodes);
+            boolean disjoint;
 
-                if (map.isEmpty()) {
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
+            if (extraCctx.isReplicated()) {
+                if (isReplicatedOnly) {
+                    nodes.retainAll(extraNodes);
+
+                    disjoint = map.isEmpty();
                 }
-            }
-            else if (!isReplicatedOnly && extraCctx.isReplicated()) {
-                if (!extraNodes.containsAll(nodes))
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
-            }
-            else if (!isReplicatedOnly && !extraCctx.isReplicated()) {
-                if (!extraNodes.equals(nodes))
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
+                else
+                    disjoint = !extraNodes.containsAll(nodes);
             }
             else
-                throw new IllegalStateException();
+                disjoint = !extraNodes.equals(nodes);
+
+            if (disjoint) {
+                if (isPreloadingActive(cacheIds))
+                    return null; // Retry.
+                else
+                    throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                        ", cache2=" + extraCacheName + "]");
+            }
         }
 
         return map;

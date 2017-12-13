@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -274,63 +275,78 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
-        MvccCoordinator mvccCrd = null;
-
         GridDhtTxMapping txMapping = new GridDhtTxMapping();
+
+        boolean queryMapped = false;
+
+        for (GridDistributedTxMapping m : F.view(tx.mappings().mappings(), CU.FILTER_QUERY_MAPPING)) {
+            GridDistributedTxMapping nodeMapping = mappings.get(m.primary().id());
+
+            if(nodeMapping == null)
+                mappings.put(m.primary().id(), m);
+
+            txMapping.addMapping(F.asList(m.primary()));
+
+            queryMapped = true;
+        }
+
+        MvccCoordinator mvccCrd = null;
 
         boolean hasNearCache = false;
 
-        for (IgniteTxEntry txEntry : tx.allEntries()) {
-            txEntry.clearEntryReadVersion();
+        if (!queryMapped) {
+            for (IgniteTxEntry txEntry : tx.allEntries()) {
+                txEntry.clearEntryReadVersion();
 
-            GridCacheContext cacheCtx = txEntry.context();
+                GridCacheContext cacheCtx = txEntry.context();
 
-            if (cacheCtx.isNear())
-                hasNearCache = true;
+                if (cacheCtx.isNear())
+                    hasNearCache = true;
 
-            List<ClusterNode> nodes;
+                List<ClusterNode> nodes;
 
-            if (!cacheCtx.isLocal()) {
-                GridDhtPartitionTopology top = cacheCtx.topology();
+                if (!cacheCtx.isLocal()) {
+                    GridDhtPartitionTopology top = cacheCtx.topology();
 
-                nodes = top.nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
-            }
-            else
-                nodes = cacheCtx.affinity().nodesByKey(txEntry.key(), topVer);
+                    nodes = top.nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
+                }
+                else
+                    nodes = cacheCtx.affinity().nodesByKey(txEntry.key(), topVer);
 
-            if (mvccCrd == null && cacheCtx.mvccEnabled()) {
-                mvccCrd = cacheCtx.affinity().mvccCoordinator(topVer);
+                if (mvccCrd == null && cacheCtx.mvccEnabled()) {
+                    mvccCrd = cacheCtx.affinity().mvccCoordinator(topVer);
 
-                if (mvccCrd == null) {
-                    onDone(CacheCoordinatorsProcessor.noCoordinatorError(topVer));
+                    if (mvccCrd == null) {
+                        onDone(CacheCoordinatorsProcessor.noCoordinatorError(topVer));
+
+                        return;
+                    }
+                }
+
+                if (F.isEmpty(nodes)) {
+                    onDone(new ClusterTopologyServerNotFoundException("Failed to map keys to nodes (partition " +
+                        "is not mapped to any node) [key=" + txEntry.key() +
+                        ", partition=" + cacheCtx.affinity().partition(txEntry.key()) + ", topVer=" + topVer + ']'));
 
                     return;
                 }
+
+                ClusterNode primary = nodes.get(0);
+
+                GridDistributedTxMapping nodeMapping = mappings.get(primary.id());
+
+                if (nodeMapping == null)
+                    mappings.put(primary.id(), nodeMapping = new GridDistributedTxMapping(primary));
+
+                txEntry.nodeId(primary.id());
+
+                nodeMapping.add(txEntry);
+
+                txMapping.addMapping(nodes);
             }
-
-            if (F.isEmpty(nodes)) {
-                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys to nodes (partition " +
-                    "is not mapped to any node) [key=" + txEntry.key() +
-                    ", partition=" + cacheCtx.affinity().partition(txEntry.key()) + ", topVer=" + topVer + ']'));
-
-                return;
-            }
-
-            ClusterNode primary = nodes.get(0);
-
-            GridDistributedTxMapping nodeMapping = mappings.get(primary.id());
-
-            if (nodeMapping == null)
-                mappings.put(primary.id(), nodeMapping = new GridDistributedTxMapping(primary));
-
-            txEntry.nodeId(primary.id());
-
-            nodeMapping.add(txEntry);
-
-            txMapping.addMapping(nodes);
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || mvccCrd != null;
+        assert !tx.txState().mvccEnabled(cctx) || mvccCrd != null || queryMapped;
 
         tx.transactionNodes(txMapping.transactionNodes());
 

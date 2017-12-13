@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.MvccCleanupRow;
 import org.apache.ignite.internal.processors.cache.tree.MvccKeyMaxVersionBound;
 import org.apache.ignite.internal.processors.cache.tree.MvccKeyMinVersionBound;
+import org.apache.ignite.internal.processors.cache.tree.MvccMaxVersionClosure;
 import org.apache.ignite.internal.processors.cache.tree.MvccRemoveRow;
 import org.apache.ignite.internal.processors.cache.tree.MvccSearchRow;
 import org.apache.ignite.internal.processors.cache.tree.MvccUpdateRow;
@@ -488,6 +489,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         assert row == null || row.value() != null : row;
 
         return row;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public MvccCoordinatorVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
+        throws IgniteCheckedException {
+        CacheDataStore dataStore = dataStore(cctx, key);
+
+        return dataStore != null ? dataStore.findMaxMvccVersion(cctx, key) : null;
     }
 
     /** {@inheritDoc} */
@@ -2002,6 +2011,26 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             afterRowFound(row, key);
 
             return row;
+        }
+
+        /** {@inheritDoc} */
+        @Override public MvccCoordinatorVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
+            throws IgniteCheckedException {
+            assert grp.mvccEnabled();
+
+            key.valueBytes(cctx.cacheObjectContext());
+
+            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+            MvccMaxVersionClosure lower = new MvccMaxVersionClosure(cacheId, key);
+
+            dataTree.iterate(
+                lower,
+                new MvccKeyMinVersionBound(cacheId, key),
+                lower // Use the same instance as closure to do not create extra object.
+            );
+
+            return lower.mvccVersion();
         }
 
         /**

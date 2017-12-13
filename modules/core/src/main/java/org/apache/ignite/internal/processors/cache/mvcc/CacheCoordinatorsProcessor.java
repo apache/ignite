@@ -332,6 +332,16 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param ver Version.
+     * @return Counter.
+     */
+    public MvccCoordinatorVersion requestTxCounterOnCoordinator(GridCacheVersion ver) {
+        assert ctx.localNodeId().equals(currentCoordinatorId());
+
+        return assignTxCounter(ver, 0L);
+    }
+
+    /**
      * @param crd Coordinator.
      * @param lsnr Response listener.
      * @param txVer Transaction version.

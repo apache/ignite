@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -176,8 +177,17 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            return new H2Cursor(tree.find((GridH2SearchRow)lower,
-                (GridH2SearchRow)upper, filter(GridH2QueryContext.get()), null));
+            if (indexType.isPrimaryKey()
+                && lower != null && upper != null
+                && tree.compareRows((GridH2SearchRow)lower, (GridH2SearchRow)upper) == 0) {
+                GridH2Row row = tree.findOne((GridH2SearchRow)lower, filter(GridH2QueryContext.get()));
+
+                return (row == null) ? GridH2Cursor.EMPTY : new SingleRowCursor(row);
+            }
+            else {
+                return new H2Cursor(tree.find((GridH2SearchRow)lower,
+                    (GridH2SearchRow)upper, filter(GridH2QueryContext.get()), null));
+            }
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);

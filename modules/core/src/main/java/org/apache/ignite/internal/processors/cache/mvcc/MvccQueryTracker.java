@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -35,6 +36,13 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("unchecked")
 public class MvccQueryTracker implements MvccCoordinatorChangeAware {
+    /** */
+    private static final IgniteBiInClosure<AffinityTopologyVersion,IgniteCheckedException> NO_OP_LSNR = new CI2<AffinityTopologyVersion, IgniteCheckedException>() {
+        @Override public void apply(AffinityTopologyVersion version, IgniteCheckedException e) {
+            // No-op
+        }
+    };
+
     /** */
     private MvccCoordinator mvccCrd;
 
@@ -66,6 +74,27 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
         this.cctx = cctx;
         this.canRemap = canRemap;
         this.lsnr = lsnr;
+    }
+
+    /**
+     *
+     * @param cctx Cache context.
+     */
+    public MvccQueryTracker(GridCacheContext cctx, MvccCoordinatorVersion mvccVer, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        assert cctx.mvccEnabled() : cctx.name();
+
+        this.cctx = cctx;
+        this.mvccVer = mvccVer;
+
+        MvccCoordinator mvccCrd0 = cctx.affinity().mvccCoordinator(topVer);
+
+        if(mvccCrd0 == null)
+            throw CacheCoordinatorsProcessor.noCoordinatorError(topVer);
+
+        mvccCrd = mvccCrd0;
+
+        canRemap = false;
+        lsnr = NO_OP_LSNR;
     }
 
     /**
