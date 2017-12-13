@@ -57,6 +57,12 @@ public class CheckpointMetricsTracker {
     /** */
     private long cpMarkStart;
 
+    /** Sort & split pages start. */
+    private long sortSplitStart;
+
+    /** Sort & split pages end. */
+    private long sortSplitEnd;
+
     /** */
     private long cpLockRelease;
 
@@ -116,6 +122,22 @@ public class CheckpointMetricsTracker {
      */
     public void onLockRelease() {
         cpLockRelease = System.currentTimeMillis();
+    }
+
+    /**
+     * Marks sort & split stage started.
+     */
+    public void onSortSplitStart() {
+        sortSplitStart = System.currentTimeMillis();
+    }
+
+    /**
+     * Marks sort & split stage done.
+     * @return duration in millis of sorting.
+     */
+    public long onSortSplitStop() {
+        sortSplitEnd = System.currentTimeMillis();
+        return sortSplitEnd - sortSplitStart;
     }
 
     /**
