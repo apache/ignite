@@ -2395,16 +2395,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 checkpointHist.addCheckpointEntry(cpEntry);
 
+                long cpSplitAndSortStart = System.currentTimeMillis();
                 GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
+                long sortDuration = System.currentTimeMillis() - cpSplitAndSortStart;
 
                 if (printCheckpointStats)
                     if (log.isInfoEnabled())
                         log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
-                                "checkpointLockHoldTime=%dms, pages=%d, reason='%s']",
+                                "checkpointLockHoldTime=%dms, sortDuration=%dms, pages=%d, reason='%s']",
                             cpRec.checkpointId(),
                             cpPtr,
                             tracker.lockWaitDuration(),
                             tracker.lockHoldDuration(),
+                            sortDuration,
                             cpPages.size(),
                             curr.reason)
                         );

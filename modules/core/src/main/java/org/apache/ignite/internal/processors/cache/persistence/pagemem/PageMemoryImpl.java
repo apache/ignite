@@ -817,6 +817,19 @@ public class PageMemoryImpl implements PageMemoryEx {
         return false;
     }
 
+    /**
+     * @return count of all dirty pages from all segments.
+     */
+    public long getDirtyPagesCount() {
+        long pages = 0;
+
+        for (Segment segment : segments) {
+            pages += segment.getDirtyPagesCount();
+        }
+
+        return pages;
+    }
+
     /** {@inheritDoc} */
     @Override public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException {
         Collection[] collections = new Collection[segments.length];
@@ -1703,14 +1716,21 @@ public class PageMemoryImpl implements PageMemoryEx {
          *
          */
         private boolean safeToUpdate() {
-            return dirtyPages.size() < maxDirtyPages;
+            return getDirtyPagesCount() < maxDirtyPages;
         }
 
         /**
          * @param dirtyRatioThreshold Throttle threshold.
          */
         private boolean shouldThrottle(double dirtyRatioThreshold) {
-            return ((double)dirtyPages.size()) / pages() > dirtyRatioThreshold;
+            return ((double)getDirtyPagesCount()) / pages() > dirtyRatioThreshold;
+        }
+
+        /**
+         * @return count of dirty pages, doen not involve count of pages under checkpoint
+         */
+        private int getDirtyPagesCount() {
+            return dirtyPages.size();
         }
 
         /**
@@ -2003,7 +2023,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             throw new IgniteOutOfMemoryException("Failed to find a page for eviction [segmentCapacity=" + cap +
                 ", loaded=" + loadedPages.size() +
                 ", maxDirtyPages=" + maxDirtyPages +
-                ", dirtyPages=" + dirtyPages.size() +
+                ", dirtyPages=" + getDirtyPagesCount() +
                 ", cpPages=" + (segCheckpointPages == null ? 0 : segCheckpointPages.size()) +
                 ", pinnedInSegment=" + pinnedCnt +
                 ", failedToPrepare=" + failToPrepare +
