@@ -23,16 +23,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.logger.java.JavaLogger;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_PRECISION;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
 /**
  * Class for detection of long JVM pauses.
  * It has a worker thread, which wakes up in cycle every {@code PRECISION} (default is 50) milliseconds,
  * and monitors a time values between awakenings. If worker pause exceeds the expected value more than {@code THRESHOLD}
- * default is 500), the difference is considered as JVM pause, and event of long JVM pause is registered.
+ * default is 500), the difference is considered as JVM pause, most likely STW, and event of long JVM pause is registered.
  * The values of {@code PRECISION}, {@code THRESHOLD} and {@code EVT_CNT} (event window size, default is 20) can be
  * configured in system or environment properties IGNITE_JVM_PAUSE_DETECTOR_PRECISION,
  * IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD and IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT accordingly.
@@ -69,6 +71,13 @@ class LongJVMPauseDetector {
      * Starts worker if not started yet.
      */
     public static void start() {
+        if (getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, false)) {
+            if (LOG.isDebugEnabled())
+                LOG.debug("JVM Pause Detector is disabled.");
+
+            return;
+        }
+
         final Thread worker = new Thread("jvm-pause-detector-worker") {
             private long prev = System.currentTimeMillis();
 

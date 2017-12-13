@@ -280,8 +280,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private static final Object STOP_RECONNECT = new Object();
 
     static {
-        if (!getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, false))
-            LongJVMPauseDetector.start();
+        LongJVMPauseDetector.start();
     }
 
     /** */
