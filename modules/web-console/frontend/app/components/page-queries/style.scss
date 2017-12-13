@@ -45,6 +45,7 @@ page-queries {
             top: 18px;
             left: 14px;
             width: 14px;
+            color: inherit;
         }
 
         ul {
@@ -56,6 +57,7 @@ page-queries {
 
             .group {
                 background: white;
+                border-style: solid;
 
                 .group-legend {
                     label {
@@ -63,13 +65,15 @@ page-queries {
 
                         font-size: 12px;
                         color: $gray-light;
-                        background: none;
-                        padding-left: 0;
+                        background: #fcfcfc;
+                        padding: 0;
+                        vertical-align: 1px;
                     }
                 }
 
                 .group-content {
                     height: 66px;
+                    border-radius: 5px;
 
                     margin: 0;
                     padding: 5px 0;
