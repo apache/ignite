@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
+import java.util.HashMap;
+import java.util.Map;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,8 +32,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -122,6 +128,14 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         cache = node.cache(DEFAULT_CACHE_NAME);
     }
 
+    protected boolean isSsl(){
+        return false;
+    }
+
+    protected boolean isCompress(){
+        return false;
+    }
+
     /**
      * Tear down routine.
      *
@@ -150,6 +164,20 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCacheConfiguration(cacheConfiguration());
+
+        if (isSsl()) {
+            SslContextFactory factory = new SslContextFactory();
+
+            factory.setKeyStoreFilePath("keystore/server.jks");
+            factory.setKeyStorePassword("123456".toCharArray());
+            factory.setTrustStoreFilePath("keystore/trust.jks");
+            factory.setTrustStorePassword("123456".toCharArray());
+
+            cfg.setSslContextFactory(factory);
+        }
+
+
+        cfg.setNetworkCompressingEnabled(isCompress());
 
         return cfg;
     }
