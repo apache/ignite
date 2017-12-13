@@ -200,8 +200,8 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheManagerStatisticsEnable() throws Exception {
-        CacheManager mgr1 = Caching.getCachingProvider().getCacheManager();
-        CacheManager mgr2 = Caching.getCachingProvider().getCacheManager();
+        final CacheManager mgr1 = Caching.getCachingProvider().getCacheManager();
+        final CacheManager mgr2 = Caching.getCachingProvider().getCacheManager();
 
         CacheConfiguration cfg1 = new CacheConfiguration()
             .setName(CACHE1)
