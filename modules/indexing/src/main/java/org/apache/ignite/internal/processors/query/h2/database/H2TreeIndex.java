@@ -20,15 +20,20 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -41,6 +46,7 @@ import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
+import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
@@ -165,20 +171,22 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            IndexingQueryFilter f = threadLocalFilter();
-            IndexingQueryCacheFilter p = null;
-
-            if (f != null) {
-                String cacheName = getTable().cacheName();
-
-                p = f.forCache(cacheName);
-            }
+            IndexingQueryCacheFilter filter = partitionFilter(threadLocalFilter());
 
             int seg = threadLocalSegment();
 
             H2Tree tree = treeForRead(seg);
 
-            return new H2Cursor(tree.find(lower, upper, p));
+            if (indexType.isPrimaryKey() && lower != null && upper != null && tree.compareRows(lower, upper) == 0) {
+                GridH2Row row = tree.findOne(lower, filter);
+
+                return (row == null) ? EMPTY_CURSOR : new SingleRowCursor(row);
+            }
+            else {
+                GridCursor<GridH2Row> cursor = tree.find(lower, upper, filter);
+
+                return new H2Cursor(cursor);
+            }
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -274,14 +282,18 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        Cursor cursor = find(ses, null, null);
+        try {
+            int seg = threadLocalSegment();
 
-        long res = 0;
+            H2Tree tree = treeForRead(seg);
 
-        while (cursor.next())
-            res++;
+            BPlusTree.TreeRowClosure<SearchRow, GridH2Row> filter = filterClosure();
 
-        return res;
+            return tree.size(filter);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -344,18 +356,12 @@ public class H2TreeIndex extends GridH2IndexBase {
         @Nullable SearchRow last,
         IndexingQueryFilter filter) {
         try {
-            IndexingQueryCacheFilter p = null;
+            IndexingQueryCacheFilter pf = partitionFilter(filter);
 
-            if (filter != null) {
-                String cacheName = getTable().cacheName();
-
-                p = filter.forCache(cacheName);
-            }
-
-            GridCursor<GridH2Row> range = t.find(first, last, p);
+            GridCursor<GridH2Row> range = t.find(first, last, pf);
 
             if (range == null)
-                range = EMPTY_CURSOR;
+                range = GridH2IndexBase.EMPTY_CURSOR;
 
             return new H2Cursor(range);
         }
@@ -420,4 +426,86 @@ public class H2TreeIndex extends GridH2IndexBase {
     private void dropMetaPage(String name, int segIdx) throws IgniteCheckedException {
         cctx.offheap().dropRootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
     }
+
+    /**
+     * Returns a filter which returns true for entries belonging to a particular partition.
+     *
+     * @param qryFilter Factory that creates a predicate for filtering entries for a particular cache.
+     * @return The filter or null if the filter is not needed (e.g., if the cache is not partitioned).
+     */
+    @Nullable private IndexingQueryCacheFilter partitionFilter(@Nullable IndexingQueryFilter qryFilter) {
+        if (qryFilter == null)
+            return null;
+
+        String cacheName = getTable().cacheName();
+
+        return qryFilter.forCache(cacheName);
+    }
+
+    /**
+     * An adapter from {@link IndexingQueryCacheFilter} to {@link BPlusTree.TreeRowClosure} which
+     * filters entries that belong to the current partition.
+     */
+    private static class PartitionFilterTreeRowClosure implements BPlusTree.TreeRowClosure<SearchRow, GridH2Row> {
+        /** Filter. */
+        private final IndexingQueryCacheFilter filter;
+
+        /**
+         * Creates a {@link BPlusTree.TreeRowClosure} adapter based on the given partition filter.
+         *
+         * @param filter The partition filter.
+         */
+        public PartitionFilterTreeRowClosure(IndexingQueryCacheFilter filter) {
+            this.filter = filter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(BPlusTree<SearchRow, GridH2Row> tree,
+            BPlusIO<SearchRow> io, long pageAddr, int idx) throws IgniteCheckedException {
+
+            H2RowLinkIO h2io = (H2RowLinkIO)io;
+
+            return filter.applyPartition(
+                PageIdUtils.partId(
+                    PageIdUtils.pageId(
+                        h2io.getLink(pageAddr, idx))));
+        }
+    }
+
+    /**
+     * Returns a filter to apply to rows in the current index to obtain only the
+     * ones owned by the this cache.
+     *
+     * @return The filter, which returns true for rows owned by this cache.
+     */
+    @Nullable private BPlusTree.TreeRowClosure<SearchRow, GridH2Row> filterClosure() {
+        final IndexingQueryCacheFilter filter = partitionFilter(threadLocalFilter());
+
+        return filter != null ? new PartitionFilterTreeRowClosure(filter) : null;
+    }
+
+    /**
+     * Empty cursor.
+     */
+    public static final Cursor EMPTY_CURSOR = new Cursor() {
+        /** {@inheritDoc} */
+        @Override public Row get() {
+            throw DbException.convert(new NoSuchElementException("Empty cursor"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public SearchRow getSearchRow() {
+            throw DbException.convert(new NoSuchElementException("Empty cursor"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean previous() {
+            return false;
+        }
+    };
 }

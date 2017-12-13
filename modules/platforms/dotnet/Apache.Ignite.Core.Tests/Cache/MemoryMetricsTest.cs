@@ -102,6 +102,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
+                DataStorageConfiguration = null,
                 MemoryConfiguration = new MemoryConfiguration
                 {
                     DefaultMemoryPolicyName = MemoryPolicyWithMetrics,

@@ -2201,3 +2201,13 @@ html,body,.splash-screen {
 .demo-mode {
     padding-top: 30px;
 }
+
+// Fix for injecting svg icon into BS btn
+.btn--with-icon {
+    display: flex;
+    align-items: center;
+
+    span {
+        margin-left: 5px;
+    }
+}

@@ -96,12 +96,14 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     private Logger impl;
 
     /** Path to configuration file. */
-    private final String path;
+    @GridToStringExclude
+    private final String cfg;
 
     /** Quiet flag. */
     private final boolean quiet;
 
     /** Node ID. */
+    @GridToStringExclude
     private UUID nodeId;
 
     /**
@@ -140,7 +142,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         else
             quiet = true;
 
-        path = null;
+        cfg = null;
     }
 
     /**
@@ -151,7 +153,24 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     public Log4JLogger(final Logger impl) {
         assert impl != null;
 
-        path = null;
+        addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
+            @Override public Logger apply(Boolean init) {
+                return impl;
+            }
+        });
+
+        quiet = quiet0;
+        cfg = null;
+    }
+
+    /**
+     * Creates new logger with given implementation.
+     *
+     * @param impl Log4j implementation to use.
+     * @param path Configuration file/url path.
+     */
+    private Log4JLogger(final Logger impl, final String path) {
+        assert impl != null;
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
@@ -160,6 +179,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         });
 
         quiet = quiet0;
+        cfg = path;
     }
 
     /**
@@ -168,11 +188,11 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * @param path Path to log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public Log4JLogger(String path) throws IgniteCheckedException {
+    public Log4JLogger(final String path) throws IgniteCheckedException {
         if (path == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
-        this.path = path;
+        this.cfg = path;
 
         final URL cfgUrl = U.resolveIgniteUrl(path);
 
@@ -204,12 +224,12 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         if (!cfgFile.exists() || cfgFile.isDirectory())
             throw new IgniteCheckedException("Log4j configuration path was not found or is a directory: " + cfgFile);
 
-        path = cfgFile.getAbsolutePath();
+        cfg = cfgFile.getAbsolutePath();
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configure(path);
+                    DOMConfigurator.configure(cfg);
 
                 return Logger.getRootLogger();
             }
@@ -228,7 +248,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         if (cfgUrl == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
-        path = null;
+        cfg = cfgUrl.getPath();
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
@@ -448,7 +468,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     @Override public Log4JLogger getLogger(Object ctgr) {
         return new Log4JLogger(ctgr == null ? Logger.getRootLogger() :
             ctgr instanceof Class ? Logger.getLogger(((Class<?>)ctgr).getName()) :
-                Logger.getLogger(ctgr.toString()));
+                Logger.getLogger(ctgr.toString()), cfg);
     }
 
     /** {@inheritDoc} */
@@ -517,7 +537,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(Log4JLogger.class, this);
+        return S.toString(Log4JLogger.class, this, "config", this.cfg);
     }
 
     /** {@inheritDoc} */

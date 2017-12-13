@@ -44,9 +44,10 @@ namespace ignite
                  * @param connection Associated connection.
                  * @param sql SQL query string.
                  * @param params SQL params.
+                 * @param timeout Timeout.
                  */
-                DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
-                    const std::string& sql, const app::ParameterSet& params);
+                DataQuery(diagnostic::Diagnosable& diag, Connection& connection, const std::string& sql,
+                    const app::ParameterSet& params, int32_t& timeout);
 
                 /**
                  * Destructor.
@@ -184,6 +185,9 @@ namespace ignite
 
                 /** Cached next result page. */
                 std::auto_ptr<ResultPage> cachedNextPage;
+
+                /** Timeout. */
+                int32_t& timeout;
             };
         }
     }
