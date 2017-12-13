@@ -22,7 +22,6 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -229,11 +228,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     public void testRebalncingDuringLoad_10_500_8_16() throws Exception {
         checkRebalancingDuringLoad(10, 500, 8, 16);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return TimeUnit.MINUTES.toMillis(3);
     }
 
     /**

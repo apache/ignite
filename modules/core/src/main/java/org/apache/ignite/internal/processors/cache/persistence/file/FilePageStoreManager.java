@@ -302,7 +302,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
-        writeInternal(grpId, pageId, pageBuf, tag);
+        writeInternal(grpId, pageId, pageBuf, tag, true);
     }
 
     /** {@inheritDoc} */
@@ -317,15 +317,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param pageId Page ID.
      * @param pageBuf Page buffer.
      * @param tag Partition tag (growing 1-based partition file version). Used to validate page is not outdated
+     * @param calculateCrc if {@code False} crc calculation will be forcibly skipped.
      * @return PageStore to which the page has been written.
      * @throws IgniteCheckedException If IO error occurred.
      */
-    public PageStore writeInternal(int cacheId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+    public PageStore writeInternal(int cacheId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         int partId = PageIdUtils.partId(pageId);
 
         PageStore store = getStore(cacheId, partId);
 
-        store.write(pageId, pageBuf, tag);
+        store.write(pageId, pageBuf, tag, calculateCrc);
 
         return store;
     }
