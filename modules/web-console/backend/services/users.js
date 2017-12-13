@@ -17,15 +17,16 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/users',
-    inject: ['require(lodash)', 'errors', 'settings', 'mongo', 'services/spaces', 'services/mails', 'services/activities', 'agents-handler']
+    inject: ['errors', 'settings', 'mongo', 'services/spaces', 'services/mails', 'services/activities', 'agents-handler']
 };
 
 /**
- * @param _
  * @param mongo
  * @param errors
  * @param settings
@@ -35,7 +36,7 @@ module.exports = {
  * @param {AgentsHandler} agentHnd
  * @returns {UsersService}
  */
-module.exports.factory = (_, errors, settings, mongo, spacesService, mailsService, activitiesService, agentHnd) => {
+module.exports.factory = (errors, settings, mongo, spacesService, mailsService, activitiesService, agentHnd) => {
     const _randomString = () => {
         const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         const possibleLen = possible.length;

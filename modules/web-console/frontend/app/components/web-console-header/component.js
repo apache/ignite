@@ -29,6 +29,10 @@ export default {
             'base.settings'
         ];
 
+        static connectedClustersUnvisibleStates = [
+            '403', '404'
+        ];
+
         constructor($rootScope, $scope, $state, branding, UserNotifications) {
             Object.assign(this, {$rootScope, $scope, $state, branding, UserNotifications});
         }
@@ -38,10 +42,17 @@ export default {
                 this.constructor.webAgentDownloadVisibleStates.some((state) => this.$state.includes(state));
         }
 
+        setConnectedClustersVisible() {
+            this.isConnectedClustersVisible =
+                !this.constructor.connectedClustersUnvisibleStates.some((state) => this.$state.includes(state));
+        }
+
         $onInit() {
             this.setWebAgentDownloadVisible();
+            this.setConnectedClustersVisible();
 
             this.$scope.$on('$stateChangeSuccess', () => this.setWebAgentDownloadVisible());
+            this.$scope.$on('$stateChangeSuccess', () => this.setConnectedClustersVisible());
         }
     },
     transclude: {

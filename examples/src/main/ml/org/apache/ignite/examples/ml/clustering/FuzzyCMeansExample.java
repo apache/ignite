@@ -22,10 +22,10 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.clustering.BaseFuzzyCMeansClusterer;
 import org.apache.ignite.ml.clustering.FuzzyCMeansDistributedClusterer;
 import org.apache.ignite.ml.clustering.FuzzyCMeansModel;
-import org.apache.ignite.ml.math.distances.DistanceMeasure;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.thread.IgniteThread;
 

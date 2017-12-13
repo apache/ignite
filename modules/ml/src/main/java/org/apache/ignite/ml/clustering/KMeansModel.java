@@ -21,8 +21,8 @@ import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.KMeansModelFormat;
-import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
 
 /**
  * This class encapsulates result of clusterization.
