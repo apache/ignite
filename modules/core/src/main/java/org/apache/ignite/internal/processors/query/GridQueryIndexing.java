@@ -202,6 +202,28 @@ public interface GridQueryIndexing {
     public void unregisterCache(String cacheName, boolean rmvIdx) throws IgniteCheckedException;
 
     /**
+     *
+     * @param cctx Cache context.
+     * @param ids Involved cache ids.
+     * @param parts Partitions.
+     * @param schema Schema name.
+     * @param qry Query string.
+     * @param params Query parameters.
+     * @param flags Flags.
+     * @param pageSize Fetch page size.
+     * @param timeout Timeout.
+     * @param topVer Topology version.
+     * @param mvccVer Mvc version.
+     * @param cancel Query cancel object.
+     * @return Cursor over entries which are going to be changed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCloseableIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
+        String schema, String qry, Object[] params, int flags,
+        int pageSize, int timeout, AffinityTopologyVersion topVer,
+        MvccCoordinatorVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException;
+
+    /**
      * Registers type if it was not known before or updates it otherwise.
      *
      * @param cctx Cache context.

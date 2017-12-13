@@ -24,21 +24,36 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.transactions.Transaction;
@@ -49,13 +64,32 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * TODO IGNITE-3478: text/spatial indexes with mvcc.
- * TODO IGNITE-3478: indexingSpi with mvcc.
- * TODO IGNITE-3478: setQueryParallelism with mvcc.
- * TODO IGNITE-3478: dynamic index create.
+ * TODO IGNITE-3478: text/spatial indexes with mvcc. TODO IGNITE-3478: indexingSpi with mvcc. TODO IGNITE-3478:
+ * setQueryParallelism with mvcc. TODO IGNITE-3478: dynamic index create.
  */
 @SuppressWarnings("unchecked")
 public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
+    /** */
+    private static final int TX_TIMEOUT = 3000;
+
+    /** */
+    private CacheConfiguration ccfg;
+
+    /** */
+    private boolean client;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        if (ccfg != null)
+            cfg.setCacheConfiguration(ccfg);
+
+        cfg.setClientMode(client);
+
+        return cfg;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -128,6 +162,608 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
      */
     public void testUpdateSingleValue_LocalQuery_SingleNode() throws Exception {
         updateSingleValue(true, true);
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryInsertStaticCache() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(4);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        Ignite checkNode  = grid(rnd.nextInt(4));
+        Ignite updateNode = grid(rnd.nextInt(4));
+
+        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            tx.commit();
+        }
+
+        assertEquals(1, cache.get(1));
+        assertEquals(2, cache.get(2));
+        assertEquals(3, cache.get(3));
+
+        assertEquals(4, cache.get(4));
+        assertEquals(5, cache.get(5));
+        assertEquals(6, cache.get(6));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryDeleteStaticCache() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(4);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        Ignite checkNode  = grid(rnd.nextInt(4));
+        Ignite updateNode = grid(rnd.nextInt(4));
+
+        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+
+        cache.putAll(F.asMap(1,1,2,2,3,3));
+
+        assertEquals(1, cache.get(1));
+        assertEquals(2, cache.get(2));
+        assertEquals(3, cache.get(3));
+
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM Integer WHERE 1 = 1");
+
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            tx.commit();
+        }
+
+        assertNull(cache.get(1));
+        assertNull(cache.get(2));
+        assertNull(cache.get(3));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryUpdateStaticCache() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(4);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        Ignite checkNode  = grid(rnd.nextInt(4));
+        Ignite updateNode = grid(rnd.nextInt(4));
+
+        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+
+        cache.putAll(F.asMap(1,1,2,2,3,3));
+
+        assertEquals(1, cache.get(1));
+        assertEquals(2, cache.get(2));
+        assertEquals(3, cache.get(3));
+
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)");
+
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            tx.commit();
+        }
+
+        assertEquals(10, cache.get(1));
+        assertEquals(20, cache.get(2));
+        assertEquals(30, cache.get(3));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryDeadlock() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(2);
+
+        client = true;
+
+        startGridsMultiThreaded(2, 2);
+
+        final CyclicBarrier barrier = new CyclicBarrier(2);
+        final AtomicInteger idx = new AtomicInteger();
+        final AtomicReference<Exception> ex = new AtomicReference<>();
+
+
+        multithreaded(new Runnable() {
+            @Override public void run() {
+                int id = idx.getAndIncrement();
+
+                IgniteEx node = grid(id);
+
+                try {
+                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        tx.timeout(TX_TIMEOUT);
+
+                        IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
+
+                        String qry1 = "INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)";
+                        String qry2 = "INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)";
+
+                        SqlFieldsQuery qry = new SqlFieldsQuery((id % 2) == 0 ? qry1 : qry2);
+
+                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                            cur.getAll();
+                        }
+
+                        barrier.await();
+
+                        qry = new SqlFieldsQuery((id % 2) == 0 ? qry2 : qry1);
+
+                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                            cur.getAll();
+                        }
+
+                        tx.commit();
+                    }
+                }
+                catch (Exception e) {
+                    onException(ex, e);
+                }
+            }
+        }, 2);
+
+        Exception ex0 = ex.get();
+
+        assertNotNull(ex0);
+
+        if (!X.hasCause(ex0, IgniteTxTimeoutCheckedException.class))
+            throw ex0;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryInsertClient() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGrid(0);
+
+        client = true;
+
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        Ignite checkNode  = grid(0);
+        Ignite updateNode = grid(1);
+
+        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            tx.commit();
+        }
+
+        assertEquals(1, cache.get(1));
+        assertEquals(2, cache.get(2));
+        assertEquals(3, cache.get(3));
+
+        assertEquals(4, cache.get(4));
+        assertEquals(5, cache.get(5));
+        assertEquals(6, cache.get(6));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryInsertMultithread() throws Exception {
+        final int THREAD_CNT = 8;
+        final int BATCH_SIZE = 1000;
+        final int ROUNDS = 10;
+
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(2);
+
+        client = true;
+
+        startGridsMultiThreaded(2, 2);
+
+        final AtomicInteger seq = new AtomicInteger();
+
+        multithreaded(new Runnable() {
+            @Override public void run() {
+                for (int r = 0; r < ROUNDS; r++) {
+                    StringBuilder bldr = new StringBuilder("INSERT INTO Integer (_key, _val) values ");
+
+                    int start = seq.getAndAdd(BATCH_SIZE);
+
+                    for (int i = start, end = start + BATCH_SIZE; i < end; i++) {
+                        if (i != start)
+                            bldr.append(',');
+
+                        bldr
+                            .append('(')
+                            .append(i)
+                            .append(',')
+                            .append(i)
+                            .append(')');
+                    }
+
+                    Random rnd = ThreadLocalRandom.current();
+
+                    Ignite checkNode = grid(rnd.nextInt(4));
+                    Ignite updateNode = grid(rnd.nextInt(4));
+
+                    IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+
+                    try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+
+                        SqlFieldsQuery qry = new SqlFieldsQuery(bldr.toString());
+
+                        IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                            assertEquals((long)BATCH_SIZE, cur.iterator().next().get(0));
+                        }
+
+                        tx.commit();
+                    }
+
+                    for (int i = start, end = start + BATCH_SIZE; i < end; i++)
+                        assertEquals(i, cache.get(i));
+                }
+
+            }
+        }, THREAD_CNT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryInsertUpdateMiltithread() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(2);
+
+        final Phaser phaser = new Phaser(2);
+        final AtomicReference<Exception> ex = new AtomicReference<>();
+
+        GridCompoundFuture fut = new GridCompoundFuture();
+
+        fut.add(multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                IgniteEx node = grid(0);
+
+                try {
+                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        tx.timeout(TX_TIMEOUT);
+
+                        IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
+
+                        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+
+                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                            cur.getAll();
+                        }
+
+                        awaitPhase(phaser, 2);
+
+                        qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
+
+                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                            cur.getAll();
+                        }
+
+                        tx.commit();
+                    }
+                }
+                catch (Exception e) {
+                    onException(ex, e);
+                }
+            }
+        }, 1));
+
+        fut.add(multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                IgniteEx node = grid(1);
+
+                try {
+                    phaser.arriveAndAwaitAdvance();
+
+                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        tx.timeout(TX_TIMEOUT);
+
+                        IgniteCache<Integer, Integer> cache0 = node.cache(DEFAULT_CACHE_NAME);
+
+                        cache0.invokeAllAsync(F.asSet(1, 2, 3, 4, 5, 6), new EntryProcessor<Integer, Integer, Void>() {
+                            @Override
+                            public Void process(MutableEntry<Integer, Integer> entry,
+                                Object... arguments) throws EntryProcessorException {
+                                entry.setValue(entry.getValue() * 10);
+
+                                return null;
+                            }
+                        });
+
+                        phaser.arrive();
+
+                        tx.commit();
+                    }
+                }
+                catch (Exception e) {
+                    onException(ex, e);
+                }
+            }
+        }, 1));
+
+        fut.markInitialized();
+
+        try {
+            fut.get(TX_TIMEOUT);
+        }
+        catch (IgniteCheckedException e) {
+            onException(ex, e);
+        }
+
+        Exception ex0 = ex.get();
+
+        if (ex0 != null)
+            throw ex0;
+
+        IgniteCache cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertEquals(10, cache.get(1));
+        assertEquals(20, cache.get(2));
+        assertEquals(30, cache.get(3));
+        assertEquals(40, cache.get(4));
+        assertEquals(50, cache.get(5));
+        assertEquals(60, cache.get(6));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryInsertVersionConflict() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(2);
+
+        IgniteCache cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        cache.putAll(F.asMap(1, 1, 2, 2, 3, 3));
+
+        final Phaser phaser = new Phaser(2);
+        final AtomicReference<Exception> ex = new AtomicReference<>();
+
+        GridCompoundFuture fut = new GridCompoundFuture();
+
+        fut.add(multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                IgniteEx node = grid(0);
+
+                try {
+                    phaser.arriveAndAwaitAdvance();
+
+                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
+
+                        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)");
+
+                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                            assertEquals(3L, cur.iterator().next().get(0));
+                        }
+
+                        tx.commit();
+                    }
+
+                    phaser.arrive();
+                }
+                catch (Exception e) {
+                    onException(ex, e);
+                }
+            }
+        }, 1));
+
+        fut.add(multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                IgniteEx node = grid(1);
+
+                try {
+                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
+
+                        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10) where _key > 3");
+
+                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                            assertEquals(0L, cur.iterator().next().get(0));
+                        }
+
+                        awaitPhase(phaser, 2);
+
+                        qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)");
+
+                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                            assertEquals(0L, cur.iterator().next().get(0));
+                        }
+
+                        tx.commit();
+                    }
+                }
+                catch (Exception e) {
+                    onException(ex, e);
+                }
+            }
+        }, 1));
+
+        fut.markInitialized();
+
+        try {
+            fut.get(TX_TIMEOUT);
+        }
+        catch (IgniteCheckedException e) {
+            onException(ex, e);
+        }
+
+        Exception ex0 = ex.get();
+
+        assertNotNull(ex0);
+
+        assertEquals("Failed to run update. Mvcc version mismatch.", ex0.getMessage());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryInsertRollback() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(4);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        Ignite checkNode  = grid(rnd.nextInt(4));
+        Ignite updateNode = grid(rnd.nextInt(4));
+
+        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            tx.rollback();
+        }
+
+        for (int i = 1; i <= 6; i++)
+            assertNull(cache.get(1));
+    }
+
+
+    /**
+     * TODO IGNITE-6938
+     * @throws Exception If failed.
+     */
+    public void testQueryInsertRollbackOnKeysConflict() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(4);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        Ignite checkNode  = grid(rnd.nextInt(4));
+        Ignite updateNode = grid(rnd.nextInt(4));
+
+        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                cur.getAll();
+            }
+
+            tx.commit();
+        }
+        catch (Throwable e) {
+             assertEquals("Entry is already enlisted.", e.getMessage());
+        }
+
+        for (int i = 1; i <= 6; i++)
+            assertNull(cache.get(1));
+    }
+
+    /**
+     * @param ex Exception holder.
+     * @param e Exception.
+     */
+    private void onException(AtomicReference<Exception> ex, Exception e) {
+        if (!ex.compareAndSet(null, e))
+            ex.get().addSuppressed(e);
+    }
+
+    /**
+     * @param phaser Phaser.
+     * @param phase Phase to wait for.
+     */
+    private void awaitPhase(Phaser phaser, int phase) {
+        int p;
+        do {
+            p = phaser.arriveAndAwaitAdvance();
+        } while (p < phase);
     }
 
     /**
@@ -822,7 +1458,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testCountTransactional_SingleNode() throws Exception {
-      countTransactional(true);
+        countTransactional(true);
     }
 
     /**
@@ -864,7 +1500,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
 
                         try {
                             // Add or remove 10 keys.
-                            if (!keys.isEmpty() && (keys.size() == THREAD_KEY_RANGE || rnd.nextInt(3) == 0 )) {
+                            if (!keys.isEmpty() && (keys.size() == THREAD_KEY_RANGE || rnd.nextInt(3) == 0)) {
                                 Set<Integer> rmvKeys = new HashSet<>();
 
                                 for (Integer key : keys) {

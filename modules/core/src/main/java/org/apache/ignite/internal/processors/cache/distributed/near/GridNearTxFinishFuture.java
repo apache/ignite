@@ -742,7 +742,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
         ClusterNode n = m.primary();
 
-        assert !m.empty() : m;
+        assert !m.empty() || m.queryUpdate() : m;
 
         CacheWriteSynchronizationMode syncMode = tx.syncMode();
 

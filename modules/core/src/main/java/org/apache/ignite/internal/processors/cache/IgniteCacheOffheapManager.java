@@ -178,6 +178,15 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
+     * @param cctx Cache context.
+     * @param key Key.
+     * @return Mvcc version of found row.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable MvccCoordinatorVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
+        throws IgniteCheckedException;
+
+    /**
      * For testing only.
      *
      * @param cctx Cache context.
@@ -612,6 +621,15 @@ public interface IgniteCacheOffheapManager {
          */
         public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccCoordinatorVersion ver)
             throws IgniteCheckedException;
+
+        /**
+         * @param cctx Cache context.
+         * @param key Key.
+         * @return Mvcc version of found row.
+         * @throws IgniteCheckedException If failed.
+         */
+        MvccCoordinatorVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
+        throws IgniteCheckedException;
 
         /**
          * For testing only.

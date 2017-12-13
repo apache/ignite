@@ -341,8 +341,6 @@ public class IgniteTxHandler {
             return new GridFinishedFuture<>(e);
         }
 
-        assert firstEntry != null : req;
-
         GridDhtTxLocal tx = null;
 
         GridCacheVersion mappedVer = ctx.tm().mappedVersion(req.version());
@@ -362,6 +360,8 @@ public class IgniteTxHandler {
             GridDhtPartitionTopology top = null;
 
             if (req.firstClientRequest()) {
+                assert firstEntry != null : req;
+
                 assert req.concurrency() == OPTIMISTIC : req;
                 assert CU.clientNode(nearNode) : nearNode;
 

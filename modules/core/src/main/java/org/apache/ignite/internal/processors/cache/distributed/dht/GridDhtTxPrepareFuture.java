@@ -51,10 +51,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
@@ -346,7 +346,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     private void onEntriesLocked() {
         ret = new GridCacheReturn(null, tx.localResult(), true, null, true);
 
-        for (IgniteTxEntry writeEntry : req.writes()) {
+        for (IgniteTxEntry writeEntry : writes()) {
             IgniteTxEntry txEntry = tx.entry(writeEntry.txKey());
 
             assert txEntry != null : writeEntry;
@@ -607,7 +607,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         if (log.isDebugEnabled())
             log.debug("Marking all local candidates as ready: " + this);
 
-        readyLocks(req.writes());
+        readyLocks(writes());
 
         if (tx.serializable() && tx.optimistic())
             readyLocks(req.reads());
@@ -908,8 +908,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     private void addDhtValues(GridNearTxPrepareResponse res) {
         // Interceptor on near node needs old values to execute callbacks.
-        if (!F.isEmpty(req.writes())) {
-            for (IgniteTxEntry e : req.writes()) {
+        Collection<IgniteTxEntry> writes = writes();
+
+        if (!F.isEmpty(writes)) {
+            for (IgniteTxEntry e : writes) {
                 IgniteTxEntry txEntry = tx.entry(e.txKey());
 
                 assert txEntry != null : "Missing tx entry for key [tx=" + tx + ", key=" + e.txKey() + ']';
@@ -1203,11 +1205,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         boolean skipInit = false;
 
         try {
+            Collection<IgniteTxEntry> writes = writes();
+
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
 
                 try {
-                    err0 = checkReadConflict(req.writes());
+                    err0 = checkReadConflict(writes);
 
                     if (err0 == null)
                         err0 = checkReadConflict(req.reads());
@@ -1265,8 +1269,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
             // Assign keys to primary nodes.
-            if (!F.isEmpty(req.writes())) {
-                for (IgniteTxEntry write : req.writes())
+            if (!F.isEmpty(writes)) {
+                for (IgniteTxEntry write : writes)
                     map(tx.entry(write.txKey()));
             }
 
@@ -1310,6 +1314,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (!skipInit)
                 markInitialized();
         }
+    }
+
+    /**
+     * @return Write entries.
+     */
+    private Collection<IgniteTxEntry> writes() {
+        return F.<IgniteTxEntry>concat(false, req.writes(), F.view(tx.writeEntries(), CU.FILTER_ENLISTED_ENTRY));
     }
 
     /** {@inheritDoc} */

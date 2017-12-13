@@ -91,6 +91,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Flag indicating that near cache is enabled on originating node and it should be added as reader. */
     private static final int TX_ENTRY_ADD_READER_FLAG_MASK = 0x08;
 
+    /** Flag indicating that entry was enlisted by query. */
+    private static final int TX_ENTRY_ENLISTED_FLAG_MASK = 0x10;
+
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
         AtomicIntegerFieldUpdater.newUpdater(IgniteTxEntry.class, "prepared");
@@ -548,6 +551,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public boolean addReader() {
         return isFlag(TX_ENTRY_ADD_READER_FLAG_MASK);
+    }
+
+    /**
+     * @param enlisted Query enlisted flag.
+     */
+    public void queryEnlisted(boolean enlisted) {
+        setFlag(enlisted, TX_ENTRY_ENLISTED_FLAG_MASK);
+    }
+
+    /**
+     * @return Query enlisted flag.
+     */
+    public boolean queryEnlisted() {
+        return isFlag(TX_ENTRY_ENLISTED_FLAG_MASK);
     }
 
     /**

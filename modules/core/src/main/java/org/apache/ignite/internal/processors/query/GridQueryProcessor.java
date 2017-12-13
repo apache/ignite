@@ -1877,6 +1877,32 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     *
+     * @param cctx Cache context.
+     * @param cacheIds Involved cache ids.
+     * @param parts Partitions.
+     * @param schema Schema name.
+     * @param qry Query string.
+     * @param params Query parameters.
+     * @param flags Flags.
+     * @param pageSize Fetch page size.
+     * @param timeout Timeout.
+     * @param topVer Topology version.
+     * @param mvccVer Mvc version.
+     * @param cancel Query cancel object.
+     * @return Cursor over entries which are going to be changed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCloseableIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] cacheIds,
+        int[] parts, String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
+        AffinityTopologyVersion topVer, MvccCoordinatorVersion mvccVer,
+        GridQueryCancel cancel) throws IgniteCheckedException {
+        checkxEnabled();
+
+        return idx.prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry, params, flags, pageSize, timeout, topVer, mvccVer, cancel);
+    }
+
+    /**
      * Query SQL fields.
      *
      * @param cctx Cache context.
