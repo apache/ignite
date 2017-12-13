@@ -353,7 +353,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             maxRejectedJobs = max(maxRejectedJobs, m.getCurrentRejectedJobs());
             avgRejectedJobs += m.getCurrentRejectedJobs();
 
-            curWaitingJobs += m.getCurrentJobWaitTime();
+            curWaitingJobs += m.getCurrentWaitingJobs();
             maxWaitingJobs = max(maxWaitingJobs, m.getCurrentWaitingJobs());
             avgWaitingJobs += m.getCurrentWaitingJobs();
 
@@ -363,7 +363,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             curJobWaitTime = min(curJobWaitTime, m.getCurrentJobWaitTime());
             maxJobWaitTime = max(maxJobWaitTime, m.getCurrentJobWaitTime());
-            avgJobWaitTime += m.getCurrentJobWaitTime();
+            avgJobWaitTime += m.getAverageJobWaitTime();
 
             daemonThreadCnt += m.getCurrentDaemonThreadCount();
 

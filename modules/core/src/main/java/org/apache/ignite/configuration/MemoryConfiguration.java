@@ -267,7 +267,7 @@ public class MemoryConfiguration implements Serializable {
      * Overrides size of default memory policy which is created automatically.
      *
      * If user doesn't specify any memory policy configuration, a default one with default size
-     * (80% of available RAM) is created by Ignite.
+     * (20% of available RAM) is created by Ignite.
      *
      * This property allows user to specify desired size of default memory policy
      * without having to use more verbose syntax of MemoryPolicyConfiguration elements.
