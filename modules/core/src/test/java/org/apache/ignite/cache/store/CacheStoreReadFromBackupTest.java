@@ -33,6 +33,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -105,7 +108,7 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
         backups = 0;
         near = false;
 
-        checkReadFromBackup();
+        startAndCheckReadFromBackup();
     }
 
     /**
@@ -116,7 +119,7 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
         backups = 1;
         near = false;
 
-        checkReadFromBackup();
+        startAndCheckReadFromBackup();
     }
 
     /**
@@ -127,7 +130,7 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
         backups = 0;
         near = true;
 
-        checkReadFromBackup();
+        startAndCheckReadFromBackup();
     }
 
     /**
@@ -138,17 +141,36 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
         backups = 1;
         near = true;
 
-        checkReadFromBackup();
+        startAndCheckReadFromBackup();
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void checkReadFromBackup() throws Exception {
+    private void startAndCheckReadFromBackup() throws Exception {
         startGridsMultiThreaded(2, true);
 
-        checkReadSingleFromBackup();
-        checkReadAllFromBackup();
+        checkReadFromBackup(null, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    void checkReadFromBackup(TransactionConcurrency txConcurrency, TransactionIsolation txIsolation) throws Exception {
+        Transaction tx = txConcurrency != null && txIsolation != null
+            ? grid(0).transactions().txStart(txConcurrency, txIsolation)
+            : null;
+
+        try {
+            checkReadSingleFromBackup();
+            checkReadAllFromBackup();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+
+            grid(0).cache(CACHE_NAME).clear();
+        }
     }
 
     /**

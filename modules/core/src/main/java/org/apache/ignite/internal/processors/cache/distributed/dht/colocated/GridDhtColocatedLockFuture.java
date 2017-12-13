@@ -1657,6 +1657,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         // Set value to detached entry.
                         entry.resetFromPrimary(newVal, dhtVer);
 
+                        CU.BackupPostProcessingClosure clos = CU.createBackupPostProcessingClosure(topVer,
+                            log, cctx, k, cctx.expiryForTxEntry(txEntry), cctx.readThrough(), !retval);
+
+                        if (clos != null)
+                            clos.apply(newVal, res.dhtVersion(i));
+
                         tx.hasRemoteLocks(true);
 
                         if (log.isDebugEnabled())

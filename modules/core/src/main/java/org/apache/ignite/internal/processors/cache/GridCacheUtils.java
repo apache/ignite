@@ -1682,6 +1682,58 @@ public class GridCacheUtils {
         }
     }
 
+
+    /**
+     * Creates closure that saves initial value to backup partition.
+     * <p>
+     * Useful only when store with readThrough is used. In situation when
+     * get() on backup node returns successful result, it's expected that
+     * localPeek() will be successful as well. But it doesn't true when
+     * primary node loaded value from local store, in this case backups
+     * will remain non-initialized.
+     * <br>
+     * To meet that requirement the value requested from primary should
+     * be saved on backup during get().
+     * </p>
+     *
+     * @param topVer Topology version.
+     * @param log Logger.
+     * @param cctx Cctx.
+     * @param key Key.
+     * @param expiryPlc Expiry policy.
+     * @param readThrough Read through.
+     * @param skipVals Skip vals.
+     */
+    @Nullable public static BackupPostProcessingClosure createBackupPostProcessingClosure(
+        final AffinityTopologyVersion topVer,
+        final IgniteLogger log,
+        final GridCacheContext cctx,
+        final @Nullable KeyCacheObject key,
+        final @Nullable ExpiryPolicy expiryPlc,
+        boolean readThrough,
+        boolean skipVals
+    ) {
+        IgniteCacheExpiryPolicy ignExpPolicy = null;
+
+        if (expiryPlc != null) {
+            ignExpPolicy = new GridCacheAdapter.CacheExpiryPolicy() {
+                @Override public long forCreate() {
+                    return toTtl(expiryPlc.getExpiryForCreation());
+                }
+
+                @Override public long forUpdate() {
+                    return toTtl(expiryPlc.getExpiryForUpdate());
+                }
+
+                @Override public long forAccess() {
+                    return toTtl(expiryPlc.getExpiryForAccess());
+                }
+            };
+        }
+
+        return createBackupPostProcessingClosure(topVer, log, cctx, key, ignExpPolicy, readThrough, skipVals);
+    }
+
     /**
      * Creates closure that saves initial value to backup partition.
      * <p>
@@ -1755,7 +1807,7 @@ public class GridCacheUtils {
             }
 
             @Override public void apply(CacheObject val, GridCacheVersion ver) {
-                process(key, val, ver, cctx.dht());
+                process(key, val, ver, cctx.cache().isNear() ? ((GridNearCacheAdapter)cctx.cache()).dht() : cctx.dht());
             }
 
             @Override public void apply(Collection<GridCacheEntryInfo> infos) {
