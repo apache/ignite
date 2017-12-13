@@ -9,6 +9,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -21,30 +22,30 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Verifies index naming for Optimized Marshaller case.
+ * Verifies correct indexes naming for Optimized Marshaller with enabled persistence case.
  *
  * See IGNITE-6915 for details.
  */
 
 public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
+    /** Test name 1 */
     private static final String TEST_NAME1 = "Name1";
+    /** Test name 2 */
     private static final String TEST_NAME2 = "Name2";
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName, IgniteTestResources rsrcs)
         throws Exception {
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName, rsrcs);
-
-        // Bug IGNITE-6915 reproduces only when persistence is enabled and optimized marshaller is employed
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -61,17 +62,23 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    protected static CacheConfiguration cacheConfiguration(String name) {
-        CacheConfiguration cfg = new CacheConfiguration(name);
+    /**
+     * Creates cache configuration with required indexed types.
+     *
+     * @param name The name of the cache
+     */
+    @SuppressWarnings("deprecation")
+    protected static CacheConfiguration<Object, Object> cacheConfiguration(String name) {
+        CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>(name);
 
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setNearConfiguration(new NearCacheConfiguration());
+        cfg.setNearConfiguration(new NearCacheConfiguration<>());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setEvictionPolicy(null);
 
         cfg.setIndexedTypes(
-            Key.class, Person.class,
-            FalseKey.class, FalsePerson.class);
+            UUID.class, Person.class,
+            UUID.class, FalsePerson.class);
 
         return cfg;
     }
@@ -85,168 +92,159 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
         grid().active(true);
     }
 
-    public void testOptimizedMarshallerIndex() throws Exception {
+    /**
+     * Verifies that BPlusTree are not erroneously shared between tables in the same cache
+     * due to IGNITE-6915 bug.
+     */
+    public void testOptimizedMarshallerIndex() {
 
-        // Cache 1
-        CacheConfiguration ccfg = cacheConfiguration("PersonEn");
+        // Put objects of different types into the same cache
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration("PersonEn");
 
-        IgniteCache<Object, Object> cache1 = grid().getOrCreateCache(ccfg);
+        IgniteCache<Object, Object> cache = grid().getOrCreateCache(ccfg);
 
-        cache1.put(new Key(UUID.randomUUID()), new Person(TEST_NAME1, 42));
-        cache1.put(new FalseKey(UUID.randomUUID()), new FalsePerson(32, TEST_NAME2));
+        cache.put(UUID.randomUUID(), new Person(TEST_NAME1, 42));
+        cache.put(UUID.randomUUID(), new FalsePerson(32, TEST_NAME2));
 
-        // Check
+        // Run query against one particular type
         SqlFieldsQueryEx qry = new SqlFieldsQueryEx(
             "select * from " + QueryUtils.typeName(FalsePerson.class), true);
 
-        List<List<?>> result = cache1.query(qry).getAll();
+        // If fix for IGNITE-6915 doesn't work you should see exception like the one below in the log:
+        //
+        // org.h2.jdbc.JdbcSQLException: General error: "class org.apache.ignite.IgniteCheckedException:
+        // Failed to invoke getter method [type=int, property=name,
+        // obj=org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest$Person@...:
+        // org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest$Person@...,
+        // getter=public int org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest$FalsePerson.getName()]"
 
-        assertEquals(1, result.size());
+        List<List<?>> res = cache.query(qry).getAll();
+
+        assertEquals(1, res.size());
     }
 
+    /**
+     * Returns subdirectory of the work directory to put persistence store.
+     * For this test it's a class name.
+     *
+     * @return The name of subdirectory (the short name of the test class).
+     */
     @NotNull private String workSubdir() {
         return getClass().getSimpleName();
     }
 
-    public static class Key implements Externalizable {
-        private UUID uuid;
-
-        public UUID getUuid() {
-            return uuid;
-        }
-
-        public Key() {
-        }
-
-        public Key(UUID uuid) {
-            this.uuid = uuid;
-        }
-
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeUTF(uuid.toString());
-        }
-
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            uuid = UUID.fromString(in.readUTF());
-        }
-
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            Key key = (Key)o;
-            return Objects.equals(uuid, key.uuid);
-        }
-
-        @Override public int hashCode() {
-            return Objects.hash(uuid);
-        }
-    }
-
+    /** Entity to query. */
     public static class Person implements Externalizable {
 
+        /** Person name. */
         @QuerySqlField(index = true, inlineSize = 0)
         private String name;
 
+        /** Person age. */
         @QuerySqlField(index = true, inlineSize = 0)
         private int age;
 
+        /** Creates a unnamed newborn person. */
         public Person() {
         }
 
+        /**
+         * Creates a person.
+         *
+         * @param name Name
+         * @param age Age
+         */
         public Person(String name, int age) {
             this.name = name;
             this.age = age;
         }
 
+        /**
+         * Returns name of the person.
+         * @return The name of the person.
+         */
         public String getName() {
             return name;
         }
 
+        /**
+         * Returns age of the person.
+         * @return Person's age.
+         */
         public int getAge() {
             return age;
         }
 
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeUTF(name);
             out.writeInt(age);
         }
 
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException {
             name = in.readUTF();
             age = in.readInt();
         }
     }
 
-
-    public static class FalseKey implements Externalizable {
-        private UUID uuid;
-
-        public UUID getUuid() {
-            return uuid;
-        }
-
-        public FalseKey() {
-        }
-
-        public FalseKey(UUID uuid) {
-            this.uuid = uuid;
-        }
-
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeUTF(uuid.toString());
-        }
-
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            uuid = UUID.fromString(in.readUTF());
-        }
-
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            FalseKey key = (FalseKey)o;
-            return Objects.equals(uuid, key.uuid);
-        }
-
-        @Override public int hashCode() {
-            return Objects.hash(uuid);
-        }
-
-    }
-
+    /**
+     * The class that should not be met in the Person table queried
+     * due to mixing of {@link BPlusTree}-s.
+     *
+     * Note that the types of name and age are swapped.
+     */
     public static class FalsePerson implements Externalizable {
 
+        /** Person numeric name in future digital age */
         @QuerySqlField(index = true, inlineSize = 0)
         private int name;
 
+        /** Age is a string. Life's road could be twisted. */
         @QuerySqlField(index = true, inlineSize = 0)
         private String age;
 
+        /** Creates an anonymous baby. */
         public FalsePerson() {
         }
 
+        /**
+         * Creates a person of new type.
+         *
+         * @param name Numeric name.
+         * @param age Digital age.
+         */
         public FalsePerson(int name, String age) {
             this.name = name;
             this.age = age;
         }
 
+        /**
+         * Says how should you call this person.
+         *
+         * @return that digital name of the person.
+         */
         public int getName() {
             return name;
         }
 
+        /**
+         * Makes you informed about person's bio.
+         *
+         * @return age as a string.
+         */
         public String getAge() {
             return age;
         }
 
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeInt(name);
             out.writeUTF(age);
         }
 
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException {
             name = in.readInt();
             age = in.readUTF();
         }
