@@ -112,6 +112,12 @@ export default class IgniteAgentManager {
 
         this.connectionSbj = new BehaviorSubject(new ConnectionState(cluster));
 
+        let prevCluster;
+
+        this.currentCluster$ = this.connectionSbj
+            .distinctUntilChanged(({ cluster }) => prevCluster === cluster)
+            .do(({ cluster }) => prevCluster = cluster);
+
         this.clusterVersion = '2.1.0';
 
         if (!this.isDemoMode()) {
