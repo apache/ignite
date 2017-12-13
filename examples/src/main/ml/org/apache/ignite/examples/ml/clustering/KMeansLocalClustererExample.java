@@ -22,10 +22,10 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
 import org.apache.ignite.ml.clustering.KMeansModel;
-import org.apache.ignite.ml.math.DistanceMeasure;
-import org.apache.ignite.ml.math.EuclideanDistance;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 

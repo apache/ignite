@@ -23,6 +23,7 @@ import org.apache.ignite.ml.math.decompositions.LUDecompositionTest;
 import org.apache.ignite.ml.math.decompositions.QRDSolverTest;
 import org.apache.ignite.ml.math.decompositions.QRDecompositionTest;
 import org.apache.ignite.ml.math.decompositions.SingularValueDecompositionTest;
+import org.apache.ignite.ml.math.distances.DistanceTest;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOffHeapMatrixConstructorTest;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrixConstructorTest;
 import org.apache.ignite.ml.math.impls.matrix.DiagonalMatrixTest;
@@ -117,8 +118,9 @@ import org.junit.runners.Suite;
     EigenDecompositionTest.class,
     CholeskyDecompositionTest.class,
     QRDecompositionTest.class,
+    SingularValueDecompositionTest.class,
     QRDSolverTest.class,
-    SingularValueDecompositionTest.class
+    DistanceTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.
