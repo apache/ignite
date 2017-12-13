@@ -270,9 +270,10 @@ public class LabeledDataset implements Serializable {
     }
 
     /**
-     * Returns new copy of labels of all labeled vectors
-     * NOTE: This method is useful for copying labels from test dataset
-     * @return copy of labels
+     * Returns new copy of labels of all labeled vectors NOTE: This method is useful for copying labels from test
+     * dataset.
+     *
+     * @return Copy of labels.
      */
     public double[] labels() {
         assert data != null;

@@ -28,7 +28,6 @@ import org.apache.ignite.examples.ml.knn.classification.KNNClassificationExample
 import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.knn.models.Normalization;
 import org.apache.ignite.ml.knn.regression.KNNMultipleLinearRegression;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
@@ -123,17 +122,17 @@ public class KNNRegressionExample {
                     for (int i = 0; i < test.rowSize(); i++)
                         avg += test.label(i);
 
-                    avg = avg/test.rowSize();
+                    avg = avg / test.rowSize();
 
                     double detCf = 0.0;
                     double tss = 0.0;
 
-                    for (int i = 0; i < test.rowSize(); i++){
+                    for (int i = 0; i < test.rowSize(); i++) {
                         detCf += Math.pow(test.label(i) - labels[i], 2.0);
                         tss += Math.pow(test.label(i) - avg, 2.0);
                     }
 
-                    detCf = 1 - detCf/tss;
+                    detCf = 1 - detCf / tss;
 
                     System.out.println("\n>>> R^2 " + detCf);
                 }

@@ -228,7 +228,6 @@ public class LabeledDatasetTest extends BaseKNNTest {
         assertEquals(4, split1.test().rowSize());
         assertEquals(2, split1.train().rowSize());
 
-
         LabeledDatasetTestTrainPair split2 = new LabeledDatasetTestTrainPair(training, 0.65);
 
         assertEquals(3, split2.test().rowSize());
@@ -263,6 +262,5 @@ public class LabeledDatasetTest extends BaseKNNTest {
         final double[] labels = dataset.labels();
         for (int i = 0; i < lbs.length; i++)
             assertEquals(lbs[i], labels[i]);
-
     }
 }

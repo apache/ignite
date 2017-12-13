@@ -108,30 +108,29 @@ public class KNNClassificationExample {
                     for (int i = 0; i < test.rowSize(); i++) {
                         int idx1 = (int)test.label(i);
                         int idx2 = (int)labels[i];
-                        confusionMtx[idx1-1][idx2-1]++;
+                        confusionMtx[idx1 - 1][idx2 - 1]++;
                     }
                     System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
-
 
                     // Calculate precision, recall and F-metric for each class
                     for (int i = 0; i < 3; i++) {
                         double precision = 0.0;
                         for (int j = 0; j < 3; j++)
-                            precision +=confusionMtx[i][j];
-                        precision = confusionMtx[i][i]/precision;
+                            precision += confusionMtx[i][j];
+                        precision = confusionMtx[i][i] / precision;
 
-                        double classLabel = (double)(i + 1);
+                        double clsLb = (double)(i + 1);
 
-                        System.out.println("\n>>> Precision for class " + classLabel + " is " + precision);
+                        System.out.println("\n>>> Precision for class " + clsLb + " is " + precision);
 
                         double recall = 0.0;
                         for (int j = 0; j < 3; j++)
-                            recall +=confusionMtx[j][i];
-                        recall = confusionMtx[i][i]/recall;
-                        System.out.println("\n>>> Recall for class " + classLabel + " is " + recall);
+                            recall += confusionMtx[j][i];
+                        recall = confusionMtx[i][i] / recall;
+                        System.out.println("\n>>> Recall for class " + clsLb + " is " + recall);
 
                         double fScore = 2 * precision * recall / (precision + recall);
-                        System.out.println("\n>>> F-score for class " + classLabel + " is " + fScore);
+                        System.out.println("\n>>> F-score for class " + clsLb + " is " + fScore);
                     }
 
                 }

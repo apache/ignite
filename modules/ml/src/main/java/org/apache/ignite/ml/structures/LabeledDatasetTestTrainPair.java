@@ -80,21 +80,29 @@ public class LabeledDatasetTestTrainPair implements Serializable {
     /** This method generates "random double, integer" pairs, sort them, gets first "testSize" elements and returns appropriate indices */
     @NotNull private TreeSet<Integer> getSortedIndices(int datasetSize, int testSize) {
         Random rnd = new Random();
-        TreeMap<Double, Integer> randomIndexPairs = new TreeMap<>();
+        TreeMap<Double, Integer> randomIdxPairs = new TreeMap<>();
         for (int i = 0; i < datasetSize; i++)
-            randomIndexPairs.put(rnd.nextDouble(), i);
+            randomIdxPairs.put(rnd.nextDouble(), i);
 
-        final TreeMap<Double, Integer> testIndexPairs = randomIndexPairs.entrySet().stream()
+        final TreeMap<Double, Integer> testIdxPairs = randomIdxPairs.entrySet().stream()
             .limit(testSize)
             .collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
 
-        return new TreeSet<>(testIndexPairs.values());
+        return new TreeSet<>(testIdxPairs.values());
     }
 
+    /**
+     * Train subset of the whole dataset.
+     * @return Train subset.
+     */
     public LabeledDataset train() {
         return train;
     }
 
+    /**
+     * Test subset of the whole dataset.
+     * @return Test subset.
+     */
     public LabeledDataset test() {
         return test;
     }
