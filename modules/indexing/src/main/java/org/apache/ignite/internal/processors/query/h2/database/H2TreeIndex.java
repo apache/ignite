@@ -72,6 +72,9 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
 
+    /** */
+    private int inlineSize;
+
     /**
      * @param cctx Cache context.
      * @param tbl Table.
@@ -137,7 +140,44 @@ public class H2TreeIndex extends GridH2IndexBase {
             inlineIdxs = null;
         }
 
+        this.inlineSize = inlineSize;
+
         initDistributedJoinMessaging(tbl);
+    }
+
+    /**
+     * Creates a copy of the given index but with the reversed sort order in all index columns.
+     *
+     * @return Copy of the given index with reversed sort order.
+     * @throws IgniteCheckedException If failed.
+     */
+    public H2TreeIndex createReversedCopy() throws IgniteCheckedException {
+        List<IndexColumn> idxCols = new ArrayList<>(indexColumns.length);// = Arrays.asList(Arrays.copyOf(indexColumns, indexColumns.length));
+
+        for (int i = 0; i < indexColumns.length; i++) {
+            IndexColumn reversedColumn = new IndexColumn();
+
+            IndexColumn oldColumn = indexColumns[i];
+
+            reversedColumn.columnName = oldColumn.columnName;
+            reversedColumn.column = oldColumn.column;
+            reversedColumn.sortType = oldColumn.sortType ^ 1;
+
+            idxCols.add(reversedColumn);
+        }
+
+        return new H2TreeIndex(cctx, (GridH2Table)table, getReverseIndexName(getName()), false,
+            idxCols, inlineSize, segments.length);
+    }
+
+    /**
+     * Name for a reversed index.
+     *
+     * @param idxName Index name.
+     * @return Name of reversed copy.
+     */
+    public static String getReverseIndexName(String idxName) {
+        return idxName + "_reversed";
     }
 
     /**
