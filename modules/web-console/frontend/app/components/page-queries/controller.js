@@ -929,9 +929,6 @@ export default class {
             const awaitClusters$ = fromPromise(
                 agentMgr.startClusterWatch('Leave Queries', 'default-state'));
 
-            const currentCluster$ = agentMgr.connectionSbj
-                .distinctUntilChanged((n, o) => n.cluster === o.cluster);
-
             const finishLoading$ = defer(() => {
                 if (!$root.IgniteDemoMode)
                     Loading.finish('sqlLoading');
@@ -942,7 +939,7 @@ export default class {
             };
 
             this.refresh$ = awaitClusters$
-                .mergeMap(() => currentCluster$)
+                .mergeMap(() => agentMgr.currentCluster$)
                 .do(() => Loading.start('sqlLoading'))
                 .do(() => {
                     _.forEach($scope.notebook.paragraphs, (paragraph) => {

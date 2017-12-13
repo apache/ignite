@@ -19,6 +19,12 @@
 
 const uuid = require('uuid/v4');
 
+const fs = require('fs');
+const path = require('path');
+const JSZip = require('jszip');
+const socketio = require('socket.io');
+const _ = require('lodash');
+
 // Fire me up!
 
 /**
@@ -26,21 +32,16 @@ const uuid = require('uuid/v4');
  */
 module.exports = {
     implements: 'agents-handler',
-    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo', 'agent-socket']
+    inject: ['settings', 'mongo', 'agent-socket']
 };
 
 /**
- * @param _
- * @param fs
- * @param path
- * @param JSZip
- * @param socketio
  * @param settings
  * @param mongo
  * @param {AgentSocket} AgentSocket
  * @returns {AgentsHandler}
  */
-module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo, AgentSocket) {
+module.exports.factory = function(settings, mongo, AgentSocket) {
     class AgentSockets {
         constructor() {
             /**

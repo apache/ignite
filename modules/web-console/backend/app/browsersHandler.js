@@ -17,6 +17,9 @@
 
 'use strict';
 
+const _ = require('lodash');
+const socketio = require('socket.io');
+
 // Fire me up!
 
 /**
@@ -24,8 +27,8 @@
  */
 module.exports = {
     implements: 'browsers-handler',
-    inject: ['require(lodash)', 'require(socket.io)', 'configure', 'errors', 'mongo'],
-    factory: (_, socketio, configure, errors, mongo) => {
+    inject: ['configure', 'errors', 'mongo'],
+    factory: (configure, errors, mongo) => {
         class BrowserSockets {
             constructor() {
                 this.sockets = new Map();
