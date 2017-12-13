@@ -211,8 +211,6 @@ struct MetaQueriesTestSuiteFixture
      */
     ~MetaQueriesTestSuiteFixture()
     {
-        SQLExecDirect(stmt, reinterpret_cast<SQLCHAR*>("drop table if exists TestTable"), SQL_NTS);
-
         Disconnect();
 
         Ignition::StopAll(true);
