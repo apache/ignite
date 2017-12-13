@@ -41,21 +41,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RecursiveTask;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -110,6 +106,9 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CompletedSuccessFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -142,12 +141,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -173,7 +172,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
 
     /**
-     *
+     * Pages comparator to order disk writes, first compare by cache group and then by effective page
      */
     public static final Comparator<FullPageId> SEQUENTIAL_CP_PAGE_COMPARATOR = new Comparator<FullPageId>() {
         @Override public int compare(FullPageId o1, FullPageId o2) {
@@ -297,7 +296,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private boolean stopping;
 
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
-    @Nullable private ExecutorService asyncRunner;
+    @Nullable private volatile AsyncCheckpointer asyncCheckpointer;
 
     /** Buffer for the checkpoint threads. */
     private ThreadLocal<ByteBuffer> threadBuf;
@@ -424,14 +423,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void initDataBase() {
         if (persistenceCfg.getCheckpointThreads() > 1)
-            asyncRunner = new IgniteThreadPoolExecutor(
-                "checkpoint-runner",
-                cctx.igniteInstanceName(),
-                persistenceCfg.getCheckpointThreads(),
-                persistenceCfg.getCheckpointThreads(),
-                30_000,
-                new LinkedBlockingQueue<Runnable>()
-            );
+            asyncCheckpointer = new AsyncCheckpointer(persistenceCfg.getCheckpointThreads(),
+                cctx.igniteInstanceName(), log);
     }
 
     /**
@@ -855,16 +848,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        if (asyncRunner != null) {
-            asyncRunner.shutdownNow();
-
-            try {
-                asyncRunner.awaitTermination(2, TimeUnit.MINUTES);
-            }
-            catch (InterruptedException ignore) {
-                Thread.currentThread().interrupt();
-            }
-        }
+        if (asyncCheckpointer != null)
+            asyncCheckpointer.shutdownCheckpointer();
     }
 
     /** {@inheritDoc} */
@@ -1980,102 +1965,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return cpTs + "-" + cpId + "-" + type + ".bin";
     }
 
-    private static class QuickSortRecursiveTask extends RecursiveTask<FullPageId[]> {
-        private static Random random = new Random();
-        /** Source array to sort. */
-        private final FullPageId[] array;
-        /** Start position. Index of first element inclusive. */
-        private final int position;
-        /** Limit. Index of last element exclusive. */
-        private final int limit;
-        private Comparator<FullPageId> comp;
-
-        public QuickSortRecursiveTask(FullPageId[] arr,
-            Comparator<FullPageId> comp) {
-            this(arr, 0, arr.length, comp);
-        }
-
-        public QuickSortRecursiveTask(FullPageId[] arr, int position, int limit,
-            Comparator<FullPageId> comp) {
-            this.array = arr;
-            this.position = position;
-            this.limit = limit;
-            this.comp = comp;
-        }
-
-        @Override protected FullPageId[] compute() {
-            final int remaining = limit - position;
-            if (remaining < 1024 * 16) {
-                Arrays.sort(array, position, limit, comp);
-                if(false)
-                    System.err.println("Sorted [" + remaining + "] in " + Thread.currentThread().getName() );
-            }
-            else {
-                int centerIndex = partition2(array, position, limit, comp);
-                if(false) System.err.println("centerIndex="+centerIndex);
-                QuickSortRecursiveTask t1 = new QuickSortRecursiveTask(array, position,  centerIndex, comp);
-                QuickSortRecursiveTask t2 = new QuickSortRecursiveTask(array, centerIndex, limit, comp);
-                t1.fork();
-                t2.compute();
-                t1.join();
-            }
-            return array;
-        }
-
-        int partition(FullPageId[] arr, int position, int limit,
-            Comparator<FullPageId> comp) {
-            if(false)
-                System.err.println("Partition from " + position + " to " + limit); //todo remove
-            int i = position;
-            FullPageId x = arr[limit - 1];
-            for (int j = position; j < limit - 1; j++) {
-                if (comp.compare(arr[j], x) < 0) {
-                    swap(arr, i, j);
-                    i++;
-                }
-            }
-            swap(arr, i, limit - 1);
-            return i;
-        }
-
-        static int partition2(FullPageId[] arr, int position, int limit,
-            Comparator<FullPageId> comp) {
-            int left = position;
-            int right = limit-1;
-            final int randomIdx = (limit - position)/2 + position;
-            FullPageId referenceElement = arr[randomIdx]; // taking middle element as reference
-
-            while (left <= right) {
-                //searching number which is greater than reference
-                while (comp.compare(arr[left], referenceElement) < 0)
-                    left++;
-                //searching number which is less than reference
-                while (comp.compare(arr[right], referenceElement) > 0)
-                    right--;
-
-                // swap the values
-                if (left <= right) {
-                    FullPageId tmp = arr[left];
-                    arr[left] = arr[right];
-                    arr[right] = tmp;
-
-                    //increment left index and decrement right index
-                    left++;
-                    right--;
-                }
-            }
-            return left;
-        }
-
-
-        void swap(FullPageId[] arr, int i, int j) {
-            FullPageId tmp = arr[i];
-            arr[i] = arr[j];
-            arr[j] = tmp;
-        }
-
-    }
-
     /**
      *
      */
@@ -2198,11 +2087,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private void doCheckpoint() {
             try {
-                CheckpointMetricsTracker tracker = new CheckpointMetricsTracker();
+                final CheckpointMetricsTracker tracker = new CheckpointMetricsTracker();
 
-                Checkpoint chp = markCheckpointBegin(tracker);
+                final ConcurrentLinkedQueue<FullPageId[]> queue = asyncCheckpointer != null ? new ConcurrentLinkedQueue<FullPageId[]>() : null;
+                final Checkpoint chp = markCheckpointBegin(tracker, queue);
 
-                currCheckpointPagesCnt = chp.pagesSize;
+                currCheckpointPagesCnt = chp.cpPagesSize;
 
                 writtenPagesCntr = new AtomicInteger();
 
@@ -2211,47 +2101,75 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 try {
                     if (chp.hasDelta()) {
                         // Identity stores set.
-                        GridConcurrentHashSet<PageStore> updStores = new GridConcurrentHashSet<>();
+                        final GridConcurrentHashSet<PageStore> updStores = new GridConcurrentHashSet<>();
 
-                        CountDownFuture doneWriteFut = new CountDownFuture(
-                            asyncRunner == null ? 1 : chp.cpPages.collectionsSize());
+                        final int totalPagesToWriteCnt = chp.cpPagesSize;
 
                         tracker.onPagesWriteStart();
-
-                        final int totalPagesToWriteCnt = chp.cpPages.size();
-
-                        if (asyncRunner != null) {
-                            for (int i = 0; i < chp.cpPages.collectionsSize(); i++) {
-                                Runnable write = new WriteCheckpointPages(
-                                    tracker,
-                                    chp.cpPages.innerCollection(i),
-                                    updStores,
-                                    doneWriteFut,
-                                    totalPagesToWriteCnt
-                                );
-
-                                try {
-                                    asyncRunner.execute(write);
+                        Future<CountDownFuture> wrCompleteFuture;
+                        if (queue != null && chp.cpPagesChunksCountFuture != null) {
+                            wrCompleteFuture = asyncCheckpointer.lazySubmit(chp.cpPagesChunksCountFuture,
+                                queue,
+                                new IgniteBiClosure<FullPageId[], Future<CountDownFuture>, Runnable>() {
+                                @Override public Runnable apply(FullPageId[] ids, Future<CountDownFuture> fut) {
+                                    return new WriteCheckpointPages(
+                                        tracker,
+                                        Arrays.asList(ids),
+                                        updStores,
+                                        fut,
+                                        totalPagesToWriteCnt
+                                    );
                                 }
-                                catch (RejectedExecutionException ignore) {
-                                    // Run the task synchronously.
-                                    write.run();
-                                }
-                            }
+                            });
+
                         }
                         else {
-                            // Single-threaded checkpoint.
-                            Runnable write = new WriteCheckpointPages(tracker,
-                                chp.cpPages,
-                                updStores,
-                                doneWriteFut,
-                                totalPagesToWriteCnt);
+                            assert chp.cpPages != null;
 
-                            write.run();
+                            CountDownFuture doneWriteFut = new CountDownFuture(
+                                asyncCheckpointer == null ? 1 : chp.cpPages.collectionsSize());
+
+                            wrCompleteFuture = new CompletedSuccessFuture<>(doneWriteFut);
+
+                            if (asyncCheckpointer != null) {
+                                for (int i = 0; i < chp.cpPages.collectionsSize(); i++) {
+                                    Runnable write = new WriteCheckpointPages(
+                                        tracker,
+                                        chp.cpPages.innerCollection(i),
+                                        updStores,
+                                        wrCompleteFuture,
+                                        totalPagesToWriteCnt
+                                    );
+
+                                    asyncCheckpointer.execute(write);
+                                }
+                            }
+                            else {
+                                // Single-threaded checkpoint.
+                                Runnable write = new WriteCheckpointPages(tracker,
+                                    chp.cpPages,
+                                    updStores,
+                                    wrCompleteFuture,
+                                    totalPagesToWriteCnt);
+
+                                write.run();
+                            }
                         }
 
-                        // Wait and check for errors.
-                        doneWriteFut.get();
+                        try {
+                            // Wait and check for errors.
+                            final CountDownFuture future = wrCompleteFuture.get();
+
+                            future.get();
+                        }
+                        catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new IgniteInterruptedCheckedException(e);
+                        }
+                        catch (ExecutionException e) {
+                            e.printStackTrace(); //todo
+                            throw new RuntimeException(e.getCause());
+                        }
 
                         // Must re-check shutdown flag here because threads may have skipped some pages.
                         // If so, we should not put finish checkpoint mark.
@@ -2299,7 +2217,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     "walSegmentsCleared=%d, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
                                     "total=%dms]",
                                 chp.cpEntry.checkpointId(),
-                                chp.pagesSize,
+                                chp.cpPagesSize,
                                 chp.cpEntry.checkpointMark(),
                                 chp.walFilesDeleted,
                                 tracker.markDuration(),
@@ -2314,7 +2232,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         tracker.pagesWriteDuration(),
                         tracker.fsyncDuration(),
                         tracker.totalDuration(),
-                        chp.pagesSize,
+                        chp.cpPagesSize,
                         tracker.dataPagesWritten(),
                         tracker.cowPagesWritten());
                 }
@@ -2325,7 +2243,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         tracker.pagesWriteDuration(),
                         tracker.fsyncDuration(),
                         tracker.totalDuration(),
-                        chp.pagesSize,
+                        chp.cpPagesSize,
                         tracker.dataPagesWritten(),
                         tracker.cowPagesWritten());
                 }
@@ -2367,10 +2285,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         *
+         * Under CP write lock collects dirty pages, after that provides CP pages to write.
+         * @param queue optional queue to asynchronous provisioning of sorted arrays.
          */
         @SuppressWarnings("TooBroadScope")
-        private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
+        private Checkpoint markCheckpointBegin(
+            CheckpointMetricsTracker tracker,
+            @Nullable ConcurrentLinkedQueue<FullPageId[]> queue) throws IgniteCheckedException {
             CheckpointRecord cpRec = new CheckpointRecord(null);
 
             WALPointer cpPtr = null;
@@ -2449,7 +2370,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 cpPagesTuple = beginAllCheckpoints();
 
-                hasPages = hasPageForWrite(cpPagesTuple.get1());
+                hasPages = cpPagesTuple.get2() > 0;
 
                 if (hasPages) {
                     // No page updates for this checkpoint are allowed from now on.
@@ -2477,6 +2398,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
+            final int totalCpPages = cpPagesTuple.get2();
             if (hasPages) {
                 assert cpPtr != null;
 
@@ -2503,7 +2425,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 checkpointHist.addCheckpointEntry(cpEntry);
 
                 tracker.onSortSplitStart();
-                GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
+                GridMultiCollectionWrapper<FullPageId> cpPages;
+                final ForkJoinTask<Integer> cpPagesChunksCountFuture;
+                if (queue != null
+                    && persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL
+                    && !AsyncCheckpointer.QuickSortRecursiveTask.isUnderThreshold(totalCpPages)) {
+
+                    if (log.isInfoEnabled())
+                        log.info(String.format("Activated parallel page sort for [pages=%d]", totalCpPages));
+
+                    cpPagesChunksCountFuture = asyncCheckpointer.splitAndSortCpPagesIfNeeded3(cpPagesTuple, queue);
+
+                    cpPages = null;
+                }
+                else {
+                    cpPagesChunksCountFuture = null;
+
+                    cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
+                }
+
                 final long sortDuration = tracker.onSortSplitStop();
 
                 if (printCheckpointStats)
@@ -2515,11 +2455,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.lockWaitDuration(),
                             tracker.lockHoldDuration(),
                             sortDuration,
-                            cpPages.size(),
+                            totalCpPages,
                             curr.reason)
                         );
 
-                return new Checkpoint(cpEntry, cpPages, curr);
+                return new Checkpoint(cpEntry, cpPages, curr, cpPagesChunksCountFuture, totalCpPages);
             }
             else {
                 if (curr.nextSnapshot)
@@ -2534,28 +2474,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             curr.reason));
                 }
 
-                GridMultiCollectionWrapper<FullPageId> wrapper = new GridMultiCollectionWrapper<>(new Collection[0]);
+                GridMultiCollectionWrapper<FullPageId> wrapper = new GridMultiCollectionWrapper<>(Collections.<FullPageId>emptyList());
 
-                return new Checkpoint(null, wrapper, curr);
+                return new Checkpoint(null, wrapper, curr, null, 0);
             }
-        }
-
-        /**
-         * Check that at least one collection is not empty.
-         *
-         * @param cpPagesCollWrapper Collection of {@link GridMultiCollectionWrapper} checkpoint pages.
-         */
-        private boolean hasPageForWrite(Collection<GridMultiCollectionWrapper<FullPageId>> cpPagesCollWrapper) {
-            boolean hasPages = false;
-
-            for (Collection c : cpPagesCollWrapper)
-                if (!c.isEmpty()) {
-                    hasPages = true;
-
-                    break;
-                }
-
-            return hasPages;
         }
 
         /**
@@ -2647,34 +2569,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public GridMultiCollectionWrapper<FullPageId> splitAndSortCpPagesIfNeeded(
         IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple
     ) {
-        List<FullPageId> cpPagesList = new ArrayList<>(cpPagesTuple.get2());
-
-        for (GridMultiCollectionWrapper<FullPageId> col : cpPagesTuple.get1()) {
-            for (int i = 0; i < col.collectionsSize(); i++)
-                cpPagesList.addAll(col.innerCollection(i));
-        }
+        final FullPageId[] cpPagesArr = CheckpointScope.pagesToArray(cpPagesTuple);
 
         if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL)
-            Collections.sort(cpPagesList, SEQUENTIAL_CP_PAGE_COMPARATOR);
+            Arrays.sort(cpPagesArr, SEQUENTIAL_CP_PAGE_COMPARATOR);
 
         int cpThreads = persistenceCfg.getCheckpointThreads();
 
         int pagesSubLists = cpThreads == 1 ? 1 : cpThreads * 4;
-        // Splitting pages to (threads * 4) subtasks. If any thread will be faster, it will help slower threads.
 
-        Collection[] pagesSubListArr = new Collection[pagesSubLists];
-
-        for (int i = 0; i < pagesSubLists; i++) {
-            int totalSize = cpPagesList.size();
-
-            int from = totalSize * i / (pagesSubLists);
-
-            int to = totalSize * (i + 1) / (pagesSubLists);
-
-            pagesSubListArr[i] = cpPagesList.subList(from, to);
-        }
-
-        return new GridMultiCollectionWrapper<FullPageId>(pagesSubListArr);
+        return CheckpointScope.split(cpPagesArr, pagesSubLists);
     }
 
     public GridMultiCollectionWrapper<FullPageId> splitAndSortCpPagesIfNeeded2(
@@ -2683,16 +2587,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) {
         final int totalSize = cpPagesTuple.get2();
 
-          FullPageId[] pageIds = new FullPageId[totalSize];
-        int idx=0;
+        FullPageId[] pageIds = new FullPageId[totalSize];
+        int idx = 0;
         for (GridMultiCollectionWrapper<FullPageId> col : cpPagesTuple.get1()) {
             for (int i = 0; i < col.collectionsSize(); i++) {
-                final Collection<FullPageId> c = col.innerCollection(i);
-                if(c instanceof ArrayList) {
-                    final ArrayList c1 = (ArrayList)c;
-
-                }
-                for (FullPageId next : c) {
+                for (FullPageId next : col.innerCollection(i)) {
                     pageIds[idx] = next;
                     idx++;
                 }
@@ -2702,9 +2601,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL) {
             final Comparator<FullPageId> comp = SEQUENTIAL_CP_PAGE_COMPARATOR;
             try {
-                final QuickSortRecursiveTask task = new QuickSortRecursiveTask(pageIds, comp);
-                final ForkJoinTask<FullPageId[]> submit = pool.submit(task);
-                pageIds = submit.get();
+                final AsyncCheckpointer.QuickSortRecursiveTask task = new AsyncCheckpointer.QuickSortRecursiveTask(pageIds, comp, null);
+                final ForkJoinTask<Integer> submit = pool.submit(task);
+                final Integer integer = submit.get();
+
                 // cpPagesList = Arrays.asList(ids);
             }
             catch (InterruptedException e) {
@@ -2719,20 +2619,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         int cpThreads = persistenceCfg.getCheckpointThreads();
 
         int pagesSubLists = cpThreads == 1 ? 1 : cpThreads * 4;
-        // Splitting pages to (threads * 4) subtasks. If any thread will be faster, it will help slower threads.
-
-        Collection[] pagesSubListArr = new Collection[pagesSubLists];
-
-        for (int i = 0; i < pagesSubLists; i++) {
-            int from = totalSize * i / (pagesSubLists);
-
-            int to = totalSize * (i + 1) / (pagesSubLists);
-
-            final FullPageId[] ids = Arrays.copyOfRange(pageIds, from, to);
-            pagesSubListArr[i] = Arrays.asList(ids);
-        }
-
-        return new GridMultiCollectionWrapper<FullPageId>(pagesSubListArr);
+        return CheckpointScope.split(pageIds, pagesSubLists);
     }
 
     /** Pages write task */
@@ -2747,15 +2634,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private GridConcurrentHashSet<PageStore> updStores;
 
         /** */
-        private CountDownFuture doneFut;
+        private Future<CountDownFuture> futOfDoneFut;
 
         /** Total pages to write, counter may be greater than {@link #writePageIds} size */
         private final int totalPagesToWrite;
 
         /**
          * Creates task for write pages
-         *
-         * @param tracker
+         *  @param tracker
          * @param writePageIds Collection of page IDs to write.
          * @param updStores
          * @param doneFut
@@ -2765,12 +2651,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             final CheckpointMetricsTracker tracker,
             final Collection<FullPageId> writePageIds,
             final GridConcurrentHashSet<PageStore> updStores,
-            final CountDownFuture doneFut,
+            final Future<CountDownFuture> doneFut,
             final int totalPagesToWrite) {
             this.tracker = tracker;
             this.writePageIds = writePageIds;
             this.updStores = updStores;
-            this.doneFut = doneFut;
+            this.futOfDoneFut = doneFut;
             this.totalPagesToWrite = totalPagesToWrite;
         }
 
@@ -2836,10 +2722,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                 }
 
-                doneFut.onDone((Void)null);
+                log.info("Completed write of chunk [" + writePageIds.size() + "]");
+                futOfDoneFut.get().onDone((Void)null);
             }
             catch (Throwable e) {
-                doneFut.onDone(e);
+                try {
+                    futOfDoneFut.get().onDone(e);
+                }
+                catch (InterruptedException | ExecutionException ignored) {
+                    //this failure will be observed by main thread
+                }
             }
         }
     }
@@ -2863,7 +2755,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final CheckpointEntry cpEntry;
 
         /** Checkpoint pages. */
-        private final GridMultiCollectionWrapper<FullPageId> cpPages;
+        @Nullable private final GridMultiCollectionWrapper<FullPageId> cpPages;
 
         /** */
         private final CheckpointProgress progress;
@@ -2872,32 +2764,37 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private int walFilesDeleted;
 
         /** */
-        private final int pagesSize;
+        private final int cpPagesSize;
+
+        @Nullable private ForkJoinTask<Integer> cpPagesChunksCountFuture;
 
         /**
          * @param cpEntry Checkpoint entry.
          * @param cpPages Pages to write to the page store.
          * @param progress Checkpoint progress status.
+         * @param cpPagesChunksCountFuture
+         * @param size
          */
         private Checkpoint(
             CheckpointEntry cpEntry,
-            @NotNull GridMultiCollectionWrapper<FullPageId> cpPages,
-            CheckpointProgress progress
-        ) {
+            @Nullable GridMultiCollectionWrapper<FullPageId> cpPages,
+            CheckpointProgress progress,
+            @Nullable ForkJoinTask<Integer> cpPagesChunksCountFuture, int size) {
+            this.cpPagesChunksCountFuture = cpPagesChunksCountFuture;
             assert cpEntry == null || cpEntry.initGuard != 0;
 
             this.cpEntry = cpEntry;
             this.cpPages = cpPages;
             this.progress = progress;
 
-            pagesSize = cpPages.size();
+            cpPagesSize = size;
         }
 
         /**
          * @return {@code true} if this checkpoint contains at least one dirty page.
          */
         private boolean hasDelta() {
-            return pagesSize != 0;
+            return cpPagesSize != 0;
         }
     }
 
@@ -3143,7 +3040,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             chp.walFilesDeleted = deleted;
 
-            if (!chp.cpPages.isEmpty())
+            if (chp.cpPagesSize > 0)
                 cctx.wal().allowCompressionUntil(chp.cpEntry.checkpointMark());
         }
 
