@@ -1148,19 +1148,9 @@ public class QueryUtils {
                 ", valFieldName=" + valFieldName + "]");
         }
 
-        if (!F.isEmpty(keyFieldName) && !F.isEmpty(entity.getKeyFields())) {
-            throw new IgniteException("Ambiguous key configuration - keyFields may not be used " +
-                "together with keyFieldName");
-        }
-
         // This is how many entries in QueryEntity#fields correspond to key.
         int keyFldsNum = !F.isEmpty(keyFieldName) ? 1 : (entity.getKeyFields() != null ?
             entity.getKeyFields().size() : 0);
-
-        if (!F.isEmpty(valFieldName) && entity.getFields().size() - keyFldsNum > 1) {
-            throw new IgniteException("Ambiguous value configuration - valueFieldName assumes there must be only one " +
-                "value column");
-        }
 
         // This is how many entries in QueryEntity#fields correspond to value.
         int valFldsNum = !F.isEmpty(valFieldName) ? 1 : entity.getFields().size() - keyFldsNum;

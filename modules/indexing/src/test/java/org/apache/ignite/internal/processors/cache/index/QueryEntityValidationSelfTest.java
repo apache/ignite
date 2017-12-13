@@ -128,42 +128,6 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that ambiguous key configuration is caught.
-     */
-    public void testAmbiguousKeyConfiguration() {
-        QueryEntity entity = new QueryEntity();
-
-        entity.setKeyType("Key");
-        entity.setValueType("Value");
-
-        entity.setKeyFieldName("sngKeyCol");
-
-        entity.setFields(fields("sngKeyCol", "Key", "mulKeyCol1", "Type1", "mulKeyCol2", "Type2"));
-
-        entity.setKeyFields(new HashSet<>(F.asList("mulKeyCol1", "mulKeyCol2")));
-
-        assertValidationThrows(entity, "Ambiguous key configuration - " +
-            "keyFields may not be used together with keyFieldName");
-    }
-
-    /**
-     * Test that ambiguous value configuration is caught.
-     */
-    public void testAmbiguousValueConfiguration() {
-        QueryEntity entity = new QueryEntity();
-
-        entity.setKeyType("Key");
-        entity.setValueType("Value");
-
-        entity.setValueFieldName("sngValCol");
-
-        entity.setFields(fields("sngValCol", "Key", "mulValCol1", "Type1", "mulValCol2", "Type2"));
-
-        assertValidationThrows(entity, "Ambiguous value configuration - valueFieldName assumes " +
-            "there must be only one value column");
-    }
-
-    /**
      * Test multiple key columns with JDK key type.
      */
     public void testMultipleColumnsJdkKey() {
