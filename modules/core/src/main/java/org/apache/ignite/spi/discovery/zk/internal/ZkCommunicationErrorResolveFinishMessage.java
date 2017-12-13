@@ -18,38 +18,21 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.UUID;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class ZkInternalForceNodeFailMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
+class ZkCommunicationErrorResolveFinishMessage implements ZkInternalMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    final UUID nodeId;
-
-    /** */
-    final String warning;
+    final UUID futId;
 
     /**
-     * @param nodeId Node ID.
-     * @param warning Warning to be displayed on all nodes.
+     * @param futId Future ID.
      */
-    ZkInternalForceNodeFailMessage(UUID nodeId, String warning) {
-        this.nodeId = nodeId;
-        this.warning = warning;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
+    ZkCommunicationErrorResolveFinishMessage(UUID futId) {
+        this.futId = futId;
     }
 }

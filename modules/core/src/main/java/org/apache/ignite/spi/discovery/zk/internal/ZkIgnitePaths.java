@@ -292,4 +292,12 @@ class ZkIgnitePaths {
     String ackEventDataPath(long evtId) {
         return customEvtsAcksDir + "/" + String.valueOf(evtId);
     }
+
+    /**
+     * @param id Future ID.
+     * @return Future path.
+     */
+    String distributedFutureBasePath(UUID id) {
+        return evtsPath + "/f-" + id;
+    }
 }

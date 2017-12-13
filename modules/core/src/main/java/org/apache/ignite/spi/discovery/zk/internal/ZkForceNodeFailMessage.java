@@ -17,15 +17,31 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.util.UUID;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class ZkInternalCommunicationErrorMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
+public class ZkForceNodeFailMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    final UUID nodeId;
+
+    /** */
+    final String warning;
+
+    /**
+     * @param nodeId Node ID.
+     * @param warning Warning to be displayed on all nodes.
+     */
+    ZkForceNodeFailMessage(UUID nodeId, String warning) {
+        this.nodeId = nodeId;
+        this.warning = warning;
+    }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {

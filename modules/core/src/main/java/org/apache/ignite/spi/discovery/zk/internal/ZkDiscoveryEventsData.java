@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.TreeMap;
+import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,6 +45,9 @@ class ZkDiscoveryEventsData implements Serializable {
     /** */
     TreeMap<Long, ZkDiscoveryEventData> evts;
 
+    /** */
+    private UUID commErrFutId;
+
     /**
      * @param topVer Current topology version.
      * @param gridStartTime Cluster start time.
@@ -53,6 +57,20 @@ class ZkDiscoveryEventsData implements Serializable {
         this.gridStartTime = gridStartTime;
         this.topVer = topVer;
         this.evts = evts;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    @Nullable UUID communicationErrorResolveFutureId() {
+        return commErrFutId;
+    }
+
+    /**
+     * @param id Future ID.
+     */
+     void communicationErrorResolveFutureId(UUID id) {
+        commErrFutId = id;
     }
 
     /**
