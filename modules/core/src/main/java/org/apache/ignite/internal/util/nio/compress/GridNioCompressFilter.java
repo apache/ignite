@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESS_META;
@@ -232,15 +233,26 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
+        GridNioSslFilter sslFilter = null;
+
+        if (nextFilter() instanceof GridNioSslFilter) {
+            sslFilter = (GridNioSslFilter)nextFilter();
+
+            sslFilter.lock(ses);
+        }
+
         GridNioCompressHandler hnd = compressHandler(ses);
 
-//        hnd.lock();
+        hnd.lock();
 
         try {
             return shutdownSession(ses, hnd);
         }
         finally {
-//            hnd.unlock();
+            hnd.unlock();
+
+            if (sslFilter != null)
+                sslFilter.unlock(ses);
         }
     }
 
@@ -254,7 +266,7 @@ public class GridNioCompressFilter extends GridNioFilterAdapter {
      */
     private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioCompressHandler hnd)
         throws IgniteCheckedException {
-//        hnd.writeNetBuffer(null);
+        hnd.writeNetBuffer(null);
 
         return proceedSessionClose(ses);
     }
