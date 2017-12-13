@@ -21,8 +21,9 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
 
 /**
- * TcpDiscoveryS3IpFinder test using AWS credentials and selected bucket endpoint
- * Possible endpoints are here: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region.
+ * TcpDiscoveryS3IpFinder tests bucket endpoint for IP finder.
+ * For information about possible endpoint names visit
+ * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>.
  */
 public class TcpDiscoveryS3IpFinderBucketEndpointSelfTest extends TcpDiscoveryS3IpFinderAbstractSelfTest {
     /**
@@ -31,20 +32,13 @@ public class TcpDiscoveryS3IpFinderBucketEndpointSelfTest extends TcpDiscoveryS3
      * @throws Exception If any error occurs.
      */
     public TcpDiscoveryS3IpFinderBucketEndpointSelfTest() throws Exception {
-        // No-op.
+        bucketEndpoint = "s3.us-east-2.amazonaws.com";
     }
 
     /** {@inheritDoc} */
     @Override protected void setAwsCredentials(TcpDiscoveryS3IpFinder finder) {
         finder.setAwsCredentials(new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
             IgniteS3TestSuite.getSecretKey()));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void setBucketEndpoint(TcpDiscoveryS3IpFinder finder) {
-        super.setBucketEndpoint(finder);
-
-        finder.setBucketEndpoint("s3.us-east-2.amazonaws.com");
     }
 
     /** {@inheritDoc} */

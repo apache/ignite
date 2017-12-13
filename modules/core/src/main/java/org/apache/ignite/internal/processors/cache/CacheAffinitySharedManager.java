@@ -684,6 +684,28 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param fut Exchange future.
+     * @param crd Coordinator flag.
+     * @param exchActions Exchange actions.
+     */
+    public void onCustomMessageNoAffinityChange(
+        GridDhtPartitionsExchangeFuture fut,
+        boolean crd,
+        @Nullable final ExchangeActions exchActions
+    ) {
+        final ExchangeDiscoveryEvents evts = fut.context().events();
+
+        forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
+            @Override public void applyx(GridAffinityAssignmentCache aff) {
+                if (exchActions != null && exchActions.cacheGroupStopping(aff.groupId()))
+                    return;
+
+                aff.clientEventTopologyChange(evts.lastEvent(), evts.topologyVersion());
+            }
+        });
+    }
+
+    /**
      * @param fut Future.
      * @param crd Coordinator.
      */
@@ -718,14 +740,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         caches.updateCachesInfo(exchActions);
 
         // Affinity did not change for existing caches.
-        forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
-            @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
-                if (exchActions.cacheGroupStopping(aff.groupId()))
-                    return;
-
-                aff.clientEventTopologyChange(evts.lastEvent(), evts.topologyVersion());
-            }
-        });
+        onCustomMessageNoAffinityChange(fut, crd, exchActions);
 
         for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
             DynamicCacheDescriptor cacheDesc = action.descriptor();
