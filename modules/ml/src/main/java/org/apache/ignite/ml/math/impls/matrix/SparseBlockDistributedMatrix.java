@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -36,11 +40,6 @@ import org.apache.ignite.ml.math.impls.storage.matrix.BlockVectorStorage;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Sparse block distributed matrix. This matrix represented by blocks 32x32 {@link MatrixBlockEntry}.
@@ -71,6 +70,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
      */
     public SparseBlockDistributedMatrix(double[][] data) {
         assert data.length > 0;
+
         setStorage(new BlockMatrixStorage(data.length, getMaxAmountOfColumns(data)));
 
         for (int i = 0; i < data.length; i++)
@@ -117,7 +117,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
             throw new CardinalityException(columnSize(), mtx.rowSize());
 
         SparseBlockDistributedMatrix matrixA = this;
-        SparseBlockDistributedMatrix matrixB = (SparseBlockDistributedMatrix) mtx;
+        SparseBlockDistributedMatrix matrixB = (SparseBlockDistributedMatrix)mtx;
 
         String cacheName = this.storage().cacheName();
         SparseBlockDistributedMatrix matrixC = new SparseBlockDistributedMatrix(matrixA.rowSize(), matrixB.columnSize());
@@ -166,7 +166,6 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         return matrixC;
     }
 
-
     /**
      * {@inheritDoc}
      */
@@ -179,8 +178,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
             throw new CardinalityException(columnSize(), vec.size());
 
         SparseBlockDistributedMatrix matrixA = this;
-        SparseBlockDistributedVector vectorB = (SparseBlockDistributedVector) vec;
-
+        SparseBlockDistributedVector vectorB = (SparseBlockDistributedVector)vec;
 
         String cacheName = this.storage().cacheName();
         SparseBlockDistributedVector vectorC = new SparseBlockDistributedVector(matrixA.rowSize());
@@ -204,7 +202,6 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
             // TODO: IGNITE:5114, exec in parallel
             locKeys.forEach(key -> {
                 long newBlockId = key.blockId();
-
 
                 IgnitePair<Long> newBlockIdForMtx = new IgnitePair<>(newBlockId, 0L);
 
@@ -296,7 +293,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
 
     /** */
     private UUID getUUID() {
-        return ((BlockMatrixStorage) getStorage()).getUUID();
+        return ((BlockMatrixStorage)getStorage()).getUUID();
     }
 
     /**
@@ -313,6 +310,6 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
      *
      */
     private BlockMatrixStorage storage() {
-        return (BlockMatrixStorage) getStorage();
+        return (BlockMatrixStorage)getStorage();
     }
 }

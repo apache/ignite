@@ -17,14 +17,15 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 /**
  * Module interaction with agents.
  */
 module.exports = {
-    implements: 'agent-socket',
-    inject: ['require(lodash)']
+    implements: 'agent-socket'
 };
 
 /**
@@ -78,17 +79,16 @@ class Command {
 }
 
 /**
- * @param _
  * @returns {AgentSocket}
  */
-module.exports.factory = function(_) {
+module.exports.factory = function() {
     /**
      * Connected agent descriptor.
      */
     class AgentSocket {
         /**
          * @param {Socket} socket Socket for interaction.
-         * @param {String} tokens Active tokens.
+         * @param {Array.<String>} tokens Agent tokens.
          * @param {String} demoEnabled Demo enabled.
          */
         constructor(socket, tokens, demoEnabled) {

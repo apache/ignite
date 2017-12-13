@@ -145,6 +145,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default write throttling enabled. */
     public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
 
+    /** Default wal compaction enabled. */
+    public static final boolean DFLT_WAL_COMPACTION_ENABLED = false;
+
     /** Size of a memory chunk reserved for system cache initially. */
     private long sysRegionInitSize = DFLT_SYS_CACHE_INIT_SIZE;
 
@@ -241,6 +244,12 @@ public class DataStorageConfiguration implements Serializable {
      * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
      */
     private boolean writeThrottlingEnabled = DFLT_WRITE_THROTTLING_ENABLED;
+
+    /**
+     * Flag to enable WAL compaction. If true, system filters and compresses WAL archive in background.
+     * Compressed WAL archive gets automatically decompressed on demand.
+     */
+    private boolean walCompactionEnabled = DFLT_WAL_COMPACTION_ENABLED;
 
     /**
      * Initial size of a data region reserved for system cache.
@@ -847,6 +856,24 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setCheckpointWriteOrder(CheckpointWriteOrder checkpointWriteOrder) {
         this.checkpointWriteOrder = checkpointWriteOrder;
+
+        return this;
+    }
+
+    /**
+     * @return Flag indicating whether WAL compaction is enabled.
+     */
+    public boolean isWalCompactionEnabled() {
+        return walCompactionEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether WAL compaction is enabled.
+     *
+     * @param walCompactionEnabled Wal compaction enabled flag.
+     */
+    public DataStorageConfiguration setWalCompactionEnabled(boolean walCompactionEnabled) {
+        this.walCompactionEnabled = walCompactionEnabled;
 
         return this;
     }

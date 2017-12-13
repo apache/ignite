@@ -17,6 +17,8 @@
 
 'use strict';
 
+const passportMongo = require('passport-local-mongoose');
+
 // Fire me up!
 
 /**
@@ -24,10 +26,10 @@
  */
 module.exports = {
     implements: 'mongo',
-    inject: ['require(passport-local-mongoose)', 'settings', 'mongoose']
+    inject: ['settings', 'mongoose']
 };
 
-const defineSchema = (passportMongo, mongoose) => {
+const defineSchema = (mongoose) => {
     const Schema = mongoose.Schema;
     const ObjectId = mongoose.Schema.Types.ObjectId;
     const result = { connection: mongoose.connection };
@@ -79,6 +81,7 @@ const defineSchema = (passportMongo, mongoose) => {
         DUPLICATE_KEY_ERROR: 11000,
         DUPLICATE_KEY_UPDATE_ERROR: 11001
     };
+
     // Define Account model.
     result.Account = mongoose.model('Account', AccountSchema);
 
@@ -1149,7 +1152,7 @@ const defineSchema = (passportMongo, mongoose) => {
     return result;
 };
 
-module.exports.factory = function(passportMongo, settings, mongoose) {
+module.exports.factory = function(settings, mongoose) {
     // Use native promises
     mongoose.Promise = global.Promise;
 
@@ -1203,5 +1206,5 @@ module.exports.factory = function(passportMongo, settings, mongoose) {
                     return Promise.reject(err);
                 });
         })
-        .then(() => defineSchema(passportMongo, mongoose));
+        .then(() => defineSchema(mongoose));
 };

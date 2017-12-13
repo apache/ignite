@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl
                 }
 
                 // 2. Create unmanaged pointer.
-                var jvm = CreateJvm(cfg);
+                var jvm = CreateJvm(cfg, log);
 
                 if (cfg.RedirectJavaConsoleOutput)
                 {
@@ -106,9 +106,17 @@ namespace Apache.Ignite.Core.Impl
         /// Create JVM.
         /// </summary>
         /// <returns>JVM.</returns>
-        private static Jvm CreateJvm(IgniteConfiguration cfg)
+        private static Jvm CreateJvm(IgniteConfiguration cfg, ILogger log)
         {
-            var cp = Classpath.CreateClasspath(cfg);
+            // Do not bother with classpath when JVM exists.
+            var jvm = Jvm.Get(true);
+
+            if (jvm != null)
+            {
+                return jvm;
+            }
+
+            var cp = Classpath.CreateClasspath(cfg, log: log);
 
             var jvmOpts = GetMergedJvmOptions(cfg);
 

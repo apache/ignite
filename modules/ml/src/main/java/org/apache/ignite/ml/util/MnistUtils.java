@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
@@ -32,19 +33,22 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
  */
 public class MnistUtils {
     /**
-     * Read random {@code count} samples from MNIST dataset from two files (images and labels) into a stream of labeled vectors.
+     * Read random {@code count} samples from MNIST dataset from two files (images and labels) into a stream of labeled
+     * vectors.
+     *
      * @param imagesPath Path to the file with images.
      * @param labelsPath Path to the file with labels.
      * @param rnd Random numbers generatror.
-     * @param count Count of samples to read.
+     * @param cnt Count of samples to read.
      * @return Stream of MNIST samples.
-     * @throws IOException
+     * @throws IOException In case of exception.
      */
-    public static Stream<DenseLocalOnHeapVector> mnist(String imagesPath, String labelsPath, Random rnd, int count) throws IOException {
+    public static Stream<DenseLocalOnHeapVector> mnist(String imagesPath, String labelsPath, Random rnd, int cnt)
+        throws IOException {
         FileInputStream isImages = new FileInputStream(imagesPath);
         FileInputStream isLabels = new FileInputStream(labelsPath);
 
-        int magic = read4Bytes(isImages); // Skip magic number.
+        read4Bytes(isImages); // Skip magic number.
         int numOfImages = read4Bytes(isImages);
         int imgHeight = read4Bytes(isImages);
         int imgWidth = read4Bytes(isImages);
@@ -53,10 +57,6 @@ public class MnistUtils {
         read4Bytes(isLabels); // Skip number of labels.
 
         int numOfPixels = imgHeight * imgWidth;
-
-        System.out.println("Magic: " + magic);
-        System.out.println("Num of images: " + numOfImages);
-        System.out.println("Num of pixels: " + numOfPixels);
 
         double[][] vecs = new double[numOfImages][numOfPixels + 1];
 
@@ -74,22 +74,24 @@ public class MnistUtils {
         isImages.close();
         isLabels.close();
 
-        return lst.subList(0, count).stream().map(DenseLocalOnHeapVector::new);
+        return lst.subList(0, cnt).stream().map(DenseLocalOnHeapVector::new);
     }
 
     /**
      * Convert random {@code count} samples from MNIST dataset from two files (images and labels) into libsvm format.
+     *
      * @param imagesPath Path to the file with images.
      * @param labelsPath Path to the file with labels.
      * @param outPath Path to output path.
      * @param rnd Random numbers generator.
-     * @param count Count of samples to read.
-     * @throws IOException
+     * @param cnt Count of samples to read.
+     * @throws IOException In case of exception.
      */
-    public static void asLIBSVM(String imagesPath, String labelsPath, String outPath, Random rnd, int count) throws IOException {
+    public static void asLIBSVM(String imagesPath, String labelsPath, String outPath, Random rnd, int cnt)
+        throws IOException {
 
         try (FileWriter fos = new FileWriter(outPath)) {
-            mnist(imagesPath, labelsPath, rnd, count).forEach(vec -> {
+            mnist(imagesPath, labelsPath, rnd, cnt).forEach(vec -> {
                 try {
                     fos.write((int)vec.get(vec.size() - 1) + " ");
 
@@ -104,7 +106,7 @@ public class MnistUtils {
 
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    throw new IgniteException("Error while converting to LIBSVM.");
                 }
             });
         }
@@ -112,8 +114,9 @@ public class MnistUtils {
 
     /**
      * Utility method for reading 4 bytes from input stream.
+     *
      * @param is Input stream.
-     * @throws IOException
+     * @throws IOException In case of exception.
      */
     private static int read4Bytes(FileInputStream is) throws IOException {
         return (is.read() << 24) | (is.read() << 16) | (is.read() << 8) | (is.read());

@@ -17,22 +17,6 @@
 
 package org.apache.ignite.ml.math.impls.storage.vector;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.VectorStorage;
-import org.apache.ignite.ml.math.distributed.CacheUtils;
-import org.apache.ignite.ml.math.distributed.DistributedStorage;
-import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
-import org.apache.ignite.ml.math.distributed.keys.impl.SparseMatrixKey;
-import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -40,17 +24,33 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.VectorStorage;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.apache.ignite.ml.math.distributed.DistributedStorage;
+import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
+import org.apache.ignite.ml.math.distributed.keys.impl.SparseMatrixKey;
+import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
 /**
- * {@link VectorStorage} implementation for {@link /*SparseDistributedVector}.
+ * {@link VectorStorage} implementation for {@link SparseDistributedVector}.
  */
 public class SparseDistributedVectorStorage extends CacheUtils implements VectorStorage, StorageConstants, DistributedStorage<RowColMatrixKey> {
     /** Cache name used for all instances of {@link SparseDistributedVectorStorage}. */
     private static final String CACHE_NAME = "ML_SPARSE_VECTORS_CONTAINER";
+
     /** Amount of elements in the vector. */
     private int size;
+
     /** Random or sequential access mode. */
     private int acsMode;
+
     /** Matrix uuid. */
     private UUID uuid;
 
@@ -65,7 +65,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     }
 
     /**
-     * @param size    Amount of elements in the vector.
+     * @param size Amount of elements in the vector.
      * @param acsMode Random or sequential access mode.
      */
     public SparseDistributedVectorStorage(int size, int acsMode) {
@@ -137,7 +137,8 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
         return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, getCacheKey(i))).call(() -> {
             IgniteCache<RowColMatrixKey, Double> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
             Double res = cache.get(getCacheKey(i));
-            if (res == null) return 0.0;
+            if (res == null)
+                return 0.0;
             return res;
         });
     }
@@ -163,12 +164,10 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
         });
     }
 
-
     /** {@inheritDoc} */
     @Override public int size() {
         return size;
     }
-
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
@@ -182,7 +181,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         acsMode = in.readInt();
-        uuid = (UUID) in.readObject();
+        uuid = (UUID)in.readObject();
         cache = ignite().getOrCreateCache(in.readUTF());
     }
 
@@ -217,37 +216,11 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
         cache.clearAll(keyset);
     }
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = 1;
-
-        res = res * 37 + size;
-        res = res * 37 + acsMode;
-        res = res * 37 + uuid.hashCode();
-        res = res * 37 + cache.hashCode();
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-
-        SparseDistributedVectorStorage that = (SparseDistributedVectorStorage) obj;
-
-        return size == that.size && acsMode == that.acsMode
-                && uuid.equals(that.uuid) && (cache != null ? cache.equals(that.cache) : that.cache == null);
-    }
-
     /**
-     * Builds cache key for vector element
+     * Builds cache key for vector element.
      *
-     * @param idx Index
-     * @return RowColMatrixKey
+     * @param idx Index.
+     * @return RowColMatrixKey.
      */
     public RowColMatrixKey getCacheKey(int idx) {
         return new SparseMatrixKey(idx, uuid, null);
@@ -270,11 +243,39 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
         return uuid;
     }
 
-    @Override
-    public double[] data() {
-        double[] result = new double[this.size];
-        for (int i = 0; i < this.size; i++) result[i] = this.get(i);
-        return result;
+    /** {@inheritDoc} */
+    @Override public double[] data() {
+        double[] res = new double[this.size];
+
+        for (int i = 0; i < this.size; i++)
+            res[i] = this.get(i);
+
+        return res;
     }
 
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + size;
+        res = res * 37 + acsMode;
+        res = res * 37 + uuid.hashCode();
+        res = res * 37 + cache.hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        SparseDistributedVectorStorage that = (SparseDistributedVectorStorage)obj;
+
+        return size == that.size && acsMode == that.acsMode
+            && uuid.equals(that.uuid) && (cache != null ? cache.equals(that.cache) : that.cache == null);
+    }
 }

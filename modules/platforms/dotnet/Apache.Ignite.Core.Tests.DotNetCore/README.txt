@@ -6,8 +6,9 @@ However, this does not prevent us from supporting .NET Standard 2.0 and .NET Cor
 because of ".NET Framework compatibility mode", which allows referencing any libraries
 from .NET Core 2.0 projects.
 
-Therefore we can't include .NET Core tests in manin solution, and we rely on pre-built
-NuGet packages for cross-platform tests.
+Therefore we can't include .NET Core tests in main solution, and we rely on pre-built
+NuGet packages for cross-platform tests. Most tests are still reused from main solution
+using "Add As Link" feature.
 
 How to run:
 1) Build Ignite.NET (only on Windows):  build -version 0.0.1-test

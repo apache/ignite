@@ -25,7 +25,6 @@ namespace Apache.Ignite
     using System.Threading;
     using Apache.Ignite.Config;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Service;
 
     /// <summary>

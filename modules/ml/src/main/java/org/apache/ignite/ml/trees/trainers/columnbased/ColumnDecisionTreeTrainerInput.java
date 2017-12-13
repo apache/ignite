@@ -23,7 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
- * Input for {@see ColumnDecisionTreeTrainer}.
+ * Input for {@link ColumnDecisionTreeTrainer}.
  */
 public interface ColumnDecisionTreeTrainerInput {
     /**

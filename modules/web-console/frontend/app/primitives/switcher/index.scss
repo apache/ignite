@@ -15,31 +15,39 @@
  * limitations under the License.
  */
 
-@import '../../../public/stylesheets/variables';
+@import 'public/stylesheets/variables';
 
 label.switcher--ignite {
-    width: 34px;
-    max-width: 34px !important;
-    height: 20px;
+    $width: 34px;
+    $height: 20px;
 
-    line-height: 20px;
+    $color-inactive-primary: #c5c5c5;
+    $color-inactive-secondary: #ffffff;
+    $color-active-primary: $ignite-brand-primary;
+    $color-active-secondary: #ff8485;
+
+    width: $width;
+    max-width: $width !important;
+    height: $height;
+
+    line-height: $height;
     vertical-align: middle;
 
     cursor: pointer;
 
-    input[type="checkbox"] {
+    input[type='checkbox'] {
         position: absolute;
         opacity: 0.0;
 
         & + div {
             position: relative;
 
-            width: 34px;
+            width: $width;
             height: 14px;
             margin: 3px 0;
 
             border-radius: 8px;
-            background-color: #C5C5C5;
+            background-color: $color-inactive-primary;
             transition: background 0.2s ease;
 
             &:before {
@@ -49,12 +57,14 @@ label.switcher--ignite {
                 top: -3px;
                 left: 0;
 
-                width: 20px;
-                height: 20px;
+                width: $height;
+                height: $height;
 
-                border: solid 1px #C5C5C5;
+                border-width: 1px;
+                border-style: solid;
                 border-radius: 50%;
-                background-color: #FFF;
+                border-color: $color-inactive-primary;
+                background-color: $color-inactive-secondary;
 
                 transition: all 0.12s ease;
             }
@@ -64,17 +74,46 @@ label.switcher--ignite {
             }
         }
 
+        &[is-in-progress='true'] + div:before {
+            border-left-width: 2px;
+            border-left-color: $color-active-primary;
+
+            animation-name: switcher--animation;
+            animation-duration: 1s;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+        }
+
         &:checked + div {
-            background-color: #FF8485;
+            background-color: $color-active-secondary;
 
             &:before {
                 content: '';
 
                 left: 14px;
 
-                border: 0;
-                background-color: #EE2B27;
+                border-color: $color-active-primary;
+                background-color: $color-active-primary;
             }
         }
+
+        &[is-in-progress='true']:checked + div {
+            background-color: $color-inactive-primary;
+
+            &:before {
+                border-color: $color-inactive-primary;
+                border-left-color: $color-active-primary;
+                background-color: $color-inactive-secondary;
+            }
+        }
+    }
+}
+
+@keyframes switcher--animation {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
     }
 }
