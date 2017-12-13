@@ -46,8 +46,9 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.FailureProcessingPolicy;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.failover.IgniteFailureCause;
+import org.apache.ignite.failover.IgniteFailureProcessor;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -118,7 +119,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
-import static org.apache.ignite.configuration.FailureProcessingPolicy.NOOP;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -2188,9 +2188,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
             finally {
                 if (!stop) {
-                    log.warning("Unexpected ExchangeWorker death!");
+                    log.warning("Unexpected ExchangeWorker stopping!");
 
-                    onExchangeWorkerDeath();
+                    IgniteFailureProcessor.INSTANCE.processFailure(
+                        cctx.kernalContext(),
+                        IgniteFailureCause.Type.EXCHANGE_WORKER_STOP);
                 }
             }
         }
@@ -2487,32 +2489,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         "(preloading will not start): " + task, e);
                 }
             }
-        }
-    }
-
-    /**
-     *
-     */
-    private void onExchangeWorkerDeath() {
-        FailureProcessingPolicy flrPlc = cctx.gridConfig().getFailureProcessingPolicy();
-
-        switch (flrPlc) {
-            case RESTART_JVM:
-                U.warn(log, "Restarting JVM according to configured failure processing policy.");
-
-                restartJvm();
-
-                break;
-
-            case STOP:
-                U.warn(log, "Stopping local node according to configured failure processing policy.");
-
-                stopNode();
-
-                break;
-
-            default:
-                assert flrPlc == NOOP : "Unsupported failure processing policy value: " + flrPlc;
         }
     }
 

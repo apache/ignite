@@ -18,7 +18,7 @@
 package org.apache.ignite.failover;
 
 /**
- *
+ * Enumeration of Ignite failure actions.
  */
 public enum IgniteFailureAction {
     /** Restart jvm. */

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.failover;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 
 /**
- *
+ * This interface provides facility to handle Ignite failures by custom user implementations,
+ * which can be added by {@link IgniteConfiguration#setIgniteFailureHandler(IgniteFailureHandler)} method.
  */
 public interface IgniteFailureHandler {
     /** Default handler. */

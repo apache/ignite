@@ -20,7 +20,7 @@ package org.apache.ignite.failover;
 import org.apache.ignite.internal.GridKernalContext;
 
 /**
- *
+ * Default implementation of {@link IgniteFailureHandler}
  */
 public class DefaultIgniteFailureHandler implements IgniteFailureHandler {
     /** {@inheritDoc} */
