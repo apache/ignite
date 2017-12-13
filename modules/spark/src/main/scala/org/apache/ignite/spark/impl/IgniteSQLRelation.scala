@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
+package org.apache.ignite.spark.impl
 
 import org.apache.ignite.IgniteException
 import org.apache.ignite.cache.{CacheMode, QueryEntity}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.impl.{IgniteDataFramePartition, IgniteSQLDataFrameRDD}
-import org.apache.ignite.spark.IgniteSQLRelation.sqlCacheName
+import org.apache.ignite.spark.impl.IgniteSQLRelation._
+import org.apache.ignite.spark.{IgniteContext, IgniteRDD}
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources._
@@ -70,10 +70,6 @@ class IgniteSQLRelation[K, V](
             case _ ⇒
                 (s"SELECT $columnsStr FROM $tableName", List.empty)
         }
-
-        val cache = ic.ignite().cache[K, V](sqlCacheName(tableName))
-
-        val ccfg = cache.getConfiguration(classOf[CacheConfiguration[K, V]])
 
         IgniteSQLDataFrameRDD[K, V](ic, sqlCacheName(tableName), schema, qryAndArgs._1, qryAndArgs._2, calcPartitions(filters))
     }

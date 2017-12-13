@@ -18,14 +18,13 @@
 package org.apache.ignite.spark
 
 import org.apache.ignite.{Ignite, Ignition}
-import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.spark.sql.SparkSession
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSpec, Matchers}
-import java.lang.{Integer ⇒ JInteger, Long ⇒ JLong}
+import java.lang.{Long ⇒ JLong}
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
+import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.AbstractDataFrameSpec.configuration
 
 /**
@@ -99,42 +98,21 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
 }
 
 object AbstractDataFrameSpec {
+    val TEST_CONFIG_FILE = "src/test/resources/ignite-spark-config.xml"
+
     val INT_STR_CACHE_NAME = "cache1"
 
     val INT_TEST_OBJ_CACHE_NAME = "cache2"
 
     val TEST_OBJ_TEST_OBJ_CACHE_NAME = "cache3"
 
-    val IP_FINDER = new TcpDiscoveryVmIpFinder(true)
-
     def configuration(igniteInstanceName: String, client: Boolean): IgniteConfiguration = {
-        val cfg = new IgniteConfiguration
-
-        val discoSpi = new TcpDiscoverySpi
-
-        discoSpi.setIpFinder(IP_FINDER)
-
-        cfg.setDiscoverySpi(discoSpi)
-
-        cfg.setCacheConfiguration(
-            cacheConfiguration[JInteger, String](INT_STR_CACHE_NAME).setSqlSchema("PUBLIC"),
-            cacheConfiguration[JInteger, TestObject](INT_TEST_OBJ_CACHE_NAME).setSqlSchema("PUBLIC")
-        )
+        val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()
 
         cfg.setClientMode(client)
 
         cfg.setIgniteInstanceName(igniteInstanceName)
 
         cfg
-    }
-
-    def cacheConfiguration[K, V](cacheName : String): CacheConfiguration[Object, Object] = {
-        val ccfg = new CacheConfiguration[Object, Object]()
-
-        ccfg.setBackups(1)
-
-        ccfg.setName(cacheName)
-
-        ccfg
     }
 }

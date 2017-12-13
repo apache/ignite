@@ -20,14 +20,14 @@ package org.apache.ignite.spark
 import java.lang.{Long ⇒ JLong}
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
-import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.spark.AbstractDataFrameSpec.INT_STR_CACHE_NAME
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder
+import org.apache.ignite.internal.IgnitionEx
+import org.apache.ignite.spark.AbstractDataFrameSpec.{INT_STR_CACHE_NAME, TEST_CONFIG_FILE}
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.apache.spark.sql.types.{LongType, StringType}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+
+import org.apache.ignite.spark.impl._
 
 import scala.collection.JavaConversions._
 
@@ -121,17 +121,7 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         createCityTable(client, INT_STR_CACHE_NAME)
 
         val configProvider = enclose(null) (x ⇒ () ⇒ {
-            val cfg = new IgniteConfiguration
-
-            val discoSpi = new TcpDiscoverySpi
-
-            val ipFinder = new TcpDiscoveryMulticastIpFinder()
-
-            ipFinder.setAddresses(List("127.0.0.1:47500..47509"))
-
-            discoSpi.setIpFinder(ipFinder)
-
-            cfg.setDiscoverySpi(discoSpi)
+            val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()
 
             cfg.setClientMode(true)
 

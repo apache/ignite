@@ -18,8 +18,9 @@
 package org.apache.spark.sql.ignite
 
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.IgniteRelationProvider._
-import org.apache.ignite.spark.{IgniteContext, IgniteSQLRelation, ignite, _}
+import org.apache.ignite.spark.IgniteDataFrameOptions.{GRID, TABLE}
+import org.apache.ignite.spark.IgniteContext
+import org.apache.ignite.spark.IgniteDataFrameOptions._
 import org.apache.ignite.{Ignite, Ignition}
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -28,6 +29,7 @@ import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.types.StructType
+import org.apache.ignite.spark.impl._
 
 import scala.collection.JavaConversions._
 
@@ -36,11 +38,11 @@ import scala.collection.JavaConversions._
   *
   * @param defaultIgniteContext Ignite context to provide access to Ignite instance. If <code>None</code> passed then no-name instance of Ignite used.
   */
-class IgniteExternalCatalog(defaultIgniteContext: Option[IgniteContext] = None) extends ExternalCatalog {
+class IgniteExternalCatalog(defaultIgniteContext: IgniteContext) extends ExternalCatalog {
     /**
       * Default Ignite instance.
       */
-    @transient private var default: Ignite = defaultIgniteContext.map(_.ignite()).getOrElse(Ignition.ignite)
+    @transient private var default: Ignite = defaultIgniteContext.ignite
 
     /**
       * @param db Ignite instance name.
@@ -188,7 +190,6 @@ class IgniteExternalCatalog(defaultIgniteContext: Option[IgniteContext] = None) 
                 CatalogTablePartition (
                     Map[String, String] (
                         "name" → name,
-                        GRID → ignite.name,
                         "primary" → nodes.head.id.toString,
                         "backups" → nodes.tail.map(_.id.toString).mkString(",")
                     ),

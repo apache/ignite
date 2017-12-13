@@ -20,11 +20,12 @@ package org.apache.ignite.spark
 import java.lang.{Integer ⇒ JInteger, String ⇒ JString}
 
 import org.apache.ignite.spark.AbstractDataFrameSpec._
-import org.apache.ignite.spark.IgniteRelationProvider._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+
+import org.apache.ignite.spark.IgniteDataFrameOptions._
 
 /**
   * Tests to check loading schema for Ignite data sources.
@@ -85,7 +86,7 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
 
         personDataFrame = spark.read
             .format(IGNITE)
-            .option(GRID, "client")
+            .option(CONFIG_FILE, TEST_CONFIG_FILE)
             .option(TABLE, "person")
             .load()
 
@@ -93,7 +94,7 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
 
         intStrDataFrame = spark.read
             .format(IGNITE)
-            .option(GRID, "client")
+            .option(CONFIG_FILE, TEST_CONFIG_FILE)
             .option(CACHE, INT_STR_CACHE_NAME)
             .option(KEY_CLASS, classOf[JInteger].getName)
             .option(VALUE_CLASS, classOf[JString].getName)
@@ -103,7 +104,7 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
 
         intTestObjDataFrame = spark.read
             .format(IGNITE)
-            .option(GRID, "client")
+            .option(CONFIG_FILE, TEST_CONFIG_FILE)
             .option(CACHE, INT_TEST_OBJ_CACHE_NAME)
             .option(KEY_CLASS, classOf[JInteger].getName)
             .option(VALUE_CLASS, classOf[TestObject].getName)

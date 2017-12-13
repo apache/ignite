@@ -240,6 +240,7 @@ object IgniteSparkSession {
             else {
                 logWarning("No `igniteConfig` or `igniteConfigProvider`. " +
                     "IgniteSparkSession will use DFLT_CFG for Ignite.")
+
                 new IgniteContext(sparkSession.sparkContext)
             }
 

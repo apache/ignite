@@ -19,7 +19,8 @@ package org.apache.ignite.spark
 
 import java.lang.{Integer ⇒ JInteger, String ⇒ JString}
 
-import org.apache.ignite.spark.IgniteRelationProvider._
+import org.apache.ignite.spark.AbstractDataFrameSpec.TEST_CONFIG_FILE
+import org.apache.ignite.spark.IgniteDataFrameOptions._
 import org.apache.ignite.{IgniteException, IgniteIllegalStateException}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -46,7 +47,7 @@ class IgniteDataFrameWrongConfigSpec extends AbstractDataFrameSpec {
             intercept[IgniteException] {
                 spark.read
                     .format(IGNITE)
-                    .option(GRID, client.name())
+                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
                     .option(TABLE, "unknown_table")
                     .load()
             }
@@ -56,7 +57,7 @@ class IgniteDataFrameWrongConfigSpec extends AbstractDataFrameSpec {
             intercept[IgniteException] {
                 spark.read
                     .format(IGNITE)
-                    .option(GRID, client.name())
+                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
                     .option(CACHE, "unknown_cache")
                     .option(KEY_CLASS, classOf[JInteger].getName)
                     .option(VALUE_CLASS, classOf[JString].getName)
@@ -68,7 +69,7 @@ class IgniteDataFrameWrongConfigSpec extends AbstractDataFrameSpec {
             intercept[IgniteException] {
                 spark.read
                     .format(IGNITE)
-                    .option(GRID, client.name())
+                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
                     .load()
             }
         }
@@ -77,7 +78,7 @@ class IgniteDataFrameWrongConfigSpec extends AbstractDataFrameSpec {
             intercept[IgniteException] {
                 spark.read
                     .format(IGNITE)
-                    .option(GRID, client.name())
+                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
                     .option(CACHE, "cache1")
                     .option(VALUE_CLASS, classOf[JString].getName)
                     .load()
@@ -88,7 +89,7 @@ class IgniteDataFrameWrongConfigSpec extends AbstractDataFrameSpec {
             intercept[IgniteException] {
                 spark.read
                     .format(IGNITE)
-                    .option(GRID, client.name())
+                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
                     .option(CACHE, "cache1")
                     .option(KEY_CLASS, classOf[JString].getName)
                     .load()
@@ -99,7 +100,7 @@ class IgniteDataFrameWrongConfigSpec extends AbstractDataFrameSpec {
             intercept[IgniteException] {
                 spark.read
                     .format(IGNITE)
-                    .option(GRID, client.name())
+                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
                     .option(CACHE, "cache1")
                     .load()
             }

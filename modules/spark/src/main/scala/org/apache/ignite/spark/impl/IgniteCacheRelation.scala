@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
+package org.apache.ignite.spark.impl
 
 import java.lang.reflect.Modifier
-
-import org.apache.ignite.cache.query.ScanQuery
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.spark.impl.IgniteSqlRDD
-import org.apache.spark.sql.{Row, SQLContext}
-import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{Metadata, StructField, StructType}
 import javax.cache.Cache
 
 import org.apache.ignite.IgniteException
 import org.apache.ignite.binary.BinaryObject
+import org.apache.ignite.cache.query.ScanQuery
+import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.lang.IgniteBiPredicate
+import org.apache.ignite.spark.{IgniteContext, IgniteRDD}
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.sql.sources._
+import org.apache.spark.sql.types.{Metadata, StructField, StructType}
+import org.apache.spark.sql.{Row, SQLContext}
 
 import scala.annotation.tailrec
 

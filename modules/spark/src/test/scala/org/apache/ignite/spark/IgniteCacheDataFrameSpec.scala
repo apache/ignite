@@ -21,8 +21,8 @@ import java.lang.{Byte ⇒ JByte, Integer ⇒ JInteger, Long ⇒ JLong, Short �
 import java.sql.Timestamp
 import java.util.Date
 
-import org.apache.ignite.spark.AbstractDataFrameSpec.INT_TEST_OBJ_CACHE_NAME
-import org.apache.ignite.spark.IgniteRelationProvider._
+import org.apache.ignite.spark.AbstractDataFrameSpec.{INT_TEST_OBJ_CACHE_NAME, TEST_CONFIG_FILE}
+import org.apache.ignite.spark.IgniteDataFrameOptions._
 import org.apache.spark.sql.DataFrame
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -318,7 +318,7 @@ class IgniteCacheDataFrameSpec extends AbstractDataFrameSpec {
 
         intTestObjDataFrame = spark.read
             .format(IGNITE)
-            .option(GRID, "client")
+            .option(CONFIG_FILE, TEST_CONFIG_FILE)
             .option(CACHE, INT_TEST_OBJ_CACHE_NAME)
             .option(KEY_CLASS, classOf[JInteger].getName)
             .option(VALUE_CLASS, classOf[TestObject].getName)

@@ -26,7 +26,7 @@ import org.apache.ignite.{Ignite, Ignition}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-import org.apache.ignite.spark.IgniteRelationProvider._
+import org.apache.ignite.spark.IgniteDataFrameOptions._
 
 /**
   * Example application showing use-cases for Ignite implementation of Spark DataFrame API.

@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spark
 
-import org.apache.ignite.spark.IgniteRelationProvider._
+import org.apache.ignite.spark.AbstractDataFrameSpec.TEST_CONFIG_FILE
+import org.apache.ignite.spark.IgniteDataFrameOptions._
 import org.apache.spark.sql.DataFrame
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -278,7 +279,7 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
 
         personDataFrame = spark.read
             .format(IGNITE)
-            .option(GRID, "client")
+            .option(CONFIG_FILE, TEST_CONFIG_FILE)
             .option(TABLE, "person")
             .load()
 

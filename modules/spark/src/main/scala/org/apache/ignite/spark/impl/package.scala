@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite
+package org.apache.ignite.spark
 
-import scala.collection.JavaConversions._
 import org.apache.commons.lang.StringUtils.equalsIgnoreCase
+import org.apache.ignite.{Ignite, IgniteException, IgniteState, Ignition}
 import org.apache.ignite.cache.QueryEntity
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.internal.util.lang.GridFunc.contains
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 
-package object spark {
+import scala.collection.JavaConversions._
+
+package object impl {
     def ensureIgnite(gridName: String): Unit =
         if (!igniteExists(gridName))
             throw new IgniteException(s"Ignite grid with name '$gridName' does not exist.")
