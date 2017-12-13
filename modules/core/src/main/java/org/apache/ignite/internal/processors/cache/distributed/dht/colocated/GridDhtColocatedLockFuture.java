@@ -604,7 +604,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (tx != null) {
             cctx.tm().txContext(tx);
 
-            tx.updateLockFuture(this, null);
+            if (success)
+                tx.updateLockFuture(this, null);
         }
 
         if (super.onDone(success, err)) {

@@ -1242,8 +1242,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @throws IgniteCheckedException If transaction check failed.
      */
     protected void checkValid() throws IgniteCheckedException {
+        boolean marked = false;
+
         if (local() && !dht() && remainingTime() == -1)
-            state(MARKED_ROLLBACK, true);
+            marked = state(MARKED_ROLLBACK, true);
 
         if (isRollbackOnly()) {
             if (remainingTime() == -1)
@@ -1259,7 +1261,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 throw new IgniteTxHeuristicCheckedException("Cache transaction is in unknown state " +
                     "(remote transactions will be invalidated): " + this);
 
-            throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
+            throw marked ? new IgniteCheckedException("Cache transaction marked as rollback-only: " + this)
+                : new IgniteTxRollbackCheckedException("Cache transaction marked as rollback-only: " + this);
         }
     }
 

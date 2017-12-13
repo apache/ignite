@@ -3324,17 +3324,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return chainFinishFuture(finishFut, false);
         }
 
+        final boolean rollingBackNoLocking = updateLockFuture(null, ROLLBACK_FUT);
+
         IgniteInternalFuture<Boolean> lockFut0 = lockFut;
 
-        if (updateLockFuture(null, ROLLBACK_FUT))
-            lockFut0 = null;
-
-        if (fastFinish()) {
+        if (rollingBackNoLocking && fastFinish()) {
             log.info("fastFinish TRANSACTION " + xidVersion() + " " + state() + " " + lockFut);
-
-            if (lockFut0 != null) {
-                System.out.println();
-            }
 
             GridNearTxFastFinishFuture fut0;
 
@@ -3357,7 +3352,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return chainFinishFuture(finishFut, false);
         }
 
-        if (lockFut0 != null) {
+        if (!rollingBackNoLocking && lockFut0 != null) {
             if (onTimeout) {
                 // Must wait for current lock future to finish.
                 final GridFutureAdapter retFut = new GridFutureAdapter<>();
@@ -3409,8 +3404,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         else if (lockFutFinal instanceof GridNearLockFuture)
                             ((GridNearLockFuture)lockFutFinal).onRollback(rollbackException());
 
-                        assert lockFutFinal.isDone();
-
                         try {
                             retFut.onDone(fut.get());
                         }
@@ -3436,6 +3429,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         else {
             log.info("Null lock TRANSACTION: " + xidVersion());
         }
+
+        assert lockFut == ROLLBACK_FUT;
 
         finishAsync(fut0, clearThreadMap);
 
@@ -3909,7 +3904,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 removeTimeoutHandler();
 
             if (state != ROLLING_BACK && state != COMMITTING)
-                rollback();
+                rollbackNearTxLocalAsync(state != MARKED_ROLLBACK, false); // Do no clear thread map if tx is started rolling back.
 
             synchronized (this) {
                 try {

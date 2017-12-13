@@ -25,9 +25,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -397,7 +399,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final CountDownLatch rollbackLatch = new CountDownLatch(1);
 
-        final int loops = 100;
+        final int loops = 30;
 
         final IgniteKernal k = (IgniteKernal)rNode;
 
@@ -405,15 +407,16 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final GridCacheContext<Object, Object> cctx = ctx.cacheContext(CU.cacheId(CACHE_NAME));
 
+        final AtomicBoolean stop = new AtomicBoolean();
+
         IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 U.awaitQuiet(lockLatch);
 
                 for (int i = 0; i < loops; i++) {
-
                     GridNearTxLocal locTx = ctx.tm().threadLocalTx(cctx);
 
-                    assertTrue((i == 0 && locTx == null) || locTx.isRollbackOnly());
+                    assertTrue("Failed iter: " + i, (i == 0 && locTx == null) || (locTx != null && locTx.isRollbackOnly()));
 
                     rollbackLatch.countDown();
 
@@ -432,10 +435,10 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                         // Expected.
                     }
                 }
+
+                stop.set(true);
             }
         }, 1, "tx-thread");
-
-        final AtomicBoolean stop = new AtomicBoolean();
 
         IgniteInternalFuture<?> rollbackFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -445,21 +448,29 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 int i = 0;
 
+                List<IgniteFuture<?>> futs = new ArrayList<IgniteFuture<?>>(1000);
+
                 while(!stop.get()) {
                     for (Transaction tx : rNode.transactions().localActiveTransactions()) {
                         i++;
 
                         log.info("Rolled back TRANSACTION: " + ((TransactionProxyImpl)tx).tx().xidVersion());
 
-                        tx.rollbackAsync();
+                        final IgniteFuture<?> fut = tx.rollbackAsync();
+
+                        futs.add(fut);
                     }
                 }
+
+                for (IgniteFuture<?> fut : futs)
+                    try {
+                        fut.get();
+                    }
+                    catch (Exception e) {
+                        // No-op.
+                    }
             }
         }, 1, "rollback-thread");
-
-        doSleep(25000);
-
-        stop.set(true);
 
         rollbackFut.get();
 
