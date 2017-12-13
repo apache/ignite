@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -29,17 +30,20 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Test for local query partitions reservation.
@@ -52,7 +56,7 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
     /** Timeout */
     private static final long TIMEOUT_MS = 30_000L;
 
-    /** Cache size. */
+    /** Cache size. Should be quite enough for a long time of query execution (hundreds of milliseconds).*/
     private static final int CACHE_SIZE = 2_000_000;
 
     /**
@@ -61,7 +65,7 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testLocalSqlFieldsQueryReservations() throws Exception {
-        Query qry = new SqlFieldsQuery("select count(*) from person where age >= 0 or age < 1000000000");
+        Query qry = new SqlFieldsQuery("select name, age from person where age >= 0 or age < 1000000000");
 
         checkReservations(qry);
     }
@@ -80,6 +84,32 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
     }
 
     /**
+     * Test for the local {@link SqlFieldsQuery} reservations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testLocalSqlFieldsQueryCursorCloseReservations() throws Exception {
+        Query qry = new SqlFieldsQuery("select name, age from person where age >= 0 or age < 1000000000");
+
+        checkEagerCursorClosingReservations(qry);
+    }
+
+    /**
+     * Test for the local {@link SqlQuery} reservations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testLocalSqlQueryCursorCloseReservations() throws Exception {
+        String sql = "age >= 0 or age < 1000000000";
+
+        SqlQuery<Integer, Person> qry = new SqlQuery<>(Person.class, sql);
+
+        checkEagerCursorClosingReservations(qry);
+    }
+
+
+
+    /**
      * Checks if a query partitions reservations occurs.
      *
      * @param qry Query for entries counting.
@@ -88,94 +118,235 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
     private void checkReservations(final Query qry) throws Exception {
         final IgniteEx grid = startGrid(0);
 
-        createAndFillCache();
+        createCache();
+
+        fillCache();
 
         qry.setLocal(true);
 
         final IgniteCache<Integer, Person> cache = grid(0).cache(PERSON_CACHE);
 
+        final List<GridDhtLocalPartition> parts = grid.context().cache().internalCache(PERSON_CACHE).context()
+            .topology().localPartitions();
+
+        // 1. Before the cache.query() execution all partitions should be released.
+        checkReservationsAfterClosure(false, parts, "Partitions should be released before query.",
+            new IgniteClosure<Object, Object>() {
+                @Override public Object apply(Object o) {
+                    return null; // Do nothing - checking state before the query.
+                }
+            });
+
+        // 2. When a cursor obtained from the cache.query(), all partitions should be reserved.
+        final QueryCursor<List<?>> cursor = checkReservationsAfterClosure(true, parts,
+            "Partitions should be reserved when got cursor.",
+            new IgniteClosure<Object, QueryCursor<List<?>>>() {
+                @Override public QueryCursor<List<?>> apply(Object o) {
+                    return (QueryCursor<List<?>>)cache.query(qry);
+                }
+            });
+
+        // 3. During the obtaining iterator from the Cursor partitions reservations should be released for
+        // an SqlQuery and reserved for an SqlFieldsQuery (due to its laziness).
+        boolean shouldBeReserved = qry instanceof SqlFieldsQuery;
+
+        final Iterator<List<?>> it = checkReservationsAfterClosure(shouldBeReserved, parts,
+            "Partitions should be " + (shouldBeReserved ? "reserved" : "released" ) + " when obtaining iterator.",
+            new IgniteClosure<Object, Iterator<List<?>>>() {
+                @Override public Iterator<List<?>> apply(Object o) {
+                    return cursor.iterator();
+                }
+            });
+
+        // 4. When iterating over the result, all partitions should be released because entire result set is in the
+        // memory now.
+        final List<?> res = checkReservationsAfterClosure(false, parts,
+            "Partitions should be released when iterating over the result set.",
+            new IgniteClosure<Object, List<?>>() {
+                @Override public List<?> apply(Object o) {
+                    List r = new ArrayList();
+
+                    while (it.hasNext())
+                        r.add(it.next());
+
+                    return r;
+                }
+            });
+
+        assertEquals("Wrong result set size.", CACHE_SIZE, res.size());
+
+        // 5. Should be released after the cursor has been closed.
+        checkReservationsAfterClosure(false, parts,
+            "Partitions should be released after the cursor has been closed.",
+            new IgniteClosure<Object, Object>() {
+                @Override public Object apply(Object o) {
+                    cursor.close();
+
+                    return null;
+                }
+            });
+    }
+
+    /**
+     * Checks if reservations have been released after the cursor
+     * has been closed eagerly (before the iterator obtaining)
+     *
+     * @param qry Query.
+     * @throws Exception If failed.
+     */
+    private void checkEagerCursorClosingReservations(final Query qry) throws Exception {
+        final IgniteEx grid = startGrid(0);
+
+        createCache();
+
+        fillCache();
+
+        qry.setLocal(true);
+
+        final IgniteCache<Integer, Person> cache = grid(0).cache(PERSON_CACHE);
+
+        final List<GridDhtLocalPartition> parts = grid.context().cache().internalCache(PERSON_CACHE).context()
+            .topology().localPartitions();
+
+        // 1. Before the cache.query() execution all partitions should be released.
+        checkReservationsAfterClosure(false, parts, "Partitions should be released before query.",
+            new IgniteClosure<Object, Object>() {
+                @Override public Object apply(Object o) {
+                    return null; // Do nothing - checking state before the query.
+                }
+            });
+
+        // 2. When a cursor obtained from the cache.query(), all partitions should be reserved.
+        final QueryCursor<List<?>> cursor = checkReservationsAfterClosure(true, parts,
+            "Partitions should be reserved when got cursor.",
+            new IgniteClosure<Object, QueryCursor<List<?>>>() {
+                @Override public QueryCursor<List<?>> apply(Object o) {
+                    return (QueryCursor<List<?>>)cache.query(qry);
+                }
+            });
+
+        // 3. Partitions should be released when cursor closed.
+        checkReservationsAfterClosure(false, parts,
+            "Partitions should be released when cursor is closed.",
+            new IgniteClosure<Object, Object>() {
+                @Override public Object apply(Object o) {
+                    cursor.close();
+
+                    return null;
+                }
+            });
+    }
+
+    /**
+     * Checks reservations status after the given closure having been invoked.
+     *
+     * @param shouldBeReserved Expected reservation status. {@code True} if reserved.
+     * @param parts Partitions.
+     * @param msg Warning message.
+     * @param clo Closure.
+     * @param <E> Closure argument parameter.
+     * @param <R> Closure return parameter.
+     * @return Closure invocation result.
+     * @throws Exception If failed.
+     */
+    private <E, R> R checkReservationsAfterClosure(final boolean shouldBeReserved,
+        final List<GridDhtLocalPartition> parts, final String msg, final IgniteClosure<E, R> clo)  throws Exception {
         final CyclicBarrier crd = new CyclicBarrier(2);
 
-        /*
-         * Checks this scenario:
-         * 1. Before the query execution all partitions should not be reserved.
-         * 2. During the query execution all partitions should be reserved.
-         * 3. After the query execution all partitions should be released.
-         */
         Callable<Boolean> reservationsChecker = new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                final List<GridDhtLocalPartition> parts = grid.context().cache().internalCache(PERSON_CACHE).context()
-                    .topology().localPartitions();
-
-                // 1. Before the query execution all partitions should not be reserved.
-                for (GridDhtLocalPartition part : parts) {
-                    if (part.reservations() > 0) {
-                        log.error("Partitions should not be reserved before the query execution.");
-
-                        return false; // There are no reservations should be here yet.
-                    }
-                }
-
-                final Set<GridDhtLocalPartition> partsSet = new HashSet<>(parts);
-
-                crd.await(TIMEOUT_MS, TimeUnit.MILLISECONDS); // Query execution starts here.
-
-                // 2. During the query execution all partitions should be reserved.
-                boolean wasReserved = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                    @Override public boolean apply() {
-                        for (Iterator<GridDhtLocalPartition> partsIt = partsSet.iterator(); partsIt.hasNext();) {
-                            GridDhtLocalPartition part = partsIt.next();
-                            if (part.reservations() == 1)
-                                partsIt.remove();
-                        }
-
-                        if (partsSet.isEmpty())
-                            return true; // All partitions have been reserved.
-                        else {
-                            log.warning("Partitions should be reserved during the query execution.");
-
-                            return false;
-                        }
-                    }
-                }, TIMEOUT_MS);
-
-                if (!wasReserved)
-                    return false;
-
+                // After this barrier closure will be invoked.
                 crd.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
-                // 3. After the query execution all partitions should be released.
-                boolean wasReleased = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                    @Override public boolean apply() {
-                        for (GridDhtLocalPartition part : parts) {
-                            if (part.reservations() > 0) {
-                                log.error("Partitions should be released after the query execution.");
+                // Check if the partitions are in the proper state.
+                if (shouldBeReserved) {
+                    if (!isReserved(parts, msg))
+                        return false;
+                } else {
+                    if (!isReleased(parts, msg))
+                        return false;
+                }
 
-                                return false;
-                            }
-                        }
+                // Wait for the end of checking.
+                crd.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
-                        return true; // All partitions have been released.
-                    }
-                }, TIMEOUT_MS);
-
-                return wasReleased;
+                return true;
             }
         };
 
-        FutureTask<Boolean> reservationsResult = new FutureTask<>(reservationsChecker);
+        FutureTask<Boolean> reservationsRes = new FutureTask<>(reservationsChecker);
 
-        Thread checkerThread = new Thread(reservationsResult);
+        Thread checkerThread = new Thread(reservationsRes);
 
         checkerThread.start();
 
-        crd.await(TIMEOUT_MS, TimeUnit.MILLISECONDS); // Wait before query execution.
+        crd.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
-        cache.query(qry).getAll();
+        R res = clo.apply(null);
 
-        crd.await(TIMEOUT_MS, TimeUnit.MILLISECONDS); // Wait after query execution.
+        crd.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
-        assertTrue("Partitions are not properly reserved or released", reservationsResult.get());
+        assertTrue("Partitions are not properly " + (shouldBeReserved ? "reserved." : "released."),
+            reservationsRes.get());
+
+        return res;
+    }
+
+    /**
+     * Checks if all partitions are reserved.
+     *
+     * @param parts Partitions.
+     * @param msg Warning message.
+     * @return {@code True} if reserved.
+     * @throws IgniteInterruptedCheckedException If failed.
+     */
+    @NotNull private Boolean isReserved(List<GridDhtLocalPartition> parts, final String msg)
+        throws IgniteInterruptedCheckedException {
+        final Set<GridDhtLocalPartition> partsSet = new HashSet<>(parts);
+
+        return GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (Iterator<GridDhtLocalPartition> partsIt = partsSet.iterator(); partsIt.hasNext();) {
+                    GridDhtLocalPartition part = partsIt.next();
+
+                    if (part.reservations() == 1)
+                        partsIt.remove();
+                }
+
+                if (partsSet.isEmpty())
+                    return true; // All partitions have been reserved.
+                else {
+                    log.warning(msg);
+
+                    return false;
+                }
+            }
+        }, TIMEOUT_MS);
+    }
+
+    /**
+     * Checks if all partitions are released.
+     *
+     * @param parts Partitions.
+     * @param msg Warning message.
+     * @return {@code True} if released.
+     * @throws IgniteInterruptedCheckedException If failed.
+     */
+    private boolean isReleased(final List<GridDhtLocalPartition> parts, final String msg)
+        throws IgniteInterruptedCheckedException {
+        return GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (GridDhtLocalPartition part : parts) {
+                    if (part.reservations() > 0) {
+                        log.warning(msg);
+
+                        return false;
+                    }
+                }
+
+                return true; // All partitions have been released.
+            }
+        }, TIMEOUT_MS);
     }
 
     /** {@inheritDoc} */
@@ -184,11 +355,9 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
     }
 
     /**
-     * Creates and fills cache.
-     *
-     * @return Number of filled cache entities.
+     * Creates  cache.
      */
-    private int createAndFillCache() {
+    private void createCache() {
         CacheConfiguration<Integer, Person> cacheConf = new CacheConfiguration<>(PERSON_CACHE);
 
         cacheConf.setCacheMode(CacheMode.PARTITIONED)
@@ -196,29 +365,23 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
         .setIndexedTypes(Integer.class, Person.class)
         .setName(PERSON_CACHE);
 
-        IgniteCache<Integer, Person> cache = grid(0).createCache(cacheConf);
-
-        Affinity<Integer> aff = grid(0).affinity(PERSON_CACHE);
-
-        return fillCache(cache, aff);
+        grid(0).createCache(cacheConf);
     }
 
     /**
      * Populates cache with a data.
      *
-     * @param cache - Cache to fill all partition to.
-     * @param aff Affinity.
      * @return Number of filled entities.
      */
-    private int fillCache(IgniteCache<Integer, Person> cache, Affinity<Integer> aff) {
-        // Should be quite enough for a long time of query execution (hundreds of milliseconds).
-
+    private int fillCache() {
         IgniteDataStreamer streamer = grid(0).dataStreamer(PERSON_CACHE);
 
         for (int i = 0; i < CACHE_SIZE; i++)
             streamer.addData(i, new Person("p_"+ i, i));
 
         streamer.flush();
+
+        streamer.close();
 
         return CACHE_SIZE;
     }

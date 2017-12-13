@@ -22,11 +22,13 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -540,6 +542,32 @@ public class GridSqlQueryParser {
             else
                 throw new IgniteSQLException("Unexpected statement command");
         }
+    }
+
+    /**
+     * Returns a list of ids of the all caches used in the current query.
+     *
+     * @return {@link List} of cache ids.
+     */
+    public List<Integer> getAffectedCacheIds() {
+        Set<Integer> cacheIds = new HashSet<>();
+
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null) {
+                    Integer cacheId = tbl.cache().cacheId();
+
+                    cacheIds.add(cacheId);
+                }
+            }
+        }
+
+        return new ArrayList<>(cacheIds);
     }
 
     /**

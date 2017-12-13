@@ -25,7 +25,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
  * Field query result. It is composed of
  * fields metadata and iterator over queried fields.
  */
-public interface GridQueryFieldsResult {
+public interface GridQueryFieldsResult extends AutoCloseable {
     /**
      * Gets metadata for queried fields.
      *

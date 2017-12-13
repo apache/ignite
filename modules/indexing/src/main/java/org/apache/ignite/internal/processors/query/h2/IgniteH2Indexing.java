@@ -352,6 +352,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private final ConcurrentMap<ReservationKey, GridReservable> reservations = new ConcurrentHashMap8<>();
 
+    /** Map from sql string to affected caches ids list */
+    private final ConcurrentMap<String, List<Integer>> sqlToCacheIdsCache = new ConcurrentHashMap8<>();
+
     /** */
     private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = new IgniteInClosure<IgniteInternalFuture<?>>() {
         @Override public void apply(IgniteInternalFuture<?> fut) {
@@ -897,38 +900,47 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Cannot prepare query metadata", e);
         }
 
+        final GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL_FIELDS,
+            schemaName, U.currentTimeMillis(), cancel, true);
+
+        runs.putIfAbsent(run.id(), run);
+
+        List<Integer> cacheIds = getCacheIds(p);
+
+        AffinityTopologyVersion topVer = readyTopologyVersion();
+
+        final List<GridReservable> reserved = new ArrayList<>();
+
+        if (!reservePartitions(cacheIds, topVer, parts, reserved))
+            throw new IgniteCheckedException("Failed to reserve partitions for [cacheIds=" + cacheIds +
+                ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');
+
+        final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
+            .filter(filter)
+            .distributedJoinMode(OFF)
+            .reservations(reserved);
+
+        assert GridH2QueryContext.get() == null;
+
+        GridH2QueryContext.set(ctx);
+
         return new GridQueryFieldsResultAdapter(meta, null) {
+
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
-                assert GridH2QueryContext.get() == null;
-
-                GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL_FIELDS,
-                    schemaName, U.currentTimeMillis(), cancel, true);
-
-                runs.putIfAbsent(run.id(), run);
-
-                List<Integer> cacheIds = collectCacheIds(p);
-
-                AffinityTopologyVersion topVer = readyTopologyVersion();
-
-                List<GridReservable> reserved = new ArrayList<>();
-
-                if (!reservePartitions(cacheIds, topVer, parts, reserved))
-                    throw new IgniteCheckedException("Failed to reserve partitions for [cacheIds=" + cacheIds +
-                        ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');
-
-                GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
-                    .filter(filter)
-                    .distributedJoinMode(OFF)
-                    .reservations(reserved);
-
-                GridH2QueryContext.set(ctx);
-
                 try {
                     ResultSet rs = executeSqlQueryWithTimer(stmt, conn, qry, params, timeout, cancel);
 
                     return new H2FieldsIterator(rs);
                 }
                 finally {
+                    close();
+                }
+            }
+
+            @Override public void close() {
+                if (!closed) {
+                    super.close();
+
                     GridH2QueryContext.clearThreadLocal();
 
                     ctx.clearContext(false);
@@ -937,6 +949,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
         };
+    }
+
+    /**
+     * Returns all affected caches ids for the give prepared statement.
+     *
+     * @param p Prepared statement.
+     * @return List of caches.
+     */
+    private List<Integer> getCacheIds(Prepared p) {
+        String sql = p.getSQL();
+
+        assert sql != null;
+
+        List<Integer> cacheIds = sqlToCacheIdsCache.get(sql);
+
+        if (cacheIds == null) {
+            GridSqlQueryParser parser = new GridSqlQueryParser(false);
+
+            parser.parse(p);
+
+            cacheIds = parser.getAffectedCacheIds();
+
+            sqlToCacheIdsCache.put(sql, cacheIds);
+        }
+
+        return cacheIds;
     }
 
     /** {@inheritDoc} */
@@ -1146,7 +1184,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, F.asList(args), filter,
             qry.isEnforceJoinOrder(), qry.getTimeout(), cancel, qry.getPartitions());
 
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
                 try {
                     return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
@@ -1155,7 +1193,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw new IgniteException(e);
                 }
             }
-        }, cancel);
+        }, cancel) {
+            @Override public void close() {
+                super.close();
+
+                try {
+                    res.close();
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            }
+        };
 
         cursor.fieldsMeta(res.metaData());
 
@@ -2537,6 +2586,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridCacheTwoStepQuery qry = e.getValue().query();
 
                 if (!F.isEmpty(qry.cacheIds()) && qry.cacheIds().contains(cacheId))
+                    it.remove();
+            }
+
+            for (Iterator<Map.Entry<String, List<Integer>>> it = sqlToCacheIdsCache.entrySet().iterator(); it.hasNext();) {
+                Map.Entry<String, List<Integer>> entry = it.next();
+
+                assert entry != null;
+                assert entry.getValue() != null;
+
+                if (entry.getValue().contains(cacheId))
                     it.remove();
             }
         }

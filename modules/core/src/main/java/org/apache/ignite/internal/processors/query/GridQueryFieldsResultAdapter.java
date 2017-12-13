@@ -33,6 +33,9 @@ public class GridQueryFieldsResultAdapter implements GridQueryFieldsResult {
     /** Result iterator. */
     private final GridCloseableIterator<List<?>> it;
 
+    /** Underlying resource closed flag. */
+    protected volatile boolean closed;
+
     /**
      * Creates query field result composed of field metadata and iterator
      * over queried fields.
@@ -54,5 +57,10 @@ public class GridQueryFieldsResultAdapter implements GridQueryFieldsResult {
     /** {@inheritDoc} */
     @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException{
         return it;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        closed = true;
     }
 }
