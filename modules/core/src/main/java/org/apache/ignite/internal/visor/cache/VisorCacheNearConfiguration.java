@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
@@ -68,9 +69,11 @@ public class VisorCacheNearConfiguration extends VisorDataTransferObject {
         if (nearEnabled) {
             NearCacheConfiguration nccfg = ccfg.getNearConfiguration();
 
+            final Factory nearEvictionPlc = nccfg.getNearEvictionPolicyFactory();
+
             nearStartSize = nccfg.getNearStartSize();
-            nearEvictPlc = compactClass(nccfg.getNearEvictionPolicy());
-            nearEvictMaxSize = evictionPolicyMaxSize(nccfg.getNearEvictionPolicy());
+            nearEvictPlc = compactClass(nearEvictionPlc);
+            nearEvictMaxSize = evictionPolicyMaxSize(nearEvictionPlc);
         }
     }
 
