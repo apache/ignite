@@ -1140,9 +1140,11 @@ public class GridSqlQueryParser {
 
         res.wrapValue(wrapVal0);
 
-        if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
+        if (!F.isEmpty(res.valueTypeName()) && !U.isJdk(res.valueTypeName()) &&
+            F.eq(res.keyTypeName(), res.valueTypeName())) {
             throw new IgniteSQLException("Key and value type names " +
                 "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);
+        }
 
         if (res.affinityKey() == null) {
             LinkedHashSet<String> pkCols0 = res.primaryKeyColumns();

@@ -639,22 +639,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertParseThrows("create table Int (_key int primary key, _val int) WITH \"template=cache\"",
             IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
-
-        assertParseThrows("create table Ints (k int primary key, v int) WITH \"template=cache," +
-            "key_type=java.lang.String\"", IgniteSQLException.class,
-            "KEY_TYPE points at SQL type different from the type of primary key column.");
-
-        assertParseThrows("create table Ints (k int primary key, v int) WITH \"template=cache," +
-            "value_type=java.lang.String\"", IgniteSQLException.class,
-            "VALUE_TYPE points at SQL type different from the type of value column.");
-
-        assertParseThrows("create table Ints (k1 int, k2 int, v int, primary key(k1, k2)) WITH \"template=cache," +
-            "key_type=java.lang.String\"", IgniteSQLException.class,
-            "KEY_TYPE may not point at SQL type when multiple key columns are defined.");
-
-        assertParseThrows("create table Ints (k int primary key, v1 int, v2 int) WITH \"template=cache," +
-            "value_type=java.lang.String\"", IgniteSQLException.class,
-            "VALUE_TYPE may not point at SQL type when multiple value columns are defined.");
     }
 
     /** */

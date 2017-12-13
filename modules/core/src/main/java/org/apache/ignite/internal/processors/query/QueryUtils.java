@@ -1148,16 +1148,19 @@ public class QueryUtils {
                 ", valFieldName=" + valFieldName + "]");
         }
 
-        if (!F.isEmpty(keyFieldName) && !F.isEmpty(entity.getKeyFields()))
+        if (!F.isEmpty(keyFieldName) && !F.isEmpty(entity.getKeyFields())) {
             throw new IgniteException("Ambiguous key configuration - keyFields may not be used " +
                 "together with keyFieldName");
+        }
 
         // This is how many entries in QueryEntity#fields correspond to key.
-        int keyFldsNum = !F.isEmpty(keyFieldName) ? 1 : entity.getKeyFields().size();
+        int keyFldsNum = !F.isEmpty(keyFieldName) ? 1 : (entity.getKeyFields() != null ?
+            entity.getKeyFields().size() : 0);
 
-        if (!F.isEmpty(valFieldName) && entity.getFields().size() - keyFldsNum > 1)
+        if (!F.isEmpty(valFieldName) && entity.getFields().size() - keyFldsNum > 1) {
             throw new IgniteException("Ambiguous value configuration - valueFieldName assumes there must be only one " +
                 "value column");
+        }
 
         // This is how many entries in QueryEntity#fields correspond to value.
         int valFldsNum = !F.isEmpty(valFieldName) ? 1 : entity.getFields().size() - keyFldsNum;
@@ -1168,8 +1171,7 @@ public class QueryUtils {
 
         if (!F.isEmpty(keyType) && U.isJdk(keyType)) {
             if (!F.isEmpty(entity.getKeyFields()))
-                throw new IgniteException("Key type may not point at JDK type " +
-                    "when multiple key columns are defined.");
+                throw new IgniteException("Key type may not point at JDK type when multiple key columns are defined.");
 
             Class<?> keyCls = U.box(U.classForName(keyType, null, true));
 
@@ -1186,19 +1188,21 @@ public class QueryUtils {
         String valType = entity.getValueType();
 
         if (!F.isEmpty(valType) && U.isJdk(valType)) {
-            if (!flatVal)
+            if (!flatVal) {
                 throw new IgniteException("Value type may not point at JDK type " +
                     "when multiple value columns are defined.");
+            }
 
             Class<?> valCls = U.box(U.classForName(valType, null, true));
 
             if (valCls != null && isSqlType(valCls) && !F.isEmpty(valFieldName)) {
                 String valColType = entity.getFields().get(valFieldName);
 
-                if (!F.eq(valType, valColType))
+                if (!F.eq(valType, valColType)) {
                     throw new IgniteException("Explicitly specified value column " + valFieldName +
                         " points at a type different from query entity SQL value type [entityValueType=" + valType +
                         ",valueColumnType=" + valColType + ']');
+                }
             }
         }
 
