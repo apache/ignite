@@ -394,7 +394,7 @@ class ClusterCachesInfo {
         DynamicCacheDescriptor desc = registeredCaches.get(msg.cacheName());
 
         if (desc != null)
-            desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
+            desc.statisticsEnabled(msg.enabled());
         else
             log.warning("Failed to change cache descriptor configuration, cache not found [cacheName=" + msg.cacheName() + ']');
     }
@@ -408,7 +408,7 @@ class ClusterCachesInfo {
         IgniteInternalCache<Object, Object> cache = ctx.cache().cache(msg.cacheName());
 
         if (cache != null)
-            cache.configuration().setStatisticsEnabled(msg.enabled());
+            cache.context().statisticsEnabled(msg.enabled());
         else
             log.warning("Failed to change cache configuration, cache not found [cacheName=" + msg.cacheName() + ']');
     }
@@ -966,7 +966,7 @@ class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 desc.sql(),
                 false,
-                0);
+                desc.statisticsEnabled());
 
             caches.put(desc.cacheName(), cacheData);
         }
@@ -984,7 +984,7 @@ class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 false,
                 true,
-                0);
+                desc.statisticsEnabled());
 
             templates.put(desc.cacheName(), cacheData);
         }
@@ -1057,6 +1057,8 @@ class ClusterCachesInfo {
                 cacheData.deploymentId(),
                 cacheData.schema());
 
+            desc.statisticsEnabled(cacheData.statisticsEnabled());
+
             registeredTemplates.put(cacheData.cacheConfiguration().getName(), desc);
         }
 
@@ -1080,6 +1082,8 @@ class ClusterCachesInfo {
                 cacheData.schema());
 
             desc.receivedOnDiscovery(true);
+
+            desc.statisticsEnabled(cacheData.statisticsEnabled());
 
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
 
@@ -1173,7 +1177,7 @@ class ClusterCachesInfo {
                     desc0.receivedFromStartVersion(desc.receivedFromStartVersion());
                     desc0.clientCacheStartVersion(desc.clientCacheStartVersion());
 
-                    desc0.cacheConfiguration().setStatisticsEnabled(cfg.isStatisticsEnabled());
+                    desc0.statisticsEnabled(desc.statisticsEnabled());
 
                     desc = desc0;
                 }

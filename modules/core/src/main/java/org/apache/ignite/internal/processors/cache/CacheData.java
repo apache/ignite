@@ -32,6 +32,9 @@ public class CacheData implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static final long STATISTICS_ENABLED_FLAG_MASK = 0x01;
+
+    /** */
     private final CacheConfiguration cacheCfg;
 
     /** */
@@ -87,7 +90,7 @@ public class CacheData implements Serializable {
         boolean staticCfg,
         boolean sql,
         boolean template,
-        long flags) {
+        boolean statisticsEnabled) {
         assert cacheCfg != null;
         assert rcvdFrom != null : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
@@ -104,6 +107,12 @@ public class CacheData implements Serializable {
         this.staticCfg = staticCfg;
         this.sql = sql;
         this.template = template;
+
+        long flags = 0L;
+
+        if (statisticsEnabled)
+            flags |= STATISTICS_ENABLED_FLAG_MASK;
+
         this.flags = flags;
     }
 
@@ -182,6 +191,13 @@ public class CacheData implements Serializable {
      */
     public long flags() {
         return flags;
+    }
+
+    /**
+     * @return Statistics enabled flag.
+     */
+    public boolean statisticsEnabled() {
+        return (flags & STATISTICS_ENABLED_FLAG_MASK) != 0;
     }
 
     /** {@inheritDoc} */

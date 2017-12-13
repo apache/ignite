@@ -92,6 +92,9 @@ public class DynamicCacheDescriptor {
     /** */
     private final CacheGroupDescriptor grpDesc;
 
+    /** Statistics enabled. */
+    private volatile boolean statisticsEnabled;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -133,6 +136,7 @@ public class DynamicCacheDescriptor {
         this.staticCfg = staticCfg;
         this.sql = sql;
         this.deploymentId = deploymentId;
+        this.statisticsEnabled = cacheCfg.isStatisticsEnabled();
 
         cacheId = CU.cacheId(cacheCfg.getName());
 
@@ -344,6 +348,20 @@ public class DynamicCacheDescriptor {
         synchronized (schemaMux) {
             schema.finish(msg);
         }
+    }
+
+    /**
+     * @return Statistics enabled.
+     */
+    public boolean statisticsEnabled() {
+        return statisticsEnabled;
+    }
+
+    /**
+     * @param statisticsEnabled New statistics enabled.
+     */
+    public void statisticsEnabled(boolean statisticsEnabled) {
+        this.statisticsEnabled = statisticsEnabled;
     }
 
     /** {@inheritDoc} */

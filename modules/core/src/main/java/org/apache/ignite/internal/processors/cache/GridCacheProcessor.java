@@ -1420,6 +1420,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             affMgr
         );
 
+        cacheCtx.statisticsEnabled(desc.statisticsEnabled());
+
         cacheCtx.cacheObjectContext(cacheObjCtx);
 
         GridCacheAdapter cache = null;
@@ -1549,6 +1551,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 pluginMgr,
                 affMgr
             );
+
+            cacheCtx.statisticsEnabled(desc.statisticsEnabled());
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -4026,11 +4030,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cache == null)
             throw new IgniteCheckedException("Cache not found [cacheName=" + cacheName + ']');
 
-        if (cache.context().isLocal()) {
-            cache.configuration().setStatisticsEnabled(enabled);
+        cache.context().statisticsEnabled(enabled);
 
+        if (cache.context().isLocal())
             return;
-        }
 
         for (ClusterNode n : ctx.discovery().allNodes())
             if (!n.version().greaterThanEqual(2, 4, 0))
