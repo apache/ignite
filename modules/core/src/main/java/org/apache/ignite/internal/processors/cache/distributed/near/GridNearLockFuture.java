@@ -1666,6 +1666,13 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                             entry.resetFromPrimary(newVal, lockVer, dhtVer, node.id(), topVer);
 
                             if (inTx()) {
+                                CU.BackupPostProcessingClosure clos =
+                                    CU.createBackupPostProcessingClosure(topVer, log, cctx, k,
+                                        null, createTtl, cctx.readThrough(), !retval);
+
+                                if (clos != null)
+                                    clos.apply(k, res.dhtVersion(i));
+
                                 tx.hasRemoteLocks(true);
 
                                 if (implicitTx() && tx.onePhaseCommit()) {

@@ -1753,6 +1753,7 @@ public class GridCacheUtils {
         final GridCacheContext cctx,
         final @Nullable KeyCacheObject key,
         final @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        final long ttl,
         boolean readThrough,
         boolean skipVals
     ) {
@@ -1768,11 +1769,25 @@ public class GridCacheUtils {
                     try {
                         entry = colocated.entryEx(key, topVer);
 
+                        long ttl0 = 0;
+                        long expTime = 0;
+
+                        if (expiryPlc != null) {
+                            ttl0 = expiryPlc.forCreate();
+
+                            expTime = toExpireTime(ttl0);
+                        }
+                        else if (ttl > 0) {
+                            ttl0 = ttl;
+
+                            expTime = toExpireTime(ttl0);
+                        }
+
                         entry.initialValue(
                             val,
                             ver,
-                            expiryPlc == null ? 0 : expiryPlc.forCreate(),
-                            expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
+                            ttl0,
+                            expTime,
                             false,
                             topVer,
                             GridDrType.DR_BACKUP,
@@ -1799,7 +1814,7 @@ public class GridCacheUtils {
             }
 
             @Override public void apply(CacheObject val, GridCacheVersion ver) {
-                process(key, val, ver, cctx.dht());
+                process(key, val, ver, cctx.cache().isNear() ? ((GridNearCacheAdapter)cctx.cache()).dht() : cctx.dht());
             }
 
             @Override public void apply(Collection<GridCacheEntryInfo> infos) {
