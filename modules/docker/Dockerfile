@@ -18,29 +18,43 @@
 # Start from a Java image.
 FROM openjdk:8
 
-# Ignite version
+# Set Ignite version
 ENV IGNITE_VERSION 2.3.0
-
-# Ignite home
+# Set Ignite home directory
 ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-${IGNITE_VERSION}-bin
 
-# Do not rely on anything provided by base image(s), but be explicit, if they are installed already it is noop then
+# Set image metadata
+LABEL maintainer="Peter Ivanov <mr.weider@gmail.com>"
+
+# Do not rely on anything ddddprovided by base image(s), but be explicit, if they are installed already it is noop then
 RUN apt-get update && apt-get install -y --no-install-recommends \
         unzip \
         curl \
-    && rm -rf /var/lib/apt/lists/*
+	wget \
+    && rm -rfv /var/lib/apt/lists/*
 
+# Set working directory
 WORKDIR /opt/ignite
 
-RUN curl https://dist.apache.org/repos/dist/release/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip -o ignite.zip \
+# Get and unarchive Ignite
+RUN set -x \
+    && curl -fSL "https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip" -o ignite.zip \
+    && curl -fSL "https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip.asc" -o ignite.zip.asc \
+    && export GNUPGHOME="$(mktemp -d)" \
+    && curl -fSl "https://archive.apache.org/dist/ignite/KEYS.txt" -o KEYS.txt \
+    && gpg --import KEYS.txt \
+    && gpg --batch --verify ignite.zip.asc ignite.zip \
     && unzip ignite.zip \
-    && rm ignite.zip
+    && rm -rfv "$GNUPGHOME" ignite.zip* KEYS.txt \
+    && unset GNUPGHOME
+
 
 # Copy sh files and set permission
 COPY ./run.sh $IGNITE_HOME/
 
-RUN chmod +x $IGNITE_HOME/run.sh
+# Entrypotin
+CMD "$IGNITE_HOME/run.sh"
 
-CMD $IGNITE_HOME/run.sh
-
+# Open required ports
 EXPOSE 11211 47100 47500 49112
+
