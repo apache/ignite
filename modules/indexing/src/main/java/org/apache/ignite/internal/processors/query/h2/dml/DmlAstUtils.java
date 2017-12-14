@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.sql;
+package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -24,10 +24,29 @@ import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdate;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlArray;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunction;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlKeyword;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperation;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSubquery;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -441,31 +460,8 @@ public final class DmlAstUtils {
      * @param paramIdxs Parameter indexes.
      * @return Extracted parameters list.
      */
-    private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target,
-                                           IntArray paramIdxs) {
-        if (qry instanceof GridSqlSelect)
-            return findParams((GridSqlSelect)qry, params, target, paramIdxs);
-
-        GridSqlUnion union = (GridSqlUnion)qry;
-
-        findParams(union.left(), params, target, paramIdxs);
-        findParams(union.right(), params, target, paramIdxs);
-
-        findParams((GridSqlElement)qry.limit(), params, target, paramIdxs);
-        findParams((GridSqlElement)qry.offset(), params, target, paramIdxs);
-
-        return target;
-    }
-
-    /**
-     * @param qry Select.
-     * @param params Parameters.
-     * @param target Extracted parameters.
-     * @param paramIdxs Parameter indexes.
-     * @return Extracted parameters list.
-     */
     private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target,
-                                           IntArray paramIdxs) {
+        IntArray paramIdxs) {
         if (params.length == 0)
             return target;
 
@@ -490,7 +486,7 @@ public final class DmlAstUtils {
      * @param paramIdxs Parameter indexes.
      */
     private static void findParams(@Nullable GridSqlElement el, Object[] params, ArrayList<Object> target,
-                                   IntArray paramIdxs) {
+        IntArray paramIdxs) {
         if (el == null)
             return;
 
