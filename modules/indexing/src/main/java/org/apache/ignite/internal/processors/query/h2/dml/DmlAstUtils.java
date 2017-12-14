@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSubquery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
@@ -451,6 +452,30 @@ public final class DmlAstUtils {
             return e;
         else
             return new GridSqlOperation(GridSqlOperationType.AND, where, e);
+    }
+
+    /**
+     * @param qry Select.
+     * @param params Parameters.
+     * @param target Extracted parameters.
+     * @param paramIdxs Parameter indexes.
+     * @return Extracted parameters list.
+     */
+    @SuppressWarnings("unused")
+    private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target,
+        IntArray paramIdxs) {
+        if (qry instanceof GridSqlSelect)
+            return findParams((GridSqlSelect)qry, params, target, paramIdxs);
+
+        GridSqlUnion union = (GridSqlUnion)qry;
+
+        findParams(union.left(), params, target, paramIdxs);
+        findParams(union.right(), params, target, paramIdxs);
+
+        findParams((GridSqlElement)qry.limit(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.offset(), params, target, paramIdxs);
+
+        return target;
     }
 
     /**
