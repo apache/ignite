@@ -23,31 +23,23 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.IgniteCache;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -57,6 +49,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdate;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
@@ -77,7 +70,6 @@ import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
@@ -496,7 +488,7 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     private UpdateResult doDelete(GridCacheContext cctx, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
-        BatchSender sender = new BatchSender(cctx, pageSize);
+        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize);
 
         for (List<?> row : cursor) {
             if (row.size() != 2) {
@@ -544,7 +536,7 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
 
-        BatchSender sender = new BatchSender(cctx, pageSize);
+        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize);
 
         for (List<?> row : cursor) {
             T3<Object, Object, Object> row0 = plan.processRowForUpdate(row);
@@ -578,50 +570,6 @@ public class DmlStatementsProcessor {
         }
 
         return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray());
-    }
-
-    /**
-     * Process errors of entry processor - split the keys into duplicated/concurrently modified and those whose
-     * processing yielded an exception.
-     *
-     * @param res Result of {@link GridCacheAdapter#invokeAll)}
-     * @return pair [array of duplicated/concurrently modified keys, SQL exception for erroneous keys] (exception is
-     * null if all keys are duplicates/concurrently modified ones).
-     */
-    private static PageProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res) {
-        Set<Object> errKeys = new LinkedHashSet<>(res.keySet());
-
-        SQLException currSqlEx = null;
-
-        SQLException firstSqlEx = null;
-
-        int errors = 0;
-
-        // Let's form a chain of SQL exceptions
-        for (Map.Entry<Object, EntryProcessorResult<Boolean>> e : res.entrySet()) {
-            try {
-                e.getValue().get();
-            }
-            catch (EntryProcessorException ex) {
-                SQLException next = createJdbcSqlException("Failed to process key '" + e.getKey() + '\'',
-                    IgniteQueryErrorCode.ENTRY_PROCESSING);
-
-                next.initCause(ex);
-
-                if (currSqlEx != null)
-                    currSqlEx.setNextException(next);
-                else
-                    firstSqlEx = next;
-
-                currSqlEx = next;
-
-                errKeys.remove(e.getKey());
-
-                errors++;
-            }
-        }
-
-        return new PageProcessingErrorResult(errKeys.toArray(), firstSqlEx, errors);
     }
 
     /**
@@ -692,7 +640,7 @@ public class DmlStatementsProcessor {
         }
         else {
             // Keys that failed to INSERT due to duplication.
-            BatchSender sender = new BatchSender(cctx, pageSize);
+            DmlBatchSender sender = new DmlBatchSender(cctx, pageSize);
 
             for (List<?> row : cursor) {
                 final IgniteBiTuple keyValPair = plan.processRow(row);
@@ -721,29 +669,6 @@ public class DmlStatementsProcessor {
 
             return sender.updateCount();
         }
-    }
-
-    /**
-     * Execute given entry processors and collect errors, if any.
-     * @param cctx Cache context.
-     * @param rows Rows to process.
-     * @return Triple [number of rows actually changed; keys that failed to update (duplicates or concurrently
-     *     updated ones); chain of exceptions for all keys whose processing resulted in error, or null for no errors].
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private static PageProcessingResult processPage(GridCacheContext cctx,
-        Map<Object, EntryProcessor<Object, Object, Boolean>> rows) throws IgniteCheckedException {
-        Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
-
-        if (F.isEmpty(res))
-            return new PageProcessingResult(rows.size(), null, null);
-
-        PageProcessingErrorResult splitRes = splitErrors(res);
-
-        int keysCnt = splitRes.errKeys.length;
-
-        return new PageProcessingResult(rows.size() - keysCnt - splitRes.cnt, splitRes.errKeys, splitRes.ex);
     }
 
     /**
@@ -885,175 +810,4 @@ public class DmlStatementsProcessor {
         }
     }
 
-    /** Result of processing an individual page with {@link IgniteCache#invokeAll} including error details, if any. */
-    private final static class PageProcessingResult {
-        /** Number of successfully processed items. */
-        final long cnt;
-
-        /** Keys that failed to be updated or deleted due to concurrent modification of values. */
-        @NotNull
-        final Object[] errKeys;
-
-        /** Chain of exceptions corresponding to failed keys. Null if no keys yielded an exception. */
-        final SQLException ex;
-
-        /** */
-        @SuppressWarnings("ConstantConditions")
-        private PageProcessingResult(long cnt, Object[] errKeys, SQLException ex) {
-            this.cnt = cnt;
-            this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
-            this.ex = ex;
-        }
-    }
-
-    /** Result of splitting keys whose processing resulted into an exception from those skipped by
-     * logic of {@link EntryProcessor}s (most likely INSERT duplicates, or UPDATE/DELETE keys whose values
-     * had been modified concurrently), counting and collecting entry processor exceptions.
-     */
-    private final static class PageProcessingErrorResult {
-        /** Keys that failed to be processed by {@link EntryProcessor} (not due to an exception). */
-        @NotNull
-        final Object[] errKeys;
-
-        /** Number of entries whose processing resulted into an exception. */
-        final int cnt;
-
-        /** Chain of exceptions corresponding to failed keys. Null if no keys yielded an exception. */
-        final SQLException ex;
-
-        /** */
-        @SuppressWarnings("ConstantConditions")
-        private PageProcessingErrorResult(@NotNull Object[] errKeys, SQLException ex, int exCnt) {
-            errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
-            // When exceptions count must be zero, exceptions chain must be not null, and vice versa.
-            assert exCnt == 0 ^ ex != null;
-
-            this.errKeys = errKeys;
-            this.cnt = exCnt;
-            this.ex = ex;
-        }
-    }
-
-    /**
-     * Batch sender class.
-     */
-    private static class BatchSender {
-        /** Cache context. */
-        private final GridCacheContext cctx;
-
-        /** Batch size. */
-        private final int size;
-
-        /** Batches. */
-        private final Map<UUID, Map<Object, EntryProcessor<Object, Object, Boolean>>> batches = new HashMap<>();
-
-        /** Result count. */
-        private long updateCnt;
-
-        /** Failed keys. */
-        private List<Object> failedKeys;
-
-        /** Exception. */
-        private SQLException err;
-
-        /**
-         * Constructor.
-         *
-         * @param cctx Cache context.
-         * @param size Batch.
-         */
-        public BatchSender(GridCacheContext cctx, int size) {
-            this.cctx = cctx;
-            this.size = size;
-        }
-
-        /**
-         * Add entry to batch.
-         *
-         * @param key Key.
-         * @param proc Processor.
-         */
-        public void add(Object key, EntryProcessor<Object, Object, Boolean> proc) throws IgniteCheckedException {
-            ClusterNode node = cctx.affinity().primaryByKey(key, AffinityTopologyVersion.NONE);
-
-            if (node == null)
-                throw new IgniteCheckedException("Failed to map key to node.");
-
-            UUID nodeId = node.id();
-
-            Map<Object, EntryProcessor<Object, Object, Boolean>> batch = batches.get(nodeId);
-
-            if (batch == null) {
-                batch = new HashMap<>();
-
-                batches.put(nodeId, batch);
-            }
-
-            batch.put(key, proc);
-
-            if (batch.size() >= size) {
-                sendBatch(batch);
-
-                batch.clear();
-            }
-        }
-
-        /**
-         * Flush any remaining entries.
-         *
-         * @throws IgniteCheckedException If failed.
-         */
-        public void flush() throws IgniteCheckedException {
-            for (Map<Object, EntryProcessor<Object, Object, Boolean>> batch : batches.values()) {
-                if (!batch.isEmpty())
-                    sendBatch(batch);
-            }
-        }
-
-        /**
-         * @return Update count.
-         */
-        public long updateCount() {
-            return updateCnt;
-        }
-
-        /**
-         * @return Failed keys.
-         */
-        public List<Object> failedKeys() {
-            return failedKeys != null ? failedKeys : Collections.emptyList();
-        }
-
-        /**
-         * @return Error.
-         */
-        public SQLException error() {
-            return err;
-        }
-
-        /**
-         * Send the batch.
-         *
-         * @param batch Batch.
-         * @throws IgniteCheckedException If failed.
-         */
-        private void sendBatch(Map<Object, EntryProcessor<Object, Object, Boolean>> batch)
-            throws IgniteCheckedException {
-            PageProcessingResult pageRes = processPage(cctx, batch);
-
-            updateCnt += pageRes.cnt;
-
-            if (failedKeys == null)
-                failedKeys = new ArrayList<>();
-
-            failedKeys.addAll(F.asList(pageRes.errKeys));
-
-            if (pageRes.ex != null) {
-                if (err == null)
-                    err = pageRes.ex;
-                else
-                    err.setNextException(pageRes.ex);
-            }
-        }
-    }
 }

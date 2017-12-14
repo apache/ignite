@@ -209,6 +209,7 @@ public final class DmlAstUtils {
      * @return Whether given element corresponds to {@code WHERE _key = ?}, and key is a literal expressed
      * in query or a query param.
      */
+    @SuppressWarnings("RedundantCast")
     private static IgnitePair<GridSqlElement> findKeyValueEqualityCondition(GridSqlElement where) {
         if (where == null || !(where instanceof GridSqlOperation))
             return null;
@@ -528,6 +529,7 @@ public final class DmlAstUtils {
      * @param c Closure each found table and subquery will be passed to. If returns {@code true} the we need to stop.
      * @return {@code true} If we have found.
      */
+    @SuppressWarnings("RedundantCast")
     private static boolean findTablesInFrom(GridSqlElement from, IgnitePredicate<GridSqlElement> c) {
         if (from == null)
             return false;
