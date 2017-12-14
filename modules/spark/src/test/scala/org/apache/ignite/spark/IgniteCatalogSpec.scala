@@ -21,7 +21,7 @@ import java.lang.{Long ⇒ JLong}
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.spark.AbstractDataFrameSpec.{EMPLOYEE_CACHE_NAME, INT_STR_CACHE_NAME, TEST_CONFIG_FILE}
+import org.apache.ignite.spark.AbstractDataFrameSpec.{EMPLOYEE_CACHE_NAME, DEFAULT_CACHE, TEST_CONFIG_FILE}
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.apache.spark.sql.types.{LongType, StringType}
 import org.junit.runner.RunWith
@@ -90,7 +90,7 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         }
 
         it("Should provide newly created tables in tables list") {
-            val cache = client.cache(INT_STR_CACHE_NAME)
+            val cache = client.cache(DEFAULT_CACHE)
 
             cache.query(new SqlFieldsQuery(
                 "CREATE TABLE new_table(id LONG PRIMARY KEY, name VARCHAR) WITH \"template=replicated\"")).getAll
@@ -131,9 +131,9 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
     override protected def beforeAll(): Unit = {
         super.beforeAll()
 
-        createPersonTable(client, INT_STR_CACHE_NAME)
+        createPersonTable(client, DEFAULT_CACHE)
 
-        createCityTable(client, INT_STR_CACHE_NAME)
+        createCityTable(client, DEFAULT_CACHE)
 
         createEmployeeCache(client, EMPLOYEE_CACHE_NAME)
 
@@ -152,4 +152,9 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
             .igniteConfigProvider(configProvider)
             .getOrCreate()
     }
+
+    /**
+      * Enclose some closure, so it doesn't on outer object(default scala behaviour) while serializing.
+      */
+    def enclose[E, R](enclosed: E)(func: E => R): R = func(enclosed)
 }

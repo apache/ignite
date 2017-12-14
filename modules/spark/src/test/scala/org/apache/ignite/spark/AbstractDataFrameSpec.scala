@@ -114,13 +114,11 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
 object AbstractDataFrameSpec {
     val TEST_CONFIG_FILE = "src/test/resources/ignite-spark-config.xml"
 
-    val INT_STR_CACHE_NAME = "cache1"
+    val DEFAULT_CACHE = "cache1"
 
-    val INT_TEST_OBJ_CACHE_NAME = "cache2"
+    val TEST_OBJ_TEST_OBJ_CACHE_NAME = "cache2"
 
-    val TEST_OBJ_TEST_OBJ_CACHE_NAME = "cache3"
-
-    val EMPLOYEE_CACHE_NAME = "cache4"
+    val EMPLOYEE_CACHE_NAME = "cache3"
 
     def configuration(igniteInstanceName: String, client: Boolean): IgniteConfiguration = {
         val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()

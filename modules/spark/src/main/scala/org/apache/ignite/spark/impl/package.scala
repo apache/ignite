@@ -92,14 +92,6 @@ package object impl {
 
     /**
       * @param ignite Ignite instance.
-      * @param cacheName Cache name.
-      * @return True if cache exists false otherwise.
-      */
-    def cacheExists(ignite: Ignite, cacheName: String): Boolean =
-        ignite.cacheNames().contains(cacheName)
-
-    /**
-      * @param ignite Ignite instance.
       * @param tabName Table name.
       * @return QueryEntity for a given table.
       */
@@ -137,10 +129,4 @@ package object impl {
       */
     def isKeyColumn(table: QueryEntity, column: String): Boolean =
         contains(table.getKeyFields, column) || equalsIgnoreCase(table.getKeyFieldName, column)
-
-    /**
-      * Enclose some closure, so it doesn't on outer object(default scala behaviour) while serializing.
-      */
-    def enclose[E, R](enclosed: E)(func: E => R): R = func(enclosed)
-
 }

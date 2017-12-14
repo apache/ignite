@@ -33,9 +33,8 @@ import org.apache.ignite.spark.IgniteDataFrameOptions._
 @RunWith(classOf[JUnitRunner])
 class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
     var personDataFrame: DataFrame = _
+
     var employeeDataFrame: DataFrame = _
-    var intStrDataFrame: DataFrame = _
-    var intTestObjDataFrame: DataFrame = _
 
     describe("Loading DataFrame schema for Ignite tables") {
         it("should successfully load DataFrame schema for a Ignite SQL Table") {
@@ -53,32 +52,6 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
             )
         }
 
-        it("should successfully load DataFrame schema for a Ignite key-value cache") {
-            intStrDataFrame.schema.fields.map(f ⇒ (f.name, f.dataType, f.nullable)) should equal (
-                Array(
-                    ("key", IntegerType, false),
-                    ("value", StringType, false))
-            )
-        }
-
-        it("should successfully load DataFrame data for a Ignite complex key-value cache") {
-            intTestObjDataFrame.schema.fields.map(f ⇒ (f.name, f.dataType, f.nullable)) should equal (
-                Array(
-                    ("key", IntegerType, false),
-                    ("value.byteF", ByteType, true),
-                    ("value.shortF", ShortType, true),
-                    ("value.integerF", IntegerType, true),
-                    ("value.longF", LongType, true),
-                    ("value.floatF", FloatType, true),
-                    ("value.doubleF", DoubleType, true),
-                    ("value.bigDecimalF", DecimalType(10, 0), true),
-                    ("value.stringF", StringType, true),
-                    ("value.dateF", DateType, true),
-                    ("value.sqlDateF", DateType, true),
-                    ("value.timestampF", TimestampType, true))
-            )
-        }
-
         it("should successfully load DataFrame data for a Ignite table configured throw java annotation") {
             employeeDataFrame.schema.fields.map(f ⇒ (f.name, f.dataType, f.nullable)) should equal (
                 Array(
@@ -92,7 +65,7 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
     override protected def beforeAll(): Unit = {
         super.beforeAll()
 
-        createPersonTable(client, INT_STR_CACHE_NAME)
+        createPersonTable(client, DEFAULT_CACHE)
 
         createEmployeeCache(client, EMPLOYEE_CACHE_NAME)
 
