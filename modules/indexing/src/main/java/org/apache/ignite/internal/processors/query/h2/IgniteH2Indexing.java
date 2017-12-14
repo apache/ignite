@@ -1352,7 +1352,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry) {
         // Heuristic check for fast return.
-        if (!qry.getSql().toUpperCase().contains("INDEX"))
+        if (!qry.getSql().toUpperCase().matches("(CREATE|DROP)\\s+(INDEX|TABLE)"))
             return null;
 
         // Parse.

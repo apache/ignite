@@ -173,7 +173,7 @@ public class SqlLexer implements SqlLexerToken {
                     }
 
                     token0 = sql.substring(tokenStartPos0, pos).toUpperCase();
-                    tokenTyp0 = SqlLexerTokenType.DEFAULT;
+                    tokenTyp0 = SqlLexerTokenType.KEYWORD;
             }
 
             if (tokenTyp0 != null) {

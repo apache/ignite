@@ -21,7 +21,7 @@ import java.util.Collections;
 import org.h2.command.Parser;
 import org.h2.expression.ValueExpression;
 
-/** Keyword (like DEFAULT). */
+/** Keyword (like KEYWORD). */
 public final class GridSqlKeyword extends GridSqlElement {
     /**
      * Default update value - analogous to H2.

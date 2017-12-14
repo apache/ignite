@@ -24,7 +24,7 @@ import java.util.HashMap;
  */
 public enum SqlLexerTokenType {
     /** Standard word. */
-    DEFAULT,
+    KEYWORD,
 
     /** Quoted phrase. */
     QUOTED,

@@ -20,9 +20,11 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
+import java.util.Set;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.DEFAULT;
 import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
@@ -38,12 +40,12 @@ public class SqlParserUtils {
      * @return {@code True} if statement is found.
      */
     public static boolean parseIfExists(SqlLexer lex) {
-        SqlLexerToken token = lex.lookAhead();
+        SqlLexerToken tok = lex.lookAhead();
 
-        if (matchesKeyword(token, IF)) {
+        if (matchesKeyword(tok, IF)) {
             lex.shift();
 
-            skipIfMatchesKeyword(lex, EXISTS);
+            skipKeyword(lex, EXISTS);
 
             return true;
         }
@@ -58,13 +60,13 @@ public class SqlParserUtils {
      * @return {@code True} if statement is found.
      */
     public static boolean parseIfNotExists(SqlLexer lex) {
-        SqlLexerToken token = lex.lookAhead();
+        SqlLexerToken tok = lex.lookAhead();
 
-        if (matchesKeyword(token, IF)) {
+        if (matchesKeyword(tok, IF)) {
             lex.shift();
 
-            skipIfMatchesKeyword(lex, NOT);
-            skipIfMatchesKeyword(lex, EXISTS);
+            skipKeyword(lex, NOT);
+            skipKeyword(lex, EXISTS);
 
             return true;
         }
@@ -75,17 +77,18 @@ public class SqlParserUtils {
     /**
      * Skip comma or right parenthesis.
      *
-     * @param lex Lexer.
-     * @return {@code True} if right parenthesis is found.
+     * @param lex The lexer.
+     * @return The skipped token type.
      */
-    public static boolean skipCommaOrRightParenthesis(SqlLexer lex) {
+    public static SqlLexerTokenType skipCommaOrRightParenthesis(SqlLexer lex) {
         if (lex.shift()) {
             switch (lex.tokenType()) {
-                case COMMA:
-                    return false;
-
                 case PARENTHESIS_RIGHT:
-                    return true;
+                case COMMA:
+                    return lex.tokenType();
+
+                default:
+                    // Fall through
             }
         }
 
@@ -107,7 +110,7 @@ public class SqlParserUtils {
             lex.shift();
         }
 
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.KEYWORD) {
             try {
                 long val = sign * Long.parseLong(lex.token());
 
@@ -170,15 +173,15 @@ public class SqlParserUtils {
     /**
      * Check if token is identifier.
      *
-     * @param token Token.
+     * @param tok Token.
      * @return {@code True} if we are standing on possible identifier.
      */
-    public static boolean isValidIdentifier(SqlLexerToken token) {
-        switch (token.tokenType()) {
-            case DEFAULT:
-                char c = token.tokenFirstChar();
+    public static boolean isValidIdentifier(SqlLexerToken tok) {
+        switch (tok.tokenType()) {
+            case KEYWORD:
+                char c = tok.tokenFirstChar();
 
-                return ((c >= 'A' && c <= 'Z') || c == '_') && !SqlKeyword.isKeyword(token.token());
+                return ((c >= 'A' && c <= 'Z') || c == '_') && !SqlKeyword.isKeyword(tok.token());
 
             case QUOTED:
                 return true;
@@ -191,12 +194,12 @@ public class SqlParserUtils {
     /**
      * Check if current lexer token matches expected.
      *
-     * @param token Token..
+     * @param tok Token..
      * @param expKeyword Expected keyword.
      * @return {@code True} if matches.
      */
-    public static boolean matchesKeyword(SqlLexerToken token, String expKeyword) {
-        return token.tokenType() == SqlLexerTokenType.DEFAULT && expKeyword.equals(token.token());
+    public static boolean matchesKeyword(SqlLexerToken tok, String expKeyword) {
+        return tok.tokenType() == SqlLexerTokenType.KEYWORD && expKeyword.equals(tok.token());
     }
 
     /**
@@ -205,7 +208,7 @@ public class SqlParserUtils {
      * @param lex Lexer.
      * @param expKeyword Expected keyword.
      */
-    public static void skipIfMatchesKeyword(SqlLexer lex, String expKeyword) {
+    public static void skipKeyword(SqlLexer lex, String expKeyword) {
         if (lex.shift() && matchesKeyword(lex, expKeyword))
             return;
 
@@ -216,13 +219,13 @@ public class SqlParserUtils {
      * Skip next token if it matches expected type.
      *
      * @param lex Lexer.
-     * @param tokenTyp Expected token type.
+     * @param tokTyp Expected token type.
      */
-    public static void skipIfMatches(SqlLexer lex, SqlLexerTokenType tokenTyp) {
-        if (lex.shift() && F.eq(lex.tokenType(), tokenTyp))
+    public static void skipToken(SqlLexer lex, SqlLexerTokenType tokTyp) {
+        if (lex.shift() && F.eq(lex.tokenType(), tokTyp))
             return;
 
-        throw errorUnexpectedToken(lex, tokenTyp.asString());
+        throw errorUnexpectedToken(lex, tokTyp.asString());
     }
 
     /** FIXME */
@@ -236,21 +239,21 @@ public class SqlParserUtils {
     }
 
     /** FIXME */
-    public static void parseOptionallyQuotedId(SqlLexer lex, String paramDesc, Setter<String> setter) {
+    public static void parseKeywordOrQuoted(SqlLexer lex, String paramDesc, Setter<String> setter) {
         SqlLexerToken nextTok = lex.lookAhead();
 
         switch (nextTok.tokenType()) {
             case QUOTED:
                 lex.shift();
 
-                setter.apply(lex.token(), true);
+                setter.apply(lex.token(), false, true);
 
                 return;
 
-            case DEFAULT:
+            case KEYWORD:
                 lex.shift();
 
-                setter.apply(lex.token(), false);
+                setter.apply(lex.token(), false, false);
 
                 return;
 
@@ -262,116 +265,116 @@ public class SqlParserUtils {
     /**
      * Create parse exception referring to current lexer position.
      *
-     * @param token Token.
+     * @param tok Token.
      * @param msg Message.
      * @return Exception.
      */
-    public static SqlParseException error(SqlLexerToken token, String msg) {
-        return error0(token, IgniteQueryErrorCode.PARSING, msg);
+    public static SqlParseException error(SqlLexerToken tok, String msg) {
+        return error0(tok, IgniteQueryErrorCode.PARSING, msg);
     }
 
     /**
      * Create parse exception referring to current lexer position.
      *
-     * @param token Token.
+     * @param tok Token.
      * @param code Error code.
      * @param msg Message.
      * @return Exception.
      */
-    private static SqlParseException error0(SqlLexerToken token, int code, String msg) {
-        return new SqlParseException(token.sql(), token.tokenPosition(), code, msg);
+    private static SqlParseException error0(SqlLexerToken tok, int code, String msg) {
+        return new SqlParseException(tok.sql(), tok.tokenPosition(), code, msg);
     }
 
     /**
      * Create generic parse exception due to unexpected token.
      *
-     * @param token Token.
+     * @param tok Token.
      * @return Exception.
      */
-    public static SqlParseException errorUnexpectedToken(SqlLexerToken token) {
-        return errorUnexpectedToken0(token);
+    public static SqlParseException errorUnexpectedToken(SqlLexerToken tok) {
+        return errorUnexpectedToken0(tok);
     }
 
     /**
      * Throw unsupported token exception if passed keyword is found.
      *
-     * @param token Token.
+     * @param tok Token.
      * @param keyword Keyword.
      */
-    public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken token, String keyword) {
-        if (matchesKeyword(token, keyword))
-            throw errorUnsupported(token);
+    public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken tok, String keyword) {
+        if (matchesKeyword(tok, keyword))
+            throw errorUnsupported(tok);
     }
 
     /**
      * Throw unsupported token exception if one of passed keywords is found.
      *
-     * @param token Token.
+     * @param tok Token.
      * @param keywords Keywords.
      */
-    public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken token, String... keywords) {
+    public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken tok, String... keywords) {
         if (F.isEmpty(keywords))
             return;
 
         for (String keyword : keywords)
-            errorUnsupportedIfMatchesKeyword(token, keyword);
+            errorUnsupportedIfMatchesKeyword(tok, keyword);
     }
 
     /**
      * Error on unsupported keyword.
      *
-     * @param token Token.
+     * @param tok Token.
      * @return Error.
      */
-    public static SqlParseException errorUnsupported(SqlLexerToken token) {
-        throw error0(token, IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
-            "Unsupported keyword: \"" + token.token() + "\"");
+    public static SqlParseException errorUnsupported(SqlLexerToken tok) {
+        throw error0(tok, IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            "Unsupported keyword: \"" + tok.token() + "\"");
     }
 
     /**
      * Create generic parse exception due to unexpected token.
      *
      * @param lex Lexer.
-     * @param expToken Expected token.
+     * @param expTok Expected token.
      * @return Exception.
      */
-    public static SqlParseException errorUnexpectedToken(SqlLexer lex, String expToken) {
-        return errorUnexpectedToken0(lex, expToken);
+    public static SqlParseException errorUnexpectedToken(SqlLexer lex, String expTok) {
+        return errorUnexpectedToken0(lex, expTok);
     }
 
     /**
      * Create generic parse exception due to unexpected token.
      *
-     * @param token Token.
-     * @param firstExpToken First expected token.
+     * @param tok Token.
+     * @param firstExpTok First expected token.
      * @param expTokens Additional expected tokens (if any).
      * @return Exception.
      */
-    public static SqlParseException errorUnexpectedToken(SqlLexerToken token, String firstExpToken,
+    public static SqlParseException errorUnexpectedToken(SqlLexerToken tok, String firstExpTok,
         String... expTokens) {
         if (F.isEmpty(expTokens))
-            return errorUnexpectedToken0(token, firstExpToken);
+            return errorUnexpectedToken0(tok, firstExpTok);
         else {
             String[] expTokens0 = new String[expTokens.length + 1];
 
-            expTokens0[0] = firstExpToken;
+            expTokens0[0] = firstExpTok;
 
             System.arraycopy(expTokens, 0, expTokens0, 1, expTokens.length);
 
-            throw errorUnexpectedToken0(token, expTokens0);
+            throw errorUnexpectedToken0(tok, expTokens0);
         }
     }
 
     /**
      * Create generic parse exception due to unexpected token.
      *
-     * @param token Token.
+     * @param tok Token.
      * @param expTokens Expected tokens (if any).
      * @return Exception.
      */
     @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
-    private static SqlParseException errorUnexpectedToken0(SqlLexerToken token, String... expTokens) {
-        String token0 = token.token();
+    private static SqlParseException errorUnexpectedToken0(SqlLexerToken tok, String... expTokens) {
+        String token0 = tok.token();
 
         StringBuilder msg = new StringBuilder(
             token0 == null ? "Unexpected end of command" : "Unexpected token: \"" + token0 + "\"");
@@ -393,152 +396,72 @@ public class SqlParserUtils {
             msg.append(")");
         }
 
-        throw error(token, msg.toString());
+        throw error(tok, msg.toString());
     }
 
     /** FIXME */
-    public static <T extends Enum<T>> T parseEnumIfSpecified(SqlLexer lex, Class<T> enumClass, T defaultVal) {
-        SqlLexerToken nextTok = lex.lookAhead();
-
-        if (nextTok.tokenType() == SqlLexerTokenType.DEFAULT) {
-            try {
-                T val = Enum.valueOf(enumClass, nextTok.token().trim().toUpperCase());
-
-                lex.shift();
-
-                return val;
-            }
-            catch(IllegalArgumentException e) {
-                // Fall through
-            }
-        }
-
-        return defaultVal;
-    }
-
-    /** FIXME */
-    public static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumClass) {
-        T val = parseEnumIfSpecified(lex, enumClass, null);
-
-        if (val != null)
-            return val;
-
-        throw errorUnexpectedToken(lex.lookAhead(), "[" + enumClass.getCanonicalName()
-            + " constant, one of " + Arrays.toString(enumClass.getEnumConstants()));
-    }
-
-    /** FIXME */
-    public static boolean parseBoolean(SqlLexer lex) {
-        if (matchesKeyword(lex, Boolean.TRUE.toString().toUpperCase())) {
-
-            lex.shift();
-
-            return true;
-        }
-
-        if (matchesKeyword(lex, Boolean.FALSE.toString().toUpperCase())) {
-
-            lex.shift();
-
-            return false;
-        }
-
-        throw errorUnexpectedToken(lex, "[boolean value: " + Boolean.FALSE + " or " + Boolean.TRUE + "]");
-    }
-
-    /** FIXME */
-    public static boolean parseOptionalStringParam(SqlLexer lex, String keyword, String description,
-        Setter<String> setter) {
+    public static boolean tryParseStringParam(SqlLexer lex, String keyword, String description,
+        @Nullable Set<String> parsedParams, boolean allowDefault, Setter<String> setter) {
 
         if (!matchesKeyword(lex.lookAhead(), keyword))
             return false;
+
+        if (parsedParams != null && parsedParams.contains(keyword))
+            throw error(lex.currentToken(), "Duplicate parameter: " + keyword);
 
         lex.shift();
 
         skipOptionalEqSign(lex);
 
-        parseOptionallyQuotedId(lex, description, setter);
+        if (allowDefault && matchesKeyword(lex.lookAhead(), DEFAULT)) {
 
-        return true;
-    }
-
-    /** FIXME */
-    public static <T extends Enum<T>> boolean parseOptionalEnumValue(SqlLexer lex, String token, Class<T> enumClass,
-        Setter<T> setter) {
-
-        if (matchesKeyword(lex.lookAhead(), token)) {
             lex.shift();
 
-            skipOptionalEqSign(lex);
-
-            setter.apply(parseEnum(lex, enumClass), false);
+            setter.apply(null, true, false);
         }
-        else {
-            T val = parseEnumIfSpecified(lex, enumClass, null);
+        else
+            parseKeywordOrQuoted(lex, description, setter);
 
-            if (val == null)
-                return false;
-
-            setter.apply(val, false);
-        }
+        if (parsedParams != null)
+            parsedParams.add(keyword);
 
         return true;
     }
 
     /** FIXME */
-    public static boolean parseOptionalIntValue(SqlLexer lex, String token,
-        Setter<Integer> setter) {
+    public static boolean tryParseIntParam(SqlLexer lex, String keyword, @Nullable Set<String> parsedParams,
+        boolean allowDefault, Setter<Integer> setter) {
 
-        if (!matchesKeyword(lex.lookAhead(), token))
+        if (!matchesKeyword(lex.lookAhead(), keyword))
             return false;
+
+        if (parsedParams != null && parsedParams.contains(keyword))
+            throw error(lex.currentToken(), "Duplicate parameter: " + keyword);
 
         lex.shift();
 
-        SqlParserUtils.skipOptionalEqSign(lex);
+        skipOptionalEqSign(lex);
 
-        setter.apply(parseInt(lex), false);
+        if (allowDefault && matchesKeyword(lex.lookAhead(), DEFAULT)) {
+
+            lex.shift();
+
+            setter.apply(null, true, false);
+        }
+        else
+            setter.apply(parseInt(lex), false, false);
+
+        if (parsedParams != null)
+            parsedParams.add(keyword);
 
         return true;
     }
-
-    /** FIXME */
-    public static boolean parseOptionalBoolValue(SqlLexer lex, String trueToken, String falseToken,
-        Setter<Boolean> setter) {
-
-        SqlLexerToken nextTok = lex.lookAhead();
-
-        if (matchesKeyword(nextTok, trueToken)) {
-            lex.shift();
-
-            if (lex.lookAhead().tokenType() == SqlLexerTokenType.EQUALS) {
-                lex.shift();
-
-                setter.apply(SqlParserUtils.parseBoolean(lex), false);
-
-                return true;
-            }
-            else {
-                setter.apply(true, false);
-
-                return true;
-            }
-        }
-        else if (matchesKeyword(nextTok, falseToken)) {
-            setter.apply(false, false);
-
-            lex.shift();
-
-            return true;
-        }
-
-        return false;
-    }
-
 
     /** FIXME */
     public interface Setter<T> {
 
-        void apply(T value, boolean isQuoted);
+        /** FIXME */
+        void apply(T val, boolean isDflt, boolean isQuoted);
     }
 
     /**

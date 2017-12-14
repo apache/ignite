@@ -19,6 +19,7 @@ package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.sql.SqlEnumParserUtils;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlLexerToken;
@@ -95,26 +96,27 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfNotExists;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
-import static org.apache.ignite.internal.sql.SqlParserUtils.parseOptionalBoolValue;
+import static org.apache.ignite.internal.sql.SqlEnumParserUtils.tryParseBoolean;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatches;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipToken;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipKeyword;
 
 /**
  * CREATE INDEX command.
  */
 public class SqlCreateTableCommand implements SqlCommand {
 
-    public static final int BACKUPS_NOT_SET = -1;
-
     /** Schema name. */
+    @GridToStringInclude
     private String schemaName;
 
     /** Table name. */
+    @GridToStringInclude
     private String tblName;
 
     /** IF NOT EXISTS flag. */
+    @GridToStringInclude
     private boolean ifNotExists;
 
     /** Columns. */
@@ -129,40 +131,55 @@ public class SqlCreateTableCommand implements SqlCommand {
     private Collection<String> pkColNames;
 
     /** Cache name upon which new cache configuration for this table must be based. */
+    @GridToStringInclude
     private String templateName;
 
     /** Name of new cache associated with this table. */
+    @GridToStringInclude
     private String cacheName;
 
     /** Group to put new cache into. */
+    @GridToStringInclude
     private String cacheGrp;
 
     /** Atomicity mode for new cache. */
+    @GridToStringInclude
     private CacheAtomicityMode atomicityMode;
 
     /** Write sync mode. */
+    @GridToStringInclude
     private CacheWriteSynchronizationMode writeSyncMode;
 
     /** Backups number for new cache. */
+    @GridToStringInclude
     private Integer backups;
 
     /** Name of the column that represents affinity key. */
+    @GridToStringInclude
     private String affinityKey;
 
     /** Forcefully turn single column PK into an Object. */
+    @GridToStringInclude
     private Boolean wrapKey;
 
     /** Forcefully turn single column value into an Object. */
+    @GridToStringInclude
     private Boolean wrapVal;
 
     /** Name of cache key type. */
+    @GridToStringInclude
     private String keyTypeName;
 
     /** Name of cache value type. */
+    @GridToStringInclude
     private String valTypeName;
 
     /** Data region. */
+    @GridToStringInclude
     private String dataRegionName;
+
+    /** FIXME */
+    private Set<String> parsedParams = new HashSet<>();
 
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
@@ -265,8 +282,8 @@ public class SqlCreateTableCommand implements SqlCommand {
     /**
      * @return Backups number for new cache.
      */
-    public int backups() {
-        return backups == null ? BACKUPS_NOT_SET : backups;
+    public Integer backups() {
+        return backups;
     }
 
     /**
@@ -396,7 +413,7 @@ public class SqlCreateTableCommand implements SqlCommand {
         while (true) {
             parseColumnOrConstraint(lex);
 
-            if (skipCommaOrRightParenthesis(lex))
+            if (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.PARENTHESIS_RIGHT)
                 break;
         }
     }
@@ -422,7 +439,7 @@ public class SqlCreateTableCommand implements SqlCommand {
     private void parseColumn(SqlLexer lex) {
         String name = parseIdentifier(lex);
 
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.KEYWORD) {
             SqlColumn col = null;
 
             switch (lex.token()) {
@@ -487,15 +504,15 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case DECIMAL:
                 case NUMBER:
                 case NUMERIC: {
-                    skipIfMatches(lex, SqlLexerTokenType.PARENTHESIS_LEFT);
+                    skipToken(lex, SqlLexerTokenType.PARENTHESIS_LEFT);
 
                     int scale = parseInt(lex);
                     int precision = 0;
 
-                    if (!skipCommaOrRightParenthesis(lex)) {
+                    if (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.COMMA) {
                         precision = parseInt(lex);
 
-                        skipIfMatches(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
+                        skipToken(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
                     }
 
                     col = new SqlColumn(name, SqlColumnType.DECIMAL, scale, precision);
@@ -564,7 +581,7 @@ public class SqlCreateTableCommand implements SqlCommand {
 
                     lex.shift();
 
-                    skipIfMatchesKeyword(lex, KEY);
+                    skipKeyword(lex, KEY);
                 }
 
                 return;
@@ -598,10 +615,10 @@ public class SqlCreateTableCommand implements SqlCommand {
 
         pkColNames = new HashSet<>();
 
-        skipIfMatchesKeyword(lex, PRIMARY);
-        skipIfMatchesKeyword(lex, KEY);
+        skipKeyword(lex, PRIMARY);
+        skipKeyword(lex, KEY);
 
-        skipIfMatches(lex, SqlLexerTokenType.PARENTHESIS_LEFT);
+        skipToken(lex, SqlLexerTokenType.PARENTHESIS_LEFT);
 
         while (true) {
             String pkColName = parseIdentifier(lex);
@@ -609,7 +626,7 @@ public class SqlCreateTableCommand implements SqlCommand {
             if (!pkColNames.add(pkColName))
                 throw error(lex, "Duplicate PK column name: " + pkColName);
 
-            if (skipCommaOrRightParenthesis(lex))
+            if (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.PARENTHESIS_RIGHT)
                 break;
         }
     }
@@ -630,7 +647,7 @@ public class SqlCreateTableCommand implements SqlCommand {
 
             res = parseInt(lex);
 
-            skipIfMatches(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
+            skipToken(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
         }
 
         return res;
@@ -640,111 +657,126 @@ public class SqlCreateTableCommand implements SqlCommand {
      * @param lex Lexer.
      */
     private void parseParametersSection(SqlLexer lex) {
+
         while (lex.tokenType() != SqlLexerTokenType.EOF) {
-            if (!parseTemplate(lex) &&
-                !parseBackups(lex) &&
-                !parseAtomicity(lex) &&
-                !parseWriteSyncMode(lex) &&
-                !parseCacheGroup(lex) &&
-                !parseAffinityKey(lex) &&
-                !parseCacheName(lex) &&
-                !parseDataRegion(lex) &&
-                !parseKeyType(lex) &&
-                !parseValueType(lex) &&
-                !parseWrapKey(lex) &&
-                !parseWrapValue(lex))
+
+            if (!tryParseTemplate(lex) &&
+                !tryParseBackups(lex) &&
+                !tryParseAtomicity(lex) &&
+                !tryParseWriteSyncMode(lex) &&
+                !tryParseCacheGroup(lex) &&
+                !tryParseAffinityKey(lex) &&
+                !tryParseCacheName(lex) &&
+                !tryParseDataRegion(lex) &&
+                !tryParseKeyType(lex) &&
+                !tryParseValueType(lex) &&
+                !tryParseWrapKey(lex) &&
+                !tryParseWrapValue(lex))
+
                 throw errorUnexpectedToken(lex.currentToken());
         }
     }
 
     /** FIXME */
-    private boolean parseTemplate(SqlLexer lex) {
-        return SqlParserUtils.parseOptionalStringParam(lex, TEMPLATE, "template name" ,
+    private boolean tryParseTemplate(final SqlLexer lex) {
+
+        return SqlParserUtils.tryParseStringParam(lex, TEMPLATE, "template name" , parsedParams, true,
 
             new SqlParserUtils.Setter<String>() {
 
-                @Override public void apply(String value, boolean isQuoted) {
+                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
 
-                    templateName(value);
+                    templateName(isDflt ? null : val);
                 }
             }
         );
     }
     /** FIXME */
-    private boolean parseBackups(final SqlLexer lex) {
-        return SqlParserUtils.parseOptionalIntValue(lex, BACKUPS,
+    private boolean tryParseBackups(final SqlLexer lex) {
+
+        return SqlParserUtils.tryParseIntParam(lex, BACKUPS, parsedParams, true,
 
             new SqlParserUtils.Setter<Integer>() {
 
-                @Override public void apply(Integer backupsNum, boolean isQuoted) {
+                @Override public void apply(Integer backupsNum, boolean isDflt, boolean isQuoted) {
 
-                    if (backupsNum == null)
-                        return;
+                    if (isDflt)
+                        backups(null);
+                    else {
+                        if (backupsNum < 0)
+                            throw error(lex.currentToken(), "Number of backups should be positive [val=" + backupsNum + "]");
 
-                    if (backupsNum < 0)
-                        throw error(lex.currentToken(), "Number of backups should be positive [val=" + backupsNum + "]");
-
-                    backups(backupsNum);
+                        backups(backupsNum);
+                    }
                 }
             });
     }
 
     /** FIXME */
-    private boolean parseAtomicity(SqlLexer lex) {
-        return SqlParserUtils.parseOptionalEnumValue(lex, ATOMICITY,
+    private boolean tryParseAtomicity(final SqlLexer lex) {
 
-            CacheAtomicityMode.class, new SqlParserUtils.Setter<CacheAtomicityMode>() {
+        return SqlEnumParserUtils.tryParseEnumParam(lex, ATOMICITY, CacheAtomicityMode.class, parsedParams, true,
 
-                @Override public void apply(CacheAtomicityMode mode, boolean isQuoted) {
+            new SqlParserUtils.Setter<CacheAtomicityMode>() {
 
-                    atomicityMode(mode);
+                @Override public void apply(CacheAtomicityMode mode, boolean isDflt, boolean isQuoted) {
+
+                    atomicityMode(isDflt ? null : mode);
                 }
             });
     }
 
     /** FIXME */
-    private boolean parseWriteSyncMode(SqlLexer lex) {
-        return SqlParserUtils.parseOptionalEnumValue(lex, WRITE_SYNC_MODE,
+    private boolean tryParseWriteSyncMode(final SqlLexer lex) {
 
-            CacheWriteSynchronizationMode.class, new SqlParserUtils.Setter<CacheWriteSynchronizationMode>() {
+        return SqlEnumParserUtils.tryParseEnumParam(lex, WRITE_SYNC_MODE, CacheWriteSynchronizationMode.class,
 
-                @Override public void apply(CacheWriteSynchronizationMode mode, boolean isQuoted) {
+            parsedParams, true, new SqlParserUtils.Setter<CacheWriteSynchronizationMode>() {
 
-                    writeSynchronizationMode(mode);
+                @Override public void apply(CacheWriteSynchronizationMode mode, boolean isDflt, boolean isQuoted) {
+
+                    writeSynchronizationMode(isDflt ? null : mode);
                 }
             });
     }
 
     /** FIXME */
-    private boolean parseCacheGroup(SqlLexer lex) {
-        return SqlParserUtils.parseOptionalStringParam(lex, CACHE_GROUP, "cache group name" ,
+    private boolean tryParseCacheGroup(final SqlLexer lex) {
 
-            new SqlParserUtils.Setter<String>() {
+        return SqlParserUtils.tryParseStringParam(lex, CACHE_GROUP, "cache group name" , parsedParams,
 
-                @Override public void apply(String value, boolean isQuoted) {
+            false, new SqlParserUtils.Setter<String>() {
 
-                    cacheGroup(value);
+                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
+
+                    assert !isDflt;
+
+                    cacheGroup(val);
                 }
             }
         );
     }
 
     /** FIXME */
-    private boolean parseAffinityKey(final SqlLexer lex) {
-        return SqlParserUtils.parseOptionalStringParam(lex, AFFINITY_KEY, "affinity key" ,
+    private boolean tryParseAffinityKey(final SqlLexer lex) {
 
-            new SqlParserUtils.Setter<String>() {
+        return SqlParserUtils.tryParseStringParam(lex, AFFINITY_KEY, "affinity key", parsedParams,
 
-                @Override public void apply(String value, boolean isQuoted) {
-                    value = value.trim();
+            false, new SqlParserUtils.Setter<String>() {
+
+                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
+
+                    assert !isDflt;
 
                     SqlColumn affCol = null;
 
                     for (SqlColumn col : columns()) {
-                        if (value.equalsIgnoreCase(col.name())) {
+
+                        if (val.equalsIgnoreCase(col.name())) {
+
                             if (affCol != null)
-                                throw error(lex.currentToken(), "Ambiguous affinity column name, use single quotes" +
-                                    "for case sensitivity");
+                                throw error(lex.currentToken(),
+                                    "Ambiguous affinity column name, use single quotes for case sensitivity");
 
                             affCol = col;
                         }
@@ -763,79 +795,95 @@ public class SqlCreateTableCommand implements SqlCommand {
     }
 
     /** FIXME */
-    private boolean parseCacheName(SqlLexer lex) {
-        return SqlParserUtils.parseOptionalStringParam(lex, CACHE_NAME, "cache name" ,
+    private boolean tryParseCacheName(SqlLexer lex) {
 
-            new SqlParserUtils.Setter<String>() {
+        return SqlParserUtils.tryParseStringParam(lex, CACHE_NAME, "cache name" , parsedParams,
 
-                @Override public void apply(String value, boolean isQuoted) {
+            false, new SqlParserUtils.Setter<String>() {
 
-                    cacheName(value);
+                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
+
+                    assert !isDflt;
+
+                    cacheName(val);
                 }
             }
         );
     }
 
     /** FIXME */
-    private boolean parseDataRegion(SqlLexer lex) {
-        return SqlParserUtils.parseOptionalStringParam(lex, DATA_REGION, "data region" ,
+    private boolean tryParseDataRegion(final SqlLexer lex) {
+
+        return SqlParserUtils.tryParseStringParam(lex, DATA_REGION, "data region" , parsedParams, true,
 
             new SqlParserUtils.Setter<String>() {
 
-                @Override public void apply(String value, boolean isQuoted) {
+                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
 
-                    dataRegionName(value);
+                    dataRegionName(isDflt ? null : val);
                 }
             }
         );
     }
 
     /** FIXME */
-    private boolean parseKeyType(SqlLexer lex) {
-        return SqlParserUtils.parseOptionalStringParam(lex, KEY_TYPE, "key type" ,
+    private boolean tryParseKeyType(final SqlLexer lex) {
+
+        return SqlParserUtils.tryParseStringParam(lex, KEY_TYPE, "key type" , parsedParams, false,
 
             new SqlParserUtils.Setter<String>() {
 
-                @Override public void apply(String value, boolean isQuoted) {
+                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
 
-                    keyTypeName(value);
+                    assert !isDflt;
+
+                    keyTypeName(val);
                 }
             }
         );
     }
 
     /** FIXME */
-    private boolean parseValueType(SqlLexer lex) {
-        return SqlParserUtils.parseOptionalStringParam(lex, VAL_TYPE, "value type" ,
+    private boolean tryParseValueType(final SqlLexer lex) {
 
-            new SqlParserUtils.Setter<String>() {
+        return SqlParserUtils.tryParseStringParam(lex, VAL_TYPE, "value type" , parsedParams,
 
-                @Override public void apply(String value, boolean isQuoted) {
+            false, new SqlParserUtils.Setter<String>() {
 
-                    valueTypeName(value);
+                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
+
+                    assert !isDflt;
+
+                    valueTypeName(val);
                 }
             }
         );
     }
 
     /** FIXME */
-    private boolean parseWrapKey(SqlLexer lex) {
-        return parseOptionalBoolValue(lex, WRAP_KEY, NO_WRAP_KEY, new SqlParserUtils.Setter<Boolean>() {
+    private boolean tryParseWrapKey(final SqlLexer lex) {
 
-                @Override public void apply(Boolean value, boolean isQuoted) {
+        return tryParseBoolean(lex, WRAP_KEY, NO_WRAP_KEY, parsedParams,true,
 
-                    wrapKey(value);
+            new SqlParserUtils.Setter<Boolean>() {
+
+                @Override public void apply(Boolean val, boolean isDflt, boolean isQuoted) {
+
+                    wrapKey(isDflt ? false : val);
                 }
             });
     }
 
     /** FIXME */
-    private boolean parseWrapValue(SqlLexer lex) {
-        return parseOptionalBoolValue(lex, WRAP_VALUE, NO_WRAP_VALUE, new SqlParserUtils.Setter<Boolean>() {
+    private boolean tryParseWrapValue(final SqlLexer lex) {
 
-            @Override public void apply(Boolean value, boolean isQuoted) {
+        return tryParseBoolean(lex, WRAP_VALUE, NO_WRAP_VALUE, parsedParams, true,
 
-                wrapValue(value);
+            new SqlParserUtils.Setter<Boolean>() {
+
+            @Override public void apply(Boolean val, boolean isDflt, boolean isQuoted) {
+
+                wrapValue(isDflt ? true : val);
             }
         });
     }
@@ -850,8 +898,8 @@ public class SqlCreateTableCommand implements SqlCommand {
      * @param name Param name.
      * @param val Param value to check.
      */
-    private static void ensureNonEmptyVal(SqlLexerToken token, String name, String val) {
+    private static void ensureNonEmptyVal(SqlLexerToken tok, String name, String val) {
         if (F.isEmpty(val))
-            throw error(token, "Parameter value cannot be empty: [name=\"" + name + "\"]");
+            throw error(tok, "Parameter value cannot be empty: [name=\"" + name + "\"]");
     }
 }
