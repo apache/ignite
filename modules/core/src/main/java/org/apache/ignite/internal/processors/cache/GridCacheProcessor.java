@@ -66,7 +66,9 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -205,6 +207,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Template configuration add futures. */
     private ConcurrentMap<String, IgniteInternalFuture> pendingTemplateFuts = new ConcurrentHashMap<>();
+
+    /** Enable/disable cache statistics futures. */
+    private ConcurrentMap<UUID, EnableStatisticsFuture> enableStatisticsFuts = new ConcurrentHashMap<>();
 
     /** */
     private ClusterCachesInfo cachesInfo;
@@ -650,6 +655,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
+        GridDiscoveryManager discoMgr = ctx.discovery();
+
+        discoMgr.setCustomEventListener(CacheStatisticsModeChangeResponse.class,
+            new CacheStatisticsModeChangeListener());
+
         if (!ctx.isDaemon()) {
             Map<String, CacheInfo> caches = new HashMap<>();
 
@@ -984,6 +994,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (IgniteInternalFuture fut : pendingTemplateFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
+
+        for (EnableStatisticsFuture fut : enableStatisticsFuts.values())
+            fut.onDone(err);
 
         for (CacheGroupContext grp : cacheGrps.values())
             grp.onDisconnected(reconnectFut);
@@ -3633,6 +3646,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (IgniteInternalFuture fut : pendingTemplateFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
+
+        for (EnableStatisticsFuture fut : enableStatisticsFuts.values())
+            fut.onDone(err);
     }
 
     /**
@@ -4050,9 +4066,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to enable/disable statistics for cache cluster wide, "
                     + "some nodes don't support this feature [node=" + n.id() + ", v=" + n.version() + "].");
 
-        CacheStatisticsModeChangeMessage msg = new CacheStatisticsModeChangeMessage(globalCaches, enabled);
+        UUID reqId = UUID.randomUUID();
+
+        EnableStatisticsFuture fut = new EnableStatisticsFuture(reqId);
+
+        enableStatisticsFuts.put(reqId, fut);
+
+        CacheStatisticsModeChangeMessage msg = new CacheStatisticsModeChangeMessage(reqId, globalCaches, enabled);
 
         ctx.grid().context().discovery().sendCustomEvent(msg);
+
+        if (fut.get() == Boolean.FALSE)
+            log.warning("Failed to enable/disable statistics for caches on some nodes "
+                + "(check other nodes logs for details)");
     }
 
     /**
@@ -4258,6 +4284,51 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     addRemovedItemsCleanupTask(timeout);
                 }
             }, true);
+        }
+    }
+
+    /**
+     * Enable statistics future.
+     */
+    private class EnableStatisticsFuture extends GridFutureAdapter<Boolean> {
+        /** */
+        private UUID id;
+
+        /**
+         * @param id Future ID.
+         */
+        private EnableStatisticsFuture(UUID id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+            // Make sure to remove future before completion.
+            enableStatisticsFuts.remove(id, this);
+
+            return super.onDone(res, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(EnableStatisticsFuture.class, this);
+        }
+    }
+
+    /**
+     * Listener for cache enable/disable statistics response message.
+     */
+    private final class CacheStatisticsModeChangeListener implements CustomEventListener<CacheStatisticsModeChangeResponse> {
+        /** {@inheritDoc} */
+        @Override public void onCustomEvent(
+            AffinityTopologyVersion topVer,
+            ClusterNode snd,
+            CacheStatisticsModeChangeResponse msg
+        ) {
+            EnableStatisticsFuture fut = enableStatisticsFuts.get(msg.requestId());
+
+            if (fut != null)
+                fut.onDone(msg.result());
         }
     }
 }

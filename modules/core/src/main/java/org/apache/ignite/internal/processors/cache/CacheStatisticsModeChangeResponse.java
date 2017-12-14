@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -29,9 +27,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache statistics mode change discovery message.
+ * Cache statistics mode change discovery response message.
  */
-public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage {
+public class CacheStatisticsModeChangeResponse implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,23 +39,15 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     /** Request id. */
     private final UUID reqId;
 
-    /** Cache names. */
-    private final Collection<String> caches;
-
-    /** Statistic enabled. */
-    private final boolean enabled;
-
     /** Result. */
-    private boolean res;
+    private final boolean res;
 
     /**
-     * @param caches Collection of cache names.
+     *
      */
-    public CacheStatisticsModeChangeMessage(UUID reqId, Collection<String> caches, boolean enabled) {
+    public CacheStatisticsModeChangeResponse(UUID reqId, boolean res) {
         this.reqId = reqId;
-        this.caches = Collections.unmodifiableCollection(caches);
-        this.enabled = enabled;
-        this.res = true;
+        this.res = res;
     }
 
     /** {@inheritDoc} */
@@ -67,12 +57,12 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new CacheStatisticsModeChangeResponse(reqId, res);
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -82,28 +72,21 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     }
 
     /**
-     * @return Cache names.
+     * @return Request id.
      */
-    public Collection<String> caches() {
-        return Collections.unmodifiableCollection(caches);
+    public UUID requestId() {
+        return reqId;
     }
 
     /**
-     * @return Statistic enabled.
+     * @return Result.
      */
-    public boolean enabled() {
-        return enabled;
-    }
-
-    /**
-     * Sets result.
-     */
-    public void result(boolean res) {
-        this.res = res;
+    public boolean result() {
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheStatisticsModeChangeMessage.class, this);
+        return S.toString(CacheStatisticsModeChangeResponse.class, this);
     }
 }

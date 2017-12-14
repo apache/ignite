@@ -396,8 +396,11 @@ class ClusterCachesInfo {
 
             if (desc != null)
                 desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
-            else
+            else {
+                msg.result(false);
+
                 log.warning("Failed to change cache descriptor configuration, cache not found [cacheName=" + cacheName + ']');
+            }
         }
     }
 
