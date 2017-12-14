@@ -4,6 +4,9 @@ import junit.framework.TestSuite;
 import org.apache.ignite.testsuites.IgnitePdsTestSuite;
 import org.apache.ignite.testsuites.IgnitePdsTestSuite2;
 
+/**
+ * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
+ */
 public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
     /**
      * @return Suite.
@@ -12,7 +15,6 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
 
-        // Basic PageMemory tests.
         suite.addTest(IgnitePdsTestSuite2.suite());
 
         return suite;
