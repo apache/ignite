@@ -257,8 +257,6 @@ public class GridMapQueryExecutor {
         return nodeRess;
     }
 
-
-
     /**
      * @param caches Cache IDs.
      * @return The first found partitioned cache.
