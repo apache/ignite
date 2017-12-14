@@ -367,7 +367,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             if (state == OWNING) {
                                 assert part != null;
 
-                                addPartition(
+                                if(!addPartition(
                                     part,
                                     ctx.partitionStatMap(),
                                     partMetaPageAddr,
@@ -376,7 +376,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                     store.partId(),
                                     this.ctx.pageStore().pages(grpId, store.partId()),
                                     store.fullSize()
-                                );
+                                ))
+                                    U.warn(log,"Partition was concurrently evicted grpId=" +  grpId +
+                                            ", partitionId=" + part.id());
                             }
                             else if (state == MOVING || state == RENTING) {
                                 if (ctx.partitionStatMap().forceSkipIndexPartition(grpId)) {
@@ -442,7 +444,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @param cacheId Cache ID.
      * @param currAllocatedPageCnt total number of pages allocated for partition <code>[partition, cacheId]</code>
      */
-    private static void addPartition(
+    private static boolean addPartition(
             GridDhtLocalPartition part,
             final PartitionAllocationMap map,
             final long metaPageAddr,
@@ -452,8 +454,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             final int currAllocatedPageCnt,
             final int partSize
     ) {
-        if (part != null)
-            part.reserve();
+        if (part != null) {
+            boolean reserved = part.reserve();
+
+            if(!reserved)
+                return false;
+        }
         else
             assert partId == PageIdAllocator.INDEX_PARTITION : partId;
 
@@ -466,6 +472,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         map.put(
             new GroupPartitionId(cacheId, partId),
             new PagesAllocationRange(lastAllocatedPageCnt, curPageCnt));
+
+        return true;
     }
 
     /** {@inheritDoc} */
