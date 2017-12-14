@@ -391,12 +391,14 @@ class ClusterCachesInfo {
     public void onCacheStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
         assert msg != null;
 
-        DynamicCacheDescriptor desc = registeredCaches.get(msg.cacheName());
+        for (String cacheName : msg.caches()) {
+            DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
-        if (desc != null)
-            desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
-        else
-            log.warning("Failed to change cache descriptor configuration, cache not found [cacheName=" + msg.cacheName() + ']');
+            if (desc != null)
+                desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
+            else
+                log.warning("Failed to change cache descriptor configuration, cache not found [cacheName=" + cacheName + ']');
+        }
     }
 
     /**
@@ -405,12 +407,14 @@ class ClusterCachesInfo {
     public void processStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
         assert msg != null;
 
-        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(msg.cacheName());
+        for (String cacheName : msg.caches()) {
+            IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
 
-        if (cache != null)
-            cache.context().statisticsEnabled(msg.enabled());
-        else
-            log.warning("Failed to change cache configuration, cache not found [cacheName=" + msg.cacheName() + ']');
+            if (cache != null)
+                cache.context().statisticsEnabled(msg.enabled());
+            else
+                log.warning("Failed to change cache configuration, cache not found [cacheName=" + cacheName + ']');
+        }
     }
 
     /**

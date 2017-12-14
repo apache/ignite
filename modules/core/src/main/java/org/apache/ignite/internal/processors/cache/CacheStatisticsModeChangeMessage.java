@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -35,17 +37,17 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Cache name. */
-    private final String cacheName;
+    /** Cache names. */
+    private final Collection<String> caches;
 
     /** Statistic enabled. */
     private final boolean enabled;
 
     /**
-     * @param cacheName Cache name.
+     * @param caches Collection of cache names.
      */
-    public CacheStatisticsModeChangeMessage(String cacheName, boolean enabled) {
-        this.cacheName = cacheName;
+    public CacheStatisticsModeChangeMessage(Collection<String> caches, boolean enabled) {
+        this.caches = Collections.unmodifiableCollection(caches);
         this.enabled = enabled;
     }
 
@@ -71,10 +73,10 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     }
 
     /**
-     * @return Cache name.
+     * @return Cache names.
      */
-    public String cacheName() {
-        return cacheName;
+    public Collection<String> caches() {
+        return Collections.unmodifiableCollection(caches);
     }
 
     /**

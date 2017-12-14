@@ -677,6 +677,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
+    /** {@inheritDoc} */
+    @Override public void enableStatistics(boolean enabled) {
+        compute.call(new EnableStatisticsTask(cacheName, isAsync, enabled));
+    }
+
     /**
      *
      */
@@ -1715,6 +1720,30 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /** {@inheritDoc} */
         @Override public R call() throws Exception {
             return cache().unwrap(clazz);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class EnableStatisticsTask extends CacheTaskAdapter<Void, Void, Void> {
+        /** Statistics enabled. */
+        private final boolean enabled;
+
+        /**
+         * @param cacheName Cache name.
+         */
+        public EnableStatisticsTask(String cacheName, boolean async, boolean enabled) {
+            super(cacheName, async, null);
+
+            this.enabled = enabled;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            cache().enableStatistics(enabled);
+
+            return null;
         }
     }
 

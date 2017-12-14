@@ -4017,22 +4017,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Enable/disable statistics globally for the cache
+     * Enable/disable statistics globally for the caches
      *
-     * @param cacheName Cache name.
+     * @param caches Collection of cache names.
      * @param enabled Statistics enabled flag.
      */
-    public void enableStatistics(String cacheName, boolean enabled) throws IgniteCheckedException {
-        assert cacheName != null;
+    public void enableStatistics(Collection<String> caches, boolean enabled) throws IgniteCheckedException {
+        assert caches != null;
 
-        IgniteInternalCache cache = cache(cacheName);
+        Collection<String> globalCaches = new ArrayList<>(caches.size());
 
-        if (cache == null)
-            throw new IgniteCheckedException("Cache not found [cacheName=" + cacheName + ']');
+        if (!cacheNames().containsAll(caches))
+            throw new IgniteCheckedException("One or more cache descriptors not found [caches=" + caches + ']');
 
-        cache.context().statisticsEnabled(enabled);
+        for (String cacheName : caches) {
+            IgniteInternalCache cache = cache(cacheName);
 
-        if (cache.context().isLocal())
+            if (cache == null)
+                throw new IgniteCheckedException("Cache not found [cacheName=" + cacheName + ']');
+
+            cache.context().statisticsEnabled(enabled);
+
+            if (!cache.context().isLocal())
+                globalCaches.add(cacheName);
+        }
+
+        if (globalCaches.isEmpty())
             return;
 
         for (ClusterNode n : ctx.discovery().allNodes())
@@ -4040,7 +4050,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to enable/disable statistics for cache cluster wide, "
                     + "some nodes don't support this feature [node=" + n.id() + ", v=" + n.version() + "].");
 
-        CacheStatisticsModeChangeMessage msg = new CacheStatisticsModeChangeMessage(cacheName, enabled);
+        CacheStatisticsModeChangeMessage msg = new CacheStatisticsModeChangeMessage(globalCaches, enabled);
 
         ctx.grid().context().discovery().sendCustomEvent(msg);
     }

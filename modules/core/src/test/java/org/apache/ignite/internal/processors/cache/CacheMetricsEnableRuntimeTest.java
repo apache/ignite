@@ -103,10 +103,8 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return !mgr1.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
-                    && !mgr2.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
-                    && mgr1.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
-                    && mgr2.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled();
+                return !isStatisticsEnabled(mgr1, CACHE1) && !isStatisticsEnabled(mgr2, CACHE1)
+                    && isStatisticsEnabled(mgr1, CACHE2) && isStatisticsEnabled(mgr2, CACHE2);
             }
         }, WAIT_CONDITION_TIMEOUT));
 
@@ -115,10 +113,8 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return mgr1.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
-                    && mgr2.getCache(CACHE1).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
-                    && !mgr1.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled()
-                    && !mgr2.getCache(CACHE2).getConfiguration(CacheConfiguration.class).isStatisticsEnabled();
+                return isStatisticsEnabled(mgr1, CACHE1) && isStatisticsEnabled(mgr2, CACHE1)
+                    && !isStatisticsEnabled(mgr1, CACHE2) && !isStatisticsEnabled(mgr2, CACHE2);
             }
         }, WAIT_CONDITION_TIMEOUT));
     }
@@ -270,5 +266,13 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
                 return checkStatisticsMode(CACHE1, enabled1) && checkStatisticsMode(CACHE2, enabled2);
             }
         }, WAIT_CONDITION_TIMEOUT));
+    }
+
+    /**
+     * @param cacheManager Cache manager.
+     * @param cacheName Cache name.
+     */
+    private boolean isStatisticsEnabled(CacheManager cacheManager, String cacheName) {
+        return ((IgniteCache)cacheManager.getCache(cacheName)).metrics().isStatisticsEnabled();
     }
 }
