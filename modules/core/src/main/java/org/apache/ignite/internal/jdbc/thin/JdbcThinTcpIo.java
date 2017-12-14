@@ -141,32 +141,6 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * Try to guess request capacity.
-     *
-     * @param req Request.
-     * @return Expected capacity.
-     */
-    private static int guessCapacity(JdbcRequest req) {
-        int cap;
-
-        if (req instanceof JdbcBatchExecuteRequest) {
-            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
-
-            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
-        }
-        else if (req instanceof JdbcQueryCloseRequest)
-            cap = QUERY_CLOSE_MSG_SIZE;
-        else if (req instanceof JdbcQueryMetadataRequest)
-            cap = QUERY_META_MSG_SIZE;
-        else if (req instanceof JdbcQueryFetchRequest)
-            cap = QUERY_FETCH_MSG_SIZE;
-        else
-            cap = DYNAMIC_SIZE_MSG_CAP;
-
-        return cap;
-    }
-
-    /**
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
@@ -235,7 +209,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
+        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(ver.major());
         writer.writeShort(ver.minor());
@@ -305,7 +279,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
+        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(VER_2_1_0.major());
         writer.writeShort(VER_2_1_0.minor());
@@ -367,6 +341,32 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Try to guess request capacity.
+     *
+     * @param req Request.
+     * @return Expected capacity.
+     */
+    private static int guessCapacity(JdbcRequest req) {
+        int cap;
+
+        if (req instanceof JdbcBatchExecuteRequest) {
+            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
+
+            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
+        }
+        else if (req instanceof JdbcQueryCloseRequest)
+            cap = QUERY_CLOSE_MSG_SIZE;
+        else if (req instanceof JdbcQueryMetadataRequest)
+            cap = QUERY_META_MSG_SIZE;
+        else if (req instanceof JdbcQueryFetchRequest)
+            cap = QUERY_FETCH_MSG_SIZE;
+        else
+            cap = DYNAMIC_SIZE_MSG_CAP;
+
+        return cap;
+    }
+
+    /**
      * @param req JDBC request bytes.
      * @throws IOException On error.
      */
@@ -390,7 +390,7 @@ public class JdbcThinTcpIo {
     private byte[] read() throws IOException {
         byte[] sizeBytes = read(4);
 
-        int msgSize = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
+        int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
             | ((0xFF & sizeBytes[1]) << 8) + (0xFF & sizeBytes[0]));
 
         return read(msgSize);
@@ -401,7 +401,7 @@ public class JdbcThinTcpIo {
      * @return Read bytes.
      * @throws IOException On error.
      */
-    private byte[] read(int size) throws IOException {
+    private byte [] read(int size) throws IOException {
         int off = 0;
 
         byte[] data = new byte[size];
@@ -464,14 +464,16 @@ public class JdbcThinTcpIo {
 
         if (!F.isEmpty(sslFactory)) {
             try {
-                Class<Factory<SSLSocketFactory>> cls = (Class<Factory<SSLSocketFactory>>)getClass().getClassLoader().loadClass(sslFactory);
+                Class<Factory<SSLSocketFactory>> cls = (Class<Factory<SSLSocketFactory>>)getClass()
+                    .getClassLoader().loadClass(sslFactory);
 
                 Factory<SSLSocketFactory> f = cls.newInstance();
 
                 return f.create();
             }
             catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                throw new SQLException("Could not fount SSL factory class: " + sslFactory, SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                throw new SQLException("Could not fount SSL factory class: " + sslFactory,
+                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
         }
 
@@ -480,7 +482,8 @@ public class JdbcThinTcpIo {
                 return SSLContext.getDefault().getSocketFactory();
             }
             catch (NoSuchAlgorithmException e) {
-                throw new SQLException("Could not create default SSL context", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                throw new SQLException("Could not create default SSL context",
+                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
         }
 
@@ -525,17 +528,19 @@ public class JdbcThinTcpIo {
             }
         }
         catch (UnrecoverableKeyException e) {
-            throw new SQLException("Could not recover keys from client keystore.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Could not recover keys from client keystore.",
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
         catch (NoSuchAlgorithmException e) {
             throw new SQLException("Unsupported keystore algorithm.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
         catch (KeyStoreException e) {
-            throw new SQLException("Could not create client KeyStore instance.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Could not create client KeyStore instance.",
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
         catch (CertificateException e) {
-            throw new SQLException("Could not load client key store. [storeType=" + cliCertKeyStoreType + ", cliStoreUrl="
-                + cliCertKeyStoreUrl + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Could not load client key store. [storeType=" + cliCertKeyStoreType
+                + ", cliStoreUrl=" + cliCertKeyStoreUrl + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
         catch (MalformedURLException e) {
             throw new SQLException("Invalid client key store URL. [url=" + cliCertKeyStoreUrl + ']',
@@ -551,7 +556,8 @@ public class JdbcThinTcpIo {
                     ksInputStream.close();
                 }
                 catch (IOException e) {
-                    // can't close input stream, but keystore can be properly initialized so we shouldn't throw this exception
+                    // can't close input stream, but keystore can be properly initialized
+                    // so we shouldn't throw this exception
                 }
             }
         }
@@ -569,7 +575,8 @@ public class JdbcThinTcpIo {
                 KeyStore trustKeyStore = null;
 
                 if (!F.isEmpty(trustCertKeyStoreUrl) && !F.isEmpty(trustCertKeyStoreType)) {
-                    char[] trustStorePassword = (trustCertKeyStorePwd == null) ? new char[0] : trustCertKeyStorePwd.toCharArray();
+                    char[] trustStorePassword = (trustCertKeyStorePwd == null) ? new char[0]
+                        : trustCertKeyStorePwd.toCharArray();
 
                     tsInputStream = new URL(trustCertKeyStoreUrl).openStream();
 
@@ -588,7 +595,8 @@ public class JdbcThinTcpIo {
                 throw new SQLException("Unsupported keystore algorithm.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
             catch (KeyStoreException e) {
-                throw new SQLException("Could not create trust KeyStore instance.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                throw new SQLException("Could not create trust KeyStore instance.",
+                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
             catch (CertificateException e) {
                 throw new SQLException("Could not load trusted key store. [storeType=" + trustCertKeyStoreType +
@@ -608,7 +616,8 @@ public class JdbcThinTcpIo {
                         tsInputStream.close();
                     }
                     catch (IOException e) {
-                        // can't close input stream, but keystore can be properly initialized so we shouldn't throw this exception
+                        // can't close input stream, but keystore can be properly initialized
+                        // so we shouldn't throw this exception
                     }
                 }
             }

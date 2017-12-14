@@ -39,14 +39,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- * Connection test.
+ * SSL connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-    /** */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+
     /** Ssl context factory. */
     private static Factory<SSLContext> sslContextFactory;
 

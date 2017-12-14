@@ -149,7 +149,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
-        useSSL,
+        useSSL, sslProtocol,
         clientCertificateKeyStoreUrl, clientCertificateKeyStorePassword, clientCertificateKeyStoreType,
         trustCertificateKeyStoreUrl, trustCertificateKeyStorePassword, trustCertificateKeyStoreType,
         trustAll, sslFactory, useDefault
