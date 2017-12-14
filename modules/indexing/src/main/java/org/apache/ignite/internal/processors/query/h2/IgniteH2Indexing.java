@@ -2838,7 +2838,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (cctx == null) // Cache was not found, probably was not deployed yet.
                 return false;
 
-            if (cctx.isLocal() || !cctx.rebalanceEnabled())
+            if (cctx.isLocal() || !cctx.rebalanceEnabled() || cctx.localNode().isClient())
                 continue;
 
             // For replicated cache topology version does not make sense.

@@ -786,10 +786,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             ex = e;
         }
 
-        assertNotNull("", it.next());
-
         assertNull("No exception should be thrown if cursor is not closed.", ex);
-        assertNotNull("Iterator should not be empty.", it);
+        assertNotNull("Iterator should not be null.", it);
 
         cur1.close();
     }
