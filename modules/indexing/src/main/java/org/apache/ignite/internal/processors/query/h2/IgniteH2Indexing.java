@@ -920,19 +920,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             .distributedJoinMode(OFF)
             .reservations(reserved);
 
-        assert GridH2QueryContext.get() == null;
-
-        GridH2QueryContext.set(ctx);
-
         return new GridQueryFieldsResultAdapter(meta, null) {
-
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
                 try {
+                    assert GridH2QueryContext.get() == null;
+
+                    GridH2QueryContext.set(ctx);
+
                     ResultSet rs = executeSqlQueryWithTimer(stmt, conn, qry, params, timeout, cancel);
 
                     return new H2FieldsIterator(rs);
                 }
                 finally {
+                    GridH2QueryContext.clearThreadLocal();
+
                     close();
                 }
             }
@@ -940,8 +941,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Override public void close() {
                 if (!closed) {
                     super.close();
-
-                    GridH2QueryContext.clearThreadLocal();
 
                     ctx.clearContext(false);
 

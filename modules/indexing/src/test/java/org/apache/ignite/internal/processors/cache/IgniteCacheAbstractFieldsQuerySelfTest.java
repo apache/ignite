@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -36,7 +37,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -44,11 +44,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongValue;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -721,6 +719,79 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             assert "key".equals(row.get(0));
             assert "val".equals(row.get(1));
         }
+    }
+
+    /**
+     * Checks closing cursor from the another thread.
+     *
+     * @throws Exception If failed.
+     */
+    public void testQueryCancelFromAnotherThread() throws Exception {
+        final QueryCursor<List<?>> cur = strCache.query(sqlFieldsQuery("select * from String"));
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final Throwable[] exceptions = new Throwable[1];
+
+        ignite(0).scheduler().runLocal(new Runnable() {
+            @Override public void run() {
+                try {
+                    cur.close();
+                }
+                catch (Throwable e) {
+                    exceptions[0] = e;
+                }
+                finally {
+                    latch.countDown();
+                }
+            }
+        });
+
+        latch.await();
+
+        assertNull("Exception occurred when cancelled from another thread.", exceptions[0]);
+
+        Exception ex = null;
+        Iterator it = null;
+
+        try {
+            it = cur.iterator();
+        }
+        catch (Exception e) {
+            ex = e;
+        }
+
+        assertNotNull("Exception hasn't been thrown during obtaining iterator from the closed cursor.", ex);
+        assertNull("Iterator has been fetched after the cursor had been closed.", it);
+    }
+
+    /**
+     * Checks if simultaneous queries are executed independently.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSimultaneousQueries() throws Exception {
+        final QueryCursor<List<?>> cur1 = strCache.query(sqlFieldsQuery("select * from String").setLocal(true));
+        final QueryCursor<List<?>> cur2 = strCache.query(sqlFieldsQuery("select * from String").setLocal(true));
+
+        cur2.close();
+
+        Exception ex = null;
+        Iterator it = null;
+
+        try {
+            it = cur1.iterator();
+        }
+        catch (Exception e) {
+            ex = e;
+        }
+
+        assertNotNull("", it.next());
+
+        assertNull("No exception should be thrown if cursor is not closed.", ex);
+        assertNotNull("Iterator should not be empty.", it);
+
+        cur1.close();
     }
 
     /** @throws Exception If failed. */
