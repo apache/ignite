@@ -110,6 +110,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             Ignite g = grid(i);
 
             IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+
             if (cache instanceof IgniteCacheProxy)
                 ((IgniteCacheProxy)cache).context().statisticsEnabled(true);
         }
@@ -124,6 +125,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             Ignite g = grid(i);
 
             IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+
             if (cache instanceof IgniteCacheProxy)
                 ((IgniteCacheProxy)cache).context().statisticsEnabled(false);
         }

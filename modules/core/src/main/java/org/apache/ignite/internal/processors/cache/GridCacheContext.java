@@ -2138,7 +2138,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param statisticsEnabled New statistics enabled flag.
+     * @param statisticsEnabled Statistics enabled flag.
      */
     public void statisticsEnabled(boolean statisticsEnabled) {
         this.statisticsEnabled = statisticsEnabled;

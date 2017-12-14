@@ -87,6 +87,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             Ignite g = grid(i);
 
             IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+
             if (cache instanceof IgniteCacheProxy)
                 ((IgniteCacheProxy)cache).context().statisticsEnabled(true);
         }
