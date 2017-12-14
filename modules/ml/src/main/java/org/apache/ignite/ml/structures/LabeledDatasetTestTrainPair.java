@@ -39,7 +39,8 @@ public class LabeledDatasetTestTrainPair implements Serializable {
      * <p>
      * NOTE: This method uses next algorithm with O(n log n) by calculations and O(n) by memory.
      * </p>
-     * @param dataset The dataset to split on train and test subsets.
+     *
+     * @param dataset        The dataset to split on train and test subsets.
      * @param testPercentage The percentage of the test subset.
      */
     public LabeledDatasetTestTrainPair(LabeledDataset dataset, double testPercentage) {
@@ -48,7 +49,7 @@ public class LabeledDatasetTestTrainPair implements Serializable {
         final int datasetSize = dataset.rowSize();
         assert datasetSize > 2;
 
-        final int testSize = (int)Math.floor(datasetSize * testPercentage);
+        final int testSize = (int) Math.floor(datasetSize * testPercentage);
         final int trainSize = datasetSize - testSize;
 
         final TreeSet<Integer> sortedTestIndices = getSortedIndices(datasetSize, testSize);
@@ -62,7 +63,7 @@ public class LabeledDatasetTestTrainPair implements Serializable {
         int trainCntr = 0;
         int testCntr = 0;
 
-        for (Integer idx: sortedTestIndices){ // guarantee order as iterator
+        for (Integer idx : sortedTestIndices) { // guarantee order as iterator
             testVectors[testCntr] = dataset.getRow(idx);
             testCntr++;
 
@@ -73,7 +74,7 @@ public class LabeledDatasetTestTrainPair implements Serializable {
 
             datasetCntr = idx + 1;
         }
-        if(datasetCntr < datasetSize){
+        if (datasetCntr < datasetSize) {
             for (int i = datasetCntr; i < datasetSize; i++) {
                 trainVectors[trainCntr] = dataset.getRow(i);
                 trainCntr++;
@@ -100,6 +101,7 @@ public class LabeledDatasetTestTrainPair implements Serializable {
 
     /**
      * Train subset of the whole dataset.
+     *
      * @return Train subset.
      */
     public LabeledDataset train() {
@@ -108,6 +110,7 @@ public class LabeledDatasetTestTrainPair implements Serializable {
 
     /**
      * Test subset of the whole dataset.
+     *
      * @return Test subset.
      */
     public LabeledDataset test() {

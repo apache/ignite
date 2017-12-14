@@ -51,7 +51,7 @@ public class KNNRegressionExample {
     private static final String SEPARATOR = ",";
 
     /** */
-    public static final String KNN_CLEARED_MACHINES_TXT = "datasets/knn/cleared_machines.txt";
+    private static final String KNN_CLEARED_MACHINES_TXT = "datasets/knn/cleared_machines.txt";
 
     /**
      * Executes example.
@@ -136,9 +136,8 @@ public class KNNRegressionExample {
 
                     System.out.println("\n>>> R^2 " + detCf);
                 }
-                catch (URISyntaxException | IOException e) {
-                    e.printStackTrace();
-                    System.out.println("\n>>> Check resources");
+                catch (NullPointerException | URISyntaxException | IOException e) {
+                    System.out.println("\n>>> Resource is not found. Check resource " + KNN_CLEARED_MACHINES_TXT + " in folder resources");
                 }
                 finally {
                     System.out.println("\n>>> kNN regression example completed.");

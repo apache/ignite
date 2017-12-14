@@ -50,7 +50,7 @@ public class KNNClassificationExample {
     private static final String SEPARATOR = "\t";
 
     /** Path to the Iris dataset. */
-    static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
+    private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
 
     /**
      * Executes example.
@@ -134,9 +134,8 @@ public class KNNClassificationExample {
                     }
 
                 }
-                catch (URISyntaxException | IOException e) {
-                    e.printStackTrace();
-                    System.out.println("\n>>> Check resources");
+                catch (NullPointerException | URISyntaxException | IOException e) {
+                    System.out.println("\n>>> Resource is not found. Check resource " + KNN_IRIS_TXT + " in folder resources");
                 }
                 finally {
                     System.out.println("\n>>> kNN classification example completed.");
