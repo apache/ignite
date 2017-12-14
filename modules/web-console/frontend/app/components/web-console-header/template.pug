@@ -16,10 +16,10 @@
 
 .wch-notification(ng-show='$ctrl.UserNotifications.message' ng-bind-html='$ctrl.UserNotifications.message')
 
-.wch-notification(ng-show='$ctrl.$rootScope.user.becomeUsed')
-    | You are currently viewing user #[strong {{$ctrl.$rootScope.user.firstName}} {{$ctrl.$rootScope.user.lastName}}] as administrator. #[a(ng-click='$ctrl.$rootScope.revertIdentity()') Revert to your identity?]
+.wch-notification(ng-show='$root.user.becomeUsed')
+    | You are currently viewing user #[strong {{$root.user.firstName}} {{$root.user.lastName}}] as administrator. #[a(ng-click='$root.revertIdentity()') Revert to your identity?]
 
-.wch-notification.wch-notification--demo(ng-if='$ctrl.$rootScope.IgniteDemoMode')
+.wch-notification.wch-notification--demo(ng-if='$root.IgniteDemoMode')
     .container(ng-controller='demoController')
         | You are now in #[b Demo Mode]. #[a(ng-click='closeDemo();') Close Demo?]
 
