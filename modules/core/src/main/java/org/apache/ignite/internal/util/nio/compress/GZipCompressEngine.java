@@ -78,8 +78,11 @@ public class GZipCompressEngine implements CompressEngine {
 
         byte[] bytes = deflateBaos.toByteArray();
 
-        if (bytes.length + 4 > buf.remaining())
+        if (bytes.length + 4 > buf.remaining()) {
+            src.rewind();
+
             return BUFFER_OVERFLOW;
+        }
 
         if (compressSmall)
             buf.put((byte)-1);

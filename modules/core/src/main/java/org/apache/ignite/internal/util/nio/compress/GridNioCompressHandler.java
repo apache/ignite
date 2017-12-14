@@ -170,9 +170,9 @@ class GridNioCompressHandler extends ReentrantLock {
 
         // Loop until there is no more data in src
         while (src.hasRemaining()) {
-            int outNetRemaining = outNetBuf.capacity() - outNetBuf.position();
+            CompressEngineResult res = compressEngine.wrap(src, outNetBuf);
 
-            if (outNetRemaining < src.remaining() * 2) {
+            if (res == BUFFER_OVERFLOW) {
                 outNetBuf = expandBuffer(outNetBuf, Math.max(
                     outNetBuf.position() + src.remaining() * 2, outNetBuf.capacity() * 2));
 
@@ -180,11 +180,6 @@ class GridNioCompressHandler extends ReentrantLock {
                     log.debug("Expanded output net buffer [outNetBufCapacity=" + outNetBuf.capacity() + ", ses=" +
                         ses + ']');
             }
-
-            CompressEngineResult res = compressEngine.wrap(src, outNetBuf);
-
-            if (res != OK)
-                throw new IOException("Failed to compress data");
         }
 
         outNetBuf.flip();
