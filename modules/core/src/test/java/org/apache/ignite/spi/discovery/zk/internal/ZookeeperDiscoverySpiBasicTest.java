@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -66,13 +67,14 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.CommunicationProblemContext;
-import org.apache.ignite.spi.discovery.CommunicationProblemResolver;
+import org.apache.ignite.configuration.CommunicationProblemContext;
+import org.apache.ignite.configuration.CommunicationProblemResolver;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -121,6 +123,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private boolean testSockNio;
 
     /** */
+    private boolean testCommSpi;
+
+    /** */
     private int sesTimeout;
 
     /** */
@@ -139,7 +144,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private boolean persistence;
 
     /** */
-    private CommunicationProblemResolver communicationProblemResolver;
+    private CommunicationProblemResolver commProblemRslvr;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -235,6 +240,12 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
             cfg.setDataStorageConfiguration(memCfg);
         }
+
+        if (testCommSpi)
+            cfg.setCommunicationSpi(new ZkTestCommunicationSpi());
+
+        if (commProblemRslvr != null)
+            cfg.setCommunicationProblemResolver(commProblemRslvr);
 
         return cfg;
     }
@@ -1792,7 +1803,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         assert nodes > 1;
 
         sesTimeout = 2000;
-        communicationProblemResolver = new NoOpCommunicationProblemResolver();
+        commProblemRslvr = new NoOpCommunicationProblemResolver();
 
         startGridsMultiThreaded(nodes);
 
@@ -1824,7 +1835,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     public void testNoOpCommunicationErrorResolve_3() throws Exception {
         // One node fails before sending communication status.
         sesTimeout = 2000;
-        communicationProblemResolver = new NoOpCommunicationProblemResolver();
+        commProblemRslvr = new NoOpCommunicationProblemResolver();
 
         startGridsMultiThreaded(3);
 
@@ -1861,6 +1872,64 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }
 
         waitForTopology(3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoOpCommunicationErrorResolve_4() throws Exception {
+        // Coordinator changes while resolve process is in progress.
+        testCommSpi = true;
+
+        sesTimeout = 2000;
+        commProblemRslvr = new NoOpCommunicationProblemResolver();
+
+        startGrid(0);
+
+        startGridsMultiThreaded(1, 3);
+
+        ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.forNode(ignite(3));
+
+        commSpi.pingLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() {
+                ZookeeperDiscoverySpi spi = spi(ignite(1));
+
+                spi.onCommunicationConnectionError(ignite(2).cluster().localNode(), new Exception("test"));
+
+                return null;
+            }
+        });
+
+        U.sleep(1000);
+
+        assertFalse(fut.isDone());
+
+        stopGrid(0);
+
+        commSpi.pingLatch.countDown();
+
+        fut.get();
+
+        waitForTopology(3);
+    }
+
+    /**
+     * TODO ZK: move to comm spi tests.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNodesPing() throws Exception {
+       startGrids(3);
+
+       TcpCommunicationSpi spi = (TcpCommunicationSpi)ignite(1).configuration().getCommunicationSpi();
+
+       List<ClusterNode> nodes = new ArrayList<>();
+
+       nodes.add(ignite(2).cluster().localNode());
+
+       spi.pingNodes(nodes);
     }
 
     /**
@@ -2298,6 +2367,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }, 10000));
     }
 
+    /**
+     * @param node Node.
+     */
     private static void closeZkClient(Ignite node) {
         DiscoverySpi spi = node.configuration().getDiscoverySpi();
 
@@ -2322,6 +2394,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
     /**
      * @param spi Spi instance.
+     * @return Zookeeper client.
      */
     private static ZooKeeper zkClient(ZookeeperDiscoverySpi spi) {
         return GridTestUtils.getFieldValue(spi, "impl", "rtState", "zkClient", "zk");
@@ -2333,6 +2406,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @param log  Logger.
      * @param clients Clients.
      * @param disconnectedC Closure which will be run when client node disconnected.
+     * @param closeSock {@code True} to simulate reconnect by closing zk client's socket.
      * @throws Exception If failed.
      */
     public static void reconnectClientNodes(final IgniteLogger log,
@@ -2449,7 +2523,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @param latch Latch.
      * @throws Exception If failed.
      */
-    protected static void waitReconnectEvent(IgniteLogger log, CountDownLatch latch) throws Exception {
+    private static void waitReconnectEvent(IgniteLogger log, CountDownLatch latch) throws Exception {
         if (!latch.await(30_000, MILLISECONDS)) {
             log.error("Failed to wait for reconnect event, will dump threads, latch count: " + latch.getCount());
 
@@ -2475,6 +2549,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @SuppressWarnings("MismatchedReadAndWriteOfArray")
     static class TestAffinityFunction extends RendezvousAffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
@@ -2534,6 +2609,37 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void resolve(CommunicationProblemContext ctx) {
             // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    static class ZkTestCommunicationSpi extends TcpCommunicationSpi {
+        /** */
+        private volatile CountDownLatch pingLatch;
+
+        /**
+         * @param ignite Node.
+         * @return Node's communication SPI.
+         */
+        static ZkTestCommunicationSpi forNode(Ignite ignite) {
+            return (ZkTestCommunicationSpi)ignite.configuration().getCommunicationSpi();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteFuture<BitSet> pingNodes(List<ClusterNode> nodes) {
+            CountDownLatch pingLatch = this.pingLatch;
+
+            try {
+                if (pingLatch != null)
+                    pingLatch.await();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteException(e);
+            }
+
+            return super.pingNodes(nodes);
         }
     }
 }

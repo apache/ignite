@@ -20,6 +20,8 @@ package org.apache.ignite.spi.discovery;
 import java.util.BitSet;
 import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CommunicationProblemContext;
+import org.apache.ignite.configuration.CommunicationProblemResolver;
 
 /**
  *

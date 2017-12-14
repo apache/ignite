@@ -485,6 +485,14 @@ public class GridNioServer<T> {
         return fut;
     }
 
+    public void closeFromWorkerThread(GridNioSession ses) {
+        assert ses instanceof GridSelectorNioSessionImpl : ses;
+
+        GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
+
+        ((AbstractNioClientWorker)ses0.worker()).close((GridSelectorNioSessionImpl)ses, null);
+    }
+
     /**
      * @param ses Session.
      * @param msg Message.
@@ -834,7 +842,7 @@ public class GridNioServer<T> {
                 NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
 
                 if (async) {
-                    assert meta != null;
+                    // assert meta != null;
 
                     req.op = NioOperation.CONNECT;
                 }

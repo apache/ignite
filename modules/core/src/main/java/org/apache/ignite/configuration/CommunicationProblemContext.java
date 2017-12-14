@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery;
+package org.apache.ignite.configuration;
 
 import java.util.List;
 import java.util.UUID;

@@ -32,6 +32,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -81,6 +82,7 @@ import org.apache.ignite.internal.util.nio.GridConnectionBytesVerifyFilter;
 import org.apache.ignite.internal.util.nio.GridDirectParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioMessageReaderFactory;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
 import org.apache.ignite.internal.util.nio.GridNioMessageWriterFactory;
@@ -2562,6 +2564,53 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** {@inheritDoc} */
     @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
         sendMessage0(node, msg, null);
+    }
+
+    public IgniteFuture<BitSet> pingNodes(List<ClusterNode> nodes) {
+        ClusterNode node = nodes.get(0);
+
+        try {
+            LinkedHashSet<InetSocketAddress> addrs = nodeAddresses(node);
+
+            // /172.25.4.90:45012
+
+            for (InetSocketAddress addr : addrs) {
+                SocketChannel ch = SocketChannel.open();
+
+                ch.configureBlocking(false);
+
+                ch.socket().setTcpNoDelay(tcpNoDelay);
+                ch.socket().setKeepAlive(true);
+
+                boolean connect = ch.connect(addr);
+
+                if (!connect) {
+                    GridNioFuture<GridNioSession> fut = nioSrvr.createSession(ch, null, true, new IgniteInClosure<IgniteInternalFuture<GridNioSession>>() {
+                        @Override public void apply(IgniteInternalFuture<GridNioSession> fut) {
+                            try {
+                                GridNioSession ses = fut.get();
+
+                                log.info("Ping connected");
+
+                                nioSrvr.closeFromWorkerThread(ses);
+                            }
+                            catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+
+                    fut.get();
+                }
+                else
+                    log.info("Connected");
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteSpiException(e);
+        }
+
+        return null;
     }
 
     /**

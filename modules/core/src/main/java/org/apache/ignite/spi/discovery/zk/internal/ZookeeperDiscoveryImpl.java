@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CommunicationProblemResolver;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -1042,6 +1043,22 @@ public class ZookeeperDiscoveryImpl {
 
             assert locNode.order() > 0 : locNode;
             assert rtState.evtsData != null;
+
+            UUID futId = rtState.evtsData.communicationErrorResolveFutureId();
+
+            if (futId != null) {
+                if (log.isInfoEnabled()) {
+                    log.info("New discovery coordinator will handle already started cluster-wide communication " +
+                        "error resolve [reqId=" + futId + ']');
+                }
+
+                ZkCommunicationErrorProcessFuture fut = commErrProcFut.get();
+
+                ZkDistributedCollectDataFuture collectResFut = collectCommunicationStatusFuture(futId);
+
+                if (fut != null)
+                    fut.nodeResultCollectFuture(collectResFut);
+            }
 
             for (ZkDiscoveryEventData evtData : rtState.evtsData.evts.values())
                 evtData.initRemainingAcks(rtState.top.nodesByOrder.values());
@@ -2106,16 +2123,7 @@ public class ZookeeperDiscoveryImpl {
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
         if (rtState.crd) {
-            ZkDistributedCollectDataFuture nodeResFut = new ZkDistributedCollectDataFuture(this, rtState, futPath,
-                new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        // Future is completed from ZK event thread.
-                        finishCommunicationResolveProcess(rtState);
-
-                        return null;
-                    }
-                }
-            );
+            ZkDistributedCollectDataFuture nodeResFut = collectCommunicationStatusFuture(msg.id);
 
             fut.nodeResultCollectFuture(nodeResFut);
         }
@@ -2128,13 +2136,34 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * @param futId Future ID.
+     * @return Future.
+     * @throws Exception If failed.
+     */
+    private ZkDistributedCollectDataFuture collectCommunicationStatusFuture(UUID futId) throws Exception {
+        return new ZkDistributedCollectDataFuture(this, rtState, zkPaths.distributedFutureBasePath(futId),
+            new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    // Future is completed from ZK event thread.
+                    onCommunicationResolveStatusReceived(rtState);
+
+                    return null;
+                }
+            }
+        );
+    }
+
+    /**
      * @param rtState Runtime state.
      * @throws Exception If failed.
      */
-    private void finishCommunicationResolveProcess(ZkRuntimeState rtState) throws Exception {
+    private void onCommunicationResolveStatusReceived(ZkRuntimeState rtState) throws Exception {
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
 
         UUID futId = rtState.evtsData.communicationErrorResolveFutureId();
+
+        if (log.isInfoEnabled())
+            log.info("Received communication status from all nodes, call resolver [reqId=" + futId + ']');
 
         assert futId != null;
 
@@ -2147,6 +2176,14 @@ public class ZookeeperDiscoveryImpl {
         ZkDistributedCollectDataFuture.saveResult(zkPaths.distributedFutureResultPath(futId),
             rtState.zkClient,
             marshalZip(res));
+
+        CommunicationProblemResolver rslvr = spi.ignite().configuration().getCommunicationProblemResolver();
+
+        if (rslvr != null) {
+            ZkCommunicationProblemContext ctx = new ZkCommunicationProblemContext();
+
+            rslvr.resolve(ctx);
+        }
 
         evtsData.evtIdGen++;
 

@@ -78,8 +78,10 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
         if (remainingNodes.isEmpty())
             completeAndNotifyListener();
         else {
-            if (log.isInfoEnabled())
-                log.info("Initialize data collect future [futPath=" + futPath + ", nodes=" + remainingNodes.size() + ']');
+            if (log.isInfoEnabled()) {
+                log.info("Initialize data collect future [futPath=" + futPath + ", " +
+                    "remainingNodes=" + remainingNodes.size() + ']');
+            }
 
             rtState.zkClient.getChildrenAsync(futPath, watcher, watcher);
         }
