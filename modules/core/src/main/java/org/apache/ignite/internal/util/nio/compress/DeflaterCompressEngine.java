@@ -36,6 +36,7 @@ public class DeflaterCompressEngine implements CompressEngine {
     private final Deflater deflater = new Deflater();
     private final byte[] deflateArray = new byte[1024];
     private byte[] inputWrapArray = new byte[1024];
+    private final ByteArrayOutputStream deflateBaos = new ByteArrayOutputStream(1024);
 
     private final Inflater inflater = new Inflater();
     private final byte[] inflateArray = new byte[1024];
@@ -62,17 +63,15 @@ public class DeflaterCompressEngine implements CompressEngine {
         deflater.setInput(inputWrapArray, 0, len);
         deflater.finish();
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        deflateBaos.reset();
 
         while (!deflater.finished()) {
             int count = deflater.deflate(deflateArray);
 
-            baos.write(deflateArray, 0, count);
+            deflateBaos.write(deflateArray, 0, count);
         }
 
-        baos.close();
-
-        byte[] bytes = baos.toByteArray();
+        byte[] bytes = deflateBaos.toByteArray();
 
         bytesAfter += bytes.length;
 
@@ -114,12 +113,11 @@ public class DeflaterCompressEngine implements CompressEngine {
         }
 
         if (inflater.finished()) {
-            if (inflater.getRemaining() > 0) {
+            if (inflater.getRemaining() > 0)
                 src.position(src.position() - inflater.getRemaining());
-            }
+
             inflater.reset();
 
-            inflateBaos.close();
             byte[] output = inflateBaos.toByteArray();
             inflateBaos.reset();
 
@@ -134,6 +132,8 @@ public class DeflaterCompressEngine implements CompressEngine {
             if (src.remaining() == 0)
                 return BUFFER_UNDERFLOW;
         }
+       /* else
+            return BUFFER_UNDERFLOW;*/
 
         return OK;
     }
