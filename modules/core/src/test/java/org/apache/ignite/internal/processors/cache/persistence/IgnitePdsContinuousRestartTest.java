@@ -221,11 +221,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         checkRebalancingDuringLoad(10, 500, 8, 16);
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return TimeUnit.MINUTES.toMillis(3);
-    }
-
     /**
      * @throws Exception if failed.
      */
