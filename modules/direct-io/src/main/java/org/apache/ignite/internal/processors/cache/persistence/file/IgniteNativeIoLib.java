@@ -34,8 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * <br>
  * Uses JNA library (https://github.com/java-native-access/jna) to access native calls. <br>
  * <br>
- * This file is partially based on code of Jaydio library (https://github.com/smacke/jaydio) <br>
- * by Stephen Macke (smacke@illinois.edu). Jaydio library solves more general task of random access IO.<br>
  */
 @SuppressWarnings({"OctalInteger", "WeakerAccess"})
 public class IgniteNativeIoLib {

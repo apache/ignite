@@ -28,6 +28,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -68,8 +69,8 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     /** Number of instances to cache */
     private static final int CACHED_LONGS = 512;
 
-    /** Native long cache, not volatile write because values once created are not mutable. */
-    private static final NativeLong nativeLongCache[] = new NativeLong[CACHED_LONGS];
+    /** Native long instance cache. */
+    private static final AtomicReferenceArray<NativeLong> nativeLongCache = new AtomicReferenceArray<>(CACHED_LONGS);
 
     /**
      * Creates Direct File IO.
@@ -363,14 +364,14 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         if (value % pageSize == 0 && value < CACHED_LONGS * pageSize) {
             int cacheIdx = (int)(value / pageSize);
 
-            NativeLong curCached = nativeLongCache[cacheIdx];
+            NativeLong curCached = nativeLongCache.get(cacheIdx);
 
             if (curCached != null)
                 return curCached;
 
             NativeLong nl = new NativeLong(value);
 
-            nativeLongCache[cacheIdx] = nl;
+            nativeLongCache.compareAndSet(cacheIdx, null, nl);
 
             return nl;
         }
