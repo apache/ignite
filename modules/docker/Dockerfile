@@ -15,29 +15,30 @@
 # limitations under the License.
 #
 
-# Start from a Java image.
-FROM openjdk:8
+# Start from basic Alpine Linux image (~5Mb)
+FROM alpine:3.7
 
 # Set Ignite version
 ENV IGNITE_VERSION 2.3.0
 # Set Ignite home directory
 ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-${IGNITE_VERSION}-bin
 
-# Set image metadata
+# Set docker image metadata
 LABEL maintainer="Peter Ivanov <mr.weider@gmail.com>"
 
-# Do not rely on anything ddddprovided by base image(s), but be explicit, if they are installed already it is noop then
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        unzip \
-        curl \
-	wget \
-    && rm -rfv /var/lib/apt/lists/*
+# Add missing software
+RUN apk --update add \
+	openjdk8 \
+	curl \
+	bash \
+	gnupg
 
 # Set working directory
 WORKDIR /opt/ignite
 
-# Get and unarchive Ignite
+# Get and unarchive Ignite (checking the signatures on the way)
 RUN set -x \
+    && set -o errexit \
     && curl -fSL "https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip" -o ignite.zip \
     && curl -fSL "https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip.asc" -o ignite.zip.asc \
     && export GNUPGHOME="$(mktemp -d)" \
@@ -49,10 +50,10 @@ RUN set -x \
     && unset GNUPGHOME
 
 
-# Copy sh files and set permission
+# Copy entrypoint executable
 COPY ./run.sh $IGNITE_HOME/
 
-# Entrypotin
+# Entrypoint
 CMD "$IGNITE_HOME/run.sh"
 
 # Open required ports
