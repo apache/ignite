@@ -38,22 +38,33 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /** */
     final String evtPath;
 
-    /** */
-    transient DiscoverySpiCustomMessage msg;
+    /** Message instance (can be marshalled as part of ZkDiscoveryCustomEventData or stored in separate znode. */
+    DiscoverySpiCustomMessage msg;
+
+    /** Unmarshalled message. */
+    transient DiscoverySpiCustomMessage resolvedMsg;
 
     /**
      * @param evtId Event ID.
      * @param topVer Topology version.
      * @param sndNodeId Sender node ID.
+     * @param msg Message instance.
      * @param evtPath Event path.
      * @param ack Acknowledge event flag.
      */
-    ZkDiscoveryCustomEventData(long evtId, long topVer, UUID sndNodeId, String evtPath, boolean ack) {
+    ZkDiscoveryCustomEventData(long evtId,
+        long topVer,
+        UUID sndNodeId,
+        DiscoverySpiCustomMessage msg,
+        String evtPath,
+        boolean ack)
+    {
         super(evtId, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT, topVer);
 
         assert sndNodeId != null;
-        assert ack || !F.isEmpty(evtPath);
+        assert msg != null || ack || !F.isEmpty(evtPath);
 
+        this.msg = msg;
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
 

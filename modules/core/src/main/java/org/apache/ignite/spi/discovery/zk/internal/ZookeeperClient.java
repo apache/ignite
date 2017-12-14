@@ -321,6 +321,11 @@ public class ZookeeperClient implements Watcher {
         return parts;
     }
 
+    /**
+     * TODO ZK: it seems not always precise, e.g. if ACL is used?
+     * @param path Request path.
+     * @return Marshalled request overhead.
+     */
     private int requestOverhead(String path) {
         return path.length();
     }

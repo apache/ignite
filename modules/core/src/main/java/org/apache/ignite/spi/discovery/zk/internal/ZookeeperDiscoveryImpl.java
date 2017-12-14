@@ -54,7 +54,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -72,7 +71,6 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.jetbrains.annotations.Nullable;
@@ -151,7 +149,10 @@ public class ZookeeperDiscoveryImpl {
     public volatile IgniteDiscoverySpiInternalListener internalLsnr;
 
     /** */
-    private final ConcurrentHashMap<UUID, PingFuture> pingFuts = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, PingFuture> pingFuts = new ConcurrentHashMap<>();
+
+    /** */
+    private final AtomicReference<ZkCommunicationErrorProcessFuture> commErrProcFut = new AtomicReference<>();
 
     /**
      * @param spi Discovery SPI.
@@ -230,9 +231,9 @@ public class ZookeeperDiscoveryImpl {
         return rtState.top.nodesByOrder.get(nodeOrder);
     }
 
-    /** */
-    private final AtomicReference<ZkCommunicationErrorProcessFuture> commErrProcFut = new AtomicReference<>();
-
+    /**
+     * @param fut Future to remove.
+     */
     void clearCommunicationErrorProcessFuture(ZkCommunicationErrorProcessFuture fut) {
         assert fut.isDone() : fut;
 
@@ -261,6 +262,11 @@ public class ZookeeperDiscoveryImpl {
 
                 if (commErrProcFut.compareAndSet(fut, newFut)) {
                     fut = newFut;
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Created new communication error process future [errNode=" + node0.id() +
+                            ", err= " + err + ']');
+                    }
 
                     fut.scheduleCheckOnTimeout();
                 }
@@ -295,7 +301,9 @@ public class ZookeeperDiscoveryImpl {
      * @return Ping result.
      */
     public boolean pingNode(UUID nodeId) {
-        ZookeeperClusterNode node = node(nodeId);
+        ZkRuntimeState rtState = this.rtState;
+
+        ZookeeperClusterNode node = rtState.top.nodesById.get(nodeId);
 
         if (node == null)
             return false;
@@ -303,12 +311,12 @@ public class ZookeeperDiscoveryImpl {
         if (node.isLocal())
             return true;
 
-        PingFuture fut = pingFuts.get(nodeId);
+        PingFuture fut = pingFuts.get(node.order());
 
         if (fut == null) {
-            fut = new PingFuture(node);
+            fut = new PingFuture(rtState, node);
 
-            PingFuture old = pingFuts.putIfAbsent(nodeId, fut);
+            PingFuture old = pingFuts.putIfAbsent(node.order(), fut);
 
             if (old == null) {
                 if (fut.checkNodeAndState())
@@ -419,7 +427,7 @@ public class ZookeeperDiscoveryImpl {
                 connState = ConnectionState.STOPPED;
             }
 
-            zkClient().zk().sync(zkPaths.clusterDir, new SegmentedWatcher(), null);
+            rtState.zkClient.zk().sync(zkPaths.clusterDir, new SegmentedWatcher(), null);
         }
         else
             joinFut.onDone(e);
@@ -530,33 +538,7 @@ public class ZookeeperDiscoveryImpl {
         try {
             ZookeeperClient zkClient = rtState.zkClient;
 
-            String prefix = UUID.randomUUID().toString();
-
-            int partCnt = 1;
-
-            int overhead = 10;
-
-            UUID locId = locNode.id();
-
-            String path = zkPaths.createCustomEventPath(prefix, locId, partCnt);
-
-            if (zkClient.needSplitNodeData(path, msgBytes, overhead)) {
-                List<byte[]> parts = zkClient.splitNodeData(path, msgBytes, overhead);
-
-                String partsBasePath = zkPaths.customEventPartsBasePath(prefix, locId);
-
-                saveMultipleParts(zkClient, partsBasePath, parts);
-
-                msgBytes = null;
-
-                partCnt = parts.size();
-            }
-
-            zkClient.createSequential(prefix,
-                zkPaths.customEvtsDir,
-                zkPaths.createCustomEventPath(prefix, locId, partCnt),
-                msgBytes,
-                CreateMode.PERSISTENT_SEQUENTIAL);
+            saveCustomMessage(zkClient, msgBytes);
         }
         catch (ZookeeperClientFailedException e) {
             if (clientReconnectEnabled)
@@ -572,6 +554,44 @@ public class ZookeeperDiscoveryImpl {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * @param zkClient Client.
+     * @param msgBytes Marshalled message.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
+    private void saveCustomMessage(ZookeeperClient zkClient, byte[] msgBytes)
+        throws ZookeeperClientFailedException, InterruptedException
+    {
+        String prefix = UUID.randomUUID().toString();
+
+        int partCnt = 1;
+
+        int overhead = 10;
+
+        UUID locId = locNode.id();
+
+        String path = zkPaths.createCustomEventPath(prefix, locId, partCnt);
+
+        if (zkClient.needSplitNodeData(path, msgBytes, overhead)) {
+            List<byte[]> parts = zkClient.splitNodeData(path, msgBytes, overhead);
+
+            String partsBasePath = zkPaths.customEventPartsBasePath(prefix, locId);
+
+            saveMultipleParts(zkClient, partsBasePath, parts);
+
+            msgBytes = null;
+
+            partCnt = parts.size();
+        }
+
+        zkClient.createSequential(prefix,
+            zkPaths.customEvtsDir,
+            zkPaths.createCustomEventPath(prefix, locId, partCnt),
+            msgBytes,
+            CreateMode.PERSISTENT_SEQUENTIAL);
     }
 
     /**
@@ -859,7 +879,7 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
-    private class CheckJoinStateTimeoutObject implements IgniteSpiTimeoutObject, Watcher, AsyncCallback.DataCallback {
+    private class CheckJoinStateTimeoutObject extends ZkAbstractWatcher implements IgniteSpiTimeoutObject, AsyncCallback.DataCallback {
         /** */
         private final IgniteUuid id = IgniteUuid.randomUuid();
 
@@ -869,16 +889,14 @@ public class ZookeeperDiscoveryImpl {
         /** */
         private final String joinDataPath;
 
-        /** */
-        private final ZkRuntimeState rtState;
-
         /**
          * @param joinDataPath Node joined data path.
          * @param rtState State.
          */
         CheckJoinStateTimeoutObject(String joinDataPath, ZkRuntimeState rtState) {
+            super(rtState, ZookeeperDiscoveryImpl.this);
+
             this.joinDataPath = joinDataPath;
-            this.rtState = rtState;
         }
 
         /** {@inheritDoc} */
@@ -909,7 +927,7 @@ public class ZookeeperDiscoveryImpl {
             if (rc != 0)
                 return;
 
-            if (!busyLock.enterBusy())
+            if (!onProcessStart())
                 return;
 
             try {
@@ -921,27 +939,17 @@ public class ZookeeperDiscoveryImpl {
                     onSegmented(new IgniteSpiException(joinErr.err));
                 }
 
-                busyLock.leaveBusy();
+                onProcessEnd();
             }
             catch (Throwable e) {
-                onFatalError(busyLock, e);
+                onProcessError(e);
             }
         }
 
         /** {@inheritDoc} */
-        @Override public void process(WatchedEvent evt) {
-            if (!busyLock.enterBusy())
-                return;
-
-            try {
-                if (evt.getType() == Event.EventType.NodeDataChanged)
-                    rtState.zkClient.getDataAsync(evt.getPath(), this, this);
-
-                busyLock.leaveBusy();
-            }
-            catch (Throwable e) {
-                onFatalError(busyLock, e);
-            }
+        @Override public void process0(WatchedEvent evt) {
+            if (evt.getType() == Event.EventType.NodeDataChanged)
+                rtState.zkClient.getDataAsync(evt.getPath(), this, this);
         }
     }
 
@@ -1243,18 +1251,20 @@ public class ZookeeperDiscoveryImpl {
             return true;
         }
         else {
+            ZookeeperClient client = rtState.zkClient;
+
             if (joinErr.notifyNode) {
                 String joinDataPath = zkPaths.joiningNodeDataPath(nodeId, prefixId);
 
-                zkClient().setData(joinDataPath, marshalZip(joinErr), -1);
+                client.setData(joinDataPath, marshalZip(joinErr), -1);
 
-                zkClient().deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
+                client.deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
             }
             else {
                 if (log.isInfoEnabled())
                     log.info("Ignore join data, node was failed by previous coordinator: " + aliveNodePath);
 
-                zkClient().deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
+                client.deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
             }
 
             return false;
@@ -1483,8 +1493,10 @@ public class ZookeeperDiscoveryImpl {
     private void cleanupPreviousClusterData() throws Exception {
         long start = System.currentTimeMillis();
 
-        // TODO ZK: use multi, better batching.
-        rtState.zkClient.setData(zkPaths.evtsPath, null, -1);
+        ZookeeperClient client = rtState.zkClient;
+
+        // TODO ZK: use multi, better batching + max-size safe + NoNodeException safe.
+        client.setData(zkPaths.evtsPath, null, -1);
 
         List<String> evtChildren = rtState.zkClient.getChildren(zkPaths.evtsPath);
 
@@ -1494,10 +1506,10 @@ public class ZookeeperDiscoveryImpl {
             removeChildren(evtDir);
         }
 
-        rtState.zkClient.deleteAll(zkPaths.evtsPath, evtChildren, -1);
+        client.deleteAll(zkPaths.evtsPath, evtChildren, -1);
 
-        rtState.zkClient.deleteAll(zkPaths.customEvtsDir,
-            rtState.zkClient.getChildren(zkPaths.customEvtsDir),
+        client.deleteAll(zkPaths.customEvtsDir,
+            client.getChildren(zkPaths.customEvtsDir),
             -1);
 
         rtState.zkClient.deleteAll(zkPaths.customEvtsPartsDir,
@@ -1522,20 +1534,6 @@ public class ZookeeperDiscoveryImpl {
      */
     private void removeChildren(String path) throws Exception {
         rtState.zkClient.deleteAll(path, rtState.zkClient.getChildren(path), -1);
-    }
-
-    /**
-     * @return Nodes.
-     */
-    ZkClusterNodes nodes() {
-        return rtState.top;
-    }
-
-    /**
-     * @return Client.
-     */
-    ZookeeperClient zkClient() {
-        return rtState.zkClient;
     }
 
     /**
@@ -1654,7 +1652,8 @@ public class ZookeeperDiscoveryImpl {
                             }
                             else {
                                 if (log.isInfoEnabled()) {
-                                    log.info("Start communication error resolve [sndNode=" + sndNode +
+                                    log.info("Start cluster-wide communication error resolve [sndNode=" + sndNode +
+                                        ", reqId=" + msg0.id +
                                         ", topVer=" + evtsData.topVer + ']');
                                 }
 
@@ -1672,10 +1671,11 @@ public class ZookeeperDiscoveryImpl {
                             evtsData.evtIdGen,
                             evtsData.topVer,
                             sndNodeId,
+                            null,
                             evtPath,
                             false);
 
-                        evtData.msg = msg;
+                        evtData.resolvedMsg = msg;
 
                         evtsData.addEvent(rtState.top.nodesByOrder.values(), evtData);
 
@@ -1746,7 +1746,7 @@ public class ZookeeperDiscoveryImpl {
                         (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
 
                     if (evtData0 != null)
-                        evtData0.msg = ((ZkDiscoveryCustomEventData)evtData).msg;
+                        evtData0.resolvedMsg = ((ZkDiscoveryCustomEventData)evtData).resolvedMsg;
                 }
             }
         }
@@ -1831,25 +1831,31 @@ public class ZookeeperDiscoveryImpl {
                         DiscoverySpiCustomMessage msg;
 
                         if (rtState.crd) {
-                            assert evtData0.msg != null : evtData0;
+                            assert evtData0.resolvedMsg != null : evtData0;
 
-                            msg = evtData0.msg;
+                            msg = evtData0.resolvedMsg;
                         }
                         else {
-                            if (evtData0.ackEvent()) {
-                                String path = zkPaths.ackEventDataPath(evtData0.eventId());
+                            if (evtData0.msg == null) {
+                                if (evtData0.ackEvent()) {
+                                    String path = zkPaths.ackEventDataPath(evtData0.eventId());
 
-                                msg = unmarshalZip(zkClient.getData(path));
+                                    msg = unmarshalZip(zkClient.getData(path));
+                                }
+                                else {
+                                    assert evtData0.evtPath != null : evtData0;
+
+                                    byte[] msgBytes = readCustomEventData(zkClient,
+                                        evtData0.evtPath,
+                                        evtData0.sndNodeId);
+
+                                    msg = unmarshalZip(msgBytes);
+                                }
                             }
-                            else {
-                                byte[] msgBytes = readCustomEventData(zkClient,
-                                    evtData0.evtPath,
-                                    evtData0.sndNodeId);
+                            else
+                                msg = evtData0.msg;
 
-                                msg = unmarshalZip(msgBytes);
-                            }
-
-                            evtData0.msg = msg;
+                            evtData0.resolvedMsg = msg;
                         }
 
                         if (msg instanceof ZkInternalMessage)
@@ -1889,6 +1895,11 @@ public class ZookeeperDiscoveryImpl {
 
             zkClient.setData(rtState.locNodeZkPath, marshalZip(rtState.locNodeInfo), -1);
         }
+
+        ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
+
+        if (commErrFut != null)
+            commErrFut.onTopologyChange(rtState.top); // This can add new event, notify out of event process loop.
     }
 
     /**
@@ -1973,12 +1984,13 @@ public class ZookeeperDiscoveryImpl {
         if (msg instanceof ZkForceNodeFailMessage)
             processForceNodeFailMessage((ZkForceNodeFailMessage)msg, evtData);
         else if (msg instanceof ZkCommunicationErrorResolveStartMessage) {
-            processStartResolveCommunicationErrorMessage(
+            processCommunicationErrorResolveStartMessage(
                 (ZkCommunicationErrorResolveStartMessage)msg,
                 evtData);
         }
         else if (msg instanceof ZkCommunicationErrorResolveFinishMessage) {
-            ZkCommunicationErrorResolveFinishMessage msg0 = (ZkCommunicationErrorResolveFinishMessage)msg;
+            processCommunicationErrorResolveFinishMessage(
+                (ZkCommunicationErrorResolveFinishMessage)msg);
         }
     }
 
@@ -2012,9 +2024,48 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param msg Message.
-     * @param evtData Event data.
+     * @throws Exception If failed.
      */
-    private void processStartResolveCommunicationErrorMessage(ZkCommunicationErrorResolveStartMessage msg,
+    private void processCommunicationErrorResolveFinishMessage(ZkCommunicationErrorResolveFinishMessage msg)
+        throws Exception
+    {
+        UUID futId = msg.futId;
+
+        assert futId != null;
+        assert futId.equals(rtState.evtsData.communicationErrorResolveFutureId());
+
+        if (log.isInfoEnabled())
+            log.info("Received communication error resolve finish message [reqId=" + futId + ']');
+
+        rtState.evtsData.communicationErrorResolveFutureId(null);
+
+        ZkCommunicationErrorResolveResult res = msg.res;
+
+        if (res == null)
+            res = unmarshalZip(ZkDistributedCollectDataFuture.readResult(rtState.zkClient, zkPaths, futId));
+
+        ZkCommunicationErrorProcessFuture fut = commErrProcFut.get();
+
+        assert fut != null;
+
+        Set<Long> failedNodes = null;
+
+        if (res.failedNodes != null) {
+            failedNodes = U.newHashSet(res.failedNodes.size());
+
+            for (int i = 0; i < res.failedNodes.size(); i++)
+                failedNodes.add(res.failedNodes.get(i));
+        }
+
+        fut.onFinishResolve(failedNodes);
+    }
+
+    /**
+     * @param msg Message.
+     * @param evtData Event data.
+     * @throws Exception If failed.
+     */
+    private void processCommunicationErrorResolveStartMessage(ZkCommunicationErrorResolveStartMessage msg,
         ZkDiscoveryCustomEventData evtData) throws Exception {
         ZkCommunicationErrorProcessFuture fut;
 
@@ -2043,6 +2094,11 @@ public class ZookeeperDiscoveryImpl {
             }
         }
 
+        if (log.isInfoEnabled()) {
+            log.info("Received communication error resolve request [reqId=" + msg.id +
+                ", topVer=" + rtState.top.topologySnapshot() + ']');
+        }
+
         assert !fut.isDone() : fut;
 
         final String futPath = zkPaths.distributedFutureBasePath(msg.id);
@@ -2050,7 +2106,7 @@ public class ZookeeperDiscoveryImpl {
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
         if (rtState.crd) {
-            ZkCollectDistributedFuture nodeResFut = new ZkCollectDistributedFuture(this, rtState, futPath,
+            ZkDistributedCollectDataFuture nodeResFut = new ZkDistributedCollectDataFuture(this, rtState, futPath,
                 new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         // Future is completed from ZK event thread.
@@ -2075,25 +2131,34 @@ public class ZookeeperDiscoveryImpl {
      * @param rtState Runtime state.
      * @throws Exception If failed.
      */
-    void finishCommunicationResolveProcess(ZkRuntimeState rtState) throws Exception {
+    private void finishCommunicationResolveProcess(ZkRuntimeState rtState) throws Exception {
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
 
         UUID futId = rtState.evtsData.communicationErrorResolveFutureId();
 
         assert futId != null;
 
-        rtState.evtsData.communicationErrorResolveFutureId(null);
-
         ZkCommunicationErrorResolveFinishMessage msg = new ZkCommunicationErrorResolveFinishMessage(futId);
+
+        ZkCommunicationErrorResolveResult res = new ZkCommunicationErrorResolveResult(null);
+
+        msg.res = res;
+
+        ZkDistributedCollectDataFuture.saveResult(zkPaths.distributedFutureResultPath(futId),
+            rtState.zkClient,
+            marshalZip(res));
+
+        evtsData.evtIdGen++;
 
         ZkDiscoveryCustomEventData evtData = new ZkDiscoveryCustomEventData(
             evtsData.evtIdGen,
             evtsData.topVer,
             locNode.id(),
+            msg,
             null,
             false);
 
-        evtData.msg = msg;
+        evtData.resolvedMsg = msg;
 
         evtsData.addEvent(rtState.top.nodesByOrder.values(), evtData);
 
@@ -2104,11 +2169,15 @@ public class ZookeeperDiscoveryImpl {
      *
      */
     public void simulateNodeFailure() {
-        zkClient().deleteIfExistsAsync(zkPaths.aliveNodesDir);
+        ZkRuntimeState rtState = this.rtState;
+
+        ZookeeperClient client = rtState.zkClient;
+
+        client.deleteIfExistsAsync(zkPaths.aliveNodesDir);
 
         rtState.onCloseStart();
 
-        zkClient().close();
+        rtState.zkClient.close();
     }
 
     /**
@@ -2211,15 +2280,10 @@ public class ZookeeperDiscoveryImpl {
             throw new ZookeeperClientFailedException("Received node failed event for local node.");
         }
         else {
-            PingFuture pingFut = pingFuts.get(failedNode.id());
+            PingFuture pingFut = pingFuts.get(failedNode.order());
 
             if (pingFut != null)
                 pingFut.onDone(false);
-
-            ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
-
-            if (commErrFut != null)
-                commErrFut.onNodeFailed(failedNode);
 
             final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
@@ -2291,9 +2355,10 @@ public class ZookeeperDiscoveryImpl {
                                 evtData.topologyVersion(), // Use topology version from original event.
                                 locNode.id(),
                                 null,
+                                null,
                                 true);
 
-                            ackEvtData.msg = ack;
+                            ackEvtData.resolvedMsg = ack;
 
                             if (newEvts == null)
                                 newEvts = new ArrayList<>();
@@ -2404,18 +2469,28 @@ public class ZookeeperDiscoveryImpl {
      * @param ctx Context for log.
      * @param evtData Event data.
      * @return Ack message.
+     * @throws Exception If failed.
      */
-    @Nullable private DiscoverySpiCustomMessage handleProcessedCustomEvent(String ctx, ZkDiscoveryCustomEventData evtData) {
+    @Nullable private DiscoverySpiCustomMessage handleProcessedCustomEvent(String ctx, ZkDiscoveryCustomEventData evtData)
+        throws Exception {
         if (log.isDebugEnabled())
             log.debug("All nodes processed custom event [ctx=" + ctx + ", evtData=" + evtData + ']');
 
         if (!evtData.ackEvent()) {
-            deleteCustomEventDataAsync(rtState.zkClient, evtData.evtPath);
+            if (evtData.evtPath != null)
+                deleteCustomEventDataAsync(rtState.zkClient, evtData.evtPath);
+            else {
+                if (evtData.resolvedMsg instanceof ZkCommunicationErrorResolveFinishMessage) {
+                    UUID futId = ((ZkCommunicationErrorResolveFinishMessage)evtData.resolvedMsg).futId;
 
-            assert evtData.msg != null || locNode.order() > evtData.topologyVersion() : evtData;
+                    ZkDistributedCollectDataFuture.deleteFutureData(rtState.zkClient, zkPaths, futId);
+                }
+            }
 
-            if (evtData.msg != null)
-                return evtData.msg.ackMessage();
+            assert evtData.resolvedMsg != null || locNode.order() > evtData.topologyVersion() : evtData;
+
+            if (evtData.resolvedMsg != null)
+                return evtData.resolvedMsg.ackMessage();
         }
         else {
             String path = zkPaths.ackEventDataPath(evtData.eventId());
@@ -2829,7 +2904,7 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
-    private class PingFuture extends GridFutureAdapter<Boolean> implements IgniteSpiTimeoutObject, Runnable {
+    private class PingFuture extends GridFutureAdapter<Boolean> implements IgniteSpiTimeoutObject {
         /** */
         private final ZookeeperClusterNode node;
 
@@ -2839,16 +2914,20 @@ public class ZookeeperDiscoveryImpl {
         /** */
         private final IgniteUuid id;
 
+        /** */
+        private final ZkRuntimeState rtState;
+
         /**
          * @param node Node.
          */
-        PingFuture(ZookeeperClusterNode node) {
+        PingFuture(ZkRuntimeState rtState, ZookeeperClusterNode node) {
+            this.rtState = rtState;
             this.node = node;
 
             id = IgniteUuid.fromUuid(node.id());
 
             endTime = System.currentTimeMillis() + node.sessionTimeout() + 1000;
-        }
+        };
 
         /** {@inheritDoc} */
         @Override public IgniteUuid id() {
@@ -2861,30 +2940,31 @@ public class ZookeeperDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @Override public void run() {
+        @Override public void onTimeout() {
             if (checkNodeAndState()) {
-                try {
-                    for (String path : zkClient().getChildren(zkPaths.aliveNodesDir)) {
-                        if (node.internalId() == ZkIgnitePaths.aliveInternalId(path)) {
-                            onDone(true);
+                runInWorkerThread(new ZkRunnable(rtState, ZookeeperDiscoveryImpl.this) {
+                    @Override protected void run0() throws Exception {
+                        if (checkNodeAndState()) {
+                            try {
+                                for (String path : rtState.zkClient.getChildren(zkPaths.aliveNodesDir)) {
+                                    if (node.internalId() == ZkIgnitePaths.aliveInternalId(path)) {
+                                        onDone(true);
 
-                            return;
+                                        return;
+                                    }
+                                }
+
+                                onDone(false);
+                            }
+                            catch (Exception e) {
+                                onDone(e);
+
+                                throw e;
+                            }
                         }
                     }
-
-                    onDone(false);
-                }
-                catch (Exception e) {
-                    if (checkNodeAndState())
-                        onDone(e);
-                }
+                });
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onTimeout() {
-            if (checkNodeAndState())
-                runInWorkerThread(this);
         }
 
         /** {@inheritDoc} */

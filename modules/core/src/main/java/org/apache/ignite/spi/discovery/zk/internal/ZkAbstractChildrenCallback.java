@@ -48,6 +48,14 @@ abstract class ZkAbstractChildrenCallback extends ZkAbstractCallabck implements 
         }
     }
 
+    /**
+     * @param rc
+     * @param path
+     * @param ctx
+     * @param children
+     * @param stat
+     * @throws Exception If failed.
+     */
     abstract void processResult0(int rc, String path, Object ctx, List<String> children, Stat stat)
         throws Exception;
 }

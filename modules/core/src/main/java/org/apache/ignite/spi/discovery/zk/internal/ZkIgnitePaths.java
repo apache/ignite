@@ -26,22 +26,22 @@ class ZkIgnitePaths {
     /** */
     private static final int UUID_LEN = 36;
 
-    /** */
+    /** Directory to store joined node data. */
     private static final String JOIN_DATA_DIR = "jd";
 
-    /** */
+    /** Directory to store new custom events. */
     private static final String CUSTOM_EVTS_DIR = "ce";
 
-    /** */
+    /** Directory to store parts of multi-parts custom events. */
     private static final String CUSTOM_EVTS_PARTS_DIR = "cp";
 
-    /** */
+    /** Directory to store acknowledge messages for custom events. */
     private static final String CUSTOM_EVTS_ACKS_DIR = "ca";
 
-    /** */
+    /** Directory to store EPHEMERAL znodes for alive cluster nodes. */
     static final String ALIVE_NODES_DIR = "n";
 
-    /** */
+    /** Path to store discovery events {@link ZkDiscoveryEventsData}. */
     private static final String DISCO_EVENTS_PATH = "e";
 
     /** */
@@ -299,5 +299,13 @@ class ZkIgnitePaths {
      */
     String distributedFutureBasePath(UUID id) {
         return evtsPath + "/f-" + id;
+    }
+
+    /**
+     * @param id Future ID.
+     * @return Future path.
+     */
+    String distributedFutureResultPath(UUID id) {
+        return evtsPath + "/fr-" + id;
     }
 }

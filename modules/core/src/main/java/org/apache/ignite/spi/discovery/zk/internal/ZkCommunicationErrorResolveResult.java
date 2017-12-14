@@ -17,43 +17,21 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import java.io.Serializable;
+import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-class ZkCommunicationErrorResolveFinishMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
+class ZkCommunicationErrorResolveResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    final UUID futId;
+    final GridLongList failedNodes;
 
-    /** */
-    transient ZkCommunicationErrorResolveResult res;
-
-    /**
-     * @param futId Future ID.
-     */
-    ZkCommunicationErrorResolveFinishMessage(UUID futId) {
-        this.futId = futId;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ZkCommunicationErrorResolveFinishMessage.class, this);
+    ZkCommunicationErrorResolveResult(@Nullable GridLongList failedNodes) {
+        this.failedNodes = failedNodes;
     }
 }

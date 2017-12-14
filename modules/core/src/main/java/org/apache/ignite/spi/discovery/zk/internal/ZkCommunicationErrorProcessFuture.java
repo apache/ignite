@@ -18,11 +18,10 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
+import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,7 +41,10 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
     private final ZookeeperDiscoveryImpl impl;
 
     /** */
-    private final Map<Long, GridFutureAdapter<Boolean>> nodeFuts = new HashMap<>();
+    private final IgniteLogger log;
+
+    /** */
+    private final Map<Long, GridFutureAdapter<Boolean>> nodeFuts = new ConcurrentHashMap<>();
 
     /** */
     private final long endTime;
@@ -59,7 +62,10 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
     private Set<Long> resFailedNodes;
 
     /** */
-    private ZkCollectDistributedFuture nodeResFut;
+    private Exception resErr;
+
+    /** */
+    private ZkDistributedCollectDataFuture collectResFut;
 
     /**
      * @param impl Discovery impl.
@@ -87,6 +93,7 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
         assert state != State.DONE;
 
         this.impl = impl;
+        this.log = impl.log();
 
         if (state == State.WAIT_TIMEOUT) {
             assert timeout > 0 : timeout;
@@ -102,15 +109,44 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
         this.state = state;
     }
 
-    void nodeResultCollectFuture(ZkCollectDistributedFuture nodeResFut) {
-        assert nodeResFut == null : nodeResFut;
-
-        this.nodeResFut = nodeResFut;
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteLogger logger() {
+        return log;
     }
 
+    /**
+     * @param collectResFut Collect nodes' communication status future.
+     */
+    void nodeResultCollectFuture(ZkDistributedCollectDataFuture collectResFut) {
+        assert this.collectResFut == null : collectResFut;
+
+        this.collectResFut = collectResFut;
+    }
+
+    /**
+     * @param top Topology.
+     * @throws Exception If failed.
+     */
+    void onTopologyChange(ZkClusterNodes top) throws Exception {
+        for (Map.Entry<Long, GridFutureAdapter<Boolean>> e : nodeFuts.entrySet()) {
+            if (!top.nodesByOrder.containsKey(e.getKey()))
+                e.getValue().onDone(false);
+        }
+
+        if (collectResFut != null)
+            collectResFut.onTopologyChange(top);
+    }
+
+    /**
+     * @param locNodeOrder Local node order.
+     * @param rtState Runtime state.
+     * @param futPath Future path.
+     * @param nodes Nodes to ping.
+     * @throws Exception If failed.
+     */
     void pingNodesAndNotifyFuture(long locNodeOrder, ZkRuntimeState rtState, String futPath, Collection<ClusterNode> nodes)
         throws Exception {
-        ZkCollectDistributedFuture.saveNodeResult(futPath, rtState.zkClient, locNodeOrder, null);
+        ZkDistributedCollectDataFuture.saveNodeResult(futPath, rtState.zkClient, locNodeOrder, null);
     }
 
     /**
@@ -146,6 +182,37 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
     }
 
     /**
+     * @param failedNodes Node failed as result of resolve process.
+     */
+    void onFinishResolve(Set<Long> failedNodes) {
+        Map<Long, GridFutureAdapter<Boolean>> futs;
+
+        synchronized (this) {
+            if (state == State.DONE) {
+                assert resErr != null;
+
+                return;
+            }
+
+            assert state == State.RESOLVE_STARTED : state;
+
+            state = State.DONE;
+
+            resFailedNodes = failedNodes;
+
+            futs = nodeFuts; // nodeFuts should not be modified after state changed to DONE.
+        }
+
+        for (Map.Entry<Long, GridFutureAdapter<Boolean>> e : futs.entrySet()) {
+            Boolean res = !F.contains(resFailedNodes, e.getKey());
+
+            e.getValue().onDone(res);
+        }
+
+        onDone();
+    }
+
+    /**
      * @param node Node.
      * @return Future finished when communication error resolve is done or {@code null} if another
      *      resolve process should be started.
@@ -176,27 +243,19 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
         return fut;
     }
 
-    /**
-     * @param node Failed node.
-     */
-    void onNodeFailed(ClusterNode node) {
-        GridFutureAdapter<Boolean> fut = null;
-
-        synchronized (this) {
-            if (state == State.WAIT_TIMEOUT)
-                fut = nodeFuts.get(node.order());
-        }
-
-        if (fut != null)
-            fut.onDone(false);
-    }
-
     /** {@inheritDoc} */
     @Override public void run() {
         // Run from zk discovery worker pool after timeout.
-        if (processTimeout()) {
+        if (needProcessTimeout()) {
             try {
-                impl.sendCustomMessage(new ZkCommunicationErrorResolveStartMessage(UUID.randomUUID()));
+                UUID reqId = UUID.randomUUID();
+
+                if (log.isInfoEnabled()) {
+                    log.info("Initiate cluster-wide communication error resolve process [reqId=" + reqId +
+                        ", errNodes=" + nodeFuts.size() + ']');
+                }
+
+                impl.sendCustomMessage(new ZkCommunicationErrorResolveStartMessage(reqId));
             }
             catch (Exception e) {
                 Collection<GridFutureAdapter<Boolean>> futs;
@@ -206,6 +265,7 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
                         return;
 
                     state = State.DONE;
+                    resErr = e;
 
                     futs = nodeFuts.values(); // nodeFuts should not be modified after state changed to DONE.
                 }
@@ -221,7 +281,7 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
     /**
      * @return {@code True} if need initiate resolve process after timeout expired.
      */
-    private boolean processTimeout() {
+    private boolean needProcessTimeout() {
         synchronized (this) {
             if (state != State.WAIT_TIMEOUT)
                 return false;
@@ -251,7 +311,7 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        if (processTimeout())
+        if (needProcessTimeout())
             impl.runInWorkerThread(this);
     }
 

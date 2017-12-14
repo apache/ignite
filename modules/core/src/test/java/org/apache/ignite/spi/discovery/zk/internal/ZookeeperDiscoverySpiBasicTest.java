@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingZooKeeperServer;
@@ -70,6 +71,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.CommunicationProblemContext;
+import org.apache.ignite.spi.discovery.CommunicationProblemResolver;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -135,6 +138,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
     private boolean persistence;
 
+    /** */
+    private CommunicationProblemResolver communicationProblemResolver;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         if (testSockNio)
@@ -169,8 +175,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
-
-        // cfg.setMarshaller(new JdkMarshaller());
 
         cfg.setClientMode(client);
 
@@ -248,6 +252,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @param instances Number of instances.
+     * @return Cluster.
+     */
     private static TestingCluster createTestingCluster(int instances) {
         String tmpDir = System.getProperty("java.io.tmpdir");
 
@@ -270,6 +278,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         return new TestingCluster(specs);
     }
 
+    /**
+     * @param file Directory to delete.
+     */
     private static void deleteRecursively0(File file) {
         File[] files = file.listFiles();
 
@@ -279,8 +290,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         for (File f : files) {
             if (f.isDirectory())
                 deleteRecursively0(f);
-            else
-                f.delete();
+            else {
+                if (!f.delete())
+                    throw new IgniteException("Failed to delete file: " + f.getAbsolutePath());
+            }
         }
     }
 
@@ -331,11 +344,30 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             assertFalse("Unexpected error, see log for details", err);
 
             checkEventsConsistency();
+
+            checkInternalStructuresCleanup();
         }
         finally {
             reset();
 
             stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkInternalStructuresCleanup() throws Exception {
+        for (Ignite node : G.allGrids()) {
+            final AtomicReference<?> res = GridTestUtils.getFieldValue(spi(node), "impl", "commErrProcFut");
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return res.get() == null;
+                }
+            }, 5000);
+
+            assertNull(res.get());
         }
     }
 
@@ -879,16 +911,31 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         waitForTopology(initNodes + startNodes - failCnt);
     }
 
+    /**
+     * @param node
+     * @return
+     */
     private static String aliveZkNodePath(Ignite node) {
         return aliveZkNodePath(node.configuration().getDiscoverySpi());
     }
 
+    /**
+     * @param spi
+     * @return
+     */
     private static String aliveZkNodePath(DiscoverySpi spi) {
         String path = GridTestUtils.getFieldValue(spi, "impl", "rtState", "locNodeZkPath");
 
         return path.substring(path.lastIndexOf('/') + 1);
     }
 
+    /**
+     * @param log
+     * @param connectString
+     * @param failedZkNodes
+     * @param timeout
+     * @throws Exception
+     */
     private static void waitNoAliveZkNodes(final IgniteLogger log,
         String connectString, final List<String> failedZkNodes,
         long timeout)
@@ -1724,6 +1771,99 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testNoOpCommunicationErrorResolve_1() throws Exception {
+        communicationErrorResolve_Simple(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoOpCommunicationErrorResolve_2() throws Exception {
+        communicationErrorResolve_Simple(10);
+    }
+
+    /**
+     * @param nodes Nodes number.
+     * @throws Exception If failed.
+     */
+    private void communicationErrorResolve_Simple(int nodes) throws Exception {
+        assert nodes > 1;
+
+        sesTimeout = 2000;
+        communicationProblemResolver = new NoOpCommunicationProblemResolver();
+
+        startGridsMultiThreaded(nodes);
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        for (int i = 0; i < 3; i++) {
+            info("Iteration: " + i);
+
+            int idx1 = rnd.nextInt(nodes);
+
+            int idx2;
+
+            do {
+                idx2 = rnd.nextInt(nodes);
+            }
+            while (idx1 == idx2);
+
+            ZookeeperDiscoverySpi spi = spi(ignite(idx1));
+
+            spi.onCommunicationConnectionError(ignite(idx2).cluster().localNode(), new Exception("test"));
+
+            checkInternalStructuresCleanup();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoOpCommunicationErrorResolve_3() throws Exception {
+        // One node fails before sending communication status.
+        sesTimeout = 2000;
+        communicationProblemResolver = new NoOpCommunicationProblemResolver();
+
+        startGridsMultiThreaded(3);
+
+        sesTimeout = 10_000;
+
+        testSockNio = true;
+        sesTimeout = 5000;
+
+        startGrid(3);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() {
+                ZookeeperDiscoverySpi spi = spi(ignite(0));
+
+                spi.onCommunicationConnectionError(ignite(1).cluster().localNode(), new Exception("test"));
+
+                return null;
+            }
+        });
+
+        U.sleep(1000);
+
+        ZkTestClientCnxnSocketNIO nio = ZkTestClientCnxnSocketNIO.forNode(ignite(3));
+
+        nio.closeSocket(true);
+
+        try {
+            stopGrid(3);
+
+            fut.get();
+        }
+        finally {
+            nio.allowConnect();
+        }
+
+        waitForTopology(3);
+    }
+
+    /**
      * @param dfltConsistenId Default consistent ID flag.
      * @throws Exception If failed.
      */
@@ -2062,6 +2202,14 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param node Node.
+     * @return Node's discovery SPI.
+     */
+    private static ZookeeperDiscoverySpi spi(Ignite node) {
+        return (ZookeeperDiscoverySpi)node.configuration().getDiscoverySpi();
+    }
+
+    /**
      * @param nodeName Node name.
      * @return Node's discovery SPI.
      * @throws Exception If failed.
@@ -2069,7 +2217,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private ZookeeperDiscoverySpi waitSpi(final String nodeName) throws Exception {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return spis.contains(nodeName);
+                return spis.containsKey(nodeName);
             }
         }, 5000);
 
@@ -2080,6 +2228,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         return spi;
     }
 
+    /**
+     * @param topVer Topology version.
+     * @return Expected event instance.
+     */
     private static DiscoveryEvent joinEvent(long topVer) {
         DiscoveryEvent expEvt = new DiscoveryEvent(null, null, EventType.EVT_NODE_JOINED, null);
 
@@ -2088,6 +2240,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         return expEvt;
     }
 
+    /**
+     * @param topVer Topology version.
+     * @return Expected event instance.
+     */
     private static DiscoveryEvent failEvent(long topVer) {
         DiscoveryEvent expEvt = new DiscoveryEvent(null, null, EventType.EVT_NODE_FAILED, null);
 
@@ -2369,5 +2525,15 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      */
     private static class C2 implements Serializable {
         // No-op.
+    }
+
+    /**
+     *
+     */
+    static class NoOpCommunicationProblemResolver implements CommunicationProblemResolver {
+        /** {@inheritDoc} */
+        @Override public void resolve(CommunicationProblemContext ctx) {
+            // No-op.
+        }
     }
 }
