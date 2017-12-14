@@ -17,44 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import javax.cache.CacheException;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -73,7 +44,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.FastUpdate;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
@@ -83,7 +53,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -99,6 +68,25 @@ import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.CacheException;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
@@ -372,7 +360,7 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = getPlanForStatement(schemaName, c, prepared, fieldsQry, loc, errKeysPos);
 
-        GridCacheContext cctx0 = plan.tbl.cache();
+        GridCacheContext cctx0 = plan.cacheContext();
 
         if (cctx0.mvccEnabled() && cctx0.transactional()) {
             GridNearTxLocal tx = cctx0.tm().userTx();
@@ -382,15 +370,17 @@ public class DmlStatementsProcessor {
 
                 int[] ids;
 
-                if (plan.distributed != null) {
-                    List<Integer> cacheIds = plan.distributed.getCacheIds();
+                DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
+
+                if (distributedPlan != null) {
+                    List<Integer> cacheIds = distributedPlan.getCacheIds();
 
                     ids = new int[cacheIds.size()];
 
                     for (int i = 0; i < ids.length; i++)
                         ids[i] = cacheIds.get(i);
 
-                    if (plan.distributed.isReplicatedOnly())
+                    if (distributedPlan.isReplicatedOnly())
                         flags |= GridH2QueryRequest.FLAG_REPLICATED;
                 }
                 else
@@ -839,7 +829,7 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = getPlanForStatement(schema, conn, prepared, qry, local, null);
 
-        GridCacheContext cctx = plan.tbl.cache();
+        GridCacheContext cctx = plan.cacheContext();
 
         CacheOperationContext opCtx = cctx.operationContextPerCall();
 
@@ -861,8 +851,8 @@ public class DmlStatementsProcessor {
 
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
         // sub-query and not some dummy stuff like "select 1, 2, 3;"
-        if (!local && !plan.isLocSubqry) {
-            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQry, qry.isCollocated())
+        if (!local && !plan.isLocalSubquery()) {
+            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), qry.isCollocated())
                 .setArgs(qry.getArgs())
                 .setDistributedJoins(qry.isDistributedJoins())
                 .setEnforceJoinOrder(qry.isEnforceJoinOrder())
@@ -874,7 +864,7 @@ public class DmlStatementsProcessor {
                 cancel, cctx.cacheId(), true, new MvccQueryTracker(cctx, mvccVer, topVer)).get(0);
         }
         else {
-            final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQry,
+            final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
                 F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), qry.getTimeout(), cancel, new MvccQueryTracker(cctx, mvccVer, topVer));
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
@@ -889,337 +879,7 @@ public class DmlStatementsProcessor {
             }, cancel);
         }
 
-        switch (plan.mode) {
-            case INSERT:
-                return new InsertIterator(cur, plan, topVer);
-            case UPDATE:
-                return new UpdateIterator(cur, plan, topVer);
-            case DELETE:
-                return new DeleteIterator(cur, plan, topVer);
-
-            default:
-                throw new UnsupportedOperationException(String.valueOf(plan.mode));
-        }
-    }
-
-    /** */
-    private abstract static class AbstractIterator extends GridCloseableIteratorAdapter<Object> {
-        /** */
-        protected final QueryCursor<List<?>> cur;
-
-        /** */
-        protected final UpdatePlan plan;
-
-        /** */
-        protected final Iterator<List<?>> it;
-
-        /** */
-        protected final GridCacheContext cctx;
-
-        /** */
-        protected final AffinityTopologyVersion topVer;
-
-        /** */
-        protected final GridCacheAffinityManager affinity;
-
-        /** */
-        protected Object curr;
-
-        /**
-         * @param cur Query cursor.
-         * @param plan Update plan.
-         * @param topVer Topology version.
-         */
-        private AbstractIterator(QueryCursor<List<?>> cur, UpdatePlan plan, AffinityTopologyVersion topVer) {
-            this.cur = cur;
-            this.plan = plan;
-            this.topVer = topVer;
-
-            it = cur.iterator();
-            cctx = plan.tbl.cache();
-            affinity = cctx.affinity();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Object onNext() throws IgniteCheckedException {
-            advance();
-
-            if(curr == null)
-                throw new NoSuchElementException();
-
-            Object res = curr;
-
-            curr = null;
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
-            advance();
-
-            return curr != null;
-        }
-
-        /** */
-        protected abstract void advance() throws IgniteCheckedException;
-
-        /** {@inheritDoc} */
-        @Override protected void onClose() {
-            cur.close();
-        }
-    }
-
-    /** */
-    private final class UpdateIterator extends AbstractIterator {
-        /** */
-        private final boolean bin;
-
-        /** */
-        private final GridH2RowDescriptor desc;
-
-        /** */
-        private final boolean hasNewVal;
-
-        /** */
-        private final boolean hasProps;
-
-        /**
-         * @param cur Query cursor.
-         * @param plan Update plan.
-         * @param topVer Topology version.
-         */
-        private UpdateIterator(QueryCursor<List<?>> cur, UpdatePlan plan, AffinityTopologyVersion topVer) {
-            super(cur, plan, topVer);
-
-            bin = cctx.binaryMarshaller();
-            desc = plan.tbl.rowDescriptor();
-
-            hasNewVal = (plan.valColIdx != -1);
-            hasProps = !hasNewVal || plan.colNames.length > 1;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void advance() throws IgniteCheckedException {
-            if(curr != null)
-                return;
-
-            if (it.hasNext()) {
-                List<?> row = it.next();
-
-                Map<String, Object> newColVals = new HashMap<>();
-
-                for (int i = 0; i < plan.colNames.length; i++) {
-                    if (hasNewVal && i == plan.valColIdx - 2)
-                        continue;
-
-                    GridQueryProperty prop = plan.tbl.rowDescriptor().type().property(plan.colNames[i]);
-
-                    assert prop != null : "Unknown property: " + plan.colNames[i];
-
-                    newColVals.put(plan.colNames[i], convert(row.get(i + 2), desc, prop.type(), plan.colTypes[i]));
-                }
-
-                Object newVal = plan.valSupplier.apply(row);
-
-                if (newVal == null)
-                    throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
-
-                // Skip key and value - that's why we start off with 3rd column
-                for (int i = 0; i < plan.tbl.getColumns().length - DEFAULT_COLUMNS_COUNT; i++) {
-                    Column c = plan.tbl.getColumn(i + DEFAULT_COLUMNS_COUNT);
-
-                    if (desc.isKeyValueOrVersionColumn(c.getColumnId()))
-                        continue;
-
-                    GridQueryProperty prop = desc.type().property(c.getName());
-
-                    if (prop.key())
-                        continue; // Don't get values of key's columns - we won't use them anyway
-
-                    boolean hasNewColVal = newColVals.containsKey(c.getName());
-
-                    if (!hasNewColVal)
-                        continue;
-
-                    Object colVal = newColVals.get(c.getName());
-
-                    // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key.
-                    desc.setColumnValue(null, newVal, colVal, i);
-                }
-
-                if (bin && hasProps) {
-                    assert newVal instanceof BinaryObjectBuilder;
-
-                    newVal = ((BinaryObjectBuilder)newVal).build();
-                }
-
-                desc.type().validateKeyAndValue(row.get(0), newVal);
-
-                curr = new Object[] {row.get(0), newVal};
-            }
-        }
-    }
-
-    /** */
-    private final class DeleteIterator extends AbstractIterator {
-
-        /**
-         * @param cur Query cursor.
-         * @param plan Update plan.
-         * @param topVer Topology version.
-         */
-        private DeleteIterator(QueryCursor<List<?>> cur, UpdatePlan plan, AffinityTopologyVersion topVer) {
-            super(cur, plan, topVer);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void advance() {
-            if(curr != null)
-                return;
-
-            if (it.hasNext())
-                curr = it.next().get(0);
-        }
-    }
-
-    /** */
-    private final class InsertIterator extends AbstractIterator {
-        /** */
-        private final GridH2RowDescriptor rowDesc;
-
-        /** */
-        private final GridQueryTypeDescriptor desc;
-
-        /**
-         * @param cur Query cursor.
-         * @param plan Update plan.
-         * @param topVer Topology version.
-         */
-        private InsertIterator(QueryCursor<List<?>> cur, UpdatePlan plan, AffinityTopologyVersion topVer) {
-            super(cur, plan, topVer);
-
-            rowDesc = plan.tbl.rowDescriptor();
-            desc = rowDesc.type();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void advance() throws IgniteCheckedException {
-            if(curr != null)
-                return;
-
-            while (it.hasNext()) {
-                List<?> row = it.next();
-
-                Object key = plan.keySupplier.apply(row);
-
-                if (QueryUtils.isSqlType(desc.keyClass())) {
-                    assert plan.keyColIdx != -1;
-
-                    key = convert(key, rowDesc, desc.keyClass(), plan.colTypes[plan.keyColIdx]);
-                }
-
-                if (key == null) {
-                    if (F.isEmpty(desc.keyFieldName()))
-                        throw new IgniteSQLException("Key for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_KEY);
-                    else
-                        throw new IgniteSQLException("Null value is not allowed for column '" + desc.keyFieldName() + "'",
-                            IgniteQueryErrorCode.NULL_KEY);
-                }
-
-                if (affinity.primaryByKey(cctx.localNode(), key, topVer)) {
-                    Object val = plan.valSupplier.apply(row);
-
-                    if (QueryUtils.isSqlType(desc.valueClass())) {
-                        assert plan.valColIdx != -1;
-
-                        val = convert(val, rowDesc, desc.valueClass(), plan.colTypes[plan.valColIdx]);
-                    }
-
-                    if (val == null) {
-                        if (F.isEmpty(desc.valueFieldName()))
-                            throw new IgniteSQLException("Value for INSERT, MERGE, or UPDATE must not be null",
-                                IgniteQueryErrorCode.NULL_VALUE);
-                        else
-                            throw new IgniteSQLException("Null value is not allowed for column '" + desc.valueFieldName() + "'",
-                                IgniteQueryErrorCode.NULL_VALUE);
-                    }
-
-                    Map<String, Object> newColVals = new HashMap<>();
-
-                    for (int i = 0; i < plan.colNames.length; i++) {
-                        if (i == plan.keyColIdx || i == plan.valColIdx)
-                            continue;
-
-                        String colName = plan.colNames[i];
-
-                        GridQueryProperty prop = desc.property(colName);
-
-                        assert prop != null;
-
-                        Class<?> expCls = prop.type();
-
-                        newColVals.put(colName, convert(row.get(i), rowDesc, expCls, plan.colTypes[i]));
-                    }
-
-                    // We update columns in the order specified by the table for a reason - table's
-                    // column order preserves their precedence for correct update of nested properties.
-                    Column[] cols = plan.tbl.getColumns();
-
-                    // First 3 columns are _key, _val and _ver. Skip 'em.
-                    for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
-                        if (plan.tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
-                            continue;
-
-                        String colName = cols[i].getName();
-
-                        if (!newColVals.containsKey(colName))
-                            continue;
-
-                        Object colVal = newColVals.get(colName);
-
-                        desc.setValue(colName, key, val, colVal);
-                    }
-
-                    if (cctx.binaryMarshaller()) {
-                        if (key instanceof BinaryObjectBuilder)
-                            key = ((BinaryObjectBuilder) key).build();
-
-                        if (val instanceof BinaryObjectBuilder)
-                            val = ((BinaryObjectBuilder) val).build();
-                    }
-
-                    desc.validateKeyAndValue(key, val);
-
-                    curr = new Object[] {key, null, new InsertEntryProcessor0(val), null};
-
-                    return;
-                }
-            }
-        }
-    }
-
-    /** */
-    private static final class InsertEntryProcessor0 implements EntryProcessor<Object, Object, Void> {
-        /** */
-        private final Object val;
-
-        /**
-         * @param val Value to insert.
-         */
-        private InsertEntryProcessor0(Object val) {
-            this.val = val;
-        }
-
-        @Override public Void process(MutableEntry<Object, Object> entry, Object... args) throws EntryProcessorException {
-            if (entry.exists())
-                throw new IgniteSQLException("Duplicate key during INSERT [key=" +
-                    entry.getKey() + ']', DUPLICATE_KEY);
-
-            entry.setValue(val);
-
-            return null;
-        }
+        return plan.iteratorForTransaction(cur, topVer);
     }
 
     /** */
@@ -1335,5 +995,4 @@ public class DmlStatementsProcessor {
             throw new IgniteSQLException(conEx);
         }
     }
-
 }
