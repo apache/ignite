@@ -31,36 +31,12 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class IgniteDataFrameWrongConfigSpec extends AbstractDataFrameSpec {
     describe("DataFrame negative cases") {
-        it("Should throw exception when try load unknown grid") {
-            intercept[IgniteIllegalStateException] {
-                spark.read
-                    .format(IGNITE)
-                    .option(GRID, "unknown_grid")
-                    .option(CACHE, "cache1")
-                    .option(KEY_CLASS, classOf[JInteger].getName)
-                    .option(VALUE_CLASS, classOf[JString].getName)
-                    .load()
-            }
-        }
-
         it("Should throw exception when try load unknown table") {
             intercept[IgniteException] {
                 spark.read
                     .format(IGNITE)
                     .option(CONFIG_FILE, TEST_CONFIG_FILE)
                     .option(TABLE, "unknown_table")
-                    .load()
-            }
-        }
-
-        it("Should throw exception when try load unknown cache") {
-            intercept[IgniteException] {
-                spark.read
-                    .format(IGNITE)
-                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(CACHE, "unknown_cache")
-                    .option(KEY_CLASS, classOf[JInteger].getName)
-                    .option(VALUE_CLASS, classOf[JString].getName)
                     .load()
             }
         }
@@ -73,38 +49,5 @@ class IgniteDataFrameWrongConfigSpec extends AbstractDataFrameSpec {
                     .load()
             }
         }
-
-        it("Should throw exception when no key class for cache") {
-            intercept[IgniteException] {
-                spark.read
-                    .format(IGNITE)
-                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(CACHE, "cache1")
-                    .option(VALUE_CLASS, classOf[JString].getName)
-                    .load()
-            }
-        }
-
-        it("Should throw exception when no value class for cache") {
-            intercept[IgniteException] {
-                spark.read
-                    .format(IGNITE)
-                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(CACHE, "cache1")
-                    .option(KEY_CLASS, classOf[JString].getName)
-                    .load()
-            }
-        }
-
-        it("Should throw exception when no class for cache") {
-            intercept[IgniteException] {
-                spark.read
-                    .format(IGNITE)
-                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(CACHE, "cache1")
-                    .load()
-            }
-        }
     }
 }
-

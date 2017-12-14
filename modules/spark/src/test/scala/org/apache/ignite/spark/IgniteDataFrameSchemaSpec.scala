@@ -104,30 +104,9 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
 
         personDataFrame.createOrReplaceTempView("person")
 
-        intStrDataFrame = spark.read
-            .format(IGNITE)
-            .option(CONFIG_FILE, TEST_CONFIG_FILE)
-            .option(CACHE, INT_STR_CACHE_NAME)
-            .option(KEY_CLASS, classOf[JInteger].getName)
-            .option(VALUE_CLASS, classOf[JString].getName)
-            .load()
-
-        intStrDataFrame.createOrReplaceTempView("int_str")
-
-        intTestObjDataFrame = spark.read
-            .format(IGNITE)
-            .option(CONFIG_FILE, TEST_CONFIG_FILE)
-            .option(CACHE, INT_TEST_OBJ_CACHE_NAME)
-            .option(KEY_CLASS, classOf[JInteger].getName)
-            .option(VALUE_CLASS, classOf[TestObject].getName)
-            .load()
-
-        intTestObjDataFrame.createOrReplaceTempView("int_test_obj")
-
         employeeDataFrame = spark.read
             .format(IGNITE)
             .option(CONFIG_FILE, TEST_CONFIG_FILE)
-            .option(CACHE, EMPLOYEE_CACHE_NAME)
             .option(TABLE, "employee")
             .load()
 

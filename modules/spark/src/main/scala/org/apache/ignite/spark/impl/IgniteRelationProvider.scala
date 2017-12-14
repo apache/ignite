@@ -92,18 +92,7 @@ class IgniteRelationProvider extends RelationProvider with DataSourceRegister {
 
         if (params.contains(TABLE))
             IgniteSQLRelation(ic, params(TABLE).toUpperCase, sqlCtx)
-        else if (params.contains(CACHE)) {
-            val cache = params(CACHE)
-
-            if (!params.contains(KEY_CLASS) || !params.contains(VALUE_CLASS))
-                throw new IgniteException("'keyClass' and 'valueClass' must be specified for a 'cache'")
-
-            val keepBinary = params.getOrElse(KEEP_BINARY, "true").toBoolean
-
-            IgniteCacheRelation(ic, cache, Class.forName(params(KEY_CLASS)),
-                Class.forName(params(VALUE_CLASS)), keepBinary, sqlCtx)
-        }
         else
-            throw new IgniteException("'table' or 'cache' must be specified for loading ignite data.")
+            throw new IgniteException("'table' must be specified for loading ignite data.")
     }
 }

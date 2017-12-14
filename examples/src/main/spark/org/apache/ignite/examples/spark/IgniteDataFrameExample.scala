@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.spark
 
 import java.lang.{Long ⇒ JLong, String ⇒ JString}
-import java.util.Calendar
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.configuration.CacheConfiguration
@@ -62,10 +61,6 @@ object IgniteDataFrameExample extends App {
         sparkDSLExample
 
         nativeSparkSqlExample
-
-        nativeSparkSqlFromCacheExample
-
-        nativeSparkSqlFromCacheExample2
     }
 
     /**
@@ -111,74 +106,6 @@ object IgniteDataFrameExample extends App {
         igniteDF.show() //Printing query results to console.
     }
 
-    /**
-      * Examples of usage Ignite DataFrame implementation.
-      * Registration of Ignite DataFrame for following usage.
-      * Selecting data from key-value cache by Spark SQL query.
-      *
-      * @param spark SparkSession.
-      */
-    def nativeSparkSqlFromCacheExample(implicit spark: SparkSession): Unit = {
-        val df = spark.read
-            .format(IGNITE) //Data source type.
-            .option(CONFIG_FILE, CONFIG) //Ignite config.
-            .option(CACHE, CACHE_NAME) //Cache name.
-            .option(KEY_CLASS, "java.lang.Long") //Class of keys in cache.
-            .option(VALUE_CLASS, "java.lang.String") //Class of value in cache.
-            .load()
-
-        //Printing data frame schema to console.
-        df.printSchema()
-
-        //Registering DataFrame as Spark view.
-        df.createOrReplaceTempView("testCache")
-
-        //Selecting data.
-        val igniteDF = spark.sql("SELECT key, value FROM testCache WHERE key >= 2 AND value like '%0'")
-
-        igniteDF.printSchema() //Printing query schema to console.
-        igniteDF.show() //Printing query results to console.
-    }
-
-    /**
-      * Examples of usage Ignite DataFrame implementation.
-      * Registration of Ignite DataFrame for following usage.
-      * Selecting data from key-value cache by Spark SQL query.
-      *
-      * @param spark SparkSession.
-      */
-    def nativeSparkSqlFromCacheExample2(implicit spark: SparkSession): Unit = {
-        val df = spark.read
-            .format(IGNITE) //Data source type.
-            .option(CONFIG_FILE, CONFIG) //Ignite config.
-            .option(CACHE, "testCache2") //Cache name.
-            .option(KEY_CLASS, "java.lang.Long") //Class of keys in cache.
-            .option(VALUE_CLASS, classOf[Person].getName) //Class of value in cache.
-            .load()
-
-        //Printing data frame schema to console.
-        df.printSchema()
-
-        //Printing data frame schema to console.
-        df.createOrReplaceTempView("testCache")
-
-        //Selecting data.
-        val igniteDF = spark.sql(
-            """
-              | SELECT
-              |  key,
-              |  `value.name`,
-              |  `value.birthDate`
-              | FROM
-              |  testCache
-              | WHERE
-              |  key >= 2 AND
-              |  `value.name` like '%0' """.stripMargin)
-
-        igniteDF.printSchema() //Printing query schema to console.
-        igniteDF.show() //Printing query results to console.
-    }
-
     def setupServerAndData: Ignite = {
         //Starting Ignite.
         val ignite = Ignition.start(CONFIG)
@@ -187,22 +114,6 @@ object IgniteDataFrameExample extends App {
         val ccfg = new CacheConfiguration[JLong, JString](CACHE_NAME).setSqlSchema("PUBLIC")
 
         val cache = ignite.getOrCreateCache(ccfg)
-
-        //Putting some data first cache.
-        for (i ← 1L to 100L)
-            cache.put(i, i.toString)
-
-        //Creating second test cache.
-        val cache2 = ignite.getOrCreateCache(new CacheConfiguration[JLong, Person](CACHE_NAME + "2"))
-
-        //Putting some data to second cache.
-        for (i ← 1L to 100L) {
-            val d = Calendar.getInstance
-
-            d.set(Calendar.DAY_OF_YEAR, i.toInt)
-
-            cache2.put(i, Person(s"John Connor $i", d.getTime))
-        }
 
         //Creating SQL tables.
         cache.query(new SqlFieldsQuery(
@@ -232,6 +143,4 @@ object IgniteDataFrameExample extends App {
 
         ignite
     }
-
-    case class Person(name: String, birthDate: java.util.Date)
 }
