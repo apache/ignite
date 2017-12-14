@@ -1223,7 +1223,7 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.queryDistributedSqlFields(schema, newFieldsQry, true,
-                cancel, cctx.cacheId(), true).get(0);
+                cancel, cctx.cacheId(), true, new MvccQueryTracker(cctx, mvccVer, topVer)).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQry,

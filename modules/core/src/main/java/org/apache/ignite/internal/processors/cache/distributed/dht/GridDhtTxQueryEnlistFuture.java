@@ -272,7 +272,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
     /**
      *
      */
-    public void map() {
+    public void init() {
         cancel = new GridQueryCancel();
 
         cctx.mvcc().addFuture(this);

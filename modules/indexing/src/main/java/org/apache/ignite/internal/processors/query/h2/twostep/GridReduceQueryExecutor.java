@@ -517,6 +517,7 @@ public class GridReduceQueryExecutor {
      * @param params Query parameters.
      * @param parts Partitions.
      * @param lazy Lazy execution flag.
+     * @param mvccTracker Query tracker.
      * @return Rows iterator.
      */
     public Iterator<List<?>> query(
@@ -528,8 +529,8 @@ public class GridReduceQueryExecutor {
         GridQueryCancel cancel,
         Object[] params,
         final int[] parts,
-        boolean lazy
-    ) {
+        boolean lazy,
+        MvccQueryTracker mvccTracker) {
         if (F.isEmpty(params))
             params = EMPTY_PARAMS;
 
@@ -564,10 +565,7 @@ public class GridReduceQueryExecutor {
 
             List<Integer> cacheIds = qry.cacheIds();
 
-            MvccQueryTracker mvccTracker = null;
-
-            // TODO IGNITE-3478.
-            if (qry.mvccEnabled()) {
+            if (qry.mvccEnabled() && mvccTracker == null) {
                 assert !cacheIds.isEmpty();
 
                 final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();

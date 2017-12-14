@@ -456,7 +456,7 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
                     }
                 });
 
-                fut.map();
+                fut.init();
             }
         }
         catch (Throwable e) {
