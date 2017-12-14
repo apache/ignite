@@ -169,16 +169,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         if (cctx.affinityNode() && cctx.ttl().eagerTtlEnabled() && pendingEntries == null) {
             String name = "PendingEntries";
 
-                long rootPage = allocateForTree();
+            long rootPage = allocateForTree();
 
-                pendingEntries = new PendingEntriesTree(
-                    grp,
-                    name,
-                    grp.dataRegion().pageMemory(),
-                    rootPage,
-                    grp.reuseList(),
-                    true);
-            }
+            pendingEntries = new PendingEntriesTree(
+                grp,
+                name,
+                grp.dataRegion().pageMemory(),
+                rootPage,
+                grp.reuseList(),
+                true);
+        }
     }
 
     /**
