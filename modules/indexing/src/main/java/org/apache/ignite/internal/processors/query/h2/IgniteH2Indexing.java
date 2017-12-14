@@ -2827,7 +2827,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         assert topVer != null;
 
-        if (F.isEmpty(cacheIds))
+        if (F.isEmpty(cacheIds) || ctx.clientNode())
             return true;
 
         Collection<Integer> partIds = wrap(explicitParts);
@@ -2838,7 +2838,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (cctx == null) // Cache was not found, probably was not deployed yet.
                 return false;
 
-            if (cctx.isLocal() || !cctx.rebalanceEnabled() || cctx.localNode().isClient())
+            if (cctx.isLocal() || !cctx.rebalanceEnabled())
                 continue;
 
             // For replicated cache topology version does not make sense.
