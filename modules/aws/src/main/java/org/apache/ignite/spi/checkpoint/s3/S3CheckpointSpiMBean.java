@@ -40,6 +40,12 @@ public interface S3CheckpointSpiMBean extends IgniteSpiManagementMBean {
     public String getBucketEndpoint();
 
     /**
+     * @return S3 server-side encryption algorithm.
+     */
+    @MXBeanDescription("S3 server-side encryption algorithm.")
+    public String getSSEAlgorithm();
+
+    /**
      * @return S3 access key.
      */
     @MXBeanDescription("S3 access key.")

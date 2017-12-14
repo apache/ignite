@@ -12,11 +12,11 @@
     },
     "mail": {
         "service": "",
-        "sign": "Kind regards,<br>Apache Ignite Team",
-        "greeting": "Apache Ignite Web Console",
-        "from": "Apache Ignite Web Console <someusername@somecompany.tld>",
+        "from": "Some Company Web Console <some_username@some_company.com>",
+        "greeting": "Some Company Web Console",
+        "sign": "Kind regards,<br>Some Company Team",
         "auth": {
-            "user": "someusername@somecompany.tld",
+            "user": "some_username@some_company.com",
             "pass": ""
         }
     }

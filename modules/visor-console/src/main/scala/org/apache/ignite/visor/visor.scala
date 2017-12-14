@@ -35,7 +35,6 @@ import jline.console.ConsoleReader
 import org.jetbrains.annotations.Nullable
 import java.io._
 import java.lang.{Boolean => JavaBoolean}
-import java.net._
 import java.text._
 import java.util.concurrent._
 import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
@@ -240,7 +239,7 @@ object visor extends VisorTag {
 
     var batchMode: Boolean = false
 
-    /** Quiet mode to disable node log and information messages output. */
+    /** Quiet mode to disable internal node log and information messages output. */
     var quiet: Boolean = false
 
     def reader(reader: ConsoleReader) {
