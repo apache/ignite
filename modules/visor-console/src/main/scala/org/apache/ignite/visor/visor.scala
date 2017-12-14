@@ -35,7 +35,6 @@ import jline.console.ConsoleReader
 import org.jetbrains.annotations.Nullable
 import java.io._
 import java.lang.{Boolean => JavaBoolean}
-import java.net._
 import java.text._
 import java.util.concurrent._
 import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
