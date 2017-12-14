@@ -344,6 +344,9 @@ public class CacheManager implements javax.cache.CacheManager {
         if(IgniteUtils.IGNITE_MBEANS_DISABLED)
             return;
 
+        if (cacheName == null)
+            throw new NullPointerException();
+
         kernalGateway.readLock();
 
         try {
