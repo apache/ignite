@@ -17,16 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.lang.IgniteClosure;
@@ -36,18 +31,21 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR;
 
+/**
+ * Asynchronous Checkpointer, encapsulates thread pool functionality and allows
+ */
 public class AsyncCheckpointer {
-
     /** Checkpoint runner thread name prefix. */
     public static final String CHECKPOINT_RUNNER = "checkpoint-runner";
 
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private ExecutorService asyncRunner;
-    private IgniteLogger log;
 
-    public AsyncCheckpointer(int checkpointThreads, String igniteInstanceName, IgniteLogger log) {
-        this.log = log;
-
+    /**
+     * @param checkpointThreads Checkpoint threads.
+     * @param igniteInstanceName Ignite instance name.
+     */
+    public AsyncCheckpointer(int checkpointThreads, String igniteInstanceName) {
         asyncRunner = new IgniteThreadPoolExecutor(
             CHECKPOINT_RUNNER,
             igniteInstanceName,
@@ -58,45 +56,56 @@ public class AsyncCheckpointer {
         );
     }
 
+    /**
+     * Close async checkpointer, stops all thread from pool
+     */
     public void shutdownCheckpointer() {
-        if (asyncRunner != null) {
-            asyncRunner.shutdownNow();
+        asyncRunner.shutdownNow();
 
-            try {
-                asyncRunner.awaitTermination(2, TimeUnit.MINUTES);
-            }
-            catch (InterruptedException ignore) {
-                Thread.currentThread().interrupt();
-            }
+        try {
+            asyncRunner.awaitTermination(2, TimeUnit.MINUTES);
+        }
+        catch (InterruptedException ignore) {
+            Thread.currentThread().interrupt();
         }
     }
 
-    public void execute(Runnable write) {
+    /**
+     * Executes the given runnable in thread pool.
+     *
+     * @param runnable task to run.
+     */
+    private void execute(Runnable runnable) {
         try {
-            asyncRunner.execute(write);
+            asyncRunner.execute(runnable);
         }
         catch (RejectedExecutionException ignore) {
             // Run the task synchronously.
-            write.run();
+            runnable.run();
         }
     }
 
-
-    public void execute(final Callable<Void> task, final CountDownFuture doneReportFut) {
+    /**
+     * Executes the given runnable in thread pool.
+     *
+     * @param task task to run.
+     * @param doneReportFut Count down future to report this runnable completion.
+     */
+    public void execute(Callable<Void> task, CountDownFuture doneReportFut) {
         execute(wrapRunnableWithDoneReporting(task, doneReportFut));
     }
 
     /**
-     * @param write actual runnable performing required action.
-     * @param doneReportFut  Count down future to report this runnable completion stage.
+     * @param task actual callable performing required action.
+     * @param doneReportFut Count down future to report this runnable completion.
      * @return wrapper runnable which will report result to {@code doneReportFut}
      */
-    private static Runnable wrapRunnableWithDoneReporting(final Callable<Void> write,
+    private static Runnable wrapRunnableWithDoneReporting(final Callable<Void> task,
         final CountDownFuture doneReportFut) {
         return new Runnable() {
             @Override public void run() {
                 try {
-                    write.call();
+                    task.call();
 
                     doneReportFut.onDone((Void)null); // success
                 }
@@ -107,14 +116,19 @@ public class AsyncCheckpointer {
         };
     }
 
-    public CountDownFuture quickSortAndWritePages(
-        CheckpointScope cpScope,
+    /**
+     * @param cpScope Checkpoint scope, contains unsorted collections.
+     * @param taskFactory write pages task factory. Should provide callable to write given pages array.
+     * @return future will be completed when background writing is done.
+     */
+    public CountDownFuture quickSortAndWritePages(CheckpointScope cpScope,
         IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
-
-        final CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(1); // init cntr 1 protects from premature completing
+        // init counter 1 protects here from premature completing
+        final CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(1);
         FullPageId[] pageIds = cpScope.toArray();
 
-        final Callable<Void> task = new QuickSortRecursiveTask(pageIds, SEQUENTIAL_CP_PAGE_COMPARATOR,
+        Callable<Void> task = new QuickSortRecursiveTask(pageIds,
+            SEQUENTIAL_CP_PAGE_COMPARATOR,
             taskFactory,
             new IgniteInClosure<Callable<Void>>() {
                 @Override public void apply(Callable<Void> call) {
@@ -129,9 +143,15 @@ public class AsyncCheckpointer {
         return cntDownDynamicFut;
     }
 
-    private void fork(Callable<Void> call, CountDownDynamicFuture cntDownDynamicFut) {
+    /**
+     * Executes the given runnable in thread pool, registers future to be waited.
+     *
+     * @param task task to run.
+     * @param cntDownDynamicFut Count down future to register job and then report this runnable completion.
+     */
+    private void fork(Callable<Void> task, CountDownDynamicFuture cntDownDynamicFut) {
         cntDownDynamicFut.incrementTasksCount(); // for created task about to be forked
 
-        execute(call, cntDownDynamicFut);
+        execute(task, cntDownDynamicFut);
     }
 }

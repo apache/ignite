@@ -20,7 +20,11 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.configuration.CheckpointWriteOrder;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.jetbrains.annotations.NotNull;
 
@@ -54,26 +58,32 @@ public class CheckpointScope {
         return pageIds;
     }
 
-    @NotNull
-    public static GridMultiCollectionWrapper<FullPageId> split( FullPageId[] pageIds, int pagesSubLists) {
-        // Splitting pages to (threads * 4) subtasks. If any thread will be faster, it will help slower threads.
+    /**
+     * Splits pages to {@code pagesSubLists} subtasks. If any thread will be faster, it will help slower threads.
+     *
+     * @param pageIds full pages collection.
+     * @param pagesSubLists required subArraysCount.
+     * @return full page arrays to be processed as standalone tasks.
+     */
+    public static Collection<FullPageId[]> split(FullPageId[] pageIds, int pagesSubLists) {
+        final Collection<FullPageId[]> res = new ArrayList<>();
 
-        if(pagesSubLists==1)
-            return new GridMultiCollectionWrapper<>(Arrays.asList(pageIds));
+        if (pagesSubLists == 1) {
+            res.add(pageIds);
+
+            return res;
+        }
 
         final int totalSize = pageIds.length;
-        Collection[] pagesSubListArr = new Collection[pagesSubLists];
 
         for (int i = 0; i < pagesSubLists; i++) {
             int from = totalSize * i / (pagesSubLists);
 
             int to = totalSize * (i + 1) / (pagesSubLists);
 
-            final FullPageId[] ids = Arrays.copyOfRange(pageIds, from, to);
-            pagesSubListArr[i] = Arrays.asList(ids);
+            res.add(Arrays.copyOfRange(pageIds, from, to));
         }
-
-        return new GridMultiCollectionWrapper<FullPageId>(pagesSubListArr);
+        return res;
     }
 
     /**
@@ -91,7 +101,30 @@ public class CheckpointScope {
         return pagesNum > 0;
     }
 
+    /**
+     * @return total checkpoint pages from all caches and regions
+     */
     public int totalCpPages() {
         return pagesNum;
+    }
+
+    /**
+     * Reorders list of checkpoint pages and splits them into needed number of sublists according to
+     * {@link DataStorageConfiguration#getCheckpointThreads()} and
+     * {@link DataStorageConfiguration#getCheckpointWriteOrder()}.
+     *
+     * @param persistenceCfg persistent configuration.
+     */
+    public Collection<FullPageId[]> splitAndSortCpPagesIfNeeded(DataStorageConfiguration persistenceCfg) {
+        final FullPageId[] cpPagesArr = toArray();
+
+        if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL)
+            Arrays.sort(cpPagesArr, GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR);
+
+        int cpThreads = persistenceCfg.getCheckpointThreads();
+
+        int pagesSubLists = cpThreads == 1 ? 1 : cpThreads * 4;
+
+        return split(cpPagesArr, pagesSubLists);
     }
 }
