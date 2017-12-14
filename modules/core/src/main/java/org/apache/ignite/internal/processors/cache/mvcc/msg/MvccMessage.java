@@ -15,15 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- *
+ * Common interface for all MVCC-related messages.
  */
-public interface MvccCoordinatorMessage extends Message {
+public interface MvccMessage extends Message {
+    /**
+     * @return {@code True} if should wait for coordinator initialization.
+     */
     public boolean waitForCoordinatorInit();
 
+    /**
+     * @return {@code True} if message should be processed from NIO thread.
+     */
     public boolean processedFromNioThread();
 }

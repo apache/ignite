@@ -42,9 +42,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -409,7 +409,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      *
      */
     private void ackMvccCoordinatorOnRollback() {
-        TxMvccInfo mvccInfo = tx.mvccInfo();
+        MvccTxInfo mvccInfo = tx.mvccInfo();
 
         MvccQueryTracker qryTracker = tx.mvccQueryTracker();
 
@@ -445,7 +445,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 GridLongList waitTxs = tx.mvccWaitTransactions();
 
                 if (waitTxs != null) {
-                    TxMvccInfo mvccInfo = tx.mvccInfo();
+                    MvccTxInfo mvccInfo = tx.mvccInfo();
 
                     assert mvccInfo != null;
 
@@ -865,8 +865,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                     return "CheckRemoteTxMiniFuture[nodes=" + fut.nodes() + ", done=" + f.isDone() + "]";
                 }
-                else if (f instanceof MvccCoordinatorFuture) {
-                    MvccCoordinatorFuture fut = (MvccCoordinatorFuture)f;
+                else if (f instanceof MvccFuture) {
+                    MvccFuture fut = (MvccFuture)f;
 
                     return "WaitPreviousTxsFut[mvccCrd=" + fut.coordinatorNodeId() + ", done=" + f.isDone() + "]";
                 }

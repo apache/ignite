@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -26,56 +26,42 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
+public class MvccQueryVersionRequest implements MvccMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     private long futId;
 
-    /** */
-    private GridLongList txs;
-
     /**
-     *
+     * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorWaitTxsRequest() {
+    public MvccQueryVersionRequest() {
         // No-op.
     }
 
     /**
      * @param futId Future ID.
-     * @param txs Transactions to wait for.
      */
-    public CoordinatorWaitTxsRequest(long futId, GridLongList txs) {
-        assert txs != null && txs.size() > 0 : txs;
-
+    public MvccQueryVersionRequest(long futId) {
         this.futId = futId;
-        this.txs = txs;
-    }
-
-    /**
-     * @return Future ID.
-     */
-    long futureId() {
-        return futId;
-    }
-
-    /**
-     * @return Transactions to wait for.
-     */
-    GridLongList transactions() {
-        return txs;
     }
 
     /** {@inheritDoc} */
     @Override public boolean waitForCoordinatorInit() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean processedFromNioThread() {
         return true;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long futureId() {
+        return futId;
     }
 
     /** {@inheritDoc} */
@@ -92,12 +78,6 @@ public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
         switch (writer.state()) {
             case 0:
                 if (!writer.writeLong("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMessage("txs", txs))
                     return false;
 
                 writer.incrementState();
@@ -123,27 +103,19 @@ public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
 
                 reader.incrementState();
 
-            case 1:
-                txs = reader.readMessage("txs");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
-        return reader.afterMessageRead(CoordinatorWaitTxsRequest.class);
+        return reader.afterMessageRead(MvccQueryVersionRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 137;
+        return 133;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -153,6 +125,6 @@ public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorWaitTxsRequest.class, this);
+        return S.toString(MvccQueryVersionRequest.class, this);
     }
 }

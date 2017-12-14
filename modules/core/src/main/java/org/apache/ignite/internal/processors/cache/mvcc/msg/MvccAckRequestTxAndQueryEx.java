@@ -15,76 +15,63 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class TxMvccInfo implements Message {
+public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private UUID crd;
+    private long qryCrdVer;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private long qryCntr;
 
     /**
-     *
+     * Required by {@link GridIoMessageFactory}.
      */
-    public TxMvccInfo() {
+    public MvccAckRequestTxAndQueryEx() {
         // No-op.
     }
 
     /**
-     * @param crd Coordinator node ID.
-     * @param mvccVer Mvcc version.
+     * @param futId Future ID.
+     * @param txCntr Counter assigned to transaction update.
+     * @param qryCrdVer Version of coordinator assigned read counter.
+     * @param qryCntr Counter assigned for transaction reads.
      */
-    public TxMvccInfo(UUID crd, MvccCoordinatorVersion mvccVer) {
-        assert crd != null;
-        assert mvccVer != null;
+    public MvccAckRequestTxAndQueryEx(long futId, long txCntr, long qryCrdVer, long qryCntr) {
+        super(futId, txCntr);
 
-        this.crd = crd;
-        this.mvccVer = mvccVer;
+        this.qryCrdVer = qryCrdVer;
+        this.qryCntr = qryCntr;
     }
 
-    /**
-     * @return Instance with version without active transactions.
-     */
-    public TxMvccInfo withoutActiveTransactions() {
-        MvccCoordinatorVersion mvccVer0 = mvccVer.withoutActiveTransactions();
-
-        if (mvccVer0 == mvccVer)
-            return this;
-
-        return new TxMvccInfo(crd, mvccVer0);
+    /** {@inheritDoc} */
+    @Override public long queryCoordinatorVersion() {
+        return qryCrdVer;
     }
 
-    /**
-     * @return Coordinator node ID.
-     */
-    public UUID coordinatorNodeId() {
-        return crd;
-    }
-
-    /**
-     * @return Mvcc version.
-     */
-    public MvccCoordinatorVersion version() {
-        return mvccVer;
+    /** {@inheritDoc} */
+    @Override public long queryCounter() {
+        return qryCntr;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -94,14 +81,14 @@ public class TxMvccInfo implements Message {
         }
 
         switch (writer.state()) {
-            case 0:
-                if (!writer.writeUuid("crd", crd))
+            case 3:
+                if (!writer.writeLong("qryCntr", qryCntr))
                     return false;
 
                 writer.incrementState();
 
-            case 1:
-                if (!writer.writeMessage("mvccVer", mvccVer))
+            case 4:
+                if (!writer.writeLong("qryCrdVer", qryCrdVer))
                     return false;
 
                 writer.incrementState();
@@ -118,17 +105,20 @@ public class TxMvccInfo implements Message {
         if (!reader.beforeMessageRead())
             return false;
 
+        if (!super.readFrom(buf, reader))
+            return false;
+
         switch (reader.state()) {
-            case 0:
-                crd = reader.readUuid("crd");
+            case 3:
+                qryCntr = reader.readLong("qryCntr");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 1:
-                mvccVer = reader.readMessage("mvccVer");
+            case 4:
+                qryCrdVer = reader.readLong("qryCrdVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -137,26 +127,21 @@ public class TxMvccInfo implements Message {
 
         }
 
-        return reader.afterMessageRead(TxMvccInfo.class);
+        return reader.afterMessageRead(MvccAckRequestTxAndQueryEx.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 139;
+        return 142;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
+        return 5;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TxMvccInfo.class, this);
+        return S.toString(MvccAckRequestTxAndQueryEx.class, this);
     }
 }

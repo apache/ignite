@@ -39,8 +39,8 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersionWithoutTxs;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -87,9 +87,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.MVCC_START_CNTR;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.versionForRemovedValue;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_START_CNTR;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unmaskCoordinatorVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.versionForRemovedValue;
 
 /**
  *
@@ -391,7 +391,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
+        MvccVersion mvccVer) throws IgniteCheckedException {
         return dataStore(entry.localPartition()).mvccInitialValue(
             entry.context(),
             entry.key(),
@@ -408,7 +408,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
+        MvccVersion mvccVer) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
 
@@ -425,7 +425,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     @Override public GridLongList mvccRemove(
         boolean primary,
         GridCacheMapEntry entry,
-        MvccCoordinatorVersion mvccVer
+        MvccVersion mvccVer
     ) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
@@ -478,7 +478,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccCoordinatorVersion ver)
+    @Nullable @Override public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccVersion ver)
         throws IgniteCheckedException {
         assert ver != null;
 
@@ -692,7 +692,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         boolean primary,
         boolean backups,
         final AffinityTopologyVersion topVer,
-        @Nullable MvccCoordinatorVersion mvccVer)
+        @Nullable MvccVersion mvccVer)
         throws IgniteCheckedException {
         return iterator(cacheId, cacheData(primary, backups, topVer), mvccVer);
     }
@@ -727,7 +727,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      */
     private GridCloseableIterator<CacheDataRow> iterator(final int cacheId,
         final Iterator<CacheDataStore> dataIt,
-        final MvccCoordinatorVersion mvccVer)
+        final MvccVersion mvccVer)
     {
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */
@@ -1391,7 +1391,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             @Nullable CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            MvccCoordinatorVersion mvccVer)
+            MvccVersion mvccVer)
             throws IgniteCheckedException
         {
             if (!busyLock.enterBusy())
@@ -1411,7 +1411,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 // TODO IGNITE-3478: null is passed for loaded from store, need handle better.
                 if (mvccVer == null) {
-                    mvccVer = new MvccCoordinatorVersionWithoutTxs(1L, MVCC_START_CNTR, 0L);
+                    mvccVer = new MvccVersionWithoutTxs(1L, MVCC_START_CNTR, 0L);
 
                     newVal = true;
                 }
@@ -1490,7 +1490,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
+            MvccVersion mvccVer) throws IgniteCheckedException {
             assert mvccVer != null;
             assert primary || mvccVer.activeTransactions().size() == 0 : mvccVer;
 
@@ -1573,7 +1573,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public GridLongList mvccRemove(GridCacheContext cctx,
             boolean primary,
             KeyCacheObject key,
-            MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
+            MvccVersion mvccVer) throws IgniteCheckedException {
             assert mvccVer != null;
             assert primary || mvccVer.activeTransactions().size() == 0 : mvccVer;
 
@@ -1990,7 +1990,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public CacheDataRow mvccFind(GridCacheContext cctx,
             KeyCacheObject key,
-            MvccCoordinatorVersion ver) throws IgniteCheckedException {
+            MvccVersion ver) throws IgniteCheckedException {
             key.valueBytes(cctx.cacheObjectContext());
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2029,7 +2029,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(MvccCoordinatorVersion ver)
+        @Override public GridCursor<? extends CacheDataRow> cursor(MvccVersion ver)
             throws IgniteCheckedException {
 
             if (ver != null) {
@@ -2050,7 +2050,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc}
          * @param cacheId*/
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
-            MvccCoordinatorVersion ver) throws IgniteCheckedException {
+            MvccVersion ver) throws IgniteCheckedException {
             return cursor(cacheId, null, null, null, ver);
         }
 
@@ -2068,7 +2068,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
-            KeyCacheObject upper, Object x, MvccCoordinatorVersion ver) throws IgniteCheckedException {
+            KeyCacheObject upper, Object x, MvccVersion ver) throws IgniteCheckedException {
             SearchRow lowerRow;
             SearchRow upperRow;
 
@@ -2249,12 +2249,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             /** */
             private final GridCursor<? extends CacheDataRow> cur;
             /** */
-            private final MvccCoordinatorVersion ver;
+            private final MvccVersion ver;
             /** */
             private CacheDataRow curRow;
 
             /** */
-            MvccCursor(GridCursor<? extends CacheDataRow> cur, MvccCoordinatorVersion ver) {
+            MvccCursor(GridCursor<? extends CacheDataRow> cur, MvccVersion ver) {
                 this.cur = cur;
                 this.ver = ver;
             }

@@ -59,8 +59,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -255,7 +255,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected ConsistentIdMapper consistentIdMapper;
 
     /** */
-    protected TxMvccInfo mvccInfo;
+    protected MvccTxInfo mvccInfo;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -378,21 +378,21 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Mvcc info.
      */
-    @Nullable public TxMvccInfo mvccInfo() {
+    @Nullable public MvccTxInfo mvccInfo() {
         return mvccInfo;
     }
 
     /**
      * @return Mvcc version for update operation, should be always initialized if mvcc is enabled.
      */
-    @Nullable protected final MvccCoordinatorVersion mvccVersionForUpdate() {
+    @Nullable protected final MvccVersion mvccVersionForUpdate() {
         assert !txState().mvccEnabled(cctx) || mvccInfo != null : "Mvcc is not initialized: " + this;
 
         return mvccInfo != null ? mvccInfo.version() : null;
     }
 
     /** {@inheritDoc} */
-    @Override public void mvccInfo(TxMvccInfo mvccInfo) {
+    @Override public void mvccInfo(MvccTxInfo mvccInfo) {
         this.mvccInfo = mvccInfo;
     }
 
@@ -1905,7 +1905,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public void mvccInfo(TxMvccInfo mvccInfo) {
+        @Override public void mvccInfo(MvccTxInfo mvccInfo) {
             // No-op.
         }
 

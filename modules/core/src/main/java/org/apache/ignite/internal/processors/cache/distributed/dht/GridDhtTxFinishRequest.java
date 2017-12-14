@@ -25,7 +25,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -68,7 +68,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private GridCacheVersion writeVer;
 
     /** */
-    private TxMvccInfo mvccInfo;
+    private MvccTxInfo mvccInfo;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -126,7 +126,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean addDepInfo,
         boolean retVal,
         boolean waitRemoteTxs,
-        TxMvccInfo mvccInfo
+        MvccTxInfo mvccInfo
     ) {
         super(
             xidVer,
@@ -213,7 +213,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         Collection<Long> updateIdxs,
         boolean retVal,
         boolean waitRemoteTxs,
-        TxMvccInfo mvccInfo
+        MvccTxInfo mvccInfo
     ) {
         this(nearNodeId,
             futId,
@@ -252,7 +252,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Counter.
      */
-    public TxMvccInfo mvccInfo() {
+    public MvccTxInfo mvccInfo() {
         return mvccInfo;
     }
 

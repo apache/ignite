@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -1718,7 +1718,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable MvccCoordinatorVersion mvccVer,
+    public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable MvccVersion mvccVer,
         @Nullable CacheDataRow prevRow, boolean prevRowAvailable, boolean idxRebuild)
         throws IgniteCheckedException {
         assert cctx != null;
@@ -2348,7 +2348,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param newVer Mvcc version for remove operation.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void remove(GridCacheContext cctx, CacheDataRow val, @Nullable MvccCoordinatorVersion newVer)
+    public void remove(GridCacheContext cctx, CacheDataRow val, @Nullable MvccVersion newVer)
         throws IgniteCheckedException {
         assert val != null;
         assert cctx.mvccEnabled() || newVer == null;

@@ -15,53 +15,65 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class CoordinatorAckRequestTxAndQuery extends CoordinatorAckRequestTx {
+public class MvccActiveQueriesMessage implements MvccMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long qryCntr;
+    @GridDirectMap(keyType = Message.class, valueType = Integer.class)
+    private Map<MvccCounter, Integer> activeQrys;
 
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorAckRequestTxAndQuery() {
+    public MvccActiveQueriesMessage() {
         // No-op.
     }
 
     /**
-     * @param futId Future ID.
-     * @param txCntr Counter assigned to transaction update.
-     * @param qryCntr Counter assigned for transaction reads.
+     * @param activeQrys Active queries.
      */
-    CoordinatorAckRequestTxAndQuery(long futId, long txCntr, long qryCntr) {
-        super(futId, txCntr);
+    public MvccActiveQueriesMessage(Map<MvccCounter, Integer> activeQrys) {
+        this.activeQrys = activeQrys;
+    }
 
-        this.qryCntr = qryCntr;
+    /**
+     * @return Active queries.
+     */
+    @Nullable public Map<MvccCounter, Integer> activeQueries() {
+        return activeQrys;
     }
 
     /** {@inheritDoc} */
-    @Override long queryCounter() {
-        return qryCntr;
+    @Override public boolean waitForCoordinatorInit() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean processedFromNioThread() {
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -71,8 +83,8 @@ public class CoordinatorAckRequestTxAndQuery extends CoordinatorAckRequestTx {
         }
 
         switch (writer.state()) {
-            case 3:
-                if (!writer.writeLong("qryCntr", qryCntr))
+            case 0:
+                if (!writer.writeMap("activeQrys", activeQrys, MessageCollectionItemType.MSG, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -89,12 +101,9 @@ public class CoordinatorAckRequestTxAndQuery extends CoordinatorAckRequestTx {
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf, reader))
-            return false;
-
         switch (reader.state()) {
-            case 3:
-                qryCntr = reader.readLong("qryCntr");
+            case 0:
+                activeQrys = reader.readMap("activeQrys", MessageCollectionItemType.MSG, MessageCollectionItemType.INT, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -103,21 +112,26 @@ public class CoordinatorAckRequestTxAndQuery extends CoordinatorAckRequestTx {
 
         }
 
-        return reader.afterMessageRead(CoordinatorAckRequestTxAndQuery.class);
+        return reader.afterMessageRead(MvccActiveQueriesMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 141;
+        return 144;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorAckRequestTxAndQuery.class, this);
+        return S.toString(MvccActiveQueriesMessage.class, this);
     }
 }

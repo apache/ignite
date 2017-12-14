@@ -49,7 +49,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -286,7 +286,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** Cache mvcc coordinators. */
     @GridToStringExclude
-    private CacheCoordinatorsProcessor coordProc;
+    private MvccProcessor coordProc;
 
     /** */
     @GridToStringExclude
@@ -588,8 +588,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             poolProc = (PoolProcessor)comp;
         else if (comp instanceof GridMarshallerMappingProcessor)
             mappingProc = (GridMarshallerMappingProcessor)comp;
-        else if (comp instanceof CacheCoordinatorsProcessor)
-            coordProc = (CacheCoordinatorsProcessor)comp;
+        else if (comp instanceof MvccProcessor)
+            coordProc = (MvccProcessor)comp;
         else if (comp instanceof PdsFoldersResolver)
             pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
@@ -847,7 +847,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public CacheCoordinatorsProcessor coordinators() {
+    @Override public MvccProcessor coordinators() {
         return coordProc;
     }
 

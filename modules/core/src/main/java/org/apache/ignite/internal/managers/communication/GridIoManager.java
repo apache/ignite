@@ -65,7 +65,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorMessage;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -1114,7 +1114,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             return;
         }
         if (msg.topicOrdinal() == TOPIC_CACHE_COORDINATOR.ordinal()) {
-            MvccCoordinatorMessage msg0 = (MvccCoordinatorMessage)msg.message();
+            MvccMessage msg0 = (MvccMessage)msg.message();
 
             if (msg0.processedFromNioThread())
                 c.run();

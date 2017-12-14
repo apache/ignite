@@ -17,14 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.UUID;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public interface MvccCoordinatorFuture {
+public interface MvccVersion extends Message {
     /**
-     * @return Coordinator node ID.
+     * @return Active transactions.
      */
-    public UUID coordinatorNodeId();
+    public MvccLongList activeTransactions();
+
+    /**
+     * @return Coordinator version.
+     */
+    public long coordinatorVersion();
+
+    /**
+     * @return Cleanup version (all smaller versions are safe to remove).
+     */
+    public long cleanupVersion();
+
+    /**
+     * @return Counter.
+     */
+    public long counter();
+
+    /**
+     * @return Version without active transactions.
+     */
+    public MvccVersion withoutActiveTransactions();
 }

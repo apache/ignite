@@ -62,9 +62,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -1236,7 +1236,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            IgniteInternalFuture<MvccCoordinatorVersion> waitCrdCntrFut = null;
+            IgniteInternalFuture<MvccVersion> waitCrdCntrFut = null;
 
             if (req.requestMvccCounter()) {
                 assert last;
@@ -1250,7 +1250,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 if (crd.nodeId().equals(cctx.localNodeId()))
                     onMvccResponse(cctx.localNodeId(), cctx.coordinators().requestTxCounterOnCoordinator(tx));
                 else {
-                    IgniteInternalFuture<MvccCoordinatorVersion> crdCntrFut = cctx.coordinators().requestTxCounter(crd,
+                    IgniteInternalFuture<MvccVersion> crdCntrFut = cctx.coordinators().requestTxCounter(crd,
                         this,
                         tx.nearXidVersion());
 
@@ -1282,8 +1282,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 if (waitCrdCntrFut != null) {
                     skipInit = true;
 
-                    waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccCoordinatorVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<MvccCoordinatorVersion> fut) {
+                    waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<MvccVersion> fut) {
                             try {
                                 fut.get();
 
@@ -1313,8 +1313,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void onMvccResponse(UUID crdId, MvccCoordinatorVersion res) {
-        tx.mvccInfo(new TxMvccInfo(crdId, res));
+    @Override public void onMvccResponse(UUID crdId, MvccVersion res) {
+        tx.mvccInfo(new MvccTxInfo(crdId, res));
     }
 
     /** {@inheritDoc} */
@@ -1345,7 +1345,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
 
         // Do not need process active transactions on backups.
-        TxMvccInfo mvccInfo = tx.mvccInfo();
+        MvccTxInfo mvccInfo = tx.mvccInfo();
 
         if (mvccInfo != null)
             mvccInfo = mvccInfo.withoutActiveTransactions();
