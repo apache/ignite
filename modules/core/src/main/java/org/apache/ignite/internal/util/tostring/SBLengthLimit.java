@@ -17,50 +17,59 @@
 
 package org.apache.ignite.internal.util.tostring;
 
+import org.apache.ignite.IgniteSystemProperties;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
+
 /**
- * Helper wrapper containing StringBuilder and additional values. Stored as a thread-local variable.
+ *
  */
-class GridToStringThreadLocal {
+class SBLengthLimit {
     /** */
-    private SBLimitedLength sb = new SBLimitedLength(256);
+    private static final int MAX_TO_STR_LEN = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_MAX_LENGTH, 10_000);
 
     /** */
-    private Object[] addNames = new Object[7];
+    private int len;
 
     /** */
-    private Object[] addVals = new Object[7];
-
-    /** */
-    private boolean[] addSens = new boolean[7];
+    private boolean done;
 
     /**
-     * @param len Length limit.
-     * @return String builder.
+     * @return Current length.
      */
-    SBLimitedLength getStringBuilder(SBLengthLimit len) {
-        sb.initLimit(len);
-
-        return sb;
+    int length() {
+        return len;
     }
 
     /**
-     * @return Additional names.
+     *
      */
-    Object[] getAdditionalNames() {
-        return addNames;
+    void reset() {
+        len = 0;
+        done = false;
     }
 
     /**
-     * @return Additional values.
+     * @param sb String builder.
+     * @param writtenLen Written length.
      */
-    Object[] getAdditionalValues() {
-        return addVals;
+    void onWrite(SBLimitedLength sb, int writtenLen) {
+        if (done)
+            return;
+
+        len += writtenLen;
+
+        if (len > MAX_TO_STR_LEN) {
+            sb.appendNoLimitCheck("...");
+
+            done = true;
+        }
     }
 
     /**
-     * @return Additional values.
+     * @return {@code True} if reached limit.
      */
-    boolean[] getAdditionalSensitives() {
-        return addSens;
+    boolean done() {
+        return done;
     }
 }
