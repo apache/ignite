@@ -15,26 +15,10 @@
  * limitations under the License.
  */
 
-/** @returns {ng.IDirective} */
-export default function() {
-    return {
-        require: '?^listEditableCols',
-        /** @param {PcListEditableColsController} ctrl */
-        link(scope, el, attr, ctrl) {
-            if (!ctrl || !ctrl.colDefs.length)
-                return;
+import angular from 'angular';
 
-            const children = el.children();
+import component from './component';
 
-            if (children.length !== ctrl.colDefs.length)
-                return;
-
-            if (ctrl.rowClass)
-                el.addClass(ctrl.rowClass);
-
-            ctrl.colDefs.forEach(({ cellClass }, index) => {
-                _.forEach((Array.isArray(cellClass) ? cellClass : [cellClass]), (item) => children[index].classList.add(item));
-            });
-        }
-    };
-}
+export default angular
+    .module('ignite-console.grid-export', [])
+    .component('gridExport', component);

@@ -15,26 +15,17 @@
  * limitations under the License.
  */
 
-/** @returns {ng.IDirective} */
-export default function() {
-    return {
-        require: '?^listEditableCols',
-        /** @param {PcListEditableColsController} ctrl */
-        link(scope, el, attr, ctrl) {
-            if (!ctrl || !ctrl.colDefs.length)
-                return;
+grid-no-data {
+    position: relative;
+    display: block;
+    padding: 0 51px;
 
-            const children = el.children();
+    border-radius: 0 0 4px 4px;
+    
+    font-style: italic;
+    line-height: 16px;
 
-            if (children.length !== ctrl.colDefs.length)
-                return;
-
-            if (ctrl.rowClass)
-                el.addClass(ctrl.rowClass);
-
-            ctrl.colDefs.forEach(({ cellClass }, index) => {
-                _.forEach((Array.isArray(cellClass) ? cellClass : [cellClass]), (item) => children[index].classList.add(item));
-            });
-        }
-    };
+    [ng-transclude] {
+    	padding: 16px 0;
+    }
 }
