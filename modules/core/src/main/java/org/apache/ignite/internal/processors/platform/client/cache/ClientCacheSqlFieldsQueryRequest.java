@@ -101,7 +101,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
             }
 
             List<FieldsQueryCursor<List<?>>> curs = ctx.kernalContext().query()
-                    .querySqlFieldsNoCache(qry, true, true, true, null);
+                    .querySqlFieldsNoCache(qry, true, true);
 
             assert curs.size() == 1;
 

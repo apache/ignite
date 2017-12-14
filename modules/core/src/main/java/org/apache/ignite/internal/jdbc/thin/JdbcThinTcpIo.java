@@ -55,8 +55,11 @@ public class JdbcThinTcpIo {
     /** Version 2.3.1. */
     private static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
 
+    /** Version 2.4.0. */
+    private static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_4_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -194,7 +197,9 @@ public class JdbcThinTcpIo {
 
             ClientListenerProtocolVersion srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (VER_2_1_5.equals(srvProtocolVer))
+            if (VER_2_3_0.equals(srvProtocolVer))
+                handshake(VER_2_3_0);
+            else if (VER_2_1_5.equals(srvProtocolVer))
                 handshake(VER_2_1_5);
             else if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();

@@ -178,8 +178,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** */
     private MvccQueryTracker mvccTracker;
 
-    /** Whether this transaction was started via SQL API or not. */
-    private boolean sql;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -198,7 +196,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param isolation Isolation.
      * @param timeout Timeout.
      * @param storeEnabled Store enabled flag.
-     * @param sql Whether this transaction was started via SQL API or not.
      * @param txSize Transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
@@ -213,7 +210,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         TransactionIsolation isolation,
         long timeout,
         boolean storeEnabled,
-        boolean sql,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
@@ -237,8 +233,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             taskNameHash);
 
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
-
-        this.sql = sql;
 
         initResult();
 
@@ -547,7 +541,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         assert key != null;
 
         try {
-            beforePut(cacheCtx, retval, false);
+            beforePut(cacheCtx, retval);
 
             final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
@@ -685,7 +679,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval
     ) {
         try {
-            beforePut(cacheCtx, retval, false);
+            beforePut(cacheCtx, retval);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -1793,10 +1787,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
-        if (sql)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Cache operations are forbidden " +
-                "inside of an SQL transaction"));
-
         init();
 
         if (cacheCtx.mvccEnabled() && (optimistic() && !readCommitted()) && mvccTracker == null) {
@@ -1844,7 +1834,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean single = keysCnt == 1;
 
         try {
-            beforePut(cacheCtx, false, true);
+            beforePut(cacheCtx, false);
             checkValid();
 
             final Map<K, V> retMap = new GridLeanMap<>(keysCnt);
@@ -4025,13 +4015,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * @return SQL flag.
-     */
-    public boolean sql() {
-        return sql;
-    }
-
-    /**
      * @return Public API proxy.
      */
     public TransactionProxy proxy() {
@@ -4221,19 +4204,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @param cacheCtx Cache context.
      * @param retval Return value flag.
-     * @param sql SQL operation flag.
      * @throws IgniteCheckedException If failed.
      */
-    private void beforePut(GridCacheContext cacheCtx, boolean retval, boolean sql) throws IgniteCheckedException {
+    private void beforePut(GridCacheContext cacheCtx, boolean retval) throws IgniteCheckedException {
         checkUpdatesAllowed(cacheCtx);
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_PUT);
-
-        if (sql && !this.sql)
-            throw new IgniteCheckedException("SQL operations are forbidden within transactions started not via SQL.");
-
-        if (!sql && this.sql)
-            throw new IgniteCheckedException("Cache operations are forbidden inside of an SQL transaction");
 
         if (retval)
             needReturnValue(true);

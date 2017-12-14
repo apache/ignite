@@ -20,12 +20,9 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.Serializable;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Properties;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
@@ -101,26 +98,29 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
     /** Nested transactions handling strategy. */
-    private EnumProperty<NestedTxMode> nestedTx;
+    private StringProperty nestedTx = new StringProperty(
+        "nestedTransactionsMode", "Way to handle nested transactions", NestedTxMode.ERROR.name(),
+        null, false, new PropertyValidator() {
+        private static final long serialVersionUID = 0L;
+
+        @Override public void validate(String mode) throws SQLException {
+            if (!F.isEmpty(mode)) {
+                try {
+                    NestedTxMode.valueOf(mode.toUpperCase());
+                }
+                catch (IllegalArgumentException e) {
+                    throw new SQLException();
+                }
+            }
+        }
+    });
 
     /** Properties array. */
-    private final ConnectionProperty[] propsArray;
-
-    {
-        try {
-            nestedTx = new EnumProperty<>(NestedTxMode.class,
-                "nestedTransactionsMode", "Ignite node IP to connect", NestedTxMode.DEFAULT, false);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-
-        propsArray = new ConnectionProperty[] {
-            host, port,
-            distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-            tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTx
-        };
-    }
+    private final ConnectionProperty [] propsArray = {
+        host, port,
+        distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTx
+    };
 
     /** {@inheritDoc} */
     @Override public String getHost() {
@@ -244,12 +244,19 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** {@inheritDoc} */
     @Override public NestedTxMode nestedTxMode() {
-        return nestedTx.value();
+        try {
+            String val = nestedTx.value();
+
+            return !F.isEmpty(val) ? NestedTxMode.valueOf(val.toUpperCase()) : NestedTxMode.DEFAULT;
+        }
+        catch (IllegalArgumentException e) {
+            throw new AssertionError(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void nestedTxMode(NestedTxMode nestedTxMode) {
-        nestedTx.setValue(nestedTxMode);
+        nestedTx.setValue(nestedTxMode.name());
     }
 
     /**
@@ -661,92 +668,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         /** {@inheritDoc} */
         @Override String valueObject() {
             return val;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class EnumProperty<T extends Enum> extends ConnectionProperty {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Value */
-        private T val;
-
-        /** Target class. */
-        private final Class<T> enumCls;
-
-        /**
-         * @param name Name.
-         * @param desc Description.
-         * @param dfltVal Default value.
-         * @param required {@code true} if the property is required.
-         */
-        EnumProperty(final Class<T> enumCls, String name, String desc, T dfltVal, boolean required)
-            throws IgniteCheckedException {
-            super(name,
-                desc,
-                dfltVal,
-                names(enumCls),
-                required,
-                new PropertyValidator() {
-                @Override public void validate(String val) throws SQLException {
-                    if (F.isEmpty(val))
-                        return;
-
-                    List<String> names = F.asList(names(enumCls));
-
-                    if (!F.contains(names, val.toUpperCase()))
-                        throw new SQLException("Unexpected enum value '" + val + "', expected one of the following: " +
-                            names, SqlStateCode.CLIENT_CONNECTION_FAILED);
-                }
-            });
-
-            this.enumCls = enumCls;
-
-            val = dfltVal;
-        }
-
-        /**
-         * @param val Property value.
-         */
-        void setValue(T val) {
-            this.val = val;
-        }
-
-        /**
-         * @return Property value.
-         */
-        T value() {
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override void init(String str) throws SQLException {
-            if (!F.isEmpty(str))
-                val = (T)Enum.valueOf(enumCls, str.toUpperCase());
-        }
-
-        /** {@inheritDoc} */
-        @Override String valueObject() {
-            return val.name();
-        }
-
-        /**
-         * @param cls Enum class.
-         * @param <T> Enum type.
-         * @return All names of members.
-         */
-        private static <T extends Enum> String[] names(Class<T> cls) {
-            T[] vals = cls.getEnumConstants();
-
-            String[] res = new String[vals.length];
-
-            for (int i = 0; i < vals.length; i++)
-                res[i] = vals[i].name();
-
-            return res;
         }
     }
 }

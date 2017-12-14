@@ -428,7 +428,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout transaction timeout.
-     * @param sql Whether this transaction is being started via SQL API or not.
      * @param txSize Expected transaction size.
      * @return New transaction.
      */
@@ -440,7 +439,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TransactionIsolation isolation,
         long timeout,
         boolean storeEnabled,
-        boolean sql,
         int txSize
     ) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
@@ -459,7 +457,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             isolation,
             timeout,
             storeEnabled,
-            sql,
             txSize,
             subjId,
             taskNameHash);

@@ -17,20 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.List;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionState;
 
@@ -44,7 +36,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
 
         startGrid(commonConfiguration(0));
 
-        execute(node(), "CREATE TABLE INTS(k int primary key, v int) WITH \"wrap_value=false,cache_name=ints," +
+        super.execute(node(), "CREATE TABLE INTS(k int primary key, v int) WITH \"wrap_value=false,cache_name=ints," +
             "atomicity=transactional\"");
     }
 
@@ -61,7 +53,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     public void testBegin() {
         execute(node(), "BEGIN");
 
-        assertSqlTxPresent();
+        assertTxPresent();
 
         assertTxState(tx().proxy(), TransactionState.ACTIVE);
     }
@@ -72,7 +64,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     public void testCommit() {
         execute(node(), "BEGIN WORK");
 
-        assertSqlTxPresent();
+        assertTxPresent();
 
         Transaction tx = tx().proxy();
 
@@ -98,7 +90,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     public void testRollback() {
         execute(node(), "BEGIN TRANSACTION");
 
-        assertSqlTxPresent();
+        assertTxPresent();
 
         Transaction tx = tx().proxy();
 
@@ -109,191 +101,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
         assertTxState(tx, TransactionState.ROLLED_BACK);
 
         assertSqlTxNotPresent();
-    }
-
-    /**
-     * Test that attempting to open a nested transaction yields an exception.
-     */
-    public void testDefaultNestedTxMode() {
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
-                nestedTxStart(true, null);
-            }
-        }, IgniteQueryErrorCode.TRANSACTION_EXISTS);
-    }
-
-    /**
-     * Test that attempting to open a nested transaction yields an exception.
-     */
-    public void testErrorNestedTxMode() {
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
-                nestedTxStart(true, NestedTxMode.ERROR);
-            }
-        }, IgniteQueryErrorCode.TRANSACTION_EXISTS);
-    }
-
-    /**
-     * Test that attempting to open a nested transaction yields nothing.
-     */
-    public void testIgnoreNestedTxMode() {
-        assertTrue(nestedTxStart(true, NestedTxMode.IGNORE));
-    }
-
-    /**
-     * Test that attempting to open a nested transaction yields nothing.
-     */
-    public void testCommitNestedTxMode() {
-        assertFalse(nestedTxStart(true, NestedTxMode.COMMIT));
-    }
-
-    /**
-     * Test that attempting to open a nested transaction yields an exception.
-     */
-    public void testDefaultNestedTxModeNoAutoCommit() {
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
-                nestedTxStart(false, null);
-            }
-        }, IgniteQueryErrorCode.TRANSACTION_EXISTS);
-    }
-
-    /**
-     * Test that attempting to open a nested transaction yields an exception.
-     */
-    public void testErrorNestedTxModeNoAutoCommit() {
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
-                nestedTxStart(false, NestedTxMode.ERROR);
-            }
-        }, IgniteQueryErrorCode.TRANSACTION_EXISTS);
-    }
-
-    /**
-     * Test that attempting to open a nested transaction yields nothing.
-     */
-    public void testIgnoreNestedTxModeNoAutoCommit() {
-        assertTrue(nestedTxStart(false, NestedTxMode.IGNORE));
-    }
-
-    /**
-     * Test that attempting to open a nested transaction yields nothing.
-     */
-    public void testCommitNestedTxModeNoAutoCommit() {
-        assertFalse(nestedTxStart(false, NestedTxMode.COMMIT));
-    }
-
-    /**
-     * @param autoCommit Auto commit flag.
-     * @param mode Mode to use.
-     * @return Whether transactions from both calls are the same.
-     */
-    private boolean nestedTxStart(boolean autoCommit, NestedTxMode mode) {
-        SqlFieldsQuery qry = new SqlFieldsQuery("BEGIN");
-
-        queryProcessor(node()).querySqlFieldsNoCache(qry, true, true, autoCommit, mode).get(0).getAll();
-
-        GridNearTxLocal tx = node().context().cache().context().tm().userTx();
-
-        queryProcessor(node()).querySqlFieldsNoCache(qry, true, true, autoCommit, mode).get(0).getAll();
-
-        return (tx == node().context().cache().context().tm().userTx());
-    }
-
-    /**
-     * Test that attempting to perform various SQL operations within non SQL transaction yields an exception.
-     */
-    public void testSqlOperationsWithinNonSqlTransaction() {
-        assertSqlOperationWithinNonSqlTransactionThrows("COMMIT");
-
-        assertSqlOperationWithinNonSqlTransactionThrows("ROLLBACK");
-
-        assertSqlOperationWithinNonSqlTransactionThrows("SELECT * from ints");
-
-        assertSqlOperationWithinNonSqlTransactionThrows("create index idx on ints(v)");
-
-        assertSqlOperationWithinNonSqlTransactionThrows("CREATE TABLE T(k int primary key, v int)");
-    }
-
-    /**
-     * Check that trying to run given SQL statement both locally and in distributed mode yields an exception.
-     * @param sql SQL statement.
-     */
-    private void assertSqlOperationWithinNonSqlTransactionThrows(final String sql) {
-        try (Transaction ignored = node().transactions().txStart()) {
-            assertSqlException(new RunnableX() {
-                @Override public void run() throws Exception {
-                    execute(node(), sql);
-                }
-            }, IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
-        }
-
-        try (Transaction ignored = node().transactions().txStart()) {
-            assertSqlException(new RunnableX() {
-                @Override public void run() throws Exception {
-                    node().cache("ints").query(new SqlFieldsQuery(sql).setLocal(true)).getAll();
-                }
-            }, IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
-        }
-    }
-
-    /**
-     * Test that attempting to perform a cache GET operation from within an SQL transaction fails.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void checkCacheOperationThrows(final String opName, final Object... args) {
-        execute(node(), "BEGIN");
-
-        try {
-            GridTestUtils.assertThrows(null, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try {
-                        Object res = U.invoke(GatewayProtectedCacheProxy.class, node().cache("ints"), opName, args);
-
-                        if (opName.endsWith("Async"))
-                            ((IgniteFuture)res).get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (e.getCause() != null) {
-                            if (e.getCause().getCause() != null)
-                                throw (Exception)e.getCause().getCause();
-                            else
-                                throw (Exception) e.getCause();
-                        }
-                        else
-                            throw e;
-                    }
-
-                    return null;
-                }
-            }, IgniteCheckedException.class, "Cache operations are forbidden inside of an SQL transaction");
-        }
-        finally {
-            try {
-                execute(node(), "COMMIT");
-            }
-            catch (Throwable e) {
-                // No-op.
-            }
-        }
-    }
-
-    /**
-     * Test that attempting to perform a cache PUT operation from within an SQL transaction fails.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testCacheOperationsFromSqlTransaction() {
-        checkCacheOperationThrows("get", 1);
-
-        checkCacheOperationThrows("put", 1, 1);
-
-        checkCacheOperationThrows("getAll", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("putAll", Collections.singletonMap(1, 1));
-
-        checkCacheOperationThrows("getAllAsync", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("putAllAsync", Collections.singletonMap(1, 1));
     }
 
     /**
@@ -313,10 +120,13 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Check that there's an open transaction with SQL flag.
      */
-    private void assertSqlTxPresent() {
+    private void assertTxPresent() {
         assertNotNull(tx());
+    }
 
-        assertTrue(tx().sql());
+    /** {@inheritDoc} */
+    @Override protected List<List<?>> execute(Ignite node, String sql) {
+        return node.cache("ints").query(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA)).getAll();
     }
 
     /**

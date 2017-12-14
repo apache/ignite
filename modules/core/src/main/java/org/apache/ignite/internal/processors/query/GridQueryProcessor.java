@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
@@ -129,6 +130,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCH
  * Indexing processor.
  */
 public class GridQueryProcessor extends GridProcessorAdapter {
+    /** Dummy metadata for update result. */
+    public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
+        singletonList(new QueryFieldMetadataImpl(null, null, "UPDATED", Long.class.getName()));
+
     /** Queries detail metrics eviction frequency. */
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
 
@@ -235,6 +240,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     U.warn(log, "Unsupported IO message: " + msg);
             }
         };
+    }
+
+    /**
+     * @return Non empty dummy result set to return as a result of transactional and DDL operations.
+     */
+    @SuppressWarnings("unchecked")
+    public static FieldsQueryCursor<List<?>> dummyCursor() {
+        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
+            (Collections.singletonList(0L)), null, false);
+
+        resCur.fieldsMeta(UPDATE_RESULT_META);
+
+        return resCur;
     }
 
     /** {@inheritDoc} */
@@ -1946,7 +1964,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             qry.setDistributedJoins(true);
 
                             cur = idx.queryDistributedSqlFields(schemaName, qry,
-                                keepBinary, cancel, mainCacheId, true, true, null).get(0);
+                                keepBinary, cancel, mainCacheId, true).get(0);
                         }
                         else {
                             IndexingQueryFilter filter = idx.backupFilter(requestTopVer.get(), qry.getPartitions());
@@ -1963,7 +1981,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else {
                 clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
                     @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId, true, true, null).get(0);
+                        return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId, true).get(0);
                     }
                 };
             }
@@ -1989,7 +2007,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public FieldsQueryCursor<List<?>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
         final boolean keepBinary) {
-        return querySqlFieldsNoCache(qry, keepBinary, true, true, null).get(0);
+        return querySqlFieldsNoCache(qry, keepBinary, true).get(0);
     }
 
     /**
@@ -1999,14 +2017,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
-     * @param autoCommit Auto commit flag from the driver, should be {@code true} when in doubt.
-     * @param nestedTxMode Nested transactions handling mode, or {@code null} if none given explicitly.
      * @return Cursor.
      * @see NestedTxMode
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
-        final boolean keepBinary, final boolean failOnMultipleStmts, final boolean autoCommit,
-        final NestedTxMode nestedTxMode) {
+        final boolean keepBinary, final boolean failOnMultipleStmts) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
@@ -2033,7 +2048,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null,
-                        failOnMultipleStmts, autoCommit, nestedTxMode);
+                        failOnMultipleStmts);
                 }
             };
 
@@ -2053,6 +2068,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public GridNearTxLocal sqlUserTxStart() {
         return ctx.cache().transactions().txStartSql(TransactionConcurrency.PESSIMISTIC,
             TransactionIsolation.REPEATABLE_READ);
+    }
+
+    /**
+     * @return Currently started transaction, or {@code null} if none started.
+     */
+    @Nullable public GridNearTxLocal userTx() throws IgniteSQLException {
+        return ctx.cache().context().tm().userTx();
     }
 
     /**

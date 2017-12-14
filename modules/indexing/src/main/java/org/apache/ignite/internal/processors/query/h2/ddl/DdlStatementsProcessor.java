@@ -34,6 +34,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -66,7 +67,7 @@ import org.h2.command.ddl.DropTable;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
 
 /**
@@ -164,7 +165,7 @@ public class DdlStatementsProcessor {
             if (fut != null)
                 fut.get();
 
-            return dummyCursor();
+            return GridQueryProcessor.dummyCursor();
         }
         catch (SchemaOperationException e) {
             throw convert(e);
@@ -175,19 +176,6 @@ public class DdlStatementsProcessor {
         catch (Exception e) {
             throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * @return Non empty dummy result set to return as a result of transactional and DDL operations.
-     */
-    @SuppressWarnings("unchecked")
-    public static FieldsQueryCursor<List<?>> dummyCursor() {
-        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-            (Collections.singletonList(0L)), null, false);
-
-        resCur.fieldsMeta(UPDATE_RESULT_META);
-
-        return resCur;
     }
 
     /**

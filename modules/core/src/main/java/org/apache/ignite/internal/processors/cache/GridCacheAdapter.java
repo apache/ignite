@@ -4072,7 +4072,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     READ_COMMITTED,
                     tCfg.getDefaultTxTimeout(),
                     !ctx.skipStore(),
-                    op.sql(),
                     0
                 );
 
@@ -4172,7 +4171,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     READ_COMMITTED,
                     txCfg.getDefaultTxTimeout(),
                     !skipStore,
-                    false,
                     0);
 
                 return asyncOp(tx, op, opCtx, /*retry*/false);
@@ -4847,7 +4845,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 READ_COMMITTED,
                 CU.transactionConfiguration(ctx, ctx.kernalContext().config()).getDefaultTxTimeout(),
                 opCtx == null || !opCtx.skipStore(),
-                false,
                 0);
 
             IgniteInternalFuture<T> fut = asyncOp(tx, op, opCtx, retry);

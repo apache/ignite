@@ -51,9 +51,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Expected statement type. */
     private JdbcStatementType stmtType;
 
-    /** Auto commit flag state sent from client. */
-    private boolean autoCommit;
-
     /**
      */
     JdbcQueryExecuteRequest() {
@@ -65,12 +62,11 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param schemaName Cache name.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
-     * @param autoCommit Connection auto commit flag state.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
     public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        boolean autoCommit, String sqlQry, Object[] args) {
+        String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
@@ -79,7 +75,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         this.sqlQry = sqlQry;
         this.args = args;
         this.stmtType = stmtType;
-        this.autoCommit = autoCommit;
     }
 
     /**
@@ -124,13 +119,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         return stmtType;
     }
 
-    /**
-     * @return Implicit transaction auto commit flag.
-     */
-    public boolean autoCommit() {
-        return autoCommit;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
@@ -139,7 +127,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         writer.writeInt(pageSize);
         writer.writeInt(maxRows);
         writer.writeString(sqlQry);
-        writer.writeBoolean(autoCommit);
 
         writer.writeInt(args == null ? 0 : args.length);
 
@@ -159,7 +146,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         pageSize = reader.readInt();
         maxRows = reader.readInt();
         sqlQry = reader.readString();
-        autoCommit = reader.readBoolean();
 
         int argsNum = reader.readInt();
 

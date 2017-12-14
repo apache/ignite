@@ -26,9 +26,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,6 +43,9 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
 
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+
+    /** Logger. */
+    private GridStringLogger log;
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
@@ -59,6 +64,8 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
+        cfg.setGridLogger(log = new GridStringLogger());
+
         return cfg;
     }
 
@@ -76,31 +83,39 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         startGrid(0);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
     /**
+     * @param autoCommit Auto commit mode.
+     * @param nestedTxMode Nested transactions mode.
      * @return Connection.
      * @throws SQLException if failed.
      */
-    private static Connection c() throws SQLException {
-        return DriverManager.getConnection(URL);
+    private static Connection c(boolean autoCommit, NestedTxMode nestedTxMode) throws SQLException {
+        Connection res = DriverManager.getConnection(URL + "/?nestedTransactionsMode=" + nestedTxMode.name());
+
+        res.setAutoCommit(autoCommit);
+
+        return res;
     }
 
-    /** */
+    /**
+     *
+     */
     public void testTransactionsBeginCommitRollback() throws IgniteCheckedException {
         GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    try (Connection c = c()) {
+                    try (Connection c = c(false, NestedTxMode.ERROR)) {
                         try (Statement s = c.createStatement())  {
                             s.execute("BEGIN");
 
@@ -121,29 +136,97 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
 
     /**
      *
-     * @throws SQLException
      */
-    public void testNestedTxModes() throws SQLException {
-        try (Connection c = DriverManager.getConnection(URL + "/?nestedTransactionsMode=ignore")) {
-            try (Statement s = c.createStatement())  {
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testIgnoreNestedTxAutocommitOff() throws SQLException {
+        try (Connection c = c(false, NestedTxMode.IGNORE)) {
+            try (Statement s = c.createStatement()) {
                 s.execute("BEGIN");
 
                 s.execute("BEGIN");
             }
         }
 
-        try (Connection c = DriverManager.getConnection(URL + "/?nestedTransactionsMode=coMMit")) {
-            try (Statement s = c.createStatement())  {
+        assertTrue(log.toString().contains("ignoring BEGIN command"));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testCommitNestedTxAutocommitOff() throws SQLException {
+        try (Connection c = c(false, NestedTxMode.COMMIT)) {
+            try (Statement s = c.createStatement()) {
                 s.execute("BEGIN");
 
                 s.execute("BEGIN");
             }
         }
 
+        assertFalse(log.toString().contains("ignoring BEGIN command"));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testErrorNestedTxAutocommitOff() throws SQLException {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                try (Connection c = DriverManager.getConnection(URL + "/?nestedTransactionsMode=ERROR")) {
-                    try (Statement s = c.createStatement())  {
+                try (Connection c = c(false, NestedTxMode.ERROR)) {
+                    try (Statement s = c.createStatement()) {
+                        s.execute("BEGIN");
+
+                        s.execute("BEGIN");
+                    }
+                }
+
+                throw new AssertionError();
+            }
+        }, SQLException.class, "Transaction has already been started.");
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testIgnoreNestedTxAutocommitOn() throws SQLException {
+        try (Connection c = c(true, NestedTxMode.IGNORE)) {
+            try (Statement s = c.createStatement()) {
+                s.execute("BEGIN");
+
+                s.execute("BEGIN");
+            }
+        }
+
+        assertTrue(log.toString().contains("ignoring BEGIN command"));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testCommitNestedTxAutocommitOn() throws SQLException {
+        try (Connection c = c(true, NestedTxMode.COMMIT)) {
+            try (Statement s = c.createStatement()) {
+                s.execute("BEGIN");
+
+                s.execute("BEGIN");
+            }
+        }
+
+        assertFalse(log.toString().contains("ignoring BEGIN command"));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testErrorNestedTxAutocommitOn() throws SQLException {
+        GridTestUtils.assertThrows(null, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try (Connection c = c(true, NestedTxMode.ERROR)) {
+                    try (Statement s = c.createStatement()) {
                         s.execute("BEGIN");
 
                         s.execute("BEGIN");

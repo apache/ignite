@@ -128,7 +128,7 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("SQL query is empty.");
 
         JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-            maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()])));
+            maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
 
         assert res0 != null;
 

@@ -52,7 +52,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         return txStart0(
             cfg.getDefaultTxConcurrency(),
             cfg.getDefaultTxIsolation(),
-            false, cfg.getDefaultTxTimeout(),
+            cfg.getDefaultTxTimeout(),
             0,
             null
         ).proxy();
@@ -68,7 +68,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         return txStart0(
             concurrency,
             isolation,
-            false, cfg.getDefaultTxTimeout(),
+            cfg.getDefaultTxTimeout(),
             0,
             null
         ).proxy();
@@ -85,7 +85,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         return txStart0(
             concurrency,
             isolation,
-            false, timeout,
+            timeout,
             txSize,
             null
         ).proxy();
@@ -108,7 +108,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         return txStart0(concurrency,
             isolation,
-            false, timeout,
+            timeout,
             txSize,
             ctx.systemTx() ? ctx : null);
     }
@@ -128,7 +128,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         return txStart0(concurrency,
             isolation,
-            false, cfg.getDefaultTxTimeout(),
+            cfg.getDefaultTxTimeout(),
             0,
             ctx.systemTx() ? ctx : null);
     }
@@ -142,7 +142,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         return txStart0(concurrency,
             isolation,
-            true,
             cfg.getDefaultTxTimeout(),
             0,
             null);
@@ -151,7 +150,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /**
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.
-     * @param sql SQL flag.
      * @param timeout Transaction timeout.
      * @param txSize Expected transaction size.
      * @param sysCacheCtx System cache context.    @return Transaction.
@@ -160,7 +158,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     private GridNearTxLocal txStart0(
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
-        boolean sql,
         long timeout,
         int txSize,
         @Nullable GridCacheContext sysCacheCtx
@@ -182,7 +179,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
                 isolation,
                 timeout,
                 true,
-                sql,
                 txSize
             );
 
