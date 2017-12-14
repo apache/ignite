@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -652,10 +651,10 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
         int txRollbacksDueToDeadlock = 0;
 
         if (loc)
-            txRollbacksDueToDeadlock = grid(clientTx ? 1 : 0).transactions().metrics().txRollbackOnDeadlock();
+            txRollbacksDueToDeadlock = grid(clientTx ? 1 : 0).transactions().metrics().txRollbacksOnDeadlock();
         else {
             for (int i = 0; i < txCnt; i++)
-                txRollbacksDueToDeadlock += grid(i + (clientTx ? txCnt : 0)).transactions().metrics().txRollbackOnDeadlock();
+                txRollbacksDueToDeadlock += grid(i + (clientTx ? txCnt : 0)).transactions().metrics().txRollbacksOnDeadlock();
 
             // At least one transaction was rolled back due to deadlock on non LOCAL cache.
             assertTrue("No rollbacks due to deadlock detected.", txRollbacksDueToDeadlock > 0);

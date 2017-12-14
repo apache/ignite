@@ -68,7 +68,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
         txCommits.set(m.txCommits());
         txRollbacks.set(m.txRollbacks());
         txRollbacksOnTimeout.set(m.txRollbacksOnTimeout());
-        txRollbacksOnDeadlock.set(m.txRollbackOnDeadlock());
+        txRollbacksOnDeadlock.set(m.txRollbacksOnDeadlock());
     }
 
     /** {@inheritDoc} */
@@ -97,7 +97,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public int txRollbackOnDeadlock() {
+    @Override public int txRollbacksOnDeadlock() {
         return txRollbacksOnDeadlock.intValue();
     }
 

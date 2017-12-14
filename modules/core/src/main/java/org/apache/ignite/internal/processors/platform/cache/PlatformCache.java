@@ -1472,6 +1472,8 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeBoolean(metrics.isManagementEnabled());
         writer.writeBoolean(metrics.isReadThrough());
         writer.writeBoolean(metrics.isWriteThrough());
+        writer.writeLong(metrics.getCacheTxRollbacksOnDeadlock());
+        writer.writeLong(metrics.getCacheTxRollbacksOnTimeout());
     }
 
     /**

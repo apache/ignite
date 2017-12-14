@@ -71,6 +71,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly long _cacheTxRollbacks;
 
         /** */
+        private readonly long _cacheTxRollbacksOnDeadlock;
+
+        /** */
+        private readonly long _cacheTxRollbacksOnTimeout;
+
+        /** */
         private readonly string _cacheName;
 
         /** */
@@ -279,6 +285,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             _isManagementEnabled = reader.ReadBoolean();
             _isReadThrough = reader.ReadBoolean();
             _isWriteThrough = reader.ReadBoolean();
+            _cacheTxRollbacksOnDeadlock = reader.ReadLong();
+            _cacheTxRollbacksOnTimeout = reader.ReadLong();
         }
 
         /** <inheritDoc /> */
@@ -325,6 +333,12 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
         public long CacheTxRollbacks { get { return _cacheTxRollbacks; } }
+
+        /** <inheritDoc /> */
+        public long CacheTxRollbacksOnDeadlock { get { return _cacheTxRollbacksOnDeadlock; } }
+
+        /** <inheritDoc /> */
+        public long CacheTxRollbacksOnTimeout { get { return _cacheTxRollbacksOnTimeout; } }
 
         /** <inheritDoc /> */
         public string CacheName { get { return _cacheName; } }

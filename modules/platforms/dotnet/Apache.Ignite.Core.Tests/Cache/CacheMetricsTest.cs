@@ -199,6 +199,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(true, metrics.IsManagementEnabled);
                 Assert.AreEqual(true, metrics.IsReadThrough);
                 Assert.AreEqual(true, metrics.IsWriteThrough);
+
+                Assert.AreEqual(64, metrics.CacheTxRollbacksOnDeadlock);
+                Assert.AreEqual(65, metrics.CacheTxRollbacksOnTimeout);
             }
         }
 

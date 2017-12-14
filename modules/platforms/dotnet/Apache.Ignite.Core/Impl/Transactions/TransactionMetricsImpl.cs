@@ -43,6 +43,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
             TxCommits = reader.ReadInt();
             TxRollbacks = reader.ReadInt();
+
+            TxRollbacksOnTimeout = reader.ReadInt();
+            TxRollbacksOnDeadlock = reader.ReadInt();
         }
 
         /// <summary>
@@ -64,5 +67,15 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// Gets the total number of transaction rollbacks.
         /// </summary>
         public int TxRollbacks { get; private set; }
+
+        /// <summary>
+        /// Gets the total number of transaction rollbacks due to timeout.
+        /// </summary>
+        public int TxRollbacksOnTimeout { get; private set; }
+
+        /// <summary>
+        /// Gets the total number of transaction rollbacks due to deadlock.
+        /// </summary>
+        public int TxRollbacksOnDeadlock { get; private set; }
     }
 }

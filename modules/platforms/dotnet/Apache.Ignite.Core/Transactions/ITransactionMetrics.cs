@@ -43,5 +43,15 @@ namespace Apache.Ignite.Core.Transactions
         /// Gets the total number of transaction rollbacks.
         /// </summary>
         int TxRollbacks { get; }
+
+        /// <summary>
+        /// Gets the total number of transaction rollbacks due to timeout.
+        /// </summary>
+        int TxRollbacksOnTimeout { get; }
+
+        /// <summary>
+        /// Gets the total number of transaction rollbacks due to deadlock.
+        /// </summary>
+        int TxRollbacksOnDeadlock { get; }
     }
 }

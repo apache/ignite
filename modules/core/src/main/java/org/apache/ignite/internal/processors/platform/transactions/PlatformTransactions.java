@@ -271,6 +271,8 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                 writer.writeTimestamp(new Timestamp(metrics.rollbackTime()));
                 writer.writeInt(metrics.txCommits());
                 writer.writeInt(metrics.txRollbacks());
+                writer.writeInt(metrics.txRollbacksOnTimeout());
+                writer.writeInt(metrics.txRollbacksOnDeadlock());
 
                 break;
 

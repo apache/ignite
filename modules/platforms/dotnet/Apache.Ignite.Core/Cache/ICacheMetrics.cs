@@ -145,6 +145,22 @@ namespace Apache.Ignite.Core.Cache
         long CacheTxRollbacks { get; }
 
         /// <summary>
+        /// Gets total number of rollbacks due to deadlock.
+        /// </summary>
+        /// <returns>
+        /// Number of transaction rollbacks due to deadlock.
+        /// </returns>
+        long CacheTxRollbacksOnDeadlock { get; }
+
+        /// <summary>
+        /// Gets total number of rollbacks due to timeout.
+        /// </summary>
+        /// <returns>
+        /// Number of transaction rollbacks due to timeout.
+        /// </returns>
+        long CacheTxRollbacksOnTimeout { get; }
+
+        /// <summary>
         /// Gets cache name.
         /// </summary>
         /// <returns>

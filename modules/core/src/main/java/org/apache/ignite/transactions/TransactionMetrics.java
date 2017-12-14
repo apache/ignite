@@ -63,5 +63,5 @@ public interface TransactionMetrics extends Serializable {
      *
      * @return Number of transaction rollbacks due to deadlock.
      */
-    public int txRollbackOnDeadlock();
+    public int txRollbacksOnDeadlock();
 }
