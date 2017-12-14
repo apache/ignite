@@ -97,8 +97,18 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getCheckpointBufferPages() {
+        return memMetrics.getCheckpointBufferPages();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getCheckpointBufferSize() {
         return memMetrics.getCheckpointBufferSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getPageSize() {
+        return memMetrics.getPageSize();
     }
 
     /** {@inheritDoc} */

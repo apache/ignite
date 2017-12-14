@@ -60,7 +60,13 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     private long physicalMemorySize;
 
     /** */
+    private long checkpointBufferPages;
+
+    /** */
     private long checkpointBufferSize;
+
+    /** */
+    private int pageSize;
 
     /**
      * @param metrics Metrics instance to take a copy.
@@ -78,7 +84,9 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
         pageReplaceAge = metrics.getPagesReplaceAge();
         physicalMemoryPages = metrics.getPhysicalMemoryPages();
         physicalMemorySize = metrics.getPhysicalMemorySize();
+        checkpointBufferPages = metrics.getCheckpointBufferPages();
         checkpointBufferSize = metrics.getCheckpointBufferSize();
+        pageSize = metrics.getPageSize();
     }
 
     /** {@inheritDoc} */
@@ -141,7 +149,18 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
         return physicalMemoryPages;
     }
 
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferPages() {
+        return checkpointBufferPages;
+    }
+
+    /** {@inheritDoc} */
     @Override public long getCheckpointBufferSize() {
         return checkpointBufferSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getPageSize() {
+        return pageSize;
     }
 }

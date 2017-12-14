@@ -146,9 +146,23 @@ public interface DataRegionMetrics {
     public long getPhysicalMemorySize();
 
     /**
-     * Gets checkpoint buffer size.
+     * Gets checkpoint buffer size in pages.
+     *
+     * @return Checkpoint buffer size in pages.
+     */
+    public long getCheckpointBufferPages();
+
+    /**
+     * Gets checkpoint buffer size in bytes.
      *
      * @return Checkpoint buffer size in bytes.
      */
     public long getCheckpointBufferSize();
+
+    /**
+     * Gets memory page size.
+     *
+     * @return page size in bytes.
+     */
+    public int getPageSize();
 }
