@@ -17,20 +17,21 @@
 
 'use strict';
 
+const _ = require('lodash');
+const nodemailer = require('nodemailer');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/mails',
-    inject: ['require(lodash)', 'require(nodemailer)', 'settings']
+    inject: ['settings']
 };
 
 /**
- * @param _
- * @param nodemailer
  * @param settings
  * @returns {MailsService}
  */
-module.exports.factory = (_, nodemailer, settings) => {
+module.exports.factory = (settings) => {
     /**
      * Send mail to user.
      *

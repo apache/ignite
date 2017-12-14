@@ -77,6 +77,10 @@ export default class IgniteVersion {
 
         this.supportedVersions = [
             {
+                label: 'Ignite 2.4',
+                ignite: '2.4.0'
+            },
+            {
                 label: 'Ignite 2.3',
                 ignite: '2.3.0'
             },

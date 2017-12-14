@@ -15,54 +15,50 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml.clustering;
+package org.apache.ignite.yardstick.ml.trees;
 
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.clustering.KMeansDistributedClusterer;
-import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.ContinuousSplitCalculators;
+import org.apache.ignite.ml.trees.trainers.columnbased.regcalcs.RegionCalculators;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.apache.ignite.yardstick.ml.DataChanger;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
  */
 @SuppressWarnings("unused")
-public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBenchmark {
+public class IgniteColumnDecisionTreeVarianceBenchmark extends IgniteAbstractBenchmark {
     /** */
     @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        final DataChanger.Scale scale = new DataChanger.Scale();
-
         // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
         // because we create ignite cache internally.
         IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
             this.getClass().getSimpleName(), new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
-                // IMPL NOTE originally taken from KMeansDistributedClustererTest
-                KMeansDistributedClusterer clusterer = new KMeansDistributedClusterer(
-                    new EuclideanDistance(), 1, 1, 1L);
+                // IMPL NOTE originally taken from ColumnDecisionTreeTrainerTest#testCacheMixed
+                int totalPts = 1 << 10;
+                int featCnt = 2;
 
-                double[] v1 = scale.mutate(new double[] {1959, 325100});
-                double[] v2 = scale.mutate(new double[] {1960, 373200});
+                HashMap<Integer, Integer> catsInfo = new HashMap<>();
+                catsInfo.put(1, 3);
 
-                SparseDistributedMatrix points = new SparseDistributedMatrix(
-                    2, 2, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+                SplitDataGenerator<DenseLocalOnHeapVector> gen
+                    = new SplitDataGenerator<>(
+                    featCnt, catsInfo, () -> new DenseLocalOnHeapVector(featCnt + 1)).
+                    split(0, 1, new int[] {0, 2}).
+                    split(1, 0, -10.0);
 
-                points.setRow(0, v1);
-                points.setRow(1, v2);
-
-                clusterer.cluster(points, 1);
-
-                points.destroy();
+                gen.testByGen(totalPts,
+                    ContinuousSplitCalculators.VARIANCE, RegionCalculators.VARIANCE, RegionCalculators.MEAN, ignite);
             }
         });
 
