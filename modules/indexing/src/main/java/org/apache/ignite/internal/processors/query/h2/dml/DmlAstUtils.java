@@ -15,21 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.sql;
+package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlArray;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunction;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlKeyword;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperation;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSubquery;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -168,7 +186,7 @@ public final class DmlAstUtils {
      * @return {@code null} if given statement directly updates {@code _val} column with a literal or param value
      * and filters by single non expression key (and, optionally,  by single non expression value).
      */
-    public static FastUpdateArguments getFastUpdateArgs(GridSqlUpdate update) {
+    public static FastUpdate getFastUpdateArgs(GridSqlUpdate update) {
         IgnitePair<GridSqlElement> filter = findKeyValueEqualityCondition(update.where());
 
         if (filter == null)
@@ -190,40 +208,20 @@ public final class DmlAstUtils {
         if (!(set instanceof GridSqlConst || set instanceof GridSqlParameter))
             return null;
 
-        return new FastUpdateArguments(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
-            operandForElement(set));
-    }
-
-    /**
-     * Create operand based on exact type of SQL element.
-     *
-     * @param el element.
-     * @return Operand.
-     */
-    private static FastUpdateArgument operandForElement(GridSqlElement el) {
-        assert el == null ^ (el instanceof GridSqlConst || el instanceof GridSqlParameter);
-
-        if (el == null)
-            return FastUpdateArguments.NULL_ARGUMENT;
-
-        if (el instanceof GridSqlConst)
-            return new ValueArgument(((GridSqlConst)el).value().getObject());
-        else
-            return new ParamArgument(((GridSqlParameter)el).index());
+        return FastUpdate.create(filter.getKey(), filter.getValue(), set);
     }
 
     /**
      * @param del DELETE statement.
      * @return {@code true} if given statement filters by single non expression key.
      */
-    public static FastUpdateArguments getFastDeleteArgs(GridSqlDelete del) {
+    public static FastUpdate getFastDeleteArgs(GridSqlDelete del) {
         IgnitePair<GridSqlElement> filter = findKeyValueEqualityCondition(del.where());
 
         if (filter == null)
             return null;
 
-        return new FastUpdateArguments(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
-            FastUpdateArguments.NULL_ARGUMENT);
+        return FastUpdate.create(filter.getKey(), filter.getValue(), null);
     }
 
     /**
@@ -231,6 +229,7 @@ public final class DmlAstUtils {
      * @return Whether given element corresponds to {@code WHERE _key = ?}, and key is a literal expressed
      * in query or a query param.
      */
+    @SuppressWarnings("RedundantCast")
     private static IgnitePair<GridSqlElement> findKeyValueEqualityCondition(GridSqlElement where) {
         if (where == null || !(where instanceof GridSqlOperation))
             return null;
@@ -462,8 +461,9 @@ public final class DmlAstUtils {
      * @param paramIdxs Parameter indexes.
      * @return Extracted parameters list.
      */
+    @SuppressWarnings("unused")
     private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target,
-                                           IntArray paramIdxs) {
+        IntArray paramIdxs) {
         if (qry instanceof GridSqlSelect)
             return findParams((GridSqlSelect)qry, params, target, paramIdxs);
 
@@ -486,7 +486,7 @@ public final class DmlAstUtils {
      * @return Extracted parameters list.
      */
     private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target,
-                                           IntArray paramIdxs) {
+        IntArray paramIdxs) {
         if (params.length == 0)
             return target;
 
@@ -511,7 +511,7 @@ public final class DmlAstUtils {
      * @param paramIdxs Parameter indexes.
      */
     private static void findParams(@Nullable GridSqlElement el, Object[] params, ArrayList<Object> target,
-                                   IntArray paramIdxs) {
+        IntArray paramIdxs) {
         if (el == null)
             return;
 
@@ -550,6 +550,7 @@ public final class DmlAstUtils {
      * @param c Closure each found table and subquery will be passed to. If returns {@code true} the we need to stop.
      * @return {@code true} If we have found.
      */
+    @SuppressWarnings("RedundantCast")
     private static boolean findTablesInFrom(GridSqlElement from, IgnitePredicate<GridSqlElement> c) {
         if (from == null)
             return false;
@@ -604,41 +605,5 @@ public final class DmlAstUtils {
             throw new IgniteSQLException("Failed to determine target table", IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         return tbls.iterator().next();
-    }
-
-    /** Simple constant value based operand. */
-    private final static class ValueArgument implements FastUpdateArgument {
-        /** Value to return. */
-        private final Object val;
-
-        /** */
-        private ValueArgument(Object val) {
-            this.val = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-            return val;
-        }
-    }
-
-    /** Simple constant value based operand. */
-    private final static class ParamArgument implements FastUpdateArgument {
-        /** Value to return. */
-        private final int paramIdx;
-
-        /** */
-        private ParamArgument(int paramIdx) {
-            assert paramIdx >= 0;
-
-            this.paramIdx = paramIdx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-            assert arg.length > paramIdx;
-
-            return arg[paramIdx];
-        }
     }
 }
