@@ -93,7 +93,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /**
      * Compatibility mode flag. When node detects it runs in heterogeneous cluster (nodes of different versions),
-     * it should skip baseline topology operations (
+     * it should skip baseline topology operations.
      */
     private volatile boolean compatibilityMode;
 
@@ -155,6 +155,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+    }
+
+    /**
+     * @return {@code True} if {@link GridClusterStateProcessor} has detected that cluster is working
+     * in compatibility mode (nodes of different versions are joined to the cluster).
+     */
+    public boolean compatibilityMode() {
+        return compatibilityMode;
     }
 
     /** {@inheritDoc} */
