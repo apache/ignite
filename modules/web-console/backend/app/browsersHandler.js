@@ -17,6 +17,9 @@
 
 'use strict';
 
+const _ = require('lodash');
+const socketio = require('socket.io');
+
 // Fire me up!
 
 /**
@@ -24,8 +27,8 @@
  */
 module.exports = {
     implements: 'browsers-handler',
-    inject: ['require(lodash)', 'require(socket.io)', 'configure', 'errors', 'mongo'],
-    factory: (_, socketio, configure, errors, mongo) => {
+    inject: ['configure', 'errors', 'mongo'],
+    factory: (configure, errors, mongo) => {
         class BrowserSockets {
             constructor() {
                 this.sockets = new Map();
@@ -124,6 +127,16 @@ module.exports = {
                     .then((stat) => _.forEach(socks, (sock) => sock.emit('agents:stat', stat)));
             }
 
+            clusterChanged(token, cluster) {
+                const socks = this._browserSockets.get(token);
+
+                _.forEach(socks, (sock) => sock.emit('cluster:changed', cluster));
+            }
+
+            pushInitialData(sock) {
+                // Send initial data.
+            }
+
             emitNotification(sock) {
                 sock.emit('user:notifications', this.notification);
             }
@@ -176,7 +189,8 @@ module.exports = {
              * @return {Promise.<T>}
              */
             executeOnNode(agent, demo, params) {
-                return agent.then((agentSock) => agentSock.emitEvent('node:rest', {uri: 'ignite', demo, params}))
+                return agent
+                    .then((agentSock) => agentSock.emitEvent('node:rest', {uri: 'ignite', demo, params}))
                     .then((res) => {
                         if (res.status === 0) {
                             if (res.zipped)
@@ -224,6 +238,7 @@ module.exports = {
                 this.registerVisorTask('queryClose', internalVisor('query.VisorQueryCleanupTask'), 'java.util.Map', 'java.util.UUID', 'java.util.Set');
                 this.registerVisorTask('queryCloseX2', internalVisor('query.VisorQueryCleanupTask'), internalVisor('query.VisorQueryCleanupTaskArg'));
 
+                this.registerVisorTask('toggleClusterState', internalVisor('misc.VisorChangeGridActiveStateTask'), internalVisor('misc.VisorChangeGridActiveStateTaskArg'));
 
                 // Return command result from grid to browser.
                 sock.on('node:visor', (clusterId, taskId, nids, ...args) => {
@@ -300,6 +315,7 @@ module.exports = {
                             this.agentListeners(sock);
                             this.nodeListeners(sock);
 
+                            this.pushInitialData(sock);
                             this.agentStats(sock.request.user.token, [sock]);
                             this.emitNotification(sock);
                         });

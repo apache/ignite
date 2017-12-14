@@ -433,7 +433,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+    @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         init();
 
         lock.readLock().lock();
@@ -451,13 +451,20 @@ public class FilePageStore implements PageStore {
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                 + " should be same with " + ByteOrder.nativeOrder();
-            assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
+            assert PageIO.getType(pageBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(pageId);
+            assert PageIO.getVersion(pageBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(pageId);
 
-            int crc32 = skipCrc ? 0 : PureJavaCrc32.calcCrc32(pageBuf, pageSize);
+            if (calculateCrc && !skipCrc) {
+                assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
 
-            PageIO.setCrc(pageBuf, crc32);
+                PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
+            }
 
-            pageBuf.position(0);
+            // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
+            assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
+                    "CRC hasn't been calculated, crc=0";
+
+            assert pageBuf.position() == 0 : pageBuf.position();
 
             int len = pageSize;
 
@@ -478,6 +485,21 @@ public class FilePageStore implements PageStore {
         }
         finally {
             lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param pageBuf Page buffer.
+     * @param pageSize Page size.
+     */
+    private static int calcCrc32(ByteBuffer pageBuf, int pageSize) {
+        try {
+            pageBuf.position(0);
+
+            return PureJavaCrc32.calcCrc32(pageBuf, pageSize);
+        }
+        finally {
+            pageBuf.position(0);
         }
     }
 

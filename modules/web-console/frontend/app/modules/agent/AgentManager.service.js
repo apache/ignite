@@ -38,7 +38,18 @@ class ConnectionState {
         this.state = State.DISCONNECTED;
     }
 
+    updateCluster(cluster) {
+        this.cluster = cluster;
+        this.cluster.connected = !!_.find(this.clusters, {id: this.cluster.id});
+
+        return cluster;
+    }
+
     update(demo, count, clusters) {
+        _.forEach(clusters, (cluster) => {
+            cluster.name = cluster.id;
+        });
+
         this.clusters = clusters;
 
         if (_.isNil(this.cluster))
@@ -101,6 +112,12 @@ export default class IgniteAgentManager {
 
         this.connectionSbj = new BehaviorSubject(new ConnectionState(cluster));
 
+        let prevCluster;
+
+        this.currentCluster$ = this.connectionSbj
+            .distinctUntilChanged(({ cluster }) => prevCluster === cluster)
+            .do(({ cluster }) => prevCluster = cluster);
+
         this.clusterVersion = '2.1.0';
 
         if (!this.isDemoMode()) {
@@ -142,6 +159,7 @@ export default class IgniteAgentManager {
         };
 
         self.socket.on('connect_error', onDisconnect);
+
         self.socket.on('disconnect', onDisconnect);
 
         self.socket.on('agents:stat', ({clusters, count}) => {
@@ -152,6 +170,8 @@ export default class IgniteAgentManager {
             self.connectionSbj.next(conn);
         });
 
+        self.socket.on('cluster:changed', (cluster) => this.updateCluster(cluster));
+
         self.socket.on('user:notifications', (notification) => this.UserNotifications.notification = notification);
     }
 
@@ -161,6 +181,31 @@ export default class IgniteAgentManager {
         } catch (ignore) {
             // No-op.
         }
+    }
+
+    updateCluster(newCluster) {
+        const state = this.connectionSbj.getValue();
+
+        const oldCluster = _.find(state.clusters, (cluster) => cluster.id === newCluster.id);
+
+        if (!_.isNil(oldCluster)) {
+            oldCluster.nids = newCluster.nids;
+            oldCluster.addresses = newCluster.addresses;
+            oldCluster.clusterVersion = newCluster.clusterVersion;
+            oldCluster.active = newCluster.active;
+
+            this.connectionSbj.next(state);
+        }
+    }
+
+    switchCluster(cluster) {
+        const state = this.connectionSbj.getValue();
+
+        state.updateCluster(cluster);
+
+        this.connectionSbj.next(state);
+
+        this.saveToStorage(cluster);
     }
 
     /**
@@ -212,6 +257,8 @@ export default class IgniteAgentManager {
 
         self.connectionSbj.next(conn);
 
+        this.modalSubscription && this.modalSubscription.unsubscribe();
+
         self.modalSubscription = this.connectionSbj.subscribe({
             next: ({state}) => {
                 switch (state) {
@@ -251,6 +298,8 @@ export default class IgniteAgentManager {
         conn.useConnectedCluster();
 
         self.connectionSbj.next(conn);
+
+        this.modalSubscription && this.modalSubscription.unsubscribe();
 
         self.modalSubscription = this.connectionSbj.subscribe({
             next: ({state}) => {
@@ -633,7 +682,6 @@ export default class IgniteAgentManager {
     }
 
     /**
-     /**
      * @param {String} nid Node id.
      * @param {String} cacheName Cache name.
      * @param {String} filter Filter text.
@@ -663,5 +711,18 @@ export default class IgniteAgentManager {
 
         return this.queryScan(nid, cacheName, filter, regEx, caseSensitive, near, local, pageSz)
             .then(fetchResult);
+    }
+
+    /**
+     * Change cluster active state.
+     *
+     * @returns {Promise}
+     */
+    toggleClusterState() {
+        const state = this.connectionSbj.getValue();
+        const active = !state.cluster.active;
+
+        return this.visorTask('toggleClusterState', null, active)
+            .then(() => state.updateCluster(Object.assign(state.cluster, { active })));
     }
 }
