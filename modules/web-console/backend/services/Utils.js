@@ -15,26 +15,37 @@
  * limitations under the License.
  */
 
-/** @returns {ng.IDirective} */
-export default function() {
-    return {
-        require: '?^listEditableCols',
-        /** @param {PcListEditableColsController} ctrl */
-        link(scope, el, attr, ctrl) {
-            if (!ctrl || !ctrl.colDefs.length)
-                return;
+'use strict';
 
-            const children = el.children();
+// Fire me up!
 
-            if (children.length !== ctrl.colDefs.length)
-                return;
+module.exports = {
+    implements: 'services/utils'
+};
 
-            if (ctrl.rowClass)
-                el.addClass(ctrl.rowClass);
+/**
+ * @returns {UtilsService}
+ */
+module.exports.factory = () => {
+    class UtilsService {
+        /**
+         * Generate token string.
+         *
+         * @param len length of string
+         * @returns {String} Random string.
+         */
+        static randomString(len) {
+            const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const possibleLen = possible.length;
 
-            ctrl.colDefs.forEach(({ cellClass }, index) => {
-                _.forEach((Array.isArray(cellClass) ? cellClass : [cellClass]), (item) => children[index].classList.add(item));
-            });
+            let res = '';
+
+            for (let i = 0; i < len; i++)
+                res += possible.charAt(Math.floor(Math.random() * possibleLen));
+
+            return res;
         }
-    };
-}
+    }
+
+    return UtilsService;
+};

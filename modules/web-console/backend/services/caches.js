@@ -58,6 +58,8 @@ module.exports.factory = (mongo, spaceService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_UPDATE_ERROR || err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Cache with name: "' + cache.name + '" already exist.');
+                else
+                    throw err;
             });
     };
 
@@ -77,6 +79,8 @@ module.exports.factory = (mongo, spaceService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Cache with name: "' + cache.name + '" already exist.');
+                else
+                    throw err;
             });
     };
 

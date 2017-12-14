@@ -15,26 +15,19 @@
  * limitations under the License.
  */
 
-/** @returns {ng.IDirective} */
-export default function() {
-    return {
-        require: '?^listEditableCols',
-        /** @param {PcListEditableColsController} ctrl */
-        link(scope, el, attr, ctrl) {
-            if (!ctrl || !ctrl.colDefs.length)
-                return;
+const _ = require('lodash');
 
-            const children = el.children();
+exports.up = function up(done) {
+    const accounts = this('Account');
 
-            if (children.length !== ctrl.colDefs.length)
-                return;
+    accounts.find({}).lean().exec()
+        .then((data) => _.forEach(data, (acc) => accounts.update({_id: acc._id}, {$set: {registered: acc.lastLogin}}, {upsert: true}).exec()))
+        .then(() => done())
+        .catch(done);
+};
 
-            if (ctrl.rowClass)
-                el.addClass(ctrl.rowClass);
-
-            ctrl.colDefs.forEach(({ cellClass }, index) => {
-                _.forEach((Array.isArray(cellClass) ? cellClass : [cellClass]), (item) => children[index].classList.add(item));
-            });
-        }
-    };
-}
+exports.down = function down(done) {
+    this('Account').update({}, {$unset: {registered: 1}}, {multi: true}).exec()
+        .then(() => done())
+        .catch(done);
+};

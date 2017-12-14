@@ -131,6 +131,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             this._agentSockets = new AgentSockets();
 
             this.clusters = [];
+            this.topLsnrs = [];
         }
 
         /**
@@ -212,6 +213,15 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
         }
 
         /**
+         * Add topology listener.
+         *
+         * @param lsnr
+         */
+        addTopologyListener(lsnr) {
+            this.topLsnrs.push(lsnr);
+        }
+
+        /**
          * Link agent with browsers by account.
          *
          * @param {Socket} sock
@@ -234,7 +244,9 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             sock.on('cluster:topology', (top) => {
                 const cluster = this.getOrCreateCluster(top);
 
-                if (_.isNil(agentSocket.cluster)) {
+                _.forEach(this.topLsnrs, (lsnr) => lsnr(agentSocket, cluster, top));
+
+                if (agentSocket.cluster !== cluster) {
                     agentSocket.cluster = cluster;
 
                     _.forEach(tokens, (token) => {
@@ -254,11 +266,11 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
                 }
             });
 
-            sock.on('cluster:collector', (top) => {
-
-            });
-
             sock.on('cluster:disconnected', () => {
+                const newTop = _.assign({}, agentSocket.cluster, {nids: []});
+
+                _.forEach(this.topLsnrs, (lsnr) => lsnr(agentSocket, agentSocket.cluster, newTop));
+
                 agentSocket.cluster = null;
 
                 _.forEach(tokens, (token) => {
