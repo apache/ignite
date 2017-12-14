@@ -311,12 +311,6 @@ public abstract class IgniteUtils {
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
 
-    /** {@code sun.nio.ch.DirectBuffer.cleaner()} method. */
-    private static final Method DIRECT_BUFFER_CLEANER_MTD;
-
-    /** {@code sun.misc.Cleaner.clean()} method. */
-    private static final Method SUN_MISC_CLEANER_CLEAN_MTD;
-
     /** Correct Mbean cache name pattern. */
     private static Pattern MBEAN_CACHE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
 
@@ -785,19 +779,6 @@ public abstract class IgniteUtils {
             else if ("toString".equals(mtd.getName()))
                 toStringMtd = mtd;
         }
-
-        Method directBufferCleanerMtd = null;
-        Method sunMiscCleanerCleanMtd = null;
-
-        try {
-            directBufferCleanerMtd = Class.forName("sun.nio.ch.DirectBuffer").getMethod("cleaner");
-            sunMiscCleanerCleanMtd = Class.forName("sun.misc.Cleaner").getMethod("clean");
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            // No-op.
-        }
-
-        DIRECT_BUFFER_CLEANER_MTD = directBufferCleanerMtd;
-        SUN_MISC_CLEANER_CLEAN_MTD = sunMiscCleanerCleanMtd;
     }
 
     /**
@@ -1042,35 +1023,6 @@ public abstract class IgniteUtils {
      */
     @Nullable public static Object sunReflectionFactory() {
         return SUN_REFLECT_FACTORY;
-    }
-
-    /**
-     * Cleans direct {@code ByteBuffer}.
-     *
-     * @param directBuffer buffer
-     */
-    public static void cleanDirectBuffer(ByteBuffer directBuffer) {
-        assert directBuffer.isDirect();
-
-        Method cleanerMtd = DIRECT_BUFFER_CLEANER_MTD;
-
-        if (cleanerMtd == null)
-            throw new RuntimeException("Failed to get sun.nio.ch.DirectBuffer.cleaner() method");
-
-        Method cleanMtd = SUN_MISC_CLEANER_CLEAN_MTD;
-
-        if (cleanMtd == null)
-            throw new RuntimeException("Failed to get sun.misc.Cleaner.clean() method");
-
-        Object cleaner;
-
-        try {
-            cleaner = cleanerMtd.invoke(directBuffer);
-
-            cleanMtd.invoke(cleaner);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /**

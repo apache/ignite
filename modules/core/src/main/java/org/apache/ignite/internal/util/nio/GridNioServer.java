@@ -56,6 +56,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -2543,10 +2544,10 @@ public class GridNioServer<T> {
 
                 if (directBuf) {
                     if (ses.writeBuffer() != null)
-                        U.cleanDirectBuffer(ses.writeBuffer());
+                        GridUnsafe.cleanDirectBuffer(ses.writeBuffer());
 
                     if (ses.readBuffer() != null)
-                        U.cleanDirectBuffer(ses.readBuffer());
+                        GridUnsafe.cleanDirectBuffer(ses.readBuffer());
                 }
 
                 // Shutdown input and output so that remote client will see correct socket close.

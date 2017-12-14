@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.lang.GridPlainInClosure;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 import sun.misc.Unsafe;
@@ -96,6 +100,10 @@ public abstract class GridUnsafe {
 
     /** */
     public static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
+
+    /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
+    // TODO IGNITE-6743: change to Consumer<ByteBuffer> when Java 8 comes.
+    public static final GridPlainInClosure<ByteBuffer> DIRECT_BYTE_BUFFER_CLEANER = directByteBufferCleaner();
 
     /**
      * Ensure singleton.
@@ -1359,6 +1367,53 @@ public abstract class GridUnsafe {
         }
     }
 
+    /** */
+    private static GridPlainInClosure<ByteBuffer> directByteBufferCleaner() {
+        if (IgniteSystemProperties.getString("java.version", "").startsWith("9")) {
+            try {
+                Method cleaner = Unsafe.class.getMethod("invokeCleaner", ByteBuffer.class);
+
+                return new GridPlainInClosure<ByteBuffer>() {
+                    @Override public void apply(ByteBuffer buf) throws IgniteCheckedException {
+                        try {
+                            cleaner.invoke(UNSAFE, buf);
+                        }
+                        catch (IllegalAccessException | InvocationTargetException ignored) {}
+                    }
+                };
+            }
+            catch (NoSuchMethodException e) {
+                throw new RuntimeException("Reflection failure: no sun.misc.Unsafe.invokeCleaner() method found", e);
+            }
+        } else {
+            Method cleanerMtd;
+            Method cleanMtd;
+
+            try {
+                cleanerMtd = Class.forName("sun.nio.ch.DirectBuffer").getMethod("cleaner");
+
+            } catch (ClassNotFoundException | NoSuchMethodException e) {
+                throw new RuntimeException("Reflection failure: no sun.nio.ch.DirectBuffer.cleaner() method found", e);
+            }
+
+            try {
+                cleanMtd = Class.forName("sun.misc.Cleaner").getMethod("clean");
+            }
+            catch (ClassNotFoundException | NoSuchMethodException e) {
+                throw new RuntimeException("Reflection failure: no sun.misc.Cleaner.clean() method found", e);
+            }
+
+            return new GridPlainInClosure<ByteBuffer>() {
+                @Override public void apply(ByteBuffer buf) throws IgniteCheckedException {
+                    try {
+                        cleanMtd.invoke(cleanerMtd.invoke(buf));
+                    }
+                    catch (IllegalAccessException | InvocationTargetException ignored) {}
+                }
+            };
+        }
+    }
+
     /**
      * @param obj Object.
      * @param off Offset.
@@ -1669,5 +1724,19 @@ public abstract class GridUnsafe {
      */
     public static long bufferAddress(ByteBuffer buf) {
         return ((DirectBuffer)buf).address();
+    }
+
+    /**
+     * Cleans direct {@code java.nio.ByteBuffer}
+     *
+     * @param buf Direct buffer.
+     */
+    public static void cleanDirectBuffer(ByteBuffer buf) {
+        assert buf.isDirect();
+
+        try {
+            DIRECT_BYTE_BUFFER_CLEANER.apply(buf);
+        }
+        catch (IgniteCheckedException ignored) {}
     }
 }
