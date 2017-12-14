@@ -15,26 +15,22 @@
  * limitations under the License.
  */
 
-/** @returns {ng.IDirective} */
-export default function() {
-    return {
-        require: '?^listEditableCols',
-        /** @param {PcListEditableColsController} ctrl */
-        link(scope, el, attr, ctrl) {
-            if (!ctrl || !ctrl.colDefs.length)
-                return;
+.ui-grid-filters[role="columnheader"] {
+	display: flex;
 
-            const children = el.children();
+    // Decrease horizontal padding because multiselect button already has it
+    padding-left: 8px !important;
+    padding-right: 8px !important;
 
-            if (children.length !== ctrl.colDefs.length)
-                return;
+    & > div:first-child {
+    	flex: auto !important;
+    }
 
-            if (ctrl.rowClass)
-                el.addClass(ctrl.rowClass);
+    .ui-grid-cell-contents[role="button"] {
+        flex: auto !important;
+        flex-basis: 100% !important;
 
-            ctrl.colDefs.forEach(({ cellClass }, index) => {
-                _.forEach((Array.isArray(cellClass) ? cellClass : [cellClass]), (item) => children[index].classList.add(item));
-            });
-        }
-    };
+        padding: 0 !important;
+        overflow: visible !important;
+    }
 }

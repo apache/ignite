@@ -15,26 +15,36 @@
  * limitations under the License.
  */
 
-/** @returns {ng.IDirective} */
-export default function() {
-    return {
-        require: '?^listEditableCols',
-        /** @param {PcListEditableColsController} ctrl */
-        link(scope, el, attr, ctrl) {
-            if (!ctrl || !ctrl.colDefs.length)
-                return;
+import filter from 'lodash/fp/filter';
 
-            const children = el.children();
+const rowsFiltered = filter(({ visible }) => visible);
 
-            if (children.length !== ctrl.colDefs.length)
-                return;
+export default class {
+    static $inject = ['$scope', 'uiGridConstants'];
 
-            if (ctrl.rowClass)
-                el.addClass(ctrl.rowClass);
+    constructor($scope, uiGridConstants) {
+        Object.assign(this, {$scope, uiGridConstants});
 
-            ctrl.colDefs.forEach(({ cellClass }, index) => {
-                _.forEach((Array.isArray(cellClass) ? cellClass : [cellClass]), (item) => children[index].classList.add(item));
+        this.noData = true;
+    }
+
+    $onChanges(changes) {
+        if (changes && 'gridApi' in changes && changes.gridApi.currentValue) {
+            this.gridApi.core.on.rowsVisibleChanged(this.$scope, () => {
+                this.applyValues();
             });
         }
-    };
+    }
+
+    applyValues() {
+        if (!this.gridApi.grid.rows.length) {
+            this.noData = true;
+            return;
+        }
+
+        this.noData = false;
+
+        const filtered = rowsFiltered(this.gridApi.grid.rows);
+        this.noDataFiltered = !filtered.length;
+    }
 }
