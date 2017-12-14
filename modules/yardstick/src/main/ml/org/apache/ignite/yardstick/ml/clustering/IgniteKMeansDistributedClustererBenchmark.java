@@ -30,13 +30,12 @@ import org.apache.ignite.yardstick.ml.DataChanger;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
- * Todo: IGNITE-7118, enable this benchmark.
  */
 @SuppressWarnings("unused")
 public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBenchmark {
     /** */
     @IgniteInstanceResource
-    Ignite ignite;
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {

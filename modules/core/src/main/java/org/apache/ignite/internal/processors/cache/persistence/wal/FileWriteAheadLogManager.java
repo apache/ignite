@@ -1014,6 +1014,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileIO fileIO = ioFactory.create(nextFile);
 
             IgniteInClosure<FileIO> lsnr = createWalFileListener;
+
             if (lsnr != null)
                 lsnr.apply(fileIO);
 

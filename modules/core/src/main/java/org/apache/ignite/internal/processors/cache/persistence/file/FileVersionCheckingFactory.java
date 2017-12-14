@@ -58,6 +58,14 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         this.memCfg = memCfg;
     }
 
+    /**
+     * @param fileIOFactory File IO factory for V1 & V2 page store and for version checking.
+     * @param memCfg Memory configuration.
+     */
+    public FileVersionCheckingFactory(FileIOFactory fileIOFactory, DataStorageConfiguration memCfg) {
+        this(fileIOFactory, fileIOFactory, memCfg);
+    }
+
     /** {@inheritDoc} */
     @Override public FilePageStore createPageStore(byte type, File file) throws IgniteCheckedException {
         if (!file.exists())

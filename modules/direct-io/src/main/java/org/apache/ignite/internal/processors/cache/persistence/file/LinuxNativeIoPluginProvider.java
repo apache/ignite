@@ -229,14 +229,6 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
                     U.warn(log, "Unable to apply fadvice on WAL file descriptor [fd=" + fdValue + "]:" +
                         IgniteNativeIoLib.strerror(retVal));
                 }
-
-                /*
-                int retValAlloc = IgniteNativeIoLib.posix_fallocate(fdValue, 0, size);
-                if (retValAlloc != 0) {
-                    U.warn(log, "Unable to run fallocate on WAL file descriptor [fd=" + fdValue + "]:" +
-                        IgniteNativeIoLib.strerror(retValAlloc));
-                }
-                */
             }
         }
         catch (Exception e) {
