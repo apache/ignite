@@ -1,3 +1,19 @@
+/*
+* Licensed to the Apache Software Foundation (ASF) under one or more
+* contributor license agreements.  See the NOTICE file distributed with
+* this work for additional information regarding copyright ownership.
+* The ASF licenses this file to You under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
 import java.util.ArrayList;
@@ -10,8 +26,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -39,11 +55,11 @@ public class SplitAndSortCpPagesTest {
 
     @Test
     public void testSpeedOfSortParallel() {
-        Collection<GridMultiCollectionWrapper<FullPageId>> coll = getTestCollection();
-        int size = getCpPagesCntFromPagesMulticollection(coll);
-        final GridMultiCollectionWrapper<FullPageId> ids = mgr.splitAndSortCpPagesIfNeeded2(pool, new T2<>(coll, size));
+        CheckpointScope coll = getTestCollection();
 
-        validateOrder(ids, size);
+        final GridMultiCollectionWrapper<FullPageId> ids = mgr.splitAndSortCpPagesIfNeeded2(pool, coll);
+
+        validateOrder(ids, coll.totalCpPages());
     }
 
 
@@ -56,12 +72,12 @@ public class SplitAndSortCpPagesTest {
 
     @Test
     public void testSpeedOfSort() {
-        Collection<GridMultiCollectionWrapper<FullPageId>> coll = getTestCollection();
-        int size = getCpPagesCntFromPagesMulticollection(coll);
-        final GridMultiCollectionWrapper<FullPageId> ids = mgr.splitAndSortCpPagesIfNeeded(new T2<>(coll, size));
+        CheckpointScope coll = getTestCollection();
 
-        assertEquals(ids.size(), size);
-        validateOrder(ids, size);
+        final GridMultiCollectionWrapper<FullPageId> ids = mgr.splitAndSortCpPagesIfNeeded(coll);
+
+        assertEquals(ids.size(), coll.totalCpPages());
+        validateOrder(ids, coll.totalCpPages());
     }
 
     static void validateOrder(Iterable<FullPageId> ids, int size) {
@@ -86,20 +102,14 @@ public class SplitAndSortCpPagesTest {
         return new GridCacheDatabaseSharedManager(ctx);
     }
 
-    static int getCpPagesCntFromPagesMulticollection(Collection<GridMultiCollectionWrapper<FullPageId>> coll) {
-        int size = 0;
-        for (GridMultiCollectionWrapper<FullPageId> next : coll) {
-            size += next.size();
-        }
-        return size;
-    }
 
-    @NotNull static Collection<GridMultiCollectionWrapper<FullPageId>> getTestCollection() {
-        Collection<GridMultiCollectionWrapper<FullPageId>> coll = new ArrayList<>();
+    @NotNull static CheckpointScope getTestCollection() {
 
+        final int regions = 1024;
+        final CheckpointScope scope = new CheckpointScope(regions);
         final Random random = new Random();
-        for (int i = 0; i < 1024; i++) {
-            final int innerCollections = 1024;
+        for (int i = 0; i < regions; i++) {
+            final int innerCollections = regions;
             final Collection[] collections = new Collection[innerCollections];
             for (int j = 0; j < innerCollections; j++) {
                 final Collection<FullPageId> innerColl = new ArrayList<>();
@@ -111,8 +121,8 @@ public class SplitAndSortCpPagesTest {
             }
             final GridMultiCollectionWrapper<FullPageId> e = new GridMultiCollectionWrapper<>(collections);
 
-            coll.add(e);
+            scope.addCpPages(e);
         }
-        return coll;
+        return scope;
     }
 }

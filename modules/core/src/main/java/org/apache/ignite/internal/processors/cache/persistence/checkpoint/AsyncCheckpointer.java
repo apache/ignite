@@ -62,9 +62,9 @@ public class AsyncCheckpointer {
 
     private static ForkJoinTask<Integer> splitAndSortCpPagesIfNeeded3(
         ForkJoinPool pool,
-        IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple,
+        CheckpointScope cpPagesTuple,
         BlockingQueue<FullPageId[]> queue) {
-        FullPageId[] pageIds = CheckpointScope.pagesToArray(cpPagesTuple);
+        FullPageId[] pageIds = cpPagesTuple.toArray();
 
         final QuickSortRecursiveTask task = new QuickSortRecursiveTask(pageIds, SEQUENTIAL_CP_PAGE_COMPARATOR, queue);
         final ForkJoinTask<Integer> submit = pool.submit(task);
@@ -99,7 +99,7 @@ public class AsyncCheckpointer {
     }
 
     public ForkJoinTask<Integer> splitAndSortCpPagesIfNeeded3(
-        IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> tuple,
+        CheckpointScope tuple,
         BlockingQueue<FullPageId[]> queue) {
         if (pageQuickSortPool == null) {
             synchronized (this) {

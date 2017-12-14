@@ -17,24 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * Checkpoint scope is the unsorted sets of all dirty pages collections from all regions
  */
 public class CheckpointScope {
-    @NotNull public static FullPageId[] pagesToArray(
-        IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple) {
-        final int totalSize = cpPagesTuple.get2();
+    /** Dirty Pages number from all regions. */
+    private int pagesNum = 0;
 
-        FullPageId[] pageIds = new FullPageId[totalSize];
+    private Collection<GridMultiCollectionWrapper<FullPageId>> res;
+
+    public CheckpointScope(int regions) {
+        res = new ArrayList<>(regions);
+    }
+
+    /**
+     * @return global array with all checkpoint pages
+     */
+    public FullPageId[] toArray() {
+        FullPageId[] pageIds = new FullPageId[pagesNum];
         int idx = 0;
-        for (GridMultiCollectionWrapper<FullPageId> col : cpPagesTuple.get1()) {
+        for (GridMultiCollectionWrapper<FullPageId> col : res) {
             for (int i = 0; i < col.collectionsSize(); i++) {
                 for (FullPageId next : col.innerCollection(i)) {
                     pageIds[idx] = next;
@@ -65,5 +74,24 @@ public class CheckpointScope {
         }
 
         return new GridMultiCollectionWrapper<FullPageId>(pagesSubListArr);
+    }
+
+    /**
+     * @param nextCpPagesCol next cp pages collection from region
+     */
+    public void addCpPages(GridMultiCollectionWrapper<FullPageId> nextCpPagesCol) {
+        pagesNum += nextCpPagesCol.size();
+        res.add(nextCpPagesCol);
+    }
+
+    /**
+     * @return {@code true} if there is checkpoint pages available
+     */
+    public boolean hasPages() {
+        return pagesNum > 0;
+    }
+
+    public int totalCpPages() {
+        return pagesNum;
     }
 }

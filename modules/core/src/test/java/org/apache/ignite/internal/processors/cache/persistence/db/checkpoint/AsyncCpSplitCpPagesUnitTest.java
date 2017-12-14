@@ -1,28 +1,39 @@
+/*
+* Licensed to the Apache Software Foundation (ASF) under one or more
+* contributor license agreements.  See the NOTICE file distributed with
+* this work for additional information regarding copyright ownership.
+* The ASF licenses this file to You under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
 import org.apache.ignite.internal.util.future.CountDownFuture;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.junit.AfterClass;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.SplitAndSortCpPagesTest.getCpPagesCntFromPagesMulticollection;
 import static org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.SplitAndSortCpPagesTest.getTestCollection;
 import static org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.SplitAndSortCpPagesTest.validateOrder;
 import static org.junit.Assert.assertEquals;
@@ -45,14 +56,13 @@ public class AsyncCpSplitCpPagesUnitTest {
 
     @Test
     public void testAsyncLazyCpPagesSubmit() throws ExecutionException, InterruptedException, IgniteCheckedException {
-        Collection<GridMultiCollectionWrapper<FullPageId>> coll = getTestCollection();
-        int size = getCpPagesCntFromPagesMulticollection(coll);
+        final CheckpointScope collection = getTestCollection();
 
         final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), new NullLogger());
 
         final BlockingQueue<FullPageId[]> queue = asyncCheckpointer != null ? new LinkedBlockingQueue<FullPageId[]>() : null;
         final ForkJoinTask<Integer> task
-            = asyncCheckpointer.splitAndSortCpPagesIfNeeded3(new T2<>(coll, size), queue);
+            = asyncCheckpointer.splitAndSortCpPagesIfNeeded3(collection, queue);
         final AtomicInteger totalPagesAfterSort = new AtomicInteger();
         final CountDownFuture fut = asyncCheckpointer.lazySubmit(task, queue,
             new IgniteBiClosure<FullPageId[], CountDownFuture, Runnable>() {
@@ -71,6 +81,6 @@ public class AsyncCpSplitCpPagesUnitTest {
         });
 
         fut.get();
-        assertEquals(totalPagesAfterSort.get(), size);
+        assertEquals(totalPagesAfterSort.get(), collection.totalCpPages());
     }
 }

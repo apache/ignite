@@ -2286,11 +2286,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             final CheckpointProgress curr;
 
-            IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple;
+            CheckpointScope cpScope;
 
             tracker.onLockWaitStart();
-
-            boolean hasPages;
 
             IgniteFuture snapFut = null;
 
@@ -2356,11 +2354,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cpRec.addCacheGroupState(grp.groupId(), state);
                 }
 
-                cpPagesTuple = beginAllCheckpoints();
+                cpScope = beginAllCheckpoints();
 
-                hasPages = cpPagesTuple.get2() > 0;
-
-                if (hasPages) {
+                if (cpScope.hasPages()) {
                     // No page updates for this checkpoint are allowed from now on.
                     cpPtr = cctx.wal().log(cpRec);
 
@@ -2386,8 +2382,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-            final int totalCpPages = cpPagesTuple.get2();
-            if (hasPages) {
+            if (cpScope.hasPages()) {
                 assert cpPtr != null;
 
                 // Sync log outside the checkpoint write lock.
@@ -2413,6 +2408,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 checkpointHist.addCheckpointEntry(cpEntry);
 
                 tracker.onSortSplitStart();
+
+                final int totalCpPages = cpScope.totalCpPages();
                 GridMultiCollectionWrapper<FullPageId> cpPages;
                 final ForkJoinTask<Integer> cpPagesChunksCountFuture;
                 if (queue != null
@@ -2422,14 +2419,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (log.isInfoEnabled())
                         log.info(String.format("Activated parallel page sort for [pages=%d]", totalCpPages));
 
-                    cpPagesChunksCountFuture = asyncCheckpointer.splitAndSortCpPagesIfNeeded3(cpPagesTuple, queue);
+                    cpPagesChunksCountFuture = asyncCheckpointer.splitAndSortCpPagesIfNeeded3(cpScope, queue);
 
                     cpPages = null;
                 }
                 else {
                     cpPagesChunksCountFuture = null;
 
-                    cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
+                    cpPages = splitAndSortCpPagesIfNeeded(cpScope);
                 }
 
                 final long sortDuration = tracker.onSortSplitStop();
@@ -2472,23 +2469,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return tuple with collections of FullPageIds obtained from each PageMemory and overall number of dirty
          * pages.
          */
-        private IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> beginAllCheckpoints() {
-            Collection<GridMultiCollectionWrapper<FullPageId>> res = new ArrayList(dataRegions().size());
+        private CheckpointScope beginAllCheckpoints() {
+            final CheckpointScope scope = new CheckpointScope(dataRegions().size());
 
-            int pagesNum = 0;
-
-            for (DataRegion memPlc : dataRegions()) {
-                if (!memPlc.config().isPersistenceEnabled())
+            for (DataRegion region : dataRegions()) {
+                if (!region.config().isPersistenceEnabled())
                     continue;
 
-                GridMultiCollectionWrapper<FullPageId> nextCpPagesCol = ((PageMemoryEx)memPlc.pageMemory()).beginCheckpoint();
+                GridMultiCollectionWrapper<FullPageId> nextCpPagesCol = ((PageMemoryEx)region.pageMemory()).beginCheckpoint();
 
-                pagesNum += nextCpPagesCol.size();
-
-                res.add(nextCpPagesCol);
+                scope.addCpPages(nextCpPagesCol);
             }
 
-            return new IgniteBiTuple<>(res, pagesNum);
+            return scope;
         }
 
         /**
@@ -2554,10 +2547,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @param cpPagesTuple Checkpoint pages tuple.
      */
-    public GridMultiCollectionWrapper<FullPageId> splitAndSortCpPagesIfNeeded(
-        IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple
-    ) {
-        final FullPageId[] cpPagesArr = CheckpointScope.pagesToArray(cpPagesTuple);
+    public GridMultiCollectionWrapper<FullPageId> splitAndSortCpPagesIfNeeded(CheckpointScope cpPagesTuple) {
+        final FullPageId[] cpPagesArr = cpPagesTuple.toArray();
 
         if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL)
             Arrays.sort(cpPagesArr, SEQUENTIAL_CP_PAGE_COMPARATOR);
@@ -2572,20 +2563,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Deprecated
     public GridMultiCollectionWrapper<FullPageId> splitAndSortCpPagesIfNeeded2(
         ForkJoinPool pool,
-        IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple
+        CheckpointScope scope
     ) {
-        final int totalSize = cpPagesTuple.get2();
 
-        FullPageId[] pageIds = new FullPageId[totalSize];
-        int idx = 0;
-        for (GridMultiCollectionWrapper<FullPageId> col : cpPagesTuple.get1()) {
-            for (int i = 0; i < col.collectionsSize(); i++) {
-                for (FullPageId next : col.innerCollection(i)) {
-                    pageIds[idx] = next;
-                    idx++;
-                }
-            }
-        }
+        FullPageId[] pageIds = scope.toArray();
 
         if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL) {
             final Comparator<FullPageId> comp = SEQUENTIAL_CP_PAGE_COMPARATOR;
