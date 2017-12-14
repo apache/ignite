@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncC
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -56,31 +58,30 @@ public class AsyncCpSplitCpPagesUnitTest {
 
     @Test
     public void testAsyncLazyCpPagesSubmit() throws ExecutionException, InterruptedException, IgniteCheckedException {
-        final CheckpointScope collection = getTestCollection();
+        final CheckpointScope scope = getTestCollection();
 
         final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), new NullLogger());
 
         final BlockingQueue<FullPageId[]> queue = asyncCheckpointer != null ? new LinkedBlockingQueue<FullPageId[]>() : null;
         final ForkJoinTask<Integer> task
-            = asyncCheckpointer.splitAndSortCpPagesIfNeeded3(collection, queue);
+            = asyncCheckpointer.splitAndSortCpPagesIfNeeded3(scope, queue);
         final AtomicInteger totalPagesAfterSort = new AtomicInteger();
         final CountDownFuture fut = asyncCheckpointer.lazySubmit(task, queue,
-            new IgniteBiClosure<FullPageId[], CountDownFuture, Runnable>() {
-            @Override public Runnable apply(final FullPageId[] ids, final CountDownFuture future) {
-                return new Runnable() {
-                    @Override public void run() {
-                        final int length = ids.length;
-                        totalPagesAfterSort.addAndGet(length);
-                        validateOrder(Arrays.asList(ids), length);
-
-                        future.onDone((Void)null);
-
-                    }
-                };
+            new IgniteClosure<FullPageId[], Callable<Void>>() {
+                @Override public Callable<Void> apply(final FullPageId[] ids) {
+                    return new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            final int length = ids.length;
+                            totalPagesAfterSort.addAndGet(length);
+                            validateOrder(Arrays.asList(ids), length);
+                            return null;
+                        }
+                    };
             }
         });
 
         fut.get();
-        assertEquals(totalPagesAfterSort.get(), collection.totalCpPages());
+        assertEquals(totalPagesAfterSort.get(), scope.totalCpPages());
+
     }
 }

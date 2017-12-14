@@ -8,6 +8,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.jetbrains.annotations.Nullable;
 
 public class QuickSortRecursiveTask extends RecursiveTask<Integer> {
+    public static final int ONE_CHUNK_THRESHOLD = 1024 * 16;
     /** Source array to sort. */
     private final FullPageId[] array;
     /** Start position. Index of first element inclusive. */
@@ -41,7 +42,7 @@ public class QuickSortRecursiveTask extends RecursiveTask<Integer> {
         int chunks;
         if (isUnderThreshold(remaining)) {
             Arrays.sort(array, position, limit, comp);
-            if (false)
+            if (false) //todo remove
                 System.err.println("Sorted [" + remaining + "] in " + Thread.currentThread().getName());
 
             if (queue != null) {
@@ -75,7 +76,7 @@ public class QuickSortRecursiveTask extends RecursiveTask<Integer> {
     }
 
     public static boolean isUnderThreshold(int cnt) {
-        return cnt < 1024 * 16;
+        return cnt < ONE_CHUNK_THRESHOLD;
     }
 
     int partition(FullPageId[] arr, int position, int limit,

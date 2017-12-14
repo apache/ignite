@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
@@ -28,10 +28,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.future.CountDownFuture;
-import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +37,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 
 public class AsyncCheckpointer {
 
-    /** Checkpoint runner thread name. */
+    /** Checkpoint runner thread name prefix. */
     public static final String CHECKPOINT_RUNNER = "checkpoint-runner";
     public static final FullPageId[] POISON_PILL = {};
     private volatile ForkJoinPool pageQuickSortPool;
@@ -120,9 +118,35 @@ public class AsyncCheckpointer {
         }
     }
 
+
+    public void execute(final Callable<Void> task, final CountDownFuture doneReportFut) {
+        execute(wrapRunnableWithDoneReporting(task, doneReportFut));
+    }
+
+    /**
+     * @param write actual runnable performing required action.
+     * @param doneReportFut  Count down future to report this runnable completion stage.
+     * @return wrapper runnable which will report result to {@code doneReportFut}
+     */
+    private static Runnable wrapRunnableWithDoneReporting(final Callable<Void> write,
+        final CountDownFuture doneReportFut) {
+        return new Runnable() {
+            @Override public void run() {
+                try {
+                    write.call();
+
+                    doneReportFut.onDone((Void)null); // success
+                }
+                catch (Throwable t) {
+                    doneReportFut.onDone(t); //reporting error
+                }
+            }
+        };
+    }
+
     public CountDownFuture lazySubmit(ForkJoinTask<Integer> cpPagesChunksCntFut,
         BlockingQueue<FullPageId[]> queue,
-        IgniteBiClosure<FullPageId[], CountDownFuture, Runnable> factory) {
+        IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
 
         final int submittingTask = 1;
         CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(submittingTask);
@@ -140,13 +164,13 @@ public class AsyncCheckpointer {
             if (poll == AsyncCheckpointer.POISON_PILL)
                 break;
 
-            final Runnable runnable = factory.apply(poll, cntDownDynamicFut);
+            final Callable<Void> task = taskFactory.apply(poll);
             if (log.isInfoEnabled())
                 log.info("Scheduling " + poll.length + " pages write");
 
             cntDownDynamicFut.incrementTasksCount();
 
-            execute(runnable);
+            execute(task, cntDownDynamicFut);
         }
         //submit complete
         cntDownDynamicFut.onDone((Void)null);
