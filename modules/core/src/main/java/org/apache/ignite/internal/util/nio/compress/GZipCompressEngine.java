@@ -42,34 +42,41 @@ public class GZipCompressEngine implements CompressEngine {
         assert smallMsgSize > 0;
     }
 
+    private final ByteArrayOutputStream deflateBaos = new ByteArrayOutputStream(1024);
+    private byte[] inputWrapArray = new byte[1024];
+
+    private final ByteArrayOutputStream inflateBaos = new ByteArrayOutputStream(1024);
+    private final byte[] inflateArray = new byte[1024];
+    private byte[] inputUnwapArray = new byte[1024];
+    private final byte[] lenBytes = new byte[4];
+
     /** */
     public CompressEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
-        int lenToCompress = src.remaining();
+        int len = src.remaining();
 
-        bytesBefore += lenToCompress;
+        bytesBefore += len;
 
-        if (compressSmall && lenToCompress < smallMsgSize) {
-            bytesAfter += lenToCompress + 1;
+        if (compressSmall && len < smallMsgSize) {
+            bytesAfter += len + 1;
 
-            buf.put((byte)lenToCompress);
+            buf.put((byte)len);
             buf.put(src);
 
             return OK;
         }
 
-        byte[] bytes = new byte[src.remaining()];
+        while (inputWrapArray.length < len)
+            inputWrapArray = new byte[inputWrapArray.length * 2];
 
-        src.get(bytes);
+        src.get(inputWrapArray, 0 , len);
 
-        try (
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            OutputStream out = new GZIPOutputStream(baos);
-        ) {
-            out.write(bytes);
-            out.close(); // need it, otherwise EOFException at decompressing
+        deflateBaos.reset();
 
-            bytes = baos.toByteArray();
+        try (GZIPOutputStream out = new GZIPOutputStream(deflateBaos) ) {
+            out.write(inputWrapArray, 0, len);
         }
+
+        byte[] bytes = deflateBaos.toByteArray();
 
         if (bytes.length + 4 > buf.remaining())
             return BUFFER_OVERFLOW;
@@ -78,6 +85,7 @@ public class GZipCompressEngine implements CompressEngine {
             buf.put((byte)-1);
         buf.put(toArray(bytes.length));
         buf.put(bytes);
+
         bytesAfter += bytes.length;
 
         return OK;
@@ -121,7 +129,6 @@ public class GZipCompressEngine implements CompressEngine {
             return BUFFER_UNDERFLOW;
         }
 
-        byte[] lenBytes = new byte[4];
         src.get(lenBytes);
         int len = toInt(lenBytes);
 
@@ -131,22 +138,23 @@ public class GZipCompressEngine implements CompressEngine {
             return BUFFER_UNDERFLOW;
         }
 
-        byte[] bytes = new byte[len]; // ? ByteArrayInputStream->ByteBufferInputStream
+        while (inputUnwapArray.length < src.remaining())
+            inputUnwapArray = new byte[inputUnwapArray.length * 2];
 
-        src.get(bytes);
+        src.get(inputUnwapArray, 0, len);
 
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             InputStream in = new GZIPInputStream(new ByteArrayInputStream(bytes))
+        inflateBaos.reset();
+
+        try (InputStream in = new GZIPInputStream(new ByteArrayInputStream(inputUnwapArray, 0, len))
         ) {
-            byte[] buffer = new byte[32];
             int length;
 
-            while ((length = in.read(buffer)) != -1)
-                baos.write(buffer, 0, length);
+            while ((length = in.read(inflateArray)) != -1)
+                inflateBaos.write(inflateArray, 0, length);
 
-            baos.flush();
+            inflateBaos.flush();
 
-            byte[] output = baos.toByteArray();
+            byte[] output = inflateBaos.toByteArray();
 
             if (output.length > buf.remaining()) {
                 src.position(initPos);
