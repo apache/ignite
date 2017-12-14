@@ -21,12 +21,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdate;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -168,7 +166,7 @@ public final class DmlAstUtils {
      * @return {@code null} if given statement directly updates {@code _val} column with a literal or param value
      * and filters by single non expression key (and, optionally,  by single non expression value).
      */
-    public static FastUpdateArguments getFastUpdateArgs(GridSqlUpdate update) {
+    public static FastUpdate getFastUpdateArgs(GridSqlUpdate update) {
         IgnitePair<GridSqlElement> filter = findKeyValueEqualityCondition(update.where());
 
         if (filter == null)
@@ -190,40 +188,20 @@ public final class DmlAstUtils {
         if (!(set instanceof GridSqlConst || set instanceof GridSqlParameter))
             return null;
 
-        return new FastUpdateArguments(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
-            operandForElement(set));
-    }
-
-    /**
-     * Create operand based on exact type of SQL element.
-     *
-     * @param el element.
-     * @return Operand.
-     */
-    private static FastUpdateArgument operandForElement(GridSqlElement el) {
-        assert el == null ^ (el instanceof GridSqlConst || el instanceof GridSqlParameter);
-
-        if (el == null)
-            return FastUpdateArguments.NULL_ARGUMENT;
-
-        if (el instanceof GridSqlConst)
-            return new ValueArgument(((GridSqlConst)el).value().getObject());
-        else
-            return new ParamArgument(((GridSqlParameter)el).index());
+        return FastUpdate.create(filter.getKey(), filter.getValue(), set);
     }
 
     /**
      * @param del DELETE statement.
      * @return {@code true} if given statement filters by single non expression key.
      */
-    public static FastUpdateArguments getFastDeleteArgs(GridSqlDelete del) {
+    public static FastUpdate getFastDeleteArgs(GridSqlDelete del) {
         IgnitePair<GridSqlElement> filter = findKeyValueEqualityCondition(del.where());
 
         if (filter == null)
             return null;
 
-        return new FastUpdateArguments(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
-            FastUpdateArguments.NULL_ARGUMENT);
+        return FastUpdate.create(filter.getKey(), filter.getValue(), null);
     }
 
     /**
@@ -604,41 +582,5 @@ public final class DmlAstUtils {
             throw new IgniteSQLException("Failed to determine target table", IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         return tbls.iterator().next();
-    }
-
-    /** Simple constant value based operand. */
-    private final static class ValueArgument implements FastUpdateArgument {
-        /** Value to return. */
-        private final Object val;
-
-        /** */
-        private ValueArgument(Object val) {
-            this.val = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-            return val;
-        }
-    }
-
-    /** Simple constant value based operand. */
-    private final static class ParamArgument implements FastUpdateArgument {
-        /** Value to return. */
-        private final int paramIdx;
-
-        /** */
-        private ParamArgument(int paramIdx) {
-            assert paramIdx >= 0;
-
-            this.paramIdx = paramIdx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-            assert arg.length > paramIdx;
-
-            return arg[paramIdx];
-        }
     }
 }

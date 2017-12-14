@@ -252,7 +252,7 @@ public final class UpdatePlanBuilder {
         throws IgniteCheckedException {
         GridSqlElement target;
 
-        FastUpdateArguments fastUpdate;
+        FastUpdate fastUpdate;
 
         UpdateMode mode;
 
@@ -260,7 +260,7 @@ public final class UpdatePlanBuilder {
             // Let's verify that user is not trying to mess with key's columns directly
             verifyUpdateColumns(stmt);
 
-            GridSqlUpdate update = (GridSqlUpdate) stmt;
+            GridSqlUpdate update = (GridSqlUpdate)stmt;
             target = update.target();
             fastUpdate = DmlAstUtils.getFastUpdateArgs(update);
             mode = UpdateMode.UPDATE;

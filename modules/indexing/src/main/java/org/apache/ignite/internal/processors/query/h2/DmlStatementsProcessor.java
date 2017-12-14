@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdate;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -351,10 +351,12 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = getPlanForStatement(schemaName, c, prepared, fieldsQry, loc, errKeysPos);
 
-        if (plan.fastUpdateArguments() != null) {
+        FastUpdate fastUpdate = plan.fastUpdate();
+
+        if (fastUpdate != null) {
             assert F.isEmpty(failedKeys) && errKeysPos == null;
 
-            return doFastUpdate(plan, fieldsQry.getArgs());
+            return fastUpdate.execute(plan.cacheContext().cache(), fieldsQry.getArgs());
         }
 
         if (plan.distributedPlan() != null) {
@@ -461,46 +463,6 @@ public class DmlStatementsProcessor {
             return U.firstNotNull(planCache.putIfAbsent(planKey, res), res);
         else
             return res;
-    }
-
-    /**
-     * Perform single cache operation based on given args.
-     * @param plan Update plan.
-     * @param args Query parameters.
-     * @return 1 if an item was affected, 0 otherwise.
-     * @throws IgniteCheckedException if failed.
-     */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private static UpdateResult doFastUpdate(UpdatePlan plan, Object[] args) throws IgniteCheckedException {
-        GridCacheContext cctx = plan.cacheContext();
-
-        FastUpdateArguments singleUpdate = plan.fastUpdateArguments();
-
-        assert singleUpdate != null;
-
-        boolean valBounded = (singleUpdate.val != FastUpdateArguments.NULL_ARGUMENT);
-
-        if (singleUpdate.newVal != FastUpdateArguments.NULL_ARGUMENT) { // Single item UPDATE
-            Object key = singleUpdate.key.apply(args);
-            Object newVal = singleUpdate.newVal.apply(args);
-
-            if (valBounded) {
-                Object val = singleUpdate.val.apply(args);
-
-                return (cctx.cache().replace(key, val, newVal) ? UpdateResult.ONE : UpdateResult.ZERO);
-            }
-            else
-                return (cctx.cache().replace(key, newVal) ? UpdateResult.ONE : UpdateResult.ZERO);
-        }
-        else { // Single item DELETE
-            Object key = singleUpdate.key.apply(args);
-            Object val = singleUpdate.val.apply(args);
-
-            if (singleUpdate.val == FastUpdateArguments.NULL_ARGUMENT) // No _val bound in source query
-                return cctx.cache().remove(key) ? UpdateResult.ONE : UpdateResult.ZERO;
-            else
-                return cctx.cache().remove(key, val) ? UpdateResult.ONE : UpdateResult.ZERO;
-        }
     }
 
     /**

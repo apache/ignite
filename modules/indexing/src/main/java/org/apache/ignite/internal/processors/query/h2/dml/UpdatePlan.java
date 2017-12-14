@@ -78,7 +78,7 @@ public final class UpdatePlan {
     private final int rowsNum;
 
     /** Arguments for fast UPDATE or DELETE. */
-    private final FastUpdateArguments fastUpdateArgs;
+    private final FastUpdate fastUpdate;
 
     /** Additional info for distributed update. */
     private final DmlDistributedPlanInfo distributed;
@@ -97,7 +97,7 @@ public final class UpdatePlan {
      * @param selectQry Select query.
      * @param isLocSubqry Local subquery flag.
      * @param rowsNum Rows number.
-     * @param fastUpdateArgs Fast update arguments (if any).
+     * @param fastUpdate Fast update (if any).
      * @param distributed Distributed plan (if any)
      */
     public UpdatePlan(
@@ -112,7 +112,7 @@ public final class UpdatePlan {
         String selectQry,
         boolean isLocSubqry,
         int rowsNum,
-        @Nullable FastUpdateArguments fastUpdateArgs,
+        @Nullable FastUpdate fastUpdate,
         @Nullable DmlDistributedPlanInfo distributed
     ) {
         this.colNames = colNames;
@@ -130,7 +130,7 @@ public final class UpdatePlan {
         this.valColIdx = valColIdx;
         this.selectQry = selectQry;
         this.isLocSubqry = isLocSubqry;
-        this.fastUpdateArgs = fastUpdateArgs;
+        this.fastUpdate = fastUpdate;
         this.distributed = distributed;
     }
 
@@ -140,14 +140,14 @@ public final class UpdatePlan {
      * @param mode Mode.
      * @param tbl Table.
      * @param selectQry Select query.
-     * @param fastUpdateArgs Fast update arguments (if any).
+     * @param fastUpdate Fast update arguments (if any).
      * @param distributed Distributed plan (if any)
      */
     public UpdatePlan(
         UpdateMode mode,
         GridH2Table tbl,
         String selectQry,
-        @Nullable FastUpdateArguments fastUpdateArgs,
+        @Nullable FastUpdate fastUpdate,
         @Nullable DmlDistributedPlanInfo distributed) {
         this(
             mode,
@@ -161,7 +161,7 @@ public final class UpdatePlan {
             selectQry,
             false,
             0,
-            fastUpdateArgs,
+            fastUpdate,
             distributed
         );
     }
@@ -380,9 +380,9 @@ public final class UpdatePlan {
     }
 
     /**
-     * @return Fast update arguments.
+     * @return Fast update.
      */
-    @Nullable public FastUpdateArguments fastUpdateArguments() {
-        return fastUpdateArgs;
+    @Nullable public FastUpdate fastUpdate() {
+        return fastUpdate;
     }
 }
