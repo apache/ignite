@@ -136,6 +136,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         startGrid(0);
 
         startGridsMultiThreaded(1, GRID_CNT - 1);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -400,13 +402,16 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      *
      */
     public void testConcurrentRollback() throws Exception {
+        Ignite client = startClient();
+        Ignite client2 = startClient2();
+
         final CountDownLatch lockLatch = new CountDownLatch(1);
 
         CountDownLatch commitLatch = new CountDownLatch(1);
 
-        final Ignite wNode = grid(0);
+        final Ignite wNode = client; // grid(0);
 
-        final Ignite rNode = grid(1);
+        final Ignite rNode = client2; // grid(1);
 
         IgniteInternalFuture<?> lockFut = startLockThread(wNode, lockLatch, commitLatch, 0, true);
 
@@ -414,7 +419,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final CountDownLatch rollbackLatch = new CountDownLatch(1);
 
-        final int txCnt = 40;
+        final int txCnt = 10;
 
         final IgniteKernal k = (IgniteKernal)rNode;
 
@@ -497,7 +502,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         lockFut.get();
 
-        assertEquals(0, wNode.cache(CACHE_NAME).get(0));
+        assertEquals(100, wNode.cache(CACHE_NAME).get(0));
 
         checkFutures();
     }
@@ -510,9 +515,11 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         for (int k = 0; k < keysCnt; k++)
             grid(0).cache(CACHE_NAME).put(k, (long)0);
 
-        CountDownLatch lockLatch = new CountDownLatch(1);
+        final CountDownLatch lockLatch = new CountDownLatch(1);
 
         CountDownLatch commitLatch = new CountDownLatch(1);
+
+        Ignite writeNode = primaryNode(0, CACHE_NAME);
 
         final IgniteEx wNode = grid(0);
 
@@ -520,15 +527,32 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> lockFut = startLockThread(wNode, lockLatch, commitLatch, 0, true);
 
-//        IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
-//
-//        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
-//            long v1 = (long)cache.get(0);
-//            long v2 = (long)cache.get(1);
-//            long v3 = (long)cache.get(2);
-//
-//            cache.put(0, v1 + 1);
-//        }
+        IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                U.awaitQuiet(lockLatch);
+
+                try (Transaction tx = rNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                    log.info("Started TRANSACTION: " + ((TransactionProxyImpl)tx).tx().xidVersion());
+
+                    rNode.cache(CACHE_NAME).get(0);
+                }
+                catch (Exception e) {
+                    // Expected.
+                }
+            }
+        }, 1, "tx-thread");
+
+        doSleep(5_000);
+
+        commitLatch.countDown();
+
+        txFut.get();
+
+        lockFut.get();
+
+        assertEquals(100, wNode.cache(CACHE_NAME).get(0));
+
+        checkFutures();
     }
 
     /**
@@ -669,7 +693,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         return multithreadedAsync(new Runnable() {
             @Override public void run() {
                 Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1);
-                node.cache(CACHE_NAME).put(0, 0); // Own the lock.
+                node.cache(CACHE_NAME).put(0, 100); // Own the lock.
 
                 lockedLatch.countDown();
 
