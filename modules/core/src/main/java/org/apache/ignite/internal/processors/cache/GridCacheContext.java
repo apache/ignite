@@ -2144,7 +2144,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.statisticsEnabled = statisticsEnabled;
 
         if (isNear())
-            near().dht().context().statisticsEnabled(statisticsEnabled);
+            near().dht().context().statisticsEnabled = statisticsEnabled;
     }
 
     /** {@inheritDoc} */
