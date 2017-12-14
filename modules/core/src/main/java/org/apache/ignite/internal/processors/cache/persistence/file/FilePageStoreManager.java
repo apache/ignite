@@ -36,8 +36,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -92,8 +92,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private final IgniteConfiguration igniteCfg;
 
+    /**
+     * File IO factory for page store, by default is taken from {@link #dsCfg}.
+     * May be overriden by block read/write.
+     */
+    private FileIOFactory pageStoreFileIoFactory;
+
+    /**
+     * File IO factory for page store V1 and for fast checking page store (non block read).
+     * By default is taken from {@link #dsCfg}.
+     */
+    private FileIOFactory pageStoreV1FileIoFactory;
+
     /** */
-    private DataStorageConfiguration dsCfg;
+    private final DataStorageConfiguration dsCfg;
 
     /** Absolute directory for file page store. Includes consistent id based folder. */
     private File storeWorkDir;
@@ -115,6 +127,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         assert dsCfg != null;
 
         this.dsCfg = dsCfg;
+
+        pageStoreV1FileIoFactory = pageStoreFileIoFactory = dsCfg.getFileIOFactory();
     }
 
     /** {@inheritDoc} */
@@ -353,8 +367,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (dirExisted && !idxFile.exists())
             grpsWithoutIdx.add(grpDesc.groupId());
 
-        FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
-            dsCfg.getFileIOFactory(), igniteCfg.getDataStorageConfiguration());
+        FilePageStoreFactory pageStoreFactory = new FileVersionCheckingFactory(
+            pageStoreFileIoFactory, pageStoreV1FileIoFactory, igniteCfg.getDataStorageConfiguration());
 
         FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
 
@@ -643,6 +657,31 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "(partition has not been created) [grpId=" + grpId + ", partId=" + partId + ']');
 
         return store;
+    }
+
+    /**
+     * @param pageStoreFileIoFactory File IO factory to override default, may be used for blocked read-write.
+     * @param pageStoreV1FileIoFactory File IO factory for reading V1 page store and for fast touching page files
+     *      (non blocking).
+     */
+    public void setPageStoreFileIOFactories(final FileIOFactory pageStoreFileIoFactory,
+        final FileIOFactory pageStoreV1FileIoFactory) {
+        this.pageStoreFileIoFactory = pageStoreFileIoFactory;
+        this.pageStoreV1FileIoFactory = pageStoreV1FileIoFactory;
+    }
+
+    /**
+     * @return File IO factory currently selected for page store.
+     */
+    public FileIOFactory getPageStoreFileIoFactory() {
+        return pageStoreFileIoFactory;
+    }
+
+    /**
+     * @return Durable memory page size in bytes.
+     */
+    public int pageSize() {
+        return dsCfg.getPageSize();
     }
 
     /**

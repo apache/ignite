@@ -49,26 +49,29 @@ public interface FileIO extends AutoCloseable {
     /**
      * Reads a sequence of bytes from this file into the {@code destinationBuffer}.
      *
-     * @param destinationBuffer Destination byte buffer.
+     * @param destBuf Destination byte buffer.
      *
-     * @return Number of read bytes.
+     * @return Number of read bytes, or <tt>-1</tt> if the
+     *          given position is greater than or equal to the file's current size
      *
      * @throws IOException If some I/O error occurs.
      */
-    public int read(ByteBuffer destinationBuffer) throws IOException;
+    public int read(ByteBuffer destBuf) throws IOException;
 
     /**
      * Reads a sequence of bytes from this file into the {@code destinationBuffer}
      * starting from specified file {@code position}.
      *
-     * @param destinationBuffer Destination byte buffer.
+     * @param destBuf Destination byte buffer.
      * @param position Starting position of file.
      *
-     * @return Number of read bytes.
+     * @return Number of read bytes, possibly zero, or <tt>-1</tt> if the
+     *          given position is greater than or equal to the file's current
+     *          size
      *
      * @throws IOException If some I/O error occurs.
      */
-    public int read(ByteBuffer destinationBuffer, long position) throws IOException;
+    public int read(ByteBuffer destBuf, long position) throws IOException;
 
     /**
      * Reads a up to {@code length} bytes from this file into the {@code buffer}.

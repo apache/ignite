@@ -279,7 +279,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private ExecutorService asyncRunner;
 
-    /** Buffer for the checkpoint threads. */
+    /** Thread local with buffers for the checkpoint threads. Each buffer represent one page for durable memory. */
     private ThreadLocal<ByteBuffer> threadBuf;
 
     /** */
@@ -1958,6 +1958,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private static String checkpointFileName(long cpTs, UUID cpId, CheckpointEntryType type) {
         return cpTs + "-" + cpId + "-" + type + ".bin";
+    }
+
+    /**
+     * Replace thread local with buffers. Thread local should provide direct buffer with one page in length.
+     *
+     * @param threadBuf new thread-local with buffers for the checkpoint threads.
+     */
+    public void setThreadBuf(final ThreadLocal<ByteBuffer> threadBuf) {
+        this.threadBuf = threadBuf;
     }
 
     /**
