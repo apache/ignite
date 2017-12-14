@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,8 +40,6 @@ public class AsyncCheckpointer {
 
     /** Checkpoint runner thread name prefix. */
     public static final String CHECKPOINT_RUNNER = "checkpoint-runner";
-    public static final FullPageId[] POISON_PILL = {};
-    private volatile ForkJoinPool pageQuickSortPool;
 
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private ExecutorService asyncRunner;
@@ -48,6 +47,7 @@ public class AsyncCheckpointer {
 
     public AsyncCheckpointer(int checkpointThreads, String igniteInstanceName, IgniteLogger log) {
         this.log = log;
+
         asyncRunner = new IgniteThreadPoolExecutor(
             CHECKPOINT_RUNNER,
             igniteInstanceName,
@@ -58,23 +58,7 @@ public class AsyncCheckpointer {
         );
     }
 
-    private static ForkJoinTask<Integer> splitAndSortCpPagesIfNeeded3(
-        ForkJoinPool pool,
-        CheckpointScope cpPagesTuple,
-        BlockingQueue<FullPageId[]> queue) {
-        FullPageId[] pageIds = cpPagesTuple.toArray();
-
-        final QuickSortRecursiveTask task = new QuickSortRecursiveTask(pageIds, SEQUENTIAL_CP_PAGE_COMPARATOR, queue);
-        final ForkJoinTask<Integer> submit = pool.submit(task);
-
-        return submit;
-    }
-
     public void shutdownCheckpointer() {
-        final ForkJoinPool fjPool = pageQuickSortPool;
-        if (fjPool != null)
-            fjPool.shutdownNow();
-
         if (asyncRunner != null) {
             asyncRunner.shutdownNow();
 
@@ -85,27 +69,6 @@ public class AsyncCheckpointer {
                 Thread.currentThread().interrupt();
             }
         }
-
-        if (fjPool != null) {
-            try {
-                fjPool.awaitTermination(2, TimeUnit.SECONDS);
-            }
-            catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    public ForkJoinTask<Integer> splitAndSortCpPagesIfNeeded3(
-        CheckpointScope tuple,
-        BlockingQueue<FullPageId[]> queue) {
-        if (pageQuickSortPool == null) {
-            synchronized (this) {
-                if (pageQuickSortPool == null)
-                    pageQuickSortPool = new ForkJoinPool();
-            }
-        }
-        return splitAndSortCpPagesIfNeeded3(pageQuickSortPool, tuple, queue);
     }
 
     public void execute(Runnable write) {
@@ -144,37 +107,31 @@ public class AsyncCheckpointer {
         };
     }
 
-    public CountDownFuture lazySubmit(ForkJoinTask<Integer> cpPagesChunksCntFut,
-        BlockingQueue<FullPageId[]> queue,
+    public CountDownFuture quickSortAndWritePages(
+        CheckpointScope cpScope,
         IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
 
-        final int submittingTask = 1;
-        CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(submittingTask);
+        final CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(1); // init cntr 1 protects from premature completing
+        FullPageId[] pageIds = cpScope.toArray();
 
-        while (true) {
-            final FullPageId[] poll;
-            try {
-                poll = queue.take();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        final Callable<Void> task = new QuickSortRecursiveTask(pageIds, SEQUENTIAL_CP_PAGE_COMPARATOR,
+            taskFactory,
+            new IgniteInClosure<Callable<Void>>() {
+                @Override public void apply(Callable<Void> call) {
+                    fork(call, cntDownDynamicFut);
+                }
+            });
 
-                throw new IgniteInterruptedException(e);
-            }
-            if (poll == AsyncCheckpointer.POISON_PILL)
-                break;
+        fork(task, cntDownDynamicFut);
 
-            final Callable<Void> task = taskFactory.apply(poll);
-            if (log.isInfoEnabled())
-                log.info("Scheduling " + poll.length + " pages write");
+        cntDownDynamicFut.onDone((Void)null); //submit of all tasks completed
 
-            cntDownDynamicFut.incrementTasksCount();
-
-            execute(task, cntDownDynamicFut);
-        }
-        //submit complete
-        cntDownDynamicFut.onDone((Void)null);
         return cntDownDynamicFut;
     }
 
+    private void fork(Callable<Void> call, CountDownDynamicFuture cntDownDynamicFut) {
+        cntDownDynamicFut.incrementTasksCount(); // for created task about to be forked
+
+        execute(call, cntDownDynamicFut);
+    }
 }

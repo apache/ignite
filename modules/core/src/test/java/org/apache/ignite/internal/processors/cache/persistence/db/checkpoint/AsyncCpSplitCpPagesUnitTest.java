@@ -17,12 +17,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
 import java.util.Arrays;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,9 +27,8 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
 import org.apache.ignite.internal.util.future.CountDownFuture;
-import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.junit.AfterClass;
 import org.junit.Test;
 
@@ -60,25 +56,24 @@ public class AsyncCpSplitCpPagesUnitTest {
     public void testAsyncLazyCpPagesSubmit() throws ExecutionException, InterruptedException, IgniteCheckedException {
         final CheckpointScope scope = getTestCollection();
 
-        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), new NullLogger());
+        final JavaLogger log = new JavaLogger();
+        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
 
-        final BlockingQueue<FullPageId[]> queue = asyncCheckpointer != null ? new LinkedBlockingQueue<FullPageId[]>() : null;
-        final ForkJoinTask<Integer> task
-            = asyncCheckpointer.splitAndSortCpPagesIfNeeded3(scope, queue);
         final AtomicInteger totalPagesAfterSort = new AtomicInteger();
-        final CountDownFuture fut = asyncCheckpointer.lazySubmit(task, queue,
-            new IgniteClosure<FullPageId[], Callable<Void>>() {
-                @Override public Callable<Void> apply(final FullPageId[] ids) {
-                    return new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            final int length = ids.length;
-                            totalPagesAfterSort.addAndGet(length);
-                            validateOrder(Arrays.asList(ids), length);
-                            return null;
-                        }
-                    };
+        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
+            @Override public Callable<Void> apply(final FullPageId[] ids) {
+                return new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        final int length = ids.length;
+                        totalPagesAfterSort.addAndGet(length);
+                        validateOrder(Arrays.asList(ids), length);
+                        return null;
+                    }
+                };
             }
-        });
+        };
+
+        final CountDownFuture fut = asyncCheckpointer.quickSortAndWritePages(scope, taskFactory);
 
         fut.get();
         assertEquals(totalPagesAfterSort.get(), scope.totalCpPages());

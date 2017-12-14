@@ -1,13 +1,32 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.Callable;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 
-public class QuickSortRecursiveTask extends RecursiveTask<Integer> {
+/**
+ *
+ */
+public class QuickSortRecursiveTask implements Callable<Void> {
     public static final int ONE_CHUNK_THRESHOLD = 1024 * 16;
     /** Source array to sort. */
     private final FullPageId[] array;
@@ -16,67 +35,59 @@ public class QuickSortRecursiveTask extends RecursiveTask<Integer> {
     /** Limit. Index of last element exclusive. */
     private final int limit;
 
-    private boolean rootTask;
+
+    private final IgniteClosure<FullPageId[], Callable<Void>> taskFactory;
+
+    private IgniteInClosure<Callable<Void>> forkSubmitter;
+
     private Comparator<FullPageId> comp;
-    @Nullable private final BlockingQueue<FullPageId[]> queue;
 
     public QuickSortRecursiveTask(FullPageId[] arr,
         Comparator<FullPageId> comp,
-        @Nullable BlockingQueue<FullPageId[]> queue) {
-        this(arr, 0, arr.length, comp, queue);
-        this.rootTask = true;
+        IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
+        IgniteInClosure<Callable<Void>> forkSubmitter) {
+        this(arr, 0, arr.length, comp, taskFactory, forkSubmitter);
     }
 
     private QuickSortRecursiveTask(FullPageId[] arr, int position, int limit,
         Comparator<FullPageId> comp,
-        @Nullable BlockingQueue<FullPageId[]> queue) {
+        IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
+        IgniteInClosure<Callable<Void>> forkSubmitter) {
         this.array = arr;
         this.position = position;
         this.limit = limit;
         this.comp = comp;
-        this.queue = queue;
+        this.taskFactory = taskFactory;
+        this.forkSubmitter = forkSubmitter;
     }
 
-    @Override protected Integer compute() {
+    public static boolean isUnderThreshold(int cnt) {
+        return cnt < ONE_CHUNK_THRESHOLD;
+    }
+
+
+    @Override public Void call() throws Exception {
         final int remaining = limit - position;
-        int chunks;
         if (isUnderThreshold(remaining)) {
             Arrays.sort(array, position, limit, comp);
             if (false) //todo remove
                 System.err.println("Sorted [" + remaining + "] in " + Thread.currentThread().getName());
 
-            if (queue != null) {
-                final FullPageId[] ids = Arrays.copyOfRange(array, position, limit);
-                try {
-                    queue.put(ids);
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            chunks =  1; // one chunk was produced
+            final FullPageId[] e = Arrays.copyOfRange(array, position, limit);
+            final Callable<Void> apply = taskFactory.apply(e);
+            apply.call();
         }
         else {
             int centerIndex = partition2(array, position, limit, comp);
-            if (false)
+            if (false) //todo remove
                 System.err.println("centerIndex=" + centerIndex);
-            QuickSortRecursiveTask t1 = new QuickSortRecursiveTask(array, position, centerIndex, comp, queue);
-            QuickSortRecursiveTask t2 = new QuickSortRecursiveTask(array, centerIndex, limit, comp, queue);
-            t1.fork();
-            final Integer t2Result = t2.compute();
-            final Integer t1Result = t1.join();
-            chunks = t1Result + t2Result;
+            Callable t1 = new QuickSortRecursiveTask(array, position, centerIndex, comp, taskFactory, forkSubmitter);
+            Callable t2 = new QuickSortRecursiveTask(array, centerIndex, limit, comp, taskFactory, forkSubmitter);
+
+            t1.call();
+            forkSubmitter.apply(t2);
         }
-
-        if(rootTask && queue!=null)
-            queue.offer(AsyncCheckpointer.POISON_PILL);
-
-        return chunks;
-    }
-
-    public static boolean isUnderThreshold(int cnt) {
-        return cnt < ONE_CHUNK_THRESHOLD;
+        return null;
     }
 
     int partition(FullPageId[] arr, int position, int limit,

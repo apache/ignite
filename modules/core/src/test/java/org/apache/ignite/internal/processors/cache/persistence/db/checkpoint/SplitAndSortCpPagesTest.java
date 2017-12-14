@@ -54,23 +54,6 @@ public class SplitAndSortCpPagesTest {
     }
 
     @Test
-    public void testSpeedOfSortParallel() {
-        CheckpointScope coll = getTestCollection();
-
-        final GridMultiCollectionWrapper<FullPageId> ids = mgr.splitAndSortCpPagesIfNeeded2(pool, coll);
-
-        validateOrder(ids, coll.totalCpPages());
-    }
-
-
-   // @Test
-    public void testSpeedOfSortParallelCycle() {
-        while (true) {
-            testSpeedOfSortParallel();
-        }
-    }
-
-    @Test
     public void testSpeedOfSort() {
         CheckpointScope coll = getTestCollection();
 
