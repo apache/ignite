@@ -102,7 +102,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        boolean client = "client".equals(igniteInstanceName);
+        boolean client = igniteInstanceName.startsWith("client");
 
         cfg.setClientMode(client);
 
@@ -133,7 +133,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        startGridsMultiThreaded(GRID_CNT);
+        startGrid(0);
+
+        startGridsMultiThreaded(1, GRID_CNT - 1);
     }
 
     /** {@inheritDoc} */
@@ -148,7 +150,20 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      * @throws Exception If f nodeailed.
      */
     private Ignite startClient() throws Exception {
-        Ignite client = startGrid("client");
+        Ignite client = startGrid("client1");
+
+        assertTrue(client.configuration().isClientMode());
+
+        if (nearCacheEnabled())
+            client.createNearCache(CACHE_NAME, new NearCacheConfiguration<>());
+        else
+            assertNotNull(client.cache(CACHE_NAME));
+
+        return client;
+    }
+
+    private Ignite startClient2() throws Exception {
+        Ignite client = startGrid("client2");
 
         assertTrue(client.configuration().isClientMode());
 
@@ -389,9 +404,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         CountDownLatch commitLatch = new CountDownLatch(1);
 
-        final IgniteEx wNode = grid(0);
+        final Ignite wNode = grid(0);
 
-        final IgniteEx rNode = grid(1);
+        final Ignite rNode = grid(1);
 
         IgniteInternalFuture<?> lockFut = startLockThread(wNode, lockLatch, commitLatch, 0, true);
 
@@ -399,7 +414,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final CountDownLatch rollbackLatch = new CountDownLatch(1);
 
-        final int loops = 30;
+        final int txCnt = 40;
 
         final IgniteKernal k = (IgniteKernal)rNode;
 
@@ -413,7 +428,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             @Override public void run() {
                 U.awaitQuiet(lockLatch);
 
-                for (int i = 0; i < loops; i++) {
+                for (int i = 0; i < txCnt; i++) {
                     GridNearTxLocal locTx = ctx.tm().threadLocalTx(cctx);
 
                     assertTrue("Failed iter: " + i, (i == 0 && locTx == null) || (locTx != null && locTx.isRollbackOnly()));
@@ -476,16 +491,18 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         txFut.get();
 
+        log.info("All transactions are rolled back");
+
         commitLatch.countDown();
 
         lockFut.get();
+
+        assertEquals(0, wNode.cache(CACHE_NAME).get(0));
 
         checkFutures();
     }
 
     public void testDebugTx() throws Exception {
-        final Ignite client = startClient();
-
         final int keysCnt = 100;
 
         final int txSize = 10;
@@ -493,15 +510,25 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         for (int k = 0; k < keysCnt; k++)
             grid(0).cache(CACHE_NAME).put(k, (long)0);
 
-        IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
+        CountDownLatch lockLatch = new CountDownLatch(1);
 
-        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
-            long v1 = (long)cache.get(0);
-            long v2 = (long)cache.get(1);
-            long v3 = (long)cache.get(2);
+        CountDownLatch commitLatch = new CountDownLatch(1);
 
-            cache.put(0, v1 + 1);
-        }
+        final IgniteEx wNode = grid(0);
+
+        final IgniteEx rNode = grid(1);
+
+        IgniteInternalFuture<?> lockFut = startLockThread(wNode, lockLatch, commitLatch, 0, true);
+
+//        IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
+//
+//        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+//            long v1 = (long)cache.get(0);
+//            long v2 = (long)cache.get(1);
+//            long v3 = (long)cache.get(2);
+//
+//            cache.put(0, v1 + 1);
+//        }
     }
 
     /**
@@ -664,7 +691,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             final IgniteInternalFuture<?> f = ig.context().cache().context().
                 partitionReleaseFuture(new AffinityTopologyVersion(G.allGrids().size() + 1, 0));
 
-            assertTrue("Unexpected incomplete future: " + f, f.isDone());
+            assertTrue("Unexpected incomplete future: node=" + ig.localNode().id() + ", fut=[" + f + ']', f.isDone());
         }
     }
 
