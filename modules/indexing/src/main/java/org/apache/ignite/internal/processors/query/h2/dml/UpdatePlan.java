@@ -39,16 +39,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
@@ -711,34 +707,11 @@ public final class UpdatePlan {
 
                     desc.validateKeyAndValue(key, val);
 
-                    curr = new Object[] {key, null, new InsertEntryProcessor0(val), null};
+                    curr = new Object[] {key, null, new DmlTxInsertEntryProcessor(val), null};
 
                     return;
                 }
             }
-        }
-    }
-
-    /** */
-    private static final class InsertEntryProcessor0 implements EntryProcessor<Object, Object, Void> {
-        /** */
-        private final Object val;
-
-        /**
-         * @param val Value to insert.
-         */
-        private InsertEntryProcessor0(Object val) {
-            this.val = val;
-        }
-
-        @Override public Void process(MutableEntry<Object, Object> entry, Object... args) throws EntryProcessorException {
-            if (entry.exists())
-                throw new IgniteSQLException("Duplicate key during INSERT [key=" +
-                    entry.getKey() + ']', DUPLICATE_KEY);
-
-            entry.setValue(val);
-
-            return null;
         }
     }
 }
