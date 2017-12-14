@@ -101,6 +101,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Use SSL connection", false, false);
 
     /** Client certificate key store url. */
+    private StringProperty sslProtocol = new StringProperty("sslProtocol",
+        "SSL protocol name", "TLS",  null, false, null);
+
+    /** Client certificate key store url. */
     private StringProperty clientCertificateKeyStoreUrl = new StringProperty("clientCertificateKeyStoreUrl",
         "Client certificate key store URL",
         System.getProperty("javax.net.ssl.keyStore"), null, false, null);
@@ -128,6 +132,18 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Trusted certificate key store type",
         System.getProperty("javax.net.ssl.trustStoreType", "JKS"), null, false, null);
 
+    /** Trust all certificates. */
+    private BooleanProperty trustAll = new BooleanProperty("trustAll",
+        "Trust all certificates",false, false);
+
+    /** Custom class name that implements Factory&lt;SSLSocketFactory&gt;. */
+    private StringProperty sslFactory = new StringProperty("sslFactory",
+        "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
+
+    /** Trust all certificates. */
+    private BooleanProperty useDefault = new BooleanProperty("useDefault",
+        "Use default SSL context",false, false);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         host, port,
@@ -135,7 +151,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
         useSSL,
         clientCertificateKeyStoreUrl, clientCertificateKeyStorePassword, clientCertificateKeyStoreType,
-        trustCertificateKeyStoreUrl, trustCertificateKeyStorePassword, trustCertificateKeyStoreType
+        trustCertificateKeyStoreUrl, trustCertificateKeyStorePassword, trustCertificateKeyStoreType,
+        trustAll, sslFactory, useDefault
     };
 
     /** {@inheritDoc} */
@@ -269,6 +286,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
+    @Override public String sslProtocol() {
+        return sslProtocol.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslProtocol(String sslProtocol) {
+        this.sslProtocol.setValue(sslProtocol);
+    }
+
+    /** {@inheritDoc} */
     @Override public String getClientCertificateKeyStoreUrl() {
         return clientCertificateKeyStoreUrl.value();
     }
@@ -324,8 +351,38 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public void getTrustCertificateKeyStoreType(String ksType) {
+    @Override public void setTrustCertificateKeyStoreType(String ksType) {
         trustCertificateKeyStoreType.setValue(ksType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isTrustAll() {
+        return trustAll.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTrustAll(boolean trustAll) {
+        this.trustAll.setValue(trustAll);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslFactory() {
+        return sslFactory.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslFactory(String sslFactory) {
+        this.sslFactory.setValue(sslFactory);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSslUseDefault() {
+        return useDefault.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslUseDefault(boolean useDefault) {
+        this.useDefault.setValue(useDefault);
     }
 
     /**
@@ -731,7 +788,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
-            val = str;
+            if (str == null)
+                val = (String)dfltVal;
+            else
+                val = str;
         }
 
         /** {@inheritDoc} */

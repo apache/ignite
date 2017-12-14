@@ -1757,6 +1757,22 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     */
+    public void testSslClientAndPlainServer()  {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true&" +
+                    "clientCertificateKeyStoreUrl=modules/client/src/test/keystore/client.jks&" +
+                    "clientCertificateKeyStorePassword=123456&" +
+                    "trustCertificateKeyStoreUrl=modules/client/src/test/keystore/client.jks&" +
+                    "trustCertificateKeyStorePassword=123456");
+
+                return null;
+            }
+        }, SQLException.class, "Failed to SSL connect to server");
+    }
+
+    /**
      * @return Savepoint.
      */
     private Savepoint getFakeSavepoint() {

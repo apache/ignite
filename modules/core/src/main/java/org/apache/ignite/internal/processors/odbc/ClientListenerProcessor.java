@@ -129,10 +129,12 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                                 new GridNioSslFilter(cliConnCfg.getSslContextFactory().create(),
                                     true, ByteOrder.nativeOrder(), log);
 
-                            sslFilter.directMode(true);
+                            sslFilter.directMode(false);
 
-                            sslFilter.wantClientAuth(true);
-                            sslFilter.needClientAuth(true);
+                            boolean auth = cliConnCfg.isSslClientAuth();
+
+                            sslFilter.wantClientAuth(auth);
+                            sslFilter.needClientAuth(auth);
 
                             filters = new GridNioFilter[] {openSesFilter, codecFilter, sslFilter};
                         }

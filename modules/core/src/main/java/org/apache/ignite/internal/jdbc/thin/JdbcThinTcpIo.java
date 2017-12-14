@@ -25,16 +25,19 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.file.FileSystems;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -42,6 +45,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -96,6 +100,19 @@ public class JdbcThinTcpIo {
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
+    /** Trust all certificates manager. */
+    private final static X509TrustManager TRUST_ALL_MANAGER = new X509TrustManager() {
+        @Override public X509Certificate[] getAcceptedIssuers() {
+            return null;
+        }
+
+        @Override public void checkServerTrusted(X509Certificate[] arg0, String arg1) {
+        }
+
+        @Override public void checkClientTrusted(X509Certificate[] arg0, String arg1) {
+        }
+    };
+
     /** Connection properties. */
     private final ConnectionProperties connProps;
 
@@ -124,6 +141,32 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Try to guess request capacity.
+     *
+     * @param req Request.
+     * @return Expected capacity.
+     */
+    private static int guessCapacity(JdbcRequest req) {
+        int cap;
+
+        if (req instanceof JdbcBatchExecuteRequest) {
+            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
+
+            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
+        }
+        else if (req instanceof JdbcQueryCloseRequest)
+            cap = QUERY_CLOSE_MSG_SIZE;
+        else if (req instanceof JdbcQueryMetadataRequest)
+            cap = QUERY_META_MSG_SIZE;
+        else if (req instanceof JdbcQueryFetchRequest)
+            cap = QUERY_FETCH_MSG_SIZE;
+        else
+            cap = DYNAMIC_SIZE_MSG_CAP;
+
+        return cap;
+    }
+
+    /**
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
@@ -134,12 +177,13 @@ public class JdbcThinTcpIo {
             try {
                 SSLSocketFactory sslSocketFactory = getSSLSocketFactory();
 
-                sock = sslSocketFactory.createSocket(connProps.getHost(), connProps.getPort());
+                SSLSocket sock0 = (SSLSocket)sslSocketFactory.createSocket(connProps.getHost(), connProps.getPort());
 
-                ((SSLSocket)sock).setUseClientMode(true);
+                sock0.setUseClientMode(true);
 
-                System.out.println("+++ HANDSHAKE");
-                ((SSLSocket)sock).startHandshake();
+                sock0.startHandshake();
+
+                sock = sock0;
             }
             catch (IOException e) {
                 throw new SQLException("Failed to SSL connect to server [host=" + connProps.getHost() +
@@ -191,7 +235,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(ver.major());
         writer.writeShort(ver.minor());
@@ -261,7 +305,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(VER_2_1_0.major());
         writer.writeShort(VER_2_1_0.minor());
@@ -323,32 +367,6 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * Try to guess request capacity.
-     *
-     * @param req Request.
-     * @return Expected capacity.
-     */
-    private static int guessCapacity(JdbcRequest req) {
-        int cap;
-
-        if (req instanceof JdbcBatchExecuteRequest) {
-            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
-
-            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
-        }
-        else if (req instanceof JdbcQueryCloseRequest)
-            cap = QUERY_CLOSE_MSG_SIZE;
-        else if (req instanceof JdbcQueryMetadataRequest)
-            cap = QUERY_META_MSG_SIZE;
-        else if (req instanceof JdbcQueryFetchRequest)
-            cap = QUERY_FETCH_MSG_SIZE;
-        else
-            cap = DYNAMIC_SIZE_MSG_CAP;
-
-        return cap;
-    }
-
-    /**
      * @param req JDBC request bytes.
      * @throws IOException On error.
      */
@@ -372,7 +390,7 @@ public class JdbcThinTcpIo {
     private byte[] read() throws IOException {
         byte[] sizeBytes = read(4);
 
-        int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
+        int msgSize = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
             | ((0xFF & sizeBytes[1]) << 8) + (0xFF & sizeBytes[0]));
 
         return read(msgSize);
@@ -383,7 +401,7 @@ public class JdbcThinTcpIo {
      * @return Read bytes.
      * @throws IOException On error.
      */
-    private byte [] read(int size) throws IOException {
+    private byte[] read(int size) throws IOException {
         int off = 0;
 
         byte[] data = new byte[size];
@@ -436,6 +454,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException On error.
      */
     private SSLSocketFactory getSSLSocketFactory() throws SQLException {
+        String sslFactory = connProps.getSslFactory();
         String cliCertKeyStoreUrl = connProps.getClientCertificateKeyStoreUrl();
         String cliCertKeyStorePwd = connProps.getClientCertificateKeyStorePassword();
         String cliCertKeyStoreType = connProps.getClientCertificateKeyStoreType();
@@ -443,29 +462,38 @@ public class JdbcThinTcpIo {
         String trustCertKeyStorePwd = connProps.getTrustCertificateKeyStorePassword();
         String trustCertKeyStoreType = connProps.getTrustCertificateKeyStoreType();
 
-        if (!F.isEmpty(cliCertKeyStoreUrl)) {
+        if (!F.isEmpty(sslFactory)) {
             try {
-                new URL(cliCertKeyStoreUrl);
+                Class<Factory<SSLSocketFactory>> cls = (Class<Factory<SSLSocketFactory>>)getClass().getClassLoader().loadClass(sslFactory);
+
+                Factory<SSLSocketFactory> f = cls.newInstance();
+
+                return f.create();
             }
-            catch (MalformedURLException e) {
-                cliCertKeyStoreUrl = "file:" + cliCertKeyStoreUrl;
+            catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                throw new SQLException("Could not fount SSL factory class: " + sslFactory, SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
         }
 
-        if (!F.isEmpty(trustCertKeyStoreUrl)) {
+        if (connProps.isSslUseDefault()) {
             try {
-                new URL(trustCertKeyStoreUrl);
+                return SSLContext.getDefault().getSocketFactory();
             }
-            catch (MalformedURLException e) {
-                trustCertKeyStoreUrl = "file:" + trustCertKeyStoreUrl;
+            catch (NoSuchAlgorithmException e) {
+                throw new SQLException("Could not create default SSL context", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
         }
+
+        if (!F.isEmpty(cliCertKeyStoreUrl))
+            cliCertKeyStoreUrl = checkAndConvertUrl(cliCertKeyStoreUrl);
+
+        if (!F.isEmpty(trustCertKeyStoreUrl))
+            trustCertKeyStoreUrl = checkAndConvertUrl(trustCertKeyStoreUrl);
 
         TrustManagerFactory tmf;
         KeyManagerFactory kmf;
 
         KeyManager[] kms = null;
-        List<TrustManager> tms = new ArrayList<>();
 
         try {
             tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -477,51 +505,107 @@ public class JdbcThinTcpIo {
                 " Check java security properties file.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
 
-        if (!F.isEmpty(cliCertKeyStoreUrl)) {
-            InputStream ksInputStream = null;
+        InputStream ksInputStream = null;
 
-            try {
-                if (!F.isEmpty(cliCertKeyStoreType)) {
-                    KeyStore clientKeyStore = KeyStore.getInstance(cliCertKeyStoreType);
+        try {
+            if (!F.isEmpty(cliCertKeyStoreUrl) && !F.isEmpty(cliCertKeyStoreType)) {
+                KeyStore clientKeyStore = KeyStore.getInstance(cliCertKeyStoreType);
 
-                    URL ksURL = new URL(cliCertKeyStoreUrl);
+                URL ksURL = new URL(cliCertKeyStoreUrl);
 
-                    char[] password = (cliCertKeyStorePwd == null) ? new char[0] : cliCertKeyStorePwd.toCharArray();
+                char[] password = (cliCertKeyStorePwd == null) ? new char[0] : cliCertKeyStorePwd.toCharArray();
 
-                    ksInputStream = ksURL.openStream();
+                ksInputStream = ksURL.openStream();
 
-                    clientKeyStore.load(ksInputStream, password);
+                clientKeyStore.load(ksInputStream, password);
 
-                    kmf.init(clientKeyStore, password);
+                kmf.init(clientKeyStore, password);
 
-                    kms = kmf.getKeyManagers();
+                kms = kmf.getKeyManagers();
+            }
+        }
+        catch (UnrecoverableKeyException e) {
+            throw new SQLException("Could not recover keys from client keystore.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new SQLException("Unsupported keystore algorithm.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
+        catch (KeyStoreException e) {
+            throw new SQLException("Could not create client KeyStore instance.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
+        catch (CertificateException e) {
+            throw new SQLException("Could not load client key store. [storeType=" + cliCertKeyStoreType + ", cliStoreUrl="
+                + cliCertKeyStoreUrl + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
+        catch (MalformedURLException e) {
+            throw new SQLException("Invalid client key store URL. [url=" + cliCertKeyStoreUrl + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
+        catch (IOException e) {
+            throw new SQLException("Could not open client key store.[url=" + cliCertKeyStoreUrl + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
+        finally {
+            if (ksInputStream != null) {
+                try {
+                    ksInputStream.close();
+                }
+                catch (IOException e) {
+                    // can't close input stream, but keystore can be properly initialized so we shouldn't throw this exception
                 }
             }
-            catch (UnrecoverableKeyException e) {
-                throw new SQLException("Could not recover keys from client keystore.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
+
+        InputStream tsInputStream = null;
+
+        List<TrustManager> tms;
+
+        if (connProps.isTrustAll())
+            tms = Collections.<TrustManager>singletonList(TRUST_ALL_MANAGER);
+        else {
+            tms = new ArrayList<>();
+
+            try {
+                KeyStore trustKeyStore = null;
+
+                if (!F.isEmpty(trustCertKeyStoreUrl) && !F.isEmpty(trustCertKeyStoreType)) {
+                    char[] trustStorePassword = (trustCertKeyStorePwd == null) ? new char[0] : trustCertKeyStorePwd.toCharArray();
+
+                    tsInputStream = new URL(trustCertKeyStoreUrl).openStream();
+
+                    trustKeyStore = KeyStore.getInstance(trustCertKeyStoreType);
+
+                    trustKeyStore.load(tsInputStream, trustStorePassword);
+                }
+
+                tmf.init(trustKeyStore);
+
+                TrustManager[] origTms = tmf.getTrustManagers();
+
+                Collections.addAll(tms, origTms);
             }
             catch (NoSuchAlgorithmException e) {
                 throw new SQLException("Unsupported keystore algorithm.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
             catch (KeyStoreException e) {
-                throw new SQLException("Could not create KeyStore instance.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                throw new SQLException("Could not create trust KeyStore instance.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
             catch (CertificateException e) {
-                throw new SQLException("Could not load client key store. [storeType=" + cliCertKeyStoreType + ", cliStoreUrl="
-                    + cliCertKeyStoreUrl + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                throw new SQLException("Could not load trusted key store. [storeType=" + trustCertKeyStoreType +
+                    ", cliStoreUrl=" + trustCertKeyStoreUrl + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
             catch (MalformedURLException e) {
-                throw new SQLException("Invalid client key store URL. [url=" + cliCertKeyStoreUrl + ']',
+                throw new SQLException("Invalid trusted key store URL. [url=" + trustCertKeyStoreUrl + ']',
                     SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
             catch (IOException e) {
-                throw new SQLException("Cannot open client key store.[url=" + cliCertKeyStoreUrl + ']',
+                throw new SQLException("Could not open trusted key store. [url=" + cliCertKeyStoreUrl + ']',
                     SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
             finally {
-                if (ksInputStream != null) {
+                if (tsInputStream != null) {
                     try {
-                        ksInputStream.close();
+                        tsInputStream.close();
                     }
                     catch (IOException e) {
                         // can't close input stream, but keystore can be properly initialized so we shouldn't throw this exception
@@ -530,59 +614,10 @@ public class JdbcThinTcpIo {
             }
         }
 
-        InputStream tsInputStream = null;
-        try {
-            KeyStore trustKeyStore = null;
-
-            if (!F.isEmpty(trustCertKeyStoreUrl) && !F.isEmpty(trustCertKeyStoreType)) {
-                char[] trustStorePassword = (trustCertKeyStorePwd == null) ? new char[0] : trustCertKeyStorePwd.toCharArray();
-
-                tsInputStream = new URL(trustCertKeyStoreUrl).openStream();
-
-                trustKeyStore = KeyStore.getInstance(trustCertKeyStoreType);
-
-                trustKeyStore.load(tsInputStream, trustStorePassword);
-            }
-
-            tmf.init(trustKeyStore);
-
-            TrustManager[] origTms = tmf.getTrustManagers();
-
-            Collections.addAll(tms, origTms);
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new SQLException("Unsupported keystore algorithm.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        catch (KeyStoreException e) {
-            throw new SQLException("Could not create KeyStore instance.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        catch (CertificateException e) {
-            throw new SQLException("Could not load trusted key store. [storeType=" + trustCertKeyStoreType +
-                ", cliStoreUrl=" + trustCertKeyStoreUrl + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        catch (MalformedURLException e) {
-            throw new SQLException("Invalid trusted key store URL. [url=" + trustCertKeyStoreUrl + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        catch (IOException e) {
-            throw new SQLException("Cannot trusted client key store.[url=" + cliCertKeyStoreUrl + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        finally {
-            if (tsInputStream != null) {
-                try {
-                    tsInputStream.close();
-                }
-                catch (IOException e) {
-                    // can't close input stream, but keystore can be properly initialized so we shouldn't throw this exception
-                }
-            }
-        }
-
         assert tms.size() != 0;
 
         try {
-            SSLContext sslContext = SSLContext.getInstance("TLS");
+            SSLContext sslContext = SSLContext.getInstance(connProps.sslProtocol());
 
             sslContext.init(kms, tms.toArray(new TrustManager[tms.size()]), null);
 
@@ -593,6 +628,26 @@ public class JdbcThinTcpIo {
         }
         catch (KeyManagementException e) {
             throw new SQLException("Cannot init SSL context.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
+    }
+
+    /**
+     * @param url URL or path to check and convert to URL.
+     * @return URL.
+     * @throws SQLException If URL is invalid.
+     */
+    private String checkAndConvertUrl(String url) throws SQLException {
+        try {
+            return new URL(url).toString();
+        }
+        catch (MalformedURLException e) {
+            try {
+                return FileSystems.getDefault().getPath(url).toUri().toURL().toString();
+            }
+            catch (MalformedURLException e1) {
+                throw new SQLException("Invalid keystore UR: " + url,
+                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            }
         }
     }
 }

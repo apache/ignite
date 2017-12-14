@@ -157,6 +157,16 @@ public interface ConnectionProperties {
     public void setUseSSL(boolean useSSL);
 
     /**
+     * @return SSL protocol name.
+     */
+    public String sslProtocol();
+
+    /**
+     * @param sslProtocol SSL protocol name.
+     */
+    public void setSslProtocol(String sslProtocol);
+
+    /**
      * @return Client certificate KeyStore URL.
      */
     public String getClientCertificateKeyStoreUrl();
@@ -214,5 +224,35 @@ public interface ConnectionProperties {
     /**
      * @param ksType Trusted certificate KeyStore type.
      */
-    public void getTrustCertificateKeyStoreType(String ksType);
+    public void setTrustCertificateKeyStoreType(String ksType);
+
+    /**
+     * @return Trust all certificates flag.
+     */
+    public boolean isTrustAll();
+
+    /**
+     * @param trustAll Trust all certificates flag.
+     */
+    public void setTrustAll(boolean trustAll);
+
+    /**
+     * @return Custom class name that implements Factory&lt;SSLSocketFactory&gt;.
+     */
+    public String getSslFactory();
+
+    /**
+     * @param sslFactory Custom class name that implements Factory&lt;SSLSocketFactory&gt;.
+     */
+    public void setSslFactory(String sslFactory);
+
+    /**
+     * @return Use default SSL context flag.
+     */
+    public boolean isSslUseDefault();
+
+    /**
+     * @param useDefault Use default SSL context flag.
+     */
+    public void setSslUseDefault(boolean useDefault);
 }
