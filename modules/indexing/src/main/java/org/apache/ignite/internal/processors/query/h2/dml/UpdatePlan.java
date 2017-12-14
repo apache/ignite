@@ -83,13 +83,42 @@ public final class UpdatePlan {
     /** Additional info for distributed update. */
     private final DmlDistributedPlanInfo distributed;
 
-    /** */
-    private UpdatePlan(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
-        KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-        int rowsNum, FastUpdateArguments fastUpdateArgs, DmlDistributedPlanInfo distributed) {
+    /**
+     * Constructor.
+     *
+     * @param mode Mode.
+     * @param tbl Table.
+     * @param colNames Column names.
+     * @param colTypes Column types.
+     * @param keySupplier Key supplier.
+     * @param valSupplier Value supplier.
+     * @param keyColIdx Key column index.
+     * @param valColIdx value column index.
+     * @param selectQry Select query.
+     * @param isLocSubqry Local subquery flag.
+     * @param rowsNum Rows number.
+     * @param fastUpdateArgs Fast update arguments (if any).
+     * @param distributed Distributed plan (if any)
+     */
+    public UpdatePlan(
+        UpdateMode mode,
+        GridH2Table tbl,
+        String[] colNames,
+        int[] colTypes,
+        KeyValueSupplier keySupplier,
+        KeyValueSupplier valSupplier,
+        int keyColIdx,
+        int valColIdx,
+        String selectQry,
+        boolean isLocSubqry,
+        int rowsNum,
+        @Nullable FastUpdateArguments fastUpdateArgs,
+        @Nullable DmlDistributedPlanInfo distributed
+    ) {
         this.colNames = colNames;
         this.colTypes = colTypes;
         this.rowsNum = rowsNum;
+
         assert mode != null;
         assert tbl != null;
 
@@ -105,46 +134,36 @@ public final class UpdatePlan {
         this.distributed = distributed;
     }
 
-    /** */
-    public static UpdatePlan forMerge(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
-        KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-        int rowsNum, DmlDistributedPlanInfo distributed) {
-        assert !F.isEmpty(colNames);
-
-        return new UpdatePlan(UpdateMode.MERGE, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx,
-            selectQry, isLocSubqry, rowsNum, null, distributed);
-    }
-
-    /** */
-    public static UpdatePlan forInsert(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
-        KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-        int rowsNum, DmlDistributedPlanInfo distributed) {
-        assert !F.isEmpty(colNames);
-
-        return new UpdatePlan(UpdateMode.INSERT, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx,
-            valColIdx, selectQry, isLocSubqry, rowsNum, null, distributed);
-    }
-
-    /** */
-    public static UpdatePlan forUpdate(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier valSupplier,
-        int valColIdx, String selectQry, DmlDistributedPlanInfo distributed) {
-        assert !F.isEmpty(colNames);
-
-        return new UpdatePlan(UpdateMode.UPDATE, tbl, colNames, colTypes, null, valSupplier, -1, valColIdx, selectQry,
-            false, 0, null, distributed);
-    }
-
-    /** */
-    public static UpdatePlan forDelete(GridH2Table tbl, String selectQry, DmlDistributedPlanInfo distributed) {
-        return new UpdatePlan(UpdateMode.DELETE, tbl, null, null, null, null, -1, -1, selectQry, false, 0, null,
-            distributed);
-    }
-
-    /** */
-    public static UpdatePlan forFastUpdate(UpdateMode mode, GridH2Table tbl, FastUpdateArguments fastUpdateArgs) {
-        assert mode == UpdateMode.UPDATE || mode == UpdateMode.DELETE;
-
-        return new UpdatePlan(mode, tbl, null, null, null, null, -1, -1, null, false, 0, fastUpdateArgs, null);
+    /**
+     * Constructor for delete operation or fast update.
+     *
+     * @param mode Mode.
+     * @param tbl Table.
+     * @param selectQry Select query.
+     * @param fastUpdateArgs Fast update arguments (if any).
+     * @param distributed Distributed plan (if any)
+     */
+    public UpdatePlan(
+        UpdateMode mode,
+        GridH2Table tbl,
+        String selectQry,
+        @Nullable FastUpdateArguments fastUpdateArgs,
+        @Nullable DmlDistributedPlanInfo distributed) {
+        this(
+            mode,
+            tbl,
+            null,
+            null,
+            null,
+            null,
+            -1,
+            -1,
+            selectQry,
+            false,
+            0,
+            fastUpdateArgs,
+            distributed
+        );
     }
 
     /**

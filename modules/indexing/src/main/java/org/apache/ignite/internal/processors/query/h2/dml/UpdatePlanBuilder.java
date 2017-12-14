@@ -216,12 +216,23 @@ public final class UpdatePlanBuilder {
         DmlDistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
             checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
 
-        if (stmt instanceof GridSqlMerge)
-            return UpdatePlan.forMerge(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
-                valColIdx, selectSql, !isTwoStepSubqry, rowsNum, distributed);
-        else
-            return UpdatePlan.forInsert(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
-                valColIdx, selectSql, !isTwoStepSubqry, rowsNum, distributed);
+        UpdateMode mode = stmt instanceof GridSqlMerge ? UpdateMode.MERGE : UpdateMode.INSERT;
+
+        return new UpdatePlan(
+            mode,
+            tbl.dataTable(),
+            colNames,
+            colTypes,
+            keySupplier,
+            valSupplier,
+            keyColIdx,
+            valColIdx,
+            selectSql,
+            !isTwoStepSubqry,
+            rowsNum,
+            null,
+            distributed
+        );
     }
 
     /**
@@ -266,16 +277,23 @@ public final class UpdatePlanBuilder {
 
         GridSqlTable tbl = DmlAstUtils.gridTableForElement(target);
 
-        GridH2Table gridTbl = tbl.dataTable();
+        GridH2Table h2Tbl = tbl.dataTable();
 
-        GridH2RowDescriptor desc = gridTbl.rowDescriptor();
+        GridH2RowDescriptor desc = h2Tbl.rowDescriptor();
 
         if (desc == null)
-            throw new IgniteSQLException("Row descriptor undefined for table '" + gridTbl.getName() + "'",
+            throw new IgniteSQLException("Row descriptor undefined for table '" + h2Tbl.getName() + "'",
                 IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
-        if (fastUpdate != null)
-            return UpdatePlan.forFastUpdate(mode, gridTbl, fastUpdate);
+        if (fastUpdate != null) {
+            return new UpdatePlan(
+                mode,
+                h2Tbl,
+                null,
+                fastUpdate,
+                null
+            );
+        }
         else {
             GridSqlSelect sel;
 
@@ -311,7 +329,7 @@ public final class UpdatePlanBuilder {
 
                 int newValColIdx = (hasNewVal ? valColIdx : 1);
 
-                KeyValueSupplier newValSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps,
+                KeyValueSupplier valSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps,
                     false, true);
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
@@ -321,8 +339,20 @@ public final class UpdatePlanBuilder {
                 DmlDistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
                     checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName());
 
-                return UpdatePlan.forUpdate(gridTbl, colNames, colTypes, newValSupplier, valColIdx, selectSql,
-                    distributed);
+                return new UpdatePlan(
+                    UpdateMode.UPDATE,
+                    h2Tbl, colNames,
+                    colTypes,
+                    null,
+                    valSupplier,
+                    -1,
+                    valColIdx,
+                    selectSql,
+                    false,
+                    0,
+                    null,
+                    distributed
+                );
             }
             else {
                 sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
@@ -332,7 +362,13 @@ public final class UpdatePlanBuilder {
                 DmlDistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
                     checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName());
 
-                return UpdatePlan.forDelete(gridTbl, selectSql, distributed);
+                return new UpdatePlan(
+                    UpdateMode.DELETE,
+                    h2Tbl,
+                    selectSql,
+                    null,
+                    distributed
+                );
             }
         }
     }
