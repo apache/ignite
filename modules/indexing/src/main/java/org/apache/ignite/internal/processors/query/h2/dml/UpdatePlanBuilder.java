@@ -213,7 +213,7 @@ public final class UpdatePlanBuilder {
 
         String selectSql = sel.getSQL();
 
-        UpdatePlan.DistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
+        DmlDistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
             checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
 
         if (stmt instanceof GridSqlMerge)
@@ -318,7 +318,7 @@ public final class UpdatePlanBuilder {
 
                 String selectSql = sel.getSQL();
 
-                UpdatePlan.DistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
+                DmlDistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
                     checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName());
 
                 return UpdatePlan.forUpdate(gridTbl, colNames, colTypes, newValSupplier, valColIdx, selectSql,
@@ -329,7 +329,7 @@ public final class UpdatePlanBuilder {
 
                 String selectSql = sel.getSQL();
 
-                UpdatePlan.DistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
+                DmlDistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
                     checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName());
 
                 return UpdatePlan.forDelete(gridTbl, selectSql, distributed);
@@ -546,7 +546,7 @@ public final class UpdatePlanBuilder {
      * @return distributed update plan info, or {@code null} if cannot be distributed.
      * @throws IgniteCheckedException if failed.
      */
-    private static UpdatePlan.DistributedPlanInfo checkPlanCanBeDistributed(IgniteH2Indexing idx,
+    private static DmlDistributedPlanInfo checkPlanCanBeDistributed(IgniteH2Indexing idx,
         Connection conn, SqlFieldsQuery fieldsQry, boolean loc, String selectQry, String cacheName)
         throws IgniteCheckedException {
 
@@ -570,7 +570,7 @@ public final class UpdatePlanBuilder {
                 boolean distributed = qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
                     !qry.mapQueries().get(0).hasSubQueries();
 
-                return distributed ? new UpdatePlan.DistributedPlanInfo(qry.isReplicatedOnly(),
+                return distributed ? new DmlDistributedPlanInfo(qry.isReplicatedOnly(),
                     idx.collectCacheIds(CU.cacheId(cacheName), qry)): null;
             }
         }

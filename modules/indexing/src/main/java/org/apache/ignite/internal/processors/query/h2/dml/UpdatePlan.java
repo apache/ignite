@@ -17,61 +17,76 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
-import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.h2.table.Column;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Update plan - where to take data to update cache from and how to construct new keys and values, if needed.
  */
 public final class UpdatePlan {
     /** Initial statement to drive the rest of the logic. */
-    public final UpdateMode mode;
+    private final UpdateMode mode;
 
     /** Target table to be affected by initial DML statement. */
-    public final GridH2Table tbl;
+    private final GridH2Table tbl;
 
     /** Column names to set or update. */
-    public final String[] colNames;
+    private final String[] colNames;
 
-    /**
-     * Expected column types to set or insert/merge.
-     * @see org.h2.value.Value
-     */
-    public final int[] colTypes;
+    /** Column types to set for insert/merge. */
+    private final int[] colTypes;
 
     /** Method to create key for INSERT or MERGE, ignored for UPDATE and DELETE. */
-    public final KeyValueSupplier keySupplier;
+    private final KeyValueSupplier keySupplier;
 
     /** Method to create value to put to cache, ignored for DELETE. */
-    public final KeyValueSupplier valSupplier;
+    private final KeyValueSupplier valSupplier;
 
-    /** Index of key column, if it's explicitly mentioned in column list of MERGE or INSERT,
-     * ignored for UPDATE and DELETE. */
-    public final int keyColIdx;
+    /** Key column index. */
+    private final int keyColIdx;
 
-    /** Index of value column, if it's explicitly mentioned in column list. Ignored for UPDATE and DELETE. */
-    public final int valColIdx;
+    /** Value column index. */
+    private final int valColIdx;
 
     /** SELECT statement built upon initial DML statement. */
-    public final String selectQry;
+    private final String selectQry;
 
     /** Subquery flag - {@code true} if {@link #selectQry} is an actual subquery that retrieves data from some cache. */
-    public final boolean isLocSubqry;
+    private final boolean isLocSubqry;
 
     /** Number of rows in rows based MERGE or INSERT. */
-    public final int rowsNum;
+    private final int rowsNum;
 
     /** Arguments for fast UPDATE or DELETE. */
-    public final FastUpdateArguments fastUpdateArgs;
+    private final FastUpdateArguments fastUpdateArgs;
 
     /** Additional info for distributed update. */
-    public final DistributedPlanInfo distributed;
+    private final DmlDistributedPlanInfo distributed;
 
     /** */
     private UpdatePlan(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
         KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-        int rowsNum, FastUpdateArguments fastUpdateArgs, DistributedPlanInfo distributed) {
+        int rowsNum, FastUpdateArguments fastUpdateArgs, DmlDistributedPlanInfo distributed) {
         this.colNames = colNames;
         this.colTypes = colTypes;
         this.rowsNum = rowsNum;
@@ -93,7 +108,7 @@ public final class UpdatePlan {
     /** */
     public static UpdatePlan forMerge(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
         KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-        int rowsNum, DistributedPlanInfo distributed) {
+        int rowsNum, DmlDistributedPlanInfo distributed) {
         assert !F.isEmpty(colNames);
 
         return new UpdatePlan(UpdateMode.MERGE, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx,
@@ -103,7 +118,7 @@ public final class UpdatePlan {
     /** */
     public static UpdatePlan forInsert(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
         KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-        int rowsNum, DistributedPlanInfo distributed) {
+        int rowsNum, DmlDistributedPlanInfo distributed) {
         assert !F.isEmpty(colNames);
 
         return new UpdatePlan(UpdateMode.INSERT, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx,
@@ -112,7 +127,7 @@ public final class UpdatePlan {
 
     /** */
     public static UpdatePlan forUpdate(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier valSupplier,
-        int valColIdx, String selectQry, DistributedPlanInfo distributed) {
+        int valColIdx, String selectQry, DmlDistributedPlanInfo distributed) {
         assert !F.isEmpty(colNames);
 
         return new UpdatePlan(UpdateMode.UPDATE, tbl, colNames, colTypes, null, valSupplier, -1, valColIdx, selectQry,
@@ -120,7 +135,7 @@ public final class UpdatePlan {
     }
 
     /** */
-    public static UpdatePlan forDelete(GridH2Table tbl, String selectQry, DistributedPlanInfo distributed) {
+    public static UpdatePlan forDelete(GridH2Table tbl, String selectQry, DmlDistributedPlanInfo distributed) {
         return new UpdatePlan(UpdateMode.DELETE, tbl, null, null, null, null, -1, -1, selectQry, false, 0, null,
             distributed);
     }
@@ -133,38 +148,222 @@ public final class UpdatePlan {
     }
 
     /**
-     * Additional information about distributed update plan.
+     * Convert a row into key-value pair.
+     *
+     * @param row Row to process.
+     * @throws IgniteCheckedException if failed.
      */
-    public final static class DistributedPlanInfo {
-        /** Whether update involves only replicated caches. */
-        private final boolean replicatedOnly;
+    public IgniteBiTuple<?, ?> processRow(List<?> row) throws IgniteCheckedException {
+        GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
+        GridQueryTypeDescriptor desc = rowDesc.type();
 
-        /** Identifiers of caches involved in update (used for cluster nodes mapping). */
-        private final List<Integer> cacheIds;
+        GridCacheContext cctx = rowDesc.context();
 
-        /**
-         * Constructor.
-         *
-         * @param replicatedOnly Whether all caches are replicated.
-         * @param cacheIds List of cache identifiers.
-         */
-        DistributedPlanInfo(boolean replicatedOnly, List<Integer> cacheIds) {
-            this.replicatedOnly = replicatedOnly;
-            this.cacheIds = cacheIds;
+        Object key = keySupplier.apply(row);
+
+        if (QueryUtils.isSqlType(desc.keyClass())) {
+            assert keyColIdx != -1;
+
+            key = DmlUtils.convert(key, rowDesc, desc.keyClass(), colTypes[keyColIdx]);
         }
 
-        /**
-         * @return {@code true} in case all involved caches are replicated.
-         */
-        public boolean isReplicatedOnly() {
-            return replicatedOnly;
+        Object val = valSupplier.apply(row);
+
+        if (QueryUtils.isSqlType(desc.valueClass())) {
+            assert valColIdx != -1;
+
+            val = DmlUtils.convert(val, rowDesc, desc.valueClass(), colTypes[valColIdx]);
         }
 
-        /**
-         * @return cache identifiers.
-         */
-        public List<Integer> getCacheIds() {
-            return cacheIds;
+        if (key == null) {
+            if (F.isEmpty(desc.keyFieldName()))
+                throw new IgniteSQLException("Key for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_KEY);
+            else
+                throw new IgniteSQLException("Null value is not allowed for column '" + desc.keyFieldName() + "'",
+                    IgniteQueryErrorCode.NULL_KEY);
         }
+
+        if (val == null) {
+            if (F.isEmpty(desc.valueFieldName()))
+                throw new IgniteSQLException("Value for INSERT, MERGE, or UPDATE must not be null",
+                    IgniteQueryErrorCode.NULL_VALUE);
+            else
+                throw new IgniteSQLException("Null value is not allowed for column '" + desc.valueFieldName() + "'",
+                    IgniteQueryErrorCode.NULL_VALUE);
+        }
+
+        Map<String, Object> newColVals = new HashMap<>();
+
+        for (int i = 0; i < colNames.length; i++) {
+            if (i == keyColIdx || i == valColIdx)
+                continue;
+
+            String colName = colNames[i];
+
+            GridQueryProperty prop = desc.property(colName);
+
+            assert prop != null;
+
+            Class<?> expCls = prop.type();
+
+            newColVals.put(colName, DmlUtils.convert(row.get(i), rowDesc, expCls, colTypes[i]));
+        }
+
+        // We update columns in the order specified by the table for a reason - table's
+        // column order preserves their precedence for correct update of nested properties.
+        Column[] cols = tbl.getColumns();
+
+        // First 3 columns are _key, _val and _ver. Skip 'em.
+        for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
+            if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
+                continue;
+
+            String colName = cols[i].getName();
+
+            if (!newColVals.containsKey(colName))
+                continue;
+
+            Object colVal = newColVals.get(colName);
+
+            desc.setValue(colName, key, val, colVal);
+        }
+
+        if (cctx.binaryMarshaller()) {
+            if (key instanceof BinaryObjectBuilder)
+                key = ((BinaryObjectBuilder) key).build();
+
+            if (val instanceof BinaryObjectBuilder)
+                val = ((BinaryObjectBuilder) val).build();
+        }
+
+        desc.validateKeyAndValue(key, val);
+
+        return new IgniteBiTuple<>(key, val);
+    }
+
+    /**
+     * Convert a row into value.
+     *
+     * @param row Row to process.
+     * @throws IgniteCheckedException if failed.
+     */
+    public T3<Object, Object, Object> processRowForUpdate(List<?> row) throws IgniteCheckedException {
+        GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
+        GridQueryTypeDescriptor desc = rowDesc.type();
+
+        GridCacheContext cctx = rowDesc.context();
+
+        boolean hasNewVal = (valColIdx != -1);
+
+        boolean hasProps = !hasNewVal || colNames.length > 1;
+
+        Object key = row.get(0);
+
+        Object oldVal = row.get(1);
+
+        if (cctx.binaryMarshaller() && !(oldVal instanceof BinaryObject))
+            oldVal = cctx.grid().binary().toBinary(oldVal);
+
+        Object newVal;
+
+        Map<String, Object> newColVals = new HashMap<>();
+
+        for (int i = 0; i < colNames.length; i++) {
+            if (hasNewVal && i == valColIdx - 2)
+                continue;
+
+            GridQueryProperty prop = tbl.rowDescriptor().type().property(colNames[i]);
+
+            assert prop != null : "Unknown property: " + colNames[i];
+
+            newColVals.put(colNames[i], DmlUtils.convert(row.get(i + 2), rowDesc, prop.type(), colTypes[i]));
+        }
+
+        newVal = valSupplier.apply(row);
+
+        if (newVal == null)
+            throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
+
+        // Skip key and value - that's why we start off with 3rd column
+        for (int i = 0; i < tbl.getColumns().length - DEFAULT_COLUMNS_COUNT; i++) {
+            Column c = tbl.getColumn(i + DEFAULT_COLUMNS_COUNT);
+
+            if (rowDesc.isKeyValueOrVersionColumn(c.getColumnId()))
+                continue;
+
+            GridQueryProperty prop = desc.property(c.getName());
+
+            if (prop.key())
+                continue; // Don't get values of key's columns - we won't use them anyway
+
+            boolean hasNewColVal = newColVals.containsKey(c.getName());
+
+            if (!hasNewColVal)
+                continue;
+
+            Object colVal = newColVals.get(c.getName());
+
+            // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key.
+            rowDesc.setColumnValue(null, newVal, colVal, i);
+        }
+
+        if (cctx.binaryMarshaller() && hasProps) {
+            assert newVal instanceof BinaryObjectBuilder;
+
+            newVal = ((BinaryObjectBuilder) newVal).build();
+        }
+
+        desc.validateKeyAndValue(key, newVal);
+
+        return new T3<>(key, oldVal, newVal);
+    }
+
+    /**
+     * @return Update mode.
+     */
+    public UpdateMode mode() {
+        return mode;
+    }
+
+    /**
+     * @return Cache context.
+     */
+    public GridCacheContext cacheContext() {
+        return tbl.cache();
+    }
+
+    /**
+     * @return Distributed plan info (for skip-reducer mode).
+     */
+    @Nullable public DmlDistributedPlanInfo distributedPlan() {
+        return distributed;
+    }
+
+    /**
+     * @return Row count.
+     */
+    public int rowCount() {
+        return rowsNum;
+    }
+
+    /**
+     * @return Select query.
+     */
+    public String selectQuery() {
+        return selectQry;
+    }
+
+    /**
+     * @return Local subquery flag.
+     */
+    @Nullable public boolean isLocalSubquery() {
+        return isLocSubqry;
+    }
+
+    /**
+     * @return Fast update arguments.
+     */
+    @Nullable public FastUpdateArguments fastUpdateArguments() {
+        return fastUpdateArgs;
     }
 }
