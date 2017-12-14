@@ -2081,9 +2081,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private void doCheckpoint() {
             try {
-                final CheckpointMetricsTracker tracker = new CheckpointMetricsTracker();
+                CheckpointMetricsTracker tracker = new CheckpointMetricsTracker();
 
-                final Checkpoint chp = markCheckpointBegin(tracker);
+                Checkpoint chp = markCheckpointBegin(tracker);
 
                 currCheckpointPagesCnt = chp.pagesSize();
 
@@ -2562,6 +2562,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);
 
                 if (tag != null) {
+                    assert PageIO.getType(tmpWriteBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
+                    assert PageIO.getVersion(tmpWriteBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
+
                     tmpWriteBuf.rewind();
 
                     if (persStoreMetrics.metricsEnabled()) {
@@ -2583,9 +2586,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     tmpWriteBuf.rewind();
 
-                    PageIO.setCrc(writeAddr, 0);
 
-                    PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag);
+                    PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, false);
 
                     updStores.add(store);
                 }
