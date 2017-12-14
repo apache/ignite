@@ -195,7 +195,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             assertTrue("Node get no jobs.", nodes.contains(g.name()));
 
         assertTrue( "Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
-            Math.abs(stolen.get() - 2 * noneStolen.get()) <= 6);
+            Math.abs(stolen.get() - 2 * noneStolen.get()) <= 8);
     }
 
 
