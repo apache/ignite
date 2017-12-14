@@ -1420,7 +1420,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             affMgr
         );
 
-        cacheCtx.statisticsEnabled(desc.statisticsEnabled());
+        cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -1552,7 +1552,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 affMgr
             );
 
-            cacheCtx.statisticsEnabled(desc.statisticsEnabled());
+            cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
 

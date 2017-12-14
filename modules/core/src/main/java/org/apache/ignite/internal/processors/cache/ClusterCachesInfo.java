@@ -394,7 +394,7 @@ class ClusterCachesInfo {
         DynamicCacheDescriptor desc = registeredCaches.get(msg.cacheName());
 
         if (desc != null)
-            desc.statisticsEnabled(msg.enabled());
+            desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
         else
             log.warning("Failed to change cache descriptor configuration, cache not found [cacheName=" + msg.cacheName() + ']');
     }
@@ -966,7 +966,7 @@ class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 desc.sql(),
                 false,
-                desc.statisticsEnabled());
+                0);
 
             caches.put(desc.cacheName(), cacheData);
         }
@@ -984,7 +984,7 @@ class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 false,
                 true,
-                desc.statisticsEnabled());
+                0);
 
             templates.put(desc.cacheName(), cacheData);
         }
@@ -1057,8 +1057,6 @@ class ClusterCachesInfo {
                 cacheData.deploymentId(),
                 cacheData.schema());
 
-            desc.statisticsEnabled(cacheData.statisticsEnabled());
-
             registeredTemplates.put(cacheData.cacheConfiguration().getName(), desc);
         }
 
@@ -1082,8 +1080,6 @@ class ClusterCachesInfo {
                 cacheData.schema());
 
             desc.receivedOnDiscovery(true);
-
-            desc.statisticsEnabled(cacheData.statisticsEnabled());
 
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
 
@@ -1177,7 +1173,7 @@ class ClusterCachesInfo {
                     desc0.receivedFromStartVersion(desc.receivedFromStartVersion());
                     desc0.clientCacheStartVersion(desc.clientCacheStartVersion());
 
-                    desc0.statisticsEnabled(desc.statisticsEnabled());
+                    desc0.cacheConfiguration().setStatisticsEnabled(cfg.isStatisticsEnabled());
 
                     desc = desc0;
                 }
