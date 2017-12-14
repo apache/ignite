@@ -53,34 +53,25 @@ class QuickSortRecursiveTask implements Callable<Void> {
         this.settings = settings;
     }
 
-    public static boolean isUnderThreshold(int cnt) {
+    private static boolean isUnderThreshold(int cnt) {
         return cnt < ONE_CHUNK_THRESHOLD;
     }
 
-
     @Override public Void call() throws Exception {
         final int remaining = limit - position;
+        if (remaining == 0)
+            return null;
+
         Comparator<FullPageId> comp = settings.comp;
         if (isUnderThreshold(remaining)) {
-            Arrays.sort(array, position, limit, comp);
-            if (false) //todo remove
-                System.err.println("Sorted [" + remaining + "] in " + Thread.currentThread().getName());
+            final FullPageId[] arrCopy = Arrays.copyOfRange(array, position, limit);
 
-            final FullPageId[] e = Arrays.copyOfRange(array, position, limit);
+            Arrays.sort(arrCopy, comp);
 
-            final Callable<Void> apply = settings.taskFactory.apply(e);
-            settings.runningWriters.incrementAndGet();
-            try {
-                apply.call();
-            }
-            finally {
-                settings.runningWriters.decrementAndGet();
-            }
+            runPayload(arrCopy);
         }
         else {
-            int centerIndex = partition2(array, position, limit, comp);
-            if (false) //todo remove
-                System.err.println("centerIndex=" + centerIndex);
+            int centerIndex = partition(array, position, limit, comp);
             Callable<Void> t1 = new QuickSortRecursiveTask(array, position, centerIndex, settings);
             Callable<Void> t2 = new QuickSortRecursiveTask(array, centerIndex, limit, settings);
 
@@ -96,23 +87,18 @@ class QuickSortRecursiveTask implements Callable<Void> {
         return null;
     }
 
-    int partition(FullPageId[] arr, int position, int limit,
-        Comparator<FullPageId> comp) {
-        if (false)
-            System.err.println("Partition from " + position + " to " + limit); //todo remove
-        int i = position;
-        FullPageId x = arr[limit - 1];
-        for (int j = position; j < limit - 1; j++) {
-            if (comp.compare(arr[j], x) < 0) {
-                swap(arr, i, j);
-                i++;
-            }
+    private void runPayload(FullPageId[] data) throws Exception {
+        final Callable<Void> apply = settings.taskFactory.apply(data);
+        settings.runningWriters.incrementAndGet();
+        try {
+            apply.call();
         }
-        swap(arr, i, limit - 1);
-        return i;
+        finally {
+            settings.runningWriters.decrementAndGet();
+        }
     }
 
-    static int partition2(FullPageId[] arr, int position, int limit,
+    public static int partition(FullPageId[] arr, int position, int limit,
         Comparator<FullPageId> comp) {
         int left = position;
         int right = limit - 1;
@@ -129,9 +115,7 @@ class QuickSortRecursiveTask implements Callable<Void> {
 
             // swap the values
             if (left <= right) {
-                FullPageId tmp = arr[left];
-                arr[left] = arr[right];
-                arr[right] = tmp;
+                swap(arr, left, right);
 
                 //increment left index and decrement right index
                 left++;
@@ -141,12 +125,11 @@ class QuickSortRecursiveTask implements Callable<Void> {
         return left;
     }
 
-    void swap(FullPageId[] arr, int i, int j) {
+    static void swap(FullPageId[] arr, int i, int j) {
         FullPageId tmp = arr[i];
         arr[i] = arr[j];
         arr[j] = tmp;
     }
-
 
     private static class CpSettings {
         private final IgniteClosure<FullPageId[], Callable<Void>> taskFactory;
