@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -85,7 +86,9 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(true);
+            IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+            if (cache instanceof IgniteCacheProxy)
+                ((IgniteCacheProxy)cache).context().statisticsEnabled(true);
         }
     }
 

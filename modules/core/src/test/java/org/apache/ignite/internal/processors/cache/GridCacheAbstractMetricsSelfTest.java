@@ -109,7 +109,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(true);
+            IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+            if (cache instanceof IgniteCacheProxy)
+                ((IgniteCacheProxy)cache).context().statisticsEnabled(true);
         }
     }
 
@@ -121,7 +123,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(false);
+            IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+            if (cache instanceof IgniteCacheProxy)
+                ((IgniteCacheProxy)cache).context().statisticsEnabled(false);
         }
 
         IgniteCache<Object, Object> jcache = grid(0).cache(DEFAULT_CACHE_NAME);
