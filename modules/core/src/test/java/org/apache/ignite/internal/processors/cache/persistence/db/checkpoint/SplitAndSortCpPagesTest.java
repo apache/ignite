@@ -40,7 +40,7 @@ public class SplitAndSortCpPagesTest {
     @Test
     public void testSpeedOfSortParallel() {
         Collection<GridMultiCollectionWrapper<FullPageId>> coll = getTestCollection();
-        int size = getSize(coll);
+        int size = getCpPagesCntFromPagesMulticollection(coll);
         final GridMultiCollectionWrapper<FullPageId> ids = mgr.splitAndSortCpPagesIfNeeded2(pool, new T2<>(coll, size));
 
         validateOrder(ids, size);
@@ -54,19 +54,17 @@ public class SplitAndSortCpPagesTest {
         }
     }
 
-
     @Test
     public void testSpeedOfSort() {
         Collection<GridMultiCollectionWrapper<FullPageId>> coll = getTestCollection();
-        int size = getSize(coll);
+        int size = getCpPagesCntFromPagesMulticollection(coll);
         final GridMultiCollectionWrapper<FullPageId> ids = mgr.splitAndSortCpPagesIfNeeded(new T2<>(coll, size));
 
         assertEquals(ids.size(), size);
         validateOrder(ids, size);
-
     }
 
-    private void validateOrder(Iterable<FullPageId> ids, int size) {
+    static void validateOrder(Iterable<FullPageId> ids, int size) {
         FullPageId prevId = null;
         for (FullPageId next : ids) {
             if (prevId != null) {
@@ -88,7 +86,7 @@ public class SplitAndSortCpPagesTest {
         return new GridCacheDatabaseSharedManager(ctx);
     }
 
-    private int getSize(Collection<GridMultiCollectionWrapper<FullPageId>> coll) {
+    static int getCpPagesCntFromPagesMulticollection(Collection<GridMultiCollectionWrapper<FullPageId>> coll) {
         int size = 0;
         for (GridMultiCollectionWrapper<FullPageId> next : coll) {
             size += next.size();
@@ -96,7 +94,7 @@ public class SplitAndSortCpPagesTest {
         return size;
     }
 
-    @NotNull private Collection<GridMultiCollectionWrapper<FullPageId>> getTestCollection() {
+    @NotNull static Collection<GridMultiCollectionWrapper<FullPageId>> getTestCollection() {
         Collection<GridMultiCollectionWrapper<FullPageId>> coll = new ArrayList<>();
 
         final Random random = new Random();

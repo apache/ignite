@@ -24,6 +24,9 @@ import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ *
+ */
 public class CheckpointScope {
     @NotNull public static FullPageId[] pagesToArray(
         IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple) {
