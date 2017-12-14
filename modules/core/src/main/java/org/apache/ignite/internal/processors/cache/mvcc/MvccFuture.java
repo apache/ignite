@@ -17,29 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.io.Serializable;
+import java.util.UUID;
 
 /**
- *
+ * MVCC future.
  */
-public class CacheCoordinatorsDiscoveryData implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private MvccCoordinator crd;
-
+public interface MvccFuture {
     /**
-     * @param crd Coordinator.
+     * @return Coordinator node ID.
      */
-    public CacheCoordinatorsDiscoveryData(MvccCoordinator crd) {
-        this.crd = crd;
-    }
-
-    /**
-     * @return Current coordinator.
-     */
-    public MvccCoordinator coordinator() {
-        return crd;
-    }
+    public UUID coordinatorNodeId();
 }

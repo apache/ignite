@@ -28,7 +28,7 @@ public interface MvccResponseListener {
      * @param crdId Coordinator node ID.
      * @param res Version.
      */
-    public void onMvccResponse(UUID crdId, MvccCoordinatorVersion res);
+    public void onMvccResponse(UUID crdId, MvccVersion res);
 
     /**
      * @param e Error.

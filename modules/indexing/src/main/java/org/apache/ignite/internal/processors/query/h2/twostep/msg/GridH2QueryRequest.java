@@ -31,7 +31,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -136,7 +136,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private String schemaName;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private MvccVersion mvccVer;
 
     /**
      * Required by {@link Externalizable}
@@ -168,7 +168,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /**
      * @return Mvcc version.
      */
-    @Nullable public MvccCoordinatorVersion mvccVersion() {
+    @Nullable public MvccVersion mvccVersion() {
         return mvccVer;
     }
 
@@ -176,7 +176,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * @param mvccVer Mvcc version.
      * @return {@code this}.
      */
-    public GridH2QueryRequest mvccVersion(MvccCoordinatorVersion mvccVer) {
+    public GridH2QueryRequest mvccVersion(MvccVersion mvccVer) {
         this.mvccVer = mvccVer;
 
         return this;

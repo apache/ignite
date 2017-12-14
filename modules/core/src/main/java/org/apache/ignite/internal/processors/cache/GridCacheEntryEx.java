@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -271,7 +271,7 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
-        @Nullable MvccCoordinatorVersion mvccVer)
+        @Nullable MvccVersion mvccVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -299,7 +299,7 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
-        @Nullable MvccCoordinatorVersion mvccVer,
+        @Nullable MvccVersion mvccVer,
         @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
@@ -321,7 +321,7 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
-        @Nullable MvccCoordinatorVersion mvccVer,
+        @Nullable MvccVersion mvccVer,
         @Nullable ReaderArguments readerArgs) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -387,7 +387,7 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr,
-        @Nullable MvccCoordinatorVersion mvccVer
+        @Nullable MvccVersion mvccVer
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -430,7 +430,7 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr,
-        MvccCoordinatorVersion mvccVer
+        MvccVersion mvccVer
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -673,7 +673,7 @@ public interface GridCacheEntryEx {
      */
     public boolean initialValue(CacheObject val,
         GridCacheVersion ver,
-        @Nullable MvccCoordinatorVersion mvccVer,
+        @Nullable MvccVersion mvccVer,
         long ttl,
         long expireTime,
         boolean preload,

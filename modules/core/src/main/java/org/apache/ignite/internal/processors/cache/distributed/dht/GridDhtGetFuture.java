@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.ReaderArguments;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
@@ -116,7 +116,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private final boolean addReaders;
 
     /** */
-    private final MvccCoordinatorVersion mvccVer;
+    private final MvccVersion mvccVer;
 
     /**
      * @param cctx Context.
@@ -143,7 +143,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean skipVals,
         boolean recovery,
         boolean addReaders,
-        MvccCoordinatorVersion mvccVer
+        MvccVersion mvccVer
     ) {
         super(CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
 

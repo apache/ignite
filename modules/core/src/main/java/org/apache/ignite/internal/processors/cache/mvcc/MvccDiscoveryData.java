@@ -17,34 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
+import java.io.Serializable;
 
 /**
- *
+ * MVCC discovery data to be shared between nodes on join.
  */
-public interface MvccCoordinatorVersion extends Message {
-    /**
-     * @return Active transactions.
-     */
-    public MvccLongList activeTransactions();
+public class MvccDiscoveryData implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Current coordinator. */
+    private MvccCoordinator crd;
 
     /**
-     * @return Coordinator version.
+     * @param crd Coordinator.
      */
-    public long coordinatorVersion();
+    public MvccDiscoveryData(MvccCoordinator crd) {
+        this.crd = crd;
+    }
 
     /**
-     * @return Cleanup version (all smaller versions are safe to remove).
+     * @return Current coordinator.
      */
-    public long cleanupVersion();
+    public MvccCoordinator coordinator() {
+        return crd;
+    }
 
-    /**
-     * @return Counter.
-     */
-    public long counter();
-
-    /**
-     * @return Version without active transactions.
-     */
-    public MvccCoordinatorVersion withoutActiveTransactions();
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MvccDiscoveryData.class, this);
+    }
 }

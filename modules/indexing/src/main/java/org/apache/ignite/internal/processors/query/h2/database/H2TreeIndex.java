@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -399,7 +399,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         IndexingQueryFilter f = qctx.filter();
         IndexingQueryCacheFilter p = f == null ? null : f.forCache(getTable().cacheName());
-        MvccCoordinatorVersion v =qctx.mvccVersion();
+        MvccVersion v =qctx.mvccVersion();
 
         assert !cctx.mvccEnabled() || v != null;
 

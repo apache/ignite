@@ -18,56 +18,68 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class CoordinatorActiveQueriesMessage implements MvccCoordinatorMessage {
+public class MvccTxInfo implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridDirectMap(keyType = Message.class, valueType = Integer.class)
-    private Map<MvccCounter, Integer> activeQrys;
+    private UUID crd;
+
+    /** */
+    private MvccVersion mvccVer;
 
     /**
-     * Required by {@link GridIoMessageFactory}.
+     *
      */
-    public CoordinatorActiveQueriesMessage() {
+    public MvccTxInfo() {
         // No-op.
     }
 
     /**
-     * @param activeQrys Active queries.
+     * @param crd Coordinator node ID.
+     * @param mvccVer Mvcc version.
      */
-    CoordinatorActiveQueriesMessage(Map<MvccCounter, Integer> activeQrys) {
-        this.activeQrys = activeQrys;
+    public MvccTxInfo(UUID crd, MvccVersion mvccVer) {
+        assert crd != null;
+        assert mvccVer != null;
+
+        this.crd = crd;
+        this.mvccVer = mvccVer;
     }
 
     /**
-     * @return Active queries.
+     * @return Instance with version without active transactions.
      */
-    @Nullable Map<MvccCounter, Integer> activeQueries() {
-        return activeQrys;
+    public MvccTxInfo withoutActiveTransactions() {
+        MvccVersion mvccVer0 = mvccVer.withoutActiveTransactions();
+
+        if (mvccVer0 == mvccVer)
+            return this;
+
+        return new MvccTxInfo(crd, mvccVer0);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean waitForCoordinatorInit() {
-        return false;
+    /**
+     * @return Coordinator node ID.
+     */
+    public UUID coordinatorNodeId() {
+        return crd;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean processedFromNioThread() {
-        return true;
+    /**
+     * @return Mvcc version.
+     */
+    public MvccVersion version() {
+        return mvccVer;
     }
 
     /** {@inheritDoc} */
@@ -83,7 +95,13 @@ public class CoordinatorActiveQueriesMessage implements MvccCoordinatorMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("activeQrys", activeQrys, MessageCollectionItemType.MSG, MessageCollectionItemType.INT))
+                if (!writer.writeUuid("crd", crd))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeMessage("mvccVer", mvccVer))
                     return false;
 
                 writer.incrementState();
@@ -102,7 +120,15 @@ public class CoordinatorActiveQueriesMessage implements MvccCoordinatorMessage {
 
         switch (reader.state()) {
             case 0:
-                activeQrys = reader.readMap("activeQrys", MessageCollectionItemType.MSG, MessageCollectionItemType.INT, false);
+                crd = reader.readUuid("crd");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                mvccVer = reader.readMessage("mvccVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -111,17 +137,17 @@ public class CoordinatorActiveQueriesMessage implements MvccCoordinatorMessage {
 
         }
 
-        return reader.afterMessageRead(CoordinatorActiveQueriesMessage.class);
+        return reader.afterMessageRead(MvccTxInfo.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 144;
+        return 139;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -131,6 +157,6 @@ public class CoordinatorActiveQueriesMessage implements MvccCoordinatorMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorActiveQueriesMessage.class, this);
+        return S.toString(MvccTxInfo.class, this);
     }
 }

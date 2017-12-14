@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -26,30 +27,46 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class NewCoordinatorQueryAckRequest implements MvccCoordinatorMessage {
+public class MvccWaitTxsRequest implements MvccMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long crdVer;
+    private long futId;
 
     /** */
-    private long cntr;
+    private GridLongList txs;
 
     /**
-     * Required by {@link GridIoMessageFactory}.
+     *
      */
-    public NewCoordinatorQueryAckRequest() {
+    public MvccWaitTxsRequest() {
         // No-op.
     }
 
     /**
-     * @param crdVer Coordinator version.
-     * @param cntr Query counter.
+     * @param futId Future ID.
+     * @param txs Transactions to wait for.
      */
-    NewCoordinatorQueryAckRequest(long crdVer, long cntr) {
-        this.crdVer = crdVer;
-        this.cntr = cntr;
+    public MvccWaitTxsRequest(long futId, GridLongList txs) {
+        assert txs != null && txs.size() > 0 : txs;
+
+        this.futId = futId;
+        this.txs = txs;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long futureId() {
+        return futId;
+    }
+
+    /**
+     * @return Transactions to wait for.
+     */
+    public GridLongList transactions() {
+        return txs;
     }
 
     /** {@inheritDoc} */
@@ -60,20 +77,6 @@ public class NewCoordinatorQueryAckRequest implements MvccCoordinatorMessage {
     /** {@inheritDoc} */
     @Override public boolean processedFromNioThread() {
         return true;
-    }
-
-    /**
-     * @return Coordinator version.
-     */
-    public long coordinatorVersion() {
-        return crdVer;
-    }
-
-    /**
-     * @return Counter.
-     */
-    public long counter() {
-        return cntr;
     }
 
     /** {@inheritDoc} */
@@ -89,13 +92,13 @@ public class NewCoordinatorQueryAckRequest implements MvccCoordinatorMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("cntr", cntr))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("crdVer", crdVer))
+                if (!writer.writeMessage("txs", txs))
                     return false;
 
                 writer.incrementState();
@@ -114,7 +117,7 @@ public class NewCoordinatorQueryAckRequest implements MvccCoordinatorMessage {
 
         switch (reader.state()) {
             case 0:
-                cntr = reader.readLong("cntr");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -122,7 +125,7 @@ public class NewCoordinatorQueryAckRequest implements MvccCoordinatorMessage {
                 reader.incrementState();
 
             case 1:
-                crdVer = reader.readLong("crdVer");
+                txs = reader.readMessage("txs");
 
                 if (!reader.isLastRead())
                     return false;
@@ -131,12 +134,12 @@ public class NewCoordinatorQueryAckRequest implements MvccCoordinatorMessage {
 
         }
 
-        return reader.afterMessageRead(NewCoordinatorQueryAckRequest.class);
+        return reader.afterMessageRead(MvccWaitTxsRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 140;
+        return 137;
     }
 
     /** {@inheritDoc} */
@@ -151,6 +154,6 @@ public class NewCoordinatorQueryAckRequest implements MvccCoordinatorMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(NewCoordinatorQueryAckRequest.class, this);
+        return S.toString(MvccWaitTxsRequest.class, this);
     }
 }

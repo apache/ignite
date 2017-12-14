@@ -45,10 +45,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -82,7 +81,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private static IgniteLogger log;
 
     /** */
-    protected final MvccCoordinatorVersion mvccVer;
+    protected final MvccVersion mvccVer;
 
     /** */
     private MvccQueryTracker mvccTracker;
@@ -116,7 +115,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
-        @Nullable MvccCoordinatorVersion mvccVer
+        @Nullable MvccVersion mvccVer
     ) {
         super(cctx,
             keys,
@@ -141,14 +140,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /**
      * @return Mvcc version if mvcc is enabled for cache.
      */
-    @Nullable private MvccCoordinatorVersion mvccVersion() {
+    @Nullable private MvccVersion mvccVersion() {
         if (!cctx.mvccEnabled())
             return null;
 
         if (mvccVer != null)
             return mvccVer;
 
-        MvccCoordinatorVersion ver = mvccTracker.mvccVersion();
+        MvccVersion ver = mvccTracker.mvccVersion();
 
         assert ver != null : "[fut=" + this + ", mvccTracker=" + mvccTracker + "]";
 
@@ -200,7 +199,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MvccCoordinatorVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
+    @Nullable @Override public MvccVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
         if (mvccTracker != null)
             return mvccTracker.onMvccCoordinatorChange(newCrd);
 

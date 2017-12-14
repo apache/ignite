@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -109,7 +109,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     private long accessTtl;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private MvccVersion mvccVer;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -151,7 +151,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         boolean skipVals,
         boolean addDepInfo,
         boolean recovery,
-        @Nullable MvccCoordinatorVersion mvccVer
+        @Nullable MvccVersion mvccVer
     ) {
         assert futId != null;
         assert miniId != null;
@@ -198,7 +198,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /**
      * @return Mvcc version.
      */
-    @Nullable public MvccCoordinatorVersion mvccVersion() {
+    @Nullable public MvccVersion mvccVersion() {
         return mvccVer;
     }
 

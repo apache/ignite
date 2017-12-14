@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -27,37 +26,30 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
+public class MvccAckRequestQuery implements MvccMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long futId;
-
-    /** */
-    private GridCacheVersion txId;
+    private long cntr;
 
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorTxCounterRequest() {
+    public MvccAckRequestQuery() {
         // No-op.
     }
 
     /**
-     * @param futId Future ID.
-     * @param txId Transaction ID.
+     * @param cntr Query counter.
      */
-    CoordinatorTxCounterRequest(long futId, GridCacheVersion txId) {
-        assert txId != null;
-
-        this.futId = futId;
-        this.txId = txId;
+    public MvccAckRequestQuery(long cntr) {
+        this.cntr = cntr;
     }
 
     /** {@inheritDoc} */
     @Override public boolean waitForCoordinatorInit() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -66,17 +58,10 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
     }
 
     /**
-     * @return Future ID.
+     * @return Counter.
      */
-    public long futureId() {
-        return futId;
-    }
-
-    /**
-     * @return Transaction ID.
-     */
-    public GridCacheVersion txId() {
-        return txId;
+    public long counter() {
+        return cntr;
     }
 
     /** {@inheritDoc} */
@@ -92,13 +77,7 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMessage("txId", txId))
+                if (!writer.writeLong("cntr", cntr))
                     return false;
 
                 writer.incrementState();
@@ -117,15 +96,7 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
 
         switch (reader.state()) {
             case 0:
-                futId = reader.readLong("futId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                txId = reader.readMessage("txId");
+                cntr = reader.readLong("cntr");
 
                 if (!reader.isLastRead())
                     return false;
@@ -134,17 +105,17 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
 
         }
 
-        return reader.afterMessageRead(CoordinatorTxCounterRequest.class);
+        return reader.afterMessageRead(MvccAckRequestQuery.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 129;
+        return 134;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -154,6 +125,6 @@ public class CoordinatorTxCounterRequest implements MvccCoordinatorMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorTxCounterRequest.class, this);
+        return S.toString(MvccAckRequestQuery.class, this);
     }
 }

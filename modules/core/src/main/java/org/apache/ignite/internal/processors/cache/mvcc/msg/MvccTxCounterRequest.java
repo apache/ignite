@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -26,42 +27,56 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class CoordinatorFutureResponse implements MvccCoordinatorMessage {
+public class MvccTxCounterRequest implements MvccMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     private long futId;
 
+    /** */
+    private GridCacheVersion txId;
+
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorFutureResponse() {
+    public MvccTxCounterRequest() {
         // No-op.
     }
 
     /**
      * @param futId Future ID.
+     * @param txId Transaction ID.
      */
-    CoordinatorFutureResponse(long futId) {
+    public MvccTxCounterRequest(long futId, GridCacheVersion txId) {
+        assert txId != null;
+
         this.futId = futId;
+        this.txId = txId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean waitForCoordinatorInit() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean processedFromNioThread() {
+        return true;
     }
 
     /**
      * @return Future ID.
      */
-    long futureId() {
+    public long futureId() {
         return futId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean waitForCoordinatorInit() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean processedFromNioThread() {
-        return false;
+    /**
+     * @return Transaction ID.
+     */
+    public GridCacheVersion txId() {
+        return txId;
     }
 
     /** {@inheritDoc} */
@@ -78,6 +93,12 @@ public class CoordinatorFutureResponse implements MvccCoordinatorMessage {
         switch (writer.state()) {
             case 0:
                 if (!writer.writeLong("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeMessage("txId", txId))
                     return false;
 
                 writer.incrementState();
@@ -103,19 +124,27 @@ public class CoordinatorFutureResponse implements MvccCoordinatorMessage {
 
                 reader.incrementState();
 
+            case 1:
+                txId = reader.readMessage("txId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
-        return reader.afterMessageRead(CoordinatorFutureResponse.class);
+        return reader.afterMessageRead(MvccTxCounterRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 132;
+        return 129;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -125,6 +154,6 @@ public class CoordinatorFutureResponse implements MvccCoordinatorMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorFutureResponse.class, this);
+        return S.toString(MvccTxCounterRequest.class, this);
     }
 }

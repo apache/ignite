@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-class PreviousCoordinatorQueries {
+class MvccPreviousCoordinatorQueries {
     /** */
     private volatile boolean prevQueriesDone;
 
@@ -163,7 +163,7 @@ class PreviousCoordinatorQueries {
      */
     void onQueryDone(UUID nodeId, long crdVer, long cntr) {
         assert crdVer != 0;
-        assert cntr != CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
+        assert cntr != MvccProcessor.MVCC_COUNTER_NA;
 
         synchronized (this) {
             MvccCounter mvccCntr = new MvccCounter(crdVer, cntr);

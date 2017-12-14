@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class CoordinatorQueryVersionRequest implements MvccCoordinatorMessage {
+public class MvccFutureResponse implements MvccMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,25 +36,15 @@ public class CoordinatorQueryVersionRequest implements MvccCoordinatorMessage {
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorQueryVersionRequest() {
+    public MvccFutureResponse() {
         // No-op.
     }
 
     /**
      * @param futId Future ID.
      */
-    CoordinatorQueryVersionRequest(long futId) {
+    public MvccFutureResponse(long futId) {
         this.futId = futId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForCoordinatorInit() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean processedFromNioThread() {
-        return true;
     }
 
     /**
@@ -62,6 +52,16 @@ public class CoordinatorQueryVersionRequest implements MvccCoordinatorMessage {
      */
     public long futureId() {
         return futId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean waitForCoordinatorInit() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean processedFromNioThread() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -105,12 +105,12 @@ public class CoordinatorQueryVersionRequest implements MvccCoordinatorMessage {
 
         }
 
-        return reader.afterMessageRead(CoordinatorQueryVersionRequest.class);
+        return reader.afterMessageRead(MvccFutureResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 133;
+        return 132;
     }
 
     /** {@inheritDoc} */
@@ -125,6 +125,6 @@ public class CoordinatorQueryVersionRequest implements MvccCoordinatorMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorQueryVersionRequest.class, this);
+        return S.toString(MvccFutureResponse.class, this);
     }
 }
