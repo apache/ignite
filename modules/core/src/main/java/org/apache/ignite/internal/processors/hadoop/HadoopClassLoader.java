@@ -395,10 +395,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 long t1 = System.nanoTime();
 
                 c = findClass(name);
-
-                // this is the defining class loader; record the stats
-                sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
-                sun.misc.PerfCounter.getFindClasses().increment();
             }
 
             if (resolve)
