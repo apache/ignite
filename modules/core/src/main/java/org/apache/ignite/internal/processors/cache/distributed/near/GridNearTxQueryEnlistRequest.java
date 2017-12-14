@@ -24,7 +24,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,7 +61,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     private GridCacheVersion lockVer;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private MvccVersion mvccVer;
 
     /** */
     private int[] cacheIds;
@@ -127,7 +127,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
         UUID subjId,
         AffinityTopologyVersion topVer,
         GridCacheVersion lockVer,
-        MvccCoordinatorVersion mvccVer,
+        MvccVersion mvccVer,
         int[] cacheIds,
         int[] parts,
         String schema,
@@ -203,7 +203,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     /**
      * @return Mvcc version.
      */
-    public MvccCoordinatorVersion mvccVersion() {
+    public MvccVersion mvccVersion() {
         return mvccVer;
     }
 

@@ -1895,7 +1895,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public GridCloseableIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] cacheIds,
         int[] parts, String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
-        AffinityTopologyVersion topVer, MvccCoordinatorVersion mvccVer,
+        AffinityTopologyVersion topVer, MvccVersion mvccVer,
         GridQueryCancel cancel) throws IgniteCheckedException {
         checkxEnabled();
 

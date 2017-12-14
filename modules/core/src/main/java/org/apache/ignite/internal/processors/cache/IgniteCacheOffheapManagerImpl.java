@@ -493,7 +493,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MvccCoordinatorVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
+    @Nullable @Override public MvccVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
         throws IgniteCheckedException {
         CacheDataStore dataStore = dataStore(cctx, key);
 
@@ -2020,7 +2020,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public MvccCoordinatorVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
+        @Override public MvccVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
             throws IgniteCheckedException {
             assert grp.mvccEnabled();
 

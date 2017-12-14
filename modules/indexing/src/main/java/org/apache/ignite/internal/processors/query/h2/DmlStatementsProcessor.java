@@ -29,8 +29,8 @@ import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
@@ -823,7 +823,7 @@ public class DmlStatementsProcessor {
     public GridCloseableIterator<?> prepareDistributedUpdate(String schema, Connection conn,
         PreparedStatement stmt, SqlFieldsQuery qry,
         IndexingQueryFilter filter, GridQueryCancel cancel, boolean local,
-        AffinityTopologyVersion topVer, MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
+        AffinityTopologyVersion topVer, MvccVersion mvccVer) throws IgniteCheckedException {
 
         Prepared prepared = GridSqlQueryParser.prepared(stmt);
 

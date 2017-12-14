@@ -50,7 +50,7 @@ public interface IgniteCacheOffheapManager {
      * @param grp Cache group.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(GridCacheSharedContext ctx, CacheGroupContext grp) throws IgniteCheckedException;;
+    public void start(GridCacheSharedContext ctx, CacheGroupContext grp) throws IgniteCheckedException;
 
     /**
      * @param cctx Cache context.
@@ -183,8 +183,7 @@ public interface IgniteCacheOffheapManager {
      * @return Mvcc version of found row.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable MvccCoordinatorVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
-        throws IgniteCheckedException;
+    @Nullable MvccVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
 
     /**
      * For testing only.
@@ -628,8 +627,7 @@ public interface IgniteCacheOffheapManager {
          * @return Mvcc version of found row.
          * @throws IgniteCheckedException If failed.
          */
-        MvccCoordinatorVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
-        throws IgniteCheckedException;
+        MvccVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
 
         /**
          * For testing only.

@@ -43,7 +43,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -105,7 +105,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
     private AffinityTopologyVersion topVer;
 
     /** */
-    private final MvccCoordinatorVersion mvccVer;
+    private final MvccVersion mvccVer;
 
     /** Lock version. */
     private GridCacheVersion lockVer;
@@ -179,7 +179,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
         UUID nearNodeId,
         GridCacheVersion nearLockVer,
         AffinityTopologyVersion topVer,
-        MvccCoordinatorVersion mvccVer,
+        MvccVersion mvccVer,
         long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
@@ -698,7 +698,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
      * @throws IgniteCheckedException If failed.
      */
     private boolean checkVersion(GridCacheEntryEx entry) throws IgniteCheckedException {
-        MvccCoordinatorVersion ver = cctx.offheap().findMaxMvccVersion(cctx, entry.key());
+        MvccVersion ver = cctx.offheap().findMaxMvccVersion(cctx, entry.key());
 
         if (ver == null)
             return true;

@@ -319,7 +319,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             int[] parts,
             String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
             AffinityTopologyVersion topVer,
-            MvccCoordinatorVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
+            MvccVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
             return null;
         }
 

@@ -347,7 +347,7 @@ public class MvccProcessor extends GridProcessorAdapter {
      * @param ver Version.
      * @return Counter.
      */
-    public MvccCoordinatorVersion requestTxCounterOnCoordinator(GridCacheVersion ver) {
+    public MvccVersion requestTxCounterOnCoordinator(GridCacheVersion ver) {
         assert ctx.localNodeId().equals(currentCoordinatorId());
 
         return assignTxCounter(ver, 0L);
