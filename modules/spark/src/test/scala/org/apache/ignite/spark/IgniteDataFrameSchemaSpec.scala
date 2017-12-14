@@ -19,12 +19,12 @@ package org.apache.ignite.spark
 
 import java.lang.{Integer ⇒ JInteger, String ⇒ JString}
 
+import org.apache.ignite.Ignite
 import org.apache.ignite.spark.AbstractDataFrameSpec._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-
 import org.apache.ignite.spark.IgniteDataFrameOptions._
 
 /**
@@ -33,6 +33,7 @@ import org.apache.ignite.spark.IgniteDataFrameOptions._
 @RunWith(classOf[JUnitRunner])
 class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
     var personDataFrame: DataFrame = _
+    var employeeDataFrame: DataFrame = _
     var intStrDataFrame: DataFrame = _
     var intTestObjDataFrame: DataFrame = _
 
@@ -77,12 +78,23 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
                     ("value.timestampF", TimestampType, true))
             )
         }
+
+        it("should successfully load DataFrame data for a Ignite table configured throw java annotation") {
+            employeeDataFrame.schema.fields.map(f ⇒ (f.name, f.dataType, f.nullable)) should equal (
+                Array(
+                    ("id", LongType, true),
+                    ("name", StringType, true),
+                    ("salary", FloatType, true))
+            )
+        }
     }
 
     override protected def beforeAll(): Unit = {
         super.beforeAll()
 
         createPersonTable(client, INT_STR_CACHE_NAME)
+
+        createEmployeeCache(client, EMPLOYEE_CACHE_NAME)
 
         personDataFrame = spark.read
             .format(IGNITE)
@@ -111,5 +123,14 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
             .load()
 
         intTestObjDataFrame.createOrReplaceTempView("int_test_obj")
+
+        employeeDataFrame = spark.read
+            .format(IGNITE)
+            .option(CONFIG_FILE, TEST_CONFIG_FILE)
+            .option(CACHE, EMPLOYEE_CACHE_NAME)
+            .option(TABLE, "employee")
+            .load()
+
+        employeeDataFrame.createOrReplaceTempView("employee")
     }
 }

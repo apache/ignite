@@ -18,14 +18,18 @@
 package org.apache.ignite.spark
 
 import org.apache.ignite.{Ignite, Ignition}
-import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.spark.sql.SparkSession
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSpec, Matchers}
 import java.lang.{Long ⇒ JLong}
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
+import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.AbstractDataFrameSpec.configuration
+
+import scala.annotation.meta.field
+import scala.reflect.ClassTag
 
 /**
   */
@@ -95,6 +99,16 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
         cache.query(qry.setArgs(2L.asInstanceOf[JLong], "Denver")).getAll
         cache.query(qry.setArgs(3L.asInstanceOf[JLong], "St. Petersburg")).getAll
     }
+
+    def createEmployeeCache(client: Ignite, cacheName: String): Unit = {
+        val ccfg = AbstractDataFrameSpec.cacheConfiguration[String, Employee](cacheName)
+
+        val cache = client.getOrCreateCache(ccfg)
+
+        cache.put("key1", Employee(1, "John Connor", 15, 0))
+        cache.put("key2", Employee(2, "Sarah Connor", 32, 10000))
+        cache.put("key3", Employee(3, "Arnold Schwarzenegger", 27, 1000))
+    }
 }
 
 object AbstractDataFrameSpec {
@@ -106,6 +120,8 @@ object AbstractDataFrameSpec {
 
     val TEST_OBJ_TEST_OBJ_CACHE_NAME = "cache3"
 
+    val EMPLOYEE_CACHE_NAME = "cache4"
+
     def configuration(igniteInstanceName: String, client: Boolean): IgniteConfiguration = {
         val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()
 
@@ -115,4 +131,36 @@ object AbstractDataFrameSpec {
 
         cfg
     }
+
+    /**
+      * Gets cache configuration for the given grid name.
+      *
+      * @tparam K class of cached keys
+      * @tparam V class of cached values
+      * @param cacheName cache name.
+      * @return Cache configuration.
+      */
+    def cacheConfiguration[K : ClassTag, V : ClassTag](cacheName : String): CacheConfiguration[Object, Object] = {
+        val ccfg = new CacheConfiguration[Object, Object]()
+
+        ccfg.setBackups(1)
+
+        ccfg.setName(cacheName)
+
+        ccfg.setIndexedTypes(
+            implicitly[reflect.ClassTag[K]].runtimeClass.asInstanceOf[Class[K]],
+            implicitly[reflect.ClassTag[V]].runtimeClass.asInstanceOf[Class[V]])
+
+        ccfg
+    }
 }
+
+case class Employee (
+    @(QuerySqlField @field)(index = true) id: Long,
+
+    @(QuerySqlField @field) name: String,
+
+    age: Int,
+
+    @(QuerySqlField @field)(index = true, descending = true) salary: Float
+) extends Serializable { }

@@ -27,22 +27,41 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import scala.collection.JavaConversions._
 
 package object impl {
+    /**
+      * Checks named instance of Ignite exists.
+      * Throws IgniteException if not.
+      *
+      * @param gridName Name of grid.
+      */
     def ensureIgnite(gridName: String): Unit =
         if (!igniteExists(gridName))
             throw new IgniteException(s"Ignite grid with name '$gridName' does not exist.")
 
+    /**
+      * @param gridName Name of grid.
+      * @return True if named instance of Ignite exists false otherwise.
+      */
     def igniteExists(gridName: String): Boolean =
         if (gridName == "")
             Ignition.state() == IgniteState.STARTED
         else
             Ignition.state(gridName) == IgniteState.STARTED
 
+    /**
+      * @param g Ignite.
+      * @return Name of Ignite. If name is null empty string returned.
+      */
     def igniteName(g: Ignite): String =
         if(g.name() != null)
             g.name
         else
             ""
 
+    /**
+      * @param name Name of grid..
+      * @param default Default instance.
+      * @return Named grid instance if it exists. If not default instance returned.
+      */
     def igniteOrDefault(name: String, default: Ignite): Ignite =
         if (name == SessionCatalog.DEFAULT_DATABASE) {
             if (igniteExists(name))
@@ -53,38 +72,63 @@ package object impl {
         else
             ignite(name)
 
+    /**
+      * @param gridName Name of grid.
+      * @return Named instance of grid. If 'gridName' is empty unnamed instance returned.
+      */
     def ignite(gridName: String): Ignite =
         if (gridName == "")
             Ignition.ignite()
         else
             Ignition.ignite(gridName)
 
+    /**
+      * @param ignite Ignite instance.
+      * @param tabName Table name.
+      * @return True if table exists false otherwise.
+      */
     def sqlTableExists(ignite: Ignite, tabName: String): Boolean =
-        igniteSQLTable(ignite, tabName).isDefined
+        sqlTableInfo(ignite, tabName).isDefined
 
-    def cacheExists(ignite: Ignite, tabName: String): Boolean =
-        igniteCache(ignite, tabName).isDefined
+    /**
+      * @param ignite Ignite instance.
+      * @param cacheName Cache name.
+      * @return True if cache exists false otherwise.
+      */
+    def cacheExists(ignite: Ignite, cacheName: String): Boolean =
+        ignite.cacheNames().contains(cacheName)
 
-    def igniteSQLTable(ignite: Ignite, tabName: String): Option[QueryEntity] = {
-        val tableName = tabName.toUpperCase
+    /**
+      * @param ignite Ignite instance.
+      * @param tabName Table name.
+      * @return QueryEntity for a given table.
+      */
+    def igniteSQLTable(ignite: Ignite, tabName: String): Option[QueryEntity] =
+        sqlTableInfo[Any, Any](ignite, tabName).map(_._2)
 
-        val cacheName = IgniteSQLRelation.sqlCacheName(tableName)
+    /**
+      * @param ignite Ignite instance.
+      * @param tabName Table name.
+      * @return Cache name for given table.
+      */
+    def sqlCacheName(ignite: Ignite, tabName: String): Option[String] =
+        sqlTableInfo[Any, Any](ignite, tabName).map(_._1.getName)
 
-        if (!ignite.cacheNames.contains(cacheName))
-            None
-        else {
-            val cache = ignite.cache[Any, Any](cacheName)
+    /**
+      * @param ignite Ignite instance.
+      * @param tabName Table name.
+      * @tparam K Key class.
+      * @tparam V Value class.
+      * @return CacheConfiguration and QueryEntity for a given table.
+      */
+    private def sqlTableInfo[K, V](ignite: Ignite, tabName: String): Option[(CacheConfiguration[K, V], QueryEntity)] =
+        ignite.cacheNames().map { cacheName ⇒
+            val ccfg = ignite.cache[K, V](cacheName).getConfiguration(classOf[CacheConfiguration[K, V]])
 
-            val ccfg = cache.getConfiguration(classOf[CacheConfiguration[Any, Any]])
+            val queryEntities = ccfg.getQueryEntities
 
-            ccfg.getQueryEntities.find(_.getTableName == tableName)
-        }
-    }
-
-    def igniteCache[K, V](ignite: Ignite, tabName: String): Option[CacheConfiguration[K, V]] =
-        ignite.cacheNames().find(_.equalsIgnoreCase(tabName)).map { cacheName ⇒
-            ignite.cache[K, V](cacheName).getConfiguration(classOf[CacheConfiguration[K, V]])
-        }
+            queryEntities.find(_.getTableName.equalsIgnoreCase(tabName)).map(qe ⇒ (ccfg, qe))
+        }.find(_.isDefined).flatten
 
     /**
       * @param table Table.

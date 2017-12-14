@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spark.impl
 
-import org.apache.ignite.IgniteException
+import org.apache.ignite.{Ignite, IgniteException}
 import org.apache.ignite.cache.{CacheMode, QueryEntity}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.impl.IgniteSQLRelation._
 import org.apache.ignite.spark.{IgniteContext, IgniteRDD}
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
@@ -39,6 +38,7 @@ class IgniteSQLRelation[K, V](
     private[spark] val ic: IgniteContext,
     private[spark] val tableName: String)
     (@transient val sqlContext: SQLContext) extends BaseRelation with PrunedFilteredScan {
+
     /**
       * @return Schema of Ignite SQL table.
       */
@@ -71,7 +71,7 @@ class IgniteSQLRelation[K, V](
                 (s"SELECT $columnsStr FROM $tableName", List.empty)
         }
 
-        IgniteSQLDataFrameRDD[K, V](ic, sqlCacheName(tableName), schema, qryAndArgs._1, qryAndArgs._2, calcPartitions(filters))
+        IgniteSQLDataFrameRDD[K, V](ic, cacheName, schema, qryAndArgs._1, qryAndArgs._2, calcPartitions(filters))
     }
 
     override def toString = s"IgniteSQLRelation[table=$tableName]"
@@ -144,17 +144,17 @@ class IgniteSQLRelation[K, V](
     }
 
     private def calcPartitions(filters: Array[Filter]): Array[Partition] = {
-        val cache = ic.ignite().cache[K, V](sqlCacheName(tableName))
+        val cache = ic.ignite().cache[K, V](cacheName)
 
         val ccfg = cache.getConfiguration(classOf[CacheConfiguration[K, V]])
 
         if (ccfg.getCacheMode == CacheMode.REPLICATED) {
-            val serverNodes = ic.ignite().cluster().forCacheNodes(sqlCacheName(tableName)).forServers().nodes()
+            val serverNodes = ic.ignite().cluster().forCacheNodes(cacheName).forServers().nodes()
 
             Array(IgniteDataFramePartition(0, serverNodes.head, Stream.from(0).take(1024).toList))
         }
         else {
-            val aff = ic.ignite().affinity(sqlCacheName(tableName))
+            val aff = ic.ignite().affinity(cacheName)
 
             val parts = aff.partitions()
 
@@ -180,6 +180,13 @@ class IgniteSQLRelation[K, V](
     }
 
     /**
+      * Cache name for a table name.
+      */
+    private lazy val cacheName: String =
+        sqlCacheName(ic.ignite(), tableName)
+            .getOrElse(throw new IgniteException(s"Unknown table $tableName"))
+
+    /**
       * Utility method to add clause to sql WHERE string.
       *
       * @param filterStr Current filter string
@@ -191,6 +198,7 @@ class IgniteSQLRelation[K, V](
             clause
         else
             filterStr + " AND " + clause
+
 }
 
 object IgniteSQLRelation {
@@ -213,13 +221,6 @@ object IgniteSQLRelation {
                 metadata = Metadata.empty)
         })
     }
-
-    /**
-      * @param tableName Ignite table name.
-      *
-      * @return Cache name for given table.
-      */
-    def sqlCacheName(tableName: String): String = s"SQL_PUBLIC_${tableName.toUpperCase}"
 
     def apply[K, V](ic: IgniteContext, tableName: String, sqlContext: SQLContext): IgniteSQLRelation[K, V] =
         new IgniteSQLRelation[K, V](ic,tableName)(sqlContext)

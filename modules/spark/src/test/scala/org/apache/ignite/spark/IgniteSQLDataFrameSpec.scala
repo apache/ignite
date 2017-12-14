@@ -17,11 +17,14 @@
 
 package org.apache.ignite.spark
 
+import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.spark.AbstractDataFrameSpec.TEST_CONFIG_FILE
 import org.apache.ignite.spark.IgniteDataFrameOptions._
 import org.apache.spark.sql.DataFrame
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+
+import scala.reflect.ClassTag
 
 /**
   * Tests to check all kinds of SQL queries from Spark SQL engine to Ignite SQL table.

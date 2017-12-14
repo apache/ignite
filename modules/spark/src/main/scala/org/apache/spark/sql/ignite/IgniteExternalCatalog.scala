@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.spark.IgniteDataFrameOptions.{GRID, TABLE}
 import org.apache.ignite.spark.IgniteContext
 import org.apache.ignite.spark.IgniteDataFrameOptions._
+import org.apache.ignite.spark.impl.IgniteSQLRelation.schema
 import org.apache.ignite.{Ignite, Ignition}
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -111,7 +112,7 @@ class IgniteExternalCatalog(defaultIgniteContext: IgniteContext) extends Externa
                             GRID → gridName,
                             TABLE → tableName)
                     ),
-                    schema = IgniteSQLRelation.schema(table),
+                    schema = schema(table),
                     provider = Some(IGNITE),
                     partitionColumnNames =
                         if (table.getKeyFields != null)
@@ -158,13 +159,11 @@ class IgniteExternalCatalog(defaultIgniteContext: IgniteContext) extends Externa
     override def listPartitionNames(db: String, table: String, partialSpec: Option[TablePartitionSpec]): Seq[String] = {
         val ignite = igniteOrDefault(db, default)
 
-        if (sqlTableExists(ignite, table)) {
-            val parts = ignite.affinity(IgniteSQLRelation.sqlCacheName(table)).partitions()
+        sqlCacheName(ignite, table).map { cacheName ⇒
+            val parts = ignite.affinity(cacheName).partitions()
 
             (0 until parts).map(_.toString)
-        }
-        else
-            Seq.empty
+        }.getOrElse(Seq.empty)
     }
 
     /** @inheritdoc */
@@ -177,9 +176,9 @@ class IgniteExternalCatalog(defaultIgniteContext: IgniteContext) extends Externa
         if (partitionNames.isEmpty)
             Seq.empty
         else {
-            val tableName = IgniteSQLRelation.sqlCacheName(table)
+            val cacheName = sqlCacheName(ignite, table).get
 
-            val aff = ignite.affinity[Any](tableName)
+            val aff = ignite.affinity[Any](cacheName)
 
             partitionNames.map { name ⇒
                 val nodes = aff.mapPartitionToPrimaryAndBackups(name.toInt)
