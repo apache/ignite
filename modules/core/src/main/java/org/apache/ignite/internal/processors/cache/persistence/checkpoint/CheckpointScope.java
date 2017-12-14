@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Checkpoint scope is the unsorted sets of all dirty pages collections from all regions
@@ -50,11 +48,16 @@ public class CheckpointScope {
         for (GridMultiCollectionWrapper<FullPageId> col : res) {
             for (int i = 0; i < col.collectionsSize(); i++) {
                 for (FullPageId next : col.innerCollection(i)) {
+                    assert next != null;
+
                     pageIds[idx] = next;
+
                     idx++;
                 }
             }
         }
+        assert idx == pagesNum;
+
         return pageIds;
     }
 

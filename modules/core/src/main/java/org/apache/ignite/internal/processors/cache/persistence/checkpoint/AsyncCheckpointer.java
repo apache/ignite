@@ -41,11 +41,16 @@ public class AsyncCheckpointer {
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private ExecutorService asyncRunner;
 
+    /**  Number of checkpoint threads. */
+    private int checkpointThreads;
+
     /**
-     * @param checkpointThreads Checkpoint threads.
+     * @param checkpointThreads Number of checkpoint threads.
      * @param igniteInstanceName Ignite instance name.
      */
     public AsyncCheckpointer(int checkpointThreads, String igniteInstanceName) {
+        this.checkpointThreads = checkpointThreads;
+
         asyncRunner = new IgniteThreadPoolExecutor(
             CHECKPOINT_RUNNER,
             igniteInstanceName,
@@ -134,7 +139,8 @@ public class AsyncCheckpointer {
                 @Override public void apply(Callable<Void> call) {
                     fork(call, cntDownDynamicFut);
                 }
-            });
+            },
+            checkpointThreads);
 
         fork(task, cntDownDynamicFut);
 
