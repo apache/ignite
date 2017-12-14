@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
@@ -1707,12 +1708,52 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                             entry.resetFromPrimary(newVal, lockVer, dhtVer, node.id(), topVer);
 
                             if (inTx()) {
-                                CU.BackupPostProcessingClosure clos =
-                                    CU.createBackupPostProcessingClosure(topVer, log, cctx, k,
-                                        cctx.expiryForTxEntry(tx.entry(cctx.txKey(k))), cctx.readThrough(), !retval);
+                                if (cctx.readThrough() && !retval &&
+                                    cctx.affinity().backupsByKey(k, topVer).contains(cctx.localNode())) {
 
-                                if (clos != null)
-                                    clos.apply(k, res.dhtVersion(i));
+                                    long ttl = createTtl;
+                                    long expireTime;
+
+                                    if (ttl == CU.TTL_ZERO)
+                                        expireTime = CU.expireTimeInPast();
+                                    else {
+                                        if (ttl == CU.TTL_NOT_CHANGED)
+                                            ttl = CU.TTL_ETERNAL;
+
+                                        expireTime = CU.toExpireTime(ttl);
+                                    }
+
+                                    try {
+                                        entry.initialValue(newVal, res.dhtVersion(i), ttl, expireTime, false, topVer,
+                                            GridDrType.DR_BACKUP, true);
+                                    }
+                                    catch (GridCacheEntryRemovedException e) {
+                                        assert false : "Should not get removed exception while holding lock on entry " +
+                                            "[entry=" + entry + ", e=" + e + ']';
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        onDone(e);
+                                    }
+                                }
+
+//                                if (cctx.readThrough() && !retval &&
+//                                    cctx.affinity().backupsByKey(k, topVer).contains(cctx.localNode())) {
+//
+//                                    ExpiryPolicy plc = cctx.expiryForTxEntry(tx.entry(cctx.txKey(k)));
+//
+//                                    long ttl = plc == null ? 0 : CU.toTtl(plc.getExpiryForCreation());
+//                                    long expTime = plc == null ? 0 : CU.toExpireTime(ttl);
+//
+//                                    try {
+//                                        entry.initialValue(newVal, res.dhtVersion(i), ttl, expTime, false, topVer, GridDrType.DR_BACKUP, true);
+//                                    }
+//                                    catch (IgniteCheckedException e) {
+//                                        e.printStackTrace();
+//                                    }
+//                                    catch (GridCacheEntryRemovedException e) {
+//                                        e.printStackTrace();
+//                                    }
+//                                }
 
                                 tx.hasRemoteLocks(true);
 
