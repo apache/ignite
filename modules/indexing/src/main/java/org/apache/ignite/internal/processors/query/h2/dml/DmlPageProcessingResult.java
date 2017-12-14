@@ -15,43 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.query.h2.dml;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
+
+import java.sql.SQLException;
 
 /**
- * Update result - modifications count and keys to re-run query with, if needed.
+ * Result of processing an individual page with {@link IgniteCache#invokeAll} including error details, if any.
  */
-public final class UpdateResult {
-    /** Result to return for operations that affected 1 item - mostly to be used for fast updates and deletes. */
-    public static final UpdateResult ONE = new UpdateResult(1, X.EMPTY_OBJECT_ARRAY);
-
-    /** Result to return for operations that affected 0 items - mostly to be used for fast updates and deletes. */
-    public static final UpdateResult ZERO = new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
-
-    /** Number of processed items. */
+public final class DmlPageProcessingResult {
+    /** Number of successfully processed items. */
     private final long cnt;
 
     /** Keys that failed to be updated or deleted due to concurrent modification of values. */
     private final Object[] errKeys;
 
-    /**
-     * Constructor.
-     *
-     * @param cnt Updated rows count.
-     * @param errKeys Array of erroneous keys.
-     */
-    public @SuppressWarnings("ConstantConditions") UpdateResult(long cnt, Object[] errKeys) {
+    /** Chain of exceptions corresponding to failed keys. Null if no keys yielded an exception. */
+    private final SQLException ex;
+
+    /** */
+    @SuppressWarnings("ConstantConditions")
+    public DmlPageProcessingResult(long cnt, Object[] errKeys, @Nullable SQLException ex) {
         this.cnt = cnt;
         this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
+        this.ex = ex;
     }
 
     /**
-     * @return Update counter.
+     * @return Number of successfully processed items.
      */
-    public long counter() {
-       return cnt;
+    public long count() {
+        return cnt;
     }
 
     /**
@@ -59,5 +57,12 @@ public final class UpdateResult {
      */
     public Object[] errorKeys() {
         return errKeys;
+    }
+
+    /**
+     * @return Error.
+     */
+    @Nullable public SQLException error() {
+        return ex;
     }
 }
