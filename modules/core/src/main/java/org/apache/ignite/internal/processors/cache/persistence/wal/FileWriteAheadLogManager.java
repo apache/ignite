@@ -1393,6 +1393,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             " lastAbsArchivedIdx=" + lastAbsArchivedIdx);
 
                     return true;
+                }
 
                 Integer cur = locked.get(absIdx);
 
