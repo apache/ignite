@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
@@ -96,6 +97,11 @@ public abstract class GridUnsafe {
 
     /** */
     public static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
+
+    /**
+     * {@code java.nio.Buffer.address} field offset.
+     */
+    private static final long DIRECT_NIO_BUFFER_ADDRESS_OFFSET = directNioBufferAddressOffset();
 
     /**
      * Ensure singleton.
@@ -1359,6 +1365,16 @@ public abstract class GridUnsafe {
         }
     }
 
+    /** */
+    private static long directNioBufferAddressOffset() {
+        try {
+            return unsafe().objectFieldOffset(Buffer.class.getDeclaredField("address"));
+        }
+        catch (NoSuchFieldException e) {
+            throw new RuntimeException("Reflection failure: no java.nio.Buffer.address field found", e);
+        }
+    }
+
     /**
      * @param obj Object.
      * @param off Offset.
@@ -1664,10 +1680,10 @@ public abstract class GridUnsafe {
     }
 
     /**
-     * @param buf Direct buffer.
+     * @param directBuffer Direct buffer.
      * @return Buffer memory address.
      */
-    public static long bufferAddress(ByteBuffer buf) {
-        return ((DirectBuffer)buf).address();
+    public static long bufferAddress(ByteBuffer directBuffer) {
+        return UNSAFE.getLong(directBuffer, DIRECT_NIO_BUFFER_ADDRESS_OFFSET);
     }
 }
