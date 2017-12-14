@@ -299,7 +299,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         @SuppressWarnings("unchecked")
         public AsyncWorker(List<GridDhtLocalPartition> parts, SchemaIndexCacheVisitorClosure clo, int remainder,
             GridFutureAdapter<Void> fut) {
-            super(cctx.igniteInstanceName(), "parallel-idx-worker-" + cctx.cache() + "-" + remainder,
+            super(cctx.igniteInstanceName(), "parallel-idx-worker-" + cctx.cache().name() + "-" + remainder,
                 cctx.logger(AsyncWorker.class));
 
             this.parts = parts;
