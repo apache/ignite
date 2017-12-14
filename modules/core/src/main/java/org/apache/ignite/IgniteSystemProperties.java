@@ -758,6 +758,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
     /**
+     * When set to {@code true}, direct IO may be enabled. Direct IO enabled only if JAR file with corresponding
+     * feature is available in classpath and OS and filesystem settings allows to enable this mode.
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
+
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
