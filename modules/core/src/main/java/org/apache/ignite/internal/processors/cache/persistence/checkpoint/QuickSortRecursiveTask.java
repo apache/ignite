@@ -43,7 +43,7 @@ class QuickSortRecursiveTask implements Callable<Void> {
         IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
         IgniteInClosure<Callable<Void>> forkSubmitter, int checkpointThreads,
         ForkNowForkLaterStrategy strategy) {
-        this(arr, 0, arr.length,  new CpSettings(comp, taskFactory, forkSubmitter, checkpointThreads));
+        this(arr, 0, arr.length,  new CpSettings(comp, taskFactory, forkSubmitter, checkpointThreads, strategy));
     }
 
     private QuickSortRecursiveTask(FullPageId[] arr, int position, int limit,
@@ -126,7 +126,7 @@ class QuickSortRecursiveTask implements Callable<Void> {
         return left;
     }
 
-    static void swap(FullPageId[] arr, int i, int j) {
+    private static void swap(FullPageId[] arr, int i, int j) {
         FullPageId tmp = arr[i];
         arr[i] = arr[j];
         arr[j] = tmp;
@@ -141,16 +141,21 @@ class QuickSortRecursiveTask implements Callable<Void> {
 
         private final AtomicInteger runningWriters = new AtomicInteger();
 
+        @Deprecated
         private int checkpointThreads;
+
+        private ForkNowForkLaterStrategy strategy;
 
         CpSettings(Comparator<FullPageId> comp,
             IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
             IgniteInClosure<Callable<Void>> forkSubmitter,
-            int checkpointThreads) {
+            int checkpointThreads,
+            ForkNowForkLaterStrategy strategy) {
             this.comp = comp;
             this.taskFactory = taskFactory;
             this.forkSubmitter = forkSubmitter;
             this.checkpointThreads = checkpointThreads;
+            this.strategy = strategy;
         }
     }
 }
