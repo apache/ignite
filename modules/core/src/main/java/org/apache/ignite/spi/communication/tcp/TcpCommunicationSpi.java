@@ -92,6 +92,7 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.compress.BlockingCompressHandler;
+import org.apache.ignite.internal.util.nio.compress.DeflaterCompressEngine;
 import org.apache.ignite.internal.util.nio.compress.GZipCompressEngine;
 import org.apache.ignite.internal.util.nio.compress.GridCompressMeta;
 import org.apache.ignite.internal.util.nio.compress.GridNioCompressFilter;
@@ -3497,7 +3498,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     assert compressHnd.applicationBuffer().remaining() == 0;
                 }
 
-                if (sslAppBuf == null || sslAppBuf.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
+                if (!isSslEnabled() || sslAppBuf.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
                     buf = ByteBuffer.allocate(1000);
 
                     int read = ch.read(buf);
@@ -3514,10 +3515,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         buf = compressHnd.decode(buf);
                 }
                 else {
-                    buf = sslAppBuf;
-
                     if (isNetworkCompressingEnabled())
-                        buf = compressHnd.decode(buf);
+                        buf = compressHnd.decode(sslAppBuf);
+                    else
+                        buf = sslAppBuf;
                 }
             }
             else {

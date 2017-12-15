@@ -91,20 +91,15 @@ public class BlockingCompressHandler {
 
         // Loop until there is no more data in src
         while (src.hasRemaining()) {
-            int outNetRemaining = outNetBuf.capacity() - outNetBuf.position();
+            CompressEngineResult res = compressEngine.wrap(src, outNetBuf);
 
-            if (outNetRemaining < src.remaining() * 2) {
+            if (res == BUFFER_OVERFLOW) {
                 outNetBuf = expandBuffer(outNetBuf, Math.max(
                     outNetBuf.position() + src.remaining() * 2, outNetBuf.capacity() * 2));
 
                 if (log.isDebugEnabled())
-                    log.debug("Expanded output net buffer: " + outNetBuf.capacity());
+                    log.debug("Expanded output net buffer [outNetBufCapacity=" + outNetBuf.capacity());
             }
-
-            CompressEngineResult res = compressEngine.wrap(src, outNetBuf);
-
-            if (res != OK)
-                throw new IOException("Failed to compress data (compress engine error) [status=" + res+']');
         }
 
         outNetBuf.flip();

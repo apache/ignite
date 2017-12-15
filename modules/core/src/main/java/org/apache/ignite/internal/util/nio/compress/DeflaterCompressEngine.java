@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util.nio.compress;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -30,37 +29,51 @@ import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.
 import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.OK;
 
 public class DeflaterCompressEngine implements CompressEngine {
-    /** */
-    private boolean isInboundDone = false;
+    /* For debug stats. */
+    private long bytesBefore = 0;
+    private long bytesAfter = 0;
+
+    private final Deflater deflater = new Deflater();
+    private final byte[] deflateArray = new byte[1024];
+    private byte[] inputWrapArray = new byte[1024];
+    private final ByteArrayOutputStream deflateBaos = new ByteArrayOutputStream(1024);
+
+    private final Inflater inflater = new Inflater();
+    private final byte[] inflateArray = new byte[1024];
+    private byte[] inputUnwapArray = new byte[1024];
+    private final ByteArrayOutputStream inflateBaos = new ByteArrayOutputStream(1024);
+
+
+    public DeflaterCompressEngine(){
+        deflater.setLevel(Deflater.BEST_SPEED);
+    }
 
     /** */
     public CompressEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
-        byte[] bytes = new byte[src.remaining()];
+        bytesBefore += src.remaining();
 
-        src.get(bytes);
+        while (inputWrapArray.length < src.remaining())
+            inputWrapArray = new byte[inputWrapArray.length * 2];
 
-        Deflater compressor = new Deflater();
+        int len = src.remaining();
 
-        compressor.setLevel(Deflater.BEST_SPEED);
-        compressor.setInput(bytes);
-        compressor.finish();
+        src.get(inputWrapArray, 0, len);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        deflater.reset();
+        deflater.setInput(inputWrapArray, 0, len);
+        deflater.finish();
 
-        byte[] buf0 = new byte[32];
+        deflateBaos.reset();
 
-        while (!compressor.finished()) {
-            int count = compressor.deflate(buf0);
+        while (!deflater.finished()) {
+            int count = deflater.deflate(deflateArray);
 
-            baos.write(buf0, 0, count);
+            deflateBaos.write(deflateArray, 0, count);
         }
 
-        compressor.end();
-        baos.close();
+        byte[] bytes = deflateBaos.toByteArray();
 
-        bytes = baos.toByteArray();
-
-        bytes = concat(toArray(bytes.length), bytes);
+        bytesAfter += bytes.length;
 
         if (bytes.length > buf.remaining())
             return BUFFER_OVERFLOW;
@@ -70,110 +83,58 @@ public class DeflaterCompressEngine implements CompressEngine {
         return OK;
     }
 
-    private static byte[] concat(byte[] first, byte[] second) {
-        byte[] result = Arrays.copyOf(first, first.length + second.length);
-        System.arraycopy(second, 0, result, first.length, second.length);
-        return result;
-    }
-
-    /** */
-    public boolean isInboundDone() {
-        return isInboundDone;
-    }
-
     /** */
     public void closeInbound() throws IOException{
         //No-op
+        System.out.println("MY bytesBefore:"+bytesBefore+" bytesAfter;"+bytesAfter+ " cr="+bytesBefore*1.0/bytesAfter);
     }
 
     /** */
     public CompressEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
-        isInboundDone = false;
-
         if (src.remaining() == 0)
             return BUFFER_UNDERFLOW;
 
-        int initPos = src.position();
+        while (inputUnwapArray.length < src.remaining())
+            inputUnwapArray = new byte[inputUnwapArray.length * 2];
 
-        byte[] bytes;
-        byte[] output = new byte[0];
+        int len = src.remaining();
 
-        byte[] lenBytes = new byte[4];
-        int len;
+        src.get(inputUnwapArray, 0, len);
 
-        while (!isInboundDone) {
-            if (src.remaining() <= 5) {
-                src.position(initPos);
+        inflater.setInput(inputUnwapArray, 0, len);
 
-                return BUFFER_UNDERFLOW;
+        while (!inflater.finished() && !inflater.needsInput()) {
+            try {
+                int count = inflater.inflate(inflateArray);
+                inflateBaos.write(inflateArray, 0, count);
+            } catch (DataFormatException e) {
+                throw new IOException("DataFormatException: ", e);
+            }
+        }
+
+        if (inflater.finished()) {
+            if (inflater.getRemaining() > 0)
+                src.position(src.position() - inflater.getRemaining());
+
+            inflater.reset();
+
+            byte[] output = inflateBaos.toByteArray();
+            inflateBaos.reset();
+
+            if (buf.remaining() < output.length) {
+                src.rewind();
+
+                return BUFFER_OVERFLOW;
             }
 
-            src.get(lenBytes);
-
-            len = toInt(lenBytes);
-
-            if (src.remaining() < len) {
-                src.position(initPos);
-
-                return BUFFER_UNDERFLOW;
-            }
-
-            bytes = new byte[len]; //may be reuse or ByteArrayInputStream->ByteBufferInputStream
-
-            src.get(bytes);
-
-            Inflater inflater = new Inflater();
-            inflater.setInput(bytes);
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
-
-            byte[] buf0 = new byte[32];
-
-            while (!inflater.finished()) {
-                try {
-                    int count = inflater.inflate(buf0);
-
-                    baos.write(buf0, 0, count);
-
-                } catch (DataFormatException e) {
-                    throw new IOException("DataFormatException: ", e);
-                }
-            }
-
-            inflater.end();
-
-            baos.close();
-
-            output = concat(output, baos.toByteArray());
+            buf.put(output);
 
             if (src.remaining() == 0)
-                isInboundDone = true;
+                return BUFFER_UNDERFLOW;
         }
-
-        if (output.length > buf.remaining()) {
-            src.position(initPos);
-
-            return BUFFER_OVERFLOW;
-        }
-
-        buf.put(output);
+       /* else
+            return BUFFER_UNDERFLOW;*/
 
         return OK;
-    }
-
-    /** */
-    private int toInt(byte[] bytes){
-        return ((bytes[0] & 0xFF) << 24) | ((bytes[1] & 0xFF) << 16)
-            | ((bytes[2] & 0xFF) << 8) | (bytes[3] & 0xFF);
-    }
-
-    /** */
-    private byte[] toArray(int val){
-        return  new byte[] {
-            (byte)(val >>> 24),
-            (byte)(val >>> 16),
-            (byte)(val >>> 8),
-            (byte)val
-        };
     }
 }
