@@ -39,6 +39,10 @@ public class PagesWriteThrottle {
 
     /** Exponential backoff counter. */
     private final AtomicInteger exponentialBackoffCntr = new AtomicInteger(0);
+
+
+    private final AtomicInteger lastObservedWritten = new AtomicInteger(0);
+
     /**
      * @param pageMemory Page memory.
      * @param dbSharedMgr Database manager.
@@ -73,6 +77,7 @@ public class PagesWriteThrottle {
 
             int cpTotalPages = dbSharedMgr.currentCheckpointPagesCount();
 
+            //todo 0 of progress
             if (cpWrittenPages == cpTotalPages) {
                 // Checkpoint is already in fsync stage, increasing maximum ratio of dirty pages to 3/4
                 shouldThrottle = pageMemory.shouldThrottle(3.0 / 4);
@@ -85,7 +90,10 @@ public class PagesWriteThrottle {
 
                 shouldThrottle = pageMemory.shouldThrottle(dirtyRatioThreshold);
             }
+
+            lastObservedWritten.set(cpWrittenPages);
         }
+
 
         if (shouldThrottle) {
             int throttleLevel = exponentialBackoffCntr.getAndIncrement();

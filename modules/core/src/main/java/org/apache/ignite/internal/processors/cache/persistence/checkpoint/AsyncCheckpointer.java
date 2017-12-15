@@ -140,7 +140,13 @@ public class AsyncCheckpointer {
                     fork(call, cntDownDynamicFut);
                 }
             },
-            checkpointThreads);
+            checkpointThreads,
+            new ForkNowForkLaterStrategy() {
+                @Override public boolean forkNow() {
+                    //todo settings.runningWriters.get() < settings.checkpointThreads / 2
+                    return true;
+                }
+            });
 
         fork(task, cntDownDynamicFut);
 

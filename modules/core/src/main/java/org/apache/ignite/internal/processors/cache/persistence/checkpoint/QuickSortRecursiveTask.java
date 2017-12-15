@@ -41,7 +41,8 @@ class QuickSortRecursiveTask implements Callable<Void> {
     public QuickSortRecursiveTask(FullPageId[] arr,
         Comparator<FullPageId> comp,
         IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
-        IgniteInClosure<Callable<Void>> forkSubmitter, int checkpointThreads) {
+        IgniteInClosure<Callable<Void>> forkSubmitter, int checkpointThreads,
+        ForkNowForkLaterStrategy strategy) {
         this(arr, 0, arr.length,  new CpSettings(comp, taskFactory, forkSubmitter, checkpointThreads));
     }
 
