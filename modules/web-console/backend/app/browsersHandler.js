@@ -135,6 +135,10 @@ module.exports = {
                 _.forEach(socks, (sock) => sock.emit('cluster:changed', cluster));
             }
 
+            pushInitialData(sock) {
+                // Send initial data.
+            }
+
             emitNotification(sock) {
                 sock.emit('user:notifications', this.notification);
             }
@@ -187,7 +191,8 @@ module.exports = {
              * @return {Promise.<T>}
              */
             executeOnNode(agent, demo, params) {
-                return agent.then((agentSock) => agentSock.emitEvent('node:rest', {uri: 'ignite', demo, params}))
+                return agent
+                    .then((agentSock) => agentSock.emitEvent('node:rest', {uri: 'ignite', demo, params}))
                     .then((res) => {
                         if (res.status === 0) {
                             if (res.zipped)
@@ -310,6 +315,7 @@ module.exports = {
                             this.agentListeners(sock);
                             this.nodeListeners(sock);
 
+                            this.pushInitialData(sock);
                             this.agentStats(sock.request.user, [sock]);
                             this.emitNotification(sock);
                         });

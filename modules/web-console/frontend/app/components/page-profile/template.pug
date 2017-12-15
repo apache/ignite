@@ -38,6 +38,10 @@ mixin lbl(txt)
                         .col-xs-5.col-sm-4
                             input#profile-email.form-control(ignite-on-enter-focus-move='profile-company' type='email' ng-model='$ctrl.ui.user.email' placeholder='Input email' required)
                     .details-row
+                        +lbl-not-required('Phone:')
+                        .col-xs-5.col-sm-4
+                            input#profile-phone.form-control(ignite-on-enter-focus-move='profile-company' type='tel' ng-model='$ctrl.ui.user.phone' placeholder='Input phone')
+                    .details-row
                         +lbl('Company:')
                         .col-xs-5.col-sm-4
                             input#profile-company.form-control(ignite-on-enter-focus-move='profile-country' type='text' ng-model='$ctrl.ui.user.company' placeholder='Input company name' required)

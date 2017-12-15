@@ -41,8 +41,10 @@ const defineSchema = (mongoose) => {
         firstName: String,
         lastName: String,
         email: String,
+        phone: String,
         company: String,
         country: String,
+        registered: Date,
         lastLogin: Date,
         lastActivity: Date,
         admin: Boolean,
@@ -62,12 +64,14 @@ const defineSchema = (mongoose) => {
         return {
             _id: ret._id,
             email: ret.email,
+            phone: ret.phone,
             firstName: ret.firstName,
             lastName: ret.lastName,
             company: ret.company,
             country: ret.country,
             admin: ret.admin,
             token: ret.token,
+            registered: ret.registered,
             lastLogin: ret.lastLogin,
             lastActivity: ret.lastActivity
         };

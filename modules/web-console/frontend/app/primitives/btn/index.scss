@@ -327,3 +327,12 @@ $btn-content-padding-with-border: 9px 11px;
         $color-hover: change-color($ignite-brand-success, $lightness: 26%)
     );
 }
+
+.btn-ignite--link {
+    background: transparent;
+
+    @include ignite-link(
+        $color: $ignite-brand-success,
+        $color-hover: change-color($ignite-brand-success, $lightness: 26%)
+    );
+}

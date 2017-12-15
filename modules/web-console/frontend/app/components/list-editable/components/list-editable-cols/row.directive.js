@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 /** @returns {ng.IDirective} */
 export default function() {
     return {
@@ -33,7 +35,7 @@ export default function() {
                 el.addClass(ctrl.rowClass);
 
             ctrl.colDefs.forEach(({ cellClass }, index) => {
-                if (cellClass)
+                if (_.nonEmpty(cellClass))
                     children[index].classList.add(...(Array.isArray(cellClass) ? cellClass : cellClass.split(' ')));
             });
         }
