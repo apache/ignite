@@ -3103,7 +3103,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         log.debug("Skipping local address [addr=" + addr +
                             ", locAddrs=" + node.attribute(createSpiAttributeName(ATTR_ADDRS)) +
                             ", node=" + node + ']');
-                    continue;
+                    break;
                 }
 
                 boolean needWait = false;
