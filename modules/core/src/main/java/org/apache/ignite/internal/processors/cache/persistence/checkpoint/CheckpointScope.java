@@ -33,10 +33,14 @@ public class CheckpointScope {
     /** Dirty Pages number from all regions. */
     private int pagesNum = 0;
 
-    private Collection<GridMultiCollectionWrapper<FullPageId>> res;
+    /** Pages collections. */
+    private Collection<GridMultiCollectionWrapper<FullPageId>> pages;
 
+    /**
+     * @param regions Regions count.
+     */
     public CheckpointScope(int regions) {
-        res = new ArrayList<>(regions);
+        pages = new ArrayList<>(regions);
     }
 
     /**
@@ -44,8 +48,10 @@ public class CheckpointScope {
      */
     public FullPageId[] toArray() {
         FullPageId[] pageIds = new FullPageId[pagesNum];
+
         int idx = 0;
-        for (GridMultiCollectionWrapper<FullPageId> col : res) {
+
+        for (GridMultiCollectionWrapper<FullPageId> col : pages) {
             for (int i = 0; i < col.collectionsSize(); i++) {
                 for (FullPageId next : col.innerCollection(i)) {
                     assert next != null;
@@ -94,7 +100,7 @@ public class CheckpointScope {
      */
     public void addCpPages(GridMultiCollectionWrapper<FullPageId> nextCpPagesCol) {
         pagesNum += nextCpPagesCol.size();
-        res.add(nextCpPagesCol);
+        pages.add(nextCpPagesCol);
     }
 
     /**

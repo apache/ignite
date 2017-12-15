@@ -34,10 +34,13 @@ class QuickSortRecursiveTask implements Callable<Void> {
 
     /** One write chunk threshold. */
     private static final int ONE_WRITE_CHUNK_THRESHOLD = 1024;
+
     /** Source array to sort. Shared between threads */
     private final FullPageId[] arr;
+
     /** Start position. Index of first element inclusive. */
     private final int position;
+
     /** Limit. Index of last element exclusive. */
     private final int limit;
 
@@ -52,12 +55,12 @@ class QuickSortRecursiveTask implements Callable<Void> {
      * @param checkpointThreads Checkpoint threads.
      * @param stgy Strategy.
      */
-    public QuickSortRecursiveTask(FullPageId[] arr,
+    QuickSortRecursiveTask(FullPageId[] arr,
         Comparator<FullPageId> comp,
         IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
         IgniteInClosure<Callable<Void>> forkSubmitter, int checkpointThreads,
         ForkNowForkLaterStrategy stgy) {
-        this(arr, 0, arr.length,  new CpSettings(comp, taskFactory, forkSubmitter, stgy));
+        this(arr, 0, arr.length, new CpSettings(comp, taskFactory, forkSubmitter, stgy));
     }
 
     /**
@@ -75,21 +78,22 @@ class QuickSortRecursiveTask implements Callable<Void> {
     }
 
     /**
-     * @param cnt size of local sub array
-     * @return
+     * @param cnt size of local sub array.
+     * @return {@code true} for small chunks to be sorted under 1 thread.
      */
     private static boolean isUnderThreshold(int cnt) {
         return cnt < ONE_CHUNK_THRESHOLD;
     }
 
+    /** {@inheritDoc} */
     @Override public Void call() throws Exception {
         final int remaining = limit - position;
+
         if (remaining == 0)
             return null;
 
-        Comparator<FullPageId> comp = settings.comp;
         if (isUnderThreshold(remaining)) {
-            Arrays.sort(arr, position, limit, comp);
+            Arrays.sort(arr, position, limit, settings.comp);
 
             FullPageId[] arrCp = Arrays.copyOfRange(arr, position, limit);
 
@@ -107,7 +111,8 @@ class QuickSortRecursiveTask implements Callable<Void> {
             }
         }
         else {
-            int centerIdx = partition(arr, position, limit, comp);
+            int centerIdx = partition(arr, position, limit, settings.comp);
+
             Callable<Void> t1 = new QuickSortRecursiveTask(arr, position, centerIdx, settings);
             Callable<Void> t2 = new QuickSortRecursiveTask(arr, centerIdx, limit, settings);
 
@@ -123,6 +128,13 @@ class QuickSortRecursiveTask implements Callable<Void> {
         return null;
     }
 
+    /**
+     * @param arr Array.
+     * @param position Start position inclusive.
+     * @param limit End position exclusive.
+     * @param comp Comparator.
+     * @return Position of array split
+     */
     public static int partition(FullPageId[] arr, int position, int limit,
         Comparator<FullPageId> comp) {
         int left = position;
@@ -150,21 +162,40 @@ class QuickSortRecursiveTask implements Callable<Void> {
         return left;
     }
 
+    /**
+     * @param arr Array.
+     * @param i First element.
+     * @param j Second element.
+     */
     private static void swap(FullPageId[] arr, int i, int j) {
         FullPageId tmp = arr[i];
+
         arr[i] = arr[j];
         arr[j] = tmp;
     }
 
+    /**
+     * Shared settings for current task.
+     */
     private static class CpSettings {
+        /** Task factory. */
         private final IgniteClosure<FullPageId[], Callable<Void>> taskFactory;
 
+        /** Forked task submitter. */
         private final IgniteInClosure<Callable<Void>> forkSubmitter;
 
+        /** Comparator. */
         private final Comparator<FullPageId> comp;
 
-        private ForkNowForkLaterStrategy stgy;
+        /** Strategy of forking. */
+        private final ForkNowForkLaterStrategy stgy;
 
+        /**
+         * @param comp Comparator.
+         * @param taskFactory Task factory.
+         * @param forkSubmitter Fork submitter.
+         * @param stgy Strategy.
+         */
         CpSettings(Comparator<FullPageId> comp,
             IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
             IgniteInClosure<Callable<Void>> forkSubmitter,

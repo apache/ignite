@@ -37,11 +37,11 @@ class CountDownDynamicFuture extends CountDownFuture {
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
-        final boolean b = super.onDone(res, err);
+        final boolean done = super.onDone(res, err);
 
-        completionObserved |= b;
+        completionObserved |= done;
 
-        return b;
+        return done;
     }
 
     /**

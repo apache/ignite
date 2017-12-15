@@ -47,15 +47,14 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
  * Test for async splitting and sorting pages.
  */
 public class SplitAndSortCpPagesTest {
-    /**
-     *
-     */
+    /** Test collection size. */
     private static final int PAGES_MILLIONS = 2;
 
+    /** Logger. */
     private IgniteLogger log = new NullLogger();
 
     /**
-     *
+     * Test existing implementation.
      */
     @Test
     public void testSingleThreadSplitSort() {
@@ -87,6 +86,7 @@ public class SplitAndSortCpPagesTest {
         final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
 
         final AtomicInteger totalPagesAfterSort = new AtomicInteger();
+
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
             @Override public Callable<Void> apply(final FullPageId[] ids) {
                 return new Callable<Void>() {
@@ -108,12 +108,14 @@ public class SplitAndSortCpPagesTest {
         Assert.assertEquals(totalPagesAfterSort.get(), scope.totalCpPages());
     }
 
-
+    /**
+     * @throws Exception if failed.
+     */
     @Test
     public void testGrobalOrder() throws Exception {
-        final CheckpointScope scope = getTestCollection();
+        CheckpointScope scope = getTestCollection();
 
-        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
+        AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
 
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
             @Override public Callable<Void> apply(final FullPageId[] ids) {
@@ -137,19 +139,26 @@ public class SplitAndSortCpPagesTest {
      */
     private static void validateOrder(Iterable<FullPageId[]> ids) {
         FullPageId prevId = null;
+
         for (FullPageId[] nextArr : ids) {
             for (FullPageId next : nextArr) {
                 if (prevId != null) {
-                    final boolean condition = GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR.compare(next, prevId) >= 0;
-                    if (!condition)
+                    final boolean cond =
+                        GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR.compare(next, prevId) >= 0;
+
+                    if (!cond) {
                         assertTrue("Incorrect order of pages: [\nprev=" + prevId + ",\n cur=" + next + "]",
-                            condition);
+                            cond);
+                    }
                 }
                 prevId = next;
             }
         }
     }
 
+    /**
+     * @return test configuration
+     */
     @NotNull private IgniteConfiguration config() {
         final IgniteConfiguration cfg = new IgniteConfiguration();
         final DataStorageConfiguration dsCfg = new DataStorageConfiguration();
@@ -157,6 +166,10 @@ public class SplitAndSortCpPagesTest {
         return cfg;
     }
 
+    /**
+     * Uses control map to verify no elements were lost
+     * @throws Exception if failed.
+     */
     @Test
     public void testAsyncAllPagesArePresent() throws Exception {
         final CheckpointScope scope = getTestCollection();
@@ -190,6 +203,10 @@ public class SplitAndSortCpPagesTest {
             assertTrue("Control map should be empty: " + map.toString(), empty);
     }
 
+    /**
+     * Test page index is growing after sort.
+     * @throws Exception if failed.
+     */
     @Test
     public void testIndexGrowing() throws Exception {
         final CheckpointScope scope = getTestCollection(1, 1024);
@@ -242,25 +259,26 @@ public class SplitAndSortCpPagesTest {
         final int regions = 1024;
         final CheckpointScope scope = new CheckpointScope(regions);
         final Random random = new Random();
+
         for (int i = 0; i < regions; i++) {
-            final Collection[] collections = new Collection[innerCollections];
+            final Collection[] segments = new Collection[innerCollections];
+
             for (int j = 0; j < innerCollections; j++) {
                 final Collection<FullPageId> innerColl = new ArrayList<>();
-                collections[j] = innerColl;
+                segments[j] = innerColl;
                 for (int k = 0; k < pagesMillions; k++) {
-                    final int curPartId = random.nextInt(1024);
-                    final int idx = random.nextInt(1000000);
-                    long id = PageIdUtils.pageId(
-                        curPartId,
+                    int partId = random.nextInt(1024);
+                    int pageIdx = random.nextInt(1000000);
+                    long pageId = PageIdUtils.pageId(
+                        partId,
                         (byte)0,
-                        idx);
+                        pageIdx);
 
-                    innerColl.add(new FullPageId(id, 123));
+                    innerColl.add(new FullPageId(pageId, 123));
                 }
             }
-            final GridMultiCollectionWrapper<FullPageId> e = new GridMultiCollectionWrapper<>(collections);
 
-            scope.addCpPages(e);
+            scope.addCpPages(new GridMultiCollectionWrapper<FullPageId>(segments));
         }
         return scope;
     }
