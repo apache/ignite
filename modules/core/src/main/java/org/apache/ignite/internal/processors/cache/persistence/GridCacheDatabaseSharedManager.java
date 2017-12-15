@@ -152,6 +152,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
@@ -318,6 +319,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final long lockWaitTime;
 
     /** */
+    private final int maxCpHistMemSize;
+
+    /** */
     private Map<Integer, Map<Integer, T2<Long, WALPointer>>> reservedForExchange;
 
     /** */
@@ -365,6 +369,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         );
 
         metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
+
+        maxCpHistMemSize = Math.min(persistenceCfg.getWalHistorySize(),
+            IgniteSystemProperties.getInteger(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, 100));
     }
 
     /** */
@@ -3376,7 +3383,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private void onCheckpointFinished(Checkpoint chp) {
             int deleted = 0;
 
-            while (histMap.size() > persistenceCfg.getWalHistorySize()) {
+            boolean dropWal = persistenceCfg.getWalHistorySize() != Integer.MAX_VALUE;
+
+            while (histMap.size() > maxCpHistMemSize) {
                 Map.Entry<Long, CheckpointEntry> entry = histMap.firstEntry();
 
                 CheckpointEntry cpEntry = entry.getValue();
@@ -3391,7 +3400,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 boolean fail = removeCheckpointFiles(cpEntry);
 
                 if (!fail) {
-                    deleted += cctx.wal().truncate(null, cpEntry.checkpointMark());
+                    if (dropWal)
+                        deleted += cctx.wal().truncate(null, cpEntry.checkpointMark());
 
                     histMap.remove(entry.getKey());
                 }
@@ -3422,7 +3432,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 U.warn(log, "Failed to remove stale checkpoint files [startFile=" + startFile.getAbsolutePath() +
                     ", endFile=" + endFile.getAbsolutePath() + ']');
 
-                if (histMap.size() > 2 * persistenceCfg.getWalHistorySize()) {
+                if (histMap.size() > 2 * maxCpHistMemSize) {
                     U.error(log, "Too many stale checkpoint entries in the map, will truncate WAL archive anyway.");
 
                     fail = false;

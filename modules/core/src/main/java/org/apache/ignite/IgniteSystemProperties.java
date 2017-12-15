@@ -770,6 +770,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_DEBUG_LOG_ON_RECOVERY = "IGNITE_WAL_DEBUG_LOG_ON_RECOVERY";
 
     /**
+     * Number of checkpoint history entries held in memory.
+     */
+    public static final String IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE = "IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
