@@ -37,7 +37,6 @@ const app = path.resolve('app');
 const IgniteModules = process.env.IGNITE_MODULES ? path.join(process.env.IGNITE_MODULES, 'frontend') : path.resolve('ignite_modules');
 
 export default {
-    cache: true,
     node: {
         fs: 'empty'
     },
@@ -45,7 +44,8 @@ export default {
     entry: {
         polyfill: 'babel-polyfill',
         vendor: path.join(app, 'vendor.js'),
-        app: path.join(app, 'app.js')
+        app: path.join(app, 'app.js'),
+        browserUpdate: path.join(app, 'browserUpdate', 'index.js')
     },
 
     // Output system.

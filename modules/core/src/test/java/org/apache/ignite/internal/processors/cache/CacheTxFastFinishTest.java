@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFastFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -210,8 +211,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
         IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
 
         assertNull(fieldValue(tx0, "prepFut"));
-        assertNull(fieldValue(tx0, "commitFut"));
-        assertNull(fieldValue(tx0, "rollbackFut"));
+        assertTrue(fieldValue(tx0, "finishFut") instanceof GridNearTxFastFinishFuture);
     }
 
     /**
@@ -225,12 +225,13 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
             tx.commit();
 
             assertNotNull(fieldValue(tx0, "prepFut"));
-            assertNotNull(fieldValue(tx0, "commitFut"));
+            assertNotNull(fieldValue(tx0, "finishFut"));
         }
         else {
             tx.rollback();
 
-            assertNotNull(fieldValue(tx0, "rollbackFut"));
+            assertNull(fieldValue(tx0, "prepFut"));
+            assertNotNull(fieldValue(tx0, "finishFut"));
         }
     }
 

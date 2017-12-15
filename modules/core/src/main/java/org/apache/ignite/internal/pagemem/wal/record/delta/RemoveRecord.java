@@ -77,6 +77,6 @@ public class RemoveRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(RemoveRecord.class, this, super.toString());
+        return S.toString(RemoveRecord.class, this, "super", super.toString());
     }
 }

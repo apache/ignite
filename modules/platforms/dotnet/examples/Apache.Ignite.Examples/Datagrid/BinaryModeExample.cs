@@ -81,7 +81,11 @@ namespace Apache.Ignite.Examples.Datagrid
                                 new QueryField(NameField, typeof(string)),
                                 new QueryField(CompanyIdField, typeof(int))
                             },
-                            Indexes = new[] {new QueryIndex(false, QueryIndexType.FullText, NameField)}
+                            Indexes = new[]
+                            {
+                                new QueryIndex(false, QueryIndexType.FullText, NameField),
+                                new QueryIndex(false, QueryIndexType.Sorted, CompanyIdField)
+                            }
                         },
                         new QueryEntity
                         {
@@ -174,7 +178,10 @@ namespace Apache.Ignite.Examples.Datagrid
 
             var qry = cache.Query(new SqlQuery(PersonType,
                 "from Person, Company " +
-                "where Person.CompanyId = Company.Id and Company.Name = ?", orgName));
+                "where Person.CompanyId = Company.Id and Company.Name = ?", orgName)
+            {
+                EnableDistributedJoins = true
+            });
 
             Console.WriteLine();
             Console.WriteLine(">>> Persons working for " + orgName + ":");

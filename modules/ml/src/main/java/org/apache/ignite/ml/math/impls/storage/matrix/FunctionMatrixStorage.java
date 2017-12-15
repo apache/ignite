@@ -158,6 +158,11 @@ public class FunctionMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return StorageConstants.RANDOM_ACCESS_MODE;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;

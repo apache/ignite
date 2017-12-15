@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
@@ -56,7 +57,9 @@ namespace Apache.Ignite.Core.Impl.Services
                 {
                     // Write as is
                     foreach (var arg in arguments)
-                        writer.WriteObject(arg);
+                    {
+                        writer.WriteObjectDetached(arg);
+                    }
                 }
                 else
                 {
@@ -157,6 +160,57 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /// <summary>
+        /// Reads service deployment result.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="marsh">Marshaller.</param>
+        /// <param name="keepBinary">Binary flag.</param>
+        /// <returns>
+        /// Method invocation result, or exception in case of error.
+        /// </returns>
+        public static void ReadDeploymentResult(IBinaryStream stream, Marshaller marsh, bool keepBinary)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(marsh != null);
+
+            var mode = keepBinary ? BinaryMode.ForceBinary : BinaryMode.Deserialize;
+
+            var reader = marsh.StartUnmarshal(stream, mode);
+
+            object err;
+
+            BinaryUtils.ReadInvocationResult(reader, out err);
+
+            if (err == null)
+            {
+                return;
+            }
+
+            // read failed configurations
+            ICollection<ServiceConfiguration> failedCfgs;
+
+            try
+            {
+                // switch to BinaryMode.Deserialize mode to avoid IService casting exception
+                reader = marsh.StartUnmarshal(stream);
+                failedCfgs = reader.ReadNullableCollectionRaw(f => new ServiceConfiguration(f));
+            }
+            catch (Exception e)
+            {
+                throw new ServiceDeploymentException("Service deployment failed with an exception. " +
+                                                     "Examine InnerException for details.", e);
+            }
+
+            var binErr = err as IBinaryObject;
+
+            throw binErr != null
+                ? new ServiceDeploymentException("Service deployment failed with a binary error. " +
+                                                 "Examine BinaryCause for details.", binErr, failedCfgs)
+                : new ServiceDeploymentException("Service deployment failed with an exception. " +
+                                                 "Examine InnerException for details.", (Exception) err, failedCfgs);
+        }
+
+        /// <summary>
         /// Writes the argument in platform-compatible format.
         /// </summary>
         private static void WriteArgForPlatforms(BinaryWriter writer, ParameterInfo param, object arg)
@@ -164,9 +218,13 @@ namespace Apache.Ignite.Core.Impl.Services
             var hnd = GetPlatformArgWriter(param, arg);
 
             if (hnd != null)
+            {
                 hnd(writer, arg);
+            }
             else
-                writer.WriteObject(arg);
+            {
+                writer.WriteObjectDetached(arg);
+            }
         }
 
         /// <summary>

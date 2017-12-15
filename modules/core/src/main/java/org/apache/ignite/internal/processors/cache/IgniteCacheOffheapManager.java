@@ -60,7 +60,7 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param cacheId Cache ID.
-     * @param destroy Destroy data flag.
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
     public void stopCache(int cacheId, boolean destroy);
 
@@ -181,18 +181,6 @@ public interface IgniteCacheOffheapManager {
         long expireTime,
         GridDhtLocalPartition part,
         @Nullable CacheDataRow oldRow
-    ) throws IgniteCheckedException;
-
-    /**
-     * @param cctx Cache context.
-     * @param key Key.
-     * @param part Partition.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void updateIndexes(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        GridDhtLocalPartition part
     ) throws IgniteCheckedException;
 
     /**
@@ -414,7 +402,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * @return Initial update counter.
          */
-        public Long initialUpdateCounter();
+        public long initialUpdateCounter();
 
         /**
          * @param cctx Cache context.
@@ -450,13 +438,6 @@ public interface IgniteCacheOffheapManager {
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @throws IgniteCheckedException If failed.
-         */
-        void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

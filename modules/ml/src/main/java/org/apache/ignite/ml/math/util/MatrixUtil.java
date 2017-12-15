@@ -27,6 +27,8 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
 import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
@@ -87,6 +89,15 @@ public class MatrixUtil {
             return new DenseLocalOnHeapVector(crd);
         else
             return matrix.likeVector(crd);
+    }
+
+    /**
+     * Check if a given matrix is distributed.
+     *
+     * @param matrix Matrix for like.
+     */
+    private static boolean isDistributed(Matrix matrix) {
+        return matrix instanceof SparseDistributedMatrix || matrix instanceof SparseBlockDistributedMatrix;
     }
 
     /**
@@ -176,7 +187,7 @@ public class MatrixUtil {
 
         for (int i = 0; i < rowsCnt; i++)
             for (int j = 0; j < colsCnt; j++)
-                res[i][j] = fArr[!isRowMode? i * colsCnt + j : j * rowsCnt + i];
+                res[i][j] = fArr[!isRowMode ? i * colsCnt + j : j * rowsCnt + i];
 
         return res;
     }
@@ -195,7 +206,7 @@ public class MatrixUtil {
 
         for (int i = 0; i < rowsCnt; i++)
             for (int j = 0; j < colsCnt; j++)
-                mtx.setX(i, j, fArr[!isRowMode? i * colsCnt + j : j * rowsCnt + i]);
+                mtx.setX(i, j, fArr[!isRowMode ? i * colsCnt + j : j * rowsCnt + i]);
     }
 
     /** */
@@ -216,7 +227,7 @@ public class MatrixUtil {
 
         for (int i = 0; i < iLim; i++)
             for (int j = 0; j < jLim; j++)
-                res[isRowMode? j * iLim + i : i * jLim + j] = arr[i][j];
+                res[isRowMode ? j * iLim + i : i * jLim + j] = arr[i][j];
 
         return res;
     }

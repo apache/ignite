@@ -414,6 +414,14 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     public Matrix setRow(int row, double[] data);
 
     /**
+     * Get a specific row from matrix.
+     *
+     * @param row Row index.
+     * @return row.
+     */
+    public Vector getRow(int row);
+
+    /**
      * Sets values for given column.
      *
      * @param col Column index.
@@ -423,6 +431,14 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     public Matrix setColumn(int col, double[] data);
+
+    /**
+     * Get a specific row from matrix.
+     *
+     * @param col Col index.
+     * @return Col.
+     */
+    public Vector getCol(int col);
 
     /**
      * Sets given value without checking for index bounds. This method is marginally faster
@@ -541,6 +557,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Replace matrix entry with value oldVal at (row, col) with result of computing f(row, col, oldVal).
+     *
      * @param row Row.
      * @param col Column.
      * @param f Function used for replacing.

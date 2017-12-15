@@ -39,7 +39,7 @@ import org.apache.ignite.visor.commands.open.VisorOpenCommandSpec
 import org.apache.ignite.visor.commands.ping.VisorPingCommandSpec
 import org.apache.ignite.visor.commands.start.VisorStartCommandSpec
 import org.apache.ignite.visor.commands.tasks.VisorTasksCommandSpec
-import org.apache.ignite.visor.commands.top.VisorTopologyCommandSpec
+import org.apache.ignite.visor.commands.top.{VisorActivationCommandSpec, VisorTopologyCommandSpec}
 import org.junit.runner.RunWith
 import org.scalatest.Suites
 import org.scalatest.junit.JUnitRunner
@@ -69,6 +69,7 @@ class VisorConsoleSelfTestSuite extends Suites (
     new VisorStartCommandSpec,
     new VisorTasksCommandSpec,
     new VisorTopologyCommandSpec,
+    new VisorActivationCommandSpec,
     new VisorArgListSpec
 ) {
     // Mimic GridTestUtils.getNextMulticastGroup behavior because it can't be imported here

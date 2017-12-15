@@ -42,6 +42,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
+        <docfx.exec>docfx</docfx.exec>
         <git.exec>git</git.exec>
         <maven.bundle.plugin.version>2.5.4</maven.bundle.plugin.version>
         <javadoc.opts>-XDenableSunApiLintControl</javadoc.opts>
@@ -455,6 +456,14 @@
                                 <title>RocketMQ integration</title>
                                 <packages>org.apache.ignite.rocketmq*</packages>
                             </group>
+                            <group>
+                                <title>Ignite Development Utils</title>
+                                <packages>org.apache.ignite.development.utils*</packages>
+                            </group>
+                            <group>
+                                <title>Ignite ML</title>
+                                <packages>org.apache.ignite.ml*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
@@ -798,12 +807,18 @@
                                         <exclude>**/*.sql</exclude><!--sql files-->
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.md</exclude><!--readme files-->
+                                        <exclude>**/*index*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.jks</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.key</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.txt</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/ca/*.txt.attr</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
@@ -823,6 +838,7 @@
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
+                                        <exclude>**/resources/datasets/knn/*</exclude><!--Dataset examples in ml module-->
                                         <exclude>examples/src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
@@ -871,6 +887,7 @@
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.ruleset</exclude>
                                         <exclude>**/*.csproj</exclude>
+                                        <exclude>**/*.ndproj</exclude>
                                         <exclude>**/*.csprojrel</exclude>
                                         <exclude>**/*.vcxproj</exclude>
                                         <exclude>**/*.vcxprojrel</exclude>

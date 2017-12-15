@@ -59,7 +59,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * acquired by the failing node. In case this parameter is false, IgniteInterruptedException is called on every node
  * waiting on this semaphore.
  */
-public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, IgniteChangeGlobalStateSupport, Externalizable {
+public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridCacheSemaphoreState>
+    implements GridCacheSemaphoreEx, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -70,24 +71,6 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                 return new IgniteBiTuple<>();
             }
         };
-
-    /** Logger. */
-    private IgniteLogger log;
-
-    /** Semaphore name. */
-    private String name;
-
-    /** Removed flag. */
-    private volatile boolean rmvd;
-
-    /** Semaphore key. */
-    private GridCacheInternalKey key;
-
-    /** Semaphore projection. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView;
-
-    /** Cache context. */
-    private GridCacheContext<GridCacheInternalKey, GridCacheSemaphoreState> ctx;
 
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -290,10 +273,10 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                 return retryTopologySafe(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
                         try (GridNearTxLocal tx = CU.txStartInternal(ctx,
-                            semView,
+                            cacheView,
                             PESSIMISTIC, REPEATABLE_READ)
                         ) {
-                            GridCacheSemaphoreState val = semView.get(key);
+                            GridCacheSemaphoreState val = cacheView.get(key);
 
                             if (val == null)
                                 throw new IgniteCheckedException("Failed to find semaphore with given name: " +
@@ -328,7 +311,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
 
                                 val.setCount(newVal);
 
-                                semView.put(key, val);
+                                cacheView.put(key, val);
 
                                 tx.commit();
                             }
@@ -370,10 +353,10 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                     @Override public Boolean call() throws Exception {
                         try (
                             GridNearTxLocal tx = CU.txStartInternal(ctx,
-                                semView,
+                                cacheView,
                                 PESSIMISTIC, REPEATABLE_READ)
                         ) {
-                            GridCacheSemaphoreState val = semView.get(key);
+                            GridCacheSemaphoreState val = cacheView.get(key);
 
                             if (val == null)
                                 throw new IgniteCheckedException("Failed to find semaphore with given name: " +
@@ -391,7 +374,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                             if (broken) {
                                 val.setBroken(true);
 
-                                semView.put(key, val);
+                                cacheView.put(key, val);
 
                                 tx.commit();
 
@@ -415,7 +398,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
 
                             val.setWaiters(map);
 
-                            semView.put(key, val);
+                            cacheView.put(key, val);
 
                             sync.nodeMap = map;
 
@@ -457,16 +440,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView
     ) {
-        assert name != null;
-        assert key != null;
-        assert semView != null;
-
-        this.name = name;
-        this.key = key;
-        this.semView = semView;
-        this.ctx = semView.context();
-
-        log = ctx.logger(getClass());
+        super(name, key, semView);
     }
 
     /**
@@ -478,8 +452,8 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                 sync = retryTopologySafe(new Callable<Sync>() {
                     @Override public Sync call() throws Exception {
                         try (GridNearTxLocal tx = CU.txStartInternal(ctx,
-                            semView, PESSIMISTIC, REPEATABLE_READ)) {
-                            GridCacheSemaphoreState val = semView.get(key);
+                            cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                            GridCacheSemaphoreState val = cacheView.get(key);
 
                             if (val == null) {
                                 if (log.isDebugEnabled())
@@ -518,26 +492,6 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
             if (sync == null)
                 throw new IgniteCheckedException("Internal semaphore has not been properly initialized.");
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheInternalKey key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removed() {
-        return rmvd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean onRemoved() {
-        return rmvd = true;
     }
 
     /** {@inheritDoc} */
@@ -722,9 +676,9 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                 @Override public Integer call() throws Exception {
                     try (
                         GridNearTxLocal tx = CU.txStartInternal(ctx,
-                            semView, PESSIMISTIC, REPEATABLE_READ)
+                            cacheView, PESSIMISTIC, REPEATABLE_READ)
                     ) {
-                        GridCacheSemaphoreState val = semView.get(key);
+                        GridCacheSemaphoreState val = cacheView.get(key);
 
                         if (val == null)
                             throw new IgniteException("Failed to find semaphore with given name: " + name);
@@ -959,17 +913,6 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
         finally {
             ctx.kernalContext().gateway().readUnlock();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheSemaphoreState>context().cacheContext(ctx.cacheId());
-        this.semView = ctx.cache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
-        // No-op.
     }
 
     /** {@inheritDoc} */

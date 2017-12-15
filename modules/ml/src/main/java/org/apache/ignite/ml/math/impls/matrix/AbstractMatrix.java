@@ -41,7 +41,9 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MatrixVectorView;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
  * This class provides a helper implementation of the {@link Matrix}
@@ -281,7 +283,7 @@ public abstract class AbstractMatrix implements Matrix {
      *
      * @param row Row index.
      */
-    private void checkRowIndex(int row) {
+    void checkRowIndex(int row) {
         if (row < 0 || row >= rowSize())
             throw new RowIndexException(row);
     }
@@ -291,7 +293,7 @@ public abstract class AbstractMatrix implements Matrix {
      *
      * @param col Column index.
      */
-    private void checkColumnIndex(int col) {
+    void checkColumnIndex(int col) {
         if (col < 0 || col >= columnSize())
             throw new ColumnIndexException(col);
     }
@@ -302,7 +304,7 @@ public abstract class AbstractMatrix implements Matrix {
      * @param row Row index.
      * @param col Column index.
      */
-    protected void checkIndex(int row, int col) {
+    private void checkIndex(int row, int col) {
         checkRowIndex(row);
         checkColumnIndex(col);
     }
@@ -330,7 +332,7 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Matrix assign(double val) {
         if (sto.isArrayBased())
-                Arrays.fill(sto.data(), val);
+            Arrays.fill(sto.data(), val);
         else {
             int rows = rowSize();
             int cols = columnSize();
@@ -709,6 +711,18 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
+    @Override public Vector getRow(int row) {
+        checkRowIndex(row);
+
+        Vector res = new DenseLocalOnHeapVector(columnSize());
+
+        for (int i = 0; i < columnSize(); i++)
+            res.setX(i, getX(row, i));
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public Matrix setColumn(int col, double[] data) {
         checkColumnIndex(col);
 
@@ -721,6 +735,23 @@ public abstract class AbstractMatrix implements Matrix {
             setX(x, col, data[x]);
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector getCol(int col) {
+        checkColumnIndex(col);
+
+        Vector res;
+
+        if (isDistributed())
+            res = MatrixUtil.likeVector(this, rowSize());
+        else
+            res = new DenseLocalOnHeapVector(rowSize());
+
+        for (int i = 0; i < rowSize(); i++)
+            res.setX(i, getX(i, col));
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -770,7 +801,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         Vector res = likeVector(rows);
 
-        Blas.gemv(1,this,vec,0,res);
+        Blas.gemv(1, this, vec, 0, res);
 
         return res;
     }
@@ -948,5 +979,21 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f) {
         setX(row, col, f.apply(row, col, getX(row, col)));
+    }
+
+    /**
+     * Return max amount of columns in 2d array.
+     *
+     * TODO: why this in this class, mb some util class?
+     *
+     * @param data Data.
+     */
+    protected int getMaxAmountOfColumns(double[][] data) {
+        int maxAmountOfCols = 0;
+
+        for (int i = 0; i < data.length; i++)
+            maxAmountOfCols = Math.max(maxAmountOfCols, data[i].length);
+
+        return maxAmountOfCols;
     }
 }

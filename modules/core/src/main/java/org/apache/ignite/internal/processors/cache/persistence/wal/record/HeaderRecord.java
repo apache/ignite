@@ -18,13 +18,17 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.record;
 
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Header record.
  */
 public class HeaderRecord extends WALRecord {
-    /** */
-    public static final long MAGIC = 0xB0D045A_CE7ED045AL;
+    /** Magic of regular WAL segment. */
+    public static final long REGULAR_MAGIC = 0xB0D045A_CE7ED045AL;
+
+    /** Magic of WAL segment with skipped physical records. */
+    public static final long COMPACTED_MAGIC = 0x4E07AE0_E573A694EL;
 
     /** Serializer version */
     private final int ver;
@@ -46,5 +50,10 @@ public class HeaderRecord extends WALRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.HEADER_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(HeaderRecord.class, this, "super", super.toString());
     }
 }

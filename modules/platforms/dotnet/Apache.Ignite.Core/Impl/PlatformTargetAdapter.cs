@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Unmanaged target.
         /// </summary>
-        internal IPlatformTargetInternal Target
+        public IPlatformTargetInternal Target
         {
             get { return _target; }
         }
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Marshaller.
         /// </summary>
-        internal Marshaller Marshaller
+        public Marshaller Marshaller
         {
             get { return _marsh; }
         }
@@ -404,15 +404,6 @@ namespace Apache.Ignite.Core.Impl
         #endregion
 
         #region Miscelanneous
-
-        /// <summary>
-        /// Finish marshaling.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        internal void FinishMarshal(BinaryWriter writer)
-        {
-            _marsh.FinishMarshal(writer);
-        }
 
         /// <summary>
         /// Unmarshal object using the given stream.

@@ -25,12 +25,12 @@ import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.io.Charsets;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.result.SortOrder;
 import org.h2.value.CompareMode;
@@ -181,7 +181,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private int putAndCompare(String v1, String v2, int maxSize) throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB)
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
@@ -189,7 +189,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
                 null,
                 PAGE_SIZE,
                 plcCfg,
-                new MemoryMetricsImpl(plcCfg),
+                new DataRegionMetricsImpl(plcCfg),
                 false);
 
         pageMem.start();
@@ -207,7 +207,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, 0,
                 CompareMode.getInstance(null, 0));
 
-            ih.put(pageAddr, off, ValueString.get(v1), maxSize);
+            ih.put(pageAddr, off, v1 == null ? ValueNull.INSTANCE : ValueString.get(v1), maxSize);
 
             Comparator<Value> comp = new Comparator<Value>() {
                 @Override public int compare(Value o1, Value o2) {
@@ -215,7 +215,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
                 }
             };
 
-            return ih.compare(pageAddr, off, maxSize,  ValueString.get(v2), comp);
+            return ih.compare(pageAddr, off, maxSize,  v2 == null ? ValueNull.INSTANCE : ValueString.get(v2), comp);
         }
         finally {
             if (page != 0L)
@@ -279,7 +279,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** */
     public void testStringTruncate() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB)
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log(),
@@ -287,7 +287,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new MemoryMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(plcCfg),
             false);
 
         pageMem.start();
@@ -330,7 +330,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** */
     public void testBytes() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB)
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log(),
@@ -338,7 +338,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new MemoryMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(plcCfg),
             false);
 
         pageMem.start();
@@ -378,6 +378,10 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     /** */
     public void testNull() throws Exception {
         testPutGet(ValueInt.get(-1), ValueNull.INSTANCE, ValueInt.get(3));
+        testPutGet(ValueInt.get(-1), ValueNull.INSTANCE, ValueInt.get(3));
+
+        int maxSize = 3 + 2; // 2 ascii chars + 3 bytes header.
+        assertEquals(1, putAndCompare("aa", null, maxSize));
     }
 
     /** */
@@ -445,7 +449,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** */
     private void testPutGet(Value v1, Value v2, Value v3) throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB)
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log(),
@@ -453,7 +457,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new MemoryMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(plcCfg),
             false);
 
         pageMem.start();
@@ -495,7 +499,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         Value v1 = s1 == null ? ValueNull.INSTANCE : ValueString.get(s1);
         Value v2 = s2 == null ? ValueNull.INSTANCE : ValueString.get(s2);
 
-        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(CompareMode.DEFAULT, 0));
+        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(null, 0));
 
         return ha.canRelyOnCompare(c, v1, v2);
     }
@@ -505,7 +509,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         Value v1 = b1 == null ? ValueNull.INSTANCE : ValueBytes.get(b1);
         Value v2 = b2 == null ? ValueNull.INSTANCE : ValueBytes.get(b2);
 
-        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(CompareMode.DEFAULT, 0));
+        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(null, 0));
 
         return ha.canRelyOnCompare(c, v1, v2);
     }

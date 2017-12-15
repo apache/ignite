@@ -275,6 +275,9 @@ class ClusterCachesInfo {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
                 locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
 
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicyFactory", "Eviction policy factory",
+                locAttr.evictionPolicyFactoryClassName(), rmtAttr.evictionPolicyFactoryClassName(), true);
+
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
                 "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
                 rmtAttr.transactionManagerLookupClassName(), false);
@@ -332,6 +335,10 @@ class ClusterCachesInfo {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "nearEvictionPolicy",
                     "Near eviction policy", locAttr.nearEvictionPolicyClassName(),
                     rmtAttr.nearEvictionPolicyClassName(), false);
+
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "nearEvictionPolicyFactory",
+                    "Near eviction policy factory", locAttr.nearEvictionPolicyFactoryClassName(),
+                    rmtAttr.nearEvictionPolicyFactoryClassName(), false);
 
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityIncludeNeighbors",
                     "Affinity include neighbors", locAttr.affinityIncludeNeighbors(),
@@ -811,9 +818,26 @@ class ClusterCachesInfo {
 
     /**
      * @param joinedNodeId Joined node ID.
+     * @return {@code True} if there are new caches received from joined node.
+     */
+    boolean hasCachesReceivedFromJoin(UUID joinedNodeId) {
+        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            if (desc.staticallyConfigured()) {
+                assert desc.receivedFrom() != null : desc;
+
+                if (joinedNodeId.equals(desc.receivedFrom()))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param joinedNodeId Joined node ID.
      * @return New caches received from joined node.
      */
-    @NotNull public List<DynamicCacheDescriptor> cachesReceivedFromJoin(UUID joinedNodeId) {
+    List<DynamicCacheDescriptor> cachesReceivedFromJoin(UUID joinedNodeId) {
         assert joinedNodeId != null;
 
         List<DynamicCacheDescriptor> started = null;
@@ -895,7 +919,8 @@ class ClusterCachesInfo {
                 grpDesc.startTopologyVersion(),
                 grpDesc.deploymentId(),
                 grpDesc.caches(),
-                0);
+                0,
+                grpDesc.persistenceEnabled());
 
             cacheGrps.put(grpDesc.groupId(), grpData);
         }
@@ -973,7 +998,8 @@ class ClusterCachesInfo {
                 grpData.receivedFrom(),
                 grpData.startTopologyVersion(),
                 grpData.deploymentId(),
-                grpData.caches());
+                grpData.caches(),
+                grpData.persistenceEnabled());
 
             if (locCacheGrps.containsKey(grpDesc.groupId())) {
                 CacheGroupDescriptor locGrpCfg = locCacheGrps.get(grpDesc.groupId());
@@ -1188,7 +1214,7 @@ class ClusterCachesInfo {
             if (storedCfgs != null) {
                 List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
 
-                IgniteUuid deplymentId = IgniteUuid.fromUuid(msg.requestId());
+                IgniteUuid deploymentId = msg.id();
 
                 for (StoredCacheData storedCfg : storedCfgs) {
                     CacheConfiguration ccfg = storedCfg.config();
@@ -1198,10 +1224,11 @@ class ClusterCachesInfo {
                             ccfg.getName(),
                             msg.initiatorNodeId());
 
-                        req.deploymentId(deplymentId);
+                        req.deploymentId(deploymentId);
                         req.startCacheConfiguration(ccfg);
                         req.cacheType(ctx.cache().cacheType(ccfg.getName()));
                         req.schema(new QuerySchema(storedCfg.queryEntities()));
+                        req.sql(storedCfg.sql());
 
                         reqs.add(req);
                     }
@@ -1490,7 +1517,8 @@ class ClusterCachesInfo {
             rcvdFrom,
             curTopVer != null ? curTopVer.nextMinorVersion() : null,
             deploymentId,
-            caches);
+            caches,
+            CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration()));
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
 
@@ -1542,8 +1570,8 @@ class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "nodeFilter", "Node filter",
             attr1.nodeFilterClassName(), attr2.nodeFilterClassName(), true);
 
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "memoryPolicyName", "Memory policy",
-            cfg.getMemoryPolicyName(), startCfg.getMemoryPolicyName(), true);
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "dataRegionName", "Data region",
+            cfg.getDataRegionName(), startCfg.getDataRegionName(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator", "Topology validator",
             attr1.topologyValidatorClassName(), attr2.topologyValidatorClassName(), true);
@@ -1727,17 +1755,14 @@ class ClusterCachesInfo {
      * Use DIRECT comparator for ordering cache start operations.
      * Use REVERSE comparator for ordering cache stop operations.
      */
-    private static class CacheComparators {
+    static class CacheComparators {
         /**
          * DIRECT comparator for cache descriptors (first system caches).
          */
         static Comparator<DynamicCacheDescriptor> DIRECT = new Comparator<DynamicCacheDescriptor>() {
-            @Override
-            public int compare(DynamicCacheDescriptor o1, DynamicCacheDescriptor o2) {
-                if (!o1.cacheType().userCache())
-                    return -1;
-                if (!o2.cacheType().userCache())
-                    return 1;
+            @Override public int compare(DynamicCacheDescriptor o1, DynamicCacheDescriptor o2) {
+                if (o1.cacheType().userCache() ^ o2.cacheType().userCache())
+                    return o2.cacheType().userCache() ? -1 : 1;
 
                 return o1.cacheId().compareTo(o2.cacheId());
             }

@@ -304,7 +304,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         if (super.onDone(tx, err0)) {
             // Don't forget to clean up.
-            cctx.mvcc().removeMvccFuture(this);
+            cctx.mvcc().removeVersionedFuture(this);
 
             return true;
         }
@@ -368,18 +368,18 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap);
 
-        if (mapping.primary().isLocal()) {
-            if (write.context().isNear())
-                tx.nearLocallyMapped(true);
-            else if (write.context().isColocated())
-                tx.colocatedLocallyMapped(true);
-        }
-
         if (isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Abandoning (re)map because future is done: " + this);
 
             return;
+        }
+
+        if (mapping.primary().isLocal()) {
+            if (write.context().isNear())
+                tx.nearLocallyMapped(true);
+            else if (write.context().isColocated())
+                tx.colocatedLocallyMapped(true);
         }
 
         if (keyLockFut != null)
@@ -445,7 +445,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 ClusterNode primary = updated.primary();
 
-                assert !primary.isLocal() || !cctx.kernalContext().clientNode();
+                assert !primary.isLocal() || !cctx.kernalContext().clientNode() || write.context().isLocal();
 
                 // Minor optimization to not create MappingKey: on client node can not have mapping for local node.
                 Object key =  cctx.kernalContext().clientNode() ? primary.id() :
@@ -540,6 +540,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     tx.subjectId(),
                     tx.taskNameHash(),
                     m.clientFirst(),
+                    true,
                     tx.activeCachesDeploymentEnabled());
 
                 for (IgniteTxEntry txEntry : m.entries()) {
@@ -912,8 +913,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 return;
 
             if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
-                if (parent.cctx.tm().deadlockDetectionEnabled() &&
-                    (parent.tx.remainingTime() == -1 || res.error() instanceof IgniteTxTimeoutCheckedException)) {
+                if (parent.tx.remainingTime() == -1 || res.error() instanceof IgniteTxTimeoutCheckedException) {
                     parent.onTimeout();
 
                     return;

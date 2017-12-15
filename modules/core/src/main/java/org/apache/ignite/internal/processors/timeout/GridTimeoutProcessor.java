@@ -84,12 +84,13 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /**
      * @param timeoutObj Timeout object.
+     * @return {@code True} if object was added.
      */
     @SuppressWarnings({"NakedNotify", "CallToNotifyInsteadOfNotifyAll"})
-    public void addTimeoutObject(GridTimeoutObject timeoutObj) {
+    public boolean addTimeoutObject(GridTimeoutObject timeoutObj) {
         if (timeoutObj.endTime() <= 0 || timeoutObj.endTime() == Long.MAX_VALUE)
             // Timeout will never happen.
-            return;
+            return false;
 
         boolean added = timeoutObjs.add(timeoutObj);
 
@@ -100,6 +101,8 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 mux.notify(); // No need to notifyAll since we only have one thread.
             }
         }
+
+        return true;
     }
 
     /**
@@ -124,9 +127,10 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /**
      * @param timeoutObj Timeout object.
+     * @return {@code True} if timeout object was removed.
      */
-    public void removeTimeoutObject(GridTimeoutObject timeoutObj) {
-        timeoutObjs.remove(timeoutObj);
+    public boolean removeTimeoutObject(GridTimeoutObject timeoutObj) {
+        return timeoutObjs.remove(timeoutObj);
     }
 
     /**
@@ -149,13 +153,14 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                     GridTimeoutObject timeoutObj = iter.next();
 
                     if (timeoutObj.endTime() <= now) {
-                        iter.remove();
-
-                        if (log.isDebugEnabled())
-                            log.debug("Timeout has occurred: " + timeoutObj);
-
                         try {
-                            timeoutObj.onTimeout();
+                            boolean rmvd = timeoutObjs.remove(timeoutObj);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Timeout has occurred [obj=" + timeoutObj + ", process=" + rmvd + ']');
+
+                            if (rmvd)
+                                timeoutObj.onTimeout();
                         }
                         catch (Throwable e) {
                             if (isCancelled() && !(e instanceof Error)){

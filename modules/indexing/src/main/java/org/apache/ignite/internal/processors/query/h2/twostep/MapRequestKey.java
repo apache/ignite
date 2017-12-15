@@ -17,18 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import org.apache.ignite.internal.util.typedef.F;
+
+import java.util.UUID;
+
 /**
  * Mapper request key.
  */
 class MapRequestKey {
+    /** Node ID. */
+    private UUID nodeId;
+
     /** */
     private long reqId;
 
     /** */
     private int segmentId;
 
-    /** Constructor */
-    MapRequestKey(long reqId, int segmentId) {
+    /**
+     * Constructor.
+     *
+     * @param nodeId Node ID.
+     * @param reqId Request ID.
+     * @param segmentId Segment ID.
+     */
+    MapRequestKey(UUID nodeId, long reqId, int segmentId) {
+        this.nodeId = nodeId;
         this.reqId = reqId;
         this.segmentId = segmentId;
     }
@@ -50,14 +64,15 @@ class MapRequestKey {
 
         MapRequestKey other = (MapRequestKey)o;
 
-        return reqId == other.reqId && segmentId == other.segmentId;
+        return F.eq(nodeId, other.nodeId) && reqId == other.reqId && segmentId == other.segmentId;
 
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = (int)(reqId ^ (reqId >>> 32));
+        int res = nodeId != null ? nodeId.hashCode() : 0;
 
+        res = 31 * res + (int)(reqId ^ (reqId >>> 32));
         res = 31 * res + segmentId;
 
         return res;

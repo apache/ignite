@@ -186,7 +186,7 @@ rules:
     space-in-parens: 0
     space-infix-ops: 2
     space-unary-ops: [2, { "words": true, "nonwords": false }]
-    spaced-comment: [1, "always"]
+    spaced-comment: [1, "always", {"markers": ["/"]}]
     use-isnan: 2
     valid-jsdoc: 0
     valid-typeof: 2

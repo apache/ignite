@@ -173,7 +173,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             for (int i = 0; i < BATCH_SIZE; ++i)
                 assertEquals("Invalid update count",i + 1, updCnts[i]);
 
-            if (!e.getMessage().contains("Query produced result set [qry=select * from Person, args=[]]")) {
+            if (!e.getMessage().contains("Given statement type does not match that declared by JDBC driver")) {
                 log.error("Invalid exception: ", e);
 
                 fail();

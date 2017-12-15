@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native Ignite wrapper.
     /// </summary>
-    internal class Ignite : PlatformTargetAdapter, IIgnite, ICluster
+    internal class Ignite : PlatformTargetAdapter, ICluster, IIgniteInternal, IIgnite
     {
         /// <summary>
         /// Operation codes for PlatformProcessorImpl calls.
@@ -211,7 +211,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-
         public ICluster GetCluster()
         {
             return this;
@@ -379,7 +378,7 @@ namespace Apache.Ignite.Core.Impl
         /// Internal stop routine.
         /// </summary>
         /// <param name="cancel">Cancel flag.</param>
-        internal unsafe void Stop(bool cancel)
+        internal void Stop(bool cancel)
         {
             var jniTarget = _proc as PlatformJniTarget;
 
@@ -388,7 +387,7 @@ namespace Apache.Ignite.Core.Impl
                 throw new IgniteException("Ignition.Stop is not supported in thin client.");
             }
 
-            UU.IgnitionStop(jniTarget.Target.Context, Name, cancel);
+            UU.IgnitionStop(Name, cancel);
 
             _cbs.Cleanup();
         }
@@ -569,7 +568,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the data streamer.
         /// </summary>
-        internal IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
+        public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
         {
             var streamerTarget = DoOutOpObject((int) Op.GetDataStreamer, w =>
             {
@@ -578,6 +577,14 @@ namespace Apache.Ignite.Core.Impl
             });
 
             return new DataStreamerImpl<TK, TV>(streamerTarget, _marsh, cacheName, keepBinary);
+        }
+
+        /// <summary>
+        /// Gets the public Ignite interface.
+        /// </summary>
+        public IIgnite GetIgnite()
+        {
+            return this;
         }
 
         /** <inheritdoc /> */
@@ -745,6 +752,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+#pragma warning disable 618
         public ICollection<IMemoryMetrics> GetMemoryMetrics()
         {
             return _prj.GetMemoryMetrics();
@@ -757,6 +765,7 @@ namespace Apache.Ignite.Core.Impl
 
             return _prj.GetMemoryMetrics(memoryPolicyName);
         }
+#pragma warning restore 618
 
         /** <inheritdoc /> */
         public void SetActive(bool isActive)
@@ -771,9 +780,29 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+#pragma warning disable 618
         public IPersistentStoreMetrics GetPersistentStoreMetrics()
         {
             return _prj.GetPersistentStoreMetrics();
+        }
+#pragma warning restore 618
+
+        /** <inheritdoc /> */
+        public ICollection<IDataRegionMetrics> GetDataRegionMetrics()
+        {
+            return _prj.GetDataRegionMetrics();
+        }
+
+        /** <inheritdoc /> */
+        public IDataRegionMetrics GetDataRegionMetrics(string memoryPolicyName)
+        {
+            return _prj.GetDataRegionMetrics(memoryPolicyName);
+        }
+
+        /** <inheritdoc /> */
+        public IDataStorageMetrics GetDataStorageMetrics()
+        {
+            return _prj.GetDataStorageMetrics();
         }
 
         /// <summary>
@@ -797,7 +826,7 @@ namespace Apache.Ignite.Core.Impl
         /// Gets internal projection.
         /// </summary>
         /// <returns>Projection.</returns>
-        internal ClusterGroupImpl ClusterGroup
+        public ClusterGroupImpl ClusterGroup
         {
             get { return _prj; }
         }
@@ -805,7 +834,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the binary processor.
         /// </summary>
-        internal BinaryProcessor BinaryProcessor
+        public IBinaryProcessor BinaryProcessor
         {
             get { return _binaryProc; }
         }
@@ -813,7 +842,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Configuration.
         /// </summary>
-        internal IgniteConfiguration Configuration
+        public IgniteConfiguration Configuration
         {
             get { return _cfg; }
         }
@@ -889,7 +918,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the plugin processor.
         /// </summary>
-        internal PluginProcessor PluginProcessor
+        public PluginProcessor PluginProcessor
         {
             get { return _pluginProcessor; }
         }

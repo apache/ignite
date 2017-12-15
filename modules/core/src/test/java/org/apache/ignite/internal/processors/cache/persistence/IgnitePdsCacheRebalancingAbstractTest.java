@@ -35,17 +35,18 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -53,6 +54,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
@@ -63,7 +65,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache name. */
-    private final String cacheName = "cache";
+    private static final String cacheName = "cache";
 
     /** */
     protected boolean explicitTx;
@@ -96,29 +98,37 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ccfg2.setQueryEntities(Collections.singleton(qryEntity));
 
-        cfg.setCacheConfiguration(ccfg1, ccfg2);
+        // Do not start filtered cache on coordinator.
+        if (gridName.endsWith("0")) {
+            cfg.setCacheConfiguration(ccfg1, ccfg2);
+        }
+        else {
+            CacheConfiguration ccfg3 = cacheConfiguration("filtered");
+            ccfg3.setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE);
+            ccfg3.setBackups(1);
+            ccfg3.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            ccfg3.setNodeFilter(new CoordinatorNodeFilter());
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
+        }
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
         memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
         memCfg.setPageSize(1024);
+        memCfg.setWalMode(WALMode.LOG_ONLY);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setMaxSize(100 * 1024 * 1024);
+        memPlcCfg.setName("dfltDataRegion");
+        memPlcCfg.setMaxSize(150 * 1024 * 1024);
         memPlcCfg.setInitialSize(100 * 1024 * 1024);
-        memPlcCfg.setSwapFilePath("work/swap");
+        memPlcCfg.setSwapPath("work/swap");
+        memPlcCfg.setPersistenceEnabled(true);
 
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
 
-        cfg.setMemoryConfiguration(memCfg);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setDiscoverySpi(
             new TcpDiscoverySpi()
@@ -148,14 +158,14 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**
@@ -288,9 +298,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
 
-        awaitPartitionMapExchange();
-
         ignite1.active(true);
+
+        awaitPartitionMapExchange();
 
         IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
 
@@ -307,9 +317,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
 
-        awaitPartitionMapExchange();
-
         ignite1.active(true);
+
+        awaitPartitionMapExchange();
 
         cache1 = ignite1.cache(cacheName);
         IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
@@ -459,32 +469,35 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             }
         }, 1, "load-runner");
 
-        for (int i = 0; i < topChanges; i++) {
-            if (U.currentTimeMillis() > timeOut)
-                break;
+        try {
+            for (int i = 0; i < topChanges; i++) {
+                if (U.currentTimeMillis() > timeOut)
+                    break;
 
-            U.sleep(3_000);
+                U.sleep(3_000);
 
-            boolean add;
+                boolean add;
 
-            if (nodesCnt.get() <= maxNodesCount / 2)
-                add = true;
-            else if (nodesCnt.get() > maxNodesCount)
-                add = false;
-            else // More chance that node will be added
-                add = ThreadLocalRandom.current().nextInt(3) <= 1;
+                if (nodesCnt.get() <= maxNodesCount / 2)
+                    add = true;
+                else if (nodesCnt.get() > maxNodesCount)
+                    add = false;
+                else // More chance that node will be added
+                    add = ThreadLocalRandom.current().nextInt(3) <= 1;
 
-            if (add)
-                startGrid(nodesCnt.incrementAndGet());
-            else
-                stopGrid(nodesCnt.getAndDecrement());
+                if (add)
+                    startGrid(nodesCnt.incrementAndGet());
+                else
+                    stopGrid(nodesCnt.getAndDecrement());
 
-            awaitPartitionMapExchange();
+                awaitPartitionMapExchange();
 
-            cache.rebalance().get();
+                cache.rebalance().get();
+            }
         }
-
-        stop.set(true);
+        finally {
+            stop.set(true);
+        }
 
         fut.get();
 
@@ -492,6 +505,61 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         for (Map.Entry<Integer, TestValue> entry : map.entrySet())
             assertEquals(Integer.toString(entry.getKey()), entry.getValue(), cache.get(entry.getKey()));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testForceRebalance() throws Exception {
+        testForceRebalance(cacheName);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testForceRebalanceClientTopology() throws Exception {
+        testForceRebalance("filtered");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testForceRebalance(String cacheName) throws Exception {
+        startGrids(4);
+
+        final Ignite ig = grid(1);
+
+        ig.active(true);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> c = ig.cache(cacheName);
+
+        Integer val = 0;
+
+        for (int i = 0; i < 5; i++) {
+            info("Iteration: " + i);
+
+            Integer key = primaryKey(ignite(3).cache(cacheName));
+
+            c.put(key, val);
+
+            stopGrid(3);
+
+            val++;
+
+            c.put(key, val);
+
+            assertEquals(val, c.get(key));
+
+            startGrid(3);
+
+            awaitPartitionMapExchange();
+
+            Object val0 = ignite(3).cache(cacheName).get(key);
+
+            assertEquals(val, val0);
+        }
     }
 
     /**
@@ -555,9 +623,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         cntrs.put(part.id(), part.updateCounter());
                 }
 
-                for (int k0 = 0; k0 < k; k0++) {
+                for (int k0 = 0; k0 < k; k0++)
                     assertEquals(String.valueOf(k0), k0, ig0.cache(cacheName).get(k0));
-                }
             }
 
             assertEquals(ig.affinity(cacheName).partitions(), cntrs.size());
@@ -610,6 +677,16 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 "v1=" + v1 +
                 ", v2=" + v2 +
                 '}';
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CoordinatorNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return node.order() > 1;
         }
     }
 }

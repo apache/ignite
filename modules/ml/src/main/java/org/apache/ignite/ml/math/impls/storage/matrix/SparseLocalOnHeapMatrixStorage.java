@@ -75,10 +75,8 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         return stoMode;
     }
 
-    /**
-     * @return Matrix elements access mode.
-     */
-    public int getAccessMode() {
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
         return acsMode;
     }
 
@@ -203,6 +201,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
     }
 
     // TODO: IGNITE-5777, optimize this
+
     /** {@inheritDoc} */
     @Override public double[] data() {
         double[] res = new double[rows * cols];
@@ -216,7 +215,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
                 else
                     res[fstIdx * cols + sndIdx] = val;
 
-        }));
+            }));
 
         return res;
     }

@@ -930,7 +930,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Arguments.
      */
-    @Nullable private Object[] readQueryArgs(BinaryRawReaderEx reader) {
+    @Nullable public static Object[] readQueryArgs(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         if (cnt > 0) {
@@ -1310,6 +1310,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         boolean distrJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
+        boolean lazy = reader.readBoolean();
         int timeout = reader.readInt();
         boolean replicated = reader.readBoolean();
         boolean collocated = reader.readBoolean();
@@ -1321,6 +1322,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 .setLocal(loc)
                 .setDistributedJoins(distrJoins)
                 .setEnforceJoinOrder(enforceJoinOrder)
+                .setLazy(lazy)
                 .setTimeout(timeout, TimeUnit.MILLISECONDS)
                 .setReplicatedOnly(replicated)
                 .setCollocated(collocated)

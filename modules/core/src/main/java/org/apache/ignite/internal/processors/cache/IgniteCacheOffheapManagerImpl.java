@@ -33,40 +33,36 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.cache.tree.DataRow;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
+import org.apache.ignite.internal.processors.cache.tree.PendingRow;
+import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.GridStripedLock;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -75,17 +71,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
  *
  */
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
-    /** */
-    private static final int UNDEFINED_CACHE_ID = 0;
-
     /** */
     protected GridCacheSharedContext ctx;
 
@@ -148,20 +139,20 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException{
+    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
         if (cctx.affinityNode() && cctx.ttl().eagerTtlEnabled() && pendingEntries == null) {
             String name = "PendingEntries";
 
-            long rootPage = allocateForTree();
+                long rootPage = allocateForTree();
 
-            pendingEntries = new PendingEntriesTree(
-                grp,
-                name,
-                grp.memoryPolicy().pageMemory(),
-                rootPage,
-                grp.reuseList(),
-                true);
-        }
+                pendingEntries = new PendingEntriesTree(
+                    grp,
+                    name,
+                    grp.dataRegion().pageMemory(),
+                    rootPage,
+                    grp.reuseList(),
+                    true);
+            }
     }
 
     /**
@@ -197,14 +188,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /**
-     *
+     * @param cacheId Cache ID.
      */
     private void removeCacheData(int cacheId) {
         assert grp.affinityNode();
 
         try {
             if (grp.sharedGroup()) {
-                assert cacheId != UNDEFINED_CACHE_ID;
+                assert cacheId != CU.UNDEFINED_CACHE_ID;
+                assert ctx.database().checkpointLockIsHeldByThread();
 
                 for (CacheDataStore store : cacheDataStores())
                     store.clear(cacheId);
@@ -368,12 +360,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIndexes(GridCacheContext cctx, KeyCacheObject key, GridDhtLocalPartition part)
-        throws IgniteCheckedException {
-        dataStore(part).updateIndexes(cctx, key);
-    }
-
-    /** {@inheritDoc} */
     @Override public void remove(
         GridCacheContext cctx,
         KeyCacheObject key,
@@ -452,7 +438,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             while (it.hasNext()) {
                 cctx.shared().database().checkpointReadLock();
 
-                try{
+                try {
                     KeyCacheObject key = it.next().key();
 
                     try {
@@ -610,7 +596,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
 
-        return iterator(UNDEFINED_CACHE_ID, singletonIterator(data));
+        return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data));
     }
 
     /**
@@ -647,7 +633,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             CacheDataStore ds = dataIt.next();
 
                             curPart = ds.partId();
-                            cur = cacheId == UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                            cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
                         }
                         else
                             break;
@@ -704,7 +690,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             if (!reservePartition(ds.partId()))
                                 continue;
 
-                            cur = cacheId == UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                            cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
                         }
                         else
                             break;
@@ -803,7 +789,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         long pageId;
 
         if (reuseList == null || (pageId = reuseList.takeRecycledPage()) == 0L)
-            pageId = grp.memoryPolicy().pageMemory().allocatePage(grp.groupId(), INDEX_PARTITION, FLAG_IDX);
+            pageId = grp.dataRegion().pageMemory().allocatePage(grp.groupId(), INDEX_PARTITION, FLAG_IDX);
 
         return pageId;
     }
@@ -984,7 +970,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (grp.sharedGroup())
                 cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
             else
-                cur = pendingEntries.find(null, new PendingRow(UNDEFINED_CACHE_ID, now, 0));
+                cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
 
             if (!cur.next())
                 return false;
@@ -1054,8 +1040,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         private final ConcurrentMap<Integer, AtomicLong> cacheSizes = new ConcurrentHashMap<>();
 
-        /** Initialized update counter. */
-        protected Long initCntr = 0L;
+        /** Initial update counter. */
+        protected long initCntr;
 
         /**
          * @param partId Partition number.
@@ -1205,7 +1191,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                int cacheId = grp.sharedGroup() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
+                int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
 
                 dataTree.invoke(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY, c);
 
@@ -1247,9 +1235,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException
-        {
-            int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
+            @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+            int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
             DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
 
@@ -1266,15 +1253,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             assert dataRow.link() != 0 : dataRow;
 
-            if (grp.sharedGroup() && dataRow.cacheId() == UNDEFINED_CACHE_ID)
+            if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
                 dataRow.cacheId(cctx.cacheId());
 
             return dataRow;
         }
 
         /** {@inheritDoc} */
-        @Override public void update(GridCacheContext cctx,KeyCacheObject key,
-
+        @Override public void update(
+            GridCacheContext cctx,
+            KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
@@ -1286,7 +1274,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
+                int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
                 assert oldRow == null || oldRow.cacheId() == cacheId : oldRow;
 
@@ -1300,6 +1288,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 CacheDataRow old;
 
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
                 if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow)) {
                     old = oldRow;
 
@@ -1310,7 +1300,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     assert dataRow.link() != 0 : dataRow;
 
-                    if (grp.sharedGroup() && dataRow.cacheId() == UNDEFINED_CACHE_ID)
+                    if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
                         dataRow.cacheId(cctx.cacheId());
 
                     if (oldRow != null) {
@@ -1346,29 +1336,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             GridCacheQueryManager qryMgr = cctx.queries();
 
-            int cacheId = grp.sharedGroup() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
+            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            if (qryMgr.enabled()) {
-                if (oldRow != null) {
-                    qryMgr.store(key,
-                        partId,
-                        oldRow.value(),
-                        oldRow.version(),
-                        newRow.value(),
-                        newRow.version(),
-                        expireTime,
-                        newRow.link());
-                }
-                else {
-                    qryMgr.store(key,
-                        partId,
-                        null, null,
-                        newRow.value(),
-                        newRow.version(),
-                        expireTime,
-                        newRow.link());
-                }
-            }
+            if (qryMgr.enabled())
+                qryMgr.store(newRow, oldRow, true);
 
             if (oldRow != null) {
                 assert oldRow.link() != 0 : oldRow;
@@ -1390,35 +1361,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-            int cacheId = grp.sharedGroup() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
-
-            CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
-
-            if (row != null) {
-                row.key(key);
-
-                GridCacheQueryManager qryMgr = cctx.queries();
-
-                qryMgr.store(
-                    key,
-                    partId,
-                    null,
-                    null,
-                    row.value(),
-                    row.version(),
-                    row.expireTime(),
-                    row.link());
-            }
-        }
-
-        /** {@inheritDoc} */
         @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                int cacheId = grp.sharedGroup() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
+                int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
 
                 CacheDataRow oldRow = dataTree.remove(new SearchRow(cacheId, key));
 
@@ -1436,30 +1386,23 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @throws IgniteCheckedException If failed.
          */
         private void finishRemove(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-            CacheObject val = null;
-            GridCacheVersion ver = null;
-
             if (oldRow != null) {
-                int cacheId = grp.sharedGroup() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
+                int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
                 assert oldRow.link() != 0 : oldRow;
-                assert cacheId == UNDEFINED_CACHE_ID || oldRow.cacheId() == cacheId :
+                assert cacheId == CU.UNDEFINED_CACHE_ID || oldRow.cacheId() == cacheId :
                     "Incorrect cache ID [expected=" + cacheId + ", actual=" + oldRow.cacheId() + "].";
 
                 if (pendingEntries != null && oldRow.expireTime() != 0)
                     pendingEntries.removex(new PendingRow(cacheId, oldRow.expireTime(), oldRow.link()));
 
                 decrementSize(cctx.cacheId());
-
-                val = oldRow.value();
-
-                ver = oldRow.version();
             }
 
             GridCacheQueryManager qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
-                qryMgr.remove(key, partId, val, ver);
+                qryMgr.remove(key, oldRow);
 
             if (oldRow != null)
                 rowStore.removeRow(oldRow.link());
@@ -1471,14 +1414,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
             key.valueBytes(cctx.cacheObjectContext());
 
-            int cacheId = grp.sharedGroup() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
+            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
             CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
 
             if (row != null) {
                 row.key(key);
 
-                grp.memoryPolicy().evictionTracker().touchPage(row.link());
+                grp.dataRegion().evictionTracker().touchPage(row.link());
             }
 
             return row;
@@ -1489,8 +1432,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return dataTree.find(null, null);
         }
 
-        /** {@inheritDoc}
-         * @param cacheId*/
+        /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId) throws IgniteCheckedException {
             return cursor(cacheId, null, null);
         }
@@ -1508,14 +1450,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             SearchRow upperRow;
 
             if (grp.sharedGroup()) {
-                assert cacheId != UNDEFINED_CACHE_ID;
+                assert cacheId != CU.UNDEFINED_CACHE_ID;
 
                 lowerRow = lower != null ? new SearchRow(cacheId, lower) : new SearchRow(cacheId);
                 upperRow = upper != null ? new SearchRow(cacheId, upper) : new SearchRow(cacheId);
             }
             else {
-                lowerRow = lower != null ? new SearchRow(UNDEFINED_CACHE_ID, lower) : null;
-                upperRow = upper != null ? new SearchRow(UNDEFINED_CACHE_ID, upper) : null;
+                lowerRow = lower != null ? new SearchRow(CU.UNDEFINED_CACHE_ID, lower) : null;
+                upperRow = upper != null ? new SearchRow(CU.UNDEFINED_CACHE_ID, upper) : null;
             }
 
             return dataTree.find(lowerRow, upperRow, x);
@@ -1549,7 +1491,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void clear(int cacheId) throws IgniteCheckedException {
-            assert cacheId != UNDEFINED_CACHE_ID;
+            assert cacheId != CU.UNDEFINED_CACHE_ID;
+            assert ctx.database().checkpointLockIsHeldByThread();
 
             if (cacheSize(cacheId) == 0)
                 return;
@@ -1600,7 +1543,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public Long initialUpdateCounter() {
+        @Override public long initialUpdateCounter() {
             return initCntr;
         }
 
@@ -1629,7 +1572,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param key Key.
          * @param oldVal Old value.
          * @param newVal New value.
-         * @throws IgniteCheckedException If failed.
          */
         private void updateIgfsMetrics(
             GridCacheContext cctx,
@@ -1673,1127 +1615,4 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
     }
 
-    /**
-     *
-     */
-    private static class SearchRow implements CacheSearchRow {
-        /** */
-        private final KeyCacheObject key;
-
-        /** */
-        private final int hash;
-
-        /** */
-        private final int cacheId;
-
-        /**
-         * @param cacheId Cache ID.
-         * @param key Key.
-         */
-        SearchRow(int cacheId, KeyCacheObject key) {
-            this.key = key;
-            this.hash = key.hashCode();
-            this.cacheId = cacheId;
-        }
-
-        /**
-         * Instantiates a new fake search row as a logic cache based bound.
-         *
-         * @param cacheId Cache ID.
-         */
-        SearchRow(int cacheId) {
-            this.key = null;
-            this.hash = 0;
-            this.cacheId = cacheId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public KeyCacheObject key() {
-            return key;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long link() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hash() {
-            return hash;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int cacheId() {
-            return cacheId;
-        }
-    }
-
-    /**
-     *
-     */
-    private class DataRow extends CacheDataRowAdapter {
-        /** */
-        protected int part;
-
-        /** */
-        protected int hash;
-
-        /**
-         * @param hash Hash code.
-         * @param link Link.
-         * @param part Partition.
-         * @param rowData Required row data.
-         */
-        DataRow(int hash, long link, int part, CacheDataRowAdapter.RowData rowData) {
-            super(link);
-
-            this.hash = hash;
-
-            this.part = part;
-
-            try {
-                // We can not init data row lazily because underlying buffer can be concurrently cleared.
-                initFromLink(grp, rowData);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-
-            if (key != null)
-                key.partition(part);
-        }
-
-        /**
-         * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param part Partition.
-         * @param expireTime Expire time.
-         * @param cacheId Cache ID.
-         */
-        DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime, int cacheId) {
-            super(0);
-
-            this.hash = key.hashCode();
-            this.key = key;
-            this.val = val;
-            this.ver = ver;
-            this.part = part;
-            this.expireTime = expireTime;
-            this.cacheId = cacheId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int partition() {
-            return part;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hash() {
-            return hash;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void link(long link) {
-            this.link = link;
-        }
-
-        /**
-         * @param cacheId Cache ID.
-         */
-        void cacheId(int cacheId) {
-            this.cacheId = cacheId;
-        }
-    }
-
-    /**
-     *
-     */
-    protected static class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
-        /** */
-        private final CacheDataRowStore rowStore;
-
-        /** */
-        private final CacheGroupContext grp;
-
-        /**
-         * @param grp Ccahe group.
-         * @param name Tree name.
-         * @param reuseList Reuse list.
-         * @param rowStore Row store.
-         * @param metaPageId Meta page ID.
-         * @param initNew Initialize new index.
-         * @throws IgniteCheckedException If failed.
-         */
-        public CacheDataTree(
-            CacheGroupContext grp,
-            String name,
-            ReuseList reuseList,
-            CacheDataRowStore rowStore,
-            long metaPageId,
-            boolean initNew
-        ) throws IgniteCheckedException {
-            super(name,
-                grp.groupId(),
-                grp.memoryPolicy().pageMemory(),
-                grp.shared().wal(),
-                grp.offheap().globalRemoveId(),
-                metaPageId,
-                reuseList,
-                grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS,
-                grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS);
-
-            assert rowStore != null;
-
-            this.rowStore = rowStore;
-            this.grp = grp;
-
-            initTree(initNew);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected int compare(BPlusIO<CacheSearchRow> iox, long pageAddr, int idx, CacheSearchRow row)
-            throws IgniteCheckedException {
-            RowLinkIO io = (RowLinkIO)iox;
-
-            int cmp;
-
-            if (grp.sharedGroup()) {
-                assert row.cacheId() != UNDEFINED_CACHE_ID : "Cache ID is not provided: " + row;
-
-                int cacheId = io.getCacheId(pageAddr, idx);
-
-                assert cacheId != UNDEFINED_CACHE_ID : "Cache ID is not stored";
-
-                cmp = Integer.compare(cacheId, row.cacheId());
-
-                if (cmp != 0)
-                    return cmp;
-
-                if (row.key() == null) {
-                    assert row.getClass() == SearchRow.class : row;
-
-                    // A search row with a cache ID only is used as a cache bound.
-                    // The found position will be shifted until the exact cache bound is found;
-                    // See for details:
-                    // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findLowerBound()
-                    // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findUpperBound()
-                    return cmp;
-                }
-            }
-
-            cmp = Integer.compare(io.getHash(pageAddr, idx), row.hash());
-
-            if (cmp != 0)
-                return cmp;
-
-            long link = io.getLink(pageAddr, idx);
-
-            assert row.key() != null : row;
-
-            return compareKeys(row.key(), link);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected CacheDataRow getRow(BPlusIO<CacheSearchRow> io, long pageAddr, int idx, Object flags)
-            throws IgniteCheckedException {
-            long link = ((RowLinkIO)io).getLink(pageAddr, idx);
-            int hash = ((RowLinkIO)io).getHash(pageAddr, idx);
-            int cacheId = ((RowLinkIO)io).getCacheId(pageAddr, idx);
-
-            CacheDataRowAdapter.RowData x = flags != null ?
-                (CacheDataRowAdapter.RowData)flags :
-                CacheDataRowAdapter.RowData.FULL;
-
-            return rowStore.dataRow(cacheId, hash, link, x);
-        }
-
-        /**
-         * @param key Key.
-         * @param link Link.
-         * @return Compare result.
-         * @throws IgniteCheckedException If failed.
-         */
-        private int compareKeys(KeyCacheObject key, final long link) throws IgniteCheckedException {
-            byte[] bytes = key.valueBytes(grp.cacheObjectContext());
-
-            final long pageId = pageId(link);
-            final long page = acquirePage(pageId);
-            try {
-                long pageAddr = readLock(pageId, page); // Non-empty data page must not be recycled.
-
-                assert pageAddr != 0L : link;
-
-                try {
-                    DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
-
-                    DataPagePayload data = io.readPayload(pageAddr,
-                        itemId(link),
-                        pageSize());
-
-                    if (data.nextLink() == 0) {
-                        long addr = pageAddr + data.offset();
-
-                        if (grp.storeCacheIdInDataPage())
-                            addr += 4; // Skip cache id.
-
-                        final int len = PageUtils.getInt(addr, 0);
-
-                        int lenCmp = Integer.compare(len, bytes.length);
-
-                        if (lenCmp != 0)
-                            return lenCmp;
-
-                        addr += 5; // Skip length and type byte.
-
-                        final int words = len / 8;
-
-                        for (int i = 0; i < words; i++) {
-                            int off = i * 8;
-
-                            long b1 = PageUtils.getLong(addr, off);
-                            long b2 = GridUnsafe.getLong(bytes, GridUnsafe.BYTE_ARR_OFF + off);
-
-                            int cmp = Long.compare(b1, b2);
-
-                            if (cmp != 0)
-                                return cmp;
-                        }
-
-                        for (int i = words * 8; i < len; i++) {
-                            byte b1 = PageUtils.getByte(addr, i);
-                            byte b2 = bytes[i];
-
-                            if (b1 != b2)
-                                return b1 > b2 ? 1 : -1;
-                        }
-
-                        return 0;
-                    }
-                }
-                finally {
-                    readUnlock(pageId, page, pageAddr);
-                }
-            }
-            finally {
-                releasePage(pageId, page);
-            }
-
-            // TODO GG-11768.
-            CacheDataRowAdapter other = new CacheDataRowAdapter(link);
-            other.initFromLink(grp, CacheDataRowAdapter.RowData.KEY_ONLY);
-
-            byte[] bytes1 = other.key().valueBytes(grp.cacheObjectContext());
-            byte[] bytes2 = key.valueBytes(grp.cacheObjectContext());
-
-            int lenCmp = Integer.compare(bytes1.length, bytes2.length);
-
-            if (lenCmp != 0)
-                return lenCmp;
-
-            final int len = bytes1.length;
-            final int words = len / 8;
-
-            for (int i = 0; i < words; i++) {
-                int off = GridUnsafe.BYTE_ARR_INT_OFF + i * 8;
-
-                long b1 = GridUnsafe.getLong(bytes1, off);
-                long b2 = GridUnsafe.getLong(bytes2, off);
-
-                int cmp = Long.compare(b1, b2);
-
-                if (cmp != 0)
-                    return cmp;
-            }
-
-            for (int i = words * 8; i < len; i++) {
-                byte b1 = bytes1[i];
-                byte b2 = bytes2[i];
-
-                if (b1 != b2)
-                    return b1 > b2 ? 1 : -1;
-            }
-
-            return 0;
-        }
-    }
-
-    /**
-     *
-     */
-    protected class CacheDataRowStore extends RowStore {
-        /** */
-        private final int partId;
-
-        /**
-         * @param grp Cache group.
-         * @param freeList Free list.
-         * @param partId Partition number.
-         */
-        public CacheDataRowStore(CacheGroupContext grp, FreeList freeList, int partId) {
-            super(grp, freeList);
-
-            this.partId = partId;
-        }
-
-        /**
-         * @param cacheId Cache ID.
-         * @param hash Hash code.
-         * @param link Link.
-         * @return Search row.
-         */
-        private CacheSearchRow keySearchRow(int cacheId, int hash, long link) {
-            DataRow dataRow = new DataRow(hash, link, partId, CacheDataRowAdapter.RowData.KEY_ONLY);
-
-            if (dataRow.cacheId() == UNDEFINED_CACHE_ID && grp.sharedGroup())
-                dataRow.cacheId(cacheId);
-
-            return dataRow;
-        }
-
-        /**
-         * @param cacheId Cache ID.
-         * @param hash Hash code.
-         * @param link Link.
-         * @param rowData Required row data.
-         * @return Data row.
-         */
-        private CacheDataRow dataRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData) {
-            DataRow dataRow = new DataRow(hash, link, partId, rowData);
-
-            if (dataRow.cacheId() == UNDEFINED_CACHE_ID && grp.sharedGroup())
-                dataRow.cacheId(cacheId);
-
-            return dataRow;
-        }
-    }
-
-    /**
-     *
-     */
-    private interface RowLinkIO {
-        /**
-         * @param pageAddr Page address.
-         * @param idx Index.
-         * @return Row link.
-         */
-        public long getLink(long pageAddr, int idx);
-
-        /**
-         * @param pageAddr Page address.
-         * @param idx Index.
-         * @return Key hash code.
-         */
-        public int getHash(long pageAddr, int idx);
-
-        /**
-         * @param pageAddr Page address.
-         * @param idx Index.
-         * @return Cache ID or {@code 0} if cache ID is not defined.
-         */
-        public int getCacheId(long pageAddr, int idx);
-    }
-
-    /**
-     *
-     */
-    private static abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> implements RowLinkIO {
-        /**
-         * @param type Page type.
-         * @param ver Page format version.
-         * @param canGetRow If we can get full row from this page.
-         * @param itemSize Single item size on page.
-         */
-        protected AbstractDataInnerIO(int type, int ver, boolean canGetRow, int itemSize) {
-            super(type, ver, canGetRow, itemSize);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off, CacheSearchRow row) {
-            assert row.link() != 0;
-
-            PageUtils.putLong(pageAddr, off, row.link());
-            PageUtils.putInt(pageAddr, off + 8, row.hash());
-
-            if (storeCacheId()) {
-                assert row.cacheId() != UNDEFINED_CACHE_ID : row;
-
-                PageUtils.putInt(pageAddr, off + 12, row.cacheId());
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long pageAddr, int idx) {
-            int cacheId = getCacheId(pageAddr, idx);
-            int hash = getHash(pageAddr, idx);
-            long link = getLink(pageAddr, idx);
-
-            return ((CacheDataTree)tree).rowStore.keySearchRow(cacheId, hash, link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<CacheSearchRow> srcIo, long srcPageAddr,
-            int srcIdx) {
-            int hash = ((RowLinkIO)srcIo).getHash(srcPageAddr, srcIdx);
-            long link = ((RowLinkIO)srcIo).getLink(srcPageAddr, srcIdx);
-            int off = offset(dstIdx);
-
-            PageUtils.putLong(dstPageAddr, off, link);
-            PageUtils.putInt(dstPageAddr, off + 8, hash);
-
-            if (storeCacheId()) {
-                int cacheId = ((RowLinkIO)srcIo).getCacheId(srcPageAddr, srcIdx);
-
-                assert cacheId != UNDEFINED_CACHE_ID;
-
-                PageUtils.putInt(dstPageAddr, off + 12, cacheId);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(long pageAddr, int idx) {
-            assert idx < getCount(pageAddr) : idx;
-
-            return PageUtils.getLong(pageAddr, offset(idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getHash(long pageAddr, int idx) {
-            return PageUtils.getInt(pageAddr, offset(idx) + 8);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void visit(long pageAddr, IgniteInClosure<CacheSearchRow> c) {
-            int cnt = getCount(pageAddr);
-
-            for (int i = 0; i < cnt; i++)
-                c.apply(new CacheDataRowAdapter(getLink(pageAddr, i)));
-        }
-
-        /**
-         * @return {@code True} if cache ID has to be stored.
-         */
-        protected abstract boolean storeCacheId();
-    }
-
-    /**
-     *
-     */
-    private static abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> implements RowLinkIO {
-        /**
-         * @param type Page type.
-         * @param ver Page format version.
-         * @param itemSize Single item size on page.
-         */
-        protected AbstractDataLeafIO(int type, int ver, int itemSize) {
-            super(type, ver, itemSize);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off, CacheSearchRow row) {
-            assert row.link() != 0;
-
-            PageUtils.putLong(pageAddr, off, row.link());
-            PageUtils.putInt(pageAddr, off + 8, row.hash());
-
-            if (storeCacheId()) {
-                assert row.cacheId() != UNDEFINED_CACHE_ID;
-
-                PageUtils.putInt(pageAddr, off + 12, row.cacheId());
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<CacheSearchRow> srcIo, long srcPageAddr,
-            int srcIdx) {
-            int hash = ((RowLinkIO)srcIo).getHash(srcPageAddr, srcIdx);
-            long link = ((RowLinkIO)srcIo).getLink(srcPageAddr, srcIdx);
-            int off = offset(dstIdx);
-
-            PageUtils.putLong(dstPageAddr, off, link);
-            PageUtils.putInt(dstPageAddr, off + 8, hash);
-
-            if (storeCacheId()) {
-                int cacheId = ((RowLinkIO)srcIo).getCacheId(srcPageAddr, srcIdx);
-
-                assert cacheId != UNDEFINED_CACHE_ID;
-
-                PageUtils.putInt(dstPageAddr, off + 12, cacheId);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long buf, int idx) {
-            int cacheId = getCacheId(buf, idx);
-            int hash = getHash(buf, idx);
-            long link = getLink(buf, idx);
-
-            return ((CacheDataTree)tree).rowStore.keySearchRow(cacheId, hash, link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(long pageAddr, int idx) {
-            assert idx < getCount(pageAddr) : idx;
-
-            return PageUtils.getLong(pageAddr, offset(idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getHash(long pageAddr, int idx) {
-            return PageUtils.getInt(pageAddr, offset(idx) + 8);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void visit(long pageAddr, IgniteInClosure<CacheSearchRow> c) {
-            int cnt = getCount(pageAddr);
-
-            for (int i = 0; i < cnt; i++)
-                c.apply(new CacheDataRowAdapter(getLink(pageAddr, i)));
-        }
-
-        /**
-         * @return {@code True} if cache ID has to be stored.
-         */
-        protected abstract boolean storeCacheId();
-    }
-
-    /**
-     *
-     */
-    public static final class DataInnerIO extends AbstractDataInnerIO {
-        /** */
-        public static final IOVersions<DataInnerIO> VERSIONS = new IOVersions<>(
-            new DataInnerIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        DataInnerIO(int ver) {
-            super(T_DATA_REF_INNER, ver, true, 12);
-        }
-
-
-        @Override public int getCacheId(long pageAddr, int idx) {
-            return UNDEFINED_CACHE_ID;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean storeCacheId() {
-            return false;
-        }
-    }
-
-    /**
-     *
-     */
-    public static final class DataLeafIO extends AbstractDataLeafIO {
-        /** */
-        public static final IOVersions<DataLeafIO> VERSIONS = new IOVersions<>(
-            new DataLeafIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        DataLeafIO(int ver) {
-            super(T_DATA_REF_LEAF, ver, 12);
-        }
-
-
-        @Override public int getCacheId(long pageAddr, int idx) {
-            return UNDEFINED_CACHE_ID;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean storeCacheId() {
-            return false;
-        }
-    }
-
-    /**
-     *
-     */
-    public static final class CacheIdAwareDataInnerIO extends AbstractDataInnerIO {
-        /** */
-        public static final IOVersions<CacheIdAwareDataInnerIO> VERSIONS = new IOVersions<>(
-            new CacheIdAwareDataInnerIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        CacheIdAwareDataInnerIO(int ver) {
-            super(T_CACHE_ID_AWARE_DATA_REF_INNER, ver, true, 16);
-        }
-
-
-        @Override public int getCacheId(long pageAddr, int idx) {
-            return PageUtils.getInt(pageAddr, offset(idx) + 12);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean storeCacheId() {
-            return true;
-        }
-    }
-
-    /**
-     *
-     */
-    public static final class CacheIdAwareDataLeafIO extends AbstractDataLeafIO {
-        /** */
-        public static final IOVersions<CacheIdAwareDataLeafIO> VERSIONS = new IOVersions<>(
-            new CacheIdAwareDataLeafIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        CacheIdAwareDataLeafIO(int ver) {
-            super(T_CACHE_ID_AWARE_DATA_REF_LEAF, ver, 16);
-        }
-
-
-        @Override public int getCacheId(long pageAddr, int idx) {
-            return PageUtils.getInt(pageAddr, offset(idx) + 12);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean storeCacheId() {
-            return true;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class PendingRow {
-        /** Expire time. */
-        private long expireTime;
-
-        /** Link. */
-        private long link;
-
-        /** Cache ID. */
-        private int cacheId;
-
-        /** */
-        private KeyCacheObject key;
-
-        /**
-         * Creates a new instance which represents an upper or lower bound
-         * inside a logical cache.
-         *
-         * @param cacheId Cache ID.
-         */
-        public PendingRow(int cacheId) {
-            this.cacheId = cacheId;
-        }
-
-        /**
-         * @param cacheId Cache ID.
-         * @param expireTime Expire time.
-         * @param link Link
-         */
-        PendingRow(int cacheId, long expireTime, long link) {
-            assert expireTime != 0;
-
-            this.cacheId = cacheId;
-            this.expireTime = expireTime;
-            this.link = link;
-        }
-
-        /**
-         * @param grp Cache group.
-         * @return Row.
-         * @throws IgniteCheckedException If failed.
-         */
-        PendingRow initKey(CacheGroupContext grp) throws IgniteCheckedException {
-            CacheDataRowAdapter rowData = new CacheDataRowAdapter(link);
-            rowData.initFromLink(grp, CacheDataRowAdapter.RowData.KEY_ONLY);
-
-            key = rowData.key();
-
-            return this;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(PendingRow.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    protected static class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
-        /** */
-        private final static Object WITHOUT_KEY = new Object();
-
-        /** */
-        private final CacheGroupContext grp;
-
-        /**
-         * @param grp Cache group.
-         * @param name Tree name.
-         * @param pageMem Page memory.
-         * @param metaPageId Meta page ID.
-         * @param reuseList Reuse list.
-         * @param initNew Initialize new index.
-         * @throws IgniteCheckedException If failed.
-         */
-        public PendingEntriesTree(
-            CacheGroupContext grp,
-            String name,
-            PageMemory pageMem,
-            long metaPageId,
-            ReuseList reuseList,
-            boolean initNew)
-            throws IgniteCheckedException {
-            super(name,
-                grp.groupId(),
-                pageMem,
-                grp.shared().wal(),
-                grp.offheap().globalRemoveId(),
-                metaPageId,
-                reuseList,
-                grp.sharedGroup() ? CacheIdAwarePendingEntryInnerIO.VERSIONS : PendingEntryInnerIO.VERSIONS,
-                grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS);
-
-            this.grp = grp;
-
-            initTree(initNew);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected int compare(BPlusIO<PendingRow> iox, long pageAddr, int idx, PendingRow row)
-            throws IgniteCheckedException {
-            PendingRowIO io = (PendingRowIO)iox;
-
-            int cmp;
-
-            if (grp.sharedGroup()) {
-                assert row.cacheId != UNDEFINED_CACHE_ID : "Cache ID is not provided!";
-                assert io.getCacheId(pageAddr, idx) != UNDEFINED_CACHE_ID : "Cache ID is not stored!";
-
-                cmp = Integer.compare(io.getCacheId(pageAddr, idx), row.cacheId);
-
-                if (cmp != 0)
-                    return cmp;
-
-                if(cmp == 0 && row.expireTime == 0 && row.link == 0) {
-                    // A search row with a cach ID only is used as a cache bound.
-                    // The found position will be shifted until the exact cache bound is found;
-                    // See for details:
-                    // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findLowerBound()
-                    // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findUpperBound()
-                    return cmp;
-                }
-            }
-
-            long expireTime = io.getExpireTime(pageAddr, idx);
-
-            cmp = Long.compare(expireTime, row.expireTime);
-
-            if (cmp != 0)
-                return cmp;
-
-            if (row.link == 0L)
-                return 0;
-
-            long link = io.getLink(pageAddr, idx);
-
-            return Long.compare(link, row.link);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected PendingRow getRow(BPlusIO<PendingRow> io, long pageAddr, int idx, Object flag)
-            throws IgniteCheckedException {
-            PendingRow row = io.getLookupRow(this, pageAddr, idx);
-
-            return flag == WITHOUT_KEY ? row : row.initKey(grp);
-        }
-    }
-
-    /**
-     *
-     */
-    private interface PendingRowIO {
-        /**
-         * @param pageAddr Page address.
-         * @param idx Index.
-         * @return Expire time.
-         */
-        long getExpireTime(long pageAddr, int idx);
-
-        /**
-         * @param pageAddr Page address.
-         * @param idx Index.
-         * @return Link.
-         */
-        long getLink(long pageAddr, int idx);
-
-        /**
-         * @param pageAddr Page address.
-         * @param idx Index.
-         * @return Cache ID or {@code 0} if Cache ID is not defined.
-         */
-        int getCacheId(long pageAddr, int idx);
-    }
-
-    /**
-     *
-     */
-    private static abstract class AbstractPendingEntryInnerIO extends BPlusInnerIO<PendingRow> implements PendingRowIO {
-        /**
-         * @param type Page type.
-         * @param ver Page format version.
-         * @param canGetRow If we can get full row from this page.
-         * @param itemSize Single item size on page.
-         */
-        protected AbstractPendingEntryInnerIO(int type, int ver, boolean canGetRow, int itemSize) {
-            super(type, ver, canGetRow, itemSize);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off, PendingRow row) throws IgniteCheckedException {
-            assert row.link != 0;
-            assert row.expireTime != 0;
-
-            PageUtils.putLong(pageAddr, off, row.expireTime);
-            PageUtils.putLong(pageAddr, off + 8, row.link);
-
-            if (storeCacheId()) {
-                assert row.cacheId != UNDEFINED_CACHE_ID;
-
-                PageUtils.putInt(pageAddr, off + 16, row.cacheId);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(long dstPageAddr,
-            int dstIdx,
-            BPlusIO<PendingRow> srcIo,
-            long srcPageAddr,
-            int srcIdx) throws IgniteCheckedException {
-            int dstOff = offset(dstIdx);
-
-            long link = ((PendingRowIO)srcIo).getLink(srcPageAddr, srcIdx);
-            long expireTime = ((PendingRowIO)srcIo).getExpireTime(srcPageAddr, srcIdx);
-
-            PageUtils.putLong(dstPageAddr, dstOff, expireTime);
-            PageUtils.putLong(dstPageAddr, dstOff + 8, link);
-
-            if (storeCacheId()) {
-                int cacheId = ((PendingRowIO)srcIo).getCacheId(srcPageAddr, srcIdx);
-
-                assert cacheId != UNDEFINED_CACHE_ID;
-
-                PageUtils.putInt(dstPageAddr, dstOff + 16, cacheId);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public PendingRow getLookupRow(BPlusTree<PendingRow, ?> tree, long pageAddr, int idx)
-            throws IgniteCheckedException {
-            return new PendingRow(getCacheId(pageAddr, idx), getExpireTime(pageAddr, idx), getLink(pageAddr, idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getExpireTime(long pageAddr, int idx) {
-            return PageUtils.getLong(pageAddr, offset(idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(long pageAddr, int idx) {
-            return PageUtils.getLong(pageAddr, offset(idx) + 8);
-        }
-
-        /**
-         * @return {@code True} if cache ID has to be stored.
-         */
-        protected abstract boolean storeCacheId();
-    }
-
-    /**
-     *
-     */
-    private static abstract class AbstractPendingEntryLeafIO extends BPlusLeafIO<PendingRow> implements PendingRowIO {
-        /**
-         * @param type Page type.
-         * @param ver Page format version.
-         * @param itemSize Single item size on page.
-         */
-        protected AbstractPendingEntryLeafIO(int type, int ver, int itemSize) {
-            super(type, ver, itemSize);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off, PendingRow row) throws IgniteCheckedException {
-            assert row.link != 0;
-            assert row.expireTime != 0;
-
-            PageUtils.putLong(pageAddr, off, row.expireTime);
-            PageUtils.putLong(pageAddr, off + 8, row.link);
-
-            if (storeCacheId()) {
-                assert row.cacheId != UNDEFINED_CACHE_ID;
-
-                PageUtils.putInt(pageAddr, off + 16, row.cacheId);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(long dstPageAddr,
-            int dstIdx,
-            BPlusIO<PendingRow> srcIo,
-            long srcPageAddr,
-            int srcIdx) throws IgniteCheckedException {
-            int dstOff = offset(dstIdx);
-
-            long link = ((PendingRowIO)srcIo).getLink(srcPageAddr, srcIdx);
-            long expireTime = ((PendingRowIO)srcIo).getExpireTime(srcPageAddr, srcIdx);
-
-            PageUtils.putLong(dstPageAddr, dstOff, expireTime);
-            PageUtils.putLong(dstPageAddr, dstOff + 8, link);
-
-            if (storeCacheId()) {
-                int cacheId = ((PendingRowIO)srcIo).getCacheId(srcPageAddr, srcIdx);
-
-                assert cacheId != UNDEFINED_CACHE_ID;
-
-                PageUtils.putInt(dstPageAddr, dstOff + 16, cacheId);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public PendingRow getLookupRow(BPlusTree<PendingRow, ?> tree, long pageAddr, int idx)
-            throws IgniteCheckedException {
-            return new PendingRow(getCacheId(pageAddr, idx), getExpireTime(pageAddr, idx), getLink(pageAddr, idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getExpireTime(long pageAddr, int idx) {
-            return PageUtils.getLong(pageAddr, offset(idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(long pageAddr, int idx) {
-            return PageUtils.getLong(pageAddr, offset(idx) + 8);
-        }
-
-        /**
-         * @return {@code True} if cache ID has to be stored.
-         */
-        protected abstract boolean storeCacheId();
-    }
-
-    /**
-     *
-     */
-    public static final class PendingEntryInnerIO extends AbstractPendingEntryInnerIO {
-        /** */
-        public static final IOVersions<PendingEntryInnerIO> VERSIONS = new IOVersions<>(
-            new PendingEntryInnerIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        PendingEntryInnerIO(int ver) {
-            super(T_PENDING_REF_INNER, ver, true, 16);
-        }
-
-
-        @Override public int getCacheId(long pageAddr, int idx) {
-            return UNDEFINED_CACHE_ID;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean storeCacheId() {
-            return false;
-        }
-    }
-
-    /**
-     *
-     */
-    public static final class PendingEntryLeafIO extends AbstractPendingEntryLeafIO {
-        /** */
-        public static final IOVersions<PendingEntryLeafIO> VERSIONS = new IOVersions<>(
-            new PendingEntryLeafIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        PendingEntryLeafIO(int ver) {
-            super(T_PENDING_REF_LEAF, ver, 16);
-        }
-
-
-        @Override public int getCacheId(long pageAddr, int idx) {
-            return UNDEFINED_CACHE_ID;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean storeCacheId() {
-            return false;
-        }
-    }
-
-    /**
-     *
-     */
-    public static final class CacheIdAwarePendingEntryInnerIO extends AbstractPendingEntryInnerIO {
-        /** */
-        public static final IOVersions<CacheIdAwarePendingEntryInnerIO> VERSIONS = new IOVersions<>(
-            new CacheIdAwarePendingEntryInnerIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        CacheIdAwarePendingEntryInnerIO(int ver) {
-            super(T_CACHE_ID_AWARE_PENDING_REF_INNER, ver, true, 20);
-        }
-
-
-        @Override public int getCacheId(long pageAddr, int idx) {
-            return PageUtils.getInt(pageAddr, offset(idx) + 16);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean storeCacheId() {
-            return true;
-        }
-    }
-
-    /**
-     *
-     */
-    public static final class CacheIdAwarePendingEntryLeafIO extends AbstractPendingEntryLeafIO {
-        /** */
-        public static final IOVersions<CacheIdAwarePendingEntryLeafIO> VERSIONS = new IOVersions<>(
-            new CacheIdAwarePendingEntryLeafIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        CacheIdAwarePendingEntryLeafIO(int ver) {
-            super(T_CACHE_ID_AWARE_PENDING_REF_LEAF, ver, 20);
-        }
-
-
-        @Override public int getCacheId(long pageAddr, int idx) {
-            return PageUtils.getInt(pageAddr, offset(idx) + 16);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean storeCacheId() {
-            return true;
-        }
-    }
 }

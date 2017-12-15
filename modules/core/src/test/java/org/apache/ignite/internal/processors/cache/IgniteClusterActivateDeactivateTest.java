@@ -29,9 +29,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -66,6 +66,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
     /** */
     static final String CACHE_NAME_PREFIX = "cache-";
+
+    /** Non-persistent data region name. */
+    private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
 
     /** */
     boolean client;
@@ -116,19 +119,21 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             ccfgs = null;
         }
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(10 * 1024 * 1024);
+        memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setMaxSize(10 * 1024 * 1024)
+            .setPersistenceEnabled(persistenceEnabled()));
 
-        cfg.setMemoryConfiguration(memCfg);
+        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
+            .setMaxSize(10 * 1024 * 1024)
+            .setName(NO_PERSISTENCE_REGION)
+            .setPersistenceEnabled(false));
 
-        if (persistenceEnabled()) {
-            PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        if (persistenceEnabled())
+            memCfg.setWalMode(WALMode.LOG_ONLY);
 
-            pCfg.setWalMode(WALMode.LOG_ONLY);
-
-            cfg.setPersistentStoreConfiguration(pCfg);
-        }
+        cfg.setDataStorageConfiguration(memCfg);
 
         if (testSpi) {
             TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
@@ -1087,7 +1092,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         client = false;
 
-        // Start one more nodes while transition is in progress.
+        // Start more nodes while transition is in progress.
         IgniteInternalFuture startFut1 = GridTestUtils.runAsync(new Callable() {
             @Override public Object call() throws Exception {
                 startGrid(8);
@@ -1106,7 +1111,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         U.sleep(500);
 
         // Stop coordinator.
-        stopGrid(0);
+        stopGrid(getTestIgniteInstanceName(0), true, false);
 
         stopGrid(getTestIgniteInstanceName(1), true, false);
         stopGrid(getTestIgniteInstanceName(4), true, false);
@@ -1236,12 +1241,15 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @return Cache configurations.
      */
     final CacheConfiguration[] cacheConfigurations2() {
-        CacheConfiguration[] ccfgs = new CacheConfiguration[4];
+        CacheConfiguration[] ccfgs = new CacheConfiguration[5];
 
         ccfgs[0] = cacheConfiguration(CACHE_NAME_PREFIX + 0, ATOMIC);
         ccfgs[1] = cacheConfiguration(CACHE_NAME_PREFIX + 1, TRANSACTIONAL);
         ccfgs[2] = cacheConfiguration(CACHE_NAME_PREFIX + 2, ATOMIC);
         ccfgs[3] = cacheConfiguration(CACHE_NAME_PREFIX + 3, TRANSACTIONAL);
+        ccfgs[4] = cacheConfiguration(CACHE_NAME_PREFIX + 4, TRANSACTIONAL);
+
+        ccfgs[4].setDataRegionName(NO_PERSISTENCE_REGION);
 
         return ccfgs;
     }

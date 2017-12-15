@@ -26,6 +26,8 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Linq;
     using System.Reflection;
     using System.Xml;
+    using System.Xml.Serialization;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Events;
 
@@ -89,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 if (!property.CanWrite && !IsKeyValuePair(property.DeclaringType))
                     return;
 
-                if (IsObsolete(property))
+                if (IsIgnored(property))
                     return;
             }
 
@@ -168,7 +170,7 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             // Write attributes
-            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType) && !IsObsolete(p)))
+            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType) && !IsIgnored(p)))
             {
                 var converter = GetConverter(prop, prop.PropertyType);
                 var stringValue = converter.ConvertToInvariantString(prop.GetValue(obj, null));
@@ -401,7 +403,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static List<Type> GetConcreteDerivedTypes(Type type)
         {
-            return typeof(IIgnite).Assembly.GetTypes()
+            return TypeResolver.GetAssemblyTypesSafe(typeof(IIgnite).Assembly)
                 .Where(t => t.IsClass && !t.IsAbstract && type.IsAssignableFrom(t)).ToList();
         }
 
@@ -499,6 +501,10 @@ namespace Apache.Ignite.Core.Impl.Common
                 property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
                 return EventTypeConverter.Instance;
 
+            if (property != null &&
+                property.DeclaringType == typeof (LocalEventListener) && property.Name == "EventTypes")
+                return EventTypeConverter.Instance;
+
             if (propertyType == typeof (object))
                 return ObjectStringConverter.Instance;
 
@@ -518,7 +524,9 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(obj != null);
 
-            return obj.GetType().GetProperties().Where(p => !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
+            return obj.GetType().GetProperties()
+                .Where(p => p.GetIndexParameters().Length == 0 &&  // Skip indexed properties.
+                            !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
         }
 
         /// <summary>
@@ -550,13 +558,13 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Determines whether the specified property is obsolete.
+        /// Determines whether the specified property is marked with XmlIgnore.
         /// </summary>
-        private static bool IsObsolete(PropertyInfo property)
+        private static bool IsIgnored(PropertyInfo property)
         {
             Debug.Assert(property != null);
 
-            return property.GetCustomAttributes(typeof(ObsoleteAttribute), true).Any();
+            return property.GetCustomAttributes(typeof(XmlIgnoreAttribute), true).Any();
         }
 
         /// <summary>

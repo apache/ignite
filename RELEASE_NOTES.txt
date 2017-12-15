@@ -1,6 +1,114 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 2.3
+---------------------------------------
+Ignite:
+* Ability to enable persistence per data region.
+* Default page size is changed to 4KB.
+* Ability to enable and disable rebalancing per-node.
+* Added methods for batch services deployment.
+* Introduced cache start/stop order on cluster activation.
+* EstimatedRebalancingFinishTime and RebalancingStartTime metrics are exposed through MXBean interface.
+* Ability to (de)activate cluster via http-rest API.
+* Added Ignite update notifier.
+* Updated Lucene dependency to version 5.5.2.
+* Added an option to disable MBeans.
+* Added sorted and multithreaded checkpoint modes.
+* Added calculation of fill factor memory metric in persistent mode.
+* Added estimated time for rebalance start and completion to cache metrics.
+* Added API to add binary metadata locally.
+* Added write throttling during an ongoing checkpoint to avoid zero performance drops.
+* Ability to convert WAL to human-redable form.
+* Ability to handle CacheObject from DataRecord in standalone WAL iterator.
+* Support for uninterruptable writes using AsyncFileIOFactory; enabled with -DIGNITE_USE_ASYNC_FILE_IO_FACTORY=true.
+* Enhanced persistent store path resolving to not rely on automatically generated consistent ID.
+* Pre-configure local event listeners with IgniteConfiguration.LocalEventListeners.
+* Massive performance and stability improvements.
+
+Ignite.NET:
+* LINQ: Local collections joins support.
+* LINQ: Regex support.
+
+Ignite CPP:
+* Added Compute::Broadcast method.
+* Added Ignite::SetActive method.
+
+SQL:
+* Added sqlline utility to the build.
+* CREATE TABLE: Added NOT NULL support.
+* CREATE TABLE: Ability to specify cache, key type and value type names.
+* CREATE TABLE: Added "WRAP_KEY" and "WRAP_VALUE" options to CREATE TABLE command.
+* CREATE TABLE: Added DATA_REGION option.
+* CREATE TABLE: Added WRITE_SYNCHRONIZATION_MODE option.
+* ALTER TABLE: ADD COLUMN support.
+* Added lazy query execution mode (SqlFieldsQuery.setLazy).
+* Added QuerySqlField.inlineSize property.
+* Added FieldsQueryCursor interface to get fields metadata for SqlFieldsQuery.
+* Added QueryEntity(Class keyClass, Class valueClass) constructor.
+* Improved LocalDate, LocalTime and LocalDateTime support for Java 8.
+* Optimized memory consumption during query execution.
+* Fixed BigInteger data type handling.
+
+JDBC Driver:
+* Batch update support.
+* SQLSTATE error codes support.
+* Added "enforceJoinOrder" flag to connection string.
+* Added "skipReducerOnUpdate" flag.
+* Thin driver: Allowed execution of multiple SQL statements in one command.
+* Thin driver: Added metadata support.
+* Thin driver: Added type conversions in accordance with specification.
+* Thin driver: Added schema to connection string.
+* Thin driver: Added Statement.closeOnCompletion() support.
+* Appended UUID to thick driver's Ignite instance name to avoid collision with user-created instances.
+* Fixed a bug in PreparedStatement not clearing query parameters after execution.
+
+ODBC Driver:
+* SQLSTATE error codes support.
+* Support for BINARY and VARBINARY types.
+* DML statement batching.
+* SQL_ATTR_CONNECTION_DEAD connection attribute.
+* SQLGetInfo for info types.
+* Added "skipReducerOnUpdate" flag.
+* SQLRowCount now returns number of affected rows for non-batch queries.
+* SQLBindParameter do not unbind parameter if the ParameterValuePtr is NULL anymore.
+* Fixed error on cursor closing before all the rows from the result fetched.
+
+Machine Learning:
+* Implemented K-means clustering algorithm optimized for distributed storages.
+* Introduced sparse block distributed matrix.
+* Initial BLAS implementation.
+* Integration with BLAS via netlib.
+* Added getRow() and getCol() methods to Matrix API.
+
+Web Console:
+* Improved DDL support.
+* Added PK alias generation on Models screen.
+* Added generation of QueryEntity.keyFields on model import from RDBMS.
+* Added sanitize user on save.
+* Added charts with throughput and latency metrics for cache operations.
+* Added version to footer.
+* Added "Lazy ResultSet" flag on Queries screen.
+* Implemented refresh rate for Monitoring screen.
+* Implemented cluster nodes log viewer.
+
+Visor:
+* Ability to keep connection opened in batch mode.
+* Ability to activate/deactivate cluster.
+* Improved cache statistics.
+* Added missing configuration properties to "config" command.
+* Fixed script execution after alert throttling interval.
+
+Apache Ignite In-Memory Data Fabric 2.2
+---------------------------------------
+Ignite:
+* Checkpointing algorithm optimized
+* Default max memory size changed from 80% to 20%
+
+Ignite CPP:
+* Now possible to start node with persistent store
+* Ignite.setActive method added to C++ API
+
 Apache Ignite In-Memory Data Fabric 2.1
 ---------------------------------------
 Ignite:

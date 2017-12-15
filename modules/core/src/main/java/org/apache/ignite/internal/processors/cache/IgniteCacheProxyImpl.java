@@ -375,31 +375,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
             ctx.name(), ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
                 @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
-                    final GridCloseableIterator iter0 = qry.executeScanQuery();
-
-                    final boolean needToConvert = transformer == null;
-
-                    return new GridCloseableIteratorAdapter<R>() {
-                        @Override protected R onNext() throws IgniteCheckedException {
-                            Object next = iter0.nextX();
-
-                            if (needToConvert) {
-                                Map.Entry<K, V> entry = (Map.Entry<K, V>)next;
-
-                                return (R)new CacheEntryImpl<>(entry.getKey(), entry.getValue());
-                            }
-
-                            return (R)next;
-                        }
-
-                        @Override protected boolean onHasNext() throws IgniteCheckedException {
-                            return iter0.hasNextX();
-                        }
-
-                        @Override protected void onClose() throws IgniteCheckedException {
-                            iter0.close();
-                        }
-                    };
+                    return qry.executeScanQuery();
                 }
             }, true);
 
@@ -1662,10 +1638,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     private RuntimeException cacheException(Exception e) {
         GridFutureAdapter<Void> restartFut = this.restartFut.get();
 
-        if (restartFut != null && !restartFut.isDone()) {
+        if (restartFut != null) {
             if (X.hasCause(e, CacheStoppedException.class) || X.hasSuppressed(e, CacheStoppedException.class))
                 throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut), "Cache is restarting: " +
-                        ctx.name());
+                        ctx.name(), e);
         }
 
         if (e instanceof IgniteCheckedException)
@@ -1750,22 +1726,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * Gets value without waiting for toplogy changes.
-     *
-     * @param key Key.
-     * @return Value.
-     */
-    @Override
-    public V getTopologySafe(K key) {
-        try {
-            return delegate.getTopologySafe(key);
-        }
-        catch (IgniteCheckedException | IgniteException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /**
      * Throws {@code IgniteCacheRestartingException} if proxy is restarting.
      */
     public void checkRestart() {
@@ -1816,9 +1776,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         this.ctx = ctx;
         this.delegate = delegate;
 
-        restartFut.onDone();
-
         this.restartFut.compareAndSet(restartFut, null);
+
+        restartFut.onDone();
     }
 
     /** {@inheritDoc} */

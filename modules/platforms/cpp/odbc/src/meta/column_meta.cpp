@@ -60,6 +60,9 @@ namespace ignite
                     DBG_STR_CASE(SQL_DESC_UNNAMED);
                     DBG_STR_CASE(SQL_DESC_UNSIGNED);
                     DBG_STR_CASE(SQL_DESC_UPDATABLE);
+                    DBG_STR_CASE(SQL_COLUMN_LENGTH);
+                    DBG_STR_CASE(SQL_COLUMN_PRECISION);
+                    DBG_STR_CASE(SQL_COLUMN_SCALE);
                 default:
                     break;
                 }

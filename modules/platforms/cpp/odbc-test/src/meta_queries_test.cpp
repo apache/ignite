@@ -103,6 +103,9 @@ struct MetaQueriesTestSuiteFixture
         BOOST_REQUIRE(stmt != NULL);
     }
 
+    /**
+     * Disconnect.
+     */
     void Disconnect()
     {
         // Releasing statement handle.
@@ -116,6 +119,11 @@ struct MetaQueriesTestSuiteFixture
         SQLFreeHandle(SQL_HANDLE_ENV, env);
     }
 
+    /**
+     * Start additional node with the specified name.
+     *
+     * @param name Node name.
+     */
     static Ignite StartAdditionalNode(const char* name)
     {
 #ifdef IGNITE_TESTS_32
@@ -123,6 +131,36 @@ struct MetaQueriesTestSuiteFixture
 #else
         return StartNode("queries-test-noodbc.xml", name);
 #endif
+    }
+
+    /**
+     * Checks single row result set for correct work with SQLGetData.
+     *
+     * @param stmt Statement.
+     */
+    void CheckSingleRowResultSetWithGetData(SQLHSTMT stmt)
+    {
+        SQLRETURN ret = SQLFetch(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        char buf[1024];
+        SQLLEN bufLen = sizeof(buf);
+
+        ret = SQLGetData(stmt, 1, SQL_C_CHAR, buf, sizeof(buf), &bufLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFetch(stmt);
+
+        BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
+
+        ret = SQLGetData(stmt, 1, SQL_C_CHAR, buf, sizeof(buf), &bufLen);
+
+        BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+        BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "24000");
     }
 
     /**
@@ -235,6 +273,81 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnScale)
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+}
+
+BOOST_AUTO_TEST_CASE(TestGetDataWithGetTypeInfo)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLRETURN ret = SQLGetTypeInfo(stmt, SQL_VARCHAR);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckSingleRowResultSetWithGetData(stmt);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetDataWithTables)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR empty[] = "";
+    SQLCHAR table[] = "TestType";
+
+    SQLRETURN ret = SQLTables(stmt, empty, SQL_NTS, empty, SQL_NTS, table, SQL_NTS, empty, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckSingleRowResultSetWithGetData(stmt);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetDataWithColumns)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR empty[] = "";
+    SQLCHAR table[] = "TestType";
+    SQLCHAR column[] = "strField";
+
+    SQLRETURN ret = SQLColumns(stmt, empty, SQL_NTS, empty, SQL_NTS, table, SQL_NTS, column, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckSingleRowResultSetWithGetData(stmt);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetDataWithSelectQuery)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR insertReq[] = "insert into TestType(_key, strField) VALUES(1, 'Lorem ipsum')";
+    SQLRETURN ret = SQLExecDirect(stmt, insertReq, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR selectReq[] = "select strField from TestType";
+    ret = SQLExecDirect(stmt, selectReq, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckSingleRowResultSetWithGetData(stmt);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetInfoScrollOptions)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLUINTEGER val = 0;
+    SQLRETURN ret = SQLGetInfo(dbc, SQL_SCROLL_OPTIONS, &val, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
+
+    BOOST_CHECK_NE(val, 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

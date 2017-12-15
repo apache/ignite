@@ -1386,6 +1386,7 @@ public class GridFunc {
      * @param p Optional filtering predicates.
      * @return Iterator from given iterator and optional filtering predicate.
      */
+    @SafeVarargs
     public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans,
         final boolean readOnly,
@@ -1549,7 +1550,7 @@ public class GridFunc {
      * @return List' first element or {@code null} in case if list is empty.
      */
     public static <T> T first(List<? extends T> list) {
-        if (list.isEmpty())
+        if (list == null || list.isEmpty())
             return null;
 
         return list.get(0);

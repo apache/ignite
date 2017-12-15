@@ -92,14 +92,6 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
     public void closeProxy();
 
     /**
-     * Gets value without waiting for topology changes.
-     *
-     * @param key Key.
-     * @return Value.
-     */
-    public V getTopologySafe(K key);
-
-    /**
      * @return Future that contains cache destroy operation.
      */
     public IgniteFuture<?> destroyAsync();

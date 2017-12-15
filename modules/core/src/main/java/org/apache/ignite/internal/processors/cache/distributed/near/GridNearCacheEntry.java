@@ -30,9 +30,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -331,7 +331,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             null,
             false,
             /*skip store*/false,
-            /*can remap*/true,
             false
         ).get().get(keyValue(false));
     }
@@ -380,7 +379,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 CacheObject old = this.val;
                 boolean hasVal = hasValueUnlocked();
 
-                if (this.dhtVer == null || this.dhtVer.compareTo(dhtVer) < 0) {
+                if (this.dhtVer == null || this.dhtVer.compareTo(dhtVer) < 0 || !valid(topVer)) {
                     primaryNode(primaryNodeId, topVer);
 
                     update(val, expireTime, ttl, ver, true);
@@ -443,7 +442,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow unswap(boolean needVal, boolean checkExpire) {
+    @Nullable @Override public CacheDataRow unswap(CacheDataRow row, boolean checkExpire) {
         return null;
     }
 

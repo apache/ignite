@@ -22,8 +22,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.datagrid.CacheQueryExample;
 import org.apache.ignite.examples.model.Organization;
 
 /**
@@ -43,6 +47,9 @@ import org.apache.ignite.examples.model.Organization;
  * data that is in the persistence only.
  */
 public class PersistentStoreExample {
+    /** Organizations cache name. */
+    private static final String ORG_CACHE = CacheQueryExample.class.getSimpleName() + "Organizations";
+
     /** */
     private static final boolean UPDATE = true;
 
@@ -53,18 +60,24 @@ public class PersistentStoreExample {
     public static void main(String[] args) throws Exception {
         Ignition.setClientMode(true);
 
-        try (Ignite ig = Ignition.start("examples/config/persistentstore/example-persistent-store.xml")) {
-
+        try (Ignite ignite = Ignition.start("examples/config/persistentstore/example-persistent-store.xml")) {
             // Activate the cluster. Required to do if the persistent store is enabled because you might need
             // to wait while all the nodes, that store a subset of data on disk, join the cluster.
-            ig.active(true);
+            ignite.active(true);
 
-            IgniteCache<Long, Organization> cache = ig.cache("organization");
+            CacheConfiguration<Long, Organization> cacheCfg = new CacheConfiguration<>(ORG_CACHE);
+
+            cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            cacheCfg.setBackups(1);
+            cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            cacheCfg.setIndexedTypes(Long.class, Organization.class);
+
+            IgniteCache<Long, Organization> cache = ignite.getOrCreateCache(cacheCfg);
 
             if (UPDATE) {
                 System.out.println("Populating the cache...");
 
-                try (IgniteDataStreamer<Long, Organization> streamer = ig.dataStreamer("organization")) {
+                try (IgniteDataStreamer<Long, Organization> streamer = ignite.dataStreamer(ORG_CACHE)) {
                     streamer.allowOverwrite(true);
 
                     for (long i = 0; i < 100_000; i++) {
@@ -78,8 +91,8 @@ public class PersistentStoreExample {
 
             // Run SQL without explicitly calling to loadCache().
             QueryCursor<List<?>> cur = cache.query(
-                    new SqlFieldsQuery("select id, name from Organization where name like ?")
-                            .setArgs("organization-54321"));
+                new SqlFieldsQuery("select id, name from Organization where name like ?")
+                    .setArgs("organization-54321"));
 
             System.out.println("SQL Result: " + cur.getAll());
 

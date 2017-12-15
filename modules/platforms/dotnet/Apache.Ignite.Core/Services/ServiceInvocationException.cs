@@ -91,7 +91,14 @@ namespace Apache.Ignite.Core.Services
             get { return _binaryCause; }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// When overridden in a derived class, sets the <see cref="SerializationInfo" />
+        /// with information about the exception.
+        /// </summary>
+        /// <param name="info">The <see cref="SerializationInfo" /> that holds the serialized object data
+        /// about the exception being thrown.</param>
+        /// <param name="context">The <see cref="StreamingContext" /> that contains contextual information
+        /// about the source or destination.</param>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

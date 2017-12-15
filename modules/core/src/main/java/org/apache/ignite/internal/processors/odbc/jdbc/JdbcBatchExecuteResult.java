@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC batch execute result.
@@ -92,5 +93,10 @@ public class JdbcBatchExecuteResult extends JdbcResult {
         errCode = reader.readInt();
         errMsg = reader.readString();
         updateCnts = reader.readIntArray();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcBatchExecuteResult.class, this);
     }
 }

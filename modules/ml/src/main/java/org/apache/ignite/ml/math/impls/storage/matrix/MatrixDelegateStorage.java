@@ -130,6 +130,11 @@ public class MatrixDelegateStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return dlg.accessMode();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return dlg.isArrayBased() && rowOff == 0 && colOff == 0;
     }

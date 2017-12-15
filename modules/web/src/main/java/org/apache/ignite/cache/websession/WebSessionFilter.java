@@ -975,6 +975,11 @@ public class WebSessionFilter implements Filter {
             this.ses.filter(WebSessionFilter.this);
             this.ses.resetUpdates();
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRequestedSessionIdValid() {
+            return ses.isValid();
+        }
     }
 
     /**
@@ -998,7 +1003,7 @@ public class WebSessionFilter implements Filter {
 
         /** {@inheritDoc} */
         @Override public HttpSession getSession(boolean create) {
-            if (!ses.isValid()) {
+            if (ses != null && !ses.isValid()) {
                 binaryCache.remove(ses.id());
 
                 if (create) {
@@ -1055,6 +1060,11 @@ public class WebSessionFilter implements Filter {
                     throw new IgniteException(e);
                 }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRequestedSessionIdValid() {
+            return ses != null && ses.isValid();
         }
     }
 }

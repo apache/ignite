@@ -21,6 +21,19 @@
 
 namespace ignite_test
 {
+    std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle)
+    {
+        SQLCHAR sqlstate[7] = {};
+        SQLINTEGER nativeCode;
+
+        SQLCHAR message[ODBC_BUFFER_SIZE];
+        SQLSMALLINT reallen = 0;
+
+        SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
+
+        return std::string(reinterpret_cast<char*>(sqlstate));
+    }
+
     std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
     {
         SQLCHAR sqlstate[7] = {};
@@ -52,12 +65,8 @@ namespace ignite_test
         cfg.jvmOpts.push_back("-DIGNITE_UPDATE_NOTIFIER=false");
         cfg.jvmOpts.push_back("-Duser.language=en");
 
-        std::string home;
-        bool homeFound = jni::ResolveIgniteHome("", home);
-
-        assert(homeFound);
-
-        cfg.jvmClassPath = jni::CreateIgniteHomeClasspath(home, true);
+        cfg.igniteHome = jni::ResolveIgniteHome();
+        cfg.jvmClassPath = jni::CreateIgniteHomeClasspath(cfg.igniteHome, true);
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;

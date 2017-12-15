@@ -45,20 +45,27 @@ class MapQueryResults {
     /** */
     private final String cacheName;
 
+    /** Lazy worker. */
+    private final MapQueryLazyWorker lazyWorker;
+
     /** */
     private volatile boolean cancelled;
 
     /**
+     * Constructor.
+     *
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
      * @param cacheName Cache name.
+     * @param lazyWorker Lazy worker (if any).
      */
     @SuppressWarnings("unchecked")
-    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys,
-        @Nullable String cacheName) {
+    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable String cacheName,
+        @Nullable MapQueryLazyWorker lazyWorker) {
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cacheName = cacheName;
+        this.lazyWorker = lazyWorker;
 
         results = new AtomicReferenceArray<>(qrys);
         cancels = new GridQueryCancel[qrys];
@@ -86,13 +93,25 @@ class MapQueryResults {
     }
 
     /**
+     * @return Lazy worker.
+     */
+    MapQueryLazyWorker lazyWorker() {
+        return lazyWorker;
+    }
+
+    /**
+     * Add result.
+     *
      * @param qry Query result index.
      * @param q Query object.
      * @param qrySrcNodeId Query source node.
      * @param rs Result set.
      */
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cacheName, qrySrcNodeId, q, params);
+        MapQueryResult res = new MapQueryResult(h2, rs, cacheName, qrySrcNodeId, q, params, lazyWorker);
+
+        if (lazyWorker != null)
+            lazyWorker.result(res);
 
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
@@ -130,6 +149,7 @@ class MapQueryResults {
                 continue;
             }
 
+            // NB: Cancel is already safe even for lazy queries (see implementation of passed Runnable).
             if (forceQryCancel) {
                 GridQueryCancel cancel = cancels[i];
 

@@ -156,6 +156,11 @@ public class RandomMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return StorageConstants.RANDOM_ACCESS_MODE;
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = 1;
 

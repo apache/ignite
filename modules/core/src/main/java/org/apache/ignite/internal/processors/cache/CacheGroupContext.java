@@ -37,15 +37,15 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -56,9 +56,11 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
@@ -125,7 +127,7 @@ public class CacheGroupContext {
     private GridCachePreloader preldr;
 
     /** */
-    private final MemoryPolicy memPlc;
+    private final DataRegion dataRegion;
 
     /** */
     private final CacheObjectContext cacheObjCtx;
@@ -142,6 +144,9 @@ public class CacheGroupContext {
     /** */
     private boolean qryEnabled;
 
+    /** MXBean. */
+    private CacheGroupMetricsMXBean mxBean;
+
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -149,7 +154,7 @@ public class CacheGroupContext {
      * @param cacheType Cache type.
      * @param ccfg Cache configuration.
      * @param affNode Affinity node flag.
-     * @param memPlc Memory policy.
+     * @param dataRegion data region.
      * @param cacheObjCtx Cache object context.
      * @param freeList Free list.
      * @param reuseList Reuse list.
@@ -162,13 +167,13 @@ public class CacheGroupContext {
         CacheType cacheType,
         CacheConfiguration ccfg,
         boolean affNode,
-        MemoryPolicy memPlc,
+        DataRegion dataRegion,
         CacheObjectContext cacheObjCtx,
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer) {
         assert ccfg != null;
-        assert memPlc != null || !affNode;
+        assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
 
         this.grpId = grpId;
@@ -176,7 +181,7 @@ public class CacheGroupContext {
         this.ctx = ctx;
         this.ccfg = ccfg;
         this.affNode = affNode;
-        this.memPlc = memPlc;
+        this.dataRegion = dataRegion;
         this.cacheObjCtx = cacheObjCtx;
         this.freeList = freeList;
         this.reuseList = reuseList;
@@ -187,11 +192,13 @@ public class CacheGroupContext {
 
         depEnabled = ctx.kernalContext().deploy().enabled() && !ctx.kernalContext().cacheObjects().isBinaryEnabled(ccfg);
 
-        storeCacheId = affNode && memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
+        storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
 
         log = ctx.kernalContext().log(getClass());
 
         caches = new ArrayList<>();
+
+        mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }
 
     /**
@@ -341,7 +348,9 @@ public class CacheGroupContext {
     public GridCacheContext singleCacheContext() {
         List<GridCacheContext> caches = this.caches;
 
-        assert !sharedGroup() && caches.size() == 1;
+        assert !sharedGroup() && caches.size() == 1 :
+            "stopping=" +  ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
+            ", caches=" + caches;
 
         return caches.get(0);
     }
@@ -483,7 +492,7 @@ public class CacheGroupContext {
      * @return {@code True} if fast eviction is allowed.
      */
     public boolean allowFastEviction() {
-        return ctx.database().persistenceEnabled() && !queriesEnabled();
+        return persistenceEnabled() && !queriesEnabled();
     }
 
     /**
@@ -522,10 +531,10 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Memory policy.
+     * @return data region.
      */
-    public MemoryPolicy memoryPolicy() {
-        return memPlc;
+    public DataRegion dataRegion() {
+        return dataRegion;
     }
 
     /**
@@ -578,6 +587,13 @@ public class CacheGroupContext {
      */
     public boolean isLocal() {
         return ccfg.getCacheMode() == LOCAL;
+    }
+
+    /**
+     * @return {@code True} if cache is local.
+     */
+    public boolean isReplicated() {
+        return ccfg.getCacheMode() == REPLICATED;
     }
 
     /**
@@ -663,7 +679,7 @@ public class CacheGroupContext {
 
     /**
      * @param cctx Cache context.
-     * @param destroy Destroy flag.
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
     void stopCache(GridCacheContext cctx, boolean destroy) {
         if (top != null)
@@ -854,7 +870,7 @@ public class CacheGroupContext {
         else
             preldr = new GridCachePreloaderAdapter(this);
 
-        if (ctx.kernalContext().config().getPersistentStoreConfiguration() != null) {
+        if (persistenceEnabled()) {
             try {
                 offheapMgr = new GridCacheOffheapManager();
             }
@@ -868,6 +884,13 @@ public class CacheGroupContext {
         offheapMgr.start(ctx, this);
 
         ctx.affinity().onCacheGroupCreated(this);
+    }
+
+    /**
+     * @return Persistence enabled flag.
+     */
+    public boolean persistenceEnabled() {
+        return dataRegion != null && dataRegion.config().isPersistenceEnabled();
     }
 
     /**
@@ -956,6 +979,13 @@ public class CacheGroupContext {
             top.onReconnected();
 
         preldr.onReconnected();
+    }
+
+    /**
+     * @return MXBean.
+     */
+    public CacheGroupMetricsMXBean mxBean() {
+        return mxBean;
     }
 
     /** {@inheritDoc} */

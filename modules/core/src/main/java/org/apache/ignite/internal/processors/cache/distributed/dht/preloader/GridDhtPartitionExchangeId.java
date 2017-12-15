@@ -64,6 +64,17 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
 
     /**
      * @param nodeId Node ID.
+     * @param evt Event type.
+     * @param topVer Topology version.
+     */
+    public GridDhtPartitionExchangeId(UUID nodeId, int evt, AffinityTopologyVersion topVer) {
+        this.nodeId = nodeId;
+        this.evt = evt;
+        this.topVer = topVer;
+    }
+
+    /**
+     * @param nodeId Node ID.
      * @param discoEvt Event.
      * @param topVer Topology version.
      */
