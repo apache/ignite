@@ -33,7 +33,7 @@ export default function() {
                 el.addClass(ctrl.rowClass);
 
             ctrl.colDefs.forEach(({ cellClass }, index) => {
-                children[index].classList.add(...(Array.isArray(cellClass) ? cellClass : [cellClass]));
+                _.forEach((Array.isArray(cellClass) ? cellClass : [cellClass]), (item) => children[index].classList.add(item));
             });
         }
     };

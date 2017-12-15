@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 
 /** Standalone test to run verification on existent store */
-public class IgniteWalFloodVerifyTest extends IgniteWalFloodTest {
+public class IgniteMassLoadVerifySandboxTest extends IgniteMassLoadSandboxTest {
 
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op. //super.beforeTestsStarted();

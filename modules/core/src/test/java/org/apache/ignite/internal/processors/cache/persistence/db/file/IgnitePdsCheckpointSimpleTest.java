@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
 import com.google.common.base.Strings;
-import java.sql.Time;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -74,7 +73,7 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache");
 
         for (int i = 0; i < 10000; i++)
-            cache.put(i, valueForKey(i));
+            cache.put(i, valueWithRedundancyForKey(i));
 
         ignite.context().cache().context().database().waitForCheckpoint("test");
 
@@ -86,7 +85,7 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cacheRestart = igniteRestart.getOrCreateCache("cache");
 
         for (int i = 0; i < 10000; i++)
-            assertEquals(valueForKey(i), cacheRestart.get(i));
+            assertEquals(valueWithRedundancyForKey(i), cacheRestart.get(i));
 
         stopAllGrids();
     }
@@ -95,7 +94,7 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
      * @param i key.
      * @return value with extra data, which allows to verify
      */
-    @NotNull private String valueForKey(int i) {
+    @NotNull private String valueWithRedundancyForKey(int i) {
         return Strings.repeat(Integer.toString(i), 10);
     }
 }

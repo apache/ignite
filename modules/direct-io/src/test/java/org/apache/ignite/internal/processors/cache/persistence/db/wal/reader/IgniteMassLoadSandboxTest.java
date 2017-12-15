@@ -55,6 +55,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -72,7 +73,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
-public class IgniteWalFloodTest extends GridCommonAbstractTest {
+public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** */
     private static final String HAS_CACHE = "HAS_CACHE";
     /** Cache name. */
@@ -204,8 +205,20 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         final StringBuilder dump = new StringBuilder();
         for (ThreadInfo threadInfo : threadInfos) {
             String name = threadInfo.getThreadName();
-            if (name.contains("checkpoint-runner") || name.contains(GET_THREAD) || name.contains(PUT_THREAD))
+            if (name.contains("checkpoint-runner")
+                || name.contains("db-checkpoint-thread")
+                || name.contains("wal-file-archiver")
+                || name.contains(GET_THREAD)
+                || name.contains(PUT_THREAD))
                 dump.append(threadInfo.toString());
+            else {
+                String s = threadInfo.toString();
+
+                if(s.contains(FileWriteAheadLogManager.class.getSimpleName())
+                    || s.contains(FilePageStoreManager.class.getSimpleName())) {
+                    dump.append(s);
+                }
+            }
         }
         return dump.toString();
     }
@@ -215,9 +228,9 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         private final LongAdder8 longAdder8 = new LongAdder8();
 
         private ScheduledExecutorService svc = Executors.newScheduledThreadPool(1);
-        private String operationComplete = "Written";
         private String operation = "put";
         private Ignite ignite;
+        private volatile boolean stopping;
 
         public ProgressWatchdog(Ignite ignite) {
             this.ignite = ignite;
@@ -235,51 +248,63 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
                     final long totalCnt = longAdder8.longValue();
                     final long averagePutPerSec = totalCnt * 1000 / elapsedMs;
                     final long currPutPerSec = ((totalCnt - prevCnt.getAndSet(totalCnt)) * 1000) / (elapsedMs - prevMsElapsed.getAndSet(elapsedMs));
-                    final String fileNameWithDump = currPutPerSec < averagePutPerSec/10 ? reactNoProgress(msStart) : "";
+                    boolean slowProgress = currPutPerSec < averagePutPerSec / 10 && !stopping;
+                    final String fileNameWithDump = slowProgress ? reactNoProgress(msStart) : "";
 
                     String defRegName = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
                     long dirtyPages = -1;
-                    for (DataRegionMetrics m : ignite.dataRegionMetrics())
-                        if (m.getName().equals(defRegName))
-                            dirtyPages = m.getDirtyPages();
+                    ////  for (DataRegionMetrics m : ignite.dataRegionMetrics())
+                    //    if (m.getName().equals(defRegName))
+                    //        dirtyPages = m.getDirtyPages();
 
+                    GridCacheSharedContext<Object, Object> cacheSctx = null;
+                    PageMemoryImpl pageMemory = null;
+                    try {
+                        cacheSctx = ((IgniteEx)ignite).context().cache().context();
+                        pageMemory = (PageMemoryImpl)cacheSctx.database()
+                            .dataRegion(defRegName).pageMemory();
 
+                        dirtyPages = pageMemory.getDirtyPagesCount();
+                    }
+                    catch (IgniteCheckedException e) {
+                        e.printStackTrace();
+                    }
 
                     long cpBufPages = 0;
 
                     long cpWrittenPages;
 
-                    GridCacheSharedContext<Object, Object> cacheSctx = ((IgniteEx)ignite).context().cache().context();
                     AtomicInteger cntr = ((GridCacheDatabaseSharedManager)(cacheSctx.database())).writtenPagesCounter();
 
                     cpWrittenPages = cntr == null ? 0 : cntr.get();
                     double threshold = 0;
                     int idx = -1;
                     try {
-                        PageMemoryImpl pageMemory = (PageMemoryImpl)cacheSctx.database()
-                            .dataRegion(defRegName).pageMemory();
-                        cpBufPages = pageMemory.checkpointBufferPagesCount();
 
-                        PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
+                        if(pageMemory!=null) {
+                            cpBufPages = pageMemory.checkpointBufferPagesCount();
 
-                        threshold = U.field(throttle, "lastDirtyRatioThreshold");
+                            PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
 
-                        FileWriteAheadLogManager wal = (FileWriteAheadLogManager) cacheSctx.wal();
+                            threshold = U.field(throttle, "lastDirtyRatioThreshold");
+                        }
+
+                        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
                         idx = wal.currentIndex();
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (Exception e) {
                         e.printStackTrace();
                     }
 
                     X.println(" >> " +
-                        operationComplete +
-                        " " + totalCnt + ", time " + elapsedMs + " ms, " +
+                        operation +
+                        " done: " + totalCnt + ", time " + elapsedMs + " ms, " +
                         "Avg. " + operation + " " + averagePutPerSec + " recs/sec, " +
                         "Cur. " + operation + " " + currPutPerSec + " recs/sec " +
-                        "dirty=" + dirtyPages + ", " +
-                        "cpWrittenPages=" + cpWrittenPages + ", " +
-                        "cpBufPages=" + cpBufPages + " " +
-                        "threshold=" + threshold + " " +
+                        "dirtyP=" + dirtyPages + ", " +
+                        "cpWrittenP.=" + cpWrittenPages + ", " +
+                        "cpBufP.=" + cpBufPages + " " +
+                        "threshold=" + String.format("%.2f", threshold)+ " " +
                         "walIdx=" + idx + " " +
                         fileNameWithDump);
 
@@ -322,6 +347,10 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
                 Thread.currentThread().interrupt();
             }
         }
+
+        public void stopping() {
+            this.stopping = true;
+        }
     }
 
     public void testContinuousPutMultithreaded() throws Exception {
@@ -344,13 +373,12 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
             final ProgressWatchdog watchdog = new ProgressWatchdog(ignite);
 
             for (int j = 0; j < threads; j++) {
-                final IgniteCache<Object, IndexedObject> finalCache = cache;
                 final int finalJ = j;
                 tasks.add(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         for (int i = finalJ * recsPerThread; i < ((finalJ + 1) * recsPerThread); i++) {
                             IndexedObject v = new HugeIndexedObject(i);
-                            finalCache.put(i, v);
+                            cache.put(i, v);
                             watchdog.reportProgress(1);
                         }
                         return null;
@@ -360,6 +388,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
             watchdog.start();
             GridTestUtils.runMultiThreaded(tasks, PUT_THREAD);
+            watchdog.stopping();
             stopGrid(1);
             watchdog.stop();
 
@@ -382,7 +411,6 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
 
         final ProgressWatchdog watchdog2= new ProgressWatchdog(restartedIgnite);
 
-        watchdog2.operationComplete = "Verified";
         watchdog2.operation = "get";
 
         final Collection<Callable<?>> tasksR = new ArrayList<>();
@@ -390,7 +418,7 @@ public class IgniteWalFloodTest extends GridCommonAbstractTest {
         for (int j = 0; j < threads; j++) {
             final int finalJ = j;
             tasksR.add(new Callable<Void>() {
-                @Override public Void call() throws Exception {
+                @Override public Void call() {
                     for (int i = finalJ * recsPerThread; i < ((finalJ + 1) * recsPerThread); i++) {
                         IndexedObject object = restartedCache.get(i);
                         int actVal = object.iVal;

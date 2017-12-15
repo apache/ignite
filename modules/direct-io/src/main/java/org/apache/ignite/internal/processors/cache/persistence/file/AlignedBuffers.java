@@ -23,7 +23,6 @@ import com.sun.jna.ptr.PointerByReference;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.GridUnsafe;
-import sun.nio.ch.DirectBuffer;
 
 /**
  * Utility class for work with aligned buffers.
