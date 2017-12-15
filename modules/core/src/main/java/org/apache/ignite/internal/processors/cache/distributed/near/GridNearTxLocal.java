@@ -3282,6 +3282,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
+        log.info("Starting rollback TRANSACTION " + xidVersion());
+
         // TODO do we need this ?
         if (!clearThreadMap && !onTimeout && state() == ACTIVE)
             state(MARKED_ROLLBACK);
@@ -3291,18 +3293,26 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         NearTxFinishFuture fut = finishFut;
 
-        if (fut != null)
+        if (fut != null) {
+            log.info("Wait finish TRANSACTION " + xidVersion());
+
             return chainFinishFuture(finishFut, false);
+        }
 
         final boolean rollingBackNoLocking = updateLockFuture(null, ROLLBACK_FUT);
 
         IgniteInternalFuture<Boolean> lockFut0 = lockFut;
 
         if (rollingBackNoLocking && fastFinish()) {
+            log.info("fastFinish TRANSACTION " + xidVersion() + " " + state() + " " + lockFut);
+
             GridNearTxFastFinishFuture fut0;
 
-            if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
+            if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false))) {
+                log.info("fastFinish 2 TRANSACTION " + xidVersion() + " " + state());
+
                 return chainFinishFuture(finishFut, false);
+            }
 
             fut0.finish(clearThreadMap);
 
@@ -3311,8 +3321,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final GridNearTxFinishFuture fut0;
 
-        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false)))
+        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false))) {
+            log.info("Fail set finish TRANSACTION " + xidVersion());
+
             return chainFinishFuture(finishFut, false);
+        }
 
         if (!rollingBackNoLocking && lockFut0 != null) {
             if (onTimeout) {

@@ -244,8 +244,8 @@ public class GridCacheTxFinishSync<K, V> {
          */
         public void onSend(GridCacheVersion ver) {
             synchronized (this) {
-                if (log.isTraceEnabled())
-                    log.trace("Moved transaction synchronizer to waiting state [nodeId=" + nodeId +
+                //if (log.isTraceEnabled())
+                    log.info("Moved transaction synchronizer to waiting state [nodeId=" + nodeId +
                         ", threadId=" + threadId + ", ver=" + ver + ']');
 
                 assert cnt == 0 || nodeLeft : "nodeId=" + nodeId + ", threadId=" + threadId + ", ver=" + ver + ", cnt=" + cnt;
@@ -273,8 +273,8 @@ public class GridCacheTxFinishSync<K, V> {
                         "state (node left grid): " + nodeId));
 
                 if (pendingFut == null) {
-                    if (log.isTraceEnabled())
-                        log.trace("Creating transaction synchronizer future [nodeId=" + nodeId +
+                    //if (log.isTraceEnabled())
+                        log.info("Creating transaction synchronizer future [nodeId=" + nodeId +
                             ", threadId=" + threadId + ']');
 
                     pendingFut = new GridFutureAdapter<>();
@@ -289,8 +289,8 @@ public class GridCacheTxFinishSync<K, V> {
          */
         public void onReceive() {
             synchronized (this) {
-                if (log.isTraceEnabled())
-                    log.trace("Moving transaction synchronizer to completed state [nodeId=" + nodeId +
+                //if (log.isTraceEnabled())
+                    log.info("Moving transaction synchronizer to completed state [nodeId=" + nodeId +
                         ", threadId=" + threadId + ']');
 
                 cnt = 0;

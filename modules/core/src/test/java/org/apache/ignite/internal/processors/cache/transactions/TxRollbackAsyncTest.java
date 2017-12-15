@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -478,25 +481,36 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 List<IgniteFuture<?>> futs = new ArrayList<IgniteFuture<?>>(1000);
 
+                Set<IgniteUuid> rolledBackVers = new HashSet<>();
+
                 while(!stop.get()) {
                     for (Transaction tx : rNode.transactions().localActiveTransactions()) {
+                        if (rolledBackVers.contains(tx.xid()))
+                            fail("Impossible");
+
                         i++;
 
                         log.info("Rolled back TRANSACTION: " + ((TransactionProxyImpl)tx).tx().xidVersion());
 
-                        final IgniteFuture<?> fut = tx.rollbackAsync();
+                        try {
+                            tx.rollback();
+                        }
+                        catch (Throwable e) {
+                            // No-op.
+                        }
 
-                        futs.add(fut);
+                        rolledBackVers.add(tx.xid());
+                        //futs.add(fut);
                     }
                 }
 
-                for (IgniteFuture<?> fut : futs)
-                    try {
-                        fut.get();
-                    }
-                    catch (Exception e) {
-                        // No-op.
-                    }
+//                for (IgniteFuture<?> fut : futs)
+//                    try {
+//                        fut.get();
+//                    }
+//                    catch (Exception e) {
+//                        // No-op.
+//                    }
             }
         }, 1, "rollback-thread");
 
