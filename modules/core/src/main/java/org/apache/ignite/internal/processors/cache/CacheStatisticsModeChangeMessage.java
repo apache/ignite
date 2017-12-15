@@ -47,8 +47,8 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     /** Statistic enabled. */
     private final boolean enabled;
 
-    /** Result. */
-    private boolean res;
+    /** Success. */
+    private boolean success;
 
     /**
      * @param caches Collection of cache names.
@@ -57,7 +57,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
         this.reqId = reqId;
         this.caches = Collections.unmodifiableCollection(caches);
         this.enabled = enabled;
-        this.res = true;
+        this.success = true;
     }
 
     /** {@inheritDoc} */
@@ -67,7 +67,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new CacheStatisticsModeChangeResponse(reqId, res);
+        return new CacheStatisticsModeChangeResponse(reqId, success);
     }
 
     /** {@inheritDoc} */
@@ -96,10 +96,10 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     }
 
     /**
-     * Sets result.
+     * Sets success flag.
      */
-    public void result(boolean res) {
-        this.res = res;
+    public void success(boolean success) {
+        this.success = success;
     }
 
     /** {@inheritDoc} */

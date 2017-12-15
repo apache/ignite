@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -135,6 +136,8 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         Ignite ig1 = startGrid(1);
         Ignite ig2 = startGrid(2);
 
+        ig1.active(true);
+
         CacheConfiguration cacheCfg2 = new CacheConfiguration(ig1.cache(CACHE1).getConfiguration(
             CacheConfiguration.class));
 
@@ -198,6 +201,29 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
                 return true;
             }
         }, 10_000L));
+
+        stopAllGrids();
+
+        ig1 = startGrid(1);
+
+        ig1.active(true);
+
+        ig1.getOrCreateCache(cacheCfg2.setStatisticsEnabled(false));
+
+        if (persistence)
+            assertCachesStatisticsMode(true, true);
+        else
+            assertCachesStatisticsMode(false, false);
+
+        mxBeanCache1 = mxBean(1, CACHE1, CacheLocalMetricsMXBeanImpl.class);
+        mxBeanCache2 = mxBean(1, CACHE2, CacheLocalMetricsMXBeanImpl.class);
+
+        mxBeanCache1.disableStatistics();
+        mxBeanCache2.disableStatistics();
+
+        startGrid(2);
+
+        assertCachesStatisticsMode(false, false);
     }
 
     /**
@@ -237,7 +263,10 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg);
 
         if (persistence)
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+                .setWalMode(WALMode.LOG_ONLY)
+            );
 
         return cfg;
     }

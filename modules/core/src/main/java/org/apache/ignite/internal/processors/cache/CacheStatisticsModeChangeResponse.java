@@ -39,15 +39,15 @@ public class CacheStatisticsModeChangeResponse implements DiscoveryCustomMessage
     /** Request id. */
     private final UUID reqId;
 
-    /** Result. */
-    private final boolean res;
+    /** Success. */
+    private final boolean success;
 
     /**
      *
      */
-    public CacheStatisticsModeChangeResponse(UUID reqId, boolean res) {
+    public CacheStatisticsModeChangeResponse(UUID reqId, boolean success) {
         this.reqId = reqId;
-        this.res = res;
+        this.success = success;
     }
 
     /** {@inheritDoc} */
@@ -79,10 +79,10 @@ public class CacheStatisticsModeChangeResponse implements DiscoveryCustomMessage
     }
 
     /**
-     * @return Result.
+     * @return Success flag.
      */
-    public boolean result() {
-        return res;
+    public boolean success() {
+        return success;
     }
 
     /** {@inheritDoc} */

@@ -394,10 +394,20 @@ class ClusterCachesInfo {
         for (String cacheName : msg.caches()) {
             DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
-            if (desc != null)
+            if (desc != null) {
                 desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
+
+                try {
+                    ctx.cache().saveCacheConfiguration(desc);
+                }
+                catch (IgniteCheckedException e) {
+                    msg.success(false);
+
+                    log.error("Error while saving cache configuration to disk, cfg = " + desc.cacheConfiguration(), e);
+                }
+            }
             else {
-                msg.result(false);
+                msg.success(false);
 
                 log.warning("Failed to change cache descriptor configuration, cache not found [cacheName=" + cacheName + ']');
             }
@@ -1219,6 +1229,14 @@ class ClusterCachesInfo {
         ExchangeActions exchangeActions = new ExchangeActions();
 
         if (msg.activate()) {
+            List<StoredCacheData> storedCfgs = msg.storedCacheConfigurations();
+
+            Map<String, CacheConfiguration> storedCfgsMap = U.newHashMap(storedCfgs.size());
+
+            for (StoredCacheData storedCfg : storedCfgs)
+                if (storedCfg.config().getName() != null)
+                    storedCfgsMap.put(storedCfg.config().getName(), storedCfg.config());
+
             for (DynamicCacheDescriptor desc : orderedCaches(CacheComparators.DIRECT)) {
                 desc.startTopologyVersion(topVer);
 
@@ -1232,8 +1250,13 @@ class ClusterCachesInfo {
                 T2<CacheConfiguration, NearCacheConfiguration> locCfg = locCfgsForActivation.get(desc.cacheName());
 
                 if (locCfg != null) {
-                    if (locCfg.get1() != null)
-                        req.startCacheConfiguration(locCfg.get1());
+                    CacheConfiguration<?, ?> cfg = locCfg.get1();
+                    if (cfg != null) {
+                        if (storedCfgsMap.containsKey(desc.cacheName()))
+                            cfg.setStatisticsEnabled(storedCfgsMap.get(desc.cacheName()).isStatisticsEnabled());
+
+                        req.startCacheConfiguration(cfg);
+                    }
 
                     req.nearCacheConfiguration(locCfg.get2());
 
@@ -1245,8 +1268,6 @@ class ClusterCachesInfo {
 
             for (CacheGroupDescriptor grpDesc : registeredCacheGroups().values())
                 exchangeActions.addCacheGroupToStart(grpDesc);
-
-            List<StoredCacheData> storedCfgs = msg.storedCacheConfigurations();
 
             if (storedCfgs != null) {
                 List<DynamicCacheChangeRequest> reqs = new ArrayList<>();

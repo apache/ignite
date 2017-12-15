@@ -2940,6 +2940,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Save cache configuration to persistent store if necessary.
+     *
+     * @param desc Cache descriptor.
+     */
+    void saveCacheConfiguration(DynamicCacheDescriptor desc) throws IgniteCheckedException {
+        assert desc != null;
+
+        if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
+            CU.isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration())) {
+            StoredCacheData data = toStoredData(desc);
+
+            sharedCtx.pageStore().storeCacheData(data, true);
+        }
+    }
+
+    /**
      * Form a {@link StoredCacheData} with all data to correctly restore cache params when its configuration
      * is read from page store. Essentially, this method takes from {@link DynamicCacheDescriptor} all that's
      * needed to start cache correctly, leaving out everything else.
@@ -4328,7 +4344,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             EnableStatisticsFuture fut = enableStatisticsFuts.get(msg.requestId());
 
             if (fut != null)
-                fut.onDone(msg.result());
+                fut.onDone(msg.success());
         }
     }
 }
