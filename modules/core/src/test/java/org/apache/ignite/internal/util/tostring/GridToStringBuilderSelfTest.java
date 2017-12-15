@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal.util.tostring;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -121,6 +127,66 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test array print.
+     * @param v value to get array class and fill array.
+     * @param limit value of IGNITE_TO_STRING_COLLECTION_LIMIT.
+     * @throws Exception if failed.
+     */
+    private <T, V> void testArr(V v, int limit) throws Exception {
+        T[] arrOf = (T[]) Array.newInstance(v.getClass(), limit + 1);
+        Arrays.fill(arrOf, v);
+        T[] arr = Arrays.copyOf(arrOf, limit);
+
+        String arrStr = GridToStringBuilder.arrayToString(arr.getClass(), arr);
+        String arrOfStr = GridToStringBuilder.arrayToString(arrOf.getClass(), arrOf);
+
+        // Simulate overflow
+        StringBuilder resultSB = new StringBuilder(arrStr);
+            resultSB.deleteCharAt(resultSB.length()-1);
+            resultSB.append("... and ").append(arrOf.length - limit).append(" more]");
+            arrStr = resultSB.toString();
+
+        assertTrue("Collection limit error in array of type " + arrOf.getClass().getName()
+            + " error, normal arr: <" + arrStr + ">, overflowed arr: <" + arrOfStr + ">", arrStr.equals(arrOfStr));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testToStringCollectionLimits() throws Exception {
+        int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
+
+        Object vals[] = new Object[] {Byte.MIN_VALUE, Boolean.TRUE, Short.MIN_VALUE, Integer.MIN_VALUE, Long.MIN_VALUE,
+            Float.MIN_VALUE, Double.MIN_VALUE, Character.MIN_VALUE, new TestClass1()};
+        for (Object val : vals)
+            testArr(val, limit);
+
+        Map<String, String> strMap = new TreeMap<>();
+        List<String> strList = new ArrayList<>(limit+1);
+
+        TestClass1 testClass = new TestClass1();
+        testClass.strMap = strMap;
+        testClass.strListIncl = strList;
+
+        for (int i = 0; i < limit; i++) {
+            strMap.put("k" + i, "v");
+            strList.add("e");
+        }
+        String testClassStr = GridToStringBuilder.toString(TestClass1.class, testClass);
+
+        strMap.put("kz", "v"); // important to add last element in TreeMap here
+        strList.add("e");
+
+        String testClassStrOf = GridToStringBuilder.toString(TestClass1.class, testClass);
+
+        String testClassStrOfR = testClassStrOf.replaceAll("... and 1 more","");
+
+        assertTrue("Collection limit error in Map or List, normal: <" + testClassStr + ">, overflowed: <"
+            +"testClassStrOf", testClassStr.length() == testClassStrOfR.length());
+
+    }
+
+    /**
      * Test class.
      */
     private static class TestClass1 {
@@ -170,6 +236,12 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         /** */
         @SuppressWarnings("unused")
+        @GridToStringInclude
+        private List<String> strListIncl;
+
+
+        /** */
+        @SuppressWarnings("unused")
         private final Object obj = new Object();
 
         /** */
@@ -193,7 +265,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             buf.append("byteVar=").append(byteVar).append(", ");
             buf.append("name=").append(name).append(", ");
             buf.append("finalInt=").append(finalInt).append(", ");
-            buf.append("strMap=").append(strMap);
+            buf.append("strMap=").append(strMap).append(", ");
+            buf.append("strListIncl=").append(strListIncl);
 
             buf.append("]");
 

@@ -43,6 +43,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 
 /**
  * Provides auto-generation framework for {@code toString()} output.
@@ -86,12 +87,12 @@ public class GridToStringBuilder {
     /** */
     private static final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
-    /** Maximum number of collection (map) entries to print. */
-    public static final int MAX_COL_SIZE = 200;
-
     /** {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} */
     public static final boolean INCLUDE_SENSITIVE =
         IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true);
+
+    public static final int COLLECTION_LIMIT =
+        IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
 
     /** */
     private static ThreadLocal<Queue<GridToStringThreadLocal>> threadCache = new ThreadLocal<Queue<GridToStringThreadLocal>>() {
@@ -805,6 +806,49 @@ public class GridToStringBuilder {
     }
 
     /**
+     * Print value with length limitation
+     * @param buf buffer to print to.
+     * @param valClass value class.
+     * @param val value to print
+     */
+    private static void toString(SB buf, Class<?> valClass, Object val) {
+        if (valClass.isArray())
+            buf.a(arrayToString(valClass, val));
+        else {
+            int overflow = 0;
+            char bracket = ' ';
+            if (val instanceof Collection && ((Collection)val).size() > COLLECTION_LIMIT) {
+                overflow = ((Collection)val).size() - COLLECTION_LIMIT;
+                bracket = ']';
+                val = F.retain((Collection) val, true, COLLECTION_LIMIT);
+            } else if (val instanceof Map && ((Map)val).size() > COLLECTION_LIMIT) {
+                Map tmp = U.newHashMap(COLLECTION_LIMIT);
+                overflow = ((Map)val).size() - COLLECTION_LIMIT;
+                bracket= '}';
+                int cntr = 0;
+
+                for (Object o : ((Map)val).entrySet()) {
+                    Map.Entry e = (Map.Entry)o;
+
+                    tmp.put(e.getKey(), e.getValue());
+
+                    if (++cntr >= COLLECTION_LIMIT)
+                        break;
+                }
+
+                val = tmp;
+            }
+
+            buf.a(val);
+
+            if (overflow > 0) {
+                buf.d(buf.length() - 1);
+                buf.a("... and ").a(overflow).a(" more").a(bracket);
+            }
+        }
+    }
+
+    /**
      * Creates an uniformed string presentation for the given object.
      *
      * @param cls Class of the object.
@@ -858,31 +902,7 @@ public class GridToStringBuilder {
 
                 Class<?> fieldType = field.getType();
 
-                if (fieldType.isArray())
-                    buf.a(arrayToString(fieldType, field.get(obj)));
-                else {
-                    Object val = field.get(obj);
-
-                    if (val instanceof Collection && ((Collection)val).size() > MAX_COL_SIZE)
-                        val = F.retain((Collection)val, true, MAX_COL_SIZE);
-                    else if (val instanceof Map && ((Map)val).size() > MAX_COL_SIZE) {
-                        Map tmp = U.newHashMap(MAX_COL_SIZE);
-                        int cntr = 0;
-
-                        for (Object o : ((Map)val).entrySet()) {
-                            Map.Entry e = (Map.Entry)o;
-
-                            tmp.put(e.getKey(), e.getValue());
-
-                            if (++cntr >= MAX_COL_SIZE)
-                                break;
-                        }
-
-                        val = tmp;
-                    }
-
-                    buf.a(val);
-                }
+                toString(buf, fieldType, field.get(obj));
             }
 
             appendVals(buf, first, addNames, addVals, addSens, addLen);
@@ -910,32 +930,6 @@ public class GridToStringBuilder {
     }
 
     /**
-     * @param arrType Type of the array.
-     * @param arr Array object.
-     * @return String representation of an array.
-     */
-    public static String arrayToString(Class arrType, Object arr) {
-        if (arrType.equals(byte[].class))
-            return Arrays.toString((byte[])arr);
-        if (arrType.equals(boolean[].class))
-            return Arrays.toString((boolean[])arr);
-        if (arrType.equals(short[].class))
-            return Arrays.toString((short[])arr);
-        if (arrType.equals(int[].class))
-            return Arrays.toString((int[])arr);
-        if (arrType.equals(long[].class))
-            return Arrays.toString((long[])arr);
-        if (arrType.equals(float[].class))
-            return Arrays.toString((float[])arr);
-        if (arrType.equals(double[].class))
-            return Arrays.toString((double[])arr);
-        if (arrType.equals(char[].class))
-            return Arrays.toString((char[])arr);
-
-        return Arrays.toString((Object[])arr);
-    }
-
-    /**
      * Produces uniformed output of string with context properties
      *
      * @param str Output prefix or {@code null} if empty.
@@ -945,6 +939,46 @@ public class GridToStringBuilder {
      */
     public static String toString(String str, String name, @Nullable Object val) {
         return toString(str, name, val, false);
+    }
+
+    /**
+     * @param arrType Type of the array.
+     * @param arr Array object.
+     * @return String representation of an array.
+     */
+    public static <T> String arrayToString(Class arrType, Object arr) {
+        T[] array = (T[]) arr;
+        if (array.length > COLLECTION_LIMIT) {
+            arr = Arrays.copyOf(array, COLLECTION_LIMIT);
+        }
+
+        String result = null;
+        if (arrType.equals(byte[].class))
+            result =  Arrays.toString((byte[]) arr);
+        else if (arrType.equals(boolean[].class))
+            result =  Arrays.toString((boolean[]) arr);
+        else if (arrType.equals(short[].class))
+            result =  Arrays.toString((short[]) arr);
+        else if (arrType.equals(int[].class))
+            result =  Arrays.toString((int[]) arr);
+        else if (arrType.equals(long[].class))
+            result =  Arrays.toString((long[]) arr);
+        else if (arrType.equals(float[].class))
+            result =  Arrays.toString((float[]) arr);
+        else if (arrType.equals(double[].class))
+            result =  Arrays.toString((double[]) arr);
+        else if (arrType.equals(char[].class))
+            result =  Arrays.toString((char[]) arr);
+        else result =  Arrays.toString((Object[])arr);
+
+        if (array.length > COLLECTION_LIMIT) {
+            StringBuilder resultSB = new StringBuilder(result);
+            resultSB.deleteCharAt(resultSB.length()-1);
+            resultSB.append("... and ").append(array.length - COLLECTION_LIMIT).append(" more]");
+            result = resultSB.toString();
+        }
+
+        return result;
     }
 
     /**
@@ -1452,11 +1486,6 @@ public class GridToStringBuilder {
 
                     if (incAnn != null && incAnn.sensitive() && !INCLUDE_SENSITIVE)
                         continue;
-
-                    Class<?> cls = addVal.getClass();
-
-                    if (cls.isArray())
-                        addVal = arrayToString(cls, addVal);
                 }
 
                 if (!first)
@@ -1464,7 +1493,9 @@ public class GridToStringBuilder {
                 else
                     first = false;
 
-                buf.a(addNames[i]).a('=').a(addVal);
+                buf.a(addNames[i]).a('=');
+
+                toString(buf, addVal.getClass(), addVal);
             }
         }
     }

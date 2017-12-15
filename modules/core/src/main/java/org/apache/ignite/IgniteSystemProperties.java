@@ -159,6 +159,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
 
     /**
+     * Limit collection (map, array) elements number to output.
+     */
+    public static final String IGNITE_TO_STRING_COLLECTION_LIMIT = "IGNITE_TO_STRING_COLLECTION_LIMIT";
+
+    /**
      * If this property is set to {@code true} (default) and Ignite is launched
      * in verbose mode (see {@link #IGNITE_QUIET}) and no console appenders can be found
      * in configuration, then default console appender will be added.
