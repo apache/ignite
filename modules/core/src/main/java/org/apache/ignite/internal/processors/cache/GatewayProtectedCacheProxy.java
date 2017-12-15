@@ -1654,11 +1654,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
         if (delegate instanceof IgniteCacheProxyImpl)
             ((IgniteCacheProxyImpl) delegate).checkRestart();
-
+        
         if (gate == null)
             throw new IllegalStateException("Gateway is unavailable. Probably cache has been destroyed, but proxy is not closed.");
     }
-
+    
     /**
      * @param gate Cache gateway.
      * @param opCtx Cache operation context to guard.
@@ -1666,7 +1666,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      */
     private CacheOperationContext onEnter(@Nullable GridCacheGateway<K, V> gate, CacheOperationContext opCtx) {
         checkProxyIsValid(gate);
-
+        
         return lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx);
     }
 
