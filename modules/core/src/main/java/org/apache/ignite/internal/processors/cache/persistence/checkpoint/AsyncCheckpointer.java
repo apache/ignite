@@ -29,8 +29,6 @@ import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR;
 
@@ -154,12 +152,9 @@ public class AsyncCheckpointer {
         // init counter 1 protects here from premature completing
         final CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(1);
 
-        //shared counter with running task from factory (payload)
-        final AtomicInteger runningWriters = new AtomicInteger();
-
         Callable<Void> task = new QuickSortRecursiveTask(pageIds,
             SEQUENTIAL_CP_PAGE_COMPARATOR,
-            wrapFactoryForCounting(taskFactory, runningWriters),
+            taskFactory,
             new IgniteInClosure<Callable<Void>>() {
                 @Override public void apply(Callable<Void> call) {
                     fork(call, cntDownDynamicFut);
@@ -175,22 +170,14 @@ public class AsyncCheckpointer {
                         return true; // need to fill the pool
                     }
 
-                    if (blockingQueue.size() < 1) {
+                    if (blockingQueue.size() < 2) {
                         if (log.isTraceEnabled())
                             log.trace("Need to fill queue by computing tasks, fork now");
 
                         return true; // need to fill the queue
                     }
 
-                    if(runningWriters.get() < checkpointThreads / 2) {
-                        if (log.isTraceEnabled())
-                            log.trace("Need to give a priority to payload tasks, fork later");
-
-                        return false; // low writers, need to provide priority to writers and avoid forking
-                    }
-
-                    // fork later for this case, pool is busy, and not sufficient checkpoint writers running
-                    return true;
+                    return false; // sufficient queue and pool is already busy, don't flood queue
                 }
             });
 
@@ -199,43 +186,6 @@ public class AsyncCheckpointer {
         cntDownDynamicFut.onDone((Void)null); //submit of all tasks completed
 
         return cntDownDynamicFut;
-    }
-
-    /**
-     * @param taskFactory task factory producing tasks to track.
-     * @param runningWriters shared counter.
-     * @return wrapped factory which allows to count running tasks.
-     */
-    private IgniteClosure<FullPageId[], Callable<Void>> wrapFactoryForCounting(
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory, final AtomicInteger runningWriters) {
-
-        return new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(FullPageId[] ids) {
-                return wrapCallableForCounting(taskFactory.apply(ids), runningWriters);
-            }
-        };
-    }
-
-    /**
-     * @param task payload task.
-     * @param runningWriters counter.
-     * @return wrapped callable which perform runs counting
-     */
-    @NotNull private Callable<Void> wrapCallableForCounting(final Callable<Void> task,
-        final AtomicInteger runningWriters) {
-
-        return new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                try {
-                    runningWriters.incrementAndGet();
-
-                    return task.call();
-                }
-                finally {
-                    runningWriters.decrementAndGet();
-                }
-            }
-        };
     }
 
     /**
