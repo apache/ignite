@@ -1229,14 +1229,6 @@ class ClusterCachesInfo {
         ExchangeActions exchangeActions = new ExchangeActions();
 
         if (msg.activate()) {
-            List<StoredCacheData> storedCfgs = msg.storedCacheConfigurations();
-
-            Map<String, CacheConfiguration> storedCfgsMap = U.newHashMap(storedCfgs.size());
-
-            for (StoredCacheData storedCfg : storedCfgs)
-                if (storedCfg.config().getName() != null)
-                    storedCfgsMap.put(storedCfg.config().getName(), storedCfg.config());
-
             for (DynamicCacheDescriptor desc : orderedCaches(CacheComparators.DIRECT)) {
                 desc.startTopologyVersion(topVer);
 
@@ -1250,13 +1242,8 @@ class ClusterCachesInfo {
                 T2<CacheConfiguration, NearCacheConfiguration> locCfg = locCfgsForActivation.get(desc.cacheName());
 
                 if (locCfg != null) {
-                    CacheConfiguration<?, ?> cfg = locCfg.get1();
-                    if (cfg != null) {
-                        if (storedCfgsMap.containsKey(desc.cacheName()))
-                            cfg.setStatisticsEnabled(storedCfgsMap.get(desc.cacheName()).isStatisticsEnabled());
-
-                        req.startCacheConfiguration(cfg);
-                    }
+                    if (locCfg.get1() != null)
+                        req.startCacheConfiguration(locCfg.get1());
 
                     req.nearCacheConfiguration(locCfg.get2());
 
@@ -1268,6 +1255,8 @@ class ClusterCachesInfo {
 
             for (CacheGroupDescriptor grpDesc : registeredCacheGroups().values())
                 exchangeActions.addCacheGroupToStart(grpDesc);
+
+            List<StoredCacheData> storedCfgs = msg.storedCacheConfigurations();
 
             if (storedCfgs != null) {
                 List<DynamicCacheChangeRequest> reqs = new ArrayList<>();

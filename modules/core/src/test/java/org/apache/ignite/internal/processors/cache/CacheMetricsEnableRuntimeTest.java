@@ -211,19 +211,20 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         ig1.getOrCreateCache(cacheCfg2.setStatisticsEnabled(false));
 
         if (persistence)
-            assertCachesStatisticsMode(true, true);
+            // cache1 - from local configuration, cache2 - restored from pds
+            assertCachesStatisticsMode(false, true);
         else
             assertCachesStatisticsMode(false, false);
 
         mxBeanCache1 = mxBean(1, CACHE1, CacheLocalMetricsMXBeanImpl.class);
         mxBeanCache2 = mxBean(1, CACHE2, CacheLocalMetricsMXBeanImpl.class);
 
-        mxBeanCache1.disableStatistics();
+        mxBeanCache1.enableStatistics();
         mxBeanCache2.disableStatistics();
 
         startGrid(2);
 
-        assertCachesStatisticsMode(false, false);
+        assertCachesStatisticsMode(true, false);
     }
 
     /**
