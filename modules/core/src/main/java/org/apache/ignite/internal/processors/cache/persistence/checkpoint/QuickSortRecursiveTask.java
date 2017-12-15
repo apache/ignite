@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -28,32 +27,52 @@ import org.apache.ignite.lang.IgniteInClosure;
  *
  */
 class QuickSortRecursiveTask implements Callable<Void> {
+    /** One chunk threshold. Determines when to start apply single threaded sort and write. */
     private static final int ONE_CHUNK_THRESHOLD = 1024 * 16;
-    /** Source array to sort. */
-    private final FullPageId[] array;
+    /** Source array to sort. Shared between threads */
+    private final FullPageId[] arr;
     /** Start position. Index of first element inclusive. */
     private final int position;
     /** Limit. Index of last element exclusive. */
     private final int limit;
 
-    CpSettings settings;
+    /** This task global settings. */
+    private final CpSettings settings;
 
+    /**
+     * @param arr Array.
+     * @param comp Comparator.
+     * @param taskFactory Task factory.
+     * @param forkSubmitter Fork submitter.
+     * @param checkpointThreads Checkpoint threads.
+     * @param stgy Strategy.
+     */
     public QuickSortRecursiveTask(FullPageId[] arr,
         Comparator<FullPageId> comp,
         IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
         IgniteInClosure<Callable<Void>> forkSubmitter, int checkpointThreads,
-        ForkNowForkLaterStrategy strategy) {
-        this(arr, 0, arr.length,  new CpSettings(comp, taskFactory, forkSubmitter, checkpointThreads, strategy));
+        ForkNowForkLaterStrategy stgy) {
+        this(arr, 0, arr.length,  new CpSettings(comp, taskFactory, forkSubmitter, stgy));
     }
 
+    /**
+     * @param arr Array.
+     * @param position Position.
+     * @param limit Limit.
+     * @param settings Settings.
+     */
     private QuickSortRecursiveTask(FullPageId[] arr, int position, int limit,
         CpSettings settings) {
-        this.array = arr;
+        this.arr = arr;
         this.position = position;
         this.limit = limit;
         this.settings = settings;
     }
 
+    /**
+     * @param cnt size of local sub array
+     * @return
+     */
     private static boolean isUnderThreshold(int cnt) {
         return cnt < ONE_CHUNK_THRESHOLD;
     }
@@ -65,38 +84,30 @@ class QuickSortRecursiveTask implements Callable<Void> {
 
         Comparator<FullPageId> comp = settings.comp;
         if (isUnderThreshold(remaining)) {
-            final FullPageId[] arrCopy = Arrays.copyOfRange(array, position, limit);
+            final FullPageId[] arrCp = Arrays.copyOfRange(arr, position, limit);
 
-            Arrays.sort(arrCopy, comp);
+            Arrays.sort(arrCp, comp);
 
-            runPayload(arrCopy);
+            settings.taskFactory.apply(arrCp).call();
+
         }
         else {
-            int centerIndex = partition(array, position, limit, comp);
-            Callable<Void> t1 = new QuickSortRecursiveTask(array, position, centerIndex, settings);
-            Callable<Void> t2 = new QuickSortRecursiveTask(array, centerIndex, limit, settings);
+            int centerIdx = partition(arr, position, limit, comp);
+            Callable<Void> t1 = new QuickSortRecursiveTask(arr, position, centerIdx, settings);
+            Callable<Void> t2 = new QuickSortRecursiveTask(arr, centerIdx, limit, settings);
 
-            if (settings.runningWriters.get() < settings.checkpointThreads / 2) {
+            final boolean b = settings.stgy.forkNow();
+            System.err.println("Fork " + (b ? "now" : "later")); // todo
+            if (b) {
+                settings.forkSubmitter.apply(t2); //not all threads working or half of threads are already write
+                t1.call();
+            }
+            else {
                 t1.call(); //to low number of writers, try to get to bottom and start asap
                 settings.forkSubmitter.apply(t2);
-            } else {
-                //half of threads are already write
-                settings.forkSubmitter.apply(t2);
-                t1.call();
             }
         }
         return null;
-    }
-
-    private void runPayload(FullPageId[] data) throws Exception {
-        final Callable<Void> apply = settings.taskFactory.apply(data);
-        settings.runningWriters.incrementAndGet();
-        try {
-            apply.call();
-        }
-        finally {
-            settings.runningWriters.decrementAndGet();
-        }
     }
 
     public static int partition(FullPageId[] arr, int position, int limit,
@@ -104,14 +115,14 @@ class QuickSortRecursiveTask implements Callable<Void> {
         int left = position;
         int right = limit - 1;
         final int randomIdx = (limit - position) / 2 + position;
-        FullPageId referenceElement = arr[randomIdx]; // taking middle element as reference
+        FullPageId refElement = arr[randomIdx]; // taking middle element as reference
 
         while (left <= right) {
             //searching number which is greater than reference
-            while (comp.compare(arr[left], referenceElement) < 0)
+            while (comp.compare(arr[left], refElement) < 0)
                 left++;
             //searching number which is less than reference
-            while (comp.compare(arr[right], referenceElement) > 0)
+            while (comp.compare(arr[right], refElement) > 0)
                 right--;
 
             // swap the values
@@ -139,23 +150,16 @@ class QuickSortRecursiveTask implements Callable<Void> {
 
         private final Comparator<FullPageId> comp;
 
-        private final AtomicInteger runningWriters = new AtomicInteger();
-
-        @Deprecated
-        private int checkpointThreads;
-
-        private ForkNowForkLaterStrategy strategy;
+        private ForkNowForkLaterStrategy stgy;
 
         CpSettings(Comparator<FullPageId> comp,
             IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
             IgniteInClosure<Callable<Void>> forkSubmitter,
-            int checkpointThreads,
-            ForkNowForkLaterStrategy strategy) {
+            ForkNowForkLaterStrategy stgy) {
             this.comp = comp;
             this.taskFactory = taskFactory;
             this.forkSubmitter = forkSubmitter;
-            this.checkpointThreads = checkpointThreads;
-            this.strategy = strategy;
+            this.stgy = stgy;
         }
     }
 }

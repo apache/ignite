@@ -19,5 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 /**
  */
 public interface ForkNowForkLaterStrategy {
+    /**
+     * @return {@code true} if now is reasonable to create new task
+     */
     boolean forkNow();
 }

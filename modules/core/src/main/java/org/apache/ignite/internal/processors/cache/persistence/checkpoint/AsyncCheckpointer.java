@@ -21,12 +21,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR;
@@ -127,14 +130,20 @@ public class AsyncCheckpointer {
      * @return future will be completed when background writing is done.
      */
     public CountDownFuture quickSortAndWritePages(CheckpointScope cpScope,
-        IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
+        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
         // init counter 1 protects here from premature completing
         final CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(1);
         FullPageId[] pageIds = cpScope.toArray();
 
+        final AtomicInteger runningWriters = new AtomicInteger();
+
         Callable<Void> task = new QuickSortRecursiveTask(pageIds,
             SEQUENTIAL_CP_PAGE_COMPARATOR,
-            taskFactory,
+            new IgniteClosure<FullPageId[], Callable<Void>>() {
+                @Override public Callable<Void> apply(FullPageId[] ids) {
+                    return wrapCallableForCounting(taskFactory.apply(ids), runningWriters);
+                }
+            },
             new IgniteInClosure<Callable<Void>>() {
                 @Override public void apply(Callable<Void> call) {
                     fork(call, cntDownDynamicFut);
@@ -143,7 +152,21 @@ public class AsyncCheckpointer {
             checkpointThreads,
             new ForkNowForkLaterStrategy() {
                 @Override public boolean forkNow() {
-                    //todo settings.runningWriters.get() < settings.checkpointThreads / 2
+                    final ThreadPoolExecutor runner = (ThreadPoolExecutor)asyncRunner;
+
+                    if (runner.getActiveCount() < checkpointThreads) {
+                        System.err.print("need to fill pool: "); //todo remove
+                        return true; // need to fill the pool
+                    }
+
+                    if(runningWriters.get() < checkpointThreads / 2) {
+
+                        System.err.print("low writers: "); //todo remove
+                        return false; // need to provide priority to writers
+                    }
+
+                    System.err.print("regular: "); //todo remove
+                    // fork later for this case, pool is busy, and not sufficient checkpoint writers running
                     return true;
                 }
             });
@@ -153,6 +176,27 @@ public class AsyncCheckpointer {
         cntDownDynamicFut.onDone((Void)null); //submit of all tasks completed
 
         return cntDownDynamicFut;
+    }
+
+    /**
+     * @param task payload task.
+     * @param runningWriters counter.
+     * @return wrapped callable which perform runs counting
+     */
+    @NotNull private Callable<Void> wrapCallableForCounting(final Callable<Void> task,
+        final AtomicInteger runningWriters)  {
+        return new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try {
+                    runningWriters.incrementAndGet();
+
+                    return task.call();
+                }
+                finally {
+                    runningWriters.decrementAndGet();
+                }
+            }
+        };
     }
 
     /**

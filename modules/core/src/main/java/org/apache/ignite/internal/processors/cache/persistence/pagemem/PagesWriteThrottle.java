@@ -94,16 +94,19 @@ public class PagesWriteThrottle {
 
                 boolean cpStartedToWrite = lastObservedWritten.compareAndSet(0, cpWrittenPages);
                 if (cpStartedToWrite) {
-                    initialDirtyRatioAtCpBegin = pageMemory.getDirtyPagesRatio();
+                    final double dirty = pageMemory.getDirtyPagesRatio();
+                    double newMinRatio = dirty;
 
-                    if (initialDirtyRatioAtCpBegin < 0.05)
-                        initialDirtyRatioAtCpBegin = 0.05;
+                    if (newMinRatio < 0.05)
+                        newMinRatio = 0.05;
 
-                    if (initialDirtyRatioAtCpBegin > 1)
-                        initialDirtyRatioAtCpBegin = 1;
+                    if (newMinRatio > 1)
+                        newMinRatio = 1;
 
                     //todo remove
-                    System.err.println(">>>>> " + initialDirtyRatioAtCpBegin);
+                    System.err.println(">>>>> " + dirty + "=>" + newMinRatio);
+
+                    initialDirtyRatioAtCpBegin = newMinRatio;
                 }
 
                 double throttleWeight = 1.0 - initialDirtyRatioAtCpBegin;

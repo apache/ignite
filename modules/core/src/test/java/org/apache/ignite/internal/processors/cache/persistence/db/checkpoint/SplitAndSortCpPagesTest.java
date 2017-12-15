@@ -97,10 +97,35 @@ public class SplitAndSortCpPagesTest {
             }
         };
 
-        final CountDownFuture fut = asyncCheckpointer.quickSortAndWritePages(scope, taskFactory);
+        asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
 
-        fut.get();
         Assert.assertEquals(totalPagesAfterSort.get(), scope.totalCpPages());
+    }
+
+
+    @Test
+    public void testGrobalOrder() throws Exception {
+        final CheckpointScope scope = getTestCollection();
+
+        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName());
+
+        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
+            @Override public Callable<Void> apply(final FullPageId[] ids) {
+                return new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        final int len = ids.length;
+
+
+                        return null;
+                    }
+                };
+            }
+        };
+
+        asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
+
+
+        //todo validateOrder(Collections.singletonList(ids));
     }
 
     /**
@@ -131,7 +156,7 @@ public class SplitAndSortCpPagesTest {
     @Test
     public void testAsyncAllPagesArePresent() throws Exception {
         final CheckpointScope scope = getTestCollection();
-        ConcurrentHashMap<FullPageId, FullPageId> map = new ConcurrentHashMap<>();
+        final ConcurrentHashMap<FullPageId, FullPageId> map = new ConcurrentHashMap<>();
         FullPageId[] ids = scope.toArray();
 
         for (FullPageId id : ids) {
@@ -157,9 +182,8 @@ public class SplitAndSortCpPagesTest {
         asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
 
         boolean empty = map.isEmpty();
-        if (!empty) {
-            assertTrue("Map should be empty: " + map.toString(), empty);
-        }
+        if (!empty)
+            assertTrue("Control map should be empty: " + map.toString(), empty);
     }
 
     @Test
@@ -181,12 +205,11 @@ public class SplitAndSortCpPagesTest {
                             long idx = pageIndex(id.pageId());
                             //System.out.println(partId + " idx= " + idx);
                             if (prevIdx >= 0 && prevPart >= 0) {
-                                if (partId < prevPart) {
+                                if (partId < prevPart)
                                     throw new IllegalStateException("Invalid order " + partId + " idx=" + prevPart);
-                                }
-                                if (idx < prevIdx && partId == prevPart) {
+
+                                if (idx < prevIdx && partId == prevPart)
                                     throw new IllegalStateException("Invalid order " + prevIdx + " idx=" + idx);
-                                }
                             }
 
                             prevPart = partId;
