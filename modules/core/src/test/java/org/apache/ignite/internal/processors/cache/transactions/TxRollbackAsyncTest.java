@@ -427,7 +427,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final CountDownLatch rollbackLatch = new CountDownLatch(1);
 
-        final int txCnt = 1;
+        final int txCnt = 1000;
 
         final IgniteKernal k = (IgniteKernal)rNode;
 

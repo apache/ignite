@@ -96,11 +96,9 @@
      </category>
     -->
 
-    <!--
-    <category name="org.apache.ignite.cache.msg">
+    <category name="org.apache.ignite.cache.msg.tx.finish">
         <level value="DEBUG"/>
     </category>
-    -->
 
     <!-- Disable all open source debugging. -->
     <category name="org">
