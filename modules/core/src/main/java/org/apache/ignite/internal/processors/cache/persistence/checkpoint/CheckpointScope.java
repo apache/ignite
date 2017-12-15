@@ -46,7 +46,7 @@ public class CheckpointScope {
     /**
      * @return global array with all checkpoint pages
      */
-    public FullPageId[] toArray() {
+    public FullPageIdsBuffer toBuffer() {
         FullPageId[] pageIds = new FullPageId[pagesNum];
 
         int idx = 0;
@@ -62,9 +62,11 @@ public class CheckpointScope {
                 }
             }
         }
-        assert idx == pagesNum;
+        //actual number of pages may decrease here because of pages eviction (evicted page may have been already saved).
+        assert idx <= pagesNum : "idx=" + idx + ", pagesNum=" + pagesNum;
 
-        return pageIds;
+        pagesNum = idx;
+        return new FullPageIdsBuffer(pageIds, 0, idx);
     }
 
     /**
@@ -124,16 +126,16 @@ public class CheckpointScope {
      *
      * @param persistenceCfg persistent configuration.
      */
-    public Collection<FullPageId[]> splitAndSortCpPagesIfNeeded(DataStorageConfiguration persistenceCfg) {
-        final FullPageId[] cpPagesArr = toArray();
+    public Collection<FullPageIdsBuffer> splitAndSortCpPagesIfNeeded(DataStorageConfiguration persistenceCfg) {
+        final FullPageIdsBuffer cpPagesBuf = toBuffer();
 
         if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL)
-            Arrays.sort(cpPagesArr, GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR);
+            cpPagesBuf.sort(GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR);
 
         int cpThreads = persistenceCfg.getCheckpointThreads();
 
         int pagesSubLists = cpThreads == 1 ? 1 : cpThreads * 4;
 
-        return split(cpPagesArr, pagesSubLists);
+        return cpPagesBuf.split(pagesSubLists);
     }
 }

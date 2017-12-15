@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.FullPageIdsBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -1842,7 +1843,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (tag != null) {
                     tmpWriteBuf.rewind();
 
-                    //todo write or not page CRC
+                    //todo need or not calculate CRC
                     PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag, true);
                     tmpWriteBuf.rewind();
 
@@ -2127,12 +2128,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     wrCpPagesFactory);
                             }
                             else {
-                                Collection<FullPageId[]> cpPages = chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg);
+                                Collection<FullPageIdsBuffer> cpPages = chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg);
 
                                 wrCompleteFut = new CountDownFuture(cpPages.size());
 
-                                for (FullPageId[] next : cpPages) {
-                                    asyncCheckpointer.execute(wrCpPagesFactory.apply(next), wrCompleteFut);
+                                for (FullPageIdsBuffer next : cpPages) {
+                                    asyncCheckpointer.execute(wrCpPagesFactory.apply(next.toArray()), wrCompleteFut);
                                 }
                             }
 
@@ -2141,8 +2142,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                         else {
                             // Single-threaded checkpoint.
-                            for (FullPageId[] next : chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg)) {
-                                ((WriteCheckpointPages)wrCpPagesFactory.apply(next)).call();
+                            for (FullPageIdsBuffer next : chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg)) {
+                                ((WriteCheckpointPages)wrCpPagesFactory.apply(next.toArray())).call();
                             }
                         }
 

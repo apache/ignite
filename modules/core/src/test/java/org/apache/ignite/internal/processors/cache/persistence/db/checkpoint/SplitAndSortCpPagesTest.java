@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -31,7 +34,10 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.FullPageIdsBuffer;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
@@ -64,16 +70,19 @@ public class SplitAndSortCpPagesTest {
 
         dsCfg.setCheckpointThreads(13);
 
-        Collection<FullPageId[]> ids = coll.splitAndSortCpPagesIfNeeded(dsCfg);
+        Collection<FullPageIdsBuffer> ids = coll.splitAndSortCpPagesIfNeeded(dsCfg);
 
         int sz = 0;
 
-        for (FullPageId[] next : ids) {
-            sz += next.length;
+        List<FullPageId[]> res = new ArrayList<>();
+
+        for (FullPageIdsBuffer next : ids) {
+            sz += next.remaining();
+            res.add(next.toArray());
         }
 
         assertEquals(sz, coll.totalCpPages());
-        validateOrder(ids);
+        validateOrder(res);
     }
 
     /**
@@ -112,7 +121,7 @@ public class SplitAndSortCpPagesTest {
      * @throws Exception if failed.
      */
     @Test
-    public void testGrobalOrder() throws Exception {
+    public void testGlobalOrder() throws Exception {
         CheckpointScope scope = getTestCollection();
 
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
@@ -127,11 +136,11 @@ public class SplitAndSortCpPagesTest {
             }
         };
 
-        FullPageId[] pageIds = scope.toArray();
+        FullPageIdsBuffer pageIds = scope.toBuffer();
 
         asyncCheckpointer.quickSortAndWritePages(pageIds, taskFactory).get();
 
-        validateOrder(Collections.singletonList(pageIds));
+        validateOrder(Collections.singletonList(pageIds.toArray()));
     }
 
     /**
@@ -173,12 +182,7 @@ public class SplitAndSortCpPagesTest {
     @Test
     public void testAsyncAllPagesArePresent() throws Exception {
         final CheckpointScope scope = getTestCollection();
-        final ConcurrentHashMap<FullPageId, FullPageId> map = new ConcurrentHashMap<>();
-        FullPageId[] ids = scope.toArray();
-
-        for (FullPageId id : ids) {
-            map.put(id, id);
-        }
+        final ConcurrentHashMap<FullPageId, FullPageId> map = createCopyAsMap(scope);
 
         final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
@@ -201,6 +205,20 @@ public class SplitAndSortCpPagesTest {
         boolean empty = map.isEmpty();
         if (!empty)
             assertTrue("Control map should be empty: " + map.toString(), empty);
+    }
+
+    /**
+     * @param scope
+     * @return
+     */
+    private ConcurrentHashMap<FullPageId, FullPageId> createCopyAsMap(CheckpointScope scope) {
+        final ConcurrentHashMap<FullPageId, FullPageId> map = new ConcurrentHashMap<>();
+        FullPageIdsBuffer ids = scope.toBuffer();
+
+        for (FullPageId id : ids.toArray()) {
+            map.put(id, id);
+        }
+        return map;
     }
 
     /**
@@ -245,6 +263,76 @@ public class SplitAndSortCpPagesTest {
         asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
     }
 
+
+    /**
+     * Uses control map to verify no elements were lost
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testWithEviction() throws Exception {
+        final CheckpointScope scope = getTestCollection();
+        final ConcurrentHashMap<FullPageId, FullPageId> controlMap = createCopyAsMap(scope);
+
+        final CountDownLatch evictingThreadStarted = new CountDownLatch(1);
+        final Random random = new Random();
+        final Thread thread = new Thread(new Runnable() {
+            @Override public void run() {
+                final List<GridMultiCollectionWrapper<FullPageId>> pages = U.field(scope, "pages");
+                while(!Thread.currentThread().isInterrupted()) {
+                    evictingThreadStarted.countDown();
+                    try {
+                        final int i = random.nextInt(pages.size());
+                        final GridMultiCollectionWrapper<FullPageId> ids = pages.get(i);
+                        final int i1 = ids.collectionsSize();
+
+                        final int i2 = random.nextInt(i1);
+                        final Collection<FullPageId> destCollection = ids.innerCollection(i2);
+                        final Set<FullPageId> cpPages = (GridConcurrentHashSet<FullPageId>)destCollection;
+
+                        final int size = cpPages.size();
+                        if(size==0)
+                            continue;
+                        final int i3 = random.nextInt(size);
+
+                        final FullPageId page = cpPages.iterator().next();
+                        final boolean remove = cpPages.remove(page);
+
+                        controlMap.remove(page);
+                    }
+                    catch (Exception ignored) {
+                        ignored.printStackTrace();
+                    }
+                }
+            }
+        });
+        thread.start();
+
+        evictingThreadStarted.await();
+
+        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
+
+        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
+            @Override public Callable<Void> apply(final FullPageId[] ids) {
+                return new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        for (FullPageId id : ids) {
+                            controlMap.remove(id);
+                        }
+
+                        return null;
+                    }
+                };
+            }
+        };
+
+        asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
+        thread.interrupt();
+
+        boolean empty = controlMap.isEmpty();
+        if (!empty)
+            assertTrue("Control map should be empty: " + controlMap.toString(), empty);
+    }
+
     /**
      * @return test pages set
      */
@@ -255,24 +343,19 @@ public class SplitAndSortCpPagesTest {
     /**
      * @return test pages set
      */
-    @NotNull private static CheckpointScope getTestCollection(int pagesMillions, int innerCollections) {
+    @NotNull private static CheckpointScope getTestCollection(int pagesMillions, int segmentsCnt) {
         final int regions = 1024;
         final CheckpointScope scope = new CheckpointScope(regions);
         final Random random = new Random();
 
         for (int i = 0; i < regions; i++) {
-            final Collection[] segments = new Collection[innerCollections];
+            final Collection[] segments = new Collection[segmentsCnt];
 
-            for (int j = 0; j < innerCollections; j++) {
-                final Collection<FullPageId> innerColl = new ArrayList<>();
+            for (int j = 0; j < segmentsCnt; j++) {
+                final Collection<FullPageId> innerColl = new GridConcurrentHashSet<>();
                 segments[j] = innerColl;
                 for (int k = 0; k < pagesMillions; k++) {
-                    int partId = random.nextInt(1024);
-                    int pageIdx = random.nextInt(1000000);
-                    long pageId = PageIdUtils.pageId(
-                        partId,
-                        (byte)0,
-                        pageIdx);
+                    long pageId = randomPageId(random);
 
                     innerColl.add(new FullPageId(pageId, 123));
                 }
@@ -281,5 +364,18 @@ public class SplitAndSortCpPagesTest {
             scope.addCpPages(new GridMultiCollectionWrapper<FullPageId>(segments));
         }
         return scope;
+    }
+
+    /**
+     * @param random Random.
+     * @return page ID.
+     */
+    private static long randomPageId(Random random) {
+        int partId = random.nextInt(1024);
+        int pageIdx = random.nextInt(1000000);
+        return PageIdUtils.pageId(
+            partId,
+            (byte)0,
+            pageIdx);
     }
 }
