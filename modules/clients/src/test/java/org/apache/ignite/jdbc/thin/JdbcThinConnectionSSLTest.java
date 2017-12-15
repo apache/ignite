@@ -92,8 +92,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                 "&clientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                 "&clientCertificateKeyStorePassword=123456" +
                 "&trustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
-                "&trustCertificateKeyStorePassword=123456"
-            )) {
+                "&trustCertificateKeyStorePassword=123456")) {
                 checkConnection(conn);
             }
         }

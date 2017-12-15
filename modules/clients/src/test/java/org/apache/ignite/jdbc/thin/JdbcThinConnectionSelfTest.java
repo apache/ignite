@@ -39,6 +39,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -67,6 +68,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+
+    /** Client key store path. */
+    private static final String CLI_KEY_STORE_PATH = U.getIgniteHome() +
+        "/modules/clients/src/test/keystore/client.jks";
+
+    /** Server key store path. */
+    private static final String SRV_KEY_STORE_PATH = U.getIgniteHome() +
+        "/modules/clients/src/test/keystore/server.jks";
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
@@ -1761,11 +1770,11 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testSslClientAndPlainServer()  {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true&" +
-                    "clientCertificateKeyStoreUrl=modules/client/src/test/keystore/client.jks&" +
-                    "clientCertificateKeyStorePassword=123456&" +
-                    "trustCertificateKeyStoreUrl=modules/client/src/test/keystore/client.jks&" +
-                    "trustCertificateKeyStorePassword=123456");
+                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
+                    "&clientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                    "&clientCertificateKeyStorePassword=123456" +
+                    "&trustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                    "&trustCertificateKeyStorePassword=123456");
 
                 return null;
             }
