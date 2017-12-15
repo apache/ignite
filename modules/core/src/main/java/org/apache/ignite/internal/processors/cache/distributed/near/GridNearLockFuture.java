@@ -1671,7 +1671,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                         null, createTtl, cctx.readThrough(), !retval);
 
                                 if (clos != null)
-                                    clos.apply(k, res.dhtVersion(i));
+                                    clos.apply(newVal, res.dhtVersion(i));
 
                                 tx.hasRemoteLocks(true);
 
