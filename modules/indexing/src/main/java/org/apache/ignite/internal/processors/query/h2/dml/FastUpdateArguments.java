@@ -51,12 +51,18 @@ public final class FastUpdateArguments {
         }
     };
 
-    /** Simple constant value based operand. */
+    /**
+     * Simple constant value based operand.
+     */
     public final static class ValueArgument implements FastUpdateArgument {
         /** Value to return. */
         private final Object val;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param val Value.
+         */
         public ValueArgument(Object val) {
             this.val = val;
         }
@@ -67,12 +73,18 @@ public final class FastUpdateArguments {
         }
     }
 
-    /** User given param value operand. */
+    /**
+     * User given param value operand.
+     */
     public final static class ParamArgument implements FastUpdateArgument {
         /** Index of param to take. */
         private final int paramIdx;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param paramIdx Parameter index.
+         */
         public ParamArgument(int paramIdx) {
             assert paramIdx >= 0;
 
