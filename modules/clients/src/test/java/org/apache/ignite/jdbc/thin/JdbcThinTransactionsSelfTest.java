@@ -137,6 +137,32 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    public void testTransactionsBeginCommitRollbackAutocommit() throws IgniteCheckedException {
+        GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    try (Connection c = c(true, NestedTxMode.ERROR)) {
+                        try (Statement s = c.createStatement())  {
+                            s.execute("BEGIN");
+
+                            s.execute("COMMIT");
+
+                            s.execute("BEGIN");
+
+                            s.execute("ROLLBACK");
+                        }
+                    }
+                }
+                catch (SQLException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }, 8, "jdbc-transactions").get();
+    }
+
+    /**
+     *
+     */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIgnoreNestedTxAutocommitOff() throws SQLException {
         try (Connection c = c(false, NestedTxMode.IGNORE)) {

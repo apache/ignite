@@ -356,7 +356,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = query(qry, true, protocolVer.compareTo(VER_2_3_0) < 0);
+            List<FieldsQueryCursor<List<?>>> results = query(qry, true, protocolVer.compareTo(VER_2_3_0) < 0, req.autoCommit());
 
             if (results.size() == 1) {
                 FieldsQueryCursor<List<?>> qryCur = results.get(0);
@@ -434,22 +434,32 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param qry Query.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Multiple statements flag.
+     * @param autoCommit Auto commit flag.
      * @return Query results.
      * @throws IgniteCheckedException if failed.
      */
     private List<FieldsQueryCursor<List<?>>> query(SqlFieldsQuery qry, final boolean keepBinary,
-        final boolean failOnMultipleStmts) throws IgniteCheckedException {
+        final boolean failOnMultipleStmts, boolean autoCommit) throws IgniteCheckedException {
+        GridNearTxLocal tx = ctx.query().userTx();
+
+        boolean txAutoStart = !autoCommit && tx == null;
+
+        if (txAutoStart)
+            ctx.query().sqlUserTxStart();
+
         try {
             return ctx.query().querySqlFieldsNoCache(qry, keepBinary, failOnMultipleStmts);
         }
         catch (IgniteSQLException e) {
             if (e.statusCode() == IgniteQueryErrorCode.TRANSACTION_EXISTS) {
+                // We have started transaction automatically and got BEGIN from the user
+                // at the same time - should silently ignore this error.
+                if (txAutoStart)
+                    return Collections.singletonList(GridQueryProcessor.dummyCursor());
+
                 switch (nestedTxMode) {
                     case COMMIT:
-                        GridNearTxLocal tx = ctx.query().userTx();
-
-                        if (tx == null)
-                            throw new AssertionError(); // What's going on?
+                        assert tx != null;
 
                         tx.commit();
 
@@ -458,11 +468,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     case IGNORE:
                         log.warning("Transaction has already been started, ignoring BEGIN command.");
 
-                        break;
+                        return Collections.singletonList(GridQueryProcessor.dummyCursor());
 
                     case ERROR:
-                        throw new IgniteSQLException("Transaction has already been started.",
-                            IgniteQueryErrorCode.TRANSACTION_EXISTS);
+                        throw e;
 
                     default:
                         throw new AssertionError("Unexpected nested transaction handling mode: " +
@@ -472,8 +481,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             else
                 throw e;
         }
-
-        return Collections.singletonList(GridQueryProcessor.dummyCursor());
     }
 
     /**
@@ -596,7 +603,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 qry.setSchema(schemaName);
 
-                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)query(qry, true, true).get(0);
+                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)query(qry, true, true, req.autoCommit())
+                    .get(0);
 
                 assert !qryCur.isQuery();
 
