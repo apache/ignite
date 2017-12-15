@@ -273,8 +273,8 @@ public class GridCacheTxFinishSync<K, V> {
                         "state (node left grid): " + nodeId));
 
                 if (pendingFut == null) {
-                    //if (log.isTraceEnabled())
-                        log.info("Creating transaction synchronizer future [nodeId=" + nodeId +
+                    if (log.isTraceEnabled())
+                        log.trace("Creating transaction synchronizer future [nodeId=" + nodeId +
                             ", threadId=" + threadId + ']');
 
                     pendingFut = new GridFutureAdapter<>();

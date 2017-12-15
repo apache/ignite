@@ -29,6 +29,7 @@ import java.util.concurrent.locks.LockSupport;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.G;
@@ -56,6 +58,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.apache.log4j.Level;
 import org.jsr166.LongAdder8;
 
 import static java.lang.Thread.sleep;
@@ -120,6 +123,11 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         }
 
         return cfg;
+    }
+
+    @Override protected void resetLog4j(Level log4jLevel, boolean logToFile, String cat,
+        String... cats) throws IgniteCheckedException {
+        super.resetLog4j(log4jLevel, logToFile, cat, cats);
     }
 
     /**
@@ -419,7 +427,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final CountDownLatch rollbackLatch = new CountDownLatch(1);
 
-        final int txCnt = 10;
+        final int txCnt = 1;
 
         final IgniteKernal k = (IgniteKernal)rNode;
 
@@ -712,10 +720,12 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         for (Ignite ignite : G.allGrids()) {
             IgniteEx ig = (IgniteEx)ignite;
 
-            final IgniteInternalFuture<?> f = ig.context().cache().context().
-                partitionReleaseFuture(new AffinityTopologyVersion(G.allGrids().size() + 1, 0));
+            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
 
-            assertTrue("Unexpected incomplete future: node=" + ig.localNode().id() + ", fut=[" + f + ']', f.isDone());
+            for (GridCacheFuture<?> fut : futs)
+                log.info("Waiting for future: " + fut);
+
+            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
         }
     }
 

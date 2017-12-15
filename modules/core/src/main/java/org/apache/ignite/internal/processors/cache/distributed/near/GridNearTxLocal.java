@@ -134,13 +134,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, NearTxFinishFuture> FINISH_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, NearTxFinishFuture.class, "finishFut");
 
-    /** Lock future updater. */
-    private static final AtomicReferenceFieldUpdater<GridNearTxLocal, IgniteInternalFuture> LOCK_FUT_UPD =
-        AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "lockFut");
-
-    /** */
-    private static final IgniteInternalFuture ROLLBACK_FUT = new GridFutureAdapter();
-
     /** DHT mappings. */
     private IgniteTxMappings mappings;
 
@@ -153,11 +146,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile NearTxFinishFuture finishFut;
-
-    /** Lock future. */
-    @SuppressWarnings("UnusedDeclaration")
-    @GridToStringExclude
-    private volatile IgniteInternalFuture<Boolean> lockFut;
 
     /** True if transaction contains near cache entries mapped to local node. */
     private boolean nearLocallyMapped;
@@ -3282,18 +3270,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Atomically updates lock future.
-     *
-     * @param oldFut Old future.
-     * @param newFut New future.
-     *
-     * @return {@code true} If future was changed.
-     */
-    public boolean updateLockFuture(IgniteInternalFuture<Boolean> oldFut, IgniteInternalFuture<Boolean> newFut) {
-        return LOCK_FUT_UPD.compareAndSet(this, oldFut, newFut);
-    }
-
-    /**
      * @param clearThreadMap {@code True} if needed to clear thread map.
      * Note: For async rollbacks (from timeouts or another thread) should not clear thread map
      * since thread started tx still should be able to see this tx to prevent subsequent operations.
@@ -3306,38 +3282,27 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
-        log.info("Starting rollback TRANSACTION " + xidVersion());
-
-        if (!clearThreadMap) {
-            if (state() == ACTIVE)
-                state(MARKED_ROLLBACK);
-        }
+        // TODO do we need this ?
+        if (!clearThreadMap && !onTimeout && state() == ACTIVE)
+            state(MARKED_ROLLBACK);
 
         if (!onTimeout && trackTimeout)
             removeTimeoutHandler();
 
         NearTxFinishFuture fut = finishFut;
 
-        if (fut != null) {
-            log.info("Wait finish TRANSACTION " + xidVersion());
-
+        if (fut != null)
             return chainFinishFuture(finishFut, false);
-        }
 
         final boolean rollingBackNoLocking = updateLockFuture(null, ROLLBACK_FUT);
 
         IgniteInternalFuture<Boolean> lockFut0 = lockFut;
 
         if (rollingBackNoLocking && fastFinish()) {
-            log.info("fastFinish TRANSACTION " + xidVersion() + " " + state() + " " + lockFut);
-
             GridNearTxFastFinishFuture fut0;
 
-            if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false))) {
-                log.info("fastFinish 2 TRANSACTION " + xidVersion() + " " + state());
-
+            if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
                 return chainFinishFuture(finishFut, false);
-            }
 
             fut0.finish(clearThreadMap);
 
@@ -3346,11 +3311,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final GridNearTxFinishFuture fut0;
 
-        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false))) {
-            log.info("Fail set finish TRANSACTION " + xidVersion());
-
+        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false)))
             return chainFinishFuture(finishFut, false);
-        }
 
         if (!rollingBackNoLocking && lockFut0 != null) {
             if (onTimeout) {
@@ -3425,9 +3387,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 return retFut;
             }
-        }
-        else {
-            log.info("Null lock TRANSACTION: " + xidVersion());
         }
 
         assert lockFut == ROLLBACK_FUT;

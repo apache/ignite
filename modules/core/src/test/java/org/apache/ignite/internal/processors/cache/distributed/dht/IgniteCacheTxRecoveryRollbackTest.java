@@ -98,7 +98,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         try {
             for (Ignite node : G.allGrids()) {
-                Collection<IgniteInternalTx> txs = ((IgniteKernal)node).context().cache().context().tm().txs();
+                Collection<IgniteInternalTx> txs = ((IgniteKernal)node).context().cache().context().tm().activeTransactions();
 
                 assertTrue("Unfinished txs [node=" + node.name() + ", txs=" + txs + ']', txs.isEmpty());
             }

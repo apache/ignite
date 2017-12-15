@@ -115,8 +115,6 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
-import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
-import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
@@ -579,7 +577,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     }
                 });
 
-        for (IgniteInternalTx tx : txs()) {
+        for (IgniteInternalTx tx : activeTransactions()) {
             if (needWaitTransaction(tx, topVer))
                 res.add(tx.finishFuture());
         }
@@ -1736,13 +1734,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return All transactions.
-     */
-    public Collection<IgniteInternalTx> txs() {
-        return F.concat(false, idMap.values(), nearIdMap.values());
-    }
-
-    /**
      * @return Slow tx warn timeout.
      */
     public int slowTxWarnTimeout() {
@@ -1826,7 +1817,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public IgniteInternalFuture<?> remoteTxFinishFuture(GridCacheVersion nearVer) {
         GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>();
 
-        for (final IgniteInternalTx tx : txs()) {
+        for (final IgniteInternalTx tx : activeTransactions()) {
             if (!tx.local() && nearVer.equals(tx.nearXidVersion()))
                 fut.add((IgniteInternalFuture) tx.finishFuture());
         }
@@ -1848,7 +1839,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         @Nullable GridFutureAdapter<Boolean> fut,
         @Nullable Collection<GridCacheVersion> processedVers)
     {
-        for (final IgniteInternalTx tx : txs()) {
+        for (final IgniteInternalTx tx : activeTransactions()) {
             if (nearVer.equals(tx.nearXidVersion())) {
                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
@@ -2383,7 +2374,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
 
-                for (final IgniteInternalTx tx : txs()) {
+                for (final IgniteInternalTx tx : activeTransactions()) {
                     if ((tx.near() && !tx.local()) || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, RECOVERY_FINISH);

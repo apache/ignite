@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -249,6 +250,13 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         if (log == null) {
             msgLog = cctx.shared().txLockMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
+        }
+
+        if (tx != null && !tx.updateLockFuture(null, this)) {
+            onError(new IgniteTxRollbackCheckedException("Failed to acquire lock because transaction " +
+                "has started to roll back [tx=" + CU.txString(tx) + ']'));
+
+            onComplete(false, false, false);
         }
     }
 
@@ -704,6 +712,14 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     }
 
     /**
+     *
+     * @return {@code True} if complete by this operation.
+     */
+    public boolean onRollback() {
+        return onComplete(false, false, false);
+    }
+
+    /**
      * Completeness callback.
      *
      * @param success {@code True} if lock was acquired.
@@ -724,6 +740,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             cctx.tm().txContext(tx);
 
             set = cctx.tm().setTxTopologyHint(tx.topologyVersionSnapshot());
+
+            if (success)
+                tx.updateLockFuture(this, null);
         }
 
         try {
