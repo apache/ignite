@@ -103,7 +103,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedSize() {
-        assert pageMem != null;
+        if (pageMem == null)
+            return 0;
 
         return getTotalAllocatedPages() * pageMem.pageSize();
     }
@@ -180,7 +181,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getPhysicalMemorySize() {
-        assert pageMem != null;
+        if (pageMem == null)
+            return 0;
 
         return getPhysicalMemoryPages() * pageMem.pageSize();
     }
