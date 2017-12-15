@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConcurrentHashSet;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
@@ -284,7 +285,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private boolean stopping;
 
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
-    @Nullable private volatile AsyncCheckpointer asyncCheckpointer;
+    @Nullable private AsyncCheckpointer asyncCheckpointer;
 
     /** Buffer for the checkpoint threads. */
     private ThreadLocal<ByteBuffer> threadBuf;
@@ -1810,14 +1811,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Collection<DataRegion> memPolicies = context().database().dataRegions();
 
-        List<IgniteBiTuple<PageMemory, Collection<FullPageId>>> cpEntities = new ArrayList<>(memPolicies.size());
+        List<IgniteBiTuple<PageMemory, PagesConcurrentHashSet[]>> cpEntities = new ArrayList<>(memPolicies.size());
 
         for (DataRegion memPlc : memPolicies) {
             if (memPlc.config().isPersistenceEnabled()) {
                 PageMemoryEx pageMem = (PageMemoryEx)memPlc.pageMemory();
 
-                cpEntities.add(new IgniteBiTuple<PageMemory, Collection<FullPageId>>(
-                    pageMem, (pageMem).beginCheckpoint()));
+                cpEntities.add(new IgniteBiTuple<PageMemory, PagesConcurrentHashSet[]>(pageMem, pageMem.beginCheckpoint()));
             }
         }
 
@@ -1828,26 +1828,30 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int cpPagesCnt = 0;
 
-        for (IgniteBiTuple<PageMemory, Collection<FullPageId>> e : cpEntities) {
+        for (IgniteBiTuple<PageMemory, PagesConcurrentHashSet[]> e : cpEntities) {
             PageMemoryEx pageMem = (PageMemoryEx)e.get1();
 
-            Collection<FullPageId> cpPages = e.get2();
+            PagesConcurrentHashSet[] cpPages = e.get2();
 
-            cpPagesCnt += cpPages.size();
+            for (PagesConcurrentHashSet set : cpPages) {
+                for (GridConcurrentHashSet<FullPageId> innerSet : set) {
+                    for (FullPageId fullId : innerSet) {
 
-            for (FullPageId fullId : cpPages) {
-                tmpWriteBuf.rewind();
+                        cpPagesCnt++;
+                        tmpWriteBuf.rewind();
 
-                Integer tag = pageMem.getForCheckpoint(fullId, tmpWriteBuf, null);
+                        Integer tag = pageMem.getForCheckpoint(fullId, tmpWriteBuf, null);
 
-                if (tag != null) {
-                    tmpWriteBuf.rewind();
+                        if (tag != null) {
+                            tmpWriteBuf.rewind();
 
-                    //todo need or not calculate CRC
-                    PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag, true);
-                    tmpWriteBuf.rewind();
+                            //todo need or not calculate CRC
+                            PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag, true);
+                            tmpWriteBuf.rewind();
 
-                    updStores.add(store);
+                            updStores.add(store);
+                        }
+                    }
                 }
             }
         }
@@ -1859,7 +1863,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long fsync = U.currentTimeMillis();
 
-        for (IgniteBiTuple<PageMemory, Collection<FullPageId>> e : cpEntities)
+        for (IgniteBiTuple<PageMemory, PagesConcurrentHashSet[]> e : cpEntities)
             ((PageMemoryEx)e.get1()).finishCheckpoint();
 
         writeCheckpointEntry(
@@ -2434,9 +2438,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (!region.config().isPersistenceEnabled())
                     continue;
 
-                GridMultiCollectionWrapper<FullPageId> nextCpPagesCol = ((PageMemoryEx)region.pageMemory()).beginCheckpoint();
-
-                scope.addCpPages(nextCpPagesCol);
+                scope.addCpPages(((PageMemoryEx)region.pageMemory()).beginCheckpoint());
             }
 
             return scope;

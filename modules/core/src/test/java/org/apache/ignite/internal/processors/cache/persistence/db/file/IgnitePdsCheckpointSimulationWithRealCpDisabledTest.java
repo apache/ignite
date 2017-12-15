@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +33,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -47,17 +46,6 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -73,9 +61,22 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConcurrentHashSet;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -559,13 +560,13 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             ig.context().cache().context().database().checkpointReadUnlock();
         }
 
-        Collection<FullPageId> cpPages = mem.beginCheckpoint();
+        PagesConcurrentHashSet[] cpPages = mem.beginCheckpoint();
 
         ig.context().cache().context().database().checkpointReadLock();
 
         try {
             for (FullPageId fullId : pageIds) {
-                assertTrue(cpPages.contains(fullId));
+                assertTrue(PagesConcurrentHashSet.contains(cpPages, fullId));
 
                 ByteBuffer buf = ByteBuffer.allocate(mem.pageSize());
 
@@ -854,7 +855,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         while (checkpoints > 0) {
             Map<FullPageId, Integer> snapshot = null;
 
-            Collection<FullPageId> pageIds;
+            PagesConcurrentHashSet[] pageIds;
 
             updLock.writeLock().lock();
 
@@ -869,7 +870,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     // No more writes should be done at this point.
                     run.set(false);
 
-                info("Acquired pages for checkpoint: " + pageIds.size());
+                info("Acquired pages for checkpoint: " + PagesConcurrentHashSet.size(pageIds));
             }
             finally {
                 updLock.writeLock().unlock();
@@ -888,54 +889,59 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                 long write = 0;
 
-                for (FullPageId fullId : pageIds) {
-                    long cpStart = System.nanoTime();
+                for (PagesConcurrentHashSet concurrentHashSet : pageIds) {
+                    for (GridConcurrentHashSet<FullPageId> next : concurrentHashSet) {
+                        for (FullPageId fullId : next) {
+                            long cpStart = System.nanoTime();
 
-                    Integer tag = mem.getForCheckpoint(fullId, tmpBuf, null);
+                            Integer tag = mem.getForCheckpoint(fullId, tmpBuf, null);
 
-                    if (tag == null)
-                        continue;
+                            if (tag == null)
+                                continue;
 
-                    long cpEnd = System.nanoTime();
+                            long cpEnd = System.nanoTime();
 
-                    cp += cpEnd - cpStart;
+                            cp += cpEnd - cpStart;
 
-                    Integer state = snapshot.get(fullId);
+                            Integer state = snapshot.get(fullId);
 
-                    if (allocated.contains(fullId) && state != -1) {
-                        tmpBuf.rewind();
+                            if (allocated.contains(fullId) && state != -1) {
+                                tmpBuf.rewind();
 
-                        Integer first = null;
+                                Integer first = null;
 
-                        for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++) {
-                            int val = tmpBuf.get(i) & 0xFF;
+                                for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++) {
+                                    int val = tmpBuf.get(i) & 0xFF;
 
-                            if (first == null)
-                                first = val;
+                                    if (first == null)
+                                        first = val;
 
-                            // Avoid string concat.
-                            if (first != val)
-                                assertEquals("Corrupted buffer at position [pageId=" + fullId + ", pos=" + i + ']',
-                                    (int)first, val);
+                                    // Avoid string concat.
+                                    if (first != val)
+                                        assertEquals("Corrupted buffer at position [pageId=" + fullId + ", pos=" + i + ']',
+                                            (int)first, val);
 
-                            // Avoid string concat.
-                            if (state != val)
-                                assertEquals("Invalid value at position [pageId=" + fullId + ", pos=" + i + ']',
-                                    (int)state, val);
+                                    // Avoid string concat.
+                                    if (state != val)
+                                        assertEquals("Invalid value at position [pageId=" + fullId + ", pos=" + i + ']',
+                                            (int)state, val);
+                                }
+                            }
+
+                            tmpBuf.rewind();
+
+                            long writeStart = System.nanoTime();
+
+                            storeMgr.write(cacheId, fullId.pageId(), tmpBuf, tag);
+
+                            long writeEnd = System.nanoTime();
+
+                            write += writeEnd - writeStart;
+
+                            tmpBuf.rewind();
                         }
                     }
 
-                    tmpBuf.rewind();
-
-                    long writeStart = System.nanoTime();
-
-                    storeMgr.write(cacheId, fullId.pageId(), tmpBuf, tag);
-
-                    long writeEnd = System.nanoTime();
-
-                    write += writeEnd - writeStart;
-
-                    tmpBuf.rewind();
                 }
 
                 long syncStart = System.currentTimeMillis();

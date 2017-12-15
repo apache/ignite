@@ -81,7 +81,6 @@ public class PagesWriteThrottle {
 
             int cpTotalPages = dbSharedMgr.currentCheckpointPagesCount();
 
-            //todo 0 of progress
             if (cpWrittenPages == 0 || cpTotalPages == 0) {
                 //probably slow start is running now, drop previous dirty page percent
                 initialDirtyRatioAtCpBegin = 0;
@@ -96,17 +95,13 @@ public class PagesWriteThrottle {
 
                 boolean cpStartedToWrite = lastObservedWritten.compareAndSet(0, cpWrittenPages);
                 if (cpStartedToWrite) {
-                    final double dirty = pageMemory.getDirtyPagesRatio();
-                    double newMinRatio = dirty;
+                    double newMinRatio = pageMemory.getDirtyPagesRatio();
 
                     if (newMinRatio < MIN_RATIO_NO_THROTTLE)
                         newMinRatio = MIN_RATIO_NO_THROTTLE;
 
                     if (newMinRatio > 1)
                         newMinRatio = 1;
-
-                    //todo remove
-                    System.err.println(">>>>> " + dirty + "=>" + newMinRatio);
 
                     initialDirtyRatioAtCpBegin = newMinRatio;
                 }

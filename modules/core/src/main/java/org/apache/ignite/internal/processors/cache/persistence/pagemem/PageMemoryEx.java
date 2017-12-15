@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,7 +102,7 @@ public interface PageMemoryEx extends PageMemory {
      * @return Collection of dirty page IDs.
      * @throws IgniteException If checkpoint has been already started and was not finished.
      */
-    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException;
+    public PagesConcurrentHashSet[] beginCheckpoint() throws IgniteException;
 
     /**
      * Finishes checkpoint operation.

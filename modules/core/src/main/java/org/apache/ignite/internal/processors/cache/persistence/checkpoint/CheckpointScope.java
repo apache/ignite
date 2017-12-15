@@ -24,6 +24,8 @@ import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConcurrentHashSet;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 
 /**
@@ -67,6 +69,18 @@ public class CheckpointScope {
 
         pagesNum = idx;
         return new FullPageIdsBuffer(pageIds, 0, idx);
+    }
+
+
+    public void addCpPages(PagesConcurrentHashSet[] sets) {
+        //todo implement more effective
+        for (PagesConcurrentHashSet set : sets) {
+            for (GridConcurrentHashSet<FullPageId> innerSet : set) {
+
+                final GridMultiCollectionWrapper<FullPageId> wrapper = new GridMultiCollectionWrapper<FullPageId>(innerSet);
+                addCpPages(wrapper);
+            }
+        }
     }
 
     /**
@@ -138,4 +152,5 @@ public class CheckpointScope {
 
         return cpPagesBuf.split(pagesSubLists);
     }
+
 }

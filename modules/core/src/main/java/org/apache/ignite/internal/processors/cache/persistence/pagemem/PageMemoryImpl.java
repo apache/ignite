@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -62,9 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
@@ -840,8 +837,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
 
     /** {@inheritDoc} */
-    @Override public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException {
-        Collection[] collections = new Collection[segments.length];
+    @Override public PagesConcurrentHashSet[] beginCheckpoint() throws IgniteException {
+        PagesConcurrentHashSet[] sets = new PagesConcurrentHashSet[segments.length];
 
         for (int i = 0; i < segments.length; i++) {
             Segment seg = segments[i];
@@ -849,14 +846,14 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (seg.segCheckpointPages != null)
                 throw new IgniteException("Failed to begin checkpoint (it is already in progress).");
 
-            collections[i] = seg.segCheckpointPages = seg.dirtyPages;
+            sets[i] = seg.segCheckpointPages = seg.dirtyPages;
 
-            seg.dirtyPages = new GridConcurrentHashSet<>();
+            seg.dirtyPages = new PagesConcurrentHashSet();
         }
 
         memMetrics.resetDirtyPages();
 
-        return new GridMultiCollectionWrapper<>(collections);
+        return sets;
     }
 
     /** {@inheritDoc} */
@@ -1355,7 +1352,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     boolean isInCheckpoint(FullPageId pageId) {
         Segment seg = segment(pageId.groupId(), pageId.pageId());
 
-        Collection<FullPageId> pages0 = seg.segCheckpointPages;
+        PagesConcurrentHashSet pages0 = seg.segCheckpointPages;
 
         return pages0 != null && pages0.contains(pageId);
     }
@@ -1367,7 +1364,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     boolean clearCheckpoint(FullPageId fullPageId) {
         Segment seg = segment(fullPageId.groupId(), fullPageId.pageId());
 
-        Collection<FullPageId> pages0 = seg.segCheckpointPages;
+        PagesConcurrentHashSet pages0 = seg.segCheckpointPages;
 
         assert pages0 != null;
 
@@ -1681,10 +1678,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         private long memPerTbl;
 
         /** Pages marked as dirty since the last checkpoint. */
-        private Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
+        private PagesConcurrentHashSet dirtyPages = new PagesConcurrentHashSet();
 
-        /** */
-        private volatile Collection<FullPageId> segCheckpointPages;
+        /** Pages under current checkpoint. */
+        private volatile PagesConcurrentHashSet segCheckpointPages;
 
         /** */
         private final int maxDirtyPages;
@@ -1812,7 +1809,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (PageHeader.isAcquired(absPtr))
                 return false;
 
-            Collection<FullPageId> cpPages = segCheckpointPages;
+            PagesConcurrentHashSet cpPages = segCheckpointPages;
 
             if (isDirty(absPtr)) {
                 // Can evict a dirty page only if should be written by a checkpoint.
