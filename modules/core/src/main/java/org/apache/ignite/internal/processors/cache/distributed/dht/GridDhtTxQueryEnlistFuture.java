@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -458,6 +457,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridDistributedLockCancelledException If lock is canceled.
      */
+    @SuppressWarnings("unchecked")
     @Nullable private GridCacheMvccCandidate addEntry(GridDhtCacheEntry entry, Object row)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException, IgniteCheckedException {
         if (log.isDebugEnabled())
@@ -470,67 +470,14 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
         if (isCancelled())
             return null;
 
-        boolean enlisted = enlistWrite(entry, row);
-
-        assert enlisted : "Entry is already enlisted.";
-
-        GridCacheMvccCandidate c = entry.addDhtLocal(
-            nearNodeId,
-            nearLockVer,
-            topVer,
-            threadId,
-            lockVer,
-            null,
-            timeout,
-            false,
-            true,
-            implicitSingle(),
-            false
-        );
-
-        if (c == null && timeout < 0) {
-
-            if (log.isDebugEnabled())
-                log.debug("Failed to acquire lock with negative timeout: " + entry);
-
-            onDone(new GridCacheLockTimeoutException(lockVer));
-
-            return null;
-        }
-
-        synchronized (this) {
-            entries.add(c == null || c.reentry() ? null : entry);
-
-            if (c != null && !c.reentry())
-                pendingLocks.add(entry.key());
-        }
-
-        // Double check if the future has already timed out.
-        if (isCancelled()) {
-            entry.removeLock(lockVer);
-
-            return null;
-        }
-
-        return c;
-    }
-
-    /**
-     * @param entry Cache entry.
-     * @param row Query result row.
-     * @return {@code True} if entry was added.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked") private boolean enlistWrite(GridCacheEntryEx entry,
-        Object row) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        assert tx != null;
         assert !entry.detached();
 
-        IgniteTxKey txKey = entry.txKey();
-        IgniteTxEntry txEntry = tx.entry(txKey);
+        IgniteTxEntry txEntry = tx.entry(entry.txKey());
 
-        if (txEntry != null)
-            return false;
+        if (txEntry != null) {
+            throw new UnsupportedOperationException("One row cannot be changed twice in the same transaction. " +
+                "Operation is unsupported at the moment.");
+        }
 
         Object[] row0 = row.getClass().isArray() ? (Object[])row : null;
         CacheObject val = row0 != null && (row0.length == 2 || row0.length == 4) ? cctx.toCacheObject(row0[1]) : null;
@@ -597,7 +544,45 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
         txEntry.markValid();
         txEntry.queryEnlisted(true);
 
-        return true;
+        GridCacheMvccCandidate c = entry.addDhtLocal(
+            nearNodeId,
+            nearLockVer,
+            topVer,
+            threadId,
+            lockVer,
+            null,
+            timeout,
+            false,
+            true,
+            implicitSingle(),
+            false
+        );
+
+        if (c == null && timeout < 0) {
+
+            if (log.isDebugEnabled())
+                log.debug("Failed to acquire lock with negative timeout: " + entry);
+
+            onDone(new GridCacheLockTimeoutException(lockVer));
+
+            return null;
+        }
+
+        synchronized (this) {
+            entries.add(c == null || c.reentry() ? null : entry);
+
+            if (c != null && !c.reentry())
+                pendingLocks.add(entry.key());
+        }
+
+        // Double check if the future has already timed out.
+        if (isCancelled()) {
+            entry.removeLock(lockVer);
+
+            return null;
+        }
+
+        return c;
     }
 
     /**

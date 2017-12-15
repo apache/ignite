@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -45,7 +44,7 @@ public class H2DmlPlanKey {
         this.schemaName = schemaName;
         this.sql = sql;
 
-        if (loc || !UpdatePlanBuilder.isSkipReducerOnUpdateQuery(fieldsQry))
+        if (loc)
             this.flags = 0; // flags only relevant for server side updates.
         else {
             this.flags = (byte)(1 +

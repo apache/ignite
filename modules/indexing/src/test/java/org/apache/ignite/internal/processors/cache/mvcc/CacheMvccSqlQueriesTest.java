@@ -164,7 +164,6 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
         updateSingleValue(true, true);
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -399,6 +398,88 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
         assertEquals(4, cache.get(4));
         assertEquals(5, cache.get(5));
         assertEquals(6, cache.get(6));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryInsertSubquery() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
+
+        startGridsMultiThreaded(4);
+
+        awaitPartitionMapExchange();
+
+        Random rnd = ThreadLocalRandom.current();
+
+        Ignite checkNode  = grid(rnd.nextInt(4));
+        Ignite updateNode = grid(rnd.nextInt(4));
+
+        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+
+        cache.putAll(F.asMap(
+            1, new MvccTestSqlIndexValue(1),
+            2, new MvccTestSqlIndexValue(2),
+            3, new MvccTestSqlIndexValue(3)));
+
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) SELECT _key * 10, idxVal1 FROM MvccTestSqlIndexValue");
+
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            tx.commit();
+        }
+
+        assertEquals(10, cache.get(1));
+        assertEquals(20, cache.get(2));
+        assertEquals(30, cache.get(3));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryUpdateSubquery() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
+
+        startGridsMultiThreaded(4);
+
+        awaitPartitionMapExchange();
+
+        Random rnd = ThreadLocalRandom.current();
+
+        Ignite checkNode  = grid(rnd.nextInt(4));
+        Ignite updateNode = grid(rnd.nextInt(4));
+
+        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+
+        cache.putAll(F.asMap(
+            1, new MvccTestSqlIndexValue(1),
+            2, new MvccTestSqlIndexValue(2),
+            3, new MvccTestSqlIndexValue(3)));
+
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE MvccTestSqlIndexValue SET (idxVal1) = SELECT t.idxVal1 * 10 FROM MvccTestSqlIndexValue as t");
+
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            tx.commit();
+        }
+
+        assertEquals(10, ((MvccTestSqlIndexValue)cache.get(1)).idxVal1);
+        assertEquals(20, ((MvccTestSqlIndexValue)cache.get(2)).idxVal1);
+        assertEquals(30, ((MvccTestSqlIndexValue)cache.get(3)).idxVal1);
     }
 
     /**
@@ -739,7 +820,8 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
             tx.commit();
         }
         catch (Throwable e) {
-             assertEquals("Entry is already enlisted.", e.getMessage());
+             assertEquals("Failed to run update. One row cannot be changed twice in the same transaction. " +
+                 "Operation is unsupported at the moment.", e.getMessage());
         }
 
         for (int i = 1; i <= 6; i++)
