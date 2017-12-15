@@ -431,7 +431,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                     Collections.<ClusterStartNodeResult>emptyList());
 
             // Exceeding max line width for readability.
-            GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>> fut =
+            GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>> fut = 
                 new GridCompoundFuture<>(CU.<ClusterStartNodeResult>objectsReducer());
 
             AtomicInteger cnt = new AtomicInteger(nodeCallCnt);
