@@ -197,13 +197,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     };
 
     /** */
-    private static final Comparator<GridDhtLocalPartition> ASC_PART_COMPARATOR = new Comparator<GridDhtLocalPartition>() {
-        @Override public int compare(GridDhtLocalPartition a, GridDhtLocalPartition b) {
-            return Integer.compare(a.id(), b.id());
-        }
-    };
-
-    /** */
     private static final Comparator<File> CP_TS_COMPARATOR = new Comparator<File>() {
         /** {@inheritDoc} */
         @Override public int compare(File o1, File o2) {
@@ -2325,17 +2318,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (grp.isLocal())
                         continue;
 
-                    List<GridDhtLocalPartition> locParts = new ArrayList<>();
+                    //Create here temporary collection with basic fields to preallocate cacheStateLater and
+                    // for iterating
+                    Collection<PartitionState> partsState = new ArrayList<>();
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
-                        locParts.add(part);
+                    int prevPartId = -1;
+                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                        final int partId = part.id();
 
-                    Collections.sort(locParts, ASC_PART_COMPARATOR);
+                        if (prevPartId > partId)
+                            throw new IllegalStateException("Broken order of " +
+                                "GridDhtPartitionTopology.currentLocalPartitions(): [prev=" + prevPartId + ", cur=" + partId + "]");
 
-                    CacheState state = new CacheState(locParts.size());
+                        partsState.add(new PartitionState(partId, part.dataStore().fullSize(), part.updateCounter()));
+                    }
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
-                        state.addPartitionState(part.id(), part.dataStore().fullSize(), part.updateCounter());
+                    CacheState state = new CacheState(partsState.size());
+
+                    for (PartitionState part : partsState) {
+                        state.addPartitionState(part.partId(), part.dataStoreSize(), part.updateCounter());
+                    }
 
                     cpRec.addCacheGroupState(grp.groupId(), state);
                 }
@@ -2575,6 +2577,50 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         return new GridMultiCollectionWrapper<FullPageId>(pagesSubListArr);
+    }
+
+    /**
+     * Wrapper class to collect partition state for checkpoint record.
+     */
+    private static class PartitionState {
+        /** Partition ID. */
+        private final int partId;
+        /** Data storage size. */
+        private final int dsSize;
+        /** Update counter. */
+        private final long updateCntr;
+
+        /**
+         * @param partId Partition id.
+         * @param dsSize Ds size.
+         * @param updateCntr Update counter.
+         */
+        PartitionState(int partId, int dsSize, long updateCntr) {
+            this.partId = partId;
+            this.dsSize = dsSize;
+            this.updateCntr = updateCntr;
+        }
+
+        /**
+         * @return {@link #partId}
+         */
+        public int partId() {
+            return partId;
+        }
+
+        /**
+         * @return {@link #dsSize}
+         */
+        public int dataStoreSize() {
+            return dsSize;
+        }
+
+        /**
+         * @return {@link #updateCntr}
+         */
+        public long updateCounter() {
+            return updateCntr;
+        }
     }
 
     /** Pages write task */
