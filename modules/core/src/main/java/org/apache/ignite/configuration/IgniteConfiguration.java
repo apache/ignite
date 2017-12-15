@@ -42,7 +42,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.failover.IgniteFailureHandler;
+import org.apache.ignite.failure.IgniteFailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;

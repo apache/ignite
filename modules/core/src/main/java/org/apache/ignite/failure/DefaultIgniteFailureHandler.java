@@ -15,18 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.failover;
+package org.apache.ignite.failure;
+
+import org.apache.ignite.internal.GridKernalContext;
 
 /**
- * Enumeration of Ignite failure actions.
+ * Default implementation of {@link IgniteFailureHandler}
  */
-public enum IgniteFailureAction {
-    /** Restart jvm. */
-    RESTART_JVM,
+public class DefaultIgniteFailureHandler implements IgniteFailureHandler {
+    /** {@inheritDoc} */
+    @Override public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureCause cause) {
+        switch (cause.type()) {
+            case PERSISTENCE_ERROR:
+                return IgniteFailureAction.RESTART_JVM;
 
-    /** Stop. */
-    STOP,
+            case EXCHANGE_WORKER_STOP:
+                return IgniteFailureAction.RESTART_JVM;
 
-    /** Noop. */
-    NOOP;
+            case IGNITE_OUT_OF_MEMORY_ERROR:
+                return IgniteFailureAction.RESTART_JVM;
+
+            default:
+                return IgniteFailureAction.NOOP;
+        }
+    }
 }

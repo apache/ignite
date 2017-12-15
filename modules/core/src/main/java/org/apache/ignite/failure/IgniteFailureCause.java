@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.failover;
+package org.apache.ignite.failure;
 
 /**
  *

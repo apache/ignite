@@ -15,23 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.failover;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
+package org.apache.ignite.failure;
 
 /**
- * This interface provides facility to handle Ignite failures by custom user implementations,
- * which can be added by {@link IgniteConfiguration#setIgniteFailureHandler(IgniteFailureHandler)} method.
+ * Enumeration of Ignite failure actions.
  */
-public interface IgniteFailureHandler {
-    /** Default handler. */
-    public static final IgniteFailureHandler DFLT_HND = new DefaultIgniteFailureHandler();
+public enum IgniteFailureAction {
+    /** Restart jvm. */
+    RESTART_JVM,
 
-    /**
-     * @param ctx Context.
-     * @param cause Cause.
-     * @return IgniteFailureAction value.
-     */
-    public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureCause cause);
+    /** Stop. */
+    STOP,
+
+    /** Noop. */
+    NOOP;
 }

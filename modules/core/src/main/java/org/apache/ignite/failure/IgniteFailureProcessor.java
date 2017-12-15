@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.failover;
+package org.apache.ignite.failure;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;

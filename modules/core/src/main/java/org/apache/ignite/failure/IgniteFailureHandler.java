@@ -15,28 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.failover;
+package org.apache.ignite.failure;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 
 /**
- * Default implementation of {@link IgniteFailureHandler}
+ * This interface provides facility to handle Ignite failures by custom user implementations,
+ * which can be added by {@link IgniteConfiguration#setIgniteFailureHandler(IgniteFailureHandler)} method.
  */
-public class DefaultIgniteFailureHandler implements IgniteFailureHandler {
-    /** {@inheritDoc} */
-    @Override public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureCause cause) {
-        switch (cause.type()) {
-            case PERSISTENCE_ERROR:
-                return IgniteFailureAction.RESTART_JVM;
+public interface IgniteFailureHandler {
+    /** Default handler. */
+    public static final IgniteFailureHandler DFLT_HND = new DefaultIgniteFailureHandler();
 
-            case EXCHANGE_WORKER_STOP:
-                return IgniteFailureAction.RESTART_JVM;
-
-            case IGNITE_OUT_OF_MEMORY_ERROR:
-                return IgniteFailureAction.RESTART_JVM;
-
-            default:
-                return IgniteFailureAction.NOOP;
-        }
-    }
+    /**
+     * @param ctx Context.
+     * @param cause Cause.
+     * @return IgniteFailureAction value.
+     */
+    public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureCause cause);
 }
