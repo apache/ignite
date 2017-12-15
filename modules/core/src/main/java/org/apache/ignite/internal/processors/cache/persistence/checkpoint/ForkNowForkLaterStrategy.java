@@ -17,10 +17,13 @@
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 /**
+ * Strategy determines if it is reasonable to create new task in the executor queue, or is it better to keep queue
+ * empty.
  */
 public interface ForkNowForkLaterStrategy {
     /**
-     * @return {@code true} if now is reasonable to create new task
+     * @return {@code true} if now is reasonable to create new task now, {@code false} is returned to go to deeper
+     * recursion first instead of spoil waiting queue.
      */
     boolean forkNow();
 }

@@ -65,13 +65,13 @@ public class CheckpointScope {
      * Splits pages to {@code pagesSubLists} subtasks. If any thread will be faster, it will help slower threads.
      *
      * @param pageIds full pages collection.
-     * @param pagesSubLists required subArraysCount.
+     * @param pagesSubArrays required subArraysCount.
      * @return full page arrays to be processed as standalone tasks.
      */
-    public static Collection<FullPageId[]> split(FullPageId[] pageIds, int pagesSubLists) {
+    public static Collection<FullPageId[]> split(FullPageId[] pageIds, int pagesSubArrays) {
         final Collection<FullPageId[]> res = new ArrayList<>();
 
-        if (pagesSubLists == 1) {
+        if (pagesSubArrays == 1) {
             res.add(pageIds);
 
             return res;
@@ -79,10 +79,10 @@ public class CheckpointScope {
 
         final int totalSize = pageIds.length;
 
-        for (int i = 0; i < pagesSubLists; i++) {
-            int from = totalSize * i / (pagesSubLists);
+        for (int i = 0; i < pagesSubArrays; i++) {
+            int from = totalSize * i / (pagesSubArrays);
 
-            int to = totalSize * (i + 1) / (pagesSubLists);
+            int to = totalSize * (i + 1) / (pagesSubArrays);
 
             res.add(Arrays.copyOfRange(pageIds, from, to));
         }

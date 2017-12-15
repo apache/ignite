@@ -23,6 +23,7 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -31,8 +32,8 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
-import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,11 +43,16 @@ import static junit.framework.TestCase.assertTrue;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 
+/**
+ * Test for async splitting and sorting pages.
+ */
 public class SplitAndSortCpPagesTest {
     /**
      *
      */
     private static final int PAGES_MILLIONS = 2;
+
+    private IgniteLogger log = new NullLogger();
 
     /**
      *
@@ -78,7 +84,7 @@ public class SplitAndSortCpPagesTest {
     public void testAsyncLazyCpPagesSubmit() throws Exception {
         final CheckpointScope scope = getTestCollection();
 
-        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName());
+        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
 
         final AtomicInteger totalPagesAfterSort = new AtomicInteger();
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
@@ -107,25 +113,23 @@ public class SplitAndSortCpPagesTest {
     public void testGrobalOrder() throws Exception {
         final CheckpointScope scope = getTestCollection();
 
-        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName());
+        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
 
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
             @Override public Callable<Void> apply(final FullPageId[] ids) {
                 return new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        final int len = ids.length;
-
-
                         return null;
                     }
                 };
             }
         };
 
-        asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
+        FullPageId[] pageIds = scope.toArray();
 
+        asyncCheckpointer.quickSortAndWritePages(pageIds, taskFactory).get();
 
-        //todo validateOrder(Collections.singletonList(ids));
+        validateOrder(Collections.singletonList(pageIds));
     }
 
     /**
@@ -163,7 +167,7 @@ public class SplitAndSortCpPagesTest {
             map.put(id, id);
         }
 
-        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName());
+        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
             @Override public Callable<Void> apply(final FullPageId[] ids) {
@@ -190,7 +194,7 @@ public class SplitAndSortCpPagesTest {
     public void testIndexGrowing() throws Exception {
         final CheckpointScope scope = getTestCollection(1, 1024);
 
-        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName());
+        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
             @Override public Callable<Void> apply(final FullPageId[] ids) {

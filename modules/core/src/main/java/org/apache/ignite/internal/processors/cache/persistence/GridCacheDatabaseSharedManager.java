@@ -418,7 +418,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private void initDataBase() {
         if (persistenceCfg.getCheckpointThreads() > 1)
             asyncCheckpointer = new AsyncCheckpointer(persistenceCfg.getCheckpointThreads(),
-                cctx.igniteInstanceName());
+                cctx.igniteInstanceName(), log);
     }
 
     /**

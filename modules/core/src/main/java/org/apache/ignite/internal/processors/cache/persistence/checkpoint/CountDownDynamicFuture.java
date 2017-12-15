@@ -23,7 +23,10 @@ import org.jetbrains.annotations.Nullable;
  * Count down future, but allows to increment waiting tasks count.
  */
 class CountDownDynamicFuture extends CountDownFuture {
-    private volatile boolean completionObserved = false;
+    /**
+     * Flag protecting from submitting new tasks when future was already completed
+     */
+    private volatile boolean completionObserved;
 
     /**
      * @param cnt Number of completing parties.

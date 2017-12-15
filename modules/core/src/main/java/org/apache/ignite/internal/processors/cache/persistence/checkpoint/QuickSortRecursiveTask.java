@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -24,11 +25,15 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
- *
+ * Task for sorting pages for sequential write, replicated its subtasks as new callable.
+ * Uses strategy to determine fork now or later.
  */
 class QuickSortRecursiveTask implements Callable<Void> {
     /** One chunk threshold. Determines when to start apply single threaded sort and write. */
     private static final int ONE_CHUNK_THRESHOLD = 1024 * 16;
+
+    /** One write chunk threshold. */
+    private static final int ONE_WRITE_CHUNK_THRESHOLD = 1024;
     /** Source array to sort. Shared between threads */
     private final FullPageId[] arr;
     /** Start position. Index of first element inclusive. */
@@ -84,21 +89,29 @@ class QuickSortRecursiveTask implements Callable<Void> {
 
         Comparator<FullPageId> comp = settings.comp;
         if (isUnderThreshold(remaining)) {
-            final FullPageId[] arrCp = Arrays.copyOfRange(arr, position, limit);
+            Arrays.sort(arr, position, limit, comp);
 
-            Arrays.sort(arrCp, comp);
+            FullPageId[] arrCp = Arrays.copyOfRange(arr, position, limit);
 
-            settings.taskFactory.apply(arrCp).call();
+            int subArrays = (remaining / ONE_WRITE_CHUNK_THRESHOLD) + 1;
 
+            Collection<FullPageId[]> split = CheckpointScope.split(arrCp, subArrays);
+
+            for (FullPageId[] nextSubArray : split) {
+                final Callable<Void> task = settings.taskFactory.apply(nextSubArray);
+
+                if (subArrays > 1 && settings.stgy.forkNow())
+                    settings.forkSubmitter.apply(task);
+                else
+                    task.call();
+            }
         }
         else {
             int centerIdx = partition(arr, position, limit, comp);
             Callable<Void> t1 = new QuickSortRecursiveTask(arr, position, centerIdx, settings);
             Callable<Void> t2 = new QuickSortRecursiveTask(arr, centerIdx, limit, settings);
 
-            final boolean b = settings.stgy.forkNow();
-            System.err.println("Fork " + (b ? "now" : "later")); // todo
-            if (b) {
+            if (settings.stgy.forkNow()) {
                 settings.forkSubmitter.apply(t2); //not all threads working or half of threads are already write
                 t1.call();
             }
