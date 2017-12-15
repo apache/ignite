@@ -25,6 +25,8 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
  * Designed to avoid zero dropdowns that can happen if checkpoint buffer is overflowed.
  */
 public class PagesWriteThrottle {
+    public static final double MIN_RATIO_NO_THROTTLE = 0.1;
+    
     /** Page memory. */
     private final PageMemoryImpl pageMemory;
 
@@ -43,7 +45,7 @@ public class PagesWriteThrottle {
 
     private final AtomicInteger lastObservedWritten = new AtomicInteger(0);
 
-    private volatile double initialDirtyRatioAtCpBegin;
+    private volatile double initialDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
 
     /**
      * @param pageMemory Page memory.
@@ -97,8 +99,8 @@ public class PagesWriteThrottle {
                     final double dirty = pageMemory.getDirtyPagesRatio();
                     double newMinRatio = dirty;
 
-                    if (newMinRatio < 0.05)
-                        newMinRatio = 0.05;
+                    if (newMinRatio < MIN_RATIO_NO_THROTTLE)
+                        newMinRatio = MIN_RATIO_NO_THROTTLE;
 
                     if (newMinRatio > 1)
                         newMinRatio = 1;

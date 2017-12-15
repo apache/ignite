@@ -136,7 +136,7 @@ public class AsyncCheckpointer {
      */
     public CountDownFuture quickSortAndWritePages(CheckpointScope cpScope,
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
-        return quickSortAndWritePages(cpScope.toArray(), taskFactory);
+        return quickSortAndWritePages(cpScope.toBuffer(), taskFactory);
     }
 
     /**
@@ -144,7 +144,7 @@ public class AsyncCheckpointer {
      * @param taskFactory write pages task factory. Should provide callable to write given pages array.
      * @return future will be completed when background writing is done.
      */
-    public CountDownFuture quickSortAndWritePages(FullPageId[] pageIds,
+    public CountDownFuture quickSortAndWritePages(FullPageIdsBuffer pageIds,
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
 
         // init counter 1 protects here from premature completing

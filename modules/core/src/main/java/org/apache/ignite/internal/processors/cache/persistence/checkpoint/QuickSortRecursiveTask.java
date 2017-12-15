@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -36,44 +34,33 @@ class QuickSortRecursiveTask implements Callable<Void> {
     private static final int ONE_WRITE_CHUNK_THRESHOLD = 1024;
 
     /** Source array to sort. Shared between threads */
-    private final FullPageId[] arr;
-
-    /** Start position. Index of first element inclusive. */
-    private final int position;
-
-    /** Limit. Index of last element exclusive. */
-    private final int limit;
+    private final FullPageIdsBuffer buf;
 
     /** This task global settings. */
     private final CpSettings settings;
 
     /**
-     * @param arr Array.
+     * @param buf Array.
      * @param comp Comparator.
      * @param taskFactory Task factory.
      * @param forkSubmitter Fork submitter.
      * @param checkpointThreads Checkpoint threads.
      * @param stgy Strategy.
      */
-    QuickSortRecursiveTask(FullPageId[] arr,
+    QuickSortRecursiveTask(FullPageIdsBuffer buf,
         Comparator<FullPageId> comp,
         IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
         IgniteInClosure<Callable<Void>> forkSubmitter, int checkpointThreads,
         ForkNowForkLaterStrategy stgy) {
-        this(arr, 0, arr.length, new CpSettings(comp, taskFactory, forkSubmitter, stgy));
+        this(buf, new CpSettings(comp, taskFactory, forkSubmitter, stgy));
     }
 
     /**
-     * @param arr Array.
-     * @param position Position.
-     * @param limit Limit.
+     * @param buf Buffer.
      * @param settings Settings.
      */
-    private QuickSortRecursiveTask(FullPageId[] arr, int position, int limit,
-        CpSettings settings) {
-        this.arr = arr;
-        this.position = position;
-        this.limit = limit;
+    private QuickSortRecursiveTask(FullPageIdsBuffer buf, CpSettings settings) {
+        this.buf = buf;
         this.settings = settings;
     }
 
@@ -87,22 +74,18 @@ class QuickSortRecursiveTask implements Callable<Void> {
 
     /** {@inheritDoc} */
     @Override public Void call() throws Exception {
-        final int remaining = limit - position;
+        final int remaining = buf.remaining();
 
         if (remaining == 0)
             return null;
 
         if (isUnderThreshold(remaining)) {
-            Arrays.sort(arr, position, limit, settings.comp);
-
-            FullPageId[] arrCp = Arrays.copyOfRange(arr, position, limit);
+            buf.sort(settings.comp);
 
             int subArrays = (remaining / ONE_WRITE_CHUNK_THRESHOLD) + 1;
 
-            Collection<FullPageId[]> split = CheckpointScope.split(arrCp, subArrays);
-
-            for (FullPageId[] nextSubArray : split) {
-                final Callable<Void> task = settings.taskFactory.apply(nextSubArray);
+            for (FullPageIdsBuffer nextSubArray : buf.split(subArrays)) {
+                final Callable<Void> task = settings.taskFactory.apply(nextSubArray.toArray());
 
                 if (subArrays > 1 && settings.stgy.forkNow())
                     settings.forkSubmitter.apply(task);
@@ -111,10 +94,13 @@ class QuickSortRecursiveTask implements Callable<Void> {
             }
         }
         else {
+            final FullPageId[] arr = buf.internalArray();
+            final int position = buf.position();
+            final int limit = buf.limit();
             int centerIdx = partition(arr, position, limit, settings.comp);
 
-            Callable<Void> t1 = new QuickSortRecursiveTask(arr, position, centerIdx, settings);
-            Callable<Void> t2 = new QuickSortRecursiveTask(arr, centerIdx, limit, settings);
+            Callable<Void> t1 = new QuickSortRecursiveTask(buf.bufferOfRange(position, centerIdx), settings);
+            Callable<Void> t2 = new QuickSortRecursiveTask(buf.bufferOfRange(centerIdx, limit), settings);
 
             if (settings.stgy.forkNow()) {
                 settings.forkSubmitter.apply(t2); //not all threads working or half of threads are already write
