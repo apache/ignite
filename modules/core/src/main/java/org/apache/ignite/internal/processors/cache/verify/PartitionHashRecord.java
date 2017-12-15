@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.verify;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -25,6 +26,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class PartitionHashRecord implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Partition key. */
+    @GridToStringExclude
+    private final PartitionKey partKey;
 
     /** Is primary flag. */
     private final boolean isPrimary;
@@ -38,17 +43,32 @@ public class PartitionHashRecord implements Serializable {
     /** Update counter. */
     private final long updateCntr;
 
+    /** Size. */
+    private final long size;
+
     /**
+     * @param partKey Partition key.
      * @param isPrimary Is primary.
      * @param consistentId Consistent id.
      * @param partHash Partition hash.
      * @param updateCntr Update counter.
+     * @param size Size.
      */
-    public PartitionHashRecord(boolean isPrimary, Object consistentId, int partHash, long updateCntr) {
+    public PartitionHashRecord(PartitionKey partKey, boolean isPrimary,
+        Object consistentId, int partHash, long updateCntr, long size) {
+        this.partKey = partKey;
         this.isPrimary = isPrimary;
         this.consistentId = consistentId;
         this.partHash = partHash;
         this.updateCntr = updateCntr;
+        this.size = size;
+    }
+
+    /**
+     * @return Partition key.
+     */
+    public PartitionKey partitionKey() {
+        return partKey;
     }
 
     /**
@@ -79,8 +99,32 @@ public class PartitionHashRecord implements Serializable {
         return updateCntr;
     }
 
+    /**
+     * @return Size.
+     */
+    public long size() {
+        return size;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PartitionHashRecord.class, this);
+        return S.toString(PartitionHashRecord.class, this, "consistentId", consistentId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        PartitionHashRecord record = (PartitionHashRecord)o;
+
+        return consistentId.equals(record.consistentId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return consistentId.hashCode();
     }
 }
