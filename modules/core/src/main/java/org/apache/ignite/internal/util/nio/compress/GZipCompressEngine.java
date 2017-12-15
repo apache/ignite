@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.util.nio.compress;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -42,10 +40,10 @@ public class GZipCompressEngine implements CompressEngine {
         assert smallMsgSize > 0;
     }
 
-    private final ByteArrayOutputStream deflateBaos = new ByteArrayOutputStream(1024);
+    private final ExtendedByteArrayOutputStream deflateBaos = new ExtendedByteArrayOutputStream(1024);
     private byte[] inputWrapArray = new byte[1024];
 
-    private final ByteArrayOutputStream inflateBaos = new ByteArrayOutputStream(1024);
+    private final ExtendedByteArrayOutputStream inflateBaos = new ExtendedByteArrayOutputStream(1024);
     private final byte[] inflateArray = new byte[1024];
     private byte[] inputUnwapArray = new byte[1024];
     private final byte[] lenBytes = new byte[4];
@@ -76,9 +74,7 @@ public class GZipCompressEngine implements CompressEngine {
             out.write(inputWrapArray, 0, len);
         }
 
-        byte[] bytes = deflateBaos.toByteArray();
-
-        if (bytes.length + 4 > buf.remaining()) {
+        if (deflateBaos.size() + 4 > buf.remaining()) {
             src.rewind();
 
             return BUFFER_OVERFLOW;
@@ -86,10 +82,10 @@ public class GZipCompressEngine implements CompressEngine {
 
         if (compressSmall)
             buf.put((byte)-1);
-        buf.put(toArray(bytes.length));
-        buf.put(bytes);
+        buf.put(toArray(deflateBaos.size()));
+        buf.put(deflateBaos.getByteArray(), 0, deflateBaos.size());
 
-        bytesAfter += bytes.length;
+        bytesAfter += deflateBaos.size();
 
         return OK;
     }
@@ -157,15 +153,13 @@ public class GZipCompressEngine implements CompressEngine {
 
             inflateBaos.flush();
 
-            byte[] output = inflateBaos.toByteArray();
-
-            if (output.length > buf.remaining()) {
+            if (inflateBaos.size() > buf.remaining()) {
                 src.position(initPos);
 
                 return BUFFER_OVERFLOW;
             }
 
-            buf.put(output);
+            buf.put(inflateBaos.getByteArray(), 0, inflateBaos.size());
         }
 
         if (src.remaining() == 0)
