@@ -30,7 +30,6 @@
         <relativePath>parent</relativePath>
     </parent>
 
-    <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
     <version>2.4.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -96,6 +95,7 @@
         <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
+        <module>modules/ml</module>
     </modules>
 
     <profiles>
@@ -130,7 +130,6 @@
         <profile>
             <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
             <modules> <!-- sorted alphabetically -->
-                <module>modules/ml</module> <!-- it uses Java8 and can't be compiled by Java7 used to compile Ignite -->
                 <module>modules/web-console</module>
             </modules>
         </profile>
@@ -751,13 +750,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <profile>
-            <id>ml</id>
-            <modules>
-                <module>modules/ml</module>
-            </modules>
         </profile>
     </profiles>
 
