@@ -17,6 +17,8 @@
 
 package org.apache.ignite.failure;
 
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
+
 /**
  * Enumeration of Ignite failure actions.
  */
@@ -29,4 +31,23 @@ public enum IgniteFailureAction {
 
     /** Noop. */
     NOOP;
+
+    /**
+     * @param segPlc Segmentation policy.
+     */
+    public static IgniteFailureAction forSegmentation(SegmentationPolicy segPlc) {
+        switch (segPlc) {
+            case NOOP:
+                return NOOP;
+
+            case STOP:
+                return STOP;
+
+            case RESTART_JVM:
+                return RESTART_JVM;
+
+            default:
+                throw new IllegalArgumentException("segPlc: " + segPlc);
+        }
+    }
 }

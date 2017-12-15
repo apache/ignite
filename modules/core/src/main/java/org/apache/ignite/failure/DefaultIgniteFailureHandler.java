@@ -26,17 +26,16 @@ public class DefaultIgniteFailureHandler implements IgniteFailureHandler {
     /** {@inheritDoc} */
     @Override public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureCause cause) {
         switch (cause.type()) {
-            case PERSISTENCE_ERROR:
-                return IgniteFailureAction.RESTART_JVM;
+            case SEGMENTATION:
+                return IgniteFailureAction.forSegmentation(ctx.config().getSegmentationPolicy());
 
             case EXCHANGE_WORKER_STOP:
-                return IgniteFailureAction.RESTART_JVM;
-
-            case IGNITE_OUT_OF_MEMORY_ERROR:
-                return IgniteFailureAction.RESTART_JVM;
+                return IgniteFailureAction.STOP;
 
             default:
-                return IgniteFailureAction.NOOP;
+                assert false : "Unsupported Ignite failure type: " + cause.type();
+
+                return IgniteFailureAction.STOP;
         }
     }
 }

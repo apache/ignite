@@ -47,8 +47,8 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.failover.IgniteFailureCause;
-import org.apache.ignite.failover.IgniteFailureProcessor;
+import org.apache.ignite.failure.IgniteFailureCause;
+import org.apache.ignite.failure.IgniteFailureProcessor;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -101,7 +101,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -2190,8 +2189,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (!stop) {
                     log.warning("Unexpected ExchangeWorker stopping!");
 
-                    IgniteFailureProcessor.INSTANCE.processFailure(
-                        cctx.kernalContext(),
+                    IgniteFailureProcessor.INSTANCE.processFailure(cctx.kernalContext(),
                         IgniteFailureCause.Type.EXCHANGE_WORKER_STOP);
                 }
             }
@@ -2490,28 +2488,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
         }
-    }
-
-    /** Restarts JVM. */
-    private void restartJvm() {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    G.restart(true);
-                }
-            }
-        ).start();
-    }
-
-    /** Stops local node. */
-    private void stopNode() {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    G.stop(cctx.igniteInstanceName(), true);
-                }
-            }
-        ).start();
     }
 
     /**

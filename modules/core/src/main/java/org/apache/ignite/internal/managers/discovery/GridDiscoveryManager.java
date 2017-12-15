@@ -57,6 +57,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.IgniteFailureCause;
+import org.apache.ignite.failure.IgniteFailureProcessor;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -2288,32 +2290,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         cacheNodes.add(rich);
     }
 
-    /** Stops local node. */
-    private void stopNode() {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    ctx.markSegmented();
-
-                    G.stop(ctx.igniteInstanceName(), true);
-                }
-            }
-        ).start();
-    }
-
-    /** Restarts JVM. */
-    private void restartJvm() {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    ctx.markSegmented();
-
-                    G.restart(true);
-                }
-            }
-        ).start();
-    }
-
     /** Worker for network segment checks. */
     private class SegmentCheckWorker extends GridWorker {
         /** */
@@ -2675,8 +2651,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private void onSegmentation() {
-            SegmentationPolicy segPlc = ctx.config().getSegmentationPolicy();
-
             // Always disconnect first.
             try {
                 getSpi().disconnect();
@@ -2685,24 +2659,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 U.error(log, "Failed to disconnect discovery SPI.", e);
             }
 
-            switch (segPlc) {
-                case RESTART_JVM:
-                    U.warn(log, "Restarting JVM according to configured segmentation policy.");
-
-                    restartJvm();
-
-                    break;
-
-                case STOP:
-                    U.warn(log, "Stopping local node according to configured segmentation policy.");
-
-                    stopNode();
-
-                    break;
-
-                default:
-                    assert segPlc == NOOP : "Unsupported segmentation policy value: " + segPlc;
-            }
+            IgniteFailureProcessor.INSTANCE.processFailure(ctx, IgniteFailureCause.Type.SEGMENTATION);
         }
 
         /** {@inheritDoc} */

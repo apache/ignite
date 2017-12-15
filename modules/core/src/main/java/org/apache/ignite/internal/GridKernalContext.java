@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.IgniteFailureCause;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -420,16 +421,18 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public DataStructuresProcessor dataStructures();
 
     /**
-     * Sets segmented flag to {@code true} when node is stopped due to segmentation issues.
+     * Sets Ignite failure type when node is stopped due to Ignite failure.
+     *
+     * @param type Type.
      */
-    public void markSegmented();
+    public void failure(IgniteFailureCause.Type type);
 
     /**
-     * Gets segmented flag.
+     * Gets Ignite failure type.
      *
-     * @return {@code True} if network is currently segmented, {@code false} otherwise.
+     * @return Ignite failure type, if it was happen, or {@code null} otherwise.
      */
-    public boolean segmented();
+    public IgniteFailureCause.Type failure();
 
     /**
      * Print grid kernal memory stats (sizes of internal structures, etc.).

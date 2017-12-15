@@ -482,7 +482,7 @@ public class IgniteConfiguration {
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
     /** Ignite failure handler. */
-    private IgniteFailureHandler igniteFailureHnd = IgniteFailureHandler.DFLT_HND;
+    private IgniteFailureHandler igniteFailureHnd;
 
     /**
      * Creates valid grid configuration with all default values.

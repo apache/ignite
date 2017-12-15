@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.IgniteFailureCause;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
@@ -450,13 +451,14 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void markSegmented() {
+    /** {@inheritDoc}
+     * @param type*/
+    @Override public void failure(IgniteFailureCause.Type type) {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean segmented() {
-        return false;
+    @Override public IgniteFailureCause.Type failure() {
+        return null;
     }
 
     /** {@inheritDoc} */

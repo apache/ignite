@@ -56,13 +56,10 @@ public class IgniteFailureCause {
      * Enumeration of IgniteFailureCause types.
      */
     public enum Type {
+        /** Segmentation. */
+        SEGMENTATION,
+
         /** Exchange worker stop. */
         EXCHANGE_WORKER_STOP,
-
-        /** Persistence error. */
-        PERSISTENCE_ERROR,
-
-        /** Ignite out of memory error. */
-        IGNITE_OUT_OF_MEMORY_ERROR;
     }
 }

@@ -67,6 +67,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.failure.IgniteFailureCause;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -114,6 +115,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteState.STOPPED;
+import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
 import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
@@ -2520,7 +2522,10 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                state = grid0.context().segmented() ? STOPPED_ON_SEGMENTATION : STOPPED;
+                final IgniteFailureCause.Type failure = grid0.context().failure();
+
+                state = failure == null ? STOPPED :
+                    failure == IgniteFailureCause.Type.SEGMENTATION ? STOPPED_ON_SEGMENTATION : STOPPED_ON_FAILURE;
 
                 grid = null;
 
