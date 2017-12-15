@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -431,7 +431,7 @@ public class GridH2Table extends TableBase {
      * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException If failed.
      */
-    public void  update(CacheDataRow row, @Nullable CacheDataRow prevRow, @Nullable MvccCoordinatorVersion newVer,
+    public void  update(CacheDataRow row, @Nullable CacheDataRow prevRow, @Nullable MvccVersion newVer,
         boolean prevRowAvailable, boolean idxRebuild) throws IgniteCheckedException {
         assert desc != null;
 

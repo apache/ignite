@@ -63,7 +63,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.Gri
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -248,7 +248,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MvccCoordinatorVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
+    @Nullable @Override public MvccVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
         if (mvccTracker != null)
             return mvccTracker.onMvccCoordinatorChange(newCrd);
 
@@ -1681,7 +1681,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param cctx Cache context.
      * @return Mvcc version for read inside tx (initialized once for OPTIMISTIC SERIALIZABLE and REPEATABLE_READ txs).
      */
-    private MvccCoordinatorVersion mvccReadVersion(GridCacheContext cctx) {
+    private MvccVersion mvccReadVersion(GridCacheContext cctx) {
         if (!cctx.mvccEnabled() || mvccTracker == null)
             return null;
 

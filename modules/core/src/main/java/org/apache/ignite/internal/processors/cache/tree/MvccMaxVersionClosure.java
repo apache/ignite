@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -28,14 +28,14 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unmaskCoordinatorVersion;
 
 /**
  *
  */
 public class MvccMaxVersionClosure extends SearchRow implements BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
     /** */
-    private MvccCoordinatorVersion res;
+    private MvccVersion res;
 
     /**
      * @param cacheId Cache ID.
@@ -48,7 +48,7 @@ public class MvccMaxVersionClosure extends SearchRow implements BPlusTree.TreeRo
     /**
      * @return Mvcc version of found row.
      */
-    @Nullable public MvccCoordinatorVersion mvccVersion() {
+    @Nullable public MvccVersion mvccVersion() {
         return res;
     }
 

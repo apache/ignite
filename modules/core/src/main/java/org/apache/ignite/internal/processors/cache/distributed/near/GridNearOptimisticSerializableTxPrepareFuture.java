@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -366,7 +366,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 mvccCrd = cctx.affinity().mvccCoordinator(topVer);
 
                 if (mvccCrd == null) {
-                    onDone(CacheCoordinatorsProcessor.noCoordinatorError(topVer));
+                    onDone(MvccProcessor.noCoordinatorError(topVer));
 
                     return;
                 }

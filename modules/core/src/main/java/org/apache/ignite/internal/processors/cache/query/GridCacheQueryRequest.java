@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -130,7 +130,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private AffinityTopologyVersion topVer;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private MvccVersion mvccVer;
 
     /**
      * Required by {@link Externalizable}
@@ -248,7 +248,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         UUID subjId,
         int taskHash,
         AffinityTopologyVersion topVer,
-        MvccCoordinatorVersion mvccVer,
+        MvccVersion mvccVer,
         boolean addDepInfo
     ) {
         assert type != null || fields;
@@ -281,7 +281,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     /**
      * @return Mvcc version.
      */
-    @Nullable MvccCoordinatorVersion mvccVersion() {
+    @Nullable
+    MvccVersion mvccVersion() {
         return mvccVer;
     }
 

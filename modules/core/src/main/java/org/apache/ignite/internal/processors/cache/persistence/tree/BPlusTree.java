@@ -1022,59 +1022,92 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    public T findFirst(TreeRowClosure<L, T> c) throws IgniteCheckedException {
+    public T findFirst(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
-            long firstPageId;
-
-            long metaPage = acquirePage(metaPageId);
-            try {
-                firstPageId = getFirstPageId(metaPageId, metaPage, 0);
-            }
-            finally {
-                releasePage(metaPageId, metaPage);
-            }
-
-            long nextId = firstPageId;
-
             for (;;) {
-                final long pageId = nextId;
+                long curPageId;
 
-                long page = acquirePage(pageId);
+                long metaPage = acquirePage(metaPageId);
 
                 try {
-                    long pageAddr = readLock(pageId, page);
+                    curPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
+                }
+                finally {
+                    releasePage(metaPageId, metaPage);
+                }
+
+                long curPage = acquirePage(curPageId);
+                try {
+                    long curPageAddr = readLock(curPageId, curPage);
+
+                    if (curPageAddr == 0)
+                        continue; // The first page has gone: restart scan.
 
                     try {
-                        BPlusIO<L> io = io(pageAddr);
+                        BPlusIO<L> io = io(curPageAddr);
 
-                        int cnt = io.getCount(pageAddr);
+                        assert io.isLeaf();
 
-                        if (cnt == 0)
-                            return null;
+                        for (;;) {
+                            int cnt = io.getCount(curPageAddr);
 
-                        if(c != null) {
-                            for (int i = 0; i < cnt; i++) {
-                                if (c.apply(this, io, pageAddr, i))
-                                    return getRow(io, pageAddr, i);
+                            for (int i = 0; i < cnt; ++i) {
+                                if (filter == null || filter.apply(this, io, curPageAddr, i))
+                                    return getRow(io, curPageAddr, i);
                             }
 
-                            nextId = io.getForward(pageAddr);
+                            long nextPageId = io.getForward(curPageAddr);
 
-                            if (nextId == 0)
+                            if (nextPageId == 0)
                                 return null;
-                        }
-                        else
-                            return getRow(io, pageAddr, 0);
 
+                            long nextPage = acquirePage(nextPageId);
+
+                            try {
+                                long nextPageAddr = readLock(nextPageId, nextPage);
+
+                                // In the current implementation the next page can't change when the current page is locked.
+                                assert nextPageAddr != 0 : nextPageAddr;
+
+                                try {
+                                    long pa = curPageAddr;
+                                    curPageAddr = 0; // Set to zero to avoid double unlocking in finalizer.
+
+                                    readUnlock(curPageId, curPage, pa);
+
+                                    long p = curPage;
+                                    curPage = 0; // Set to zero to avoid double release in finalizer.
+
+                                    releasePage(curPageId, p);
+
+                                    curPageId = nextPageId;
+                                    curPage = nextPage;
+                                    curPageAddr = nextPageAddr;
+
+                                    nextPage = 0;
+                                    nextPageAddr = 0;
+                                }
+                                finally {
+                                    if (nextPageAddr != 0)
+                                        readUnlock(nextPageId, nextPage, nextPageAddr);
+                                }
+                            }
+                            finally {
+                                if (nextPage != 0)
+                                    releasePage(nextPageId, nextPage);
+                            }
+                        }
                     }
                     finally {
-                        readUnlock(pageId, page, pageAddr);
+                        if (curPageAddr != 0)
+                            readUnlock(curPageId, curPage, curPageAddr);
                     }
                 }
                 finally {
-                    releasePage(pageId, page);
+                    if (curPage != 0)
+                        releasePage(curPageId, curPage);
                 }
             }
         }

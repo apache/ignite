@@ -43,7 +43,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.versionForRemovedValue;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.versionForRemovedValue;
 
 /**
  * Thread pool for supplying partitions to demanding nodes.

@@ -85,6 +85,13 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that ROLLBACK without a transaction yields nothing.
+     */
+    public void testRollbackNoTransaction() {
+        execute(node(), "ROLLBACK");
+    }
+
+    /**
      * Test that ROLLBACK rolls back a transaction.
      */
     public void testRollback() {

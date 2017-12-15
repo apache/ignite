@@ -36,12 +36,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -317,7 +317,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     mvccCrd = cacheCtx.affinity().mvccCoordinator(topVer);
 
                     if (mvccCrd == null) {
-                        onDone(CacheCoordinatorsProcessor.noCoordinatorError(topVer));
+                        onDone(MvccProcessor.noCoordinatorError(topVer));
 
                         return;
                     }
@@ -451,12 +451,12 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             assert !tx.onePhaseCommit();
 
             if (mvccCrd.nodeId().equals(cctx.localNodeId())) {
-                MvccCoordinatorVersion mvccVer = cctx.coordinators().requestTxCounterOnCoordinator(tx);
+                MvccVersion mvccVer = cctx.coordinators().requestTxCounterOnCoordinator(tx);
 
                 onMvccResponse(cctx.localNodeId(), mvccVer);
             }
             else {
-                IgniteInternalFuture<MvccCoordinatorVersion> cntrFut =
+                IgniteInternalFuture<MvccVersion> cntrFut =
                     cctx.coordinators().requestTxCounter(mvccCrd, this, tx.nearXidVersion());
 
                 add((IgniteInternalFuture)cntrFut);
@@ -467,8 +467,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /** {@inheritDoc} */
-    @Override public void onMvccResponse(UUID crdId, MvccCoordinatorVersion res) {
-        tx.mvccInfo(new TxMvccInfo(crdId, res));
+    @Override public void onMvccResponse(UUID crdId, MvccVersion res) {
+        tx.mvccInfo(new MvccTxInfo(crdId, res));
     }
 
     /** {@inheritDoc} */
@@ -515,8 +515,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                         ", loc=" + ((MiniFuture)f).primary().isLocal() +
                         ", done=" + f.isDone() + "]";
                 }
-                else if (f instanceof MvccCoordinatorFuture) {
-                    MvccCoordinatorFuture crdFut = (MvccCoordinatorFuture)f;
+                else if (f instanceof MvccFuture) {
+                    MvccFuture crdFut = (MvccFuture)f;
 
                     return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
                         ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +

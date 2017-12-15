@@ -52,7 +52,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -947,6 +947,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated()) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                            assert grp.shared().database().checkpointLockIsHeldByThread();
+                            
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
@@ -963,6 +965,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         treeRoot.pageId().pageId(),
                         treeRoot.isAllocated()) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                            assert grp.shared().database().checkpointLockIsHeldByThread();
+
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
@@ -1267,7 +1271,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             @Nullable CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            MvccCoordinatorVersion mvccVer)
+            MvccVersion mvccVer)
             throws IgniteCheckedException
         {
             CacheDataStore delegate = init0(false);
@@ -1283,7 +1287,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
+            MvccVersion mvccVer) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
             return delegate.mvccUpdate(cctx, primary, key, val, ver, expireTime, mvccVer);
@@ -1294,7 +1298,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             GridCacheContext cctx,
             boolean primary,
             KeyCacheObject key,
-            MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
+            MvccVersion mvccVer) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
             return delegate.mvccRemove(cctx, primary, key, mvccVer);
@@ -1347,7 +1351,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccCoordinatorVersion mvccVer)
+        @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccVersion mvccVer)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
@@ -1358,7 +1362,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public MvccCoordinatorVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
+        @Override public MvccVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
@@ -1390,7 +1394,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(MvccCoordinatorVersion ver)
+        @Override public GridCursor<? extends CacheDataRow> cursor(MvccVersion ver)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
@@ -1432,7 +1436,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             KeyCacheObject lower,
             KeyCacheObject upper,
             Object x,
-            MvccCoordinatorVersion mvccVer)
+            MvccVersion mvccVer)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
@@ -1459,7 +1463,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
-            MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
+            MvccVersion mvccVer) throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)

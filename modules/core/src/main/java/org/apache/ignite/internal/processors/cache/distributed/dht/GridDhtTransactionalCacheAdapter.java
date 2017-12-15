@@ -816,7 +816,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         });
 
-        fut.map();
+        fut.init();
     }
 
     /**

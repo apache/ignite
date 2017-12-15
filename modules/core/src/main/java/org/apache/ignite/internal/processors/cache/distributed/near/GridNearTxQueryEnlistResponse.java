@@ -23,13 +23,19 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ */
 public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** Future ID. */
     private IgniteUuid futId;
@@ -41,26 +47,32 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
     /** Serialized error. */
     private byte[] errBytes;
 
-    /** */
+    /** Mini future id. */
     private int miniId;
 
-    /** */
+    /** Result. */
     private long res;
 
+    /** Remove mapping flag. */
     private boolean removeMapping;
 
     /** */
     private GridCacheVersion lockVer;
 
+    /**
+     * Default constructor.
+     */
     public GridNearTxQueryEnlistResponse() {
         // No-op.
     }
 
     /**
-     * @param futId
-     * @param miniId
-     * @param lockVer
-     * @param err
+     * @param cacheId Cache id.
+     * @param futId Future id.
+     * @param miniId Mini future id.
+     * @param lockVer Lock version.
+     * @param res Result.
+     * @param err Error.
      */
     public GridNearTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer, long res,Throwable err) {
         this.cacheId = cacheId;
@@ -71,42 +83,64 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
         this.err = err;
     }
 
+    /**
+     * @return Loc version.
+     */
     public GridCacheVersion version() {
         return lockVer;
     }
 
+    /**
+     * @return Future id.
+     */
     public IgniteUuid futureId() {
         return futId;
     }
 
+    /**
+     * @return Mini future id.
+     */
     public int miniId() {
         return miniId;
     }
 
+    /**
+     * @return Result.
+     */
     public long result() {
         return res;
     }
 
+    /**
+     * @param removeMapping Remove mapping flag.
+     */
     public void removeMapping(boolean removeMapping) {
         this.removeMapping = removeMapping;
     }
 
+    /**
+     * @return Remove mapping flag.
+     */
     public boolean removeMapping() {
         return removeMapping;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Throwable error() {
         return err;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 9;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -162,6 +196,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -225,6 +260,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
         return reader.afterMessageRead(GridNearTxQueryEnlistResponse.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
         return 147;
     }
@@ -243,5 +279,11 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
 
         if (errBytes != null)
             err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearTxQueryEnlistResponse.class, this);
     }
 }

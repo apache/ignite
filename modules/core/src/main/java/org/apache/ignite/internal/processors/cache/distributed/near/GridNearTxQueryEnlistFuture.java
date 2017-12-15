@@ -35,11 +35,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -100,7 +100,7 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
     private final long timeout;
 
     /** Mvcc version. */
-    private MvccCoordinatorVersion mvccVer;
+    private MvccVersion mvccVer;
 
     /** Mapped topology version. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -296,20 +296,20 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
             MvccCoordinator mvccCrd = cctx.affinity().mvccCoordinator(topVer);
 
             if (mvccCrd == null) {
-                onDone(CacheCoordinatorsProcessor.noCoordinatorError(topVer));
+                onDone(MvccProcessor.noCoordinatorError(topVer));
 
                 return;
             }
 
             if (cctx.localNodeId().equals(mvccCrd.nodeId())) {
-                MvccCoordinatorVersion mvccVer = cctx.shared().coordinators().requestTxCounterOnCoordinator(lockVer);
+                MvccVersion mvccVer = cctx.shared().coordinators().requestTxCounterOnCoordinator(lockVer);
 
                 onMvccResponse(cctx.localNodeId(), mvccVer);
             }
             else {
                 cctx.shared().coordinators().requestTxCounter(mvccCrd, this, lockVer)
-                    .listen(new IgniteInClosure<IgniteInternalFuture<MvccCoordinatorVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<MvccCoordinatorVersion> fut) {
+                    .listen(new IgniteInClosure<IgniteInternalFuture<MvccVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<MvccVersion> fut) {
                             if (fut.error() == null)
                                 // proceed mapping.
                                 map(remap, topLocked);
@@ -456,7 +456,7 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
                     }
                 });
 
-                fut.map();
+                fut.init();
             }
         }
         catch (Throwable e) {
@@ -513,11 +513,11 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
         // No-op;
     }
 
-    @Override public void onMvccResponse(UUID crdId, MvccCoordinatorVersion res) {
+    @Override public void onMvccResponse(UUID crdId, MvccVersion res) {
         mvccVer = res;
 
         if (tx != null)
-            tx.mvccInfo(new TxMvccInfo(crdId, res));
+            tx.mvccInfo(new MvccTxInfo(crdId, res));
     }
 
     @Override public void onMvccError(IgniteCheckedException e) {

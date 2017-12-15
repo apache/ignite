@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
@@ -44,7 +44,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     private int miniId;
 
     /** */
-    private TxMvccInfo mvccInfo;
+    private MvccTxInfo mvccInfo;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -91,7 +91,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        TxMvccInfo mvccInfo,
+        MvccTxInfo mvccInfo,
         boolean addDepInfo) {
         super(
             xidVer,
@@ -122,7 +122,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Mvcc info.
      */
-    @Nullable public TxMvccInfo mvccInfo() {
+    @Nullable public MvccTxInfo mvccInfo() {
         return mvccInfo;
     }
 

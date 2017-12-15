@@ -42,7 +42,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.versionForRemovedValue;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.versionForRemovedValue;
 
 /**
  * Partition supply message.

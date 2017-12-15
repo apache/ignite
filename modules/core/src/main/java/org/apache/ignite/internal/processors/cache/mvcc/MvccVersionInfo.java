@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class MvccVersionInfo implements MvccCoordinatorVersion {
+public class MvccVersionInfo implements MvccVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -68,7 +68,7 @@ public class MvccVersionInfo implements MvccCoordinatorVersion {
     }
 
     /** {@inheritDoc} */
-    @Override public MvccCoordinatorVersion withoutActiveTransactions() {
+    @Override public MvccVersion withoutActiveTransactions() {
         throw new UnsupportedOperationException();
     }
 

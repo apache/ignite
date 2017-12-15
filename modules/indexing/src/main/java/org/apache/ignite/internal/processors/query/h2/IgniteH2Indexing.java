@@ -70,8 +70,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
@@ -178,7 +178,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.MVCC_START_CNTR;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_START_CNTR;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
@@ -596,7 +596,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         @Nullable CacheDataRow prevRow,
-        @Nullable MvccCoordinatorVersion newVer,
+        @Nullable MvccVersion newVer,
         boolean prevRowAvailable,
         boolean idxRebuild) throws IgniteCheckedException
     {
@@ -1354,6 +1354,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param params Query parameters.
      * @param parts Partitions.
      * @param lazy Lazy query execution flag.
+     * @param mvccTracker Query tracker.
      * @return Iterable result.
      */
     private Iterable<List<?>> runQueryTwoStep(
@@ -1365,12 +1366,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final GridQueryCancel cancel,
         final Object[] params,
         final int[] parts,
-        final boolean lazy
-    ) {
+        final boolean lazy,
+        final MvccQueryTracker mvccTracker) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
                 return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params,
-                    parts, lazy);
+                    parts, lazy, mvccTracker);
             }
         };
     }
@@ -1557,6 +1558,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
         boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts) {
+        return queryDistributedSqlFields(schemaName, qry, keepBinary, cancel, mainCacheId, failOnMultipleStmts, null);
+     }
+
+    /** {@inheritDoc} */
+    @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts, MvccQueryTracker mvccTracker) {
         List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry);
 
         if (res != null)
@@ -1771,7 +1778,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         int[] parts,
         String schema, String qry, Object[] params, int flags,
         int pageSize, int timeout, AffinityTopologyVersion topVer,
-        MvccCoordinatorVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
+        MvccVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
 
         SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
 
@@ -1865,6 +1872,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Object[] args, boolean keepBinary, boolean lazy, int timeout,
         GridQueryCancel cancel, String sqlQry, boolean enforceJoinOrder, GridCacheTwoStepQuery twoStepQry,
         List<GridQueryFieldMetadata> meta) {
+        return executeTwoStepsQuery(schemaName, pageSize, partitions, args, keepBinary, lazy, timeout, cancel, sqlQry, enforceJoinOrder, twoStepQry, meta, null);
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param pageSize Page size.
+     * @param partitions Partitions.
+     * @param args Arguments.
+     * @param keepBinary Keep binary flag.
+     * @param lazy Lazy flag.
+     * @param timeout Timeout.
+     * @param cancel Cancel.
+     * @param sqlQry SQL query string.
+     * @param enforceJoinOrder Enforce join orded flag.
+     * @param twoStepQry Two-steps query.
+     * @param meta Metadata.
+     * @param mvccTracker Query tracker.
+     * @return Cursor.
+     */
+    private FieldsQueryCursor<List<?>> executeTwoStepsQuery(String schemaName, int pageSize, int partitions[],
+        Object[] args, boolean keepBinary, boolean lazy, int timeout,
+        GridQueryCancel cancel, String sqlQry, boolean enforceJoinOrder, GridCacheTwoStepQuery twoStepQry,
+        List<GridQueryFieldMetadata> meta, MvccQueryTracker mvccTracker) {
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
@@ -1885,7 +1915,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(schemaName, twoStepQry, keepBinary, enforceJoinOrder, timeout, cancel,
-                args, partitions, lazy), cancel);
+                args, partitions, lazy, mvccTracker), cancel);
 
         cursor.fieldsMeta(meta);
 
@@ -1916,12 +1946,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-<<<<<<< HEAD
      * @param cacheIds Cache IDs.
      * @param twoStepQry Query.
-=======
-     * @param cacheIds Caches identifiers.
->>>>>>> master
      * @throws IllegalStateException if segmented indices used with non-segmented indices.
      */
     private void processCaches(List<Integer> cacheIds, GridCacheTwoStepQuery twoStepQry) {

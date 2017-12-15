@@ -35,8 +35,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -297,7 +297,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         GridLongList waitTxs = tx.mvccWaitTransactions();
 
         if (waitTxs != null) {
-            TxMvccInfo mvccInfo = tx.mvccInfo();
+            MvccTxInfo mvccInfo = tx.mvccInfo();
 
             assert mvccInfo != null;
 
@@ -425,7 +425,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         int miniId = 0;
 
         // Do not need process active transactions on backups.
-        TxMvccInfo mvccInfo = tx.mvccInfo();
+        MvccTxInfo mvccInfo = tx.mvccInfo();
 
         if (mvccInfo != null)
             mvccInfo = mvccInfo.withoutActiveTransactions();
@@ -625,8 +625,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                         ", loc=" + ((MiniFuture)f).node().isLocal() +
                         ", done=" + f.isDone() + "]";
                 }
-                else if (f instanceof MvccCoordinatorFuture) {
-                    MvccCoordinatorFuture crdFut = (MvccCoordinatorFuture)f;
+                else if (f instanceof MvccFuture) {
+                    MvccFuture crdFut = (MvccFuture)f;
 
                     return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
                         ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +

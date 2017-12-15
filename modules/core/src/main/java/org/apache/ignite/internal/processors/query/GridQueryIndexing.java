@@ -31,7 +31,8 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -89,6 +90,24 @@ public interface GridQueryIndexing {
      */
     public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
         boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts)
+        throws IgniteCheckedException;
+
+    /**
+     * Parses SQL query into two step query and executes it.
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @param cancel Query cancel.
+     * @param mainCacheId Main cache ID.
+     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
+     *      more then one SQL statement.
+     * @param mvccTracker Query tracker.
+     * @return Cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts, @Nullable MvccQueryTracker mvccTracker)
         throws IgniteCheckedException;
 
     /**
@@ -221,7 +240,7 @@ public interface GridQueryIndexing {
     public GridCloseableIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
         String schema, String qry, Object[] params, int flags,
         int pageSize, int timeout, AffinityTopologyVersion topVer,
-        MvccCoordinatorVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException;
+        MvccVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
@@ -250,7 +269,7 @@ public interface GridQueryIndexing {
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         CacheDataRow prevRow,
-        @Nullable MvccCoordinatorVersion newVer,
+        @Nullable MvccVersion newVer,
         boolean prevRowAvailable,
         boolean idxRebuild) throws IgniteCheckedException;
 

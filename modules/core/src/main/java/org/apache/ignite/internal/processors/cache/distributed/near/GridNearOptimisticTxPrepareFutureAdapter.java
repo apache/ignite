@@ -27,9 +27,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -331,8 +331,8 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         }
 
         /** {@inheritDoc} */
-        @Override public void onMvccResponse(UUID crdId, MvccCoordinatorVersion res) {
-            tx.mvccInfo(new TxMvccInfo(crdId, res));
+        @Override public void onMvccResponse(UUID crdId, MvccVersion res) {
+            tx.mvccInfo(new MvccTxInfo(crdId, res));
 
             onDone();
         }

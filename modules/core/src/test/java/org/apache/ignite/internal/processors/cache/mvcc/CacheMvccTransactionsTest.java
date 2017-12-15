@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -62,6 +61,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQuery;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccVersionResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
@@ -75,16 +77,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -92,7 +87,6 @@ import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -788,7 +782,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             boolean block = true;
 
             @Override public boolean apply(ClusterNode node, Message msg) {
-                if (block && msg instanceof CoordinatorAckRequestTx) {
+                if (block && msg instanceof MvccAckRequestTx) {
                     block = false;
 
                     return true;
@@ -1140,7 +1134,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         clientSpi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
             @Override public void apply(ClusterNode node, Message msg) {
-                if (msg instanceof CoordinatorAckRequestTx)
+                if (msg instanceof MvccAckRequestTx)
                     doSleep(2000);
             }
         });
@@ -1150,7 +1144,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             private AtomicInteger cntr = new AtomicInteger();
 
             @Override public void apply(ClusterNode node, Message msg) {
-                if (msg instanceof MvccCoordinatorVersionResponse) {
+                if (msg instanceof MvccVersionResponse) {
                     if (cntr.incrementAndGet() == 2) {
                         getLatch.countDown();
 
@@ -1259,7 +1253,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             private boolean blocked;
 
             @Override public boolean apply(ClusterNode node, Message msg) {
-                if (!blocked && (msg instanceof CoordinatorAckRequestTx)) {
+                if (!blocked && (msg instanceof MvccAckRequestTx)) {
                     blocked = true;
 
                     return true;
@@ -1296,7 +1290,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             private boolean blocked;
 
             @Override public boolean apply(ClusterNode node, Message msg) {
-                if (!blocked && (msg instanceof MvccCoordinatorVersionResponse)) {
+                if (!blocked && (msg instanceof MvccVersionResponse)) {
                     blocked = true;
 
                     return true;
@@ -2186,7 +2180,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         srvSpi.blockMessages(GridNearGetResponse.class, getTestIgniteInstanceName(1));
 
-        TestRecordingCommunicationSpi.spi(client).blockMessages(CoordinatorAckRequestQuery.class,
+        TestRecordingCommunicationSpi.spi(client).blockMessages(MvccAckRequestQuery.class,
             getTestIgniteInstanceName(0));
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
@@ -2378,7 +2372,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(ignite(0));
 
-        crdSpi.blockMessages(MvccCoordinatorVersionResponse.class, client.name());
+        crdSpi.blockMessages(MvccVersionResponse.class, client.name());
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable() {
             @Override public Object call() throws Exception {
@@ -2593,7 +2587,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     private void txInProgressCoordinatorChangeSimple(boolean readOnly) throws Exception {
-        CacheCoordinatorsProcessor.coordinatorAssignClosure(new CoordinatorAssignClosure());
+        MvccProcessor.coordinatorAssignClosure(new CoordinatorAssignClosure());
 
         Ignite srv0 = startGrids(4);
 
@@ -3244,7 +3238,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         MvccCoordinator crd = null;
 
         for (Ignite node : G.allGrids()) {
-            CacheCoordinatorsProcessor crdProc = ((IgniteKernal)node).context().cache().context().coordinators();
+            MvccProcessor crdProc = ((IgniteKernal)node).context().cache().context().coordinators();
 
             MvccCoordinator crd0 = crdProc.currentCoordinator();
 
@@ -3327,7 +3321,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
             crdSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
-                    return msg instanceof MvccCoordinatorVersionResponse;
+                    return msg instanceof MvccVersionResponse;
                 }
             });
 
@@ -3640,10 +3634,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         GridCacheContext cctx =
             ((IgniteKernal)node).context().cache().context().cacheContext(CU.cacheId(cache.getName()));
 
-        CacheCoordinatorsProcessor crd = cctx.kernalContext().coordinators();
+        MvccProcessor crd = cctx.kernalContext().coordinators();
 
         // Start query to prevent cleanup.
-        IgniteInternalFuture<MvccCoordinatorVersion> fut = crd.requestQueryCounter(crd.currentCoordinator());
+        IgniteInternalFuture<MvccVersion> fut = crd.requestQueryCounter(crd.currentCoordinator());
 
         fut.get();
 
@@ -3677,8 +3671,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             for (T2<Object, MvccCounter> ver : vers) {
                 MvccCounter cntr = ver.get2();
 
-                MvccCoordinatorVersion readVer =
-                    new MvccCoordinatorVersionWithoutTxs(cntr.coordinatorVersion(), cntr.counter(), 0);
+                MvccVersion readVer =
+                    new MvccVersionWithoutTxs(cntr.coordinatorVersion(), cntr.counter(), 0);
 
                 row = cctx.offheap().mvccRead(cctx, key0, readVer);
 
@@ -3695,7 +3689,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                 key0,
                 vers.get(0).get1());
 
-            MvccCoordinatorVersionResponse ver = version(vers.get(0).get2().coordinatorVersion(), 100000);
+            MvccVersionResponse ver = version(vers.get(0).get2().coordinatorVersion(), 100000);
 
             for (int v = 0; v < vers.size(); v++) {
                 MvccCounter cntr = vers.get(v).get2();
@@ -3806,8 +3800,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @param cntr Counter.
      * @return Version.
      */
-    private MvccCoordinatorVersionResponse version(long crdVer, long cntr) {
-        return new MvccCoordinatorVersionResponse(crdVer, cntr, 0);
+    private MvccVersionResponse version(long crdVer, long cntr) {
+        return new MvccVersionResponse(crdVer, cntr, 0);
     }
 
     /**

@@ -47,7 +47,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
     private MvccCoordinator mvccCrd;
 
     /** */
-    private volatile MvccCoordinatorVersion mvccVer;
+    private volatile MvccVersion mvccVer;
 
     /** */
     @GridToStringExclude
@@ -80,7 +80,8 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
      *
      * @param cctx Cache context.
      */
-    public MvccQueryTracker(GridCacheContext cctx, MvccCoordinatorVersion mvccVer, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    public MvccQueryTracker(GridCacheContext cctx, MvccVersion mvccVer, AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
         assert cctx.mvccEnabled() : cctx.name();
 
         this.cctx = cctx;
@@ -89,7 +90,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
         MvccCoordinator mvccCrd0 = cctx.affinity().mvccCoordinator(topVer);
 
         if(mvccCrd0 == null)
-            throw CacheCoordinatorsProcessor.noCoordinatorError(topVer);
+            throw MvccProcessor.noCoordinatorError(topVer);
 
         mvccCrd = mvccCrd0;
 
@@ -98,16 +99,16 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
     }
 
     /**
-     * @return Requested mvcc version.
+     * @return Requested MVCC version.
      */
-    public MvccCoordinatorVersion mvccVersion() {
+    public MvccVersion mvccVersion() {
         assert mvccVer != null : this;
 
         return mvccVer;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public synchronized MvccCoordinatorVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
+    @Override @Nullable public synchronized MvccVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
         if (mvccVer != null) {
             assert mvccCrd != null : this;
 
@@ -130,7 +131,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
      */
     public void onQueryDone() {
         MvccCoordinator mvccCrd0 = null;
-        MvccCoordinatorVersion mvccVer0 = null;
+        MvccVersion mvccVer0 = null;
 
         synchronized (this) {
             if (mvccVer != null) {
@@ -153,9 +154,9 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
      * @param commit If {@code true} ack commit, otherwise rollback.
      * @return Commit ack future.
      */
-    public IgniteInternalFuture<Void> onTxDone(@Nullable TxMvccInfo mvccInfo, GridCacheSharedContext ctx, boolean commit) {
+    public IgniteInternalFuture<Void> onTxDone(@Nullable MvccTxInfo mvccInfo, GridCacheSharedContext ctx, boolean commit) {
         MvccCoordinator mvccCrd0 = null;
-        MvccCoordinatorVersion mvccVer0 = null;
+        MvccVersion mvccVer0 = null;
 
         synchronized (this) {
             if (mvccVer != null) {
@@ -194,7 +195,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
         MvccCoordinator mvccCrd0 = cctx.affinity().mvccCoordinator(topVer);
 
         if (mvccCrd0 == null) {
-            lsnr.apply(null, CacheCoordinatorsProcessor.noCoordinatorError(topVer));
+            lsnr.apply(null, MvccProcessor.noCoordinatorError(topVer));
 
             return;
         }
@@ -220,13 +221,13 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
             }
         }
 
-        IgniteInternalFuture<MvccCoordinatorVersion> cntrFut =
+        IgniteInternalFuture<MvccVersion> cntrFut =
             cctx.shared().coordinators().requestQueryCounter(mvccCrd0);
 
-        cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccCoordinatorVersion>>() {
-            @Override public void apply(IgniteInternalFuture<MvccCoordinatorVersion> fut) {
+        cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccVersion>>() {
+            @Override public void apply(IgniteInternalFuture<MvccVersion> fut) {
                 try {
-                    MvccCoordinatorVersion rcvdVer = fut.get();
+                    MvccVersion rcvdVer = fut.get();
 
                     assert rcvdVer != null;
 

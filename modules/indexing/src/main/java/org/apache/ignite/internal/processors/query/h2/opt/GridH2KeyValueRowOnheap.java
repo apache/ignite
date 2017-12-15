@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -59,7 +59,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     private Value ver;
 
     /** */
-    private final MvccCoordinatorVersion newVer;
+    private final MvccVersion newVer;
 
     /**
      * Constructor.
@@ -73,7 +73,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
      */
     public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc,
         CacheDataRow row,
-        MvccCoordinatorVersion newVer,
+        MvccVersion newVer,
         int keyType,
         int valType) throws IgniteCheckedException {
         super(row);
@@ -98,7 +98,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
     /** {@inheritDoc} */
     @Override public long newMvccCounter() {
-        return newVer != null ? newVer.counter(): CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
+        return newVer != null ? newVer.counter(): MvccProcessor.MVCC_COUNTER_NA;
     }
 
     /** {@inheritDoc} */

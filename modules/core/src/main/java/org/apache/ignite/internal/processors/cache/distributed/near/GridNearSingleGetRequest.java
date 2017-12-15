@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -84,7 +84,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     private long accessTtl;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private MvccVersion mvccVer;
 
     /**
      * Empty constructor required for {@link Message}.
@@ -125,7 +125,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean needVer,
         boolean addDepInfo,
         boolean recovery,
-        MvccCoordinatorVersion mvccVer
+        MvccVersion mvccVer
     ) {
         assert key != null;
 
@@ -159,7 +159,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /**
      * @return Mvcc version.
      */
-    @Nullable public MvccCoordinatorVersion mvccVersion() {
+    @Nullable public MvccVersion mvccVersion() {
         return mvccVer;
     }
 

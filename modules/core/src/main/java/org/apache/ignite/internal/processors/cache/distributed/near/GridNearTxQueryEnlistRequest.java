@@ -24,8 +24,9 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -60,7 +61,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     private GridCacheVersion lockVer;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private MvccVersion mvccVer;
 
     /** */
     private int[] cacheIds;
@@ -90,6 +91,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     /** */
     private int taskNameHash;
 
+    /** */
     private int pageSize;
 
     /** */
@@ -98,18 +100,24 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @param cacheId
-     * @param threadId
-     * @param futId
-     * @param miniId
-     * @param subjId
-     * @param topVer
-     * @param lockVer
-     * @param mvccVer
-     * @param qry
-     * @param timeout
-     * @param taskNameHash
-     * @param clientFirst
+     * @param cacheId Cache id.
+     * @param threadId Thread id.
+     * @param futId Future id.
+     * @param miniId Mini fture id.
+     * @param subjId Subject id.
+     * @param topVer Topology version.
+     * @param lockVer Lock version.
+     * @param mvccVer Mvcc version.
+     * @param cacheIds Involved cache ids.
+     * @param parts Partitions.
+     * @param schema Schema name.
+     * @param qry Query string.
+     * @param params Query parameters.
+     * @param flags Flags.
+     * @param pageSize Fetch page size.
+     * @param timeout Timeout milliseconds.
+     * @param taskNameHash Task name hash.
+     * @param clientFirst {@code True} if this is the first client request.
      */
     public GridNearTxQueryEnlistRequest(
         int cacheId,
@@ -119,7 +127,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
         UUID subjId,
         AffinityTopologyVersion topVer,
         GridCacheVersion lockVer,
-        MvccCoordinatorVersion mvccVer,
+        MvccVersion mvccVer,
         int[] cacheIds,
         int[] parts,
         String schema,
@@ -151,14 +159,14 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @return
+     * @return Thread id.
      */
     public long threadId() {
         return threadId;
     }
 
     /**
-     * @return
+     * @return Future id.
      */
     public IgniteUuid futureId() {
         return futId;
@@ -172,81 +180,98 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @return
+     * @return Subject id.
      */
     public UUID subjectId() {
         return subjId;
     }
 
     /**
-     * @return
+     * @return Topology version.
      */
-    public AffinityTopologyVersion topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
     /**
-     * @return
+     * @return Lock version.
      */
     public GridCacheVersion version() {
         return lockVer;
     }
 
     /**
-     * @return
+     * @return Mvcc version.
      */
-    public MvccCoordinatorVersion mvccVersion() {
+    public MvccVersion mvccVersion() {
         return mvccVer;
     }
 
-    /** */
+    /**
+     * @return Involved cache ids.
+     */
     public int[] cacheIds() {
         return cacheIds;
     }
 
+    /**
+     * @return Partitions.
+     */
     public int[] partitions() {
         return parts;
     }
 
+    /**
+     * @return Schema name.
+     */
     public String schemaName() {
         return schema;
     }
 
     /**
-     * @return
+     * @return Query string.
      */
     public String query() {
         return qry;
     }
 
+    /**
+     * @return Query parameters.
+     */
     public Object[] parameters() {
         return params;
     }
 
+    /**
+     * @return Flags.
+     */
     public int flags() {
         return flags;
     }
 
+    /**
+     * @return Fetch page size.
+     */
     public int pageSize() {
         return pageSize;
     }
 
     /**
-     * @return
+     * @return Timeout milliseconds.
      */
     public long timeout() {
         return timeout;
     }
 
     /**
-     * @return
+     * @return Task name hash.
      */
     public int taskNameHash() {
         return taskNameHash;
     }
 
     /**
-     * @return
+     * @return {@code True} if this is the first client request.
      */
     public boolean firstClientRequest() {
         return clientFirst;
@@ -262,6 +287,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
         return 20;
     }
 
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -269,6 +295,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
             paramsBytes = U.marshal(ctx, params);
     }
 
+    /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
@@ -553,5 +580,10 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 146;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearTxQueryEnlistRequest.class, this);
     }
 }

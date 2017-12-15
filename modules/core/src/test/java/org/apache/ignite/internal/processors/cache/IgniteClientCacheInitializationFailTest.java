@@ -44,7 +44,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
@@ -252,6 +253,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
+            boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts,
+            @Nullable MvccQueryTracker mvccTracker) throws IgniteCheckedException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public long streamUpdateQuery(String spaceName, String qry, @Nullable Object[] params,
             IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
             return 0;
@@ -311,7 +319,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             int[] parts,
             String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
             AffinityTopologyVersion topVer,
-            MvccCoordinatorVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
+            MvccVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
             return null;
         }
 
@@ -323,7 +331,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
-            CacheDataRow prevRow, @Nullable MvccCoordinatorVersion newVer, boolean prevRowAvailable,
+            CacheDataRow prevRow, @Nullable MvccVersion newVer, boolean prevRowAvailable,
             boolean idxRebuild) throws IgniteCheckedException {
             // No-op.
         }

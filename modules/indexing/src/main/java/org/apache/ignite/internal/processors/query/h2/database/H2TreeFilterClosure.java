@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
@@ -28,15 +28,15 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.assertMvccVersionValid;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.assertMvccVersionValid;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unmaskCoordinatorVersion;
 
 /**
  *
  */
 public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRow, GridH2Row> {
     /** */
-    private final MvccCoordinatorVersion mvccVer;
+    private final MvccVersion mvccVer;
     /** */
     private final IndexingQueryCacheFilter filter;
 
@@ -44,7 +44,7 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
      * @param filter Cache filter.
      * @param mvccVer Mvcc version.
      */
-    public H2TreeFilterClosure(IndexingQueryCacheFilter filter, MvccCoordinatorVersion mvccVer) {
+    public H2TreeFilterClosure(IndexingQueryCacheFilter filter, MvccVersion mvccVer) {
         assert filter != null || mvccVer != null;
 
         this.filter = filter;

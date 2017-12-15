@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -99,7 +99,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     private AffinityTopologyVersion clientRemapVer;
 
     /** */
-    private TxMvccInfo mvccInfo;
+    private MvccTxInfo mvccInfo;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -152,14 +152,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /**
      * @param mvccInfo Mvcc info.
      */
-    public void mvccInfo(TxMvccInfo mvccInfo) {
+    public void mvccInfo(MvccTxInfo mvccInfo) {
         this.mvccInfo = mvccInfo;
     }
 
     /**
      * @return Mvcc info.
      */
-    @Nullable public TxMvccInfo mvccInfo() {
+    @Nullable public MvccTxInfo mvccInfo() {
         return mvccInfo;
     }
 
