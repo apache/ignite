@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -250,7 +251,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** */
     @GridToStringExclude
-    private volatile IgniteDhtPartitionsToReloadMap partsToReload = new IgniteDhtPartitionsToReloadMap();
+    private final IgniteDhtPartitionsToReloadMap partsToReload = new IgniteDhtPartitionsToReloadMap();
 
     /** */
     private final AtomicBoolean done = new AtomicBoolean();
@@ -805,6 +806,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         StateChangeRequest req = exchActions.stateChangeRequest();
 
         assert req != null : exchActions;
+
+        DiscoveryDataClusterState state = cctx.kernalContext().state().clusterState();
+
+        if (state.transitionError() != null)
+            changeGlobalStateE = state.transitionError();
 
         if (req.activeChanged()) {
             if (req.activate()) {
@@ -2487,6 +2493,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         err = new IgniteCheckedException("Cluster state change failed.");
 
                         cctx.kernalContext().state().onStateChangeError(changeGlobalStateExceptions, req);
+                    }
+                    else {
+                        boolean hasMoving = !partsToReload.isEmpty();
+
+                        if (!hasMoving) {
+                            for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                                if (grpCtx.topology().hasMovingPartitions()) {
+                                    hasMoving = true;
+
+                                    break;
+                                }
+
+                            }
+                        }
+
+                        cctx.kernalContext().state().onExchangeFinishedOnCoordinator(this, hasMoving);
                     }
 
                     boolean active = !stateChangeErr && req.activate();

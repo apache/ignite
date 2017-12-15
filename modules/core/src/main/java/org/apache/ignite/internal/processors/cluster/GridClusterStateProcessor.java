@@ -108,4 +108,15 @@ public interface GridClusterStateProcessor extends GridProcessor {
      * @param prevBltHistItem Previous baseline history item.
      */
     void onBaselineTopologyChanged(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException;
+
+    /**
+     * @param exchangeFuture Exchange future.
+     * @param hasMovingPartitions {@code True} if there are moving partitions.
+     */
+    void onExchangeFinishedOnCoordinator(IgniteInternalFuture exchangeFuture, boolean hasMovingPartitions);
+
+    /**
+     * @return {@code True} if partition evictions are allowed in current state.
+     */
+    boolean evictionsAllowed();
 }
