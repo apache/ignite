@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -677,8 +678,29 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             top.readLock();
 
-            if (!top.topologyVersionFuture().isDone()) {
+            GridDhtTopologyFuture topFut = top.topologyVersionFuture();
+
+            if (!topFut.isDone() || !topFut.topologyVersion().equals(req.topologyVersion())) {
+                // TODO IGNITE-4191 Wait for topology change, remap client TX in case affinity was changed.
                 top.readUnlock();
+
+                GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(
+                    req.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    0,
+                    new ClusterTopologyException("Topology was changed. Please retry on stable topology."));
+
+                try {
+                    ctx.io().send(nearNode, res, ctx.ioPolicy());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send near enlist response [" +
+                        "txId=" + req.version() +
+                        ", node=" + nearNode.id() +
+                        ", res=" + res + ']', e);
+                }
 
                 return;
             }
