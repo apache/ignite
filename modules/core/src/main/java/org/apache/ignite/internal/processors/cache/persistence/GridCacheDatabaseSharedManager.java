@@ -1843,7 +1843,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     tmpWriteBuf.rewind();
 
                     //todo write or not page CRC
-                    PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag, false);
+                    PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag, true);
                     tmpWriteBuf.rewind();
 
                     updStores.add(store);
