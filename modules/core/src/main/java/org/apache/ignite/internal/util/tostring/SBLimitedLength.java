@@ -25,6 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
  */
 public class SBLimitedLength extends SB {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private SBLengthLimit lenLimit;
 
     /**
