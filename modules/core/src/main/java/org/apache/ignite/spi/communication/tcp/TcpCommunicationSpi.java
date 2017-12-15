@@ -132,6 +132,10 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
+import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
@@ -141,9 +145,9 @@ import org.jsr166.ConcurrentLinkedDeque8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
-import static org.apache.ignite.spi.communication.tcp.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
-import static org.apache.ignite.spi.communication.tcp.RecoveryLastReceivedMessage.NEED_WAIT;
-import static org.apache.ignite.spi.communication.tcp.RecoveryLastReceivedMessage.NODE_STOPPING;
+import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
+import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
+import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NODE_STOPPING;
 
 /**
  * <tt>TcpCommunicationSpi</tt> is default communication SPI which uses
@@ -456,7 +460,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 ConnectionKey connKey;
 
                 if (msg instanceof NodeIdMessage) {
-                    sndId = U.bytesToUuid(((NodeIdMessage) msg).nodeIdBytes, 0);
+                    sndId = U.bytesToUuid(((NodeIdMessage)msg).nodeIdBytes(), 0);
                     connKey = new ConnectionKey(sndId, 0, -1);
                 }
                 else {
@@ -3550,10 +3554,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    ch.write(sslHnd.encrypt(ByteBuffer.wrap(nodeIdMessage().nodeIdBytesWithType)));
+                    ch.write(sslHnd.encrypt(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId()))));
                 }
                 else
-                    ch.write(ByteBuffer.wrap(nodeIdMessage().nodeIdBytesWithType));
+                    ch.write(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId())));
             }
 
             if (recovery != null) {
@@ -3806,20 +3810,27 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return Node ID message.
      */
     private NodeIdMessage nodeIdMessage() {
+        return new NodeIdMessage(safeLocalNodeId());
+    }
+
+    /**
+     * @return Local node ID.
+     */
+    private UUID safeLocalNodeId() {
         ClusterNode locNode = getLocalNode();
 
         UUID id;
 
         if (locNode == null) {
             U.warn(log, "Local node is not started or fully initialized [isStopping=" +
-                    getSpiContext().isStopping() + ']');
+                getSpiContext().isStopping() + ']');
 
             id = new UUID(0, 0);
         }
         else
             id = locNode.id();
 
-        return new NodeIdMessage(id);
+        return id;
     }
 
     /** {@inheritDoc} */
@@ -3923,7 +3934,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @param buf Byte buffer.
      * @param type Message type.
      */
-    static void writeMessageType(ByteBuffer buf, short type) {
+    public static void writeMessageType(ByteBuffer buf, short type) {
         buf.put((byte)(type & 0xFF));
         buf.put((byte)((type >> 8) & 0xFF));
     }
@@ -4426,7 +4437,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 out.write(U.IGNITE_HEADER);
                 writeMessageType(out, NODE_ID_MSG_TYPE);
-                out.write(msg.nodeIdBytes);
+                out.write(msg.nodeIdBytes());
 
                 out.flush();
 
