@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -35,10 +37,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
@@ -48,7 +46,7 @@ public final class UpdatePlan {
     /** Initial statement to drive the rest of the logic. */
     private final UpdateMode mode;
 
-    /** Target table to be affected by initial DML statement. */
+    /**  to be affected by initial DML statement. */
     private final GridH2Table tbl;
 
     /** Column names to set or update. */
@@ -75,8 +73,8 @@ public final class UpdatePlan {
     /** Subquery flag - {@code true} if {@link #selectQry} is an actual subquery that retrieves data from some cache. */
     private final boolean isLocSubqry;
 
-    /** */
-    public final List<List<FastUpdateArgument>> rows;
+    /** Rows for query-less MERGE or INSERT. */
+    private final List<List<FastUpdateArgument>> rows;
 
     /** Number of rows in rows based MERGE or INSERT. */
     private final int rowsNum;
@@ -106,6 +104,7 @@ public final class UpdatePlan {
      * @param valColIdx value column index.
      * @param selectQry Select query.
      * @param isLocSubqry Local subquery flag.
+     * @param rows Rows for query-less INSERT or MERGE.
      * @param rowsNum Rows number.
      * @param fastUpdate Fast update (if any).
      * @param distributed Distributed plan (if any)
@@ -121,6 +120,7 @@ public final class UpdatePlan {
         int valColIdx,
         String selectQry,
         boolean isLocSubqry,
+        List<List<FastUpdateArgument>> rows,
         int rowsNum,
         @Nullable FastUpdate fastUpdate,
         @Nullable DmlDistributedPlanInfo distributed
@@ -172,6 +172,7 @@ public final class UpdatePlan {
             -1,
             selectQry,
             false,
+            null,
             0,
             fastUpdate,
             distributed
@@ -396,6 +397,48 @@ public final class UpdatePlan {
      */
     @Nullable public FastUpdate fastUpdate() {
         return fastUpdate;
+    }
+
+    /**
+     * @return Names of affected columns.
+     */
+    public String[] columnNames() {
+        return colNames;
+    }
+
+    /**
+     * @return Types of affected columns.
+     */
+    public int[] columnTypes() {
+        return colTypes;
+    }
+
+    /**
+     * @return Rows for query-less MERGE or INSERT.
+     */
+    public List<List<FastUpdateArgument>> rows() {
+        return rows;
+    }
+
+    /**
+     * @return Key column index.
+     */
+    public int keyColumnIndex() {
+        return keyColIdx;
+    }
+
+    /**
+     * @return Value column index.
+     */
+    public int valueColumnIndex() {
+        return valColIdx;
+    }
+
+    /**
+     * @return Target table.
+     */
+    public GridH2Table table() {
+        return tbl;
     }
 
     /*

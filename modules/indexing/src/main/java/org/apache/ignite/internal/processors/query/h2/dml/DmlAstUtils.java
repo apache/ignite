@@ -83,7 +83,6 @@ public final class DmlAstUtils {
      * @param cols Columns to insert values into.
      * @param rows Rows to create pseudo-SELECT upon.
      * @param subQry Subquery to use rather than rows.
-     * @param desc Row descriptor.
      * @return Subquery or pseudo-SELECT to evaluate inserted expressions, or {@code null} no query needs to be run.
      */
     public static GridSqlQuery selectForInsertOrMerge(GridSqlColumn[] cols, List<GridSqlElement[]> rows,
@@ -219,8 +218,7 @@ public final class DmlAstUtils {
         if (!(set instanceof GridSqlConst || set instanceof GridSqlParameter))
             return null;
 
-        return new FastUpdateArguments(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
-            operandForElement(set));
+        return FastUpdate.create(filter.getKey(), filter.getValue(), set);
     }
 
     /**

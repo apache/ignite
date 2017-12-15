@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.lang.reflect.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -49,15 +52,14 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdate;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
@@ -73,14 +75,12 @@ import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
-import org.h2.table.Column;
 import org.h2.util.DateTimeUtils;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.Value;
 import org.h2.value.ValueDate;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
@@ -258,15 +258,13 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    long streamUpdateQuery(IgniteDataStreamer streamer, PreparedStatement stmt, Object[] args)
+    long streamUpdateQuery(IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args)
         throws IgniteCheckedException {
-        args = U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY);
-
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         assert p != null;
 
-        UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, true, idx, null, null, null);
+        final UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, true, idx, null, null, null);
 
         if (!F.eq(streamer.cacheName(), plan.cacheContext().name()))
             throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
@@ -281,14 +279,22 @@ public class DmlStatementsProcessor {
 
             final ArrayList<List<?>> data = new ArrayList<>(plan.rowCount());
 
-            final GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()), plan.selectQuery(),
-                F.asList(args), null, false, 0, null);
-
             QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), idx.objectContext(),
-                            cctx.keepBinary());
+                        Iterator<List<?>> it;
+
+                        if (!F.isEmpty(plan.selectQuery())) {
+                            GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
+                                plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
+                                null, false, 0, null);
+
+                            it = res.iterator();
+                        }
+                        else
+                            it = planToRows(plan, U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)).iterator();
+
+                        return new GridQueryCacheObjectsIterator(it, idx.objectContext(), cctx.keepBinary());
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -370,8 +376,6 @@ public class DmlStatementsProcessor {
                 return result;
         }
 
-        assert !F.isEmpty(plan.selectQuery());
-
         Iterable<List<?>> cur;
 
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
@@ -387,11 +391,10 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>)idx.queryDistributedSqlFields(schemaName, newFieldsQry, true,
-                cancel, mainCacheId, true).get(0);
+            cur = idx.queryDistributedSqlFields(schemaName, newFieldsQry, true, cancel, mainCacheId, true).get(0);
         }
-        else if (F.isEmpty(plan.rows)) {
-            final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQry(),
+        else if (F.isEmpty(plan.rows())) {
+            final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQuery(),
                 F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
@@ -405,35 +408,45 @@ public class DmlStatementsProcessor {
                 }
             }, cancel);
         }
-        else {
-            assert plan.rowsNum > 0 && !F.isEmpty(plan.colNames);
-
-            List<List<?>> args = new ArrayList<>(plan.rowsNum);
-
-            GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
-
-            for (List<FastUpdateArgument> argRow : plan.rows) {
-                List<Object> row = new ArrayList<>();
-
-                for (int j = 0; j < plan.colNames.length; j++) {
-                    Object colVal = argRow.get(j).apply(fieldsQry.getArgs());
-
-                    if (j == plan.keyColIdx || j == plan.valColIdx)
-                        colVal = convert(colVal, desc, j == plan.keyColIdx ? desc.type().keyClass() :
-                            desc.type().valueClass(), plan.colTypes[j]);
-
-                    row.add(colVal);
-                }
-
-                args.add(row);
-            }
-
-            cur = args;
-        }
+        else
+            cur = planToRows(plan, fieldsQry.getArgs());
 
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
         return processDmlSelectResult(cctx, plan, cur, pageSize);
+    }
+
+    /**
+     * Extract rows from plan without performing any query.
+     * @param plan Plan.
+     * @param args Original query arguments.
+     * @return Rows from plan.
+     * @throws IgniteCheckedException if failed.
+     */
+    private List<List<?>> planToRows(UpdatePlan plan, Object[] args) throws IgniteCheckedException {
+        assert plan.rowCount() > 0 && !F.isEmpty(plan.columnNames());
+
+        List<List<?>> rows = new ArrayList<>(plan.rowCount());
+
+        GridH2RowDescriptor desc = plan.table().rowDescriptor();
+
+        for (List<FastUpdateArgument> argRow : plan.rows()) {
+            List<Object> row = new ArrayList<>();
+
+            for (int j = 0; j < plan.columnNames().length; j++) {
+                Object colVal = argRow.get(j).apply(args);
+
+                if (j == plan.keyColumnIndex() || j == plan.valueColumnIndex())
+                    colVal = convert(colVal, desc, j == plan.keyColumnIndex() ? desc.type().keyClass() :
+                        desc.type().valueClass(), plan.columnTypes()[j]);
+
+                row.add(colVal);
+            }
+
+            rows.add(row);
+        }
+
+        return rows;
     }
 
     /**
@@ -677,50 +690,6 @@ public class DmlStatementsProcessor {
         }
 
         return res;
-    }
-
-    /**
-     * Process errors of entry processor - split the keys into duplicated/concurrently modified and those whose
-     * processing yielded an exception.
-     *
-     * @param res Result of {@link GridCacheAdapter#invokeAll)}
-     * @return pair [array of duplicated/concurrently modified keys, SQL exception for erroneous keys] (exception is
-     * null if all keys are duplicates/concurrently modified ones).
-     */
-    private static PageProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res) {
-        Set<Object> errKeys = new LinkedHashSet<>(res.keySet());
-
-        SQLException currSqlEx = null;
-
-        SQLException firstSqlEx = null;
-
-        int errors = 0;
-
-        // Let's form a chain of SQL exceptions
-        for (Map.Entry<Object, EntryProcessorResult<Boolean>> e : res.entrySet()) {
-            try {
-                e.getValue().get();
-            }
-            catch (EntryProcessorException ex) {
-                SQLException next = createJdbcSqlException("Failed to process key '" + e.getKey() + '\'',
-                    IgniteQueryErrorCode.ENTRY_PROCESSING);
-
-                next.initCause(ex);
-
-                if (currSqlEx != null)
-                    currSqlEx.setNextException(next);
-                else
-                    firstSqlEx = next;
-
-                currSqlEx = next;
-
-                errKeys.remove(e.getKey());
-
-                errors++;
-            }
-        }
-
-        return new PageProcessingErrorResult(errKeys.toArray(), firstSqlEx, errors);
     }
 
     /**
