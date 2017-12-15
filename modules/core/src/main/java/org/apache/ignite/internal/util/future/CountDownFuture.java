@@ -78,4 +78,8 @@ public class CountDownFuture extends GridFutureAdapter<Void> {
 
         ex.addSuppressed(err);
     }
+
+    protected AtomicInteger remaining() {
+        return remaining;
+    }
 }

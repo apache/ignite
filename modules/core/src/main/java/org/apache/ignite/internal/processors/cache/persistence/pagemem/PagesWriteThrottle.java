@@ -40,6 +40,11 @@ public class PagesWriteThrottle {
     /** Exponential backoff counter. */
     private final AtomicInteger exponentialBackoffCntr = new AtomicInteger(0);
 
+
+    private final AtomicInteger lastObservedWritten = new AtomicInteger(0);
+
+    private volatile double initialDirtyRatioAtCpBegin;
+
     private volatile double lastDirtyRatioThreshold;
     /**
      * @param pageMemory Page memory.
@@ -75,7 +80,13 @@ public class PagesWriteThrottle {
 
             int cpTotalPages = dbSharedMgr.currentCheckpointPagesCount();
 
-            if (cpWrittenPages == cpTotalPages) {
+            //todo 0 of progress
+            if (cpWrittenPages == 0 || cpTotalPages == 0) {
+                //probably slow start is running now, drop previous dirty page percent
+                initialDirtyRatioAtCpBegin = 0;
+                lastObservedWritten.set(cpWrittenPages);
+            }
+            else if (cpWrittenPages == cpTotalPages) {
                 // Checkpoint is already in fsync stage, increasing maximum ratio of dirty pages to 3/4
                 double threshold = 3.0 / 4;
                 lastDirtyRatioThreshold = threshold; //todo remove if it is not required anymore
@@ -83,14 +94,34 @@ public class PagesWriteThrottle {
             } else {
                 double dirtyRatioThreshold = ((double)cpWrittenPages) / cpTotalPages;
 
-                // Starting with 0.05 to avoid throttle right after checkpoint start
+                boolean cpStartedToWrite = lastObservedWritten.compareAndSet(0, cpWrittenPages);
+                if (cpStartedToWrite) {
+                    final double dirty = pageMemory.getDirtyPagesRatio();
+                    double newMinRatio = dirty;
+
+                    if (newMinRatio < 0.05)
+                        newMinRatio = 0.05;
+
+                    if (newMinRatio > 1)
+                        newMinRatio = 1;
+
+                    //todo remove
+                    System.err.println(">>>>> " + dirty + "=>" + newMinRatio);
+
+                    initialDirtyRatioAtCpBegin = newMinRatio;
+                }
+
+                double throttleWeight = 1.0 - initialDirtyRatioAtCpBegin;
+
+                // Starting with initialDirtyRatioAtCpBegin to avoid throttle right after checkpoint start
                 // 7/12 is maximum ratio of dirty pages
-                dirtyRatioThreshold = (dirtyRatioThreshold * 0.95 + 0.05) * 7 / 12;
+                dirtyRatioThreshold = (dirtyRatioThreshold * throttleWeight + initialDirtyRatioAtCpBegin) * 7 / 12;
 
                 lastDirtyRatioThreshold = dirtyRatioThreshold; //todo remove if it is not required anymore
                 shouldThrottle = pageMemory.shouldThrottle(dirtyRatioThreshold);
             }
         }
+
 
         if (shouldThrottle) {
             int throttleLevel = exponentialBackoffCntr.getAndIncrement();
