@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -120,7 +121,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.CountDownFuture;
@@ -1834,7 +1834,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             PagesConcurrentHashSet[] cpPages = e.get2();
 
             for (PagesConcurrentHashSet set : cpPages) {
-                for (GridConcurrentHashSet<FullPageId> innerSet : set) {
+                for (Set<FullPageId> innerSet : set) {
                     for (FullPageId fullId : innerSet) {
 
                         cpPagesCnt++;
@@ -2438,7 +2438,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (!region.config().isPersistenceEnabled())
                     continue;
 
-                scope.addCpPages(((PageMemoryEx)region.pageMemory()).beginCheckpoint());
+                scope.addDataRegionCpPages(((PageMemoryEx)region.pageMemory()).beginCheckpoint());
             }
 
             return scope;

@@ -20,67 +20,137 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConcurrentHashSet;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 
 /**
  * Checkpoint scope is the unsorted sets of all dirty pages collections from all regions
  */
 public class CheckpointScope {
+    public static final int EXPECTED_SEGMENTS_AND_SUB_SETS = Runtime.getRuntime().availableProcessors() * 4 + 1;
     /** Dirty Pages number from all regions. */
-    private int pagesNum = 0;
+    private int pagesNum = -1;
 
-    /** Pages collections. */
-    private Collection<GridMultiCollectionWrapper<FullPageId>> pages;
+    private List<BucketEnabledCollector> regionsPages;
+
+    static class BucketEnabledCollector {
+        /**
+         * Map bucket -> multiset in this bucket
+         */
+        private Map<Integer, MultiSetCollector> pagesByBucket = new HashMap<>(PagesConcurrentHashSet.BUCKETS_COUNT);
+
+        public int size() {
+            int size = 0;
+
+            for (MultiSetCollector next : pagesByBucket.values()) {
+                size += next.size();
+            }
+
+            return size;
+        }
+
+        public MultiSetCollector bucket(int idx) {
+            MultiSetCollector collector = pagesByBucket.get(idx);
+
+            if (collector == null) {
+                collector = new MultiSetCollector();
+
+                pagesByBucket.put(idx, collector);
+            }
+            return collector;
+        }
+    }
+
+    static class MultiSetCollector {
+        /**
+         * Not merged sets for same bucket, but from different segments.
+         */
+        List<Set<FullPageId>> unmergedSets = new ArrayList<>(EXPECTED_SEGMENTS_AND_SUB_SETS);
+
+        public int size() {
+            int size = 0;
+            for (Set<FullPageId> next : unmergedSets) {
+                size += next.size();
+            }
+            return size;
+        }
+
+        public void add(Set<FullPageId> bucket) {
+            // dont merge sets here for performance reasons
+            unmergedSets.add(bucket);
+        }
+    }
 
     /**
      * @param regions Regions count.
      */
     public CheckpointScope(int regions) {
-        pages = new ArrayList<>(regions);
+        regionsPages = new ArrayList<>(regions);
     }
 
     /**
-     * @return global array with all checkpoint pages
+     * @return buffers wiht arrays with all checkpoint pages, may be processed independently
      */
-    public FullPageIdsBuffer toBuffer() {
-        FullPageId[] pageIds = new FullPageId[pagesNum];
+    public List<FullPageIdsBuffer> toBuffers() {
+        List<FullPageIdsBuffer> buffers = new ArrayList<>();
 
-        int idx = 0;
+        int globalIdx = 0;
+        for (BucketEnabledCollector regions : regionsPages) {
+            Set<Map.Entry<Integer, MultiSetCollector>> entries = regions.pagesByBucket.entrySet();
+            for (Map.Entry<Integer, MultiSetCollector> next : entries) {
+                Integer bucket = next.getKey();
 
-        for (GridMultiCollectionWrapper<FullPageId> col : pages) {
-            for (int i = 0; i < col.collectionsSize(); i++) {
-                for (FullPageId next : col.innerCollection(i)) {
-                    assert next != null;
+                MultiSetCollector value = next.getValue();
 
-                    pageIds[idx] = next;
+                int localIdx = 0;
+                FullPageId[] independentPageId = new FullPageId[value.size()];
 
-                    idx++;
+                for (Set<FullPageId> set : value.unmergedSets) {
+                    //here may check if set is navigatable
+                    for (FullPageId id : set) {
+                        independentPageId[localIdx] = id;
+                        localIdx++;
+
+                        globalIdx++;
+
+                        assert bucket.equals(PagesConcurrentHashSet.getBucketIndex(id));
+                    }
                 }
+
+                //actual number of pages may be less
+                buffers.add(new FullPageIdsBuffer(independentPageId, 0, localIdx));
+
             }
         }
         //actual number of pages may decrease here because of pages eviction (evicted page may have been already saved).
-        assert idx <= pagesNum : "idx=" + idx + ", pagesNum=" + pagesNum;
+        pagesNum = globalIdx;
 
-        pagesNum = idx;
-        return new FullPageIdsBuffer(pageIds, 0, idx);
+        return buffers;
     }
 
+    /**
+     * @param sets next dirty pages collections from region (array from all segments)
+     */
+    public void addDataRegionCpPages(PagesConcurrentHashSet[] sets) {
+        BucketEnabledCollector pagesByBucket = new BucketEnabledCollector();
 
-    public void addCpPages(PagesConcurrentHashSet[] sets) {
-        //todo implement more effective
-        for (PagesConcurrentHashSet set : sets) {
-            for (GridConcurrentHashSet<FullPageId> innerSet : set) {
+        for (PagesConcurrentHashSet setToAdd : sets) {
+            for (int idx = 0; idx < PagesConcurrentHashSet.BUCKETS_COUNT; idx++) {
 
-                final GridMultiCollectionWrapper<FullPageId> wrapper = new GridMultiCollectionWrapper<FullPageId>(innerSet);
-                addCpPages(wrapper);
+                Set<FullPageId> setForBucket = setToAdd.getOptionalSetForBucket(idx);
+                if (setForBucket != null)
+                    pagesByBucket.bucket(idx).add(setForBucket);
             }
         }
+
+        regionsPages.add(pagesByBucket);
     }
 
     /**
@@ -111,26 +181,33 @@ public class CheckpointScope {
         return res;
     }
 
-    /**
-     * @param nextCpPagesCol next cp pages collection from region
-     */
-    public void addCpPages(GridMultiCollectionWrapper<FullPageId> nextCpPagesCol) {
-        pagesNum += nextCpPagesCol.size();
-        pages.add(nextCpPagesCol);
-    }
 
     /**
      * @return {@code true} if there is checkpoint pages available
      */
     public boolean hasPages() {
-        return pagesNum > 0;
+        return calcPagesNum() > 0;
+    }
+
+    private int calcPagesNum() {
+        if (pagesNum < 0) {
+            int sum = 0;
+
+            for (BucketEnabledCollector next : regionsPages) {
+                sum += next.size();
+            }
+
+            pagesNum = sum;
+        }
+
+        return pagesNum;
     }
 
     /**
      * @return total checkpoint pages from all caches and regions
      */
     public int totalCpPages() {
-        return pagesNum;
+        return calcPagesNum();
     }
 
     /**
@@ -141,16 +218,19 @@ public class CheckpointScope {
      * @param persistenceCfg persistent configuration.
      */
     public Collection<FullPageIdsBuffer> splitAndSortCpPagesIfNeeded(DataStorageConfiguration persistenceCfg) {
-        final FullPageIdsBuffer cpPagesBuf = toBuffer();
+        final List<FullPageIdsBuffer> cpPagesBuf = toBuffers();
+        final Collection<FullPageIdsBuffer> allBuffers = new ArrayList<>();
 
-        if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL)
-            cpPagesBuf.sort(GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR);
+        for (FullPageIdsBuffer next : cpPagesBuf) {
+            if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL)
+                next.sort(GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR);
 
-        int cpThreads = persistenceCfg.getCheckpointThreads();
+            int cpThreads = persistenceCfg.getCheckpointThreads();
 
-        int pagesSubLists = cpThreads == 1 ? 1 : cpThreads * 4;
+            allBuffers.addAll(next.split(cpThreads));
+        }
 
-        return cpPagesBuf.split(pagesSubLists);
+        return allBuffers;
     }
 
 }

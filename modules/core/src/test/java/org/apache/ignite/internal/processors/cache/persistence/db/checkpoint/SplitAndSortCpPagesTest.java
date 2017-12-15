@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.FullPageIdsBuffer;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConcurrentHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -53,9 +54,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
  * Test for async splitting and sorting pages.
  */
 public class SplitAndSortCpPagesTest {
-    /** Test collection size. */
-    private static final int PAGES_MILLIONS = 2;
-
     /** Logger. */
     private IgniteLogger log = new NullLogger();
 
@@ -78,11 +76,14 @@ public class SplitAndSortCpPagesTest {
 
         for (FullPageIdsBuffer next : ids) {
             sz += next.remaining();
-            res.add(next.toArray());
+            FullPageId[] e = next.toArray();
+            
+            res.add(e);
+
+            validateOrder(Collections.singletonList(e));
         }
 
         assertEquals(sz, coll.totalCpPages());
-        validateOrder(res);
     }
 
     /**
@@ -136,11 +137,14 @@ public class SplitAndSortCpPagesTest {
             }
         };
 
-        FullPageIdsBuffer pageIds = scope.toBuffer();
+        List<FullPageIdsBuffer> pageIds = scope.toBuffers();
 
         asyncCheckpointer.quickSortAndWritePages(pageIds, taskFactory).get();
 
-        validateOrder(Collections.singletonList(pageIds.toArray()));
+        for (FullPageIdsBuffer next : pageIds) {
+            validateOrder(Collections.singletonList(next.toArray()));
+        }
+
     }
 
     /**
@@ -213,10 +217,12 @@ public class SplitAndSortCpPagesTest {
      */
     private ConcurrentHashMap<FullPageId, FullPageId> createCopyAsMap(CheckpointScope scope) {
         final ConcurrentHashMap<FullPageId, FullPageId> map = new ConcurrentHashMap<>();
-        FullPageIdsBuffer ids = scope.toBuffer();
+        List<FullPageIdsBuffer> ids = scope.toBuffers();
 
-        for (FullPageId id : ids.toArray()) {
-            map.put(id, id);
+        for (FullPageIdsBuffer next : ids) {
+            for (FullPageId id : next.toArray()) {
+                map.put(id, id);
+            }
         }
         return map;
     }
@@ -227,7 +233,7 @@ public class SplitAndSortCpPagesTest {
      */
     @Test
     public void testIndexGrowing() throws Exception {
-        final CheckpointScope scope = getTestCollection(1, 1024);
+        final CheckpointScope scope = getTestCollection(1024);
 
         final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
@@ -277,9 +283,11 @@ public class SplitAndSortCpPagesTest {
         final Random random = new Random();
         final Thread thread = new Thread(new Runnable() {
             @Override public void run() {
-                final List<GridMultiCollectionWrapper<FullPageId>> pages = U.field(scope, "pages");
                 while(!Thread.currentThread().isInterrupted()) {
                     evictingThreadStarted.countDown();
+
+                    //todo fix eviction to be running
+                    final List<GridMultiCollectionWrapper<FullPageId>> pages = U.field(scope, "pages");
                     try {
                         final int i = random.nextInt(pages.size());
                         final GridMultiCollectionWrapper<FullPageId> ids = pages.get(i);
@@ -337,31 +345,34 @@ public class SplitAndSortCpPagesTest {
      * @return test pages set
      */
     @NotNull static CheckpointScope getTestCollection() {
-        return getTestCollection(PAGES_MILLIONS, 1024);
+        int pow = (int)Math.pow(10, 7);
+        return getTestCollection(pow / CheckpointScope.EXPECTED_SEGMENTS_AND_SUB_SETS );
     }
 
     /**
      * @return test pages set
      */
-    @NotNull private static CheckpointScope getTestCollection(int pagesMillions, int segmentsCnt) {
-        final int regions = 1024;
+    @NotNull private static CheckpointScope getTestCollection(int pagesPerSegment) {
+        final int regions = 1;
         final CheckpointScope scope = new CheckpointScope(regions);
         final Random random = new Random();
 
-        for (int i = 0; i < regions; i++) {
-            final Collection[] segments = new Collection[segmentsCnt];
+        for (int r = 0; r < regions; r++) {
+            int segments = CheckpointScope.EXPECTED_SEGMENTS_AND_SUB_SETS;
+            PagesConcurrentHashSet[] arrayFromRegion = new PagesConcurrentHashSet[segments];
 
-            for (int j = 0; j < segmentsCnt; j++) {
-                final Collection<FullPageId> innerColl = new GridConcurrentHashSet<>();
-                segments[j] = innerColl;
-                for (int k = 0; k < pagesMillions; k++) {
+            for (int s = 0; s < segments; s++) {
+                PagesConcurrentHashSet set = arrayFromRegion[s] = new PagesConcurrentHashSet();
+                 
+                for (int p = 0; p < pagesPerSegment; p++) {
                     long pageId = randomPageId(random);
 
-                    innerColl.add(new FullPageId(pageId, 123));
+                    set.add(new FullPageId(pageId, 123));
                 }
             }
 
-            scope.addCpPages(new GridMultiCollectionWrapper<FullPageId>(segments));
+
+            scope.addDataRegionCpPages(arrayFromRegion);
         }
         return scope;
     }

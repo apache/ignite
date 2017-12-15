@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.future.CountDownFuture;
@@ -138,50 +138,52 @@ public class AsyncCheckpointer {
      */
     public CountDownFuture quickSortAndWritePages(CheckpointScope cpScope,
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
-        return quickSortAndWritePages(cpScope.toBuffer(), taskFactory);
+        return quickSortAndWritePages(cpScope.toBuffers(), taskFactory);
     }
 
     /**
-     * @param pageIds Checkpoint scope, contains unsorted collections.
+     * @param pageIds Checkpoint scope, contains unsorted collections. Elements may be processed separately.
      * @param taskFactory write pages task factory. Should provide callable to write given pages array.
      * @return future will be completed when background writing is done.
      */
-    public CountDownFuture quickSortAndWritePages(FullPageIdsBuffer pageIds,
+    public CountDownFuture quickSortAndWritePages(List<FullPageIdsBuffer> pageIds,
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
 
         // init counter 1 protects here from premature completing
         final CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(1);
-
-        Callable<Void> task = new QuickSortRecursiveTask(pageIds,
-            SEQUENTIAL_CP_PAGE_COMPARATOR,
-            taskFactory,
-            new IgniteInClosure<Callable<Void>>() {
-                @Override public void apply(Callable<Void> call) {
-                    fork(call, cntDownDynamicFut);
-                }
-            },
-            checkpointThreads,
-            new ForkNowForkLaterStrategy() {
-                @Override public boolean forkNow() {
-                    if (asyncRunner.getActiveCount() < checkpointThreads) {
-                        if (log.isTraceEnabled())
-                            log.trace("Need to fill pool by computing tasks, fork now");
-
-                        return true; // need to fill the pool
+        for (FullPageIdsBuffer nextBuffer : pageIds) {
+            Callable<Void> task = new QuickSortRecursiveTask(nextBuffer,
+                SEQUENTIAL_CP_PAGE_COMPARATOR,
+                taskFactory,
+                new IgniteInClosure<Callable<Void>>() {
+                    @Override public void apply(Callable<Void> call) {
+                        fork(call, cntDownDynamicFut);
                     }
+                },
+                checkpointThreads,
+                new ForkNowForkLaterStrategy() {
+                    @Override public boolean forkNow() {
+                        if (asyncRunner.getActiveCount() < checkpointThreads) {
+                            if (log.isTraceEnabled())
+                                log.trace("Need to fill pool by computing tasks, fork now");
 
-                    if (blockingQueue.size() < 2) {
-                        if (log.isTraceEnabled())
-                            log.trace("Need to fill queue by computing tasks, fork now");
+                            return true; // need to fill the pool
+                        }
 
-                        return true; // need to fill the queue
+                        if (blockingQueue.size() < 2) {
+                            if (log.isTraceEnabled())
+                                log.trace("Need to fill queue by computing tasks, fork now");
+
+                            return true; // need to fill the queue
+                        }
+
+                        return false; // sufficient queue and pool is already busy, don't flood queue
                     }
+                });
 
-                    return false; // sufficient queue and pool is already busy, don't flood queue
-                }
-            });
+            fork(task, cntDownDynamicFut);
+        }
 
-        fork(task, cntDownDynamicFut);
 
         cntDownDynamicFut.onDone((Void)null); //submit of all tasks completed
 

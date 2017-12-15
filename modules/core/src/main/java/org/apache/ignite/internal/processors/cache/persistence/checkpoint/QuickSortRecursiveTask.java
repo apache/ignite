@@ -82,6 +82,9 @@ class QuickSortRecursiveTask implements Callable<Void> {
         if (isUnderThreshold(remaining)) {
             buf.sort(settings.comp);
 
+            //todo remove
+            //System.out.print("Sort " + remaining + "; ");
+
             int subArrays = (remaining / ONE_WRITE_CHUNK_THRESHOLD) + 1;
 
             for (FullPageIdsBuffer nextSubArray : buf.split(subArrays)) {

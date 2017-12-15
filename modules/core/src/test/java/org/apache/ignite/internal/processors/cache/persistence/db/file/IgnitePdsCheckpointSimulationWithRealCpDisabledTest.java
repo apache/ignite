@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConc
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -890,7 +889,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 long write = 0;
 
                 for (PagesConcurrentHashSet concurrentHashSet : pageIds) {
-                    for (GridConcurrentHashSet<FullPageId> next : concurrentHashSet) {
+                    for (Set<FullPageId> next : concurrentHashSet) {
                         for (FullPageId fullId : next) {
                             long cpStart = System.nanoTime();
 
