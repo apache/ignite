@@ -15,7 +15,7 @@
     limitations under the License.
 
 .wch-content
-    .wch-nav-item(ng-repeat='item in $ctrl.items' ng-if='!item.hidden && ($root.user.becomeUsed && item.canBecomed)')
+    .wch-nav-item(ng-repeat='item in $ctrl.items' ng-if='!item.hidden')
         div(ng-if='item.children' ng-click='$event.stopPropagation()'
                 ng-class='{active: $state.includes(item.sref)}'
                 bs-dropdown='item.children'
@@ -28,7 +28,6 @@
                 span {{::item.text}}
                     span.caret
 
-        a(ng-if='$root.user.becomeUsed ? item.canBecomed : !item.children' ui-sref='{{item.sref}}' ui-sref-active='active')
         a(ng-if='!item.children && item.sref' ui-sref='{{item.sref}}' ui-sref-active='active')
             | {{::item.text}}
 

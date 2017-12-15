@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
+import {ReplaySubject} from 'rxjs/ReplaySubject';
+
 export default ['User', ['$q', '$injector', '$rootScope', '$state', '$http', function($q, $injector, $root, $state, $http) {
     let user;
 
+    const current$ = new ReplaySubject(1);
+
     return {
+        current$,
         load() {
             return user = $http.post('/api/v1/user')
                 .then(({data}) => {
                     $root.user = data;
 
                     $root.$broadcast('user', $root.user);
+
+                    current$.next(data);
 
                     return $root.user;
                 })

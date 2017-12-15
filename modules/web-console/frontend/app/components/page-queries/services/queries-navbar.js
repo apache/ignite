@@ -20,19 +20,23 @@ import 'rxjs/add/operator/partition';
 import map from 'lodash/fp/map';
 
 export default class {
-    static $inject = ['$rootScope', 'IgniteMessages', 'IgniteNotebook', 'CreateQueryDialog'];
+    static $inject = ['IgniteMessages', 'IgniteNotebook', 'CreateQueryDialog', 'User', 'AgentManager'];
 
-    constructor($root, Messages, queriesSrv, createQueryDialog) {
+    constructor(Messages, queriesSrv, createQueryDialog, User, agentMgr) {
         Object.assign(this, { Messages, queriesSrv, createQueryDialog });
 
         this.text = 'Queries';
 
-        if ($root.IgniteDemoMode)
+        if (agentMgr.isDemoMode())
             this.sref = 'base.sql.demo';
         else {
             this.click = () => this.createQueryDialog.show();
             this.getData();
         }
+
+        User.current$
+            .do((user) => this.hidden = user.becomeUsed)
+            .subscribe();
     }
 
     getData() {
