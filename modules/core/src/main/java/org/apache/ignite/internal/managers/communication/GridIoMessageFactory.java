@@ -155,6 +155,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationConnectionCheckMessage;
 import org.apache.ignite.spi.communication.tcp.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.HandshakeMessage2;
 import org.apache.ignite.spi.communication.tcp.NodeIdMessage;
@@ -186,6 +187,11 @@ public class GridIoMessageFactory implements MessageFactory {
         switch (type) {
             // -54 is reserved for SQL.
             // -46 ... -51 - snapshot messages.
+            case -62:
+                msg = new TcpCommunicationConnectionCheckMessage();
+
+                break;
+
             case -61:
                 msg = new IgniteDiagnosticMessage();
 

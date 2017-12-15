@@ -842,7 +842,7 @@ public class GridNioServer<T> {
                 NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
 
                 if (async) {
-                    // assert meta != null;
+                    assert meta != null;
 
                     req.op = NioOperation.CONNECT;
                 }

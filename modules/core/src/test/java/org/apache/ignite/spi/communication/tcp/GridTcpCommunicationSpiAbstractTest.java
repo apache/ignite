@@ -17,14 +17,21 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridAbstractCommunicationSelfTest;
+import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -32,7 +39,7 @@ import org.apache.ignite.testframework.GridTestUtils;
  */
 abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunicationSelfTest<CommunicationSpi> {
     /** */
-    private static final int SPI_COUNT = 3;
+    private static final int SPI_COUNT = 2;
 
     /** */
     public static final int IDLE_CONN_TIMEOUT = 2000;
@@ -82,6 +89,35 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
             assertEquals(getSpiCount() - 1, clients.size());
 
             clients.put(UUID.randomUUID(), F.first(clients.values()));
+        }
+    }
+
+    public void testConnectionCheck() {
+        for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
+            UUID id = entry.getKey();
+
+            TcpCommunicationSpi spi = (TcpCommunicationSpi)entry.getValue();
+
+            List<ClusterNode> checkNodes = new ArrayList<>();
+
+            for (ClusterNode node : nodes) {
+                if (!id.equals(node.id()))
+                    checkNodes.add(node);
+            }
+
+            spi.checkConnection(checkNodes);
+
+            break;
+//            for (ClusterNode node : nodes) {
+//                synchronized (mux) {
+//                    if (!msgDestMap.containsKey(entry.getKey()))
+//                        msgDestMap.put(entry.getKey(), new HashSet<UUID>());
+//
+//                    msgDestMap.get(entry.getKey()).add(node.id());
+//                }
+//
+//                entry.getValue().sendMessage(node, new GridTestMessage(entry.getKey(), msgId++, 0));
+//            }
         }
     }
 

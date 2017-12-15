@@ -151,7 +151,7 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
         throws Exception {
         TcpCommunicationSpi spi = (TcpCommunicationSpi)impl.spi.ignite().configuration().getCommunicationSpi();
 
-        spi.pingNodes(nodes);
+        spi.checkConnection(nodes);
 
         ZkDistributedCollectDataFuture.saveNodeResult(futPath, rtState.zkClient, locNodeOrder, null);
     }

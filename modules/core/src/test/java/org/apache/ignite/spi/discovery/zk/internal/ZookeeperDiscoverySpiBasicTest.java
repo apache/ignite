@@ -1929,7 +1929,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
        nodes.add(ignite(2).cluster().localNode());
 
-       spi.pingNodes(nodes);
+       // spi.pingNodes(nodes);
     }
 
     /**
@@ -2628,7 +2628,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<BitSet> pingNodes(List<ClusterNode> nodes) {
+        @Override public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
             CountDownLatch pingLatch = this.pingLatch;
 
             try {
@@ -2639,7 +2639,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 throw new IgniteException(e);
             }
 
-            return super.pingNodes(nodes);
+            return super.checkConnection(nodes);
         }
     }
 }

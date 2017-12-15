@@ -135,6 +135,7 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
@@ -308,10 +309,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private static final IgniteProductVersion VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT = IgniteProductVersion.fromString("2.1.4");
 
     /** Connection index meta for session. */
-    private static final int CONN_IDX_META = GridNioSessionMetaKey.nextUniqueKey();
+    public static final int CONN_IDX_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Session future. */
+    public static final int SES_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** */
+    public static final ConnectionKey CONN_CHECK_DUMMY_KEY = new ConnectionKey(null, -1, -1);
 
     /**
      * Default local port range (value is <tt>100</tt>).
@@ -396,9 +403,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 else {
-                    if (log.isInfoEnabled())
-                        log.info("Established outgoing communication connection [locAddr=" + ses.localAddress() +
-                            ", rmtAddr=" + ses.remoteAddress() + ']');
+                    ConnectionKey connId = ses.meta(CONN_IDX_META);
+
+                    if (connId != CONN_CHECK_DUMMY_KEY) {
+                        if (log.isInfoEnabled())
+                            log.info("Established outgoing communication connection [locAddr=" + ses.localAddress() +
+                                ", rmtAddr=" + ses.remoteAddress() + ']');
+                    }
                 }
             }
 
@@ -676,7 +687,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 ConnectionKey connKey = ses.meta(CONN_IDX_META);
 
                 if (connKey == null) {
-                    assert ses.accepted() : ses;
+                    assert ses.accepted() : msg;
 
                     if (!connectGate.tryEnter()) {
                         if (log.isDebugEnabled())
@@ -735,6 +746,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                                 recovery.lastAcknowledged(rcvCnt);
                             }
+                        }
+                        else if (connKey == CONN_CHECK_DUMMY_KEY) {
+                            assert msg instanceof NodeIdMessage : msg;
+
+                            TcpCommunicationConnectionCheckFuture fut = ses.meta(SES_FUT_META);
+
+                            fut.onConnected(U.bytesToUuid(((NodeIdMessage) msg).nodeIdBytes, 0));
+
+                            nioSrvr.closeFromWorkerThread(ses);
+
+                            return;
                         }
                     }
 
@@ -2566,45 +2588,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         sendMessage0(node, msg, null);
     }
 
-    public IgniteFuture<BitSet> pingNodes(List<ClusterNode> nodes) {
+    public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
         ClusterNode node = nodes.get(0);
 
         try {
-            LinkedHashSet<InetSocketAddress> addrs = nodeAddresses(node);
+            Collection<InetSocketAddress> addrs = nodeAddresses(node);
 
-            // /172.25.4.90:45012
-
-            for (InetSocketAddress addr : addrs) {
-                SocketChannel ch = SocketChannel.open();
-
-                ch.configureBlocking(false);
-
-                ch.socket().setTcpNoDelay(tcpNoDelay);
-                ch.socket().setKeepAlive(true);
-
-                boolean connect = ch.connect(addr);
-
-                if (!connect) {
-                    GridNioFuture<GridNioSession> fut = nioSrvr.createSession(ch, null, true, new IgniteInClosure<IgniteInternalFuture<GridNioSession>>() {
-                        @Override public void apply(IgniteInternalFuture<GridNioSession> fut) {
-                            try {
-                                GridNioSession ses = fut.get();
-
-                                log.info("Ping connected");
-
-                                nioSrvr.closeFromWorkerThread(ses);
-                            }
-                            catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-
-                    fut.get();
-                }
-                else
-                    log.info("Connected");
-            }
         }
         catch (Exception e) {
             throw new IgniteSpiException(e);
