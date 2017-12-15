@@ -155,12 +155,11 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationConnectionCheckMessage;
-import org.apache.ignite.spi.communication.tcp.HandshakeMessage;
-import org.apache.ignite.spi.communication.tcp.HandshakeMessage2;
-import org.apache.ignite.spi.communication.tcp.NodeIdMessage;
-import org.apache.ignite.spi.communication.tcp.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
+import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.jsr166.ConcurrentHashMap8;
 
 /**
