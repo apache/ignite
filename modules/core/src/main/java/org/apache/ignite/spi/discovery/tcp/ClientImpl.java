@@ -306,7 +306,10 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         U.join(msgWorker, log);
         U.join(sockWriter, log);
-        U.join(sockReader, log);
+
+        // TODO Need to understand why SocketReader is not got interrupted.
+        while (!U.join(sockReader, log, 200))
+            U.interrupt(sockReader);
 
         timer.cancel();
 
