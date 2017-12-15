@@ -15,51 +15,72 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
- * Recovery acknowledgment message.
+ * Handshake message.
  */
-public class RecoveryLastReceivedMessage implements Message {
+public class HandshakeMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    static final long ALREADY_CONNECTED = -1;
-
-    /** */
-    static final long NODE_STOPPING = -2;
-
-    /** Need wait. */
-    static final long NEED_WAIT = -3;
-
     /** Message body size in bytes. */
-    private static final int MESSAGE_SIZE = 8;
+    private static final int MESSAGE_SIZE = 32;
 
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
     /** */
+    private UUID nodeId;
+
+    /** */
     private long rcvCnt;
+
+    /** */
+    private long connectCnt;
 
     /**
      * Default constructor required by {@link Message}.
      */
-    public RecoveryLastReceivedMessage() {
+    public HandshakeMessage() {
         // No-op.
     }
 
     /**
+     * @param nodeId Node ID.
+     * @param connectCnt Connect count.
      * @param rcvCnt Number of received messages.
      */
-    public RecoveryLastReceivedMessage(long rcvCnt) {
+    public HandshakeMessage(UUID nodeId, long connectCnt, long rcvCnt) {
+        assert nodeId != null;
+        assert rcvCnt >= 0 : rcvCnt;
+
+        this.nodeId = nodeId;
+        this.connectCnt = connectCnt;
         this.rcvCnt = rcvCnt;
+    }
+
+    /**
+     * @return Connection index.
+     */
+    public int connectionIndex() {
+        return 0;
+    }
+
+    /**
+     * @return Connect count.
+     */
+    public long connectCount() {
+        return connectCnt;
     }
 
     /**
@@ -67,6 +88,13 @@ public class RecoveryLastReceivedMessage implements Message {
      */
     public long received() {
         return rcvCnt;
+    }
+
+    /**
+     * @return Node ID.
+     */
+    public UUID nodeId() {
+        return nodeId;
     }
 
     /** {@inheritDoc} */
@@ -81,7 +109,15 @@ public class RecoveryLastReceivedMessage implements Message {
 
         TcpCommunicationSpi.writeMessageType(buf, directType());
 
+        byte[] bytes = U.uuidToBytes(nodeId);
+
+        assert bytes.length == 16 : bytes.length;
+
+        buf.put(bytes);
+
         buf.putLong(rcvCnt);
+
+        buf.putLong(connectCnt);
 
         return true;
     }
@@ -91,23 +127,31 @@ public class RecoveryLastReceivedMessage implements Message {
         if (buf.remaining() < MESSAGE_SIZE)
             return false;
 
+        byte[] nodeIdBytes = new byte[NodeIdMessage.MESSAGE_SIZE];
+
+        buf.get(nodeIdBytes);
+
+        nodeId = U.bytesToUuid(nodeIdBytes, 0);
+
         rcvCnt = buf.getLong();
+
+        connectCnt = buf.getLong();
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE;
+        return TcpCommunicationSpi.HANDSHAKE_MSG_TYPE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(RecoveryLastReceivedMessage.class, this);
+        return S.toString(HandshakeMessage.class, this);
     }
 }

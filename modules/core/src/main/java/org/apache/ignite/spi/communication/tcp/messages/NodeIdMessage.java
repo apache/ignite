@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -24,76 +24,60 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
- * Handshake message.
+ * Node ID message.
  */
-public class HandshakeMessage implements Message {
+public class NodeIdMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Message body size in bytes. */
-    private static final int MESSAGE_SIZE = 32;
+    /** Message body size (with message type) in bytes. */
+    static final int MESSAGE_SIZE = 16;
 
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
     /** */
-    private UUID nodeId;
+    private byte[] nodeIdBytes;
 
     /** */
-    private long rcvCnt;
-
-    /** */
-    private long connectCnt;
-
-    /**
-     * Default constructor required by {@link Message}.
-     */
-    public HandshakeMessage() {
+    public NodeIdMessage() {
         // No-op.
     }
 
     /**
      * @param nodeId Node ID.
-     * @param connectCnt Connect count.
-     * @param rcvCnt Number of received messages.
      */
-    public HandshakeMessage(UUID nodeId, long connectCnt, long rcvCnt) {
+    public NodeIdMessage(UUID nodeId) {
         assert nodeId != null;
-        assert rcvCnt >= 0 : rcvCnt;
 
-        this.nodeId = nodeId;
-        this.connectCnt = connectCnt;
-        this.rcvCnt = rcvCnt;
+        nodeIdBytes = U.uuidToBytes(nodeId);
+
+        assert nodeIdBytes.length == MESSAGE_SIZE : "Node ID size must be " + MESSAGE_SIZE;
     }
 
     /**
-     * @return Connection index.
+     * @return Node ID bytes.
      */
-    public int connectionIndex() {
-        return 0;
+    public byte[] nodeIdBytes() {
+        return nodeIdBytes;
     }
 
     /**
-     * @return Connect count.
+     * @param nodeId Node ID.
+     * @return Marshalled node ID bytes with direct message type.
      */
-    public long connectCount() {
-        return connectCnt;
-    }
+    public static byte[] nodeIdBytesWithType(UUID nodeId) {
+        byte[] nodeIdBytesWithType = new byte[MESSAGE_FULL_SIZE];
 
-    /**
-     * @return Number of received messages.
-     */
-    public long received() {
-        return rcvCnt;
-    }
+        nodeIdBytesWithType[0] = (byte)(TcpCommunicationSpi.NODE_ID_MSG_TYPE & 0xFF);
+        nodeIdBytesWithType[1] = (byte)((TcpCommunicationSpi.NODE_ID_MSG_TYPE >> 8) & 0xFF);
 
-    /**
-     * @return Node ID.
-     */
-    public UUID nodeId() {
-        return nodeId;
+        U.uuidToBytes(nodeId, nodeIdBytesWithType, 2);
+
+        return nodeIdBytesWithType;
     }
 
     /** {@inheritDoc} */
@@ -103,20 +87,14 @@ public class HandshakeMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        assert nodeIdBytes.length == MESSAGE_SIZE;
+
         if (buf.remaining() < MESSAGE_FULL_SIZE)
             return false;
 
         TcpCommunicationSpi.writeMessageType(buf, directType());
 
-        byte[] bytes = U.uuidToBytes(nodeId);
-
-        assert bytes.length == 16 : bytes.length;
-
-        buf.put(bytes);
-
-        buf.putLong(rcvCnt);
-
-        buf.putLong(connectCnt);
+        buf.put(nodeIdBytes);
 
         return true;
     }
@@ -126,31 +104,25 @@ public class HandshakeMessage implements Message {
         if (buf.remaining() < MESSAGE_SIZE)
             return false;
 
-        byte[] nodeIdBytes = new byte[NodeIdMessage.MESSAGE_SIZE];
+        nodeIdBytes = new byte[MESSAGE_SIZE];
 
         buf.get(nodeIdBytes);
-
-        nodeId = U.bytesToUuid(nodeIdBytes, 0);
-
-        rcvCnt = buf.getLong();
-
-        connectCnt = buf.getLong();
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return TcpCommunicationSpi.HANDSHAKE_MSG_TYPE;
+        return TcpCommunicationSpi.NODE_ID_MSG_TYPE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        throw new UnsupportedOperationException();
+        return 0;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(HandshakeMessage.class, this);
+        return S.toString(NodeIdMessage.class, this);
     }
 }
