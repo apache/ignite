@@ -51,9 +51,13 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.sql.command.SqlColumn;
+import org.apache.ignite.internal.sql.command.SqlColumnType;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateTableCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropTableCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -65,6 +69,7 @@ import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
 import org.h2.table.Column;
 import org.h2.value.DataType;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
@@ -101,62 +106,25 @@ public class DdlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException{
-        IgniteInternalFuture fut;
+        IgniteInternalFuture fut = null;
 
         try {
-            if (cmd instanceof SqlCreateIndexCommand) {
-                SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
+            if (cmd instanceof SqlCreateIndexCommand)
 
-                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+                fut = makeFutureForCreateIndex((SqlCreateIndexCommand) cmd);
 
-                if (tbl == null)
-                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
+            else if (cmd instanceof SqlDropIndexCommand)
 
-                assert tbl.rowDescriptor() != null;
+                fut = makeFutureForDropIndex((SqlDropIndexCommand) cmd);
 
-                QueryIndex newIdx = new QueryIndex();
+            else if (cmd instanceof SqlCreateTableCommand)
 
-                newIdx.setName(cmd0.indexName());
+                createTable((SqlCreateTableCommand) cmd);
 
-                newIdx.setIndexType(cmd0.spatial() ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+            else if (cmd instanceof SqlDropTableCommand)
 
-                LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>();
+                dropTable((SqlDropTableCommand) cmd);
 
-                // Let's replace H2's table and property names by those operated by GridQueryProcessor.
-                GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
-
-                for (SqlIndexColumn col : cmd0.columns()) {
-                    GridQueryProperty prop = typeDesc.property(col.name());
-
-                    if (prop == null)
-                        throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, col.name());
-
-                    flds.put(prop.name(), !col.descending());
-                }
-
-                newIdx.setFields(flds);
-                newIdx.setInlineSize(cmd0.inlineSize());
-
-                fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
-                    newIdx, cmd0.ifNotExists(), cmd0.parallel());
-            }
-            else if (cmd instanceof SqlDropIndexCommand) {
-                SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
-
-                GridH2Table tbl = idx.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
-
-                if (tbl != null) {
-                    fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd0.schemaName(), cmd0.indexName(),
-                        cmd0.ifExists());
-                }
-                else {
-                    if (cmd0.ifExists())
-                        fut = new GridFinishedFuture();
-                    else
-                        throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
-                            cmd0.indexName());
-                }
-            }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -180,6 +148,124 @@ public class DdlStatementsProcessor {
         catch (Exception e) {
             throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
         }
+    }
+
+    /** FIXME */
+    private void createTable(SqlCreateTableCommand cmd) throws IgniteCheckedException {
+        if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()) && cmd.schemaName() != null)
+            throw new SchemaOperationException("CREATE TABLE can only be executed on " +
+                QueryUtils.DFLT_SCHEMA + " schema.");
+
+        GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+        if (tbl != null) {
+            if (!cmd.ifNotExists())
+                throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,
+                    cmd.tableName());
+        }
+        else {
+            QueryEntity qryEnt = toQueryEntity(cmd);
+
+            CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
+
+            ccfg.setQueryEntities(Collections.singleton(qryEnt));
+            ccfg.setSqlSchema(cmd.schemaName());
+
+            SchemaOperationException err =
+                QueryUtils.checkQueryEntityConflicts(ccfg, ctx.cache().cacheDescriptors().values());
+
+            if (err != null)
+                throw err;
+
+            ctx.query().dynamicTableCreate(cmd.schemaName(), qryEnt, cmd.templateName(), cmd.cacheName(),
+                cmd.cacheGroup(), cmd.dataRegionName(), cmd.affinityKey(), cmd.atomicityMode(),
+                cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists());
+        }
+    }
+
+    /** FIXME */
+    private void dropTable(SqlDropTableCommand cmd) throws IgniteCheckedException {
+
+        if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
+            throw new SchemaOperationException("DROP TABLE can only be executed on " +
+                QueryUtils.DFLT_SCHEMA + " schema.");
+
+        GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+        if (tbl == null && cmd.ifExists()) {
+            ctx.cache().createMissingQueryCaches();
+
+            tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+        }
+
+        if (tbl == null) {
+            if (!cmd.ifExists())
+                throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                    cmd.tableName());
+        }
+        else
+            ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
+    }
+
+    /** FIXME */
+    private IgniteInternalFuture makeFutureForCreateIndex(SqlCreateIndexCommand cmd) throws SchemaOperationException {
+        IgniteInternalFuture fut;
+
+        GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+        if (tbl == null)
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
+
+        assert tbl.rowDescriptor() != null;
+
+        QueryIndex newIdx = new QueryIndex();
+
+        newIdx.setName(cmd.indexName());
+
+        newIdx.setIndexType(cmd.spatial() ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+
+        LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>();
+
+        // Let's replace H2's table and property names by those operated by GridQueryProcessor.
+        GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
+
+        for (SqlIndexColumn col : cmd.columns()) {
+            GridQueryProperty prop = typeDesc.property(col.name());
+
+            if (prop == null)
+                throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, col.name());
+
+            flds.put(prop.name(), !col.descending());
+        }
+
+        newIdx.setFields(flds);
+        newIdx.setInlineSize(cmd.inlineSize());
+
+        fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
+            newIdx, cmd.ifNotExists(), cmd.parallel());
+
+        return fut;
+    }
+
+    /** FIXME */
+    private IgniteInternalFuture makeFutureForDropIndex(SqlDropIndexCommand cmd) throws SchemaOperationException {
+        IgniteInternalFuture fut;
+
+        GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
+
+        if (tbl != null) {
+            fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
+                cmd.ifExists());
+        }
+        else {
+            if (cmd.ifExists())
+                fut = new GridFinishedFuture();
+            else
+                throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
+                    cmd.indexName());
+        }
+
+        return fut;
     }
 
     /**
@@ -506,6 +592,106 @@ public class DdlStatementsProcessor {
 
         res.setValueType(valTypeName);
         res.setKeyType(keyTypeName);
+
+        if (!F.isEmpty(notNullFields)) {
+            QueryEntityEx res0 = new QueryEntityEx(res);
+
+            res0.setNotNullFields(notNullFields);
+
+            res = res0;
+        }
+
+        return res;
+    }
+
+    /** FIXME */
+    private static @NotNull String getSupportedTypeName(@NotNull SqlColumnType colType) {
+        assert colType != null;
+
+        Class<?> cls = SqlColumnType.classForType(colType);
+
+        if (cls == null)
+            throw new IgniteSQLException("Unsupported column type: " + colType);
+
+        return cls.getSimpleName();
+    }
+
+    /**
+     * Convert this statement to query entity and do Ignite specific sanity checks on the way.
+     * @return Query entity mimicking this SQL statement.
+     */
+    private static QueryEntity toQueryEntity(SqlCreateTableCommand cmd) {
+        if (cmd.primaryKeyColumnNames().size() == 0)
+            throw new IgniteSQLException("No primary key(s) defined for table " + cmd.tableName());
+
+        QueryEntity res = new QueryEntity();
+
+        res.setTableName(cmd.tableName());
+
+        Set<String> notNullFields = null;
+
+        for (SqlColumn col : cmd.columns().values()) {
+
+            // "[B", not "byte[]" -- ???
+            res.addQueryField(col.name(), getSupportedTypeName(col.type()), null);
+
+            if (!col.isNullable()) {
+                if (notNullFields == null)
+                    notNullFields = new HashSet<>();
+
+                notNullFields.add(col.name());
+            }
+        }
+
+        String keyTypeName;
+        String valTypeName;
+
+        if (!F.isEmpty(cmd.valueTypeName()))
+            valTypeName = cmd.valueTypeName();
+        else
+            valTypeName = QueryUtils.createTableValueTypeName(cmd.schemaName(), cmd.tableName());
+
+        if (!F.isEmpty(cmd.keyTypeName()))
+            keyTypeName = cmd.keyTypeName();
+        else
+            keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
+
+        boolean wrapKey = cmd.wrapKey() != null ? cmd.wrapKey() : false;
+        boolean wrapValue = cmd.wrapValue() != null ? cmd.wrapValue() : true;
+
+        if (wrapKey)
+            res.setKeyFields(cmd.primaryKeyColumnNames());
+        else {
+            SqlColumn pkCol = cmd.columns().get(cmd.primaryKeyColumnNames().iterator().next());
+
+            keyTypeName = getSupportedTypeName(pkCol.type());
+
+            res.setKeyFieldName(pkCol.name());
+        }
+
+        res.setKeyType(keyTypeName);
+
+        if (!wrapValue) {
+            SqlColumn valCol = null;
+
+            for (Map.Entry<String, SqlColumn> e : cmd.columns().entrySet()) {
+
+                if (!cmd.primaryKeyColumnNames().contains(e.getKey())) {
+
+                    valCol = e.getValue();
+
+                    break;
+                }
+            }
+
+            assert valCol != null;
+
+            valTypeName = getSupportedTypeName(valCol.type());
+
+            res.setValueFieldName(valCol.name());
+        }
+
+        res.setValueType(valTypeName);
 
         if (!F.isEmpty(notNullFields)) {
             QueryEntityEx res0 = new QueryEntityEx(res);

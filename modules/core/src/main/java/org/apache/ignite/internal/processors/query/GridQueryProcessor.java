@@ -1375,12 +1375,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheName,
-        String cacheGroup, @Nullable String dataRegion, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
-        @Nullable CacheWriteSynchronizationMode writeSyncMode, int backups, boolean ifNotExists)
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, @Nullable String templateName,
+        @Nullable String cacheName, String cacheGroup, @Nullable String dataRegion,
+        String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
+        @Nullable CacheWriteSynchronizationMode writeSyncMode, Integer backups, boolean ifNotExists)
         throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
         assert backups >= 0;
+
+        if (F.isEmpty(templateName))
+            templateName = QueryUtils.TEMPLATE_PARTITIONED;
 
         CacheConfiguration<?, ?> ccfg = ctx.cache().getConfigFromTemplate(templateName);
 
@@ -1419,7 +1423,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (writeSyncMode != null)
             ccfg.setWriteSynchronizationMode(writeSyncMode);
 
-        ccfg.setBackups(backups);
+        ccfg.setBackups(backups == null ? 0 : backups);
 
         ccfg.setSqlSchema(schemaName);
         ccfg.setSqlEscapeAll(true);

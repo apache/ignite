@@ -21,19 +21,20 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.sql.SqlEnumParserUtils;
 import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlLexerToken;
+import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
+import static org.apache.ignite.internal.sql.SqlEnumParserUtils.tryParseBoolean;
 import static org.apache.ignite.internal.sql.SqlKeyword.AFFINITY_KEY;
 import static org.apache.ignite.internal.sql.SqlKeyword.ATOMICITY;
 import static org.apache.ignite.internal.sql.SqlKeyword.BACKUPS;
@@ -96,11 +97,10 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfNotExists;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
-import static org.apache.ignite.internal.sql.SqlEnumParserUtils.tryParseBoolean;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipToken;
 
 /**
  * CREATE INDEX command.
@@ -121,14 +121,11 @@ public class SqlCreateTableCommand implements SqlCommand {
 
     /** Columns. */
     @GridToStringInclude
-    private Collection<SqlColumn> cols;
-
-    /** Column names. */
-    private Set<String> colNames;
+    private Map<String, SqlColumn> cols;
 
     /** Primary key column names. */
     @GridToStringInclude
-    private Collection<String> pkColNames;
+    private Set<String> pkColNames;
 
     /** Cache name upon which new cache configuration for this table must be based. */
     @GridToStringInclude
@@ -376,14 +373,14 @@ public class SqlCreateTableCommand implements SqlCommand {
     /**
      * @return Columns.
      */
-    public Collection<SqlColumn> columns() {
-        return cols != null ? cols : Collections.<SqlColumn>emptySet();
+    public Map<String, SqlColumn> columns() {
+        return cols != null ? cols : Collections.<String, SqlColumn>emptyMap();
     }
 
     /**
      * @return PK column names.
      */
-    public Collection<String> primaryKeyColumnNames() {
+    public Set<String> primaryKeyColumnNames() {
         return pkColNames != null ? pkColNames : Collections.<String>emptySet();
     }
 
@@ -446,19 +443,19 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case BIT:
                 case BOOL:
                 case BOOLEAN:
-                    col = new SqlColumn(name, SqlColumnType.BOOLEAN);
+                    col = new SqlColumn(name, SqlColumnType.BOOLEAN, 0, 0, true);
 
                     break;
 
                 case TINYINT:
-                    col = new SqlColumn(name, SqlColumnType.BYTE);
+                    col = new SqlColumn(name, SqlColumnType.BYTE, 0, 0, false);
 
                     break;
 
                 case INT2:
                 case SMALLINT:
                 case YEAR:
-                    col = new SqlColumn(name, SqlColumnType.SHORT);
+                    col = new SqlColumn(name, SqlColumnType.SHORT, 0, 0, false);
 
                     break;
 
@@ -467,19 +464,19 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case INTEGER:
                 case MEDIUMINT:
                 case SIGNED:
-                    col = new SqlColumn(name, SqlColumnType.INT);
+                    col = new SqlColumn(name, SqlColumnType.INT, 0, 0, false);
 
                     break;
 
                 case BIGINT:
                 case INT8:
-                    col = new SqlColumn(name, SqlColumnType.LONG);
+                    col = new SqlColumn(name, SqlColumnType.LONG, 0, 0, false);
 
                     break;
 
                 case FLOAT4:
                 case REAL:
-                    col = new SqlColumn(name, SqlColumnType.FLOAT);
+                    col = new SqlColumn(name, SqlColumnType.FLOAT, 0, 0, false);
 
                     break;
 
@@ -489,14 +486,14 @@ public class SqlCreateTableCommand implements SqlCommand {
                     if (matchesKeyword(next, PRECISION))
                         lex.shift();
 
-                    col = new SqlColumn(name, SqlColumnType.DOUBLE);
+                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, false);
 
                     break;
                 }
 
                 case FLOAT:
                 case FLOAT8:
-                    col = new SqlColumn(name, SqlColumnType.DOUBLE);
+                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, false);
 
                     break;
 
@@ -515,7 +512,7 @@ public class SqlCreateTableCommand implements SqlCommand {
                         skipToken(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
                     }
 
-                    col = new SqlColumn(name, SqlColumnType.DECIMAL, scale, precision);
+                    col = new SqlColumn(name, SqlColumnType.DECIMAL, scale, precision, true);
 
                     break;
                 }
@@ -544,24 +541,24 @@ public class SqlCreateTableCommand implements SqlCommand {
                 }
 
                 case DATE:
-                    col = new SqlColumn(name, SqlColumnType.DATE);
+                    col = new SqlColumn(name, SqlColumnType.DATE, 0, 0, true);
 
                     break;
 
                 case TIME:
-                    col = new SqlColumn(name, SqlColumnType.TIME);
+                    col = new SqlColumn(name, SqlColumnType.TIME, 0, 0, true);
 
                     break;
 
                 case DATETIME:
                 case SMALLDATETIME:
                 case TIMESTAMP:
-                    col = new SqlColumn(name, SqlColumnType.TIMESTAMP);
+                    col = new SqlColumn(name, SqlColumnType.TIMESTAMP, 0, 0, true);
 
                     break;
 
                 case UUID:
-                    col = new SqlColumn(name, SqlColumnType.UUID);
+                    col = new SqlColumn(name, SqlColumnType.UUID, 0, 0, true);
 
                     break;
             }
@@ -595,15 +592,13 @@ public class SqlCreateTableCommand implements SqlCommand {
      * @param col Column.
      */
     private void addColumn(SqlLexer lex, SqlColumn col) {
-        if (cols == null) {
-            cols = new LinkedList<>();
-            colNames = new HashSet<>();
-        }
+        if (cols == null)
+            cols = new LinkedHashMap<>();
 
-        if (!colNames.add(col.name()))
+        if (cols.containsKey(col.name()))
             throw error(lex, "Column already defined: " + col.name());
 
-        cols.add(col);
+        cols.put(col.name(), col);
     }
 
     /**
@@ -770,10 +765,8 @@ public class SqlCreateTableCommand implements SqlCommand {
 
                     SqlColumn affCol = null;
 
-                    for (SqlColumn col : columns()) {
-
-                        if (val.equalsIgnoreCase(col.name())) {
-
+                    for (SqlColumn col : columns().values()) {
+                        if (col.name().equalsIgnoreCase(val)) {
                             if (affCol != null)
                                 throw error(lex.currentToken(),
                                     "Ambiguous affinity column name, use single quotes for case sensitivity");
@@ -869,7 +862,7 @@ public class SqlCreateTableCommand implements SqlCommand {
 
                 @Override public void apply(Boolean val, boolean isDflt, boolean isQuoted) {
 
-                    wrapKey(isDflt ? false : val);
+                    wrapKey(val);
                 }
             });
     }
@@ -883,7 +876,7 @@ public class SqlCreateTableCommand implements SqlCommand {
 
             @Override public void apply(Boolean val, boolean isDflt, boolean isQuoted) {
 
-                wrapValue(isDflt ? true : val);
+                wrapValue(val);
             }
         });
     }

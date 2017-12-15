@@ -35,40 +35,45 @@ public class SqlColumn {
     /** Precision. */
     private final int precision;
 
+    /** Is column nullable. */
+    private final boolean isNullable;
+
     /**
-     * Constructor.
+     * Constructs the object.
      *
      * @param name Name.
      * @param typ Type.
      */
     public SqlColumn(String name, SqlColumnType typ) {
-        this(name, typ, 0, 0);
+        this(name, typ, 0, 0, true);
     }
 
     /**
-     * Constructor.
+     * Constructs the object.
      *
      * @param name Name.
      * @param typ Type.
      * @param precision Precision.
      */
     public SqlColumn(String name, SqlColumnType typ, int precision) {
-        this(name, typ, 0, precision);
+        this(name, typ, 0, precision, true);
     }
 
     /**
-     * Constructor.
+     * Constructs the object.
      *
      * @param name Name.
      * @param typ Type.
      * @param precision Precision.
      * @param scale Scale.
+     * @param isNullable Is nullable.
      */
-    public SqlColumn(String name, SqlColumnType typ, int scale, int precision) {
+    public SqlColumn(String name, SqlColumnType typ, int scale, int precision, boolean isNullable) {
         this.name = name;
         this.typ = typ;
         this.scale = scale;
         this.precision = precision;
+        this.isNullable = isNullable;
     }
 
     /**
@@ -97,6 +102,15 @@ public class SqlColumn {
      */
     public int precision() {
         return precision;
+    }
+
+    /**
+     * Returns true if column is nullable.
+     *
+     * @return true if column is nullable.
+     */
+    public boolean isNullable() {
+        return isNullable;
     }
 
     /** {@inheritDoc} */

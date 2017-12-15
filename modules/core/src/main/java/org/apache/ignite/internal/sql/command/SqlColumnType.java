@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * SQL column type.
  */
@@ -61,5 +64,55 @@ public enum SqlColumnType {
     TIMESTAMP,
 
     /** UUID. */
-    UUID
+    UUID;
+
+    /** FIXME */
+    public static @Nullable Class<?> classForType(@NotNull SqlColumnType typ) {
+        switch (typ) {
+            case BOOLEAN:
+                return java.lang.Boolean.class;
+
+            case BYTE:
+                return java.lang.Byte.class;
+
+            case SHORT:
+                return java.lang.Short.class;
+
+            case INT:
+                return java.lang.Integer.class;
+
+            case LONG:
+                return java.lang.Long.class;
+
+            case DECIMAL:
+                return java.math.BigDecimal.class;
+
+            case FLOAT:
+                return java.lang.Float.class;
+
+            case DOUBLE:
+                return java.lang.Double.class;
+
+            case TIME:
+                return java.sql.Time.class;
+
+            case DATE:
+                return java.sql.Date.class;
+
+            case TIMESTAMP:
+                return java.sql.Timestamp.class;
+
+            case CHAR:
+            case VARCHAR:
+                return java.lang.String.class;
+
+            //case BYTES:
+            case UUID:
+                // "[B", not "byte[]";
+                return byte[].class;
+
+            default:
+                return null;
+        }
+    }
 }
