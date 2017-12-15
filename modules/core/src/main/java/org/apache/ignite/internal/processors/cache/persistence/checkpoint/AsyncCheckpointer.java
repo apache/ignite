@@ -41,8 +41,11 @@ public class AsyncCheckpointer {
     /** Checkpoint runner thread name prefix. */
     public static final String CHECKPOINT_RUNNER = "checkpoint-runner";
 
+    /** Blocking queue. */
+    private final LinkedBlockingQueue<Runnable> blockingQueue;
+
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
-    @Nullable private ThreadPoolExecutor asyncRunner;
+    private ThreadPoolExecutor asyncRunner;
 
     /**  Number of checkpoint threads. */
     private int checkpointThreads;
@@ -59,13 +62,14 @@ public class AsyncCheckpointer {
         this.checkpointThreads = checkpointThreads;
         this.log = log;
 
+        blockingQueue = new LinkedBlockingQueue<>();
         asyncRunner = new IgniteThreadPoolExecutor(
             CHECKPOINT_RUNNER,
             igniteInstanceName,
             checkpointThreads,
             checkpointThreads,
             30_000,
-            new LinkedBlockingQueue<Runnable>()
+            blockingQueue
         );
     }
 
@@ -169,6 +173,13 @@ public class AsyncCheckpointer {
                             log.trace("Need to fill pool by computing tasks, fork now");
 
                         return true; // need to fill the pool
+                    }
+
+                    if (blockingQueue.size() < 1) {
+                        if (log.isTraceEnabled())
+                            log.trace("Need to fill queue by computing tasks, fork now");
+
+                        return true; // need to fill the queue
                     }
 
                     if(runningWriters.get() < checkpointThreads / 2) {
