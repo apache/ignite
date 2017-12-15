@@ -223,6 +223,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                         continue;
 
                     int partHash = 0;
+                    long partSize;
                     long updateCntrBefore;
 
                     try {
@@ -230,6 +231,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                             continue;
 
                         updateCntrBefore = part.updateCounter();
+
+                        partSize = part.dataStore().fullSize();
 
                         GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
 
@@ -263,8 +266,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
                     boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
 
-                    res.put(new PartitionKey(grpId, part.id()), new PartitionHashRecord(
-                        isPrimary, consId, partHash, updateCntrBefore));
+                    PartitionKey partKey = new PartitionKey(grpId, part.id(), grpCtx.cacheOrGroupName());
+
+                    res.put(partKey, new PartitionHashRecord(
+                        partKey, isPrimary, consId, partHash, updateCntrBefore, partSize));
                 }
             }
 

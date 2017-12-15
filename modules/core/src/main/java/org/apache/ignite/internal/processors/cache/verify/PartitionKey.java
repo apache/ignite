@@ -29,16 +29,21 @@ public class PartitionKey implements Serializable {
     /** Group id. */
     private final int grpId;
 
+    /** Group name. Optional field, used only for output. */
+    private volatile String grpName;
+
     /** Partition id. */
     private final int partId;
 
     /**
      * @param grpId Group id.
      * @param partId Partition id.
+     * @param grpName Group name.
      */
-    public PartitionKey(int grpId, int partId) {
+    public PartitionKey(int grpId, int partId, String grpName) {
         this.grpId = grpId;
         this.partId = partId;
+        this.grpName = grpName;
     }
 
     /**
@@ -53,6 +58,20 @@ public class PartitionKey implements Serializable {
      */
     public int partitionId() {
         return partId;
+    }
+
+    /**
+     * @return Group name.
+     */
+    public String groupName() {
+        return grpName;
+    }
+
+    /**
+     * @param grpName Group name.
+     */
+    public void groupName(String grpName) {
+        this.grpName = grpName;
     }
 
     /** {@inheritDoc} */
