@@ -25,8 +25,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
  * Designed to avoid zero dropdowns that can happen if checkpoint buffer is overflowed.
  */
 public class PagesWriteThrottle {
-    public static final double MIN_RATIO_NO_THROTTLE = 0.1;
-    
     /** Page memory. */
     private final PageMemoryImpl pageMemory;
 
@@ -39,12 +37,16 @@ public class PagesWriteThrottle {
     /** Backoff ratio. Each next park will be this times longer. */
     private static final double BACKOFF_RATIO = 1.05;
 
+    /** Percent of dirty pages which will not cause throttling. */
+    private static final double MIN_RATIO_NO_THROTTLE = 0.1;
+
     /** Exponential backoff counter. */
     private final AtomicInteger exponentialBackoffCntr = new AtomicInteger(0);
 
-
+    /** */
     private final AtomicInteger lastObservedWritten = new AtomicInteger(0);
 
+    /**  */
     private volatile double initialDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
 
     /**
@@ -68,7 +70,7 @@ public class PagesWriteThrottle {
         if (writtenPagesCntr == null)
             return; // Don't throttle if checkpoint is not running.
 
-        boolean shouldThrottle = false;
+        boolean shouldThrottle = false; //should apply delay current modification
 
         if (isInCheckpoint) {
             int checkpointBufLimit = pageMemory.checkpointBufferPagesSize() * 2 / 3;
@@ -83,7 +85,7 @@ public class PagesWriteThrottle {
 
             if (cpWrittenPages == 0 || cpTotalPages == 0) {
                 //probably slow start is running now, drop previous dirty page percent
-                initialDirtyRatioAtCpBegin = 0;
+                initialDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
                 lastObservedWritten.set(cpWrittenPages);
             }
             else if (cpWrittenPages == cpTotalPages) {
@@ -94,6 +96,7 @@ public class PagesWriteThrottle {
                 double dirtyRatioThreshold = ((double)cpWrittenPages) / cpTotalPages;
 
                 boolean cpStartedToWrite = lastObservedWritten.compareAndSet(0, cpWrittenPages);
+
                 if (cpStartedToWrite) {
                     double newMinRatio = pageMemory.getDirtyPagesRatio();
 
