@@ -836,10 +836,13 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     double getDirtyPagesRatio() {
         double res = 0;
+
         for (Segment segment : segments) {
             double ratio = segment.getDirtyPagesRatio();
+
             res = Math.max(res, ratio);
         }
+
         return res;
     }
 
