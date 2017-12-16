@@ -57,9 +57,6 @@ public class DiscoveryDataClusterState implements Serializable {
     /** */
     private transient DiscoveryDataClusterState prevState;
 
-    /** */
-    private transient volatile Exception transitionError;
-
     /**
      * @param active Current status.
      * @return State instance.
@@ -178,20 +175,6 @@ public class DiscoveryDataClusterState implements Serializable {
      */
     public Set<UUID> transitionNodes() {
         return transitionNodes;
-    }
-
-    /**
-     * @return Transition error.
-     */
-    @Nullable public Exception transitionError() {
-        return transitionError;
-    }
-
-    /**
-     * @param ex Exception
-     */
-    public void transitionError(Exception ex) {
-        transitionError = ex;
     }
 
     /**

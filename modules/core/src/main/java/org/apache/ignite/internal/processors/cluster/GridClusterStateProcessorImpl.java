@@ -70,7 +70,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -330,8 +329,6 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
             globalState = globalState.finish(msg.success());
 
-            afterStateChangeFinished(msg.id(), msg.success());
-
             ctx.cache().onStateChangeFinish(msg);
 
             TransitionOnJoinWaitFuture joinFut = this.joinFut;
@@ -349,11 +346,6 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         }
         else
             U.warn(log, "Received state finish message with unexpected ID: " + msg);
-    }
-
-    /** */
-    protected void afterStateChangeFinished(IgniteUuid msgId, boolean success) {
-        // no-op
     }
 
     /** {@inheritDoc} */
@@ -470,17 +462,17 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
      * @param state Current cluster state.
      * @return {@code True} if state change from message can be applied to the current state.
      */
-    protected boolean isApplicable(ChangeGlobalStateMessage msg, DiscoveryDataClusterState state) {
-        return !isEquivalent(msg, state);
-    }
+    private static boolean isApplicable(ChangeGlobalStateMessage msg, DiscoveryDataClusterState state) {
+        if (msg.activate() != state.active())
+            return true;
 
-    /**
-     * @param msg State change message.
-     * @param state Current cluster state.
-     * @return {@code True} if states are equivalent.
-     */
-    protected static boolean isEquivalent(ChangeGlobalStateMessage msg, DiscoveryDataClusterState state) {
-        return (msg.activate() == state.active() && BaselineTopology.equals(msg.baselineTopology(), state.baselineTopology()));
+        if ((state.baselineTopology() == null) != (msg.baselineTopology() == null))
+            return true;
+
+        if (state.baselineTopology() == null && msg.baselineTopology() == null)
+            return false;
+
+        return !msg.baselineTopology().equals(state.baselineTopology());
     }
 
     /** {@inheritDoc} */
@@ -525,7 +517,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
      * @param activate New state.
      * @return State change error.
      */
-    protected IgniteCheckedException concurrentStateChangeError(boolean activate) {
+    private IgniteCheckedException concurrentStateChangeError(boolean activate) {
         return new IgniteCheckedException("Failed to " + prettyStr(activate) +
             ", because another state change operation is currently in progress: " + prettyStr(!activate));
     }
@@ -752,8 +744,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
             storedCfgs,
             activate,
             blt,
-            forceChangeBaselineTopology,
-            System.currentTimeMillis());
+            forceChangeBaselineTopology);
 
         try {
             if (log.isInfoEnabled())
@@ -890,25 +881,23 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         assert !F.isEmpty(errs);
 
         // Revert caches start if activation request fail.
-        if (req.activeChanged()) {
-            if (req.activate()) {
-                try {
-                    cacheProc.onKernalStopCaches(true);
+        if (req.activate()) {
+            try {
+                cacheProc.onKernalStopCaches(true);
 
-                    cacheProc.stopCaches(true);
+                cacheProc.stopCaches(true);
 
-                    sharedCtx.affinity().removeAllCacheInfo();
+                sharedCtx.affinity().removeAllCacheInfo();
 
-                    if (!ctx.clientNode())
-                        sharedCtx.deactivate();
-                }
-                catch (Exception e) {
-                    U.error(log, "Failed to revert activation request changes", e);
-                }
+                if (!ctx.clientNode())
+                    sharedCtx.deactivate();
             }
-            else {
-                //todo https://issues.apache.org/jira/browse/IGNITE-5480
+            catch (Exception e) {
+                U.error(log, "Failed to revert activation request changes", e);
             }
+        }
+        else {
+            //todo https://issues.apache.org/jira/browse/IGNITE-5480
         }
 
         GridChangeGlobalStateFuture fut = changeStateFuture(req.initiatorNodeId(), req.requestId());
@@ -1064,16 +1053,6 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
             globalState = newState;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onExchangeFinishedOnCoordinator(IgniteInternalFuture exchangeFuture, boolean hasMovingPartitions) {
-        // no-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean evictionsAllowed() {
-        return true;
     }
 
     /**

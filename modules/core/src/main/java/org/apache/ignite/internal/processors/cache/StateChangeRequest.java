@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,13 +60,6 @@ public class StateChangeRequest {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @return State change message ID.
-     */
-    public IgniteUuid id() {
-        return msg.id();
     }
 
     /**

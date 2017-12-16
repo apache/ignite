@@ -85,11 +85,4 @@ public class IgniteDhtPartitionsToReloadMap implements Serializable {
 
         parts.add(partId);
     }
-
-    /**
-     * @return {@code True} if empty.
-     */
-    public boolean isEmpty() {
-        return map == null || map.isEmpty();
-    }
 }
