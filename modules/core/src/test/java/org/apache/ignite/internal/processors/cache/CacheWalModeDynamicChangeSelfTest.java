@@ -21,9 +21,6 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -36,10 +33,12 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -66,7 +65,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
     private static final String CACHE3 = "cache3";
 
     /** Region. */
-    private static String REGION = "region";
+    private static final String REGION = "region";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -121,7 +120,6 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         client3.active(true);
 
         GridCacheSharedContext ctx1 = ((IgniteKernal)ignite1).context().cache().context();
-        GridCacheSharedContext ctx2 = ((IgniteKernal)ignite2).context().cache().context();
         GridCacheSharedContext ctxClient = ((IgniteKernal)client3).context().cache().context();
 
         final int g1 = ctx1.cache().cacheDescriptor(CACHE1).groupId();
@@ -223,6 +221,75 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    public void testFailDuringStreaming() throws Exception {
+        testFailDuringStreaming(false);
+    }
+
+    /**
+     *
+     */
+    public void testFailDuringStreamingWithJoin() throws Exception {
+        testFailDuringStreaming(true);
+    }
+
+    /**
+     *
+     */
+    private void testFailDuringStreaming(boolean join) throws Exception {
+        final IgniteEx ignite1 = startGrid(1);
+        final IgniteEx ignite2 = startGrid(2);
+
+        ignite1.active(true);
+
+        ignite1.cluster().disableWal(Collections.singleton(CACHE1));
+
+        // Streaming
+        final IgniteCache cache1 = ignite1.getOrCreateCache(CACHE1);
+
+        int size = 100_000;
+
+        for (int i = 0; i < size; i++)
+            cache1.put(i, i);
+
+        assertEquals(size, cache1.size());
+
+        IgniteInternalFuture cpFut1 = ignite1.context().cache().context().database().wakeupForCheckpoint("test");
+        IgniteInternalFuture cpFut2 = ignite2.context().cache().context().database().wakeupForCheckpoint("test");
+
+        cpFut1.get();
+        cpFut2.get();
+
+        for (int i = size; i < size + size; i++)
+            cache1.put(i, i);
+
+        for (Ignite node : G.allGrids())
+            assertFalse(((IgniteEx)node).context().cache().context().pageStore().walDisabledGroups().isEmpty());
+
+        stopAllGrids(true);
+
+        Ignite ignite = startGrid(1);
+
+        if (!join)
+            startGrid(2);
+
+        ignite.active(true);
+
+        if (join)
+            startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        final IgniteCache cache = ignite.getOrCreateCache(CACHE1);
+
+        assertEquals(0, cache.size());
+
+        for (final Ignite node : G.allGrids())
+            assertTrue(((IgniteEx)node).context().cache().context().pageStore().walDisabledGroups().isEmpty());
+    }
+
+    /**
+     *
+     */
     public void testConcurrent() throws Exception {
         testAlreadyDone(false, true);
         testAlreadyDone(false, false);
@@ -247,22 +314,9 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
             final IgniteEx ignite4 = startGrid(4);
             final IgniteEx ignite5 = startGrid(5);
 
-            final List<IgniteEx> ignites = new LinkedList<>();
-
-            ignites.add(ignite1);
-            ignites.add(ignite2);
-            ignites.add(client3);
-            ignites.add(ignite4);
-            ignites.add(ignite5);
-
-            final Collection<GridCacheSharedContext> ctxs = new HashSet<>();
-
-            for (IgniteEx ignite : ignites)
-                ctxs.add(ignite.context().cache().context());
-
             ignite1.active(true);
 
-            final int size = ignites.size() * 5;
+            final int size = G.allGrids().size() * G.allGrids().size();
 
             if (alreadyChanged)
                 ignite1.context().cache().changeWalMode(Collections.singleton(CACHE1), disable, true).get();
@@ -274,7 +328,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
                 Thread th = new Thread() {
                     @Override public void run() {
-                        IgniteEx ignite = ignites.get(finalI % ignites.size());
+                        IgniteEx ignite = ((IgniteEx)G.allGrids().get(finalI % G.allGrids().size()));
 
                         ignite.context().cache().changeWalMode(Collections.singleton(CACHE1), disable, true);
                     }
@@ -288,7 +342,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
             for (Thread th : threads)
                 th.join();
 
-            checkWal(ctxs, disable);
+            checkWal(disable);
         }
         finally {
             stopAllGrids();
@@ -313,19 +367,11 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
      *
      */
     private void testOriginatingLeft(boolean client) throws Exception {
-        final IgniteEx ignite1 = startGrid(11);
-        final IgniteEx ignite2 = startGrid(12);
-        final IgniteEx ignite3 = startGrid(13);
-        final IgniteEx ignite4 = startGrid(14);
-        final IgniteEx ignite5 = startGrid(15);
-
-        final Collection<GridCacheSharedContext> ctxs = new HashSet<>();
-
-        ctxs.add(ignite1.context().cache().context());
-        ctxs.add(ignite2.context().cache().context());
-        ctxs.add(ignite3.context().cache().context());
-        ctxs.add(ignite4.context().cache().context());
-        ctxs.add(ignite5.context().cache().context());
+        startGrid(11);
+        startGrid(12);
+        startGrid(13);
+        startGrid(14);
+        startGrid(15);
 
         int igniteId = client ? 3 : 1;
 
@@ -336,21 +382,19 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         ignite.active(true);
 
-        requestWalModeChangeAndFail(igniteId, true, ctxs);
+        requestWalModeChangeAndFail(igniteId, true);
 
         startGrid(igniteId);
 
-        requestWalModeChangeAndFail(igniteId, false, ctxs);
+        requestWalModeChangeAndFail(igniteId, false);
     }
 
     /**
      * @param igniteId Ignite id.
      * @param disable Disable.
-     * @param ctxs Ctxs.
      */
     private void requestWalModeChangeAndFail(final int igniteId,
-        final boolean disable,
-        final Collection<GridCacheSharedContext> ctxs)
+        final boolean disable)
         throws InterruptedException, IgniteInterruptedCheckedException {
         final CountDownLatch disableLatch = new CountDownLatch(1);
 
@@ -366,23 +410,25 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         stopGrid(igniteId, true);
 
-        checkWal(ctxs, disable);
+        checkWal(disable);
     }
 
     /**
      *
      */
-    private void checkWal(final Collection<GridCacheSharedContext> ctxs, final boolean disable)
+    private void checkWal(final boolean disable)
         throws IgniteInterruptedCheckedException {
-        GridCacheSharedContext ctx0 = ctxs.iterator().next();
 
-        final int g1 = ctx0.cache().cacheDescriptor(CACHE1).groupId();
+        final int g1 = ((IgniteEx)G.allGrids().get(0)).context().cache().cacheDescriptor(CACHE1).groupId();
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                for (GridCacheSharedContext ctx : ctxs)
+                for (Ignite node : G.allGrids()) {
+                    GridCacheSharedContext ctx = ((IgniteEx)node).context().cache().context();
+
                     if (ctx.wal() != null && disable != ctx.wal().disabled(g1))
                         return false;
+                }
 
                 return true;
             }
@@ -392,8 +438,11 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
             @Override public boolean apply() {
                 try {
                     // Make sure writes allowed
-                    for (GridCacheSharedContext ctx : ctxs)
+                    for (Ignite node : G.allGrids()) {
+                        GridCacheSharedContext ctx = ((IgniteEx)node).context().cache().context();
+
                         ctx.cache().getOrStartCache(CACHE1).put(1, 1);
+                    }
                 }
                 catch (IgniteCheckedException e) {
                     return false;
@@ -405,7 +454,9 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                for (GridCacheSharedContext ctx : ctxs) {
+                for (Ignite node : G.allGrids()) {
+                    GridCacheSharedContext ctx = ((IgniteEx)node).context().cache().context();
+
                     final Map futs = U.field(ctx.cache(), "walModeChangeFuts");
 
                     if (!futs.isEmpty())
@@ -415,6 +466,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
                 return true;
             }
         }, 5000));
+
     }
 
     /**
@@ -429,41 +481,29 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         client3.active(true);
 
-        Collection<GridCacheSharedContext> ctxs = new HashSet<>();
-
-        ctxs.add(ignite1.context().cache().context());
-        ctxs.add(ignite2.context().cache().context());
-        ctxs.add(client3.context().cache().context());
-
-        Collection<Ignite> ignites = new LinkedHashSet<>();
-
-        ignites.add(ignite1);
-        ignites.add(ignite2);
-        ignites.add(client3);
-
-        for (Ignite ignite : ignites) {
-            checkWal(ctxs, false, false, false);
+        for (Ignite ignite : G.allGrids()) {
+            checkWal(false, false, false);
 
             ignite.cluster().disableWal(Collections.singleton(CACHE1));
 
-            checkWal(ctxs, true, false, false);
+            checkWal(true, false, false);
 
             ignite.cluster().enableWal(Collections.singleton(CACHE1));
 
-            checkWal(ctxs, false, false, false);
+            checkWal(false, false, false);
 
             ignite.cluster().disableWal(Collections.singleton(CACHE2), false);
 
-            checkWal(ctxs, false, true, true);
+            checkWal(false, true, true);
 
             ignite.cluster().disableWal(Collections.singleton(CACHE1));
 
-            checkWal(ctxs, true, true, true);
+            checkWal(true, true, true);
 
             ignite.cluster().enableWal(Collections.singleton(CACHE1));
             ignite.cluster().enableWal(Collections.singleton(CACHE2), false);
 
-            checkWal(ctxs, false, false, false);
+            checkWal(false, false, false);
 
             final Set<String> both = new HashSet<>();
 
@@ -472,7 +512,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
             ignite.cluster().disableWal(both, false);
 
-            checkWal(ctxs, true, true, true);
+            checkWal(true, true, true);
 
             final Set<String> all = new HashSet<>();
 
@@ -482,21 +522,20 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
             ignite.cluster().enableWal(all, false);
 
-            checkWal(ctxs, false, false, false);
+            checkWal(false, false, false);
         }
     }
 
     /**
-     * @param ctxs Ctxs.
      * @param disabled1 Disabled 1.
      * @param disabled2 Disabled 2.
      * @param disabled3 Disabled 3.
      */
-    private void checkWal(Collection<GridCacheSharedContext> ctxs,
+    private void checkWal(
         boolean disabled1,
         boolean disabled2,
         boolean disabled3) throws Exception {
-        GridCacheSharedContext ctx0 = ctxs.iterator().next();
+        GridCacheSharedContext ctx0 = ((IgniteEx)G.allGrids().get(0)).context().cache().context();
 
         int cnt = ctx0.cache().getOrStartCache(CACHE1).size();
 
@@ -506,7 +545,9 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         assertEquals(g2, g3);
 
-        for (GridCacheSharedContext ctx : ctxs) {
+        for (Ignite node : G.allGrids()) {
+            GridCacheSharedContext ctx = ((IgniteEx)node).context().cache().context();
+
             if (ctx.wal() != null) {
                 assertEquals(disabled1, ctx.wal().disabled(g1));
                 assertEquals(disabled2, ctx.wal().disabled(g2));
@@ -515,13 +556,17 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         }
 
         // Make sure writes allowed
-        for (GridCacheSharedContext ctx : ctxs) {
+        for (Ignite node : G.allGrids()) {
+            GridCacheSharedContext ctx = ((IgniteEx)node).context().cache().context();
+
             ctx.cache().getOrStartCache(CACHE1).put(++cnt, cnt);
             ctx.cache().getOrStartCache(CACHE2).put(++cnt, cnt);
             ctx.cache().getOrStartCache(CACHE3).put(++cnt, cnt);
         }
 
-        for (GridCacheSharedContext ctx : ctxs) {
+        for (Ignite node : G.allGrids()) {
+            GridCacheSharedContext ctx = ((IgniteEx)node).context().cache().context();
+
             final Map futs = U.field(ctx.cache(), "walModeChangeFuts");
 
             assertTrue(GridTestUtils.waitForCondition(new PA() {

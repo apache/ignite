@@ -790,6 +790,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     disabledGrps.add(grpId);
             }
         }
+
+        cctx.pageStore().walDisabled(grpId, disabled);
     }
 
     /** {@inheritDoc} */

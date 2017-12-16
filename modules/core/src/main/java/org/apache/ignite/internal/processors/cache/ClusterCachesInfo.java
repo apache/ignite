@@ -1533,6 +1533,9 @@ class ClusterCachesInfo {
             CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration()),
             CacheGroupWalMode.ENABLE);
 
+        if (ctx.cache().context().pageStore() != null)
+            ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
+
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
 
         assert old == null : old;

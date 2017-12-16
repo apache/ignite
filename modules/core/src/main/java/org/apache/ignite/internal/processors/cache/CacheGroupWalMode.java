@@ -4,17 +4,17 @@ package org.apache.ignite.internal.processors.cache;
  *
  */
 public enum CacheGroupWalMode {
-    /** Enabling. */
-    ENABLING,
-
     /** Enable. */
     ENABLE,
 
-    /** Disabling. */
-    DISABLING,
+    /** Enabling. */
+    ENABLING,
 
     /** Disable. */
-    DISABLE;
+    DISABLE,
+
+    /** Disabling. */
+    DISABLING;
 
     /**
      * @param disable Disable.

@@ -29,15 +29,18 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -197,7 +200,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
-        File cacheWorkDir = cacheWorkDirectory(cacheData.config());
+        File cacheWorkDir = cacheWorkDir(cacheData.config());
         File file;
 
         checkAndInitCacheWorkDir(cacheWorkDir);
@@ -320,21 +323,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param ccfg Cache configuration.
-     * @return Cache work directory.
-     */
-    private File cacheWorkDirectory(CacheConfiguration ccfg) {
-        String dirName;
-
-        if (ccfg.getGroupName() != null)
-            dirName = CACHE_GRP_DIR_PREFIX + ccfg.getGroupName();
-        else
-            dirName = CACHE_DIR_PREFIX + ccfg.getName();
-
-        return new File(storeWorkDir, dirName);
-    }
-
-    /**
      * @param grpDesc Cache group descriptor.
      * @param ccfg Cache configuration.
      * @return Cache store holder.
@@ -343,7 +331,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder initForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
         assert !grpDesc.sharedGroup() || ccfg.getGroupName() != null : ccfg.getName();
 
-        File cacheWorkDir = cacheWorkDirectory(ccfg);
+        File cacheWorkDir = cacheWorkDir(ccfg);
 
         boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
 
@@ -642,6 +630,79 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "(partition has not been created) [grpId=" + grpId + ", partId=" + partId + ']');
 
         return store;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc) {
+        if (walDisabled(grpDesc.groupId())) {
+            File dir = cacheWorkDir(grpDesc.config());
+
+            assert dir.exists();
+
+            for (File file : dir.listFiles())
+                if (!file.isDirectory()) {
+                    boolean res = file.delete();
+
+                    assert res;
+                }
+        }
+    }
+
+    /**
+     *
+     */
+    private File walMarkersDir() { // Todo to be replaced with MetaStore usage
+        try {
+            final String workDir = U.defaultWorkDirectory();
+            final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
+            final File wal = new File(db, "wal");
+            final File node = new File(wal, "disabledWal-" + cctx.discovery().consistentId());
+
+            if (!node.exists())
+                node.mkdirs();
+
+            return node;
+        }
+        catch (IgniteCheckedException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    public void walDisabled(int grpId, boolean disable) { // Todo to be replaced with MetaStore usage
+        try {
+            final File file = new File(walMarkersDir(), grpId + "");
+
+            if (disable)
+                file.createNewFile();
+
+            else
+                file.delete(); // Can be missed for newcomers.
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** {@inheritDoc} */
+    public boolean walDisabled(int grpId) { // Todo to be replaced with MetaStore usage
+        final File file = new File(walMarkersDir(), String.valueOf(grpId));
+
+        return file.exists();
+    }
+
+    /** {@inheritDoc} */
+    public Collection<Integer> walDisabledGroups() { // Todo to be replaced with MetaStore usage
+        File dir = walMarkersDir();
+
+        List<Integer> s = new ArrayList<>();
+
+        for (File file : dir.listFiles())
+            s.add(Integer.valueOf(file.getName()));
+
+        return s;
     }
 
     /**

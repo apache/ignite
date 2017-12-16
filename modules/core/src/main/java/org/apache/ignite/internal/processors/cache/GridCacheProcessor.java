@@ -991,6 +991,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (IgniteInternalFuture fut : pendingTemplateFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
 
+        for (IgniteInternalFuture fut : walModeChangeFuts.values())
+            ((WalModeChangeFuture)fut).onDone(err);
+
         for (CacheGroupContext grp : cacheGrps.values())
             grp.onDisconnected(reconnectFut);
 
@@ -2423,7 +2426,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             final WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
 
             if (!override) {
-                IgniteInternalFuture cpFut = sharedCtx.cache().context().database().checkpoint("wal-mode-change");
+                IgniteInternalFuture cpFut = sharedCtx.cache().context().database().doCheckpoint("wal-mode-change");
 
                 cpFut.listen(new CI1<Object>() {
                     @Override public void apply(Object o) {
@@ -2476,7 +2479,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else {
             WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
 
-            fut.onNodeAck(sharedCtx.localNode());
+            if (fut != null)
+                fut.onNodeAck(sharedCtx.localNode());
+            else
+                assert ctx.isStopping();
         }
     }
 
@@ -4494,15 +4500,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (discoLsnr != null) {
                 ctx.event().removeLocalEventListener(discoLsnr);
 
-                // Make sure to remove future before completion.
-                walModeChangeFuts.remove(uid, this);
-
                 log.info("Cluster wide WAL mode change operation " + (err != null ? "failed " : "completed ") +
                     "[cacheGrps=" + grpIds +
                     ", newState=" + (disable ? "disabled" : "enabled") +
                     ", initiatingNodeId=" + initiatingNodeId +
                     ", err=" + err + "]");
             }
+
+            // Make sure to remove future before completion.
+            walModeChangeFuts.remove(uid, this);
 
             return super.onDone(res, err);
         }
