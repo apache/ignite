@@ -44,6 +44,7 @@ public class PartitionEntryHashRecord implements Serializable {
     private final KeyCacheObject key;
 
     /** Key string. */
+    @GridToStringExclude
     private final String keyStr;
 
     /** Key bytes. */
@@ -60,6 +61,7 @@ public class PartitionEntryHashRecord implements Serializable {
     private volatile byte[] valBytes;
 
     /** Value string. */
+    @GridToStringExclude
     private volatile String valStr;
 
     /** Value hash. */
@@ -227,7 +229,9 @@ public class PartitionEntryHashRecord implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionEntryHashRecord.class, this,
+            "key", keyStr,
+            "value", valStr,
             "keyBytes", keyBytes != null ? U.byteArray2HexString(keyBytes) : null,
-            "valBytes", valBytes != null ? U.byteArray2HexString(valBytes) : null);
+            "valueBytes", valBytes != null ? U.byteArray2HexString(valBytes) : null);
     }
 }
