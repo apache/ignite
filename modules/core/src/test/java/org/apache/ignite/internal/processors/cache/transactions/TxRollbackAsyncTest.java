@@ -326,6 +326,12 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         wLockFut.get();
 
         checkFutures();
+
+        Transaction tx0 = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1);
+
+        client.cache(CACHE_NAME).put(0, 200);
+
+        tx0.commit();
     }
 
     /**
