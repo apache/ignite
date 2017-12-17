@@ -4387,28 +4387,30 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     @Override public void onEvent(Event evt) {
                         DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
-                        ClusterNode evtNode = discoEvt.eventNode();
+                        final ClusterNode evtNode = discoEvt.eventNode();
 
-                        if (!evtNode.isClient())
-                            ackNode(evtNode);
+                        if (!evtNode.id().equals(ctx.localNodeId())) { // Not current node failing.
+                            if (!evtNode.isClient())
+                                ackNode(evtNode);
 
-                        ClusterNode crd = ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
+                            final ClusterNode crd = ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
-                        assert crd != null;
+                            assert crd != null;
 
-                        if (evtNode.id().equals(initiatingNodeId)) {
-                            initiatingNodeId(crd.id());
+                            if (evtNode.id().equals(initiatingNodeId)) {
+                                initiatingNodeId(crd.id());
 
-                            log.info("Cluster wide WAL mode change operation restarted due to initiating node fail " +
-                                "[node=" + evtNode.id() +
-                                ", cacheGrps=" + grpIds +
-                                ", action=" + (disable ? "disabling" : "enabling") + "]. ");
+                                log.info("Cluster wide WAL mode change operation restarted due to initiating node fail " +
+                                    "[node=" + evtNode.id() +
+                                    ", cacheGrps=" + grpIds +
+                                    ", action=" + (disable ? "disabling" : "enabling") + "]. ");
 
-                            prepFut.listen(new CI1() {
-                                @Override public void apply(Object o) {
-                                    ackWalModeDynamicChangeMessage(initiatingNodeId, uid);
-                                }
-                            });
+                                prepFut.listen(new CI1() {
+                                    @Override public void apply(Object o) {
+                                        ackWalModeDynamicChangeMessage(crd.id(), uid);
+                                    }
+                                });
+                            }
                         }
                     }
                 };
@@ -4466,9 +4468,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          */
         private boolean ackNode(ClusterNode node) {
             synchronized (nodes) {
-                boolean res = nodes.remove(node);
-
-                assert res : node;
+                nodes.remove(node);
 
                 return nodes.isEmpty();
             }

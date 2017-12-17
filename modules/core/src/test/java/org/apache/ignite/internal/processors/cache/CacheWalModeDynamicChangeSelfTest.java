@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -377,11 +378,11 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
      *
      */
     private void testOriginatingLeft(boolean client) throws Exception {
+        startGrid(10);
         startGrid(11);
         startGrid(12);
         startGrid(13);
         startGrid(14);
-        startGrid(15);
 
         int igniteId = client ? 3 : 1;
 
@@ -405,8 +406,20 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
      */
     private void requestWalModeChangeAndFail(final int igniteId,
         final boolean disable)
-        throws InterruptedException, IgniteInterruptedCheckedException {
+        throws Exception {
         final CountDownLatch disableLatch = new CountDownLatch(1);
+
+        Random r = new Random();
+
+        int id1 = r.nextInt(5) + 10;
+        int id2;
+
+        do {
+            id2 = r.nextInt(5) + 10;
+        }
+        while (id2 == id1);
+
+        stopGrid(id1, true);
 
         new Thread() {
             @Override public void run() {
@@ -419,6 +432,12 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         disableLatch.await();
 
         stopGrid(igniteId, true);
+        stopGrid(id2, true);
+
+        awaitPartitionMapExchange();
+
+        startGrid(id1);
+        startGrid(id2);
 
         checkWal(disable);
     }
