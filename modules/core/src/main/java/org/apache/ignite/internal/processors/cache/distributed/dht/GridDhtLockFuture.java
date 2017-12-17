@@ -129,7 +129,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     private boolean read;
 
     /** Error. */
-    private volatile Throwable err;
+    private Throwable err;
 
     /** Timed out flag. */
     private volatile boolean timedOut;
@@ -709,16 +709,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
 
         return onComplete(success, err instanceof NodeStoppingException, true);
-    }
-
-    /**
-     *
-     * @return {@code True} if complete by this operation.
-     */
-    public boolean onRollback(Throwable err) {
-        this.err = err;
-
-        return onComplete(false, false, false);
     }
 
     /**

@@ -1254,8 +1254,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (tx instanceof GridCacheMappedVersion) {
                 GridCacheVersion mapped = ((GridCacheMappedVersion)tx).mappedVersion();
 
-                if (mapped != null)
+                if (mapped != null) {
+                    log.info("Removing mapped 1 ver=" + mapped);
+
                     mappedVers.remove(mapped);
+                }
             }
 
             // 11. Clear context.
@@ -1322,8 +1325,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     idMap.remove(ver);
 
             // 8. Remove Near-2-DHT mappings.
-            if (tx instanceof GridCacheMappedVersion)
+            if (tx instanceof GridCacheMappedVersion) {
+                log.info("Removing mapped 2 ver=" + ((GridCacheMappedVersion)tx).mappedVersion());
+
                 mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
+            }
 
             // 9. Clear context.
             resetContext();
@@ -1425,8 +1431,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             }
 
             // 6. Remove Near-2-DHT mappings.
-            if (tx instanceof GridCacheMappedVersion)
+            if (tx instanceof GridCacheMappedVersion) {
+                log.info("Removing mapped 3 ver=" + ((GridCacheMappedVersion)tx).mappedVersion());
+
                 mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
+            }
 
             // 7. Clear context.
             resetContext();

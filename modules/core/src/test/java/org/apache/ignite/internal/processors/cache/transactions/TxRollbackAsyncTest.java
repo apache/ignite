@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -45,12 +46,16 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -244,6 +249,81 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         fut.get();
 
         assertNull(client.cache(CACHE_NAME).get(0));
+
+        checkFutures();
+    }
+
+    public void testRaceLockRollback() throws Exception {
+        final Ignite client = startClient();
+
+        final CountDownLatch opLatch = new CountDownLatch(1);
+
+        final CountDownLatch op2Latch = new CountDownLatch(1);
+
+        final CountDownLatch commitLatch = new CountDownLatch(1);
+
+        final Ignite prim = primaryNode(0, CACHE_NAME);
+
+        IgniteInternalFuture<?> wLockFut = runInTx(client, 0, true, new IgniteBiInClosure<Transaction, IgniteCache>() {
+            @Override public void apply(Transaction tx, IgniteCache cache) {
+                cache.put(0, 100);
+
+                opLatch.countDown();
+
+                U.awaitQuiet(commitLatch);
+            }
+        });
+
+        final AtomicReference<Transaction> txHolder = new AtomicReference<>();
+
+        IgniteInternalFuture<?> rLockFut = runInTx(client, 0, false, new IgniteBiInClosure<Transaction, IgniteCache>() {
+            @Override public void apply(Transaction tx, IgniteCache cache) {
+                txHolder.set(tx);
+
+                U.awaitQuiet(opLatch);
+
+                toggleBlocking(GridNearLockRequest.class, prim, true);
+
+                op2Latch.countDown();
+
+                cache.get(0);
+            }
+        });
+
+        U.awaitQuiet(op2Latch);
+
+        // Sleep until lock request is issued.
+        Thread.sleep(500);
+
+        try {
+            txHolder.get().rollback();
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+        }
+
+        // rollback (no lock is held)
+        toggleBlocking(GridNearLockRequest.class, prim, false);
+
+        try {
+            rLockFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            // Expected. Lock will be rolled back locally, but request will go to dht node.
+        }
+
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
+
+            for (GridCacheFuture<?> fut : futs)
+                log.info("Waiting for future: " + fut);
+        }
+
+        commitLatch.countDown();
+
+        wLockFut.get();
 
         checkFutures();
     }
@@ -497,6 +577,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                         }
                         catch (Throwable e) {
                             // No-op.
+                            fail("No error on rollback is expected");
                         }
 
                         rolledBackVers.add(tx.xid());
@@ -725,6 +806,20 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     tx.commit();
             }
         }, 1, "tx-lock-thread");
+    }
+
+    private IgniteInternalFuture<?> runInTx(final Ignite node, final int timeout, final boolean doCommit,
+        final IgniteBiInClosure<Transaction, IgniteCache> clo) throws Exception {
+        return multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1);
+
+                clo.apply(tx, node.cache(CACHE_NAME));
+
+                if (doCommit)
+                    tx.commit();
+            }
+        }, 1, "tx-op-thread");
     }
 
     /**

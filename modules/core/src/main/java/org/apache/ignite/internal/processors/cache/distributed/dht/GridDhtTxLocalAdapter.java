@@ -79,7 +79,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    protected static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter();
+    protected static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
 
     /** Lock future updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxLocalAdapter, IgniteInternalFuture> LOCK_FUT_UPD =
@@ -106,7 +106,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Nodes where transactions were started on lock step. */
     private Set<ClusterNode> lockTxNodes;
 
-    /** Lock future. Not null while lock future is not completed (lock is obtained or cancelled). */
+    /** Lock future. Not null while lock future is not completed. */
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     protected volatile IgniteInternalFuture<Boolean> lockFut;
