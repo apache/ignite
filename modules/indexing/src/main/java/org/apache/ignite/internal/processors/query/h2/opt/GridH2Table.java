@@ -126,6 +126,9 @@ public class GridH2Table extends TableBase {
     /** Flag if table has user indexes. */
     private volatile boolean hasSecondaryIdxs;
 
+    /** Flag if not only H2Tree indexes are used by this table. */
+    private volatile boolean hasNotOnlyH2TreeIdxs;
+
     /**
      * Creates table.
      *
@@ -670,7 +673,7 @@ public class GridH2Table extends TableBase {
 
             assert rmvIdx != null;
 
-            removeFromIndexColumns(rmvIdx);
+            removeFromIndexColumns(rmvIdx, idxs);
         }
         finally {
             unlock(true);
@@ -721,7 +724,7 @@ public class GridH2Table extends TableBase {
 
                     idxs.remove(i);
 
-                    removeFromIndexColumns(idx);
+                    removeFromIndexColumns(idx, idxs);
 
                     if (idx instanceof GridH2ProxyIndex &&
                         idx.getSchema().findIndex(session, idx.getName()) != null)
@@ -1030,6 +1033,9 @@ public class GridH2Table extends TableBase {
         assert prevRow != null;
         assert newRow.key().equals(prevRow.key());
 
+        if (hasNotOnlyH2TreeIdxs)
+            return false;
+
         if (!hasSecondaryIdxs)
             return true;
 
@@ -1101,14 +1107,17 @@ public class GridH2Table extends TableBase {
                 }
             }
         }
+        else
+            hasNotOnlyH2TreeIdxs = true;
     }
 
     /**
      * Updates indexed columns list. Should run under the exclusive table lock.
      *
      * @param idx Index to remove.
+     * @param idxsList List of remaining indexes.
      */
-    private void removeFromIndexColumns(Index idx) {
+    private void removeFromIndexColumns(Index idx, List<Index> idxsList) {
         if (idx instanceof H2TreeIndex) {
             for (Column col : idx.getColumns()) {
                 String colName = col.getName();
@@ -1129,6 +1138,27 @@ public class GridH2Table extends TableBase {
                 }
             }
         }
+        else {
+            List<Index> allIdxs = new ArrayList<>(idxsList);
+
+            allIdxs.addAll(tmpIdxs.values());
+
+            if (allIdxs.size() <= sysIdxsCnt)
+                hasNotOnlyH2TreeIdxs = false;
+            else {
+                boolean foundNotH2Tree = false;
+
+                for (int i = sysIdxsCnt; i < allIdxs.size(); i++) {
+                    if (!(allIdxs.get(i) instanceof H2TreeIndex)) {
+                        foundNotH2Tree = true;
+
+                        break;
+                    }
+                }
+
+                hasNotOnlyH2TreeIdxs = foundNotH2Tree;
+            }
+        }
     }
 
     /**
@@ -1136,6 +1166,8 @@ public class GridH2Table extends TableBase {
      */
     private void clearIndexedColumnsList() {
         hasSecondaryIdxs = false;
+
+        hasNotOnlyH2TreeIdxs = false;
 
         secondaryIdxCols.clear();
     }
