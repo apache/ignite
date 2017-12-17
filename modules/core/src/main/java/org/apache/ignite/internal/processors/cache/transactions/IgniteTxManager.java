@@ -431,8 +431,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private boolean isCompleted(IgniteInternalTx tx) {
         boolean completed = completedVersHashMap.containsKey(tx.xidVersion());
 
-        // Need check that for tx with timeout rollback message was not received before lock.
-        if (!completed && tx.local() && tx.dht() && tx.timeout() > 0)
+        // Need check that for tx rollback message was not received before lock.
+        // This could happen on timeout or async rollback.
+        if (!completed && tx.local() && tx.dht())
             return completedVersHashMap.containsKey(tx.nearXidVersion());
 
         return completed;
