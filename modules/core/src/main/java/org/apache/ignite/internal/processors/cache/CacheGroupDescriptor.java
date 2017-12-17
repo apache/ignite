@@ -123,10 +123,10 @@ public class CacheGroupDescriptor {
      *
      */
     public void walMode(CacheGroupWalMode walMode) {
-        assert (this.walMode == CacheGroupWalMode.ENABLING && walMode == CacheGroupWalMode.ENABLE) ||
-            (this.walMode == CacheGroupWalMode.ENABLE && walMode == CacheGroupWalMode.DISABLING) ||
-            (this.walMode == CacheGroupWalMode.DISABLING && walMode == CacheGroupWalMode.DISABLE) ||
-            (this.walMode == CacheGroupWalMode.DISABLE && walMode == CacheGroupWalMode.ENABLING) :
+        assert (this.walMode == CacheGroupWalMode.ENABLING && walMode == CacheGroupWalMode.ENABLED) ||
+            (this.walMode == CacheGroupWalMode.ENABLED && walMode == CacheGroupWalMode.DISABLING) ||
+            (this.walMode == CacheGroupWalMode.DISABLING && walMode == CacheGroupWalMode.DISABLED) ||
+            (this.walMode == CacheGroupWalMode.DISABLED && walMode == CacheGroupWalMode.ENABLING) :
             "Unexpected modification [current=" + this.walMode + ", new=" + walMode + "]";
 
         this.walMode = walMode;

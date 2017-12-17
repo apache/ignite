@@ -126,9 +126,9 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         final int g2 = ctx1.cache().cacheDescriptor(CACHE2).groupId();
         final int g3 = ctx1.cache().cacheDescriptor(CACHE3).groupId();
 
-        assertFalse(ctx1.wal().disabled(g1));
-        assertFalse(ctx1.wal().disabled(g2));
-        assertFalse(ctx1.wal().disabled(g3));
+        assertFalse(ctx1.cache().cacheGroup(g1).walDisabled());
+        assertFalse(ctx1.cache().cacheGroup(g2).walDisabled());
+        assertFalse(ctx1.cache().cacheGroup(g3).walDisabled());
 
         client3.cluster().disableWal(Collections.singleton(CACHE1));
 
@@ -137,14 +137,14 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         GridCacheSharedContext ctx4 = ((IgniteKernal)ignite4).context().cache().context();
 
-        assertTrue(ctx4.wal().disabled(g1));
-        assertFalse(ctx4.wal().disabled(g2));
-        assertFalse(ctx4.wal().disabled(g3));
+        assertTrue(ctx4.cache().cacheGroup(g1).walDisabled());
+        assertFalse(ctx4.cache().cacheGroup(g2).walDisabled());
+        assertFalse(ctx4.cache().cacheGroup(g3).walDisabled());
 
         // Checking old node
-        assertTrue(ctx1.wal().disabled(g1));
-        assertFalse(ctx1.wal().disabled(g2));
-        assertFalse(ctx1.wal().disabled(g3));
+        assertTrue(ctx1.cache().cacheGroup(g1).walDisabled());
+        assertFalse(ctx1.cache().cacheGroup(g2).walDisabled());
+        assertFalse(ctx1.cache().cacheGroup(g3).walDisabled());
 
         // Streaming
         final IgniteCache cache1 = client3.getOrCreateCache(CACHE1);
@@ -426,7 +426,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
                 for (Ignite node : G.allGrids()) {
                     GridCacheSharedContext ctx = ((IgniteEx)node).context().cache().context();
 
-                    if (ctx.wal() != null && disable != ctx.wal().disabled(g1))
+                    if (ctx.wal() != null && disable != ctx.cache().cacheGroup(g1).walDisabled())
                         return false;
                 }
 
@@ -549,9 +549,9 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
             GridCacheSharedContext ctx = ((IgniteEx)node).context().cache().context();
 
             if (ctx.wal() != null) {
-                assertEquals(disabled1, ctx.wal().disabled(g1));
-                assertEquals(disabled2, ctx.wal().disabled(g2));
-                assertEquals(disabled3, ctx.wal().disabled(g3));
+                assertEquals(disabled1, ctx.cache().cacheGroup(g1).walDisabled());
+                assertEquals(disabled2, ctx.cache().cacheGroup(g2).walDisabled());
+                assertEquals(disabled3, ctx.cache().cacheGroup(g3).walDisabled());
             }
         }
 

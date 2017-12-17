@@ -87,11 +87,6 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void disabled(int grpId, boolean disabled) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
         return false;
     }

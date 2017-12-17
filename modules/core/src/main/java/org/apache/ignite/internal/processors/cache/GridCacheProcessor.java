@@ -1945,6 +1945,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
 
+        boolean walDisabled = desc.walMode() == CacheGroupWalMode.DISABLED ||
+            desc.walMode() == CacheGroupWalMode.DISABLING;
+
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
             desc.receivedFrom(),
@@ -1955,7 +1958,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheObjCtx,
             freeList,
             reuseList,
-            exchTopVer);
+            exchTopVer,
+            walDisabled);
 
         for (Object obj : grp.configuredUserObjects())
             prepare(cfg, obj, false);
@@ -2096,6 +2100,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (!cache.active())
                         newProxy.restart();
+
+                    CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(cacheCtx.groupId());
+
+                    if (desc.walMode() == CacheGroupWalMode.ENABLING) // Joined at WAL enabling.
+                        newProxy.disableProxy();
 
                     jCacheProxies.putIfAbsent(cacheCtx.name(), newProxy);
                 }
@@ -2328,7 +2337,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
 
-                    if (desc.walMode() != (disable ? CacheGroupWalMode.ENABLE : CacheGroupWalMode.DISABLE)) {
+                    if (desc.walMode() != (disable ? CacheGroupWalMode.ENABLED : CacheGroupWalMode.DISABLED)) {
                         WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
 
                         if (fut != null)
@@ -2392,21 +2401,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (prepare) {
             WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
 
-            if (fut != null) {
-                if (disable && sharedCtx.wal() != null) {
-                    if (!override) {
-                        GridIntIterator it = fut.grpIds.iterator();
+            if (fut != null && disable && !ctx.clientNode()) {
+                if (!override) {
+                    GridIntIterator it = fut.grpIds.iterator();
 
-                        while (it.hasNext()) {
-                            int grpId = it.next();
+                    while (it.hasNext()) {
+                        int grpId = it.next();
 
-                            if (sharedCtx.wal() != null)
-                                sharedCtx.wal().disabled(grpId, true);
-                        }
+                        sharedCtx.cache().cacheGroup(grpId).walDisabled(true);
                     }
-
-                    ackWalModeDynamicChangeMessage(msg);
                 }
+
+                ackWalModeDynamicChangeMessage(msg);
             }
         }
     }
@@ -2435,8 +2441,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         while (it.hasNext()) {
                             int grpId = it.next();
 
-                            if (sharedCtx.wal() != null)
-                                sharedCtx.wal().disabled(grpId, false);
+                            sharedCtx.cache().cacheGroup(grpId).walDisabled(false);
                         }
 
                         ackWalModeDynamicChangeMessage(msg);
@@ -3093,7 +3098,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw new IgniteException("Cache group contains more than one cache. " +
                     "Set explicit flag to false to allow such operation.");
 
-            if (desc.groupDescriptor().walMode() != (disable ? CacheGroupWalMode.DISABLE : CacheGroupWalMode.ENABLE))
+            if (desc.groupDescriptor().walMode() != (disable ? CacheGroupWalMode.DISABLED : CacheGroupWalMode.ENABLED))
                 already = false;
         }
 
@@ -4427,7 +4432,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * @param node Node.
          */
         private void onNodeAck(final ClusterNode node) {
-            assert !node.isClient();
+            assert !node.isClient() : node;
 
             log.info("Cluster wide WAL mode change operation prepare phase finished by node " +
                 "[nodeId=" + node.id() +

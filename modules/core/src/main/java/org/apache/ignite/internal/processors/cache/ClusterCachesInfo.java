@@ -1003,16 +1003,6 @@ class ClusterCachesInfo {
                 grpData.persistenceEnabled(),
                 grpData.walMode());
 
-            if (ctx.cache().context().wal() != null) {
-                ctx.cache().context().wal().disabled(grpDesc.groupId(),
-                    grpDesc.walMode() == CacheGroupWalMode.DISABLE ||
-                        grpDesc.walMode() == CacheGroupWalMode.DISABLING);
-
-                if (grpDesc.walMode() == CacheGroupWalMode.ENABLING)
-                    for (GridCacheContext cctx : ctx.cache().cacheGroup(grpDesc.groupId()).caches())
-                        ctx.cache().disableGateway(cctx.name());
-            }
-
             if (locCacheGrps.containsKey(grpDesc.groupId())) {
                 CacheGroupDescriptor locGrpCfg = locCacheGrps.get(grpDesc.groupId());
 
@@ -1531,7 +1521,7 @@ class ClusterCachesInfo {
             deploymentId,
             caches,
             CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration()),
-            CacheGroupWalMode.ENABLE);
+            CacheGroupWalMode.ENABLED);
 
         if (ctx.cache().context().pageStore() != null)
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
