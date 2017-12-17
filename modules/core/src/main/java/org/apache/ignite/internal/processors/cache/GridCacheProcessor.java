@@ -56,6 +56,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -3079,6 +3080,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param cacheName Cache name.
+     */
+    public boolean walEnabled(String cacheName) {
+        if (ctx.config().getDataStorageConfiguration() == null ||
+            ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.NONE)
+            return false;
+
+        DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
+
+        return desc.groupDescriptor().walMode() == CacheGroupWalMode.ENABLED;
+    }
+
+    /**
      * @param cacheNames Cache names.
      * @param disable Disable.
      * @param explicit Explicit.
@@ -3087,6 +3101,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<String> cacheNames,
         boolean disable,
         boolean explicit) throws IgniteException {
+        if (ctx.config().getDataStorageConfiguration() == null ||
+            ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.NONE)
+            throw new IgniteException("WAL mode can't be changed. " +
+                "Specify DataStorageConfiguration and WalMode to enable this feature.");
+
         Set<Integer> grpSet = new HashSet<>();
 
         boolean already = true;

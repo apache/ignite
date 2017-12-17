@@ -130,7 +130,15 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         assertFalse(ctx1.cache().cacheGroup(g2).walDisabled());
         assertFalse(ctx1.cache().cacheGroup(g3).walDisabled());
 
-        client3.cluster().disableWal(Collections.singleton(CACHE1));
+        assertTrue(ignite1.cluster().isWalEnabled(CACHE1));
+        assertTrue(ignite2.cluster().isWalEnabled(CACHE1));
+        assertTrue(client3.cluster().isWalEnabled(CACHE1));
+
+        client3.cluster().disableWal(CACHE1);
+
+        assertFalse(ignite1.cluster().isWalEnabled(CACHE1));
+        assertFalse(ignite2.cluster().isWalEnabled(CACHE1));
+        assertFalse(client3.cluster().isWalEnabled(CACHE1));
 
         // Checking newcomer know that wal disabled
         Ignite ignite4 = startGrid(4);
@@ -199,7 +207,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-        client3.cluster().enableWal(Collections.singleton(CACHE1));
+        client3.cluster().enableWal(CACHE1);
 
         assert opsRestricted.await(5, TimeUnit.SECONDS);
 
@@ -216,6 +224,8 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         final IgniteCache cache = newClient3.getOrCreateCache(CACHE1);
 
         assertEquals(size, cache.size());
+
+        assertTrue(newClient3.cluster().isWalEnabled(CACHE1));
     }
 
     /**
@@ -241,7 +251,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         ignite1.active(true);
 
-        ignite1.cluster().disableWal(Collections.singleton(CACHE1));
+        ignite1.cluster().disableWal(CACHE1);
 
         // Streaming
         final IgniteCache cache1 = ignite1.getOrCreateCache(CACHE1);
@@ -470,9 +480,9 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Checks internal methods allow to enable/disable more than one cache.
      */
-    public void testCacheGroupsOps() throws Exception {
+    public void testCacheGroupOps() throws Exception {
         final IgniteEx ignite1 = startGrid(1);
         final IgniteEx ignite2 = startGrid(2);
         final IgniteEx client3 = startGrid(3);
@@ -482,26 +492,28 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         client3.active(true);
 
         for (Ignite ignite : G.allGrids()) {
+            IgniteEx node = (IgniteEx)ignite;
+
             checkWal(false, false, false);
 
-            ignite.cluster().disableWal(Collections.singleton(CACHE1));
+            node.context().cache().changeWalMode(Collections.singleton(CACHE1), true, true).get();
 
             checkWal(true, false, false);
 
-            ignite.cluster().enableWal(Collections.singleton(CACHE1));
+            node.context().cache().changeWalMode(Collections.singleton(CACHE1), false, true).get();
 
             checkWal(false, false, false);
 
-            ignite.cluster().disableWal(Collections.singleton(CACHE2), false);
+            node.context().cache().changeWalMode(Collections.singleton(CACHE2), true, true).get();
 
             checkWal(false, true, true);
 
-            ignite.cluster().disableWal(Collections.singleton(CACHE1));
+            node.context().cache().changeWalMode(Collections.singleton(CACHE1), true, true).get();
 
             checkWal(true, true, true);
 
-            ignite.cluster().enableWal(Collections.singleton(CACHE1));
-            ignite.cluster().enableWal(Collections.singleton(CACHE2), false);
+            node.context().cache().changeWalMode(Collections.singleton(CACHE1), false, true).get();
+            node.context().cache().changeWalMode(Collections.singleton(CACHE2), false, true).get();
 
             checkWal(false, false, false);
 
@@ -510,7 +522,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
             both.add(CACHE1);
             both.add(CACHE2);
 
-            ignite.cluster().disableWal(both, false);
+            node.context().cache().changeWalMode(both, true, false).get();
 
             checkWal(true, true, true);
 
@@ -520,7 +532,16 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
             all.add(CACHE2);
             all.add(CACHE3);
 
-            ignite.cluster().enableWal(all, false);
+            try {
+                node.context().cache().changeWalMode(all, false, true).get();
+
+                fail("Should be restricted.");
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+
+            node.context().cache().changeWalMode(all, false, false).get();
 
             checkWal(false, false, false);
         }

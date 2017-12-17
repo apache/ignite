@@ -289,16 +289,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public void enableWal(Collection<String> cacheNames) throws IgniteException {
-        enableWal(cacheNames, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void enableWal(Collection<String> cacheNames, boolean explicit) throws IgniteException {
+    @Override public void enableWal(String cacheName) throws IgniteException {
         guard();
 
         try {
-            ctx.cache().changeWalMode(cacheNames, false, explicit).get();
+            ctx.cache().changeWalMode(Collections.singleton(cacheName), false, true).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -309,19 +304,26 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public void disableWal(Collection<String> cacheNames) throws IgniteException {
-        disableWal(cacheNames, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void disableWal(Collection<String> cacheNames, boolean explicit) throws IgniteException {
+    @Override public void disableWal(String cacheName) throws IgniteException {
         guard();
 
         try {
-            ctx.cache().changeWalMode(cacheNames, true, explicit).get();
+            ctx.cache().changeWalMode(Collections.singleton(cacheName), true, true).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWalEnabled(String cacheName) {
+        guard();
+
+        try {
+            return ctx.cache().walEnabled(cacheName);
         }
         finally {
             unguard();
