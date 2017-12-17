@@ -85,12 +85,6 @@ public final class UpdatePlan {
     /** Additional info for distributed update. */
     private final DmlDistributedPlanInfo distributed;
 
-    /*
-    private UpdatePlan(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
-                       KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-                       List<List<FastUpdateArgument>> rows, int rowsNum, FastUpdateArguments fastUpdateArgs) {
-     */
-
     /**
      * Constructor.
      *
@@ -440,42 +434,4 @@ public final class UpdatePlan {
     public GridH2Table table() {
         return tbl;
     }
-
-    /*
-    public static UpdatePlan forMerge(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
-                                      KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-                                      List<List<FastUpdateArgument>> rows, int rowsNum) {
-        assert !F.isEmpty(colNames);
-
-        return new UpdatePlan(UpdateMode.MERGE, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx,
-            selectQry, isLocSubqry, rows, rowsNum, null);
-    }
-
-    public static UpdatePlan forInsert(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
-                                       KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-                                       List<List<FastUpdateArgument>> rows, int rowsNum) {
-        assert !F.isEmpty(colNames);
-
-        return new UpdatePlan(UpdateMode.INSERT, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx,
-            selectQry, isLocSubqry, rows, rowsNum, null);
-    }
-
-    public static UpdatePlan forUpdate(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier valSupplier,
-                                       int valColIdx, String selectQry) {
-        assert !F.isEmpty(colNames);
-
-        return new UpdatePlan(UpdateMode.UPDATE, tbl, colNames, colTypes, null, valSupplier, -1, valColIdx, selectQry,
-            false, null, 0, null);
-    }
-
-    public static UpdatePlan forDelete(GridH2Table tbl, String selectQry) {
-        return new UpdatePlan(UpdateMode.DELETE, tbl, null, null, null, null, -1, -1, selectQry, false, null, 0, null);
-    }
-
-    public static UpdatePlan forFastUpdate(UpdateMode mode, GridH2Table tbl, FastUpdateArguments fastUpdateArgs) {
-        assert mode == UpdateMode.UPDATE || mode == UpdateMode.DELETE;
-
-        return new UpdatePlan(mode, tbl, null, null, null, null, -1, -1, null, false, null, 0, fastUpdateArgs);
-    }
-     */
 }

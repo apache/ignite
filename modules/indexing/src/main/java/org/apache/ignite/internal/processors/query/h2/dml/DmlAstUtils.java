@@ -222,24 +222,6 @@ public final class DmlAstUtils {
     }
 
     /**
-     * Create operand based on exact type of SQL element.
-     *
-     * @param el element.
-     * @return Operand.
-     */
-    private static FastUpdateArgument operandForElement(GridSqlElement el) {
-        assert el == null ^ (el instanceof GridSqlConst || el instanceof GridSqlParameter);
-
-        if (el == null)
-            return FastUpdateArguments.NULL_ARGUMENT;
-
-        if (el instanceof GridSqlConst)
-            return new FastUpdateArguments.ValueArgument(((GridSqlConst)el).value().getObject());
-        else
-            return new FastUpdateArguments.ParamArgument(((GridSqlParameter)el).index());
-    }
-
-    /**
      * @param del DELETE statement.
      * @return {@code true} if given statement filters by single non expression key.
      */
