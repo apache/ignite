@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -53,12 +53,17 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
+import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VAL_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VER_COL;
 
 /**
  * H2 Table implementation.
@@ -114,6 +119,12 @@ public class GridH2Table extends TableBase {
 
     /** Flag remove index or not when table will be destroyed. */
     private volatile boolean rmIndex;
+
+    /** Indexed columns mapping to the number of indexes they are used by. */
+    private final ConcurrentMap<Column, AtomicInteger> secondaryIdxCols = new ConcurrentHashMap8<>();
+
+    /** Flag if table has user indexes. */
+    private volatile boolean hasSecondaryIdxs;
 
     /**
      * Creates table.
@@ -344,6 +355,8 @@ public class GridH2Table extends TableBase {
                 }
             }
 
+            clearIndexedColumnsList();
+
             if (SysProperties.CHECK) {
                 for (SchemaObject obj : database.getAllSchemaObjects(DbObject.INDEX)) {
                     Index idx = (Index) obj;
@@ -377,6 +390,8 @@ public class GridH2Table extends TableBase {
             for (int i = 1, len = idxs.size(); i < len; i++)
                 if (idxs.get(i) instanceof GridH2IndexBase)
                     index(i).destroy(rmIndex);
+
+            clearIndexedColumnsList();
         }
         finally {
             unlock(true);
@@ -587,6 +602,8 @@ public class GridH2Table extends TableBase {
             Index oldTmpIdx = tmpIdxs.put(idx.getName(), (GridH2IndexBase)idx);
 
             assert oldTmpIdx == null;
+
+            addToIndexColumns(idx);
         }
         finally {
             unlock(true);
@@ -652,6 +669,8 @@ public class GridH2Table extends TableBase {
             GridH2IndexBase rmvIdx = tmpIdxs.remove(idxName);
 
             assert rmvIdx != null;
+
+            removeFromIndexColumns(rmvIdx);
         }
         finally {
             unlock(true);
@@ -701,6 +720,8 @@ public class GridH2Table extends TableBase {
                     ((GridH2ProxyIndex)idx).underlyingIndex() == targetIdx)) {
 
                     idxs.remove(i);
+
+                    removeFromIndexColumns(idx);
 
                     if (idx instanceof GridH2ProxyIndex &&
                         idx.getSchema().findIndex(session, idx.getName()) != null)
@@ -768,18 +789,6 @@ public class GridH2Table extends TableBase {
         idxs.add(this.idxs.get(1));
 
         return idxs;
-    }
-
-    /**
-     * Returns only user indexes: without scan, hash and pk.
-     *
-     * @return User indexes.
-     */
-    public List<Index> getUserIndexes() {
-        if (rebuildFromHashInProgress)
-            return null; // Can't check now
-
-        return Collections.unmodifiableList(idxs.subList(sysIdxsCnt, idxs.size()));
     }
 
     /** {@inheritDoc} */
@@ -1006,5 +1015,128 @@ public class GridH2Table extends TableBase {
             return false;
 
         return true;
+    }
+
+    /**
+     * Checks equality for the indexed fields.
+     *n
+     * @param newRow New row.
+     * @param prevRow Old row.
+     * @return {@code True} if all indexed fields are equal.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean checkIndexedColumnsEquality(CacheDataRow newRow,  CacheDataRow prevRow) throws IgniteCheckedException {
+        assert newRow != null;
+        assert prevRow != null;
+        assert newRow.key().equals(prevRow.key());
+
+        if (!hasSecondaryIdxs)
+            return true;
+
+        lock(false);
+
+        try {
+            for (Column col : secondaryIdxCols.keySet()) {
+                assert col.getColumnId() != KEY_COL;
+
+                Object newVal;
+                Object prevVal;
+
+                if (col.getColumnId() == VAL_COL) {
+                    newVal = newRow == null ? null : desc.wrap(newRow.value(), desc.valueType());
+                    prevVal = prevRow == null ? null : desc.wrap(prevRow.value(), desc.valueType());
+                }
+                else if (col.getColumnId() == VER_COL) {
+                    newVal = newRow == null ? null : desc.wrap(newRow.version(), Value.JAVA_OBJECT);
+                    prevVal = prevRow == null ? null : desc.wrap(prevRow.version(), Value.JAVA_OBJECT);
+                }
+                else {
+                    assert col.getColumnId() >= DEFAULT_COLUMNS_COUNT;
+
+                    int colId = col.getColumnId() - DEFAULT_COLUMNS_COUNT;
+
+                    newVal = desc.columnValue(newRow.key(), newRow.value(), colId);
+                    prevVal = desc.columnValue(prevRow.key(), prevRow.value(), colId);
+                }
+
+                if (newVal != null && prevVal != null)  {
+                    if (!newVal.equals(prevVal))
+                        return false;
+                } else if (newVal != null || prevVal != null)
+                    return false;
+            }
+
+            return true;
+        }
+        finally {
+            unlock(false);
+        }
+    }
+
+    /**
+     * Updates indexed columns list. Should run under the exclusive table lock.
+     *
+     * @param idx Index to add.
+     */
+    private void addToIndexColumns(Index idx) {
+        if (idx instanceof H2TreeIndex) {
+            for (Column col : idx.getColumns()) {
+                String colName = col.getName();
+
+                if (!KEY_FIELD_NAME.equals(colName)) {
+                    AtomicInteger cntr = secondaryIdxCols.get(col);
+
+                    if (cntr == null) {
+                        AtomicInteger newCntr = new AtomicInteger();
+
+                        cntr = secondaryIdxCols.putIfAbsent(col, newCntr);
+
+                        if (cntr == null)
+                            cntr = newCntr;
+                    }
+
+                    cntr.incrementAndGet();
+
+                    hasSecondaryIdxs = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates indexed columns list. Should run under the exclusive table lock.
+     *
+     * @param idx Index to remove.
+     */
+    private void removeFromIndexColumns(Index idx) {
+        if (idx instanceof H2TreeIndex) {
+            for (Column col : idx.getColumns()) {
+                String colName = col.getName();
+
+                if (!KEY_FIELD_NAME.equals(colName)) {
+                    AtomicInteger cntr = secondaryIdxCols.get(col);
+
+                    assert cntr != null;
+
+                    Integer res = cntr.decrementAndGet();
+
+                    if (res <= 0) {
+                        secondaryIdxCols.remove(col);
+
+                        if (secondaryIdxCols.isEmpty())
+                            hasSecondaryIdxs = false;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Clears secondary indexes columns list.
+     */
+    private void clearIndexedColumnsList() {
+        hasSecondaryIdxs = false;
+
+        secondaryIdxCols.clear();
     }
 }
