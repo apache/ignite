@@ -54,7 +54,7 @@ public class WalModeDynamicChangeAckMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -62;
+        return 129;
     }
 
     /** {@inheritDoc} */
