@@ -518,15 +518,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             storePageMem.start();
 
-            restoreMemory(status, true, storePageMem);
+            checkpointReadLock();
 
-            metaStorage = new MetaStorage(cctx.wal(), regCfg, memMetrics, true);
+            try {
+                restoreMemory(status, true, storePageMem);
 
-            metaStorage.init(this);
+                metaStorage = new MetaStorage(cctx.wal(), regCfg, memMetrics, true);
 
-            applyLastUpdates(status, true);
+                metaStorage.init(this);
 
-            notifyMetastorageReadyForRead();
+                applyLastUpdates(status, true);
+
+                notifyMetastorageReadyForRead();
+            }
+            finally {
+                checkpointReadUnlock();
+            }
 
             metaStorage = null;
 

@@ -903,7 +903,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             assert storage0 != null;
 
             for (int i = 0; i < cnt; i++) {
-                sharedCtx0.database().checkpointReadUnlock();
+                sharedCtx0.database().checkpointReadLock();
 
                 try {
                     storage0.putData(String.valueOf(i), new byte[]{(byte)(i % 256), 2, 3});
