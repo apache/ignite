@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.management.MBeanServer;
@@ -27,6 +30,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
@@ -35,6 +39,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -125,8 +130,6 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
      *
      */
     public void testPublicApiStatisticsEnable() throws Exception {
-        this.persistence = false;
-
         Ignite ig1 = startGrid(1);
         startGrid(2);
 
@@ -151,11 +154,58 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         assertCachesStatisticsMode(false, false);
     }
 
+    /**
+     *
+     */
+    public void testMultiThreadStatisticsEnable() throws Exception {
+        startGrids(5);
+
+        IgniteCache<?, ?> cache1 = grid(0).cache(CACHE1);
+
+        CacheConfiguration cacheCfg2 = new CacheConfiguration(cache1.getConfiguration(
+            CacheConfiguration.class));
+
+        cacheCfg2.setName(CACHE2);
+
+        grid(0).getOrCreateCache(cacheCfg2);
+
+        final CyclicBarrier barrier = new CyclicBarrier(10);
+
+        final AtomicInteger gridIdx = new AtomicInteger(-1);
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    Ignite ignite = grid(gridIdx.incrementAndGet() % 5);
+
+                    barrier.await();
+
+                    assertTrue(ignite.cluster().enableStatistics(Arrays.asList(CACHE1, CACHE2), true));
+
+                    assertCachesStatisticsMode(true, true);
+
+                    barrier.await();
+
+                    assertTrue(ignite.cluster().enableStatistics(Arrays.asList(CACHE1, CACHE2), false));
+
+                    assertCachesStatisticsMode(false, false);
+                }
+                catch (InterruptedException | BrokenBarrierException | IgniteCheckedException e) {
+                    fail("Unexpected exception: " + e);
+                }
+            }
+        }, 10);
+
+        fut.get();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
+
+        persistence = false;
     }
 
     /**
