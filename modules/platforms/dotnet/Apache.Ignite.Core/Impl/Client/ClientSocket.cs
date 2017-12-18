@@ -75,6 +75,12 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Background socket receiver trigger. */
         private readonly ManualResetEventSlim _listenerEvent = new ManualResetEventSlim();
 
+        /** Dispose locker. */
+        private readonly object _disposeSyncRoot = new object();
+
+        /** Disposed flag. */
+        private bool _isDisposed;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
         /// </summary>
@@ -136,6 +142,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Starts waiting for the new message.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void WaitForMessages()
         {
             try
@@ -306,6 +313,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private BinaryHeapStream SendRequest(ref RequestMessage reqMsg)
         {
+            // Do not enter lock when disposed.
+            CheckException();
+
             // If there are no pending async requests, we can execute this operation synchronously,
             // which is more efficient.
             if (_sendRequestLock.TryEnterWriteLock(0))
@@ -328,7 +338,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
                 finally
                 {
-                    _sendRequestLock.ExitWriteLock();
+                    if (_sendRequestLock.IsWriteLockHeld)
+                    {
+                        _sendRequestLock.ExitWriteLock();
+                    }
                 }
             }
 
@@ -341,6 +354,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private Task<BinaryHeapStream> SendRequestAsync(ref RequestMessage reqMsg)
         {
+            // Do not enter lock when disposed.
+            CheckException();
+
             _sendRequestLock.EnterReadLock();
             try
             {
@@ -562,12 +578,30 @@ namespace Apache.Ignite.Core.Impl.Client
             Justification = "There is no finalizer.")]
         public void Dispose()
         {
-            _exception = _exception ?? new ObjectDisposedException(typeof(ClientSocket).FullName);
-            EndRequestsWithError();
-            _socket.Dispose();
-            _listenerEvent.Set();
-            _listenerEvent.Dispose();
-            _timeoutCheckTimer.Dispose();
+            lock (_disposeSyncRoot)
+            {
+                if (_isDisposed)
+                {
+                    return;
+                }
+
+                _exception = _exception ?? new ObjectDisposedException(typeof(ClientSocket).FullName);
+                EndRequestsWithError();
+                _socket.Dispose();
+                _listenerEvent.Set();
+                _listenerEvent.Dispose();
+                _timeoutCheckTimer.Dispose();
+
+                // Wait for lock to be released and dispose.
+                if (!_sendRequestLock.IsWriteLockHeld)
+                {
+                    _sendRequestLock.EnterWriteLock();
+                }
+                _sendRequestLock.ExitWriteLock();
+                _sendRequestLock.Dispose();
+
+                _isDisposed = true;
+            }
         }
 
         /// <summary>
