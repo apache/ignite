@@ -315,8 +315,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return msg0;
         }
-        else if (msg instanceof CacheStatisticsModeChangeMessage)
-            return new CacheStatisticsModeChangeTask((CacheStatisticsModeChangeMessage)msg);
+        else if (msg instanceof CacheStatisticsModeChangeMessage) {
+            CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
+
+            if (msg0.messageType() == CacheStatisticsModeChangeMessage.MessageType.REQUEST)
+                return new CacheStatisticsModeChangeTask(msg0);
+        }
 
         return null;
     }
@@ -654,11 +658,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Start shared managers.
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
-
-        GridDiscoveryManager discoMgr = ctx.discovery();
-
-        discoMgr.setCustomEventListener(CacheStatisticsModeChangeResponse.class,
-            new CacheStatisticsModeChangeListener());
 
         if (!ctx.isDaemon()) {
             Map<String, CacheInfo> caches = new HashMap<>();
@@ -3112,8 +3111,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);
 
-        if (msg instanceof CacheStatisticsModeChangeMessage)
-            cachesInfo.onCacheStatisticsModeChange((CacheStatisticsModeChangeMessage)msg);
+        if (msg instanceof CacheStatisticsModeChangeMessage) {
+            CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
+
+            if (msg0.messageType() == CacheStatisticsModeChangeMessage.MessageType.REQUEST)
+                cachesInfo.onCacheStatisticsModeChange(msg0);
+            else {
+                EnableStatisticsFuture fut = enableStatisticsFuts.get(msg0.requestId());
+
+                if (fut != null)
+                    fut.onDone(msg0.success());
+            }
+        }
 
         return false;
     }
@@ -4328,23 +4337,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(EnableStatisticsFuture.class, this);
-        }
-    }
-
-    /**
-     * Listener for cache enable/disable statistics response message.
-     */
-    private final class CacheStatisticsModeChangeListener implements CustomEventListener<CacheStatisticsModeChangeResponse> {
-        /** {@inheritDoc} */
-        @Override public void onCustomEvent(
-            AffinityTopologyVersion topVer,
-            ClusterNode snd,
-            CacheStatisticsModeChangeResponse msg
-        ) {
-            EnableStatisticsFuture fut = enableStatisticsFuts.get(msg.requestId());
-
-            if (fut != null)
-                fut.onDone(msg.success());
         }
     }
 }

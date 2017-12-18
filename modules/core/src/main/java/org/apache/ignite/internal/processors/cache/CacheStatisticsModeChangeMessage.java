@@ -32,8 +32,19 @@ import org.jetbrains.annotations.Nullable;
  * Cache statistics mode change discovery message.
  */
 public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage {
+    /** Message types.  */
+    public enum MessageType {
+        /** Request. */
+        REQUEST,
+        /** Response. */
+        RESPONSE
+    }
+
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Message type. */
+    private final MessageType msgType;
 
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
@@ -51,9 +62,25 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     private boolean success;
 
     /**
+     * Constructor for response.
+     *
+     * @param req Request message.
+     */
+    private CacheStatisticsModeChangeMessage(CacheStatisticsModeChangeMessage req) {
+        this.msgType = MessageType.RESPONSE;
+        this.reqId = req.reqId;
+        this.caches = null;
+        this.enabled = req.enabled;
+        this.success = req.success;
+    }
+
+    /**
+     * Constructor for request.
+     *
      * @param caches Collection of cache names.
      */
     public CacheStatisticsModeChangeMessage(UUID reqId, Collection<String> caches, boolean enabled) {
+        this.msgType = MessageType.REQUEST;
         this.reqId = reqId;
         this.caches = Collections.unmodifiableCollection(caches);
         this.enabled = enabled;
@@ -67,12 +94,12 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new CacheStatisticsModeChangeResponse(reqId, success);
+        return (msgType == MessageType.REQUEST) ? new CacheStatisticsModeChangeMessage(this) : null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return true;
+        return (msgType == MessageType.REQUEST);
     }
 
     /** {@inheritDoc} */
@@ -96,10 +123,31 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     }
 
     /**
+     * Gets success flag.
+     */
+    public boolean success() {
+        return success;
+    }
+
+    /**
      * Sets success flag.
      */
     public void success(boolean success) {
         this.success = success;
+    }
+
+    /**
+     * @return Request id.
+     */
+    public UUID requestId() {
+        return reqId;
+    }
+
+    /**
+     * Message type.
+     */
+    public MessageType messageType() {
+        return msgType;
     }
 
     /** {@inheritDoc} */
