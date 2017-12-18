@@ -206,8 +206,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestOperationTimeout()
         {
-            var bigString = new string('f', 10000);
-            var data = Enumerable.Range(1, 100000).ToDictionary(x => x, x => bigString);
+            var data = Enumerable.Range(1, 100000).ToDictionary(x => x, x => x.ToString());
 
             Ignition.Start(TestUtils.GetTestConfiguration());
 
