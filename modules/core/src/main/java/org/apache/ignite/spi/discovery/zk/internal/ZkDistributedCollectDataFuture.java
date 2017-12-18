@@ -141,9 +141,14 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
         // TODO ZK: use multi, better batching + max-size safe + NoNodeException safe.
         String evtDir = paths.distributedFutureBasePath(futId);
 
-        client.deleteAll(evtDir,
-            client.getChildren(evtDir),
-            -1);
+        try {
+            client.deleteAll(evtDir,
+                client.getChildren(evtDir),
+                -1);
+        }
+        catch (KeeperException.NoNodeException e) {
+            // TODO ZK
+        }
 
         client.deleteIfExists(evtDir, -1);
 

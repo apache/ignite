@@ -214,6 +214,34 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
     }
 
     /**
+     * @param err Error.
+     */
+    void onError(Exception err) {
+        assert err != null;
+
+        Map<Long, GridFutureAdapter<Boolean>> futs;
+
+        synchronized (this) {
+            if (state == State.DONE) {
+                assert resErr != null;
+
+                return;
+            }
+
+            state = State.DONE;
+
+            resErr = err;
+
+            futs = nodeFuts; // nodeFuts should not be modified after state changed to DONE.
+        }
+
+        for (Map.Entry<Long, GridFutureAdapter<Boolean>> e : futs.entrySet())
+            e.getValue().onDone(err);
+
+        onDone(err);
+    }
+
+    /**
      * @param failedNodes Node failed as result of resolve process.
      */
     void onFinishResolve(Set<Long> failedNodes) {

@@ -17,9 +17,14 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationProblemContext;
 
@@ -28,31 +33,73 @@ import org.apache.ignite.configuration.CommunicationProblemContext;
  */
 class ZkCommunicationProblemContext implements CommunicationProblemContext {
     /** */
+    private static final Comparator<ClusterNode> NODE_ORDER_CMP = new Comparator<ClusterNode>() {
+        @Override public int compare(ClusterNode node1, ClusterNode node2) {
+            return Long.compare(node1.order(), node2.order());
+        }
+    };
+
+    /** */
     private Set<ClusterNode> killedNodes = new HashSet<>();
+
+    /** */
+    private final Map<UUID, BitSet> nodesState;
+
+    /** */
+    private final List<ClusterNode> initialNodes;
+
+    /** */
+    private final List<ClusterNode> curNodes;
+
+    /**
+     * @param curNodes Current topology snapshot.
+     * @param initialNodes Topology snapshot when communication error resolve started.
+     * @param nodesState Nodes communication state.
+     */
+    ZkCommunicationProblemContext(List<ClusterNode> curNodes,
+        List<ClusterNode> initialNodes,
+        Map<UUID, BitSet> nodesState)
+    {
+        this.curNodes = Collections.unmodifiableList(curNodes);
+        this.initialNodes = initialNodes;
+        this.nodesState = nodesState;
+    }
 
     /** {@inheritDoc} */
     @Override public List<ClusterNode> topologySnapshot() {
-        return null;
+        return curNodes;
     }
 
     /** {@inheritDoc} */
     @Override public boolean connectionAvailable(ClusterNode node1, ClusterNode node2) {
-        return false;
+        BitSet nodeState = nodesState.get(node1.id());
+
+        if (nodeState == null)
+            throw new IllegalArgumentException("Invalid node: " + node1);
+
+        int nodeIdx = Collections.binarySearch(initialNodes, node2, NODE_ORDER_CMP);
+
+        if (nodeIdx < 0)
+            throw new IllegalArgumentException("Invalid node: " + node2);
+
+        assert nodeIdx < nodeState.size() : nodeIdx;
+
+        return nodeState.get(nodeIdx);
     }
 
     /** {@inheritDoc} */
     @Override public List<String> startedCaches() {
-        return null;
+        return null; // TODO ZK
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> cacheAffinity(String cacheName) {
-        return null;
+        return null; // TODO ZK
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> cachePartitionOwners(String cacheName) {
-        return null;
+        return null; // TODO ZK
     }
 
     /** {@inheritDoc} */
@@ -60,6 +107,16 @@ class ZkCommunicationProblemContext implements CommunicationProblemContext {
         if (node == null)
             throw new NullPointerException();
 
+        if (Collections.binarySearch(curNodes, node, NODE_ORDER_CMP) < 0)
+            throw new IllegalArgumentException("Invalid node: " + node);
+
         killedNodes.add(node);
+    }
+
+    /**
+     * @return Nodes to fail.
+     */
+    Set<ClusterNode> killedNodes() {
+        return killedNodes;
     }
 }

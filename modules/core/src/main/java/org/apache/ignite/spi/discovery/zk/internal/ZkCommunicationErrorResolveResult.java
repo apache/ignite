@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridIntList;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,12 +29,17 @@ class ZkCommunicationErrorResolveResult implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    final GridLongList failedNodes;
+    final GridIntList killedNodes;
+
+    /** */
+    final Exception err;
 
     /**
-     * @param failedNodes
+     * @param killedNodes Killed nodes.
+     * @param err Error.
      */
-    ZkCommunicationErrorResolveResult(@Nullable GridLongList failedNodes) {
-        this.failedNodes = failedNodes;
+    ZkCommunicationErrorResolveResult(@Nullable GridIntList killedNodes, Exception err) {
+        this.killedNodes = killedNodes;
+        this.err = err;
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -246,6 +248,8 @@ public class ZookeeperDiscoveryImpl {
      * @param err Connect error.
      */
     public void onCommunicationConnectionError(ClusterNode node0, Exception err) {
+        checkState();
+
         ZookeeperClusterNode node = node(node0.id());
 
         if (node == null)
@@ -269,7 +273,16 @@ public class ZookeeperDiscoveryImpl {
                             ", err= " + err + ']');
                     }
 
-                    fut.scheduleCheckOnTimeout();
+                    ConnectionState connState;
+
+                    synchronized (this) {
+                        connState = this.connState;
+                    }
+
+                    if (connState != ConnectionState.STARTED)
+                        fut.onError(new IgniteCheckedException("Node stopped."));
+                    else
+                        fut.scheduleCheckOnTimeout();
                 }
                 else
                     fut = commErrProcFut.get();
@@ -475,7 +488,7 @@ public class ZookeeperDiscoveryImpl {
                 break;
 
             case STOPPED:
-                throw new IgniteSpiException("Zookeeper client closed.");
+                throw new IgniteSpiException("Node stopped.");
 
             case DISCONNECTED:
                 throw new IgniteClientDisconnectedException(null, "Client is disconnected.");
@@ -1025,11 +1038,41 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * @param lastEvts Last events from previous coordinator.
+     * @throws Exception If failed.
+     */
+    private void previousCoordinatorCleanup(ZkDiscoveryEventsData lastEvts) throws Exception {
+        for (ZkDiscoveryEventData evtData : lastEvts.evts.values()) {
+            if (evtData instanceof ZkDiscoveryCustomEventData) {
+                ZkDiscoveryCustomEventData evtData0 = (ZkDiscoveryCustomEventData)evtData;
+
+                // It is possible previous coordinator failed before finished message processing.
+                if (evtData0.msg instanceof ZkCommunicationErrorResolveFinishMessage) {
+                    try {
+                        ZkCommunicationErrorResolveFinishMessage msg =
+                            (ZkCommunicationErrorResolveFinishMessage)evtData0.msg;
+
+                        ZkCommunicationErrorResolveResult res = unmarshalZip(
+                            ZkDistributedCollectDataFuture.readResult(rtState.zkClient, zkPaths, msg.futId));
+
+                        deleteAliveNodes(res.killedNodes);
+                    }
+                    catch (KeeperException.NoNodeException ignore) {
+                        // No-op.
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * @param aliveNodes Alive nodes paths.
      * @param locInternalId Local node's internal ID.
      * @throws Exception If failed.
      */
     private void onBecomeCoordinator(List<String> aliveNodes, int locInternalId) throws Exception {
+        long topVer0 = rtState.evtsData != null ? rtState.evtsData.topVer : -1L;
+
         byte[] evtsDataBytes = rtState.zkClient.getData(zkPaths.evtsPath);
 
         if (evtsDataBytes.length > 0)
@@ -1043,6 +1086,11 @@ public class ZookeeperDiscoveryImpl {
 
             assert locNode.order() > 0 : locNode;
             assert rtState.evtsData != null;
+
+            previousCoordinatorCleanup(rtState.evtsData);
+
+            if (topVer0 > rtState.evtsData.topVer)
+                rtState.evtsData.topVer = topVer0;
 
             UUID futId = rtState.evtsData.communicationErrorResolveFutureId();
 
@@ -1636,6 +1684,7 @@ public class ZookeeperDiscoveryImpl {
 
                                 assert node != null :  msg0.nodeId;
 
+                                // TODO ZK: delete when process event
                                 for (String child : zkClient.getChildren(zkPaths.aliveNodesDir)) {
                                     if (ZkIgnitePaths.aliveInternalId(child) == node.internalId()) {
                                         zkClient.deleteIfExistsAsync(zkPaths.aliveNodesDir + "/" + child);
@@ -2021,22 +2070,25 @@ public class ZookeeperDiscoveryImpl {
         ClusterNode creatorNode = rtState.top.nodesById.get(evtData.sndNodeId);
 
         if (msg.warning != null) {
-            U.warn(log, "Received EVT_NODE_FAILED event with warning [" +
-                "nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : evtData.sndNodeId) +
-                ", nodeId=" + msg.nodeId +
-                ", msg=" + msg.warning + ']');
+            U.warn(log, "Received force EVT_NODE_FAILED event with warning [" +
+                "nodeId=" + msg.nodeId +
+                ", msg=" + msg.warning +
+                ", nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : evtData.sndNodeId) + ']');
         }
         else {
             U.warn(log, "Received force EVT_NODE_FAILED event [" +
-                "nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : evtData.sndNodeId) +
-                ", nodeId=" + msg.nodeId + ']');
+                "nodeId=" + msg.nodeId +
+                ", nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : evtData.sndNodeId) + ']');
         }
 
         ZookeeperClusterNode node = rtState.top.nodesById.get(msg.nodeId);
 
         assert node != null : msg.nodeId;
 
-        processNodeFail(node.internalId(), evtData.topologyVersion());
+        if (node.isLocal())
+            throw localNodeFail("Received force EVT_NODE_FAILED event for local node.");
+        else
+            notifyNodeFail(node.internalId(), evtData.topologyVersion());
     }
 
     /**
@@ -2049,12 +2101,9 @@ public class ZookeeperDiscoveryImpl {
         UUID futId = msg.futId;
 
         assert futId != null;
-        assert futId.equals(rtState.evtsData.communicationErrorResolveFutureId());
 
         if (log.isInfoEnabled())
             log.info("Received communication error resolve finish message [reqId=" + futId + ']');
-
-        rtState.evtsData.communicationErrorResolveFutureId(null);
 
         rtState.commErrProcNodes = null;
 
@@ -2069,14 +2118,72 @@ public class ZookeeperDiscoveryImpl {
 
         Set<Long> failedNodes = null;
 
-        if (res.failedNodes != null) {
-            failedNodes = U.newHashSet(res.failedNodes.size());
+        if (res.err != null)
+            U.error(log, "Communication error resolve failed: " + res.err, res.err);
+        else {
+            if (res.killedNodes != null) {
+                failedNodes = U.newHashSet(res.killedNodes.size());
 
-            for (int i = 0; i < res.failedNodes.size(); i++)
-                failedNodes.add(res.failedNodes.get(i));
+                for (int i = 0; i < res.killedNodes.size(); i++) {
+                    int internalId = res.killedNodes.get(i);
+
+                    if (internalId == locNode.internalId()) {
+                        fut.onError(new IgniteCheckedException("Local node is forced to stop " +
+                            "by communication error resolver"));
+
+                        if (rtState.crd)
+                            deleteAliveNodes(res.killedNodes);
+
+                        throw localNodeFail("Local node is forced to stop by communication error resolver " +
+                            "[nodeId=" + locNode.id() + ']');
+                    }
+
+                    ZookeeperClusterNode node = rtState.top.nodesByInternalId.get(internalId);
+
+                    assert node != null : internalId;
+
+                    failedNodes.add(node.order());
+                }
+
+                long topVer = msg.topVer;
+
+                for (int i = 0; i < res.killedNodes.size(); i++) {
+                    int nodeInternalId = res.killedNodes.get(i);
+
+                    ClusterNode node = rtState.top.nodesByInternalId.get(nodeInternalId);
+
+                    assert node != null : nodeInternalId;
+
+                    if (log.isInfoEnabled())
+                        log.info("Node stop is forced by communication error resolver [nodeId=" + node.id() + ']');
+
+                    notifyNodeFail(nodeInternalId, ++topVer);
+                }
+            }
         }
 
         fut.onFinishResolve(failedNodes);
+
+        if (rtState.crd)
+            deleteAliveNodes(res.killedNodes);
+    }
+
+    /**
+     * @param internalIds Nodes internal IDs.
+     * @throws Exception If failed.
+     */
+    private void deleteAliveNodes(@Nullable GridIntList internalIds) throws Exception {
+        if (internalIds == null)
+            return;
+
+        List<String> alives = rtState.zkClient.getChildren(zkPaths.aliveNodesDir);
+
+        for (int i = 0; i < alives.size(); i++) {
+            String alive = alives.get(i);
+
+            if (internalIds.contains(ZkIgnitePaths.aliveInternalId(alive)))
+                rtState.zkClient.deleteIfExistsAsync(zkPaths.aliveNodesDir + "/" + alive);
+        }
     }
 
     /**
@@ -2163,7 +2270,7 @@ public class ZookeeperDiscoveryImpl {
     private void onCommunicationErrorResolveStatusReceived(ZkRuntimeState rtState) throws Exception {
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
 
-        UUID futId = rtState.evtsData.communicationErrorResolveFutureId();
+        UUID futId = evtsData.communicationErrorResolveFutureId();
 
         if (log.isInfoEnabled())
             log.info("Received communication status from all nodes [reqId=" + futId + ']');
@@ -2178,23 +2285,101 @@ public class ZookeeperDiscoveryImpl {
 
         rtState.commErrProcNodes = null;
 
-        ZkClusterNodes top = rtState.top;
+        List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        List<ZkCommunicationErrorNodeState> nodesRes = new ArrayList<>();
+        Map<UUID, BitSet> nodesRes = U.newHashMap(topSnapshot.size());
 
-        for (ZookeeperClusterNode node : top.nodesByOrder.values()) {
+        Exception err = null;
+
+        for (ClusterNode node : topSnapshot) {
             byte[] stateBytes = ZkDistributedCollectDataFuture.readNodeResult(futPath,
                 rtState.zkClient,
                 node.order());
 
             ZkCommunicationErrorNodeState nodeState = unmarshalZip(stateBytes);
 
-            nodesRes.add(nodeState);
+            if (nodeState.err != null) {
+                if (err == null)
+                    err = new Exception("Failed to resolve communication error.");
+
+                err.addSuppressed(nodeState.err);
+            }
+            else {
+                assert nodeState.commState != null;
+
+                nodesRes.put(node.id(), nodeState.commState);
+            }
         }
 
-        ZkCommunicationErrorResolveFinishMessage msg = new ZkCommunicationErrorResolveFinishMessage(futId);
+        long topVer = evtsData.topVer;
 
-        ZkCommunicationErrorResolveResult res = new ZkCommunicationErrorResolveResult(null);
+        GridIntList killedNodesList = null;
+
+        if (err == null) {
+            boolean fullyConnected = true;
+
+            for (Map.Entry<UUID, BitSet> e : nodesRes.entrySet()) {
+                if (!checkFullyConnected(e.getValue(), initialNodes, rtState.top)) {
+                    fullyConnected = false;
+
+                    break;
+                }
+            }
+
+            if (fullyConnected) {
+                if (log.isInfoEnabled()) {
+                    log.info("Finish communication error resolve process automatically, there are no " +
+                        "communication errors [reqId=" + futId + ']');
+                }
+            }
+            else {
+                CommunicationProblemResolver rslvr = spi.ignite().configuration().getCommunicationProblemResolver();
+
+                if (rslvr != null) {
+                    if (log.isInfoEnabled()) {
+                        log.info("Call communication error resolver [reqId=" + futId +
+                            ", rslvr=" + rslvr.getClass().getSimpleName() + ']');
+                    }
+
+                    ZkCommunicationProblemContext ctx = new ZkCommunicationProblemContext(topSnapshot,
+                        initialNodes,
+                        nodesRes);
+
+                    try {
+                        rslvr.resolve(ctx);
+
+                        Set<ClusterNode> killedNodes = ctx.killedNodes();
+
+                        if (killedNodes != null) {
+                            if (log.isInfoEnabled()) {
+                                log.info("Communication error resolver forces nodes stop [reqId=" + futId +
+                                    ", killNodeCnt=" + killedNodes.size() +
+                                    ", nodeIds=" + U.nodeIds(killedNodes) + ']');
+                            }
+
+                            killedNodesList = new GridIntList(killedNodes.size());
+
+                            for (ClusterNode killedNode : killedNodes) {
+                                killedNodesList.add(((ZookeeperClusterNode)killedNode).internalId());
+
+                                evtsData.topVer++;
+                            }
+                        }
+                    }
+                    catch (Exception e) {
+                        err = e;
+
+                        U.error(log, "Failed to resolve communication error with configured resolver [reqId=" + futId + ']', e);
+                    }
+                }
+            }
+        }
+
+        evtsData.communicationErrorResolveFutureId(null);
+
+        ZkCommunicationErrorResolveResult res = new ZkCommunicationErrorResolveResult(killedNodesList, err);
+
+        ZkCommunicationErrorResolveFinishMessage msg = new ZkCommunicationErrorResolveFinishMessage(futId, topVer);
 
         msg.res = res;
 
@@ -2202,19 +2387,11 @@ public class ZookeeperDiscoveryImpl {
             rtState.zkClient,
             marshalZip(res));
 
-        CommunicationProblemResolver rslvr = spi.ignite().configuration().getCommunicationProblemResolver();
-
-        if (rslvr != null) {
-            ZkCommunicationProblemContext ctx = new ZkCommunicationProblemContext();
-
-            rslvr.resolve(ctx);
-        }
-
         evtsData.evtIdGen++;
 
         ZkDiscoveryCustomEventData evtData = new ZkDiscoveryCustomEventData(
             evtsData.evtIdGen,
-            evtsData.topVer,
+            topVer,
             locNode.id(),
             msg,
             null,
@@ -2225,6 +2402,30 @@ public class ZookeeperDiscoveryImpl {
         evtsData.addEvent(rtState.top.nodesByOrder.values(), evtData);
 
         saveAndProcessNewEvents();
+    }
+
+    /**
+     * @param commState Node communication state.
+     * @param initialNodes Topology snapshot when communication error resolve started.
+     * @param top Current topology.
+     * @return {@code True} if node has connection to all alive nodes.
+     */
+    private boolean checkFullyConnected(BitSet commState, List<ClusterNode> initialNodes, ZkClusterNodes top) {
+        int startIdx = 0;
+
+        for (;;) {
+            int idx = commState.nextClearBit(startIdx);
+
+            if (idx >= initialNodes.size())
+                return true;
+
+            ClusterNode node = initialNodes.get(idx);
+
+            if (top.nodesById.containsKey(node.id()))
+                return false;
+
+            startIdx = idx + 1;
+        }
     }
 
     /**
@@ -2292,70 +2493,73 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param evtData Event data.
-     * @throws Exception If failed.
      */
-    private void notifyNodeFail(final ZkDiscoveryNodeFailEventData evtData) throws Exception {
-        processNodeFail(evtData.failedNodeInternalId(), evtData.topologyVersion());
+    private void notifyNodeFail(final ZkDiscoveryNodeFailEventData evtData) {
+        notifyNodeFail(evtData.failedNodeInternalId(), evtData.topologyVersion());
     }
 
     /**
-     * @param nodeInternalId Failed node internal ID.
+     * @param nodeInternalOrder Node order.
      * @param topVer Topology version.
-     * @throws Exception If failed.
      */
-    private void processNodeFail(int nodeInternalId, long topVer) throws Exception {
-        final ZookeeperClusterNode failedNode = rtState.top.removeNode(nodeInternalId);
+    private void notifyNodeFail(int nodeInternalOrder, long topVer) {
+        final ZookeeperClusterNode failedNode = rtState.top.removeNode(nodeInternalOrder);
 
-        assert failedNode != null;
+        assert failedNode != null && !failedNode.isLocal() : failedNode;
 
-        if (failedNode.isLocal()) {
-            U.warn(log, "Received EVT_NODE_FAILED for local node.");
+        PingFuture pingFut = pingFuts.get(failedNode.order());
 
-            rtState.onCloseStart();
+        if (pingFut != null)
+            pingFut.onDone(false);
 
-            if (locNode.isClient() && clientReconnectEnabled) {
-                boolean reconnect = false;
+        final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-                synchronized (stateMux) {
-                    if (connState == ConnectionState.STARTED) {
-                        reconnect = true;
+        lsnr.onDiscovery(EVT_NODE_FAILED,
+            topVer,
+            failedNode,
+            topSnapshot,
+            Collections.<Long, Collection<ClusterNode>>emptyMap(),
+            null);
+    }
 
-                        connState = ConnectionState.DISCONNECTED;
-                    }
-                }
+    /**
+     * @param msg Message to log.
+     * @return Exception to be thrown.
+     */
+    private Exception localNodeFail(String msg) {
+        U.warn(log, msg);
 
-                if (reconnect) {
-                    UUID newId = UUID.randomUUID();
+        rtState.onCloseStart();
 
-                    U.quietAndWarn(log, "Received EVT_NODE_FAILED for local node, will try to reconnect with new id [" +
-                        "newId=" + newId +
-                        ", prevId=" + locNode.id() +
-                        ", locNode=" + locNode + ']');
+        if (clientReconnectEnabled) {
+            assert locNode.isClient() : locNode;
 
-                    runInWorkerThread(new ReconnectClosure(newId));
+            boolean reconnect = false;
+
+            synchronized (stateMux) {
+                if (connState == ConnectionState.STARTED) {
+                    reconnect = true;
+
+                    connState = ConnectionState.DISCONNECTED;
                 }
             }
-            else
-                notifySegmented();
 
-            // Stop any further processing.
-            throw new ZookeeperClientFailedException("Received node failed event for local node.");
+            if (reconnect) {
+                UUID newId = UUID.randomUUID();
+
+                U.quietAndWarn(log, "Client node will try to reconnect with new id [" +
+                    "newId=" + newId +
+                    ", prevId=" + locNode.id() +
+                    ", locNode=" + locNode + ']');
+
+                runInWorkerThread(new ReconnectClosure(newId));
+            }
         }
-        else {
-            PingFuture pingFut = pingFuts.get(failedNode.order());
+        else
+            notifySegmented();
 
-            if (pingFut != null)
-                pingFut.onDone(false);
-
-            final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
-
-            lsnr.onDiscovery(EVT_NODE_FAILED,
-                topVer,
-                failedNode,
-                topSnapshot,
-                Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                null);
-        }
+        // Stop any further processing.
+        return new ZookeeperClientFailedException(msg);
     }
 
     /**
@@ -2628,6 +2832,11 @@ public class ZookeeperDiscoveryImpl {
 
         if (zkClient != null)
             zkClient.close();
+
+        ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
+
+        if (commErrFut != null)
+            commErrFut.onError(new IgniteCheckedException("Node stopped."));
 
         IgniteUtils.shutdownNow(ZookeeperDiscoveryImpl.class, utilityPool, log);
     }

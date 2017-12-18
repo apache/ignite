@@ -20,7 +20,9 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -62,6 +64,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1712,6 +1715,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO ZK
+     *
      * @throws Exception If failed.
      */
     public void _testCommunicationFailure() throws Exception {
@@ -1918,6 +1923,97 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testCommunicationErrorResolve_KillNode_1() throws Exception {
+        communicationErrorResolve_KillNodes(2, Collections.singletonList(2L));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCommunicationErrorResolve_KillNode_2() throws Exception {
+        communicationErrorResolve_KillNodes(3, Collections.singletonList(2L));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCommunicationErrorResolve_KillNode_3() throws Exception {
+        communicationErrorResolve_KillNodes(10, Arrays.asList(2L, 4L, 6L));
+    }
+
+    /**
+     * @param startNodes Number of nodes to start.
+     * @param killNodes Nodes to kill by resolve process.
+     * @throws Exception If failed.
+     */
+    private void communicationErrorResolve_KillNodes(int startNodes, Collection<Long> killNodes) throws Exception {
+        testCommSpi = true;
+
+        commProblemRslvr = new TestNodeKillCommunicationProblemResolver(killNodes);
+
+        startGrids(startNodes);
+
+        ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.forNode(ignite(0));
+
+        commSpi.checkRes = new BitSet(startNodes);
+
+        ZookeeperDiscoverySpi spi = null;
+
+        for (Ignite node : G.allGrids()) {
+            ZookeeperDiscoverySpi spi0 = spi(node);
+
+            if (!killNodes.contains(node.cluster().localNode().order())) {
+                spi = spi0;
+
+                break;
+            }
+        }
+
+        assertNotNull(spi);
+
+        spi.onCommunicationConnectionError(ignite(1).cluster().localNode(), new Exception("test"));
+
+        int expNodes = startNodes - killNodes.size();
+
+        waitForTopology(expNodes);
+
+        for (Ignite node : G.allGrids())
+            assertFalse(killNodes.contains(node.cluster().localNode().order()));
+
+        startGrid(startNodes);
+
+        waitForTopology(expNodes + 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCommunicationErrorResolve_KillCoordinator() throws Exception {
+        // Kill coordinator.
+        testCommSpi = true;
+
+        commProblemRslvr = new TestNodeKillCommunicationProblemResolver(Collections.singleton(1L));
+
+        startGrids(3);
+
+        ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.forNode(ignite(2));
+
+        commSpi.checkRes = new BitSet(3);
+
+        ZookeeperDiscoverySpi spi = spi(ignite(1));
+
+        spi.onCommunicationConnectionError(ignite(0).cluster().localNode(), new Exception("test"));
+
+        waitForTopology(2);
+
+        startGrid(10);
+
+        waitForTopology(3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testConnectionCheck() throws Exception {
        final int NODES = 5;
 
@@ -1928,9 +2024,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
            TcpCommunicationSpi spi = (TcpCommunicationSpi)node.configuration().getCommunicationSpi();
 
-           List<ClusterNode> nodes = new ArrayList<>();
-
-           nodes.addAll(node.cluster().nodes());
+           List<ClusterNode> nodes = new ArrayList<>(node.cluster().nodes());
 
            BitSet res = spi.checkConnection(nodes).get();
 
@@ -2622,9 +2716,39 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      *
      */
+    static class TestNodeKillCommunicationProblemResolver implements CommunicationProblemResolver {
+        /** */
+        final Collection<Long> killNodeOrders;
+
+        /**
+         * @param killOrders Killed nodes order.
+         */
+        TestNodeKillCommunicationProblemResolver(Collection<Long> killOrders) {
+            this.killNodeOrders = killOrders;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resolve(CommunicationProblemContext ctx) {
+            List<ClusterNode> nodes = ctx.topologySnapshot();
+
+            assertTrue(nodes.size() > 0);
+
+            for (ClusterNode node : nodes) {
+                if (killNodeOrders.contains(node.order()))
+                    ctx.killNode(node);
+            }
+        }
+    }
+
+    /**
+     *
+     */
     static class ZkTestCommunicationSpi extends TcpCommunicationSpi {
         /** */
         private volatile CountDownLatch pingLatch;
+
+        /** */
+        private volatile BitSet checkRes;
 
         /**
          * @param ignite Node.
@@ -2644,6 +2768,14 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
             catch (InterruptedException e) {
                 throw new IgniteException(e);
+            }
+
+            BitSet checkRes = this.checkRes;
+
+            if (checkRes != null) {
+                this.checkRes = null;
+
+                return new IgniteFinishedFutureImpl<>(checkRes);
             }
 
             return super.checkConnection(nodes);

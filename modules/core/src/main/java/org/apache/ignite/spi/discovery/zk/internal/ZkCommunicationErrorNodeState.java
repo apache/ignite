@@ -23,21 +23,23 @@ import java.util.BitSet;
 /**
  *
  */
-public class ZkCommunicationErrorNodeState implements Serializable {
+class ZkCommunicationErrorNodeState implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final BitSet commState;
+    final BitSet commState;
 
     /** */
-    private final Exception err;
+    final Exception err;
 
     /**
      * @param commState Communication state.
      * @param err Error if failed get communication state..
      */
     ZkCommunicationErrorNodeState(BitSet commState, Exception err) {
+        assert commState != null || err != null;
+
         this.commState = commState;
         this.err = err;
     }

@@ -33,13 +33,18 @@ class ZkCommunicationErrorResolveFinishMessage implements DiscoverySpiCustomMess
     final UUID futId;
 
     /** */
+    final long topVer;
+
+    /** */
     transient ZkCommunicationErrorResolveResult res;
 
     /**
      * @param futId Future ID.
+     * @param topVer Topology version when resolve process finished.
      */
-    ZkCommunicationErrorResolveFinishMessage(UUID futId) {
+    ZkCommunicationErrorResolveFinishMessage(UUID futId, long topVer) {
         this.futId = futId;
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */

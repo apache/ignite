@@ -940,7 +940,7 @@ public class ZookeeperClient implements Watcher {
             else if (rc == KeeperException.Code.SESSIONEXPIRED.intValue())
                 U.warn(log, "Failed to execute async operation, connection lost [path=" + path + ']');
             else
-                assert rc == 0 : rc;
+                assert rc == 0 : KeeperException.Code.get(rc);
         }
     }
 

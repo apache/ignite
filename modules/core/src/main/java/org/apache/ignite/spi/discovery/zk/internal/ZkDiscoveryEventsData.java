@@ -69,7 +69,7 @@ class ZkDiscoveryEventsData implements Serializable {
     /**
      * @param id Future ID.
      */
-     void communicationErrorResolveFutureId(UUID id) {
+     void communicationErrorResolveFutureId(@Nullable UUID id) {
         commErrFutId = id;
     }
 
