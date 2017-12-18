@@ -35,8 +35,6 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <jmh.version>1.13</jmh.version>
-        <javac.target>1.7</javac.target>
         <uberjar.name>benchmarks</uberjar.name>
     </properties>
 
