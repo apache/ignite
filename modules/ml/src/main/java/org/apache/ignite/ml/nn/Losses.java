@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.nn;
 
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -28,7 +28,7 @@ public class Losses {
     /**
      * Mean squared error loss function.
      */
-    public static IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> MSE = truth -> new IgniteDiffirentiableVectorToDoubleFunction() {
+    public static IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> MSE = truth -> new IgniteDifferentiableVectorToDoubleFunction() {
         /** {@inheritDoc} */
         @Override public Vector differential(Vector pnt) {
             return pnt.minus(truth).divide(pnt.size());

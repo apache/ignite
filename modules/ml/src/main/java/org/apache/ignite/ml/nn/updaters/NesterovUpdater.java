@@ -19,7 +19,7 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.nn.MLP;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainerState;
@@ -49,7 +49,7 @@ public class NesterovUpdater extends SimpleGDUpdater {
 
     /** {@inheritDoc} */
     @Override public void init(MLP mlp, double learningRate,
-        IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> loss) {
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         super.init(mlp, learningRate, loss);
         prevData = new NesterovUpdaterData(mlp.layersCount());
     }

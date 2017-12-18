@@ -19,7 +19,7 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.MLP;
@@ -32,7 +32,7 @@ public abstract class BackpropUpdater implements MLPParameterUpdater {
     /**
      * Losses function.
      */
-    protected IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> loss;
+    protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
     /**
      * Learning rate.
@@ -41,7 +41,7 @@ public abstract class BackpropUpdater implements MLPParameterUpdater {
 
     /** {@inheritDoc} */
     @Override public void init(MLP mlp, double learningRate,
-        IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> loss) {
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
         this.learningRate = learningRate;
     }

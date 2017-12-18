@@ -19,7 +19,7 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.nn.MLP;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainerState;
@@ -35,7 +35,7 @@ public interface MLPParameterUpdater {
      * @param learningRate Learning rate.
      * @param loss Losses function.
      */
-    void init(MLP mlp, double learningRate, IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> loss);
+    void init(MLP mlp, double learningRate, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 
     /**
      * Update mlp parameters and return error on updated mlp.

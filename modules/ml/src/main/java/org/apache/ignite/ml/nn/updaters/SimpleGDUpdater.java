@@ -20,7 +20,7 @@ package org.apache.ignite.ml.nn.updaters;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
-import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.nn.MLP;
 import org.apache.ignite.ml.nn.MLPState;
@@ -101,7 +101,7 @@ public class SimpleGDUpdater extends BackpropUpdater {
         }
     }
 
-    protected Matrix differentiateLoss(Matrix groundTruth, Matrix lastLayerOutput, IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> loss) {
+    protected Matrix differentiateLoss(Matrix groundTruth, Matrix lastLayerOutput, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         Matrix diff = groundTruth.like(groundTruth.rowSize(), groundTruth.columnSize());
 
         for (int col = 0; col < groundTruth.columnSize(); col++) {

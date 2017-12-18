@@ -17,6 +17,17 @@
 
 package org.apache.ignite.ml.math.functions;
 
-public interface IgniteDifferentiableFunction<A, B> extends IgniteFunction<A, B> {
+import org.apache.ignite.ml.math.Vector;
 
+/**
+ * Interface for differentiable functions from vector to double.
+ */
+public interface IgniteDifferentiableVectorToDoubleFunction extends IgniteFunction<Vector, Double> {
+    /**
+     * Get function differential at a given point.
+     *
+     * @param pnt Point to calculate differential at.
+     * @return Function differential at a given point.
+     */
+    Vector differential(Vector pnt);
 }

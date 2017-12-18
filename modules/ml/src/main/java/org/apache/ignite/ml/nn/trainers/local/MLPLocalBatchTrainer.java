@@ -22,7 +22,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.nn.Losses;
@@ -39,7 +39,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
     /**
      * Default loss function.
      */
-    private static final IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> DEFAULT_LOSS = Losses.MSE;
+    private static final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> DEFAULT_LOSS = Losses.MSE;
 
     /**
      * Default updater supplier.
@@ -84,7 +84,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
     /**
      * Loss function.
      */
-    private final IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> loss;
+    private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
     /**
      * Logger.
@@ -100,7 +100,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
      * @param errorThreshold Error threshold.
      * @param maxIterations Maximal iterations count.
      */
-    public MLPLocalBatchTrainer(IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> loss,
+    public MLPLocalBatchTrainer(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
         IgniteSupplier<MLPParameterUpdater> updaterSupplier, double learningRate, double errorThreshold, int maxIterations) {
         this.loss = loss;
         this.updaterSupplier = updaterSupplier;
@@ -154,7 +154,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
      * @param loss New loss function.
      * @return new trainer with the same parameters as this trainer, but with new loss.
      */
-    public MLPLocalBatchTrainer withLoss(IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> loss) {
+    public MLPLocalBatchTrainer withLoss(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         return new MLPLocalBatchTrainer(loss, updaterSupplier, learningRate, errorThreshold, maxIterations);
     }
 

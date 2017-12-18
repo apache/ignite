@@ -19,7 +19,7 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.MLP;
@@ -97,7 +97,7 @@ public class RPropUpdater extends SimpleGDUpdater {
 
     /** {@inheritDoc} */
     @Override public void init(MLP mlp, double learningRate,
-        IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> loss) {
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         super.init(mlp, learningRate, loss);
         data = new RPropUpdaterData(mlp.architecture(), initUpdate);
     }

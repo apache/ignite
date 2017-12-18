@@ -17,6 +17,15 @@
 
 package org.apache.ignite.ml.math.functions;
 
+/**
+ * Interface for differentiable functions from double to double.
+ */
 public interface IgniteDifferentiableDoubleToDoubleFunction extends IgniteDoubleFunction<Double> {
-    double differential(double point);
+    /**
+     * Get function differential at a given point.
+     *
+     * @param pnt Point to calculate differential at.
+     * @return Function differential at a given point.
+     */
+    double differential(double pnt);
 }
