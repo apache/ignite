@@ -97,7 +97,7 @@
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
-    <Compile Include="Client\IgniteConfigurationSection.cs" />
+    <Compile Include="Client\IgniteClientConfigurationSection.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
     <Compile Include="Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Configuration\DataRegionConfiguration.cs" />
