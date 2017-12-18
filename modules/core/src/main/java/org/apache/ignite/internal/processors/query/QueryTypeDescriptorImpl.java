@@ -107,6 +107,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private List<GridQueryProperty> validateProps;
 
+    /** */
+    private List<GridQueryProperty> propsWithDefaultValue;
+
     /**
      * Constructor.
      *
@@ -380,6 +383,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             validateProps.add(prop);
         }
 
+        if (prop.defaultValue() != null) {
+            if (propsWithDefaultValue == null)
+                propsWithDefaultValue = new ArrayList<>();
+
+            propsWithDefaultValue.add(prop);
+        }
+
         fields.put(name, prop.type());
     }
 
@@ -516,6 +526,19 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             if (propVal == null)
                 throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'", errCode);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public void setDefaults(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(propsWithDefaultValue))
+            return;
+
+        for (int i = 0; i < propsWithDefaultValue.size(); ++i) {
+            GridQueryProperty prop = propsWithDefaultValue.get(i);
+
+            prop.setValue(key, val, prop.defaultValue());
         }
     }
 }

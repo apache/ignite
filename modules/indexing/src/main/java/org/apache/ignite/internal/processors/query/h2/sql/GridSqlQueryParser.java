@@ -1197,9 +1197,10 @@ public class GridSqlQueryParser {
             throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        if (col.getDefaultExpression() != null)
-            throw new IgniteSQLException("DEFAULT expressions are not supported [colName=" + col.getName() + ']',
+        if (col.getDefaultExpression() != null && !col.getDefaultExpression().isConstant()) {
+            throw new IgniteSQLException("Non-constant DEFAULT expressions are not supported [colName=" + col.getName() + ']',
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
 
         if (col.getSequence() != null)
             throw new IgniteSQLException("SEQUENCE columns are not supported [colName=" + col.getName() + ']',
@@ -1223,6 +1224,8 @@ public class GridSqlQueryParser {
     /**
      * Parse {@code ALTER TABLE ... ADD COLUMN} statement.
      * @param addCol H2 statement.
+     * @return Grid SQL statement.
+     *
      * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
      */
     private GridSqlStatement parseAddColumn(AlterTableAlterColumn addCol) {
@@ -1232,14 +1235,22 @@ public class GridSqlQueryParser {
             throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
+
         GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
 
         ArrayList<Column> h2NewCols = ALTER_COLUMN_NEW_COLS.get(addCol);
 
         GridSqlColumn[] gridNewCols = new GridSqlColumn[h2NewCols.size()];
 
-        for (int i = 0; i < h2NewCols.size(); i++)
+        for (int i = 0; i < h2NewCols.size(); i++) {
+            Column col = h2NewCols.get(i);
+
+            if (col.getDefaultExpression() != null)
+                throw new IgniteSQLException("ALTER TABLE ADD COLUMN with DEFAULT value is not supported",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
             gridNewCols[i] = parseColumn(h2NewCols.get(i));
+        }
 
         res.columns(gridNewCols);
 

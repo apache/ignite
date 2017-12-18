@@ -86,6 +86,9 @@ public class QueryEntity implements Serializable {
     /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
     private Set<String> _notNullFields;
 
+    /** Fields default values. */
+    private HashMap<String, Object> fieldsDefaultValues = new HashMap<>();
+
     /**
      * Creates an empty query entity.
      */
@@ -114,6 +117,9 @@ public class QueryEntity implements Serializable {
         tableName = other.tableName;
 
         _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
+
+        fieldsDefaultValues = other.fieldsDefaultValues != null ? new HashMap<>(other.fieldsDefaultValues)
+            : new HashMap<String, Object>();
     }
 
     /**
@@ -355,9 +361,12 @@ public class QueryEntity implements Serializable {
      * Sets table name for this query entity.
      *
      * @param tableName table name
+     * @return {@code this} for chaining.
      */
-    public void setTableName(String tableName) {
+    public QueryEntity setTableName(String tableName) {
         this.tableName = tableName;
+
+        return this;
     }
 
     /**
@@ -382,6 +391,27 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * Gets fields default values.
+     *
+     * @return Field's name to default value map.
+     */
+    public HashMap<String, Object> getFieldsDefaultValues() {
+        return fieldsDefaultValues;
+    }
+
+    /**
+     * Sets fields default values.
+     *
+     * @param fieldsDefaultValues Field's name to default value map.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setFieldsDefaultValues(HashMap<String, Object> fieldsDefaultValues) {
+        this.fieldsDefaultValues = fieldsDefaultValues;
+
+        return this;
+    }
+
+    /**
      * Utility method for building query entities programmatically.
      *
      * @param fullName Full name of the field.
@@ -394,6 +424,29 @@ public class QueryEntity implements Serializable {
         A.notNull(type, "type");
 
         fields.put(fullName, type);
+
+        if (alias != null)
+            aliases.put(fullName, alias);
+
+        return this;
+    }
+
+    /**
+     * Utility method for building query entities programmatically.
+     *
+     * @param fullName Full name of the field.
+     * @param type Type of the field.
+     * @param alias Field alias.
+     * @param dfltVal Default value of the field.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity addQueryField(String fullName, String type, String alias, Object dfltVal) {
+        A.notNull(fullName, "fullName");
+        A.notNull(type, "type");
+        A.notNull(dfltVal, "defaultValue");
+
+        fields.put(fullName, type);
+        fieldsDefaultValues.put(fullName, dfltVal);
 
         if (alias != null)
             aliases.put(fullName, alias);

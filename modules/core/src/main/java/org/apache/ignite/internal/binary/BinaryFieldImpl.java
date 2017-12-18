@@ -56,6 +56,8 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     /**
      * Constructor.
      *
+     * @param ctx Binary context.
+     * @param typeId Type ID.
      * @param schemas Schemas.
      * @param fieldName Field name.
      * @param fieldId Field ID.
@@ -102,6 +104,9 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     @SuppressWarnings("unchecked")
     @Override public <T> T value(BinaryObject obj) {
         BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
+
+        if (obj0.schemaId() == 0)
+            return null;
 
         int order = fieldOrder(obj0);
 
