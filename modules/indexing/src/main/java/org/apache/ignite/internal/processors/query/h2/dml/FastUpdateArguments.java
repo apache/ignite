@@ -34,7 +34,7 @@ public final class FastUpdateArguments {
 
     /** */
     public FastUpdateArguments(FastUpdateArgument key, FastUpdateArgument val, FastUpdateArgument newVal) {
-        assert key != null && key != NULL_ARGUMENT;
+        assert key != null;
         assert val != null;
         assert newVal != null;
 
@@ -42,14 +42,6 @@ public final class FastUpdateArguments {
         this.val = val;
         this.newVal = newVal;
     }
-
-    /** Operand that always evaluates as {@code null}. */
-    public final static FastUpdateArgument NULL_ARGUMENT = new FastUpdateArgument() {
-        /** {@inheritDoc} */
-        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-            return null;
-        }
-    };
 
     /**
      * Simple constant value based operand.
