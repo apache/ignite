@@ -218,25 +218,32 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     private void writeBaselineTopology(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
         assert metastorage != null;
 
-        if (blt != null) {
-            if (log.isInfoEnabled()) {
-                U.log(log, "Writing BaselineTopology[id=" + blt.id() + "]");
+        sharedCtx.database().checkpointReadLock();
 
-                if (prevBltHistItem != null)
-                    U.log(log, "Writing BaselineTopologyHistoryItem[id=" + prevBltHistItem.id() + "]");
+        try {
+            if (blt != null) {
+                if (log.isInfoEnabled()) {
+                    U.log(log, "Writing BaselineTopology[id=" + blt.id() + "]");
+
+                    if (prevBltHistItem != null)
+                        U.log(log, "Writing BaselineTopologyHistoryItem[id=" + prevBltHistItem.id() + "]");
+                }
+
+                bltHist.writeHistoryItem(metastorage, prevBltHistItem);
+
+                metastorage.write(METASTORE_CURR_BLT_KEY, blt);
             }
+            else {
+                if (log.isInfoEnabled())
+                    U.log(log, "Removing BaselineTopology and history");
 
-            bltHist.writeHistoryItem(metastorage, prevBltHistItem);
+                metastorage.remove(METASTORE_CURR_BLT_KEY);
 
-            metastorage.write(METASTORE_CURR_BLT_KEY, blt);
+                bltHist.removeHistory(metastorage);
+            }
         }
-        else {
-            if (log.isInfoEnabled())
-                U.log(log, "Removing BaselineTopology and history");
-
-            metastorage.remove(METASTORE_CURR_BLT_KEY);
-
-            bltHist.removeHistory(metastorage);
+        finally {
+            sharedCtx.database().checkpointReadUnlock();
         }
     }
 
