@@ -308,6 +308,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * @return {@link NearTxFinishFuture}.
+     */
+    public NearTxFinishFuture nearFinishFut() {
+        return finishFut;
+    }
+
+    /**
      * @return {@code True} if transaction contains at least one near cache key mapped to the local node.
      */
     public boolean nearLocallyMapped() {

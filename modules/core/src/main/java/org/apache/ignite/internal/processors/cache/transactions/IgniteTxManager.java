@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.distributed.near.NearTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -83,6 +84,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -562,13 +564,56 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : txs()) {
-            if (needWaitTransaction(tx, topVer))
-                res.add(tx.finishFuture());
+            if (needWaitTransaction(tx, topVer)) {
+                if (tx instanceof GridNearTxLocal && tx.optimistic())
+                    res.add(nearTxFinishFut((GridNearTxLocal)tx));
+                else
+                    res.add(tx.finishFuture());
+            }
         }
 
         res.markInitialized();
 
         return res;
+    }
+
+    /**
+     * @param tx {@link GridNearTxLocal}.
+     * @return {@link IgniteInternalFuture}, that awaits all dht finish responses or near finish response.
+     */
+    private IgniteInternalFuture<IgniteInternalTx> nearTxFinishFut(GridNearTxLocal tx) {
+        final GridFutureAdapter<IgniteInternalTx> resFut = new GridFutureAdapter<>();
+
+        IgniteInternalFuture<IgniteInternalTx> finishFut = tx.finishFuture();
+
+        finishFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+            @Override public void apply(IgniteInternalFuture<IgniteInternalTx> f) {
+                GridNearTxLocal locTx;
+
+                try {
+                    locTx = (GridNearTxLocal)f.get();
+
+                    assert locTx != null;
+
+                    NearTxFinishFuture finishFut = locTx.nearFinishFut(); // Creates on commit phase.
+
+                    if (finishFut == null)
+                        resFut.onDone();
+                    else {
+                        finishFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
+                            @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                resFut.onDone();
+                            }
+                        });
+                    }
+                }
+                catch (Throwable e) {
+                    resFut.onDone(e);
+                }
+            }
+        });
+
+        return resFut;
     }
 
     /**
