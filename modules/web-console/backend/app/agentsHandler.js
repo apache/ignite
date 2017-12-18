@@ -19,6 +19,12 @@
 
 const uuid = require('uuid/v4');
 
+const fs = require('fs');
+const path = require('path');
+const JSZip = require('jszip');
+const socketio = require('socket.io');
+const _ = require('lodash');
+
 // Fire me up!
 
 /**
@@ -26,21 +32,16 @@ const uuid = require('uuid/v4');
  */
 module.exports = {
     implements: 'agents-handler',
-    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo', 'agent-socket']
+    inject: ['settings', 'mongo', 'agent-socket']
 };
 
 /**
- * @param _
- * @param fs
- * @param path
- * @param JSZip
- * @param socketio
  * @param settings
  * @param mongo
  * @param {AgentSocket} AgentSocket
  * @returns {AgentsHandler}
  */
-module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo, AgentSocket) {
+module.exports.factory = function(settings, mongo, AgentSocket) {
     class AgentSockets {
         constructor() {
             /**
@@ -130,6 +131,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             this._agentSockets = new AgentSockets();
 
             this.clusters = [];
+            this.topLsnrs = [];
         }
 
         /**
@@ -211,6 +213,15 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
         }
 
         /**
+         * Add topology listener.
+         *
+         * @param lsnr
+         */
+        addTopologyListener(lsnr) {
+            this.topLsnrs.push(lsnr);
+        }
+
+        /**
          * Link agent with browsers by account.
          *
          * @param {Socket} sock
@@ -233,7 +244,9 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             sock.on('cluster:topology', (top) => {
                 const cluster = this.getOrCreateCluster(top);
 
-                if (_.isNil(agentSocket.cluster)) {
+                _.forEach(this.topLsnrs, (lsnr) => lsnr(agentSocket, cluster, top));
+
+                if (agentSocket.cluster !== cluster) {
                     agentSocket.cluster = cluster;
 
                     _.forEach(tokens, (token) => {
@@ -253,11 +266,11 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 }
             });
 
-            sock.on('cluster:collector', (top) => {
-
-            });
-
             sock.on('cluster:disconnected', () => {
+                const newTop = _.assign({}, agentSocket.cluster, {nids: []});
+
+                _.forEach(this.topLsnrs, (lsnr) => lsnr(agentSocket, agentSocket.cluster, newTop));
+
                 agentSocket.cluster = null;
 
                 _.forEach(tokens, (token) => {

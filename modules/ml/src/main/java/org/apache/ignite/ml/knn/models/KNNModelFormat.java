@@ -22,7 +22,11 @@ import java.util.Arrays;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.structures.LabeledDataset;
 
-/** */
+/**
+ * kNN model representation.
+ *
+ * @see KNNModel
+ */
 public class KNNModelFormat implements Serializable {
     /** Amount of nearest neighbors. */
     private int k;
