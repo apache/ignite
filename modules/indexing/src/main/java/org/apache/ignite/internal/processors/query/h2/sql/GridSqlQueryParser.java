@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -402,9 +401,6 @@ public class GridSqlQueryParser {
     /** */
     private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
 
-    /** */
-    private static final Getter<TableView, Query> TABLE_VIEW_QUERY = getter(TableView.class, "viewQuery");
-
     /** Class for private class: 'org.h2.command.CommandList'. */
     private static final Class<? extends Command> CLS_COMMAND_LIST;
 
@@ -509,11 +505,6 @@ public class GridSqlQueryParser {
      * deep subquery expression nesting.
      */
     private int parsingSubQryExpression;
-
-    /**
-     * All tables encountered in this query.
-     */
-    private Set<GridH2Table> allTables;
 
     /**
      * @param useOptimizedSubqry If we have to find correct order for table filters in FROM clause.

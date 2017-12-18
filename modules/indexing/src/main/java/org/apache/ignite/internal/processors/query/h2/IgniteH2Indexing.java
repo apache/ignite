@@ -567,7 +567,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param sql SQL statement.
      * @throws IgniteCheckedException If failed.
      */
-    private void executeStatement(String schema, String sql) throws IgniteCheckedException {
+    public void executeStatement(String schema, String sql) throws IgniteCheckedException {
         Statement stmt = null;
 
         try {
