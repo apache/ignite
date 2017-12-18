@@ -21,6 +21,7 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.MLP;
 import org.apache.ignite.ml.nn.trainers.MLPLocalBatchTrainerState;
 
@@ -62,7 +63,7 @@ public abstract class BackpropUpdater implements MLPParameterUpdater {
 
         Matrix predicted = mlp.predict(inputs);
 
-        return predicted.zipFoldColumns(groundTruth, (predCol, truthCol) -> loss.apply(truthCol).apply(predCol)).sum() / batchSize;
+        return MatrixUtil.zipFoldByColumns(predicted, groundTruth, (predCol, truthCol) -> loss.apply(truthCol).apply(predCol)).sum() / batchSize;
     }
 
     /** {@inheritDoc} */

@@ -261,6 +261,44 @@ public class MatrixUtil {
         return res;
     }
 
+    /**
+     * Zips two matrices by column-by-column with specified function. Result is matrix same flavour as first matrix.
+     *
+     * @param mtx1 First matrix.
+     * @param mtx2 Second matrix.
+     * @param fun Function to zip with.
+     * @return Vector consisting from values resulted from zipping column-by-column.
+     */
+    public static Vector zipFoldByColumns(Matrix mtx1, Matrix mtx2, IgniteBiFunction<Vector, Vector, Double> fun) {
+        int cols = Math.min(mtx1.columnSize(), mtx2.columnSize());
+
+        Vector vec = mtx1.likeVector(cols);
+
+        for (int i = 0; i < cols; i++)
+            vec.setX(i, fun.apply(mtx1.getCol(i), mtx2.getCol(i)));
+
+        return vec;
+    }
+
+    /**
+     * Zips two matrices by row-by-row with specified function. Result is matrix same flavour as first matrix.
+     *
+     * @param mtx1 First matrix.
+     * @param mtx2 Second matrix.
+     * @param fun Function to zip with.
+     * @return Vector consisting from values resulted from zipping row-by-row.
+     */
+    public static Vector zipFoldByRows(Matrix mtx1, Matrix mtx2, IgniteBiFunction<Vector, Vector, Double> fun) {
+        int rows = Math.min(mtx1.rowSize(), mtx2.rowSize());
+
+        Vector vec = mtx1.likeVector(rows);
+
+        for (int i = 0; i < rows; i++)
+            vec.setX(i, fun.apply(mtx1.viewRow(i), mtx2.viewRow(i)));
+
+        return vec;
+    }
+
     /** */
     public static double[] flatten(double[][] arr, int stoMode) {
         assert arr != null;

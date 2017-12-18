@@ -303,17 +303,7 @@ class ReplicatedVectorMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector zipFoldRows(Matrix mtx, IgniteBiFunction<Vector, Vector, Double> fun) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public Vector foldColumns(IgniteFunction<Vector, Double> fun) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector zipFoldColumns(Matrix mtx, IgniteBiFunction<Vector, Vector, Double> fun) {
         throw new UnsupportedOperationException();
     }
 

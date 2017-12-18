@@ -241,8 +241,6 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      */
     public Vector foldRows(IgniteFunction<Vector, Double> fun);
 
-    public Vector zipFoldRows(Matrix mtx, IgniteBiFunction<Vector, Vector, Double> fun);
-
     /**
      * Collects the results of applying a given function to all columns in this matrix.
      *
@@ -250,8 +248,6 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return Vector of column aggregates.
      */
     public Vector foldColumns(IgniteFunction<Vector, Double> fun);
-
-    public Vector zipFoldColumns(Matrix mtx, IgniteBiFunction<Vector, Vector, Double> fun);
 
     /**
      * Folds this matrix into a single value.
