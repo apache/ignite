@@ -295,7 +295,11 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
      * @param enabled2 Statistics enabled for cache 2.
      */
     private void assertCachesStatisticsMode(final boolean enabled1, final boolean enabled2) throws IgniteInterruptedCheckedException {
-        assertTrue(checkStatisticsMode(CACHE1, enabled1) && checkStatisticsMode(CACHE2, enabled2));
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return checkStatisticsMode(CACHE1, enabled1) && checkStatisticsMode(CACHE2, enabled2);
+            }
+        }, WAIT_CONDITION_TIMEOUT));
     }
 
     /**
