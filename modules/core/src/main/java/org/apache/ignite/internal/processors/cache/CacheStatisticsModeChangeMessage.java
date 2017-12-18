@@ -45,7 +45,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     private static final byte SUCCESS_MASK = 0x04;
 
     /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Request id. */
     private final UUID reqId;
@@ -54,7 +54,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     private final Collection<String> caches;
 
     /** Flags. */
-    private byte flags;
+    private volatile byte flags;
 
     /**
      * Constructor for response.
