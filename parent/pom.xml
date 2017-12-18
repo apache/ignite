@@ -88,6 +88,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jetbrains.annotations.version>13.0</jetbrains.annotations.version>
         <jetty.version>9.2.11.v20150529</jetty.version>
+        <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jsch.bundle.version>0.1.53_1</jsch.bundle.version>
         <jsch.version>0.1.53</jsch.version>
