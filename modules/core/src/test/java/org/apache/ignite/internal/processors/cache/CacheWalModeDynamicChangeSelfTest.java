@@ -439,7 +439,10 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         startGrid(id1);
         startGrid(id2);
 
-        checkWal(disable);
+        final int g1 = grid(id1).context().cache().cacheDescriptor(CACHE1).groupId();
+
+        // Initial message can be lost due to massive nodes failure, but state should be exactly the same at all nodes.
+        checkWal(grid(id1).context().cache().context().cache().cacheGroup(g1).walDisabled());
     }
 
     /**
