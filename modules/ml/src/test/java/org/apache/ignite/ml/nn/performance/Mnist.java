@@ -36,7 +36,7 @@ import org.apache.ignite.ml.nn.Losses;
 import org.apache.ignite.ml.nn.MLP;
 import org.apache.ignite.ml.nn.SimpleMLPLocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.trainers.MLPLocalBatchTrainer;
+import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.nn.updaters.RPropUpdater;
 import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark;
 import org.apache.ignite.ml.util.MnistUtils;

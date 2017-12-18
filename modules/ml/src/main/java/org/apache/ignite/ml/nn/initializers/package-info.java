@@ -15,25 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn;
-
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
-
 /**
- * Interface for classes containing input parameters for {@link MLPLocalBatchTrainer}
+ * <!-- Package description. -->
+ * Contains multilayer perceptron parameters initializers.
  */
-public interface MLPLocalBatchTrainerInput {
-    /**
-     * Get next batch in form of matrix of inputs and matrix of outputs.
-     * @return Next batch.
-     */
-    IgniteBiTuple<Matrix, Matrix> getBatch();
-
-    /**
-     * MLP to train.
-     * @return MLP to train.
-     */
-    MLP mlp();
-}
+package org.apache.ignite.ml.nn.initializers;

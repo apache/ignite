@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.trainers;
+package org.apache.ignite.ml.nn.trainers.local;
 
 /**
  * State of {@link MLPLocalBatchTrainer}.

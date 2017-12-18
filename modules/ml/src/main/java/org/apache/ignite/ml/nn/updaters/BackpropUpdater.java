@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.MLP;
-import org.apache.ignite.ml.nn.trainers.MLPLocalBatchTrainerState;
+import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainerState;
 
 /**
  * Adapter of {@link MLPParameterUpdater} for updaters performing backpropagation updates of MLP parameters.

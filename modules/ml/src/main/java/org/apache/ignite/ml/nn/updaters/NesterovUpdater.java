@@ -22,7 +22,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.nn.MLP;
-import org.apache.ignite.ml.nn.trainers.MLPLocalBatchTrainerState;
+import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainerState;
 
 /**
  * Class encapsulating Nesterov algorithm for MLP parameters update.
