@@ -87,7 +87,12 @@ namespace Apache.Ignite.Core.Tests.Client
         [SetUp]
         public virtual void TestSetUp()
         {
-            GetCache<int>().RemoveAll();
+            var cache = GetCache<int>();
+            cache.RemoveAll();
+            cache.Clear();
+            
+            Assert.AreEqual(0, cache.GetSize(CachePeekMode.All));
+            Assert.AreEqual(0, GetClientCache<int>().GetSize(CachePeekMode.All));
         }
 
         /// <summary>
