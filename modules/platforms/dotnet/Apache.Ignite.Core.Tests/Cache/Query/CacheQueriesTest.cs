@@ -797,7 +797,34 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestFieldNames()
         {
+            var cache = Cache();
+            PopulateCache(cache, false, 5, x => true);
 
+            // Get before iteration.
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson");
+            var cur = cache.Query(qry);
+            var names = cur.FieldNames;
+
+            Assert.AreEqual(new[] {"AGE", "NAME" }, names);
+            
+            cur.Dispose();
+            Assert.AreSame(names, cur.FieldNames);
+
+            Assert.Throws<NotSupportedException>(() => cur.FieldNames.Add("x"));
+
+            // Custom order, key-val, get after iteration.
+            qry.Sql = "SELECT NAME, _key, AGE, _val FROM QueryPerson";
+            cur = cache.Query(qry);
+            cur.GetAll();
+
+            Assert.AreEqual(new[] { "NAME", "_KEY", "AGE", "_VAL" }, cur.FieldNames);
+
+            // Get after disposal.
+            qry.Sql = "SELECT 1, AGE FROM QueryPerson";
+            cur = cache.Query(qry);
+            cur.Dispose();
+            
+            Assert.AreEqual(new[] { "1", "AGE" }, cur.FieldNames);
         }
 
         /// <summary>
