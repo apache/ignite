@@ -400,6 +400,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 }
 
                 Assert.AreEqual(0, exp0.Count);
+                Assert.AreEqual(new[] {"name", "age"}, cursor.FieldNames);
             }
 
             // Test old API as well.
