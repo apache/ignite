@@ -40,6 +40,7 @@ public class TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest extends TcpDis
             new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(), IgniteS3TestSuite.getSecretKey())));
     }
 
+    /** {@inheritDoc} */
     @Override public void testIpFinder() throws Exception {
         super.testIpFinder();
     }

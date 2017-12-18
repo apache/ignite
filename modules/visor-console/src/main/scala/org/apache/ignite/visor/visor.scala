@@ -35,7 +35,6 @@ import jline.console.ConsoleReader
 import org.jetbrains.annotations.Nullable
 import java.io._
 import java.lang.{Boolean => JavaBoolean}
-import java.net._
 import java.text._
 import java.util.concurrent._
 import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
@@ -239,6 +238,9 @@ object visor extends VisorTag {
     private var reader: ConsoleReader = _
 
     var batchMode: Boolean = false
+
+    /** Quiet mode to disable internal node log and information messages output. */
+    var quiet: Boolean = false
 
     def reader(reader: ConsoleReader) {
         assert(reader != null)
@@ -1658,20 +1660,22 @@ object visor extends VisorTag {
 
         nl()
 
-        val t = VisorTextTable()
+        if (!visor.quiet) {
+            val t = VisorTextTable()
 
-        // Print advise.
-        println("Some useful commands:")
+            // Print advise.
+            println("Some useful commands:")
 
-        t += ("Type 'top'", "to see full topology.")
-        t += ("Type 'node'", "to see node statistics.")
-        t += ("Type 'cache'", "to see cache statistics.")
-        t += ("Type 'tasks'", "to see tasks statistics.")
-        t += ("Type 'config'", "to see node configuration.")
+            t += ("Type 'top'", "to see full topology.")
+            t += ("Type 'node'", "to see node statistics.")
+            t += ("Type 'cache'", "to see cache statistics.")
+            t += ("Type 'tasks'", "to see tasks statistics.")
+            t += ("Type 'config'", "to see node configuration.")
 
-        t.render()
+            t.render()
 
-        println("\nType 'help' to get help.\n")
+            println("\nType 'help' to get help.\n")
+        }
 
         status()
     }
