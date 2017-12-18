@@ -48,14 +48,11 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.dml.DmlArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
-import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
@@ -282,7 +279,7 @@ public class DmlStatementsProcessor {
                             it = res.iterator();
                         }
                         else
-                            it = planToRows(plan, U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)).iterator();
+                            it = plan.createRows(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)).iterator();
 
                         return new GridQueryCacheObjectsIterator(it, idx.objectContext(), cctx.keepBinary());
                     }
@@ -379,7 +376,9 @@ public class DmlStatementsProcessor {
 
             cur = idx.queryDistributedSqlFields(schemaName, newFieldsQry, true, cancel, mainCacheId, true).get(0);
         }
-        else if (F.isEmpty(plan.rows())) {
+        else if (plan.hasRows())
+            cur = plan.createRows(fieldsQry.getArgs());
+        else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQuery(),
                 F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
 
@@ -394,45 +393,10 @@ public class DmlStatementsProcessor {
                 }
             }, cancel);
         }
-        else
-            cur = planToRows(plan, fieldsQry.getArgs());
 
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
         return processDmlSelectResult(cctx, plan, cur, pageSize);
-    }
-
-    /**
-     * Extract rows from plan without performing any query.
-     * @param plan Plan.
-     * @param args Original query arguments.
-     * @return Rows from plan.
-     * @throws IgniteCheckedException if failed.
-     */
-    private List<List<?>> planToRows(UpdatePlan plan, Object[] args) throws IgniteCheckedException {
-        assert plan.rowCount() > 0 && !F.isEmpty(plan.columnNames());
-
-        List<List<?>> rows = new ArrayList<>(plan.rowCount());
-
-        GridH2RowDescriptor desc = plan.table().rowDescriptor();
-
-        for (List<DmlArgument> argRow : plan.rows()) {
-            List<Object> row = new ArrayList<>();
-
-            for (int j = 0; j < plan.columnNames().length; j++) {
-                Object colVal = argRow.get(j).get(args);
-
-                if (j == plan.keyColumnIndex() || j == plan.valueColumnIndex())
-                    colVal = DmlUtils.convert(colVal, desc, j == plan.keyColumnIndex() ? desc.type().keyClass() :
-                        desc.type().valueClass(), plan.columnTypes()[j]);
-
-                row.add(colVal);
-            }
-
-            rows.add(row);
-        }
-
-        return rows;
     }
 
     /**

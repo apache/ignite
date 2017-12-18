@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -360,6 +361,47 @@ public final class UpdatePlan {
     }
 
     /**
+     * @return {@code True} if predefined rows exist.
+     */
+    public boolean hasRows() {
+        return !F.isEmpty(rows);
+    }
+
+    /**
+     * Extract rows from plan without performing any query.
+     * @param args Original query arguments.
+     * @return Rows from plan.
+     * @throws IgniteCheckedException if failed.
+     */
+    public List<List<?>> createRows(Object[] args) throws IgniteCheckedException {
+        assert rowsNum > 0 && !F.isEmpty(colNames);
+
+        List<List<?>> res = new ArrayList<>(rowsNum);
+
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        for (List<DmlArgument> row : rows) {
+            List<Object> resRow = new ArrayList<>();
+
+            for (int j = 0; j < colNames.length; j++) {
+                Object colVal = row.get(j).get(args);
+
+                if (j == keyColIdx || j == valColIdx) {
+                    Class<?> colCls = j == keyColIdx ? desc.type().keyClass() : desc.type().valueClass();
+
+                    colVal = DmlUtils.convert(colVal, desc, colCls, colTypes[j]);
+                }
+
+                resRow.add(colVal);
+            }
+
+            res.add(resRow);
+        }
+
+        return res;
+    }
+
+    /**
      * @return Update mode.
      */
     public UpdateMode mode() {
@@ -399,47 +441,5 @@ public final class UpdatePlan {
      */
     @Nullable public boolean isLocalSubquery() {
         return isLocSubqry;
-    }
-
-    /**
-     * @return Names of affected columns.
-     */
-    public String[] columnNames() {
-        return colNames;
-    }
-
-    /**
-     * @return Types of affected columns.
-     */
-    public int[] columnTypes() {
-        return colTypes;
-    }
-
-    /**
-     * @return Rows for query-less MERGE or INSERT.
-     */
-    public List<List<DmlArgument>> rows() {
-        return rows;
-    }
-
-    /**
-     * @return Key column index.
-     */
-    public int keyColumnIndex() {
-        return keyColIdx;
-    }
-
-    /**
-     * @return Value column index.
-     */
-    public int valueColumnIndex() {
-        return valColIdx;
-    }
-
-    /**
-     * @return Target table.
-     */
-    public GridH2Table table() {
-        return tbl;
     }
 }
