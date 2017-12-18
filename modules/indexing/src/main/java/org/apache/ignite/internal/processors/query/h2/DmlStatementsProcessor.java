@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdate;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -169,7 +168,7 @@ public class DmlStatementsProcessor {
             UpdateResult r;
 
             try {
-                r = executeUpdateStatement(schemaName, cctx, conn, prepared, fieldsQry, loc, filters, cancel, errKeys);
+                r = executeUpdateStatement(schemaName, cctx, conn, prepared, fieldsQry, loc, filters, cancel);
             }
             finally {
                 cctx.operationContextPerCall(opCtx);
@@ -337,27 +336,23 @@ public class DmlStatementsProcessor {
      * @param loc Local query flag.
      * @param filters Cache name and key filter.
      * @param cancel Query cancel state holder.
-     * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx, Connection c,
-        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
-        GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
+        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
+        throws IgniteCheckedException {
         int mainCacheId = cctx.cacheId();
 
         Integer errKeysPos = null;
 
         UpdatePlan plan = getPlanForStatement(schemaName, c, prepared, fieldsQry, loc, errKeysPos);
 
-        FastUpdate fastUpdate = plan.fastUpdate();
+        UpdateResult fastUpdateRes = plan.processFast(fieldsQry.getArgs());
 
-        if (fastUpdate != null) {
-            assert F.isEmpty(failedKeys) && errKeysPos == null;
-
-            return fastUpdate.execute(plan.cacheContext().cache(), fieldsQry.getArgs());
-        }
+        if (fastUpdateRes != null)
+            return fastUpdateRes;
 
         if (plan.distributedPlan() != null) {
             UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);

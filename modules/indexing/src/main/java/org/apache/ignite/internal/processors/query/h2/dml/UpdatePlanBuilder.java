@@ -130,8 +130,6 @@ public final class UpdatePlanBuilder {
 
         List<GridSqlElement[]> elRows = null;
 
-        List<List<DmlArgument>> rows = null;
-
         if (stmt instanceof GridSqlInsert) {
             GridSqlInsert ins = (GridSqlInsert) stmt;
             target = ins.into();
@@ -168,24 +166,6 @@ public final class UpdatePlanBuilder {
         else {
             throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
-        }
-
-        if (elRows != null) {
-            assert sel == null;
-
-            rows = new ArrayList<>(elRows.size());
-
-            for (GridSqlElement[] elRow : elRows) {
-                List<DmlArgument> row = new ArrayList<>(cols.length);
-
-                for (GridSqlElement e : elRow) {
-                    DmlArgument arg = DmlArguments.create(e);
-
-                    row.add(arg);
-                }
-
-                rows.add(row);
-            }
         }
 
         // Let's set the flag only for subqueries that have their FROM specified.
@@ -247,6 +227,26 @@ public final class UpdatePlanBuilder {
             checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
 
         UpdateMode mode = stmt instanceof GridSqlMerge ? UpdateMode.MERGE : UpdateMode.INSERT;
+
+        List<List<DmlArgument>> rows = null;
+
+        if (elRows != null) {
+            assert sel == null;
+
+            rows = new ArrayList<>(elRows.size());
+
+            for (GridSqlElement[] elRow : elRows) {
+                List<DmlArgument> row = new ArrayList<>(cols.length);
+
+                for (GridSqlElement el : elRow) {
+                    DmlArgument arg = DmlArguments.create(el);
+
+                    row.add(arg);
+                }
+
+                rows.add(row);
+            }
+        }
 
         return new UpdatePlan(
             mode,

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
@@ -345,6 +346,20 @@ public final class UpdatePlan {
     }
 
     /**
+     * Process fast DML operation if possible.
+     *
+     * @param args QUery arguments.
+     * @return Update result or {@code null} if fast update is not applicable for plan.
+     * @throws IgniteCheckedException If failed.
+     */
+    public UpdateResult processFast(Object[] args) throws IgniteCheckedException {
+        if (fastUpdate != null)
+            return fastUpdate.execute(cacheContext().cache(), args);
+
+        return null;
+    }
+
+    /**
      * @return Update mode.
      */
     public UpdateMode mode() {
@@ -384,13 +399,6 @@ public final class UpdatePlan {
      */
     @Nullable public boolean isLocalSubquery() {
         return isLocSubqry;
-    }
-
-    /**
-     * @return Fast update.
-     */
-    @Nullable public FastUpdate fastUpdate() {
-        return fastUpdate;
     }
 
     /**
