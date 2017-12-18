@@ -402,7 +402,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Assert.AreEqual(0, exp0.Count);
             }
 
-            using (var cursor = cache.Query(qry))
+            // Test old API as well.
+#pragma warning disable 618
+            using (var cursor = cache.QueryFields(qry))
             {
                 HashSet<int> exp0 = new HashSet<int>(exp);
 
@@ -415,6 +417,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 Assert.AreEqual(0, exp0.Count);
             }
+#pragma warning restore 618
         }
 
         /// <summary>
