@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.management.MBeanServer;
@@ -118,6 +119,36 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
                     && !isStatisticsEnabled(mgr1, CACHE2) && !isStatisticsEnabled(mgr2, CACHE2);
             }
         }, WAIT_CONDITION_TIMEOUT));
+    }
+
+    /**
+     *
+     */
+    public void testPublicApiStatisticsEnable() throws Exception {
+        this.persistence = false;
+
+        Ignite ig1 = startGrid(1);
+        startGrid(2);
+
+        IgniteCache<?, ?> cache1 = ig1.cache(CACHE1);
+
+        CacheConfiguration cacheCfg2 = new CacheConfiguration(cache1.getConfiguration(
+            CacheConfiguration.class));
+
+        cacheCfg2.setName(CACHE2);
+        cacheCfg2.setStatisticsEnabled(true);
+
+        ig1.getOrCreateCache(cacheCfg2);
+
+        assertCachesStatisticsMode(false, true);
+
+        assertTrue(cache1.enableStatistics(true));
+
+        assertCachesStatisticsMode(true, true);
+
+        assertTrue(ig1.cluster().enableStatistics(Arrays.asList(CACHE1, CACHE2), false));
+
+        assertCachesStatisticsMode(false, false);
     }
 
     /** {@inheritDoc} */
@@ -281,8 +312,8 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
     private boolean checkStatisticsMode(String cacheName, boolean enabled) {
         for (Ignite ignite : G.allGrids())
             if (ignite.cache(cacheName).metrics().isStatisticsEnabled() != enabled) {
-                log.error("Wrong cache statistics mode [grid=" + ignite.name() + ", cache=" + cacheName
-                    + "expected=" + enabled);
+                log.warning("Wrong cache statistics mode [grid=" + ignite.name() + ", cache=" + cacheName
+                    + ", expected=" + enabled);
 
                 return false;
             }
