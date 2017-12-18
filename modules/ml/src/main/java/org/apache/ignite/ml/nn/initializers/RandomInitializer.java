@@ -15,28 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.nn.initializers;
 
-import java.util.function.BiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import java.util.Random;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
 
-/** Basic interface for all models. */
-public interface Model<T, V> extends IgniteFunction<T, V> {
-    /** Predict a result for value. */
-    V predict(T val);
-
-    @Override default V apply(T t) {
-        return predict(t);
-    }
+/**
+ * Class for initialization of MLP parameters with random uniformly distributed numbers from -1 to 1.
+ */
+public class RandomInitializer implements MLPInitializer {
+    /**
+     * RNG.
+     */
+    Random rnd;
 
     /**
-     * Combines this model with other model via specified combiner
+     * Construct RandomInitializer from given RNG.
      *
-     * @param other Other model.
-     * @param combiner Combiner.
-     * @return Combination of models.
+     * @param rnd RNG.
      */
-    default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(predict(v), other.predict(v));
+    public RandomInitializer(Random rnd) {
+        this.rnd = rnd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initWeights(Matrix weights) {
+        weights.map(value -> 2 * (rnd.nextDouble() - 0.5));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initBiases(Vector biases) {
+        biases.map(value -> 2 * (rnd.nextDouble() - 0.5));
     }
 }

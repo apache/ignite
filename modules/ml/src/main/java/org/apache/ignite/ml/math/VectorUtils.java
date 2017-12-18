@@ -39,4 +39,36 @@ public class VectorUtils {
     public static Vector fromMap(Map<Integer, Double> val, boolean cp) {
         return new MapWrapperVector(val);
     }
+
+    /**
+     * Turn number into Vector of given size with one-hot encoding.
+     *
+     * @param num Number to turn into vector.
+     * @param vecSize Vector size of output vector.
+     * @return One-hot encoded number.
+     */
+    public static Vector num2Vec(int num, int vecSize) {
+        return new DenseLocalOnHeapVector(vecSize).setX(num, 1);
+    }
+
+    /**
+     * Turn Vector into number by looking at index of maximal element in vector.
+     *
+     * @param vec Vector to be turned into number.
+     * @return Number.
+     */
+    public static double vec2Num(Vector vec) {
+        int max = 0;
+        double maxVal = Double.NEGATIVE_INFINITY;
+
+        for (int i = 0; i < vec.size(); i++) {
+            double curVal = vec.getX(i);
+            if (curVal > maxVal) {
+                max = i;
+                maxVal = curVal;
+            }
+        }
+
+        return max;
+    }
 }

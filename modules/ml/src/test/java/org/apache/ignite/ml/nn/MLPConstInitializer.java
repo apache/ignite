@@ -15,28 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.nn;
 
-import java.util.function.BiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.nn.initializers.MLPInitializer;
 
-/** Basic interface for all models. */
-public interface Model<T, V> extends IgniteFunction<T, V> {
-    /** Predict a result for value. */
-    V predict(T val);
+public class MLPConstInitializer implements MLPInitializer {
+    double bias;
+    double weight;
 
-    @Override default V apply(T t) {
-        return predict(t);
+    public MLPConstInitializer(double bias, double weight) {
+        this.bias = bias;
+        this.weight = weight;
     }
 
-    /**
-     * Combines this model with other model via specified combiner
-     *
-     * @param other Other model.
-     * @param combiner Combiner.
-     * @return Combination of models.
-     */
-    default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(predict(v), other.predict(v));
+    @Override public void initWeights(Matrix weights) {
+        weights.assign(weight);
+    }
+
+    @Override public void initBiases(Vector biases) {
+        biases.assign(bias);
     }
 }

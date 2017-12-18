@@ -19,9 +19,13 @@ package org.apache.ignite.ml.math.util;
 
 import java.util.List;
 import org.apache.ignite.internal.util.GridArgumentCheck;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
@@ -207,6 +211,54 @@ public class MatrixUtil {
         for (int i = 0; i < rowsCnt; i++)
             for (int j = 0; j < colsCnt; j++)
                 mtx.setX(i, j, fArr[!isRowMode ? i * colsCnt + j : j * rowsCnt + i]);
+    }
+
+    public static Matrix zipWith(Matrix mtx1, Matrix mtx2, IgniteBiFunction<Double, Double, Double> f) {
+        int rows = Math.min(mtx1.rowSize(), mtx2.rowSize());
+        int cols = Math.min(mtx1.columnSize(), mtx2.columnSize());
+
+        Matrix res = mtx1.like(rows, cols);
+
+        for (int row = 0; row < rows; row++)
+            for (int col = 0; col < cols; col++)
+                res.setX(row, col, f.apply(mtx1.getX(row, col), mtx2.getX(row, col)));
+
+        return res;
+    }
+
+    public static Vector zipWith(Vector v1, Vector v2, IgniteBiFunction<Double, Double, Double> f) {
+        int size = Math.min(v1.size(), v2.size());
+
+        Vector res = v1.like(size);
+
+        for (int row = 0; row < size; row++)
+            res.setX(row, f.apply(v1.getX(row), v2.getX(row)));
+
+        return res;
+    }
+
+    public static Matrix zipWith(Matrix mtx1, Matrix mtx2, IgniteTriFunction<Double, Double, IgniteBiTuple<Integer, Integer>, Double> f) {
+        int rows = Math.min(mtx1.rowSize(), mtx2.rowSize());
+        int cols = Math.min(mtx1.columnSize(), mtx2.columnSize());
+
+        Matrix res = mtx1.like(rows, cols);
+
+        for (int row = 0; row < rows; row++)
+            for (int col = 0; col < cols; col++)
+                res.setX(row, col, f.apply(mtx1.getX(row, col), mtx2.getX(row, col), new IgniteBiTuple<>(row, col)));
+
+        return res;
+    }
+
+    public static Vector zipWith(Vector v1, Vector v2, IgniteTriFunction<Double, Double, Integer, Double> f) {
+        int size = Math.min(v1.size(), v2.size());
+
+        Vector res = v1.like(size);
+
+        for (int row = 0; row < size; row++)
+            res.setX(row, f.apply(v1.getX(row), v2.getX(row), row));
+
+        return res;
     }
 
     /** */

@@ -15,28 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.nn.architecture;
 
-import java.util.function.BiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+/**
+ * Layer architecture.
+ */
+public class LayerArchitecture {
+    /**
+     * Count of neurons on layer.
+     */
+    private final int neuronsCnt;
 
-/** Basic interface for all models. */
-public interface Model<T, V> extends IgniteFunction<T, V> {
-    /** Predict a result for value. */
-    V predict(T val);
-
-    @Override default V apply(T t) {
-        return predict(t);
+    /**
+     * Construct LayerArchitecture.
+     *
+     * @param neuronsCnt Count of neurons in layer.
+     */
+    public LayerArchitecture(int neuronsCnt) {
+        this.neuronsCnt = neuronsCnt;
     }
 
     /**
-     * Combines this model with other model via specified combiner
-     *
-     * @param other Other model.
-     * @param combiner Combiner.
-     * @return Combination of models.
+     * Get count of neurons in layer.
+     * @return Count of neurons in layer.
      */
-    default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(predict(v), other.predict(v));
+    public int neuronsCount() {
+        return neuronsCnt;
     }
 }

@@ -15,28 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.math.functions;
 
-import java.util.function.BiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+public interface IgniteDifferentiableFunction<A, B> extends IgniteFunction<A, B> {
 
-/** Basic interface for all models. */
-public interface Model<T, V> extends IgniteFunction<T, V> {
-    /** Predict a result for value. */
-    V predict(T val);
-
-    @Override default V apply(T t) {
-        return predict(t);
-    }
-
-    /**
-     * Combines this model with other model via specified combiner
-     *
-     * @param other Other model.
-     * @param combiner Combiner.
-     * @return Combination of models.
-     */
-    default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(predict(v), other.predict(v));
-    }
 }

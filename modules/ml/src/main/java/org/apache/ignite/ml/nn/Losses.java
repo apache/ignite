@@ -15,28 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.nn;
 
-import java.util.function.BiFunction;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteDiffirentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
-/** Basic interface for all models. */
-public interface Model<T, V> extends IgniteFunction<T, V> {
-    /** Predict a result for value. */
-    V predict(T val);
-
-    @Override default V apply(T t) {
-        return predict(t);
-    }
-
+/**
+ * Class containing popular loss functions.
+ */
+public class Losses {
     /**
-     * Combines this model with other model via specified combiner
-     *
-     * @param other Other model.
-     * @param combiner Combiner.
-     * @return Combination of models.
+     * Mean squared error loss function.
      */
-    default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(predict(v), other.predict(v));
-    }
+    public static IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> MSE = truth -> new IgniteDiffirentiableVectorToDoubleFunction() {
+        @Override public Vector differential(Vector pnt) {
+            return pnt.minus(truth).divide(pnt.size());
+        }
+
+        @Override public Double apply(Vector vector) {
+            return truth.copy().map(vector, (a, b) -> (a - b) * (a - b)).sum() / (2 * vector.size());
+        }
+    };
 }

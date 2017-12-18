@@ -411,6 +411,20 @@ public abstract class AbstractMatrix implements Matrix {
         return this;
     }
 
+    @Override public Matrix mapCols(IgniteFunction<Vector, Vector> fun) {
+        for (int i = 0; i < columnSize(); i++)
+            assignColumn(i, fun.apply(viewColumn(i)));
+
+        return this;
+    }
+
+    @Override public Matrix mapRows(IgniteFunction<Vector, Vector> fun) {
+        for (int i = 0; i < rowSize(); i++)
+            assignRow(i, fun.apply(viewRow(i)));
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public Matrix map(Matrix mtx, IgniteBiFunction<Double, Double, Double> fun) {
         checkCardinality(mtx);
@@ -544,6 +558,17 @@ public abstract class AbstractMatrix implements Matrix {
         return vec;
     }
 
+    @Override public Vector zipFoldRows(Matrix mtx, IgniteBiFunction<Vector, Vector, Double> fun) {
+        int rows = rowSize();
+
+        Vector vec = likeVector(rows);
+
+        for (int i = 0; i < rows; i++)
+            vec.setX(i, fun.apply(viewRow(i), mtx.viewRow(i)));
+
+        return vec;
+    }
+
     /** {@inheritDoc} */
     @Override public Vector foldColumns(IgniteFunction<Vector, Double> fun) {
         int cols = columnSize();
@@ -552,6 +577,17 @@ public abstract class AbstractMatrix implements Matrix {
 
         for (int i = 0; i < cols; i++)
             vec.setX(i, fun.apply(viewColumn(i)));
+
+        return vec;
+    }
+
+    @Override public Vector zipFoldColumns(Matrix mtx, IgniteBiFunction<Vector, Vector, Double> fun) {
+        int cols = columnSize();
+
+        Vector vec = likeVector(cols);
+
+        for (int i = 0; i < cols; i++)
+            vec.setX(i, fun.apply(getCol(i), mtx.getCol(i)));
 
         return vec;
     }
@@ -995,5 +1031,9 @@ public abstract class AbstractMatrix implements Matrix {
             maxAmountOfCols = Math.max(maxAmountOfCols, data[i].length);
 
         return maxAmountOfCols;
+    }
+
+    @Override public String toString() {
+        return "Matrix [rows=" + rowSize() + ", cols=" + columnSize() + "]";
     }
 }

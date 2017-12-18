@@ -15,28 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.nn;
 
-import java.util.function.BiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.nn.trainers.MLPLocalBatchTrainer;
 
-/** Basic interface for all models. */
-public interface Model<T, V> extends IgniteFunction<T, V> {
-    /** Predict a result for value. */
-    V predict(T val);
-
-    @Override default V apply(T t) {
-        return predict(t);
-    }
+/**
+ * Interface for classes containing input parameters for {@link MLPLocalBatchTrainer}
+ */
+public interface MLPLocalBatchTrainerInput {
+    /**
+     * Get next batch in form of matrix of inputs and matrix of outputs.
+     * @return Next batch.
+     */
+    IgniteBiTuple<Matrix, Matrix> getBatch();
 
     /**
-     * Combines this model with other model via specified combiner
-     *
-     * @param other Other model.
-     * @param combiner Combiner.
-     * @return Combination of models.
+     * MLP to train.
+     * @return MLP to train.
      */
-    default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(predict(v), other.predict(v));
-    }
+    MLP mlp();
 }
