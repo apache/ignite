@@ -55,6 +55,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     /// </summary>
     internal class FieldsQueryCursor : FieldsQueryCursor<IList<object>>, IFieldsQueryCursor
     {
+        /** */
+        private const int OpGetFieldNames = 6;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -70,8 +73,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** <inheritdoc /> */
         public IList<string> FieldNames
         {
-            // TODO: Lazy call to Java.
-            get { return null; }
+            get { return Target.OutStream(OpGetFieldNames, reader => reader.ReadStringArray()); }
         }
     }
 }
