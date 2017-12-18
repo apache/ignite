@@ -243,7 +243,7 @@ public class MLP implements Model<Matrix, Matrix> {
     }
 
     /**
-     * Sets the bias of given neuron in given layer.
+     * Set the bias of given neuron in given layer.
      *
      * @param layerIdx Layer index.
      * @param neuronIdx Neuron index.
@@ -261,6 +261,21 @@ public class MLP implements Model<Matrix, Matrix> {
     }
 
     /**
+     * Get the bias of given neuron in given layer.
+     *
+     * @param layerIdx Layer index.
+     * @param neuronIdx Neuron index.
+     * @return Bias with specified coordinates.
+     */
+    public double bias(int layerIdx, int neuronIdx) {
+        // Should be transformation layer.
+        assert layerIdx > 0;
+        assert architecture.transformationLayerArchitecture(layerIdx).hasBias();
+
+        return biases(layerIdx).getX(neuronIdx);
+    }
+
+    /**
      * Sets the weighs of layer with a given index.
      *
      * @param layerIdx Layer index.
@@ -274,10 +289,11 @@ public class MLP implements Model<Matrix, Matrix> {
     }
 
     /**
-     * Sets the weight of neuron with given index of previous layer.
+     * Set the weight of neuron with given index in previous layer to neuron with given index in given layer.
      *
      * @param layerIdx Layer index.
      * @param fromNeuron Neuron index in previous layer.
+     * @param toNeuron Neuron index in current layer.
      * @param val New value of weight.
      * @return This MLP with updated weights.
      */
@@ -289,6 +305,22 @@ public class MLP implements Model<Matrix, Matrix> {
         weights(layerIdx).setX(fromNeuron, toNeuron, val);
 
         return this;
+    }
+
+    /**
+     * Get the weight of neuron with given index in previous layer to neuron with given index in given layer.
+     *
+     * @param layerIdx Layer index.
+     * @param fromNeuron Neuron index in previous layer.
+     * @param toNeuron Neuron index in current layer.
+     * @return Weight with specified coordinates.
+     */
+    public double weight(int layerIdx, int fromNeuron, int toNeuron) {
+        // Should be transformation layer.
+        assert layerIdx > 0;
+        assert architecture.transformationLayerArchitecture(layerIdx).hasBias();
+
+        return weights(layerIdx).getX(fromNeuron, toNeuron);
     }
 
     /**
