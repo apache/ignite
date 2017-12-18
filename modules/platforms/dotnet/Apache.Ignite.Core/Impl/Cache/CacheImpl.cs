@@ -1065,7 +1065,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
-            return QueryFields(qry, (reader, count) => (IList) ReadFieldsArrayList(reader, count));
+            return Query(qry, (reader, count) => (IList) ReadFieldsArrayList(reader, count));
         }
 
         /// <summary>
@@ -1082,7 +1082,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
+        public IQueryCursor<T> Query<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
         {
             var cursor = QueryFieldsInternal(qry);
 
