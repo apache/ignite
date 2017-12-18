@@ -42,12 +42,10 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
@@ -132,7 +130,7 @@ public final class UpdatePlanBuilder {
 
         List<GridSqlElement[]> elRows = null;
 
-        List<List<FastUpdateArgument>> rows = null;
+        List<List<DmlArgument>> rows = null;
 
         if (stmt instanceof GridSqlInsert) {
             GridSqlInsert ins = (GridSqlInsert) stmt;
@@ -178,16 +176,12 @@ public final class UpdatePlanBuilder {
             rows = new ArrayList<>(elRows.size());
 
             for (GridSqlElement[] elRow : elRows) {
-                List<FastUpdateArgument> row = new ArrayList<>(cols.length);
+                List<DmlArgument> row = new ArrayList<>(cols.length);
 
                 for (GridSqlElement e : elRow) {
-                    if (e instanceof GridSqlConst)
-                        row.add(new FastUpdateArguments.ValueArgument(((GridSqlConst) e).value().getObject()));
-                    else if (e instanceof GridSqlParameter)
-                        row.add(new FastUpdateArguments.ParamArgument(((GridSqlParameter) e).index()));
-                    else
-                        throw new IgniteSQLException("Unexpected element type: " + e.getClass().getSimpleName(),
-                            IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+                    DmlArgument arg = DmlArguments.create(e);
+
+                    row.add(arg);
                 }
 
                 rows.add(row);

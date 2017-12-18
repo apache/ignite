@@ -74,7 +74,7 @@ public final class UpdatePlan {
     private final boolean isLocSubqry;
 
     /** Rows for query-less MERGE or INSERT. */
-    private final List<List<FastUpdateArgument>> rows;
+    private final List<List<DmlArgument>> rows;
 
     /** Number of rows in rows based MERGE or INSERT. */
     private final int rowsNum;
@@ -114,7 +114,7 @@ public final class UpdatePlan {
         int valColIdx,
         String selectQry,
         boolean isLocSubqry,
-        List<List<FastUpdateArgument>> rows,
+        List<List<DmlArgument>> rows,
         int rowsNum,
         @Nullable FastUpdate fastUpdate,
         @Nullable DmlDistributedPlanInfo distributed
@@ -410,7 +410,7 @@ public final class UpdatePlan {
     /**
      * @return Rows for query-less MERGE or INSERT.
      */
-    public List<List<FastUpdateArgument>> rows() {
+    public List<List<DmlArgument>> rows() {
         return rows;
     }
 

@@ -48,11 +48,11 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdate;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -421,11 +421,11 @@ public class DmlStatementsProcessor {
 
         GridH2RowDescriptor desc = plan.table().rowDescriptor();
 
-        for (List<FastUpdateArgument> argRow : plan.rows()) {
+        for (List<DmlArgument> argRow : plan.rows()) {
             List<Object> row = new ArrayList<>();
 
             for (int j = 0; j < plan.columnNames().length; j++) {
-                Object colVal = argRow.get(j).apply(args);
+                Object colVal = argRow.get(j).get(args);
 
                 if (j == plan.keyColumnIndex() || j == plan.valueColumnIndex())
                     colVal = DmlUtils.convert(colVal, desc, j == plan.keyColumnIndex() ? desc.type().keyClass() :
