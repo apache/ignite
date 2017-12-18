@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     internal class FieldsQueryCursor : FieldsQueryCursor<IList<object>>, IFieldsQueryCursor
     {
         /** */
-        private const int OpGetFieldNames = 6;
+        private const int OpGetFieldNames = 7;
 
         /// <summary>
         /// Constructor.
