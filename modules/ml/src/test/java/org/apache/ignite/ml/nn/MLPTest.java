@@ -32,7 +32,7 @@ import org.junit.Test;
  */
 public class MLPTest {
     @Test
-    public void simplestMLPTest() {
+    public void testSimpleMLP() {
         MLPArchitecture conf = new MLPArchitecture(1).withAddedLayer(1, false, Activators.SIGMOID);
 
         MLP mlp = new MLP(conf, new MLPConstInitializer(2, 1));
@@ -45,7 +45,7 @@ public class MLPTest {
     }
 
     @Test
-    public void xorTest() {
+    public void testXOR() {
         MLPArchitecture conf = new MLPArchitecture(2).
             withAddedLayer(2, true, Activators.SIGMOID).
             withAddedLayer(1, true, Activators.SIGMOID);
@@ -67,7 +67,7 @@ public class MLPTest {
     }
 
     @Test
-    public void twoLayerMLPTest() {
+    public void testTwoLayerMLP() {
         MLPArchitecture conf = new MLPArchitecture(4).
             withAddedLayer(3, false, Activators.SIGMOID).
             withAddedLayer(2, false, Activators.SIGMOID);
@@ -80,7 +80,7 @@ public class MLPTest {
     }
 
     @Test
-    public void stackedMLPTest() {
+    public void testStackedMLP() {
         int firstLayerNeuronsCnt = 3;
         int secondLayerNeuronsCnt = 2;
         MLPConstInitializer initer = new MLPConstInitializer(2, 1);
@@ -91,13 +91,15 @@ public class MLPTest {
 
         MLP mlp = new MLP(conf, initer);
 
-        MLPArchitecture mlpLayer1Conf = new MLPArchitecture(4).withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID);
-        MLPArchitecture mlpLayer2Conf = new MLPArchitecture(firstLayerNeuronsCnt).withAddedLayer(secondLayerNeuronsCnt, false, Activators.SIGMOID);
+        MLPArchitecture mlpLayer1Conf = new MLPArchitecture(4).
+            withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID);
+        MLPArchitecture mlpLayer2Conf = new MLPArchitecture(firstLayerNeuronsCnt).
+            withAddedLayer(secondLayerNeuronsCnt, false, Activators.SIGMOID);
 
         MLP mlp1 = new MLP(mlpLayer1Conf, initer);
         MLP mlp2 = new MLP(mlpLayer2Conf, initer);
 
-        MLP stackedMLP = mlp2.add(mlp1);
+        MLP stackedMLP = mlp1.add(mlp2);
 
         Matrix predict = mlp.predict(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());
         Matrix stackedPredict = stackedMLP.predict(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn.trainers;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.math.Matrix;
@@ -86,6 +87,11 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
     private final IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> loss;
 
     /**
+     * Logger.
+     */
+    private IgniteLogger log;
+
+    /**
      * Construct a trainer.
      *
      * @param loss Loss function.
@@ -129,7 +135,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
             Matrix truth = batch.get2();
 
             err = updater.updateParamsAndCalculateError(mlp, state, input, truth);
-            System.out.println(err);
+            debug("Error: " + err);
 
             state.setCurrentError(err);
 
@@ -190,5 +196,27 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
      */
     public MLPLocalBatchTrainer withMaxIterations(int maxIterations) {
         return new MLPLocalBatchTrainer(loss, updaterSupplier, learningRate, errorThreshold, maxIterations);
+    }
+
+    /**
+     * Set logger.
+     *
+     * @param log Logger.
+     * @return This object.
+     */
+    public MLPLocalBatchTrainer setLogger(IgniteLogger log) {
+        this.log = log;
+
+        return this;
+    }
+
+    /**
+     * Output debug message.
+     *
+     * @param msg Message.
+     */
+    private void debug(String msg) {
+        if (log != null && log.isDebugEnabled())
+            log.debug(msg);
     }
 }

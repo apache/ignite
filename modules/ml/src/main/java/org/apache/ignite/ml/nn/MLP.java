@@ -45,7 +45,7 @@ public class MLP implements Model<Matrix, Matrix> {
     protected List<MLPLayer> layers;
 
     /**
-     * MLP which is 'under' this MLP (i.e.) below output goes to this MLP as input.
+     * MLP which is 'below' this MLP (i.e. below output goes to this MLP as input).
      */
     protected MLP below;
 
@@ -132,11 +132,11 @@ public class MLP implements Model<Matrix, Matrix> {
      * @param state State object to write state into.
      * @param writeState Flag indicating need to write state.
      */
-    public void forwardPass(Matrix val, MLPState state, boolean writeState) {
+    public Matrix forwardPass(Matrix val, MLPState state, boolean writeState) {
         Matrix res = val;
 
         if (below != null)
-            below.forwardPass(val, state, writeState);
+            res = below.forwardPass(val, state, writeState);
 
         for (int i = 1; i < architecture.layersCount(); i++) {
             MLPLayer curLayer = layers.get(i - 1);
@@ -159,6 +159,8 @@ public class MLP implements Model<Matrix, Matrix> {
 
             state.activatorsOutput.add(res);
         }
+
+        return res;
     }
 
     /**
