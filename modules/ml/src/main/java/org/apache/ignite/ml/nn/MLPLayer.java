@@ -21,7 +21,7 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 
 /**
- * Class contaning information about layer.
+ * Class containing information about layer.
  */
 public class MLPLayer {
     /**
