@@ -400,7 +400,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 }
 
                 Assert.AreEqual(0, exp0.Count);
-                Assert.AreEqual(new[] {"name", "age"}, cursor.FieldNames);
+                Assert.AreEqual(new[] {"NAME", "AGE"}, cursor.FieldNames);
             }
 
             // Test old API as well.
@@ -789,6 +789,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             var ex = Assert.Throws<CacheException>(() => cache.Query(fieldsQry).ToArray());
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
+
+        /// <summary>
+        /// Tests the FieldNames property.
+        /// </summary>
+        [Test]
+        public void TestFieldNames()
+        {
+
         }
 
         /// <summary>
