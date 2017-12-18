@@ -61,7 +61,7 @@ public abstract class BackpropUpdater implements MLPParameterUpdater {
             i--;
         }
 
-        Matrix predicted = mlp.predict(inputs);
+        Matrix predicted = mlp.apply(inputs);
 
         return MatrixUtil.zipFoldByColumns(predicted, groundTruth, (predCol, truthCol) -> loss.apply(truthCol).apply(predCol)).sum() / batchSize;
     }

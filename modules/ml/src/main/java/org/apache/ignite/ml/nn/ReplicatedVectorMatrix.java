@@ -63,7 +63,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * @param replicationCnt Count of replications.
      * @param asColumn Should vector be replicated as a column or as a row.
      */
-    public ReplicatedVectorMatrix(Vector vector, int replicationCnt, boolean asColumn) {
+    ReplicatedVectorMatrix(Vector vector, int replicationCnt, boolean asColumn) {
         this.vector = vector;
         this.asCol = asColumn;
         this.replicationCnt = replicationCnt;
@@ -461,13 +461,6 @@ class ReplicatedVectorMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Matrix setColumn(int col, double[] data) {
         return null;
-    }
-
-    private void set(IgniteBiConsumer<Integer, Vector> replicantAssigner,
-        IgniteBiConsumer<Integer, double[]> assigner, Vector replicant, double[] data, int times, int idx) {
-        for (int i = 0; i < times; i++)
-            replicantAssigner.accept(i, replicant);
-        assigner.accept(idx, data);
     }
 
     /** {@inheritDoc} */

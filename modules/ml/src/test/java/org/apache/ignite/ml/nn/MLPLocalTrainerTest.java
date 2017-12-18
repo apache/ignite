@@ -47,7 +47,7 @@ public class MLPLocalTrainerTest {
 
         MLP mdl = new MLPLocalBatchTrainer().train(trainerInput);
 
-        Matrix predict = mdl.predict(xorInputs);
+        Matrix predict = mdl.apply(xorInputs);
         TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-2);
     }
 
@@ -71,7 +71,7 @@ public class MLPLocalTrainerTest {
             0.0001,
             16000).train(trainerInput);
 
-        Matrix predict = mdl.predict(xorInputs);
+        Matrix predict = mdl.apply(xorInputs);
 
         TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-1);
     }

@@ -38,7 +38,7 @@ public class DecisionTreeModel implements Model<Vector, Double> {
     }
 
     /** {@inheritDoc} */
-    @Override public Double predict(Vector val) {
+    @Override public Double apply(Vector val) {
         return root.process(val);
     }
 }

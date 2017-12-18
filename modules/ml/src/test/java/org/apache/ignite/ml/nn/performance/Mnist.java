@@ -102,7 +102,7 @@ public class Mnist {
 
         System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
 
-        Vector predicted = mdl.predict(testDs.get1()).foldColumns(VectorUtils::vec2Num);
+        Vector predicted = mdl.apply(testDs.get1()).foldColumns(VectorUtils::vec2Num);
         Vector truth = testDs.get2().foldColumns(VectorUtils::vec2Num);
 
         Tracer.showAscii(truth);

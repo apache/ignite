@@ -170,7 +170,7 @@ public class MLP implements Model<Matrix, Matrix> {
      * @return Matrix with predicted vectors stored in columns with column indexes corresponding to column indexes in
      * the input matrix.
      */
-    @Override public Matrix predict(Matrix val) {
+    @Override public Matrix apply(Matrix val) {
         MLPState state = new MLPState(null);
         forwardPass(val, state, false);
         return state.activatorsOutput.get(state.activatorsOutput.size() - 1);

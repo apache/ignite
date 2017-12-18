@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.function.Consumer;
 
 /**
- * Serializable try-consumer.
+ * Serializable tri-consumer.
  *
  * @param <A> First parameter type.
  * @param <B> Second parameter type.

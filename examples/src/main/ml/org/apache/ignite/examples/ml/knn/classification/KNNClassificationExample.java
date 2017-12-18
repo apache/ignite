@@ -89,7 +89,7 @@ public class KNNClassificationExample {
 
                     // Save predicted classes to test dataset
                     for (int i = 0; i < test.rowSize(); i++) {
-                        double predictedCls = knnMdl.predict(test.getRow(i).features());
+                        double predictedCls = knnMdl.apply(test.getRow(i).features());
                         test.setLabel(i, predictedCls);
                     }
 

@@ -22,14 +22,6 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /** Basic interface for all models. */
 public interface Model<T, V> extends IgniteFunction<T, V> {
-    /** Predict a result for value. */
-    V predict(T val);
-
-    /** {@inheritDoc} */
-    @Override default V apply(T t) {
-        return predict(t);
-    }
-
     /**
      * Combines this model with other model via specified combiner
      *
@@ -38,6 +30,6 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
      * @return Combination of models.
      */
     default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(predict(v), other.predict(v));
+        return v -> combiner.apply(apply(v), other.apply(v));
     }
 }

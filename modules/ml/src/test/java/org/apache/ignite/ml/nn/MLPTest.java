@@ -19,7 +19,6 @@ package org.apache.ignite.ml.nn;
 
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
@@ -34,14 +33,15 @@ public class MLPTest {
     /**
      * Tests that MLP with 2 layer, 1 neuron in each layer and weight equal to 1 is equivalent to sigmoid function.
      */
-    @Test public void testSimpleMLPPrediction() {
+    @Test
+    public void testSimpleMLPPrediction() {
         MLPArchitecture conf = new MLPArchitecture(1).withAddedLayer(1, false, Activators.SIGMOID);
 
         MLP mlp = new MLP(conf, new MLPConstInitializer(1));
 
         int input = 2;
 
-        Matrix predict = mlp.predict(new DenseLocalOnHeapMatrix(new double[][] {{input}}));
+        Matrix predict = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{input}}));
 
         Assert.assertEquals(predict, new DenseLocalOnHeapMatrix(new double[][] {{Activators.SIGMOID.apply(input)}}));
     }
@@ -65,7 +65,7 @@ public class MLPTest {
 
         Matrix input = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}}).transpose();
 
-        Matrix predict = mlp.predict(input);
+        Matrix predict = mlp.apply(input);
         Vector truth = new DenseLocalOnHeapVector(new double[] {0.0, 1.0, 1.0, 0.0});
 
         TestUtils.checkIsInEpsilonNeighbourhood(predict.getRow(0), truth, 1E-4);
@@ -96,8 +96,8 @@ public class MLPTest {
 
         MLP stackedMLP = mlp1.add(mlp2);
 
-        Matrix predict = mlp.predict(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());
-        Matrix stackedPredict = stackedMLP.predict(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());
+        Matrix predict = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());
+        Matrix stackedPredict = stackedMLP.apply(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());
 
         Assert.assertEquals(predict, stackedPredict);
     }
