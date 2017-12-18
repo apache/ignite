@@ -2301,7 +2301,11 @@ public class GridNioServer<T> {
                     else if (log.isDebugEnabled())
                         log.debug("Failed to process selector key [ses=" + ses + ", err=" + e + ']');
 
-                    close(ses, new GridNioException(e));
+                    // Can be null if async connect failed.
+                    if (ses != null)
+                        close(ses, new GridNioException(e));
+                    else
+                        closeKey(key);
                 }
             }
         }
@@ -2525,6 +2529,34 @@ public class GridNioServer<T> {
         }
 
         /**
+         * @param key Key.
+         */
+        private void closeKey(SelectionKey key) {
+            // Shutdown input and output so that remote client will see correct socket close.
+            Socket sock = ((SocketChannel)key.channel()).socket();
+
+            try {
+                try {
+                    sock.shutdownInput();
+                }
+                catch (IOException ignored) {
+                    // No-op.
+                }
+
+                try {
+                    sock.shutdownOutput();
+                }
+                catch (IOException ignored) {
+                    // No-op.
+                }
+            }
+            finally {
+                U.close(key, log);
+                U.close(sock, log);
+            }
+        }
+
+        /**
          * Closes the session and all associated resources, then notifies the listener.
          *
          * @param ses Session to be closed.
@@ -2544,8 +2576,6 @@ public class GridNioServer<T> {
             sessions.remove(ses);
             workerSessions.remove(ses);
 
-            SelectionKey key = ses.key();
-
             if (ses.setClosed()) {
                 ses.onClosed();
 
@@ -2557,28 +2587,7 @@ public class GridNioServer<T> {
                         ((DirectBuffer)ses.readBuffer()).cleaner().clean();
                 }
 
-                // Shutdown input and output so that remote client will see correct socket close.
-                Socket sock = ((SocketChannel)key.channel()).socket();
-
-                try {
-                    try {
-                        sock.shutdownInput();
-                    }
-                    catch (IOException ignored) {
-                        // No-op.
-                    }
-
-                    try {
-                        sock.shutdownOutput();
-                    }
-                    catch (IOException ignored) {
-                        // No-op.
-                    }
-                }
-                finally {
-                    U.close(key, log);
-                    U.close(sock, log);
-                }
+                closeKey(ses.key());
 
                 if (e != null)
                     filterChain.onExceptionCaught(ses, e);

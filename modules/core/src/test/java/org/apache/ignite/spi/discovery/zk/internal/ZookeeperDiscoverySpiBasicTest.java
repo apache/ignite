@@ -1916,20 +1916,27 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO ZK: move to comm spi tests.
-     *
      * @throws Exception If failed.
      */
-    public void testNodesPing() throws Exception {
-       startGrids(3);
+    public void testConnectionCheck() throws Exception {
+       final int NODES = 5;
 
-       TcpCommunicationSpi spi = (TcpCommunicationSpi)ignite(1).configuration().getCommunicationSpi();
+        startGridsMultiThreaded(NODES);
 
-       List<ClusterNode> nodes = new ArrayList<>();
+       for (int i = 0; i < NODES; i++) {
+           Ignite node = ignite(i);
 
-       nodes.add(ignite(2).cluster().localNode());
+           TcpCommunicationSpi spi = (TcpCommunicationSpi)node.configuration().getCommunicationSpi();
 
-       // spi.pingNodes(nodes);
+           List<ClusterNode> nodes = new ArrayList<>();
+
+           nodes.addAll(node.cluster().nodes());
+
+           BitSet res = spi.checkConnection(nodes).get();
+
+           for (int j = 0; j < NODES; j++)
+               assertTrue(res.get(j));
+       }
     }
 
     /**

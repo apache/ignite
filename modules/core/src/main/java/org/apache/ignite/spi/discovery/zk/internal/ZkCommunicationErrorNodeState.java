@@ -18,23 +18,27 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.util.GridLongList;
-import org.jetbrains.annotations.Nullable;
+import java.util.BitSet;
 
 /**
  *
  */
-class ZkCommunicationErrorResolveResult implements Serializable {
+public class ZkCommunicationErrorNodeState implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    final GridLongList failedNodes;
+    private final BitSet commState;
+
+    /** */
+    private final Exception err;
 
     /**
-     * @param failedNodes
+     * @param commState Communication state.
+     * @param err Error if failed get communication state..
      */
-    ZkCommunicationErrorResolveResult(@Nullable GridLongList failedNodes) {
-        this.failedNodes = failedNodes;
+    ZkCommunicationErrorNodeState(BitSet commState, Exception err) {
+        this.commState = commState;
+        this.err = err;
     }
 }

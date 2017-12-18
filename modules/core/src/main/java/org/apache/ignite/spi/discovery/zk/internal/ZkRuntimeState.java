@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.util.List;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.Watcher;
@@ -72,6 +74,9 @@ class ZkRuntimeState {
 
     /** */
     final ZkClusterNodes top = new ZkClusterNodes();
+
+    /** */
+    List<ClusterNode> commErrProcNodes;
 
     /**
      * @param prevJoined {@code True} if joined topology before reconnect attempt.

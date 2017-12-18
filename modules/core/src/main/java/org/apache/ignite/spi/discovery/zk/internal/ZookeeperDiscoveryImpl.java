@@ -2056,6 +2056,8 @@ public class ZookeeperDiscoveryImpl {
 
         rtState.evtsData.communicationErrorResolveFutureId(null);
 
+        rtState.commErrProcNodes = null;
+
         ZkCommunicationErrorResolveResult res = msg.res;
 
         if (res == null)
@@ -2120,7 +2122,8 @@ public class ZookeeperDiscoveryImpl {
 
         final String futPath = zkPaths.distributedFutureBasePath(msg.id);
         final ZkCommunicationErrorProcessFuture fut0 = fut;
-        final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
+
+        rtState.commErrProcNodes = rtState.top.topologySnapshot();
 
         if (rtState.crd) {
             ZkDistributedCollectDataFuture nodeResFut = collectCommunicationStatusFuture(msg.id);
@@ -2130,7 +2133,7 @@ public class ZookeeperDiscoveryImpl {
 
         runInWorkerThread(new ZkRunnable(rtState, this) {
             @Override protected void run0() throws Exception {
-                fut0.pingNodesAndNotifyFuture(locNode.order(), rtState, futPath, topSnapshot);
+                fut0.pingNodesAndNotifyFuture(rtState, futPath, rtState.commErrProcNodes);
             }
         });
     }
@@ -2145,7 +2148,7 @@ public class ZookeeperDiscoveryImpl {
             new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     // Future is completed from ZK event thread.
-                    onCommunicationResolveStatusReceived(rtState);
+                    onCommunicationErrorResolveStatusReceived(rtState);
 
                     return null;
                 }
@@ -2157,15 +2160,37 @@ public class ZookeeperDiscoveryImpl {
      * @param rtState Runtime state.
      * @throws Exception If failed.
      */
-    private void onCommunicationResolveStatusReceived(ZkRuntimeState rtState) throws Exception {
+    private void onCommunicationErrorResolveStatusReceived(ZkRuntimeState rtState) throws Exception {
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
 
         UUID futId = rtState.evtsData.communicationErrorResolveFutureId();
 
         if (log.isInfoEnabled())
-            log.info("Received communication status from all nodes, call resolver [reqId=" + futId + ']');
+            log.info("Received communication status from all nodes [reqId=" + futId + ']');
 
         assert futId != null;
+
+        String futPath = zkPaths.distributedFutureBasePath(futId);
+
+        List<ClusterNode> initialNodes = rtState.commErrProcNodes;
+
+        assert initialNodes != null;
+
+        rtState.commErrProcNodes = null;
+
+        ZkClusterNodes top = rtState.top;
+
+        List<ZkCommunicationErrorNodeState> nodesRes = new ArrayList<>();
+
+        for (ZookeeperClusterNode node : top.nodesByOrder.values()) {
+            byte[] stateBytes = ZkDistributedCollectDataFuture.readNodeResult(futPath,
+                rtState.zkClient,
+                node.order());
+
+            ZkCommunicationErrorNodeState nodeState = unmarshalZip(stateBytes);
+
+            nodesRes.add(nodeState);
+        }
 
         ZkCommunicationErrorResolveFinishMessage msg = new ZkCommunicationErrorResolveFinishMessage(futId);
 
@@ -2663,7 +2688,7 @@ public class ZookeeperDiscoveryImpl {
      * @return Bytes.
      * @throws IgniteCheckedException If failed.
      */
-    private byte[] marshalZip(Object obj) throws IgniteCheckedException {
+    byte[] marshalZip(Object obj) throws IgniteCheckedException {
         assert obj != null;
 
         return U.zip(marsh.marshal(obj));

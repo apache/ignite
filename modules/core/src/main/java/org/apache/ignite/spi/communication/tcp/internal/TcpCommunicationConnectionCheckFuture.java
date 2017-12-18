@@ -111,13 +111,6 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
         resBitSet = new BitSet(nodes.size());
     }
 
-    /** {@inheritDoc} */
-    @Override public void onEvent(Event evt) {
-        assert evt instanceof DiscoveryEvent : evt;
-        assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ;
-
-    }
-
     /**
      * @param timeout Connect timeout.
      */
@@ -160,6 +153,8 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
                     MultipleAddressesConnectFuture fut = new MultipleAddressesConnectFuture(i);
 
                     fut.init(addrs);
+
+                    futs[i] = fut;
                 }
             }
             else
@@ -171,7 +166,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
         spi.getSpiContext().addLocalEventListener(this, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         if (!isDone()) {
-            endTime = System.currentTimeMillis() - timeout;
+            endTime = System.currentTimeMillis() + timeout;
 
             spi.getSpiContext().addTimeoutObject(this);
         }
@@ -211,8 +206,30 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
     }
 
     /** {@inheritDoc} */
+    @Override public void onEvent(Event evt) {
+        if (isDone())
+            return;
+
+        assert evt instanceof DiscoveryEvent : evt;
+        assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ;
+
+        UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+
+        for (int i = 0; i < nodes.size(); i++) {
+            if (nodes.get(i).id().equals(nodeId)) {
+                ConnectFuture fut = futs[i];
+
+                if (fut != null)
+                    fut.onNodeFailed();
+
+                return;
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void onTimeout() {
-        if (!isDone())
+        if (isDone())
             return;
 
         ConnectFuture[] futs = this.futs;
@@ -230,6 +247,8 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
         if (super.onDone(res, err)) {
             spi.getSpiContext().removeTimeoutObject(this);
 
+            spi.getSpiContext().removeLocalEventListener(this);
+
             return true;
         }
 
@@ -244,6 +263,11 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
          *
          */
         void onTimeout();
+
+        /**
+         *
+         */
+        void onNodeFailed();
     }
 
     /**
@@ -325,11 +349,16 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
             finish(nodeId(nodeIdx).equals(rmtNodeId));
         }
 
+        /** {@inheritDoc} */
+        @Override public void onNodeFailed() {
+            cancel();
+        }
+
         /**
          * @param res Result.
          * @return {@code True} if result was set by this call.
          */
-        boolean finish(boolean res) {
+        public boolean finish(boolean res) {
             if (connFutDoneUpdater.compareAndSet(this, 0, 1)) {
                 onStatusReceived(res);
 
@@ -366,6 +395,18 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
         MultipleAddressesConnectFuture(int nodeIdx) {
             this.nodeIdx = nodeIdx;
 
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onNodeFailed() {
+            SingleAddressConnectFuture[] futs = this.futs;
+
+            for (int i = 0; i < futs.length; i++) {
+                ConnectFuture fut = futs[i];
+
+                if (fut != null)
+                    fut.onNodeFailed();
+            }
         }
 
         /** {@inheritDoc} */
