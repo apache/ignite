@@ -395,16 +395,18 @@ class ClusterCachesInfo {
             DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
             if (desc != null) {
-                desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
+                if (desc.cacheConfiguration().isStatisticsEnabled() != msg.enabled()) {
+                    desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
 
-                try {
-                    ctx.cache().saveCacheConfiguration(desc);
-                }
-                catch (IgniteCheckedException e) {
-                    msg.success(false);
+                    try {
+                        ctx.cache().saveCacheConfiguration(desc);
+                    }
+                    catch (IgniteCheckedException e) {
+                        msg.success(false);
 
-                    log.error("Error while saving cache configuration to disk, cfg = "
-                        + desc.cacheConfiguration(), e);
+                        log.error("Error while saving cache configuration to disk, cfg = "
+                            + desc.cacheConfiguration(), e);
+                    }
                 }
             }
             else {
