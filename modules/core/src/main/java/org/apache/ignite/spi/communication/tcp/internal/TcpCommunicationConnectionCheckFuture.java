@@ -28,7 +28,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -41,10 +44,13 @@ import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+
 /**
  *
  */
-public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<BitSet> implements IgniteSpiTimeoutObject {
+public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<BitSet> implements IgniteSpiTimeoutObject, GridLocalEventListener {
     /** Session future. */
     public static final int SES_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -105,6 +111,13 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
         resBitSet = new BitSet(nodes.size());
     }
 
+    /** {@inheritDoc} */
+    @Override public void onEvent(Event evt) {
+        assert evt instanceof DiscoveryEvent : evt;
+        assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ;
+
+    }
+
     /**
      * @param timeout Connect timeout.
      */
@@ -154,6 +167,8 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
         }
 
         this.futs = futs;
+
+        spi.getSpiContext().addLocalEventListener(this, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         if (!isDone()) {
             endTime = System.currentTimeMillis() - timeout;
