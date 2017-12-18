@@ -318,7 +318,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else if (msg instanceof CacheStatisticsModeChangeMessage) {
             CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
 
-            if (msg0.messageType() == CacheStatisticsModeChangeMessage.MessageType.REQUEST)
+            if (msg0.initial())
                 return new CacheStatisticsModeChangeTask(msg0);
         }
 
@@ -3114,7 +3114,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof CacheStatisticsModeChangeMessage) {
             CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
 
-            if (msg0.messageType() == CacheStatisticsModeChangeMessage.MessageType.REQUEST)
+            if (msg0.initial())
                 cachesInfo.onCacheStatisticsModeChange(msg0);
             else {
                 EnableStatisticsFuture fut = enableStatisticsFuts.get(msg0.requestId());
@@ -4099,10 +4099,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean res = fut.get();
 
-        if (!res)
-            log.warning("Failed to enable/disable statistics for caches on some nodes "
-                + "(check other nodes logs for details)");
-
         return res;
     }
 
@@ -4328,6 +4324,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+            if (!res)
+                log.warning("Failed to enable/disable statistics for caches on some nodes "
+                    + "(check other nodes logs for details)");
+
             // Make sure to remove future before completion.
             enableStatisticsFuts.remove(id, this);
 

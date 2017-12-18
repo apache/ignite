@@ -32,19 +32,17 @@ import org.jetbrains.annotations.Nullable;
  * Cache statistics mode change discovery message.
  */
 public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage {
-    /** Message types.  */
-    public enum MessageType {
-        /** Request. */
-        REQUEST,
-        /** Response. */
-        RESPONSE
-    }
-
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Message type. */
-    private final MessageType msgType;
+    /** Initial message flag mask. */
+    private static final byte INITIAL_MESSAGE_MASK = 0x01;
+
+    /** Statistics enabled flag mask. */
+    private static final byte ENABLED_MASK = 0x02;
+
+    /** Success flag mask. */
+    private static final byte SUCCESS_MASK = 0x04;
 
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
@@ -55,11 +53,8 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     /** Cache names. */
     private final Collection<String> caches;
 
-    /** Statistic enabled. */
-    private final boolean enabled;
-
-    /** Success. */
-    private boolean success;
+    /** Flags. */
+    private byte flags;
 
     /**
      * Constructor for response.
@@ -67,11 +62,15 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * @param req Request message.
      */
     private CacheStatisticsModeChangeMessage(CacheStatisticsModeChangeMessage req) {
-        this.msgType = MessageType.RESPONSE;
+        this.flags = 0;
         this.reqId = req.reqId;
         this.caches = null;
-        this.enabled = req.enabled;
-        this.success = req.success;
+
+        if (req.enabled())
+            this.flags |= ENABLED_MASK;
+
+        if (req.success())
+            this.flags |= SUCCESS_MASK;
     }
 
     /**
@@ -80,11 +79,14 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * @param caches Collection of cache names.
      */
     public CacheStatisticsModeChangeMessage(UUID reqId, Collection<String> caches, boolean enabled) {
-        this.msgType = MessageType.REQUEST;
+        this.flags = INITIAL_MESSAGE_MASK;
         this.reqId = reqId;
         this.caches = Collections.unmodifiableCollection(caches);
-        this.enabled = enabled;
-        this.success = true;
+
+        if (enabled)
+            this.flags |= ENABLED_MASK;
+
+        this.flags |= SUCCESS_MASK;
     }
 
     /** {@inheritDoc} */
@@ -94,12 +96,12 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return (msgType == MessageType.REQUEST) ? new CacheStatisticsModeChangeMessage(this) : null;
+        return initial() ? new CacheStatisticsModeChangeMessage(this) : null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return (msgType == MessageType.REQUEST);
+        return initial();
     }
 
     /** {@inheritDoc} */
@@ -119,21 +121,24 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * @return Statistic enabled.
      */
     public boolean enabled() {
-        return enabled;
+        return (flags & ENABLED_MASK) != 0;
     }
 
     /**
      * Gets success flag.
      */
     public boolean success() {
-        return success;
+        return (flags & SUCCESS_MASK) != 0;
     }
 
     /**
      * Sets success flag.
      */
     public void success(boolean success) {
-        this.success = success;
+        if (success)
+            flags |= SUCCESS_MASK;
+        else
+            flags &= ~SUCCESS_MASK;
     }
 
     /**
@@ -144,10 +149,10 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     }
 
     /**
-     * Message type.
+     * Initial message flag.
      */
-    public MessageType messageType() {
-        return msgType;
+    public boolean initial() {
+        return (flags & INITIAL_MESSAGE_MASK) != 0;
     }
 
     /** {@inheritDoc} */
