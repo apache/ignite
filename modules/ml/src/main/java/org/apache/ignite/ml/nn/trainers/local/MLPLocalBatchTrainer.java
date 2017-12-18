@@ -32,7 +32,7 @@ import org.apache.ignite.ml.nn.updaters.MLPParameterUpdater;
 import org.apache.ignite.ml.nn.updaters.RPropUpdater;
 
 /**
- * Batch trainer for MLP. This trainer is not distributed on the cluster, but input can be theoretically read data from
+ * Batch trainer for MLP. This trainer is not distributed on the cluster, but input can theoretically read data from
  * Ignite cache.
  */
 public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerInput> {
