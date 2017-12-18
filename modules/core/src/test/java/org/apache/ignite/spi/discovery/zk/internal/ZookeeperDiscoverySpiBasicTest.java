@@ -1924,14 +1924,14 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCommunicationErrorResolve_KillNode_1() throws Exception {
-        communicationErrorResolve_KillNodes(2, Collections.singletonList(2L));
+        communicationErrorResolve_KillNodes(2, Collections.singleton(2L));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCommunicationErrorResolve_KillNode_2() throws Exception {
-        communicationErrorResolve_KillNodes(3, Collections.singletonList(2L));
+        communicationErrorResolve_KillNodes(3, Collections.singleton(2L));
     }
 
     /**
@@ -1939,6 +1939,34 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      */
     public void testCommunicationErrorResolve_KillNode_3() throws Exception {
         communicationErrorResolve_KillNodes(10, Arrays.asList(2L, 4L, 6L));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCommunicationErrorResolve_KillCoordinator_1() throws Exception {
+        communicationErrorResolve_KillNodes(2, Collections.singleton(1L));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCommunicationErrorResolve_KillCoordinator_2() throws Exception {
+        communicationErrorResolve_KillNodes(3, Collections.singleton(1L));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCommunicationErrorResolve_KillCoordinator_3() throws Exception {
+        communicationErrorResolve_KillNodes(10, Arrays.asList(1L, 4L, 6L));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCommunicationErrorResolve_KillCoordinator_4() throws Exception {
+        communicationErrorResolve_KillNodes(10, Arrays.asList(1L, 2L, 3L));
     }
 
     /**
@@ -1983,32 +2011,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         startGrid(startNodes);
 
         waitForTopology(expNodes + 1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCommunicationErrorResolve_KillCoordinator() throws Exception {
-        // Kill coordinator.
-        testCommSpi = true;
-
-        commProblemRslvr = new TestNodeKillCommunicationProblemResolver(Collections.singleton(1L));
-
-        startGrids(3);
-
-        ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.forNode(ignite(2));
-
-        commSpi.checkRes = new BitSet(3);
-
-        ZookeeperDiscoverySpi spi = spi(ignite(1));
-
-        spi.onCommunicationConnectionError(ignite(0).cluster().localNode(), new Exception("test"));
-
-        waitForTopology(2);
-
-        startGrid(10);
-
-        waitForTopology(3);
     }
 
     /**
