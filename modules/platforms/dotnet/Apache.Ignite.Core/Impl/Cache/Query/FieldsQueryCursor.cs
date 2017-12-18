@@ -50,13 +50,24 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         }
     }
 
+    /// <summary>
+    /// Cursor for entry-based queries.
+    /// </summary>
     internal class FieldsQueryCursor : FieldsQueryCursor<IList<object>>, IFieldsQueryCursor
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="target">Target.</param>
+        /// <param name="keepBinary">Keep poratble flag.</param>
+        /// <param name="readerFunc">The reader function.</param>
         public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
             Func<IBinaryRawReader, int, IList<object>> readerFunc) : base(target, keepBinary, readerFunc)
         {
+            // No-op.
         }
 
+        /** <inheritdoc /> */
         public IList<string> FieldNames
         {
             // TODO: Lazy call to Java.
