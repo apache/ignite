@@ -280,8 +280,12 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
      */
     private boolean checkStatisticsMode(String cacheName, boolean enabled) {
         for (Ignite ignite : G.allGrids())
-            if (ignite.cache(cacheName).metrics().isStatisticsEnabled() != enabled)
+            if (ignite.cache(cacheName).metrics().isStatisticsEnabled() != enabled) {
+                log.error("Wrong cache statistics mode [grid=" + ignite.name() + ", cache=" + cacheName
+                    + "expected=" + enabled);
+
                 return false;
+            }
 
         return true;
     }
@@ -295,10 +299,10 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param cacheManager Cache manager.
+     * @param cacheMgr Cache manager.
      * @param cacheName Cache name.
      */
-    private boolean isStatisticsEnabled(CacheManager cacheManager, String cacheName) {
-        return ((IgniteCache)cacheManager.getCache(cacheName)).metrics().isStatisticsEnabled();
+    private boolean isStatisticsEnabled(CacheManager cacheMgr, String cacheName) {
+        return ((IgniteCache)cacheMgr.getCache(cacheName)).metrics().isStatisticsEnabled();
     }
 }

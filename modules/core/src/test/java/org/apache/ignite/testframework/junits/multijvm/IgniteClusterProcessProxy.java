@@ -155,7 +155,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void enableStatistics(Collection<String> caches, boolean enabled) {
+    @Override public boolean enableStatistics(Collection<String> caches, boolean enabled) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 

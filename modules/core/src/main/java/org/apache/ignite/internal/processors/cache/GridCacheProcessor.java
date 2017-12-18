@@ -4053,8 +4053,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param caches Collection of cache names.
      * @param enabled Statistics enabled flag.
+     * @return {@code True} if success.
      */
-    public void enableStatistics(Collection<String> caches, boolean enabled) throws IgniteCheckedException {
+    public boolean enableStatistics(Collection<String> caches, boolean enabled) throws IgniteCheckedException {
         assert caches != null;
 
         Collection<String> globalCaches = new ArrayList<>(caches.size());
@@ -4075,12 +4076,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (globalCaches.isEmpty())
-            return;
-
-        for (ClusterNode n : ctx.discovery().allNodes())
-            if (!n.version().greaterThanEqual(2, 4, 0))
-                throw new IgniteCheckedException("Failed to enable/disable statistics for cache cluster wide, "
-                    + "some nodes don't support this feature [node=" + n.id() + ", v=" + n.version() + "].");
+            return true;
 
         UUID reqId = UUID.randomUUID();
 
@@ -4092,9 +4088,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.grid().context().discovery().sendCustomEvent(msg);
 
-        if (fut.get() == Boolean.FALSE)
+        boolean res = fut.get();
+
+        if (!res)
             log.warning("Failed to enable/disable statistics for caches on some nodes "
                 + "(check other nodes logs for details)");
+
+        return res;
     }
 
     /**
