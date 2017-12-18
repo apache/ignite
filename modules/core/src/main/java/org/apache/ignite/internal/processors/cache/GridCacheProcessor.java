@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,7 +57,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -124,8 +124,6 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeD
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridIntIterator;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -2317,68 +2315,86 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param msg Message.
      */
-    private void onWalModeDynamicChangeMessage(WalModeDynamicChangeMessage msg) {
+    private boolean onWalModeDynamicChangeMessage(WalModeDynamicChangeMessage msg) {
         boolean disable = msg.disable();
         boolean prepare = msg.prepare();
 
+        int grpId = msg.grpId();
+
+        CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
+
+        final WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
+
         if (prepare) {
-            GridIntIterator it = msg.grpIds().iterator();
+            if (desc.walMode() == (disable ? CacheGroupWalMode.DISABLED : CacheGroupWalMode.ENABLED)) {
+                if (fut != null)
+                    fut.onDone();
 
-            while (it.hasNext()) {
-                int grpId = it.next();
+                return false;
+            }
 
-                CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
+            if (desc.walMode() == (disable ? CacheGroupWalMode.DISABLING : CacheGroupWalMode.ENABLING)) {
+                if (fut != null) {
+                    boolean found = false;
 
-                if (desc.walMode() != (disable ? CacheGroupWalMode.ENABLED : CacheGroupWalMode.DISABLED)) {
-                    WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
+                    for (final WalModeChangeFuture fut0 : walModeChangeFuts.values()) {
+                        if (fut0.grpId == grpId && fut0.disable == disable && fut0.active) {
+                            fut0.listen(
+                                new CI1() {
+                                    @Override public void apply(Object o) {
+                                        fut.onDone();
+                                    }
+                                }
+                            );
 
-                    if (fut != null)
-                        fut.onDone(new IgniteException("Operation can't be performed. " +
-                            "Cache's WAL mode should be " + (disable ? "enabled" : "disabled")));
+                            found = true;
 
-                    return;
+                            break;
+                        }
+                    }
+
+                    assert found;
+                }
+
+                return false;
+            }
+
+            if (desc.walMode() == (disable ? CacheGroupWalMode.ENABLING : CacheGroupWalMode.DISABLING)) {
+                if (fut != null) {
+                    fut.onDone(new ConcurrentModificationException("Another thread is trying to " +
+                        (disable ? "enable" : "disable") + " WAL for same cache."));
+
+                    return false;
                 }
             }
         }
 
-        GridIntIterator it = msg.grpIds().iterator();
+        desc.walMode(CacheGroupWalMode.resolve(disable, prepare));
 
-        while (it.hasNext()) {
-            int grpId = it.next();
-
-            CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
-
-            desc.walMode(CacheGroupWalMode.resolve(disable, prepare));
-
-            if (!disable)
-                for (GridCacheContext cctx : ctx.cache().cacheGroup(grpId).caches()) {
-                    if (prepare)
-                        ctx.cache().disableGateway(cctx.name());
-                    else
-                        ctx.cache().enableGateway(cctx.name());
-                }
-        }
-
-        if (prepare) {
-            WalModeChangeFuture fut =
-                new WalModeChangeFuture(msg.uid(), msg.initiatingNodeId(), msg.grpIds(), msg.disable());
-
-            WalModeChangeFuture old = walModeChangeFuts.putIfAbsent(msg.uid(), fut);
-
-            if (old != null) {
-                assert old.initiatingNodeId.equals(msg.initiatingNodeId());
-
-                fut = old;
+        if (!disable)
+            for (GridCacheContext cctx : ctx.cache().cacheGroup(grpId).caches()) {
+                if (prepare)
+                    ctx.cache().disableGateway(cctx.name());
+                else
+                    ctx.cache().enableGateway(cctx.name());
             }
 
-            fut.init();
+        if (prepare) {
+            if (fut == null) {
+                WalModeChangeFuture old = walModeChangeFuts.putIfAbsent(msg.uid(),
+                    new WalModeChangeFuture(msg.uid(), msg.initiatingNodeId(), msg.grpId(), msg.disable()));
+
+                assert old == null;
+            }
+
+            walModeChangeFuts.get(msg.uid()).init();
         }
         else {
-            WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
-
             if (fut != null)
                 fut.onDone();
         }
+
+        return true;
     }
 
     /**
@@ -2391,14 +2407,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (prepare) {
             WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
 
-            if (fut != null && disable && !ctx.clientNode()) {
-                GridIntIterator it = fut.grpIds.iterator();
-
-                while (it.hasNext()) {
-                    int grpId = it.next();
-
-                    sharedCtx.cache().cacheGroup(grpId).walDisabled(true);
-                }
+            if (fut != null && fut.active && disable && !ctx.clientNode()) {
+                sharedCtx.cache().cacheGroup(msg.grpId()).walDisabled(true);
 
                 ackWalModeDynamicChangeMessage(msg.initiatingNodeId(), msg.uid());
 
@@ -2420,17 +2430,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sharedCtx.wal() != null) {
             final WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
 
+            assert fut.active;
+
             IgniteInternalFuture cpFut = sharedCtx.cache().context().database().doCheckpoint("wal-mode-change");
 
             cpFut.listen(new CI1<Object>() {
                 @Override public void apply(Object o) {
-                    GridIntIterator it = msg.grpIds().iterator();
-
-                    while (it.hasNext()) {
-                        int grpId = it.next();
-
-                        sharedCtx.cache().cacheGroup(grpId).walDisabled(false);
-                    }
+                    sharedCtx.cache().cacheGroup(msg.grpId()).walDisabled(false);
 
                     ackWalModeDynamicChangeMessage(msg.initiatingNodeId(), msg.uid());
 
@@ -3063,61 +3069,39 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      */
     public boolean walEnabled(String cacheName) {
-        if (ctx.config().getDataStorageConfiguration() == null ||
-            ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.NONE)
-            return false;
-
         DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
 
         return desc.groupDescriptor().walMode() == CacheGroupWalMode.ENABLED;
     }
 
     /**
-     * @param cacheNames Cache names.
+     * @param cacheName Cache name.
      * @param disable Disable.
      * @param explicit Explicit.
      */
     public IgniteInternalFuture<?> changeWalMode(
-        Collection<String> cacheNames,
+        String cacheName,
         boolean disable,
         boolean explicit) throws IgniteException {
-        if (ctx.config().getDataStorageConfiguration() == null ||
-            ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.NONE)
-            throw new IgniteException("WAL mode can't be changed. " +
-                "Specify DataStorageConfiguration and WalMode to enable this feature.");
+        CacheGroupDescriptor desc = ctx.cache().cacheDescriptor(cacheName).groupDescriptor();
 
-        Set<Integer> grpSet = new HashSet<>();
+        if (desc.caches().size() > 1 && explicit)
+            throw new IgniteException("Cache group contains more than one cache.");
 
-        boolean already = true;
-
-        for (String cacheName : cacheNames) {
-            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
-
-            if (!grpSet.add(desc.groupId()) && explicit)
-                throw new IgniteException("Cache group contains more than one cache. " +
-                    "Set explicit flag to false to allow such operation.");
-
-            if (desc.groupDescriptor().walMode() != (disable ? CacheGroupWalMode.DISABLED : CacheGroupWalMode.ENABLED))
-                already = false;
-        }
-
-        if (already)
+        if (desc.walMode() == (disable ? CacheGroupWalMode.DISABLED : CacheGroupWalMode.ENABLED))
             return new GridFinishedFuture<>();
 
-        GridIntList grpIds = new GridIntList(grpSet.size());
-
-        for (Integer grp : grpSet)
-            grpIds.add(grp);
+        int grpId = desc.groupId();
 
         // Checking same fut already registered
         for (WalModeChangeFuture fut0 : walModeChangeFuts.values()) {
-            if (fut0.grpIds.equals(grpIds) && fut0.disable == disable)
+            if (fut0.grpId == grpId && fut0.disable == disable)
                 return fut0;
         }
 
         UUID uid = UUID.randomUUID();
 
-        WalModeChangeFuture fut = new WalModeChangeFuture(uid, ctx.localNodeId(), grpIds, disable);
+        WalModeChangeFuture fut = new WalModeChangeFuture(uid, ctx.localNodeId(), grpId, disable);
 
         WalModeChangeFuture old = walModeChangeFuts.put(uid, fut);
 
@@ -3349,9 +3333,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return true;
 
         if (msg instanceof WalModeDynamicChangeMessage) {
-            onWalModeDynamicChangeMessage((WalModeDynamicChangeMessage)msg);
-
-            return ((WalModeDynamicChangeMessage)msg).needExchange();
+            return onWalModeDynamicChangeMessage((WalModeDynamicChangeMessage)msg) &&
+                ((WalModeDynamicChangeMessage)msg).needExchange();
         }
 
         if (msg instanceof DynamicCacheChangeBatch)
@@ -4318,7 +4301,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private volatile UUID initiatingNodeId;
 
         /** Group ids. */
-        private final GridIntList grpIds;
+        private final int grpId;
 
         /** Disabling. */
         private final boolean disable;
@@ -4335,19 +4318,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** Disco listener. */
         private volatile GridLocalEventListener discoLsnr;
 
+        /** Active. */
+        private volatile boolean active;
+
         /**
          * @param uid Uid.
          * @param initiatingNodeId Node Id.
-         * @param grpIds Groups.
+         * @param grpId Group Id.
          * @param disable Disable.
          */
         private WalModeChangeFuture(UUID uid,
             final UUID initiatingNodeId,
-            final GridIntList grpIds,
+            final int grpId,
             final boolean disable) {
             this.uid = uid;
             this.initiatingNodeId = initiatingNodeId;
-            this.grpIds = grpIds;
+            this.grpId = grpId;
             this.disable = disable;
         }
 
@@ -4355,6 +4341,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * Should be inited at each node.
          */
         private void init() {
+            active = true;
+
             initIfNeeded();
 
             synchronized (nodes) {
@@ -4379,7 +4367,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private void initIfNeeded() {
             if (this.discoLsnr == null) {
                 log.info("Cluster wide WAL mode change operation started " +
-                    "[cacheGrps=" + grpIds +
+                    "[cacheGrps=" + grpId +
                     ", action=" + (disable ? "disabling" : "enabling") +
                     ", initiatingNodeId=" + initiatingNodeId + ", phase=prepare]");
 
@@ -4402,7 +4390,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                                 log.info("Cluster wide WAL mode change operation restarted due to initiating node fail " +
                                     "[node=" + evtNode.id() +
-                                    ", cacheGrps=" + grpIds +
+                                    ", cacheGrps=" + grpId +
                                     ", action=" + (disable ? "disabling" : "enabling") + "]. ");
 
                                 prepFut.listen(new CI1() {
@@ -4425,7 +4413,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private void initiatingNodeId(UUID initiatingNodeId) {
             if (this.initiatingNodeId != initiatingNodeId) {
                 log.info("Cluster wide WAL mode change operation restarted locally " +
-                    "[cacheGrps=" + grpIds +
+                    "[cacheGrps=" + grpId +
                     ", action=" + (disable ? "disabling" : "enabling") +
                     ", initiatingNodeId=" + initiatingNodeId + ", phase=prepare]");
 
@@ -4441,7 +4429,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             log.info("Cluster wide WAL mode change operation prepare phase finished by node " +
                 "[nodeId=" + node.id() +
-                ", cacheGrps=" + grpIds +
+                ", cacheGrps=" + grpId +
                 ", action=" + (disable ? "disabling" : "enabling") +
                 ", initiatingNodeId=" + initiatingNodeId + "]");
 
@@ -4452,7 +4440,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         if (done && ctx.localNodeId().equals(initiatingNodeId)) {
                             log.info("Cluster wide WAL mode change operation prepared on whole cluster " +
-                                "[cacheGrps=" + grpIds +
+                                "[cacheGrps=" + grpId +
                                 ", action=" + (disable ? "disabling" : "enabling") +
                                 ", initiatingNodeId=" + initiatingNodeId + ", phase=finish]");
 
@@ -4484,7 +4472,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 uid,
                 disable,
                 prepare,
-                grpIds,
+                grpId,
                 initiatingNodeId);
 
             Exception err;
@@ -4508,7 +4496,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ctx.event().removeLocalEventListener(discoLsnr);
 
                 log.info("Cluster wide WAL mode change operation " + (err != null ? "failed " : "completed ") +
-                    "[cacheGrps=" + grpIds +
+                    "[cacheGrps=" + grpId +
                     ", newState=" + (disable ? "disabled" : "enabled") +
                     ", initiatingNodeId=" + initiatingNodeId +
                     ", err=" + err + "]");

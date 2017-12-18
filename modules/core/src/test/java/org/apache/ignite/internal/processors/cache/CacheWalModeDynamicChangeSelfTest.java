@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -330,7 +328,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
             final int size = G.allGrids().size() * G.allGrids().size();
 
             if (alreadyChanged)
-                ignite1.context().cache().changeWalMode(Collections.singleton(CACHE1), disable, true).get();
+                ignite1.context().cache().changeWalMode(CACHE1, disable, true).get();
 
             Collection<Thread> threads = new HashSet<>();
 
@@ -341,7 +339,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
                     @Override public void run() {
                         IgniteEx ignite = ((IgniteEx)G.allGrids().get(finalI % G.allGrids().size()));
 
-                        ignite.context().cache().changeWalMode(Collections.singleton(CACHE1), disable, true);
+                        ignite.context().cache().changeWalMode(CACHE1, disable, true);
                     }
                 };
 
@@ -423,7 +421,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         new Thread() {
             @Override public void run() {
-                grid(igniteId).context().cache().changeWalMode(Collections.singleton(CACHE1), disable, true);
+                grid(igniteId).context().cache().changeWalMode(CACHE1, disable, true);
 
                 disableLatch.countDown();
             }
@@ -518,52 +516,35 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
             checkWal(false, false, false);
 
-            node.context().cache().changeWalMode(Collections.singleton(CACHE1), true, true).get();
+            node.context().cache().changeWalMode(CACHE1, true, true).get();
 
             checkWal(true, false, false);
 
-            node.context().cache().changeWalMode(Collections.singleton(CACHE1), false, true).get();
+            node.context().cache().changeWalMode(CACHE1, false, true).get();
 
             checkWal(false, false, false);
 
-            node.context().cache().changeWalMode(Collections.singleton(CACHE2), true, true).get();
+            node.context().cache().changeWalMode(CACHE2, true, false).get();
 
             checkWal(false, true, true);
 
-            node.context().cache().changeWalMode(Collections.singleton(CACHE1), true, true).get();
+            node.context().cache().changeWalMode(CACHE1, true, true).get();
 
             checkWal(true, true, true);
 
-            node.context().cache().changeWalMode(Collections.singleton(CACHE1), false, true).get();
-            node.context().cache().changeWalMode(Collections.singleton(CACHE2), false, true).get();
+            node.context().cache().changeWalMode(CACHE1, false, true).get();
+            node.context().cache().changeWalMode(CACHE2, false, false).get();
 
             checkWal(false, false, false);
 
-            final Set<String> both = new HashSet<>();
-
-            both.add(CACHE1);
-            both.add(CACHE2);
-
-            node.context().cache().changeWalMode(both, true, false).get();
-
-            checkWal(true, true, true);
-
-            final Set<String> all = new HashSet<>();
-
-            all.add(CACHE1);
-            all.add(CACHE2);
-            all.add(CACHE3);
-
             try {
-                node.context().cache().changeWalMode(all, false, true).get();
+                node.context().cache().changeWalMode(CACHE2, true, true).get();
 
                 fail("Should be restricted.");
             }
             catch (Exception e) {
                 // No-op.
             }
-
-            node.context().cache().changeWalMode(all, false, false).get();
 
             checkWal(false, false, false);
         }
