@@ -36,6 +36,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>
         /// Cursor.
         /// </returns>
+        // TODO: Rename
         IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc);
 
         /// <summary>

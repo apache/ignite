@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Core.Impl.Cache.Query
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
     /// Cursor for entry-based queries.
@@ -45,6 +47,20 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             })
         {
             // No-op.
+        }
+    }
+
+    internal class FieldsQueryCursor : FieldsQueryCursor<IList<object>>, IFieldsQueryCursor
+    {
+        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
+            Func<IBinaryRawReader, int, IList<object>> readerFunc) : base(target, keepBinary, readerFunc)
+        {
+        }
+
+        public IList<string> FieldNames
+        {
+            // TODO: Lazy call to Java.
+            get { return null; }
         }
     }
 }
