@@ -171,6 +171,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
+import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.jsr166.ConcurrentHashMap8;
 
 /**
@@ -238,7 +242,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case -44:
-                msg = new TcpCommunicationSpi.HandshakeMessage2();
+                msg = new HandshakeMessage2();
 
                 break;
 
@@ -308,17 +312,17 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case TcpCommunicationSpi.NODE_ID_MSG_TYPE:
-                msg = new TcpCommunicationSpi.NodeIdMessage();
+                msg = new NodeIdMessage();
 
                 break;
 
             case TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE:
-                msg = new TcpCommunicationSpi.RecoveryLastReceivedMessage();
+                msg = new RecoveryLastReceivedMessage();
 
                 break;
 
             case TcpCommunicationSpi.HANDSHAKE_MSG_TYPE:
-                msg = new TcpCommunicationSpi.HandshakeMessage();
+                msg = new HandshakeMessage();
 
                 break;
 
