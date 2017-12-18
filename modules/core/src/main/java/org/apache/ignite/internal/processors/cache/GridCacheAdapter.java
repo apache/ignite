@@ -826,6 +826,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 }
 
                 if (e != null) {
+                    ctx.shared().database().checkpointReadLock();
+
                     try {
                         cacheVal = e.peek(modes.heap, modes.offheap, topVer, plc);
                     }
@@ -837,6 +839,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     }
                     finally {
                         ctx0.evicts().touch(e, null);
+
+                        ctx.shared().database().checkpointReadUnlock();
                     }
                 }
 
