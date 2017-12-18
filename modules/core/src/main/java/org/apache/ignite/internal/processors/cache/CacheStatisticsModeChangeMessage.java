@@ -54,7 +54,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     private final Collection<String> caches;
 
     /** Flags. */
-    private volatile byte flags;
+    private byte flags;
 
     /**
      * Constructor for response.
