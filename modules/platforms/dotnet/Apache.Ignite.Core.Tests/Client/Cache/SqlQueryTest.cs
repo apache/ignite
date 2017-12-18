@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // DateTime.
             qry = new SqlFieldsQuery("select Id, DateTime from Person where DateTime > ?", DateTime.UtcNow.AddDays(9));
             cursor = cache.Query(qry);
-            Assert.AreEqual(new[] {"ID", "NAME"}, cursor.FieldNames);
+            Assert.AreEqual(new[] {"ID", "DATETIME" }, cursor.FieldNames);
             Assert.AreEqual(cache[Count].DateTime, cursor.Single().Last());
 
             // Invalid args.
