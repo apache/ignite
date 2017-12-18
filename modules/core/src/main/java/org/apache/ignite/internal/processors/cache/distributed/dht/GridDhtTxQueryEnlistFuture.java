@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -284,39 +285,43 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
 
         GridDhtCacheAdapter<?, ?> cache = cctx.dht();
 
-        try (GridCloseableIterator<?> it = cctx.kernalContext().query()
-            .prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry, params, flags, pageSize, (int)timeout, topVer, mvccVer, cancel)) {
+        try {
+            checkPartitions();
+
             long cnt = 0;
 
-            while (it.hasNext()) {
-                Object row = it.next();
+            try (GridCloseableIterator<?> it = cctx.kernalContext().query()
+                .prepareDistributedUpdate(cctx, cacheIds, this.parts, schema, qry, params, flags, pageSize, (int)timeout, topVer, mvccVer, cancel)) {
+                while (it.hasNext()) {
+                    Object row = it.next();
 
-                KeyCacheObject key = key(row);
+                    KeyCacheObject key = key(row);
 
-                while (true) {
-                    if (isCancelled())
-                        return;
+                    while (true) {
+                        if (isCancelled())
+                            return;
 
-                    GridDhtCacheEntry entry = cache.entryExx(key, topVer);
+                        GridDhtCacheEntry entry = cache.entryExx(key, topVer);
 
-                    try {
-                        addEntry(entry, row);
+                        try {
+                            addEntry(entry, row);
 
-                        cnt++;
+                            cnt++;
 
-                        break;
-                    }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got removed entry when adding lock (will retry): " + entry);
-                    }
-                    catch (GridDistributedLockCancelledException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to add entry [err=" + e + ", entry=" + entry + ']');
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException ignore) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got removed entry when adding lock (will retry): " + entry);
+                        }
+                        catch (GridDistributedLockCancelledException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to add entry [err=" + e + ", entry=" + entry + ']');
 
-                        onDone(e);
+                            onDone(e);
 
-                        return;
+                            return;
+                        }
                     }
                 }
             }
@@ -345,6 +350,41 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
         }
 
         readyLocks();
+    }
+
+    /**
+     * Checks whether all the necessary partitions are in {@link GridDhtPartitionState#OWNING} state.
+     * @throws ClusterTopologyCheckedException If failed.
+     */
+    private void checkPartitions() throws ClusterTopologyCheckedException {
+        if(cctx.isLocal() || !cctx.rebalanceEnabled())
+            return;
+
+        int[] parts0 = parts;
+
+        if (parts0 == null)
+            parts0 = U.toIntArray(
+                cctx.affinity()
+                    .primaryPartitions(cctx.localNodeId(), topVer));
+
+        GridDhtPartitionTopology top = cctx.topology();
+
+        try {
+            top.readLock();
+
+            List<GridDhtLocalPartition> parts = top.localPartitions();
+
+            for (int i = 0; i < parts0.length; i++) {
+                GridDhtLocalPartition p = parts.get(i);
+
+                if (p == null || p.state() != GridDhtPartitionState.OWNING)
+                    throw new ClusterTopologyCheckedException("Cannot run update query. " +
+                        "Node must own all the necessary partitions."); // TODO IGNITE-4191 Send retry instead.
+            }
+        }
+        finally {
+            top.readUnlock();
+        }
     }
 
     /**

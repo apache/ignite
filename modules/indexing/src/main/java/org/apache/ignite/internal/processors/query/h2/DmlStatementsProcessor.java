@@ -823,7 +823,7 @@ public class DmlStatementsProcessor {
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), idx.objectContext(), true);
+                        return res.iterator();
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
