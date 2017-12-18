@@ -32,7 +32,7 @@ import org.junit.Test;
  */
 public class MLPTest {
     @Test
-    public void testSimpleMLP() {
+    public void testSimpleMLPPrediction() {
         MLPArchitecture conf = new MLPArchitecture(1).withAddedLayer(1, false, Activators.SIGMOID);
 
         MLP mlp = new MLP(conf, new MLPConstInitializer(2, 1));

@@ -67,7 +67,7 @@ public class Mnist {
      * @throws IOException In case of loading MNIST dataset errors.
      */
     @Test
-    public void testMNIST() throws IOException {
+    public void tstMNIST() throws IOException {
         int samplesCntCnt = 60_000;
         int featCnt = 28 * 28;
         int hiddenNeuronsCnt = 100;
