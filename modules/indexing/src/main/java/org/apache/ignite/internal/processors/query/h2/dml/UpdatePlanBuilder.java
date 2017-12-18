@@ -264,11 +264,6 @@ public final class UpdatePlanBuilder {
             null,
             distributed
         );
-
-        /*
-        if (sel == null)
-                elRows = merge.rows();
-         */
     }
 
     /**
