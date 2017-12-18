@@ -19,8 +19,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Cursor for entry-based queries.
@@ -58,6 +60,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** */
         private const int OpGetFieldNames = 7;
 
+        /** */
+        private IList<string> _fieldNames;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -73,7 +78,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** <inheritdoc /> */
         public IList<string> FieldNames
         {
-            get { return Target.OutStream(OpGetFieldNames, reader => reader.ReadStringArray()); }
+            get
+            {
+                return _fieldNames ??
+                       (_fieldNames = new ReadOnlyCollection<string>(
+                           Target.OutStream(OpGetFieldNames, reader => reader.ReadStringCollection())));
+            }
         }
     }
 }
