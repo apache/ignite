@@ -204,9 +204,10 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Tests the operation timeout.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestOperationTimeout()
         {
-            var data = Enumerable.Range(1, 100000).ToDictionary(x => x, x => x.ToString());
+            var data = Enumerable.Range(1, 500000).ToDictionary(x => x, x => x.ToString());
 
             Ignition.Start(TestUtils.GetTestConfiguration());
 
@@ -232,6 +233,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Tests the client dispose while operations are in progress.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestClientDisposeWhileOperationsAreInProgress()
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
