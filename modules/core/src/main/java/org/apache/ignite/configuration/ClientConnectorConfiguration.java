@@ -284,7 +284,7 @@ public class ClientConnectorConfiguration {
     /**
      * Whether secure socket layer should be enabled on client connector.
      * <p>
-     * Note that if this flag is set to {@code true}, an instance of {@link GridSslContextFactory}
+     * Note that if this flag is set to {@code true}, an instance of {@code Factory&lt;SSLContext&gt;}
      * should be provided, otherwise client connector will fail to start.
      *
      * @return {@code True} if SSL should be enabled.
@@ -296,7 +296,7 @@ public class ClientConnectorConfiguration {
     /**
      * Sets whether Secure Socket Layer should be enabled for client connector.
      * <p/>
-     * Note that if this flag is set to {@code true}, then a valid instance of {@link GridSslContextFactory}
+     * Note that if this flag is set to {@code true}, then a valid instance of {@code Factory&lt;SSLContext&gt;}
      * should be provided in {@link IgniteConfiguration}. Otherwise, TCP binary protocol will fail to start.
      *
      * @param sslEnabled {@code True} if SSL should be enabled.

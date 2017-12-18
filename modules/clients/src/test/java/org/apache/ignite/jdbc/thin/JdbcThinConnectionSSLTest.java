@@ -26,17 +26,16 @@ import java.sql.Statement;
 import java.util.concurrent.Callable;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -283,23 +282,14 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @return Test SSL context factory.
      */
     private static Factory<SSLContext> getTestSslContextFactory() {
-        final GridSslBasicContextFactory factory = (GridSslBasicContextFactory)GridTestUtils.sslContextFactory();
+        SslContextFactory factory = new SslContextFactory();
 
         factory.setKeyStoreFilePath(CLI_KEY_STORE_PATH);
         factory.setKeyStorePassword("123456".toCharArray());
         factory.setTrustStoreFilePath(SRV_KEY_STORE_PATH);
         factory.setTrustStorePassword("123456".toCharArray());
 
-        return new Factory<SSLContext>() {
-            @Override public SSLContext create() {
-                try {
-                    return factory.createSslContext();
-                }
-                catch (SSLException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        };
+        return factory;
     }
 
     /**
