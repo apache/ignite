@@ -189,6 +189,12 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
                     assertTrue(ignite.cluster().enableStatistics(Arrays.asList(CACHE1, CACHE2), false));
 
                     assertCachesStatisticsMode(false, false);
+
+                    barrier.await();
+
+                    assertTrue(ignite.cluster().enableStatistics(Arrays.asList(CACHE1), true));
+
+                    assertCachesStatisticsMode(true, false);
                 }
                 catch (InterruptedException | BrokenBarrierException | IgniteCheckedException e) {
                     fail("Unexpected exception: " + e);
@@ -197,6 +203,10 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         }, 10);
 
         fut.get();
+
+        startGrid(5);
+
+        assertCachesStatisticsMode(true, false);
     }
 
     /** {@inheritDoc} */
