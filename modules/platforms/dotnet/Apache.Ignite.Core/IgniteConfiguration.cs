@@ -1188,7 +1188,7 @@ namespace Apache.Ignite.Core
         {
             IgniteArgumentCheck.NotNull(reader, "reader");
 
-            return IgniteConfigurationXmlSerializer.Deserialize(reader);
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(reader);
         }
 
         /// <summary>

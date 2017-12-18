@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using Apache.Ignite.Core.Impl.Events;
 
     /// <summary>
-    /// Serializes <see cref="IgniteConfiguration"/> to XML.
+    /// Serializes and deserializes Ignite configurations to and from XML.
     /// </summary>
     internal static class IgniteConfigurationXmlSerializer
     {
@@ -46,18 +46,18 @@ namespace Apache.Ignite.Core.Impl.Common
         private const string KeyValPairElement = "pair";
 
         /** Schema. */
-        private const string Schema = "http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection";
+        private const string Schema = "http://ignite.apache.org/schema/dotnet/";
 
         /// <summary>
-        /// Deserializes <see cref="IgniteConfiguration"/> from specified <see cref="XmlReader"/>.
+        /// Deserializes configuration of specified type from specified <see cref="XmlReader"/>.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <returns>Resulting <see cref="IgniteConfiguration"/>.</returns>
-        public static IgniteConfiguration Deserialize(XmlReader reader)
+        /// <returns>Resulting configuration.</returns>
+        public static T Deserialize<T>(XmlReader reader) where T : new()
         {
             IgniteArgumentCheck.NotNull(reader, "reader");
 
-            var cfg = new IgniteConfiguration();
+            var cfg = new T();
 
             if (reader.NodeType == XmlNodeType.Element || reader.Read())
                 ReadElement(reader, cfg, new TypeResolver());
@@ -66,25 +66,25 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Serializes specified <see cref="IgniteConfiguration" /> to <see cref="XmlWriter" />.
+        /// Serializes specified configuration to <see cref="XmlWriter" />.
         /// </summary>
         /// <param name="configuration">The configuration.</param>
         /// <param name="writer">The writer.</param>
         /// <param name="rootElementName">Name of the root element.</param>
-        public static void Serialize(IgniteConfiguration configuration, XmlWriter writer, string rootElementName)
+        public static void Serialize(object configuration, XmlWriter writer, string rootElementName)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
             IgniteArgumentCheck.NotNull(writer, "writer");
             IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
 
-            WriteElement(configuration, writer, rootElementName, typeof(IgniteConfiguration));
+            WriteElement(configuration, writer, rootElementName, configuration.GetType(), writeSchema: true);
         }
 
         /// <summary>
         /// Writes new element.
         /// </summary>
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
-            PropertyInfo property = null)
+            PropertyInfo property = null, bool writeSchema = false)
         {
             if (property != null)
             {
@@ -95,10 +95,15 @@ namespace Apache.Ignite.Core.Impl.Common
                     return;
             }
 
-            if (valueType == typeof(IgniteConfiguration))
-                writer.WriteStartElement(rootElementName, Schema);  // write xmlns for the root element
+            if (writeSchema)
+            {
+                // Write xmlns for the root element.
+                writer.WriteStartElement(rootElementName, Schema + valueType.Name);
+            }
             else
+            {
                 writer.WriteStartElement(rootElementName);
+            }
 
             if (IsBasicType(valueType))
                 WriteBasicProperty(obj, writer, valueType, property);
