@@ -418,7 +418,7 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public void enableStatistics() {
         try {
-            cache.context().kernalContext().cache().enableStatistics(Collections.singleton(cache.name()), true);
+            cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), true);
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException(e.getMessage());
@@ -428,7 +428,7 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public void disableStatistics() {
         try {
-            cache.context().kernalContext().cache().enableStatistics(Collections.singleton(cache.name()), false);
+            cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), false);
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException(e.getMessage());

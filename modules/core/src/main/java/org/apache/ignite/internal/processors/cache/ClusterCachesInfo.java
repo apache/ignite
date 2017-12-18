@@ -403,13 +403,15 @@ class ClusterCachesInfo {
                 catch (IgniteCheckedException e) {
                     msg.success(false);
 
-                    log.error("Error while saving cache configuration to disk, cfg = " + desc.cacheConfiguration(), e);
+                    log.error("Error while saving cache configuration to disk, cfg = "
+                        + desc.cacheConfiguration(), e);
                 }
             }
             else {
                 msg.success(false);
 
-                log.warning("Failed to change cache descriptor configuration, cache not found [cacheName=" + cacheName + ']');
+                log.warning("Failed to change cache descriptor configuration, cache not found [cacheName="
+                    + cacheName + ']');
             }
         }
     }

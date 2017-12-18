@@ -2943,7 +2943,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param desc Cache descriptor.
      */
-    void saveCacheConfiguration(DynamicCacheDescriptor desc) throws IgniteCheckedException {
+    public void saveCacheConfiguration(DynamicCacheDescriptor desc) throws IgniteCheckedException {
         assert desc != null;
 
         if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
