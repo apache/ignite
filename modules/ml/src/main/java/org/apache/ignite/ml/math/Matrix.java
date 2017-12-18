@@ -174,10 +174,6 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      */
     public Matrix map(IgniteDoubleFunction<Double> fun);
 
-    public Matrix mapCols(IgniteFunction<Vector, Vector> fun);
-
-    public Matrix mapRows(IgniteFunction<Vector, Vector> fun);
-
     /**
      * Maps all values in this matrix through a given function.
      * <p>

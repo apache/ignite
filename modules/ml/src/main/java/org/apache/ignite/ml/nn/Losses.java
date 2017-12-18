@@ -29,10 +29,12 @@ public class Losses {
      * Mean squared error loss function.
      */
     public static IgniteFunction<Vector, IgniteDiffirentiableVectorToDoubleFunction> MSE = truth -> new IgniteDiffirentiableVectorToDoubleFunction() {
+        /** {@inheritDoc} */
         @Override public Vector differential(Vector pnt) {
             return pnt.minus(truth).divide(pnt.size());
         }
 
+        /** {@inheritDoc} */
         @Override public Double apply(Vector vector) {
             return truth.copy().map(vector, (a, b) -> (a - b) * (a - b)).sum() / (2 * vector.size());
         }

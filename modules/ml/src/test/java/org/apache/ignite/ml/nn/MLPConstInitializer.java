@@ -21,19 +21,46 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.nn.initializers.MLPInitializer;
 
+/**
+ * Initialize weights and biases with specified constant.
+ */
 public class MLPConstInitializer implements MLPInitializer {
-    double bias;
-    double weight;
+    /**
+     * Constant to be used as bias for all layers.
+     */
+    private double bias;
 
-    public MLPConstInitializer(double bias, double weight) {
+    /**
+     * Constant to be used as weight from any neuron to any neuron in next layer.
+     */
+    private double weight;
+
+    /**
+     * Construct MLPConstInitializer.
+     *
+     * @param weight Constant to be used as weight from any neuron to any neuron in next layer.
+     * @param bias Constant to be used as bias for all layers.
+     */
+    public MLPConstInitializer(double weight, double bias) {
         this.bias = bias;
         this.weight = weight;
     }
 
+    /**
+     * Construct MLPConstInitializer with biases constant equal to 0.0.
+     *
+     * @param weight Constant to be used as weight from any neuron to any neuron in next layer.
+     */
+    public MLPConstInitializer(double weight) {
+        this(weight, 0.0);
+    }
+
+    /** {@inheritDoc} */
     @Override public void initWeights(Matrix weights) {
         weights.assign(weight);
     }
 
+    /** {@inheritDoc} */
     @Override public void initBiases(Vector biases) {
         biases.assign(bias);
     }

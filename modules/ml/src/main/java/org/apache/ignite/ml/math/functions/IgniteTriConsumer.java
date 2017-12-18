@@ -21,10 +21,20 @@ import java.io.Serializable;
 import java.util.function.Consumer;
 
 /**
- * Serializable tri-consumer.
+ * Serializable try-consumer.
  *
+ * @param <A> First parameter type.
+ * @param <B> Second parameter type.
+ * @param <C> Third parameter type.
  */
 @FunctionalInterface
 public interface IgniteTriConsumer<A, B, C> extends Serializable {
+    /**
+     * Analogous to 'accept' in {@link Consumer} version, but with three parameters.
+     *
+     * @param first First parameter.
+     * @param second Second parameter.
+     * @param third Third parameter.
+     */
     void accept(A first, B second, C third);
 }

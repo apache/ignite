@@ -25,6 +25,7 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
     /** Predict a result for value. */
     V predict(T val);
 
+    /** {@inheritDoc} */
     @Override default V apply(T t) {
         return predict(t);
     }

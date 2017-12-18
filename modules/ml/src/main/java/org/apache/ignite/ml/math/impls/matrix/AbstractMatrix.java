@@ -411,20 +411,6 @@ public abstract class AbstractMatrix implements Matrix {
         return this;
     }
 
-    @Override public Matrix mapCols(IgniteFunction<Vector, Vector> fun) {
-        for (int i = 0; i < columnSize(); i++)
-            assignColumn(i, fun.apply(viewColumn(i)));
-
-        return this;
-    }
-
-    @Override public Matrix mapRows(IgniteFunction<Vector, Vector> fun) {
-        for (int i = 0; i < rowSize(); i++)
-            assignRow(i, fun.apply(viewRow(i)));
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public Matrix map(Matrix mtx, IgniteBiFunction<Double, Double, Double> fun) {
         checkCardinality(mtx);

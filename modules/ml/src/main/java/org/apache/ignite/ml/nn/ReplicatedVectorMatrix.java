@@ -228,16 +228,6 @@ class ReplicatedVectorMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public Matrix mapCols(IgniteFunction<Vector, Vector> fun) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix mapRows(IgniteFunction<Vector, Vector> fun) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public Matrix map(Matrix mtx, IgniteBiFunction<Double, Double, Double> fun) {
         throw new UnsupportedOperationException();
     }

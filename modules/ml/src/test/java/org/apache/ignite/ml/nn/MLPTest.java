@@ -31,26 +31,31 @@ import org.junit.Test;
  * Tests for Multilayer perceptron.
  */
 public class MLPTest {
-    @Test
-    public void testSimpleMLPPrediction() {
+    /**
+     * Tests that MLP with 2 layer, 1 neuron in each layer and weight equal to 1 is equivalent to sigmoid function.
+     */
+    @Test public void testSimpleMLPPrediction() {
         MLPArchitecture conf = new MLPArchitecture(1).withAddedLayer(1, false, Activators.SIGMOID);
 
-        MLP mlp = new MLP(conf, new MLPConstInitializer(2, 1));
+        MLP mlp = new MLP(conf, new MLPConstInitializer(1));
 
-        int input = 1;
+        int input = 2;
 
         Matrix predict = mlp.predict(new DenseLocalOnHeapMatrix(new double[][] {{input}}));
 
         Assert.assertEquals(predict, new DenseLocalOnHeapMatrix(new double[][] {{Activators.SIGMOID.apply(input)}}));
     }
 
+    /**
+     * Test that MLP with parameters that should produce function close to 'XOR' is close to 'XOR'.
+     */
     @Test
     public void testXOR() {
         MLPArchitecture conf = new MLPArchitecture(2).
             withAddedLayer(2, true, Activators.SIGMOID).
             withAddedLayer(1, true, Activators.SIGMOID);
 
-        MLP mlp = new MLP(conf, new MLPConstInitializer(2, 1));
+        MLP mlp = new MLP(conf, new MLPConstInitializer(1, 2));
 
         mlp.setWeights(1, new DenseLocalOnHeapMatrix(new double[][] {{20.0, 20.0}, {-20.0, -20.0}}));
         mlp.setBiases(1, new DenseLocalOnHeapVector(new double[] {-10.0, 30.0}));
@@ -66,24 +71,14 @@ public class MLPTest {
         TestUtils.checkIsInEpsilonNeighbourhood(predict.getRow(0), truth, 1E-4);
     }
 
-    @Test
-    public void testTwoLayerMLP() {
-        MLPArchitecture conf = new MLPArchitecture(4).
-            withAddedLayer(3, false, Activators.SIGMOID).
-            withAddedLayer(2, false, Activators.SIGMOID);
-
-        MLP mlp = new MLP(conf, new MLPConstInitializer(2, 1));
-
-        Matrix predict = mlp.predict(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());
-
-        Tracer.showAscii(predict);
-    }
-
+    /**
+     * Test that two layer MLP is equivalent to it's subparts stacked on each other.
+     */
     @Test
     public void testStackedMLP() {
         int firstLayerNeuronsCnt = 3;
         int secondLayerNeuronsCnt = 2;
-        MLPConstInitializer initer = new MLPConstInitializer(2, 1);
+        MLPConstInitializer initer = new MLPConstInitializer(1, 2);
 
         MLPArchitecture conf = new MLPArchitecture(4).
             withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID).
