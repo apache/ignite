@@ -21,16 +21,15 @@
 
 module.exports = {
     implements: 'services/sessions',
-    inject: ['require(lodash)', 'mongo', 'errors']
+    inject: ['mongo', 'errors']
 };
 
 /**
- * @param _
  * @param mongo
  * @param errors
  * @returns {SessionsService}
  */
-module.exports.factory = (_, mongo, errors) => {
+module.exports.factory = (mongo, errors) => {
     class SessionsService {
         /**
          * Become user.
