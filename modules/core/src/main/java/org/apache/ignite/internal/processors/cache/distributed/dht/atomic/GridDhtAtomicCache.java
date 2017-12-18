@@ -2819,10 +2819,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             while (true) {
                 GridDhtCacheEntry entry = entryExx(key, topVer);
 
-                GridUnsafe.monitorEnter(entry);
+                entry.lockEntry();
 
                 if (entry.obsolete())
-                    GridUnsafe.monitorExit(entry);
+                    entry.unlockEntry();
                 else
                     return Collections.singletonList(entry);
             }
@@ -2845,13 +2845,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (entry == null)
                         continue;
 
-                    GridUnsafe.monitorEnter(entry);
+                    entry.lockEntry();
 
                     if (entry.obsolete()) {
                         // Unlock all locked.
                         for (int j = 0; j <= i; j++) {
                             if (locked.get(j) != null)
-                                GridUnsafe.monitorExit(locked.get(j));
+                                locked.get(j).unlockEntry();
                         }
 
                         // Clear entries.
@@ -2904,7 +2904,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             for (int i = 0; i < size; i++) {
                 GridCacheMapEntry entry = locked.get(i);
                 if (entry != null)
-                    GridUnsafe.monitorExit(entry);
+                    entry.unlockEntry();
             }
         }
 

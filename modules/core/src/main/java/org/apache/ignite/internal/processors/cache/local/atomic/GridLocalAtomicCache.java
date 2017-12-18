@@ -1429,12 +1429,12 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             for (int i = 0; i < locked.size(); i++) {
                 GridCacheEntryEx entry = locked.get(i);
 
-                GridUnsafe.monitorEnter(entry);
+                entry.lockEntry();
 
                 if (entry.obsolete()) {
                     // Unlock all locked.
                     for (int j = 0; j <= i; j++)
-                        GridUnsafe.monitorExit(locked.get(j));
+                        locked.get(j).unlockEntry();
 
                     // Clear entries.
                     locked.clear();
@@ -1465,7 +1465,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      */
     private void unlockEntries(Iterable<GridCacheEntryEx> locked) {
         for (GridCacheEntryEx entry : locked)
-            GridUnsafe.monitorExit(entry);
+            entry.unlockEntry();
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 

@@ -1020,4 +1020,18 @@ public interface GridCacheEntryEx {
      * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
      */
     public void onUnlock();
+
+    /**
+     * Locks entry to protect from concurrent access.
+     * Intended to be used instead of inherent java synchronization.
+     * This allows to separate locking from unlocking in time and/or code units.
+     *
+     * @see GridCacheEntryEx#unlockEntry().
+     */
+    public void lockEntry();
+
+    /**
+     * Unlocks entry previously locked by {@link GridCacheEntryEx#lockEntry()}.
+     */
+    public void unlockEntry();
 }

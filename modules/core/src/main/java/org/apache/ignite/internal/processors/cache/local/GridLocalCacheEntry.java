@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cache entry for local caches.
  */
-@SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
+@SuppressWarnings({"TooBroadScope"})
 public class GridLocalCacheEntry extends GridCacheMapEntry {
     /**
      * @param ctx  Cache registry.
@@ -84,7 +84,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         CacheLockCandidates prev;
         CacheLockCandidates owner = null;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             checkObsolete();
 
             if (serReadVer != null) {
@@ -123,6 +125,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
                 owner = mvcc.localOwners();
 
             val = this.val;
+        } finally {
+            unlockEntry();
         }
 
         if (cand != null && !cand.reentry())
@@ -141,7 +145,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
@@ -154,6 +160,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             }
 
             val = this.val;
+        } finally {
+            unlockEntry();
         }
 
         checkOwnerChanged(prev, owner, val);
@@ -195,7 +203,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
@@ -208,6 +218,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             }
 
             val = this.val;
+        } finally {
+            unlockEntry();
         }
 
         checkOwnerChanged(prev, owner, val);
@@ -268,7 +280,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
@@ -283,6 +297,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             }
 
             val = this.val;
+        } finally {
+            unlockEntry();
         }
 
         if (prev != null) {
@@ -307,7 +323,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
         GridCacheMvccCandidate doomed;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             GridCacheVersion obsoleteVer = obsoleteVersionExtras();
 
             if (obsoleteVer != null && !obsoleteVer.equals(ver))
@@ -329,6 +347,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             }
 
             val = this.val;
+        } finally {
+            unlockEntry();
         }
 
         if (doomed != null)
@@ -340,7 +360,13 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized String toString() {
-        return S.toString(GridLocalCacheEntry.class, this, super.toString());
+    @Override public String toString() {
+        lockEntry();
+
+        try {
+            return S.toString(GridLocalCacheEntry.class, this, super.toString());
+        } finally {
+            unlockEntry();
+        }
     }
 }

@@ -54,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Replicated cache entry.
  */
-@SuppressWarnings({"TooBroadScope", "NonPrivateFieldAccessedInSynchronizedContext"})
+@SuppressWarnings({"TooBroadScope"})
 public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /** Size overhead. */
     private static final int DHT_SIZE_OVERHEAD = 16;
@@ -105,8 +105,12 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     @Override public int memorySize() throws IgniteCheckedException {
         int rdrsOverhead;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             rdrsOverhead = ReaderId.READER_ID_SIZE * rdrs.length;
+        } finally {
+            unlockEntry();
         }
 
         return super.memorySize() + DHT_SIZE_OVERHEAD + rdrsOverhead;
@@ -146,25 +150,31 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Local candidate by near version.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @Nullable synchronized GridCacheMvccCandidate localCandidateByNearVersion(GridCacheVersion nearVer,
+    @Nullable GridCacheMvccCandidate localCandidateByNearVersion(GridCacheVersion nearVer,
         boolean rmv) throws GridCacheEntryRemovedException {
-        checkObsolete();
+        lockEntry();
 
-        GridCacheMvcc mvcc = mvccExtras();
+        try {
+            checkObsolete();
 
-        if (mvcc != null) {
-            for (GridCacheMvccCandidate c : mvcc.localCandidatesNoCopy(false)) {
-                GridCacheVersion ver = c.otherVersion();
+            GridCacheMvcc mvcc = mvccExtras();
 
-                if (ver != null && ver.equals(nearVer))
-                    return c;
+            if (mvcc != null) {
+                for (GridCacheMvccCandidate c : mvcc.localCandidatesNoCopy(false)) {
+                    GridCacheVersion ver = c.otherVersion();
+
+                    if (ver != null && ver.equals(nearVer))
+                        return c;
+                }
             }
+
+            if (rmv)
+                addRemoved(nearVer);
+
+            return null;
+        } finally {
+            unlockEntry();
         }
-
-        if (rmv)
-            addRemoved(nearVer);
-
-        return null;
     }
 
     /**
@@ -206,7 +216,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
         CacheObject val;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             // Check removed locks prior to obsolete flag.
             checkRemoved(ver);
             checkRemoved(nearVer);
@@ -258,6 +270,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
             if (mvcc.isEmpty())
                 mvccExtras(null);
+        } finally {
+            unlockEntry();
         }
 
         // Don't link reentries.
@@ -344,15 +358,21 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext"})
-    @Nullable public synchronized IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(
+    @Nullable public IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(
         AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {
-        if (isNew() || !valid(AffinityTopologyVersion.NONE) || deletedUnlocked())
-            return null;
-        else {
-            CacheObject val0 = this.val;
+        lockEntry();
 
-            return F.t(ver, val0);
+        try {
+            if (isNew() || !valid(AffinityTopologyVersion.NONE) || deletedUnlocked())
+                return null;
+            else {
+                CacheObject val0 = this.val;
+
+                return F.t(ver, val0);
+            }
+        } finally {
+            unlockEntry();
         }
     }
 
@@ -420,7 +440,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
         ReaderId reader;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             checkObsolete();
 
             reader = readerId(nodeId);
@@ -452,6 +474,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 if (id < msgId)
                     reader.messageId(msgId);
             }
+        } finally {
+            unlockEntry();
         }
 
         if (ret) {
@@ -475,9 +499,13 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                     @Override public void apply(IgniteInternalFuture<?> f) {
                         cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                             @Override public void run() {
-                                synchronized (this) {
+                                lockEntry();
+
+                                try {
                                     // Release memory.
                                     reader0.resetTxFuture();
+                                } finally {
+                                    unlockEntry();
                                 }
                             }
                         });
@@ -485,9 +513,13 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 });
             }
             else {
-                synchronized (this) {
+                lockEntry();
+
+                try {
                     // Release memory.
                     reader.resetTxFuture();
+                } finally {
+                    unlockEntry();
                 }
 
                 txFut = null;
@@ -504,49 +536,67 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings("unchecked")
-    public synchronized boolean removeReader(UUID nodeId, long msgId) throws GridCacheEntryRemovedException {
-        checkObsolete();
+    public boolean removeReader(UUID nodeId, long msgId) throws GridCacheEntryRemovedException {
+        lockEntry();
 
-        ReaderId[] rdrs = this.rdrs;
+        try {
+            checkObsolete();
 
-        int readerIdx = -1;
+            ReaderId[] rdrs = this.rdrs;
 
-        for (int i = 0; i < rdrs.length; i++) {
-            if (rdrs[i].nodeId().equals(nodeId)) {
-                readerIdx = i;
+            int readerIdx = -1;
 
-                break;
+            for (int i = 0; i < rdrs.length; i++) {
+                if (rdrs[i].nodeId().equals(nodeId)) {
+                    readerIdx = i;
+
+                    break;
+                }
             }
+
+            if (readerIdx == -1 || (rdrs[readerIdx].messageId() > msgId && msgId >= 0))
+                return false;
+
+            if (rdrs.length == 1)
+                this.rdrs = ReaderId.EMPTY_ARRAY;
+            else {
+                ReaderId[] newRdrs = Arrays.copyOf(rdrs, rdrs.length - 1);
+
+                System.arraycopy(rdrs, readerIdx + 1, newRdrs, readerIdx, rdrs.length - readerIdx - 1);
+
+                // Seal.
+                this.rdrs = newRdrs;
+            }
+
+            return true;
+        } finally {
+            unlockEntry();
         }
-
-        if (readerIdx == -1 || (rdrs[readerIdx].messageId() > msgId && msgId >= 0))
-            return false;
-
-        if (rdrs.length == 1)
-            this.rdrs = ReaderId.EMPTY_ARRAY;
-        else {
-            ReaderId[] newRdrs = Arrays.copyOf(rdrs, rdrs.length - 1);
-
-            System.arraycopy(rdrs, readerIdx + 1, newRdrs, readerIdx, rdrs.length - readerIdx - 1);
-
-            // Seal.
-            this.rdrs = newRdrs;
-        }
-
-        return true;
     }
 
     /**
      * Clears all readers (usually when partition becomes invalid and ready for eviction).
      */
     @SuppressWarnings("unchecked")
-    @Override public synchronized void clearReaders() {
-        rdrs = ReaderId.EMPTY_ARRAY;
+    @Override public void clearReaders() {
+        lockEntry();
+
+        try {
+            rdrs = ReaderId.EMPTY_ARRAY;
+        } finally {
+            unlockEntry();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void clearReader(UUID nodeId) throws GridCacheEntryRemovedException {
-        removeReader(nodeId, -1);
+    @Override public void clearReader(UUID nodeId) throws GridCacheEntryRemovedException {
+        lockEntry();
+
+        try {
+            removeReader(nodeId, -1);
+        } finally {
+            unlockEntry();
+        }
     }
 
     /**
@@ -563,42 +613,43 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     ) throws IgniteCheckedException {
         boolean rmv = false;
 
+        lockEntry();
+
         try {
-            synchronized (this) {
-                // Call markObsolete0 to avoid recursive calls to clear if
-                // we are clearing dht local partition (onMarkedObsolete should not be called).
-                if (!markObsolete0(ver, false, extras)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Entry could not be marked obsolete (it is still used or has readers): " + this);
-
-                    return false;
-                }
-
-                rdrs = ReaderId.EMPTY_ARRAY;
-
+            // Call markObsolete0 to avoid recursive calls to clear if
+            // we are clearing dht local partition (onMarkedObsolete should not be called).
+            if (!markObsolete0(ver, false, extras)) {
                 if (log.isDebugEnabled())
-                    log.debug("Entry has been marked obsolete: " + this);
+                    log.debug("Entry could not be marked obsolete (it is still used or has readers): " + this);
 
-                if (log.isTraceEnabled()) {
-                    log.trace("clearInternal [key=" + key +
-                        ", entry=" + System.identityHashCode(this) +
-                        ']');
-                }
-
-                removeValue();
-
-                // Give to GC.
-                update(null, 0L, 0L, ver, true);
-
-                if (cctx.store().isLocal())
-                    cctx.store().remove(null, key);
-
-                rmv = true;
-
-                return true;
+                return false;
             }
-        }
-        finally {
+
+            rdrs = ReaderId.EMPTY_ARRAY;
+
+            if (log.isDebugEnabled())
+                log.debug("Entry has been marked obsolete: " + this);
+
+            if (log.isTraceEnabled()) {
+                log.trace("clearInternal [key=" + key +
+                    ", entry=" + System.identityHashCode(this) +
+                    ']');
+            }
+
+            removeValue();
+
+            // Give to GC.
+            update(null, 0L, 0L, ver, true);
+
+            if (cctx.store().isLocal())
+                cctx.store().remove(null, key);
+
+            rmv = true;
+
+            return true;
+        } finally {
+            unlockEntry();
+
             if (rmv)
                 cctx.cache().removeEntry(this); // Clear cache.
         }
@@ -608,8 +659,14 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Collection of readers after check.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    public synchronized Collection<ReaderId> checkReaders() throws GridCacheEntryRemovedException {
-        return checkReadersLocked();
+    public Collection<ReaderId> checkReaders() throws GridCacheEntryRemovedException {
+        lockEntry();
+
+        try {
+            return checkReadersLocked();
+        } finally {
+            unlockEntry();
+        }
     }
 
     /**
@@ -668,10 +725,16 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected synchronized boolean hasReaders() throws GridCacheEntryRemovedException {
-        checkReadersLocked();
+    @Override protected boolean hasReaders() throws GridCacheEntryRemovedException {
+        lockEntry();
 
-        return rdrs.length > 0;
+        try {
+            checkReadersLocked();
+
+            return rdrs.length > 0;
+        } finally {
+            unlockEntry();
+        }
     }
 
     /**
@@ -681,34 +744,46 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Candidate, if one existed for the version, or {@code null} if candidate was not found.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate mappings(
+    @Nullable public GridCacheMvccCandidate mappings(
         GridCacheVersion ver,
         Collection<ClusterNode> dhtNodeIds,
         Collection<ClusterNode> nearNodeIds
     ) throws GridCacheEntryRemovedException {
-        checkObsolete();
+        lockEntry();
 
-        GridCacheMvcc mvcc = mvccExtras();
+        try {
+            checkObsolete();
 
-        GridCacheMvccCandidate cand = mvcc == null ? null : mvcc.candidate(ver);
+            GridCacheMvcc mvcc = mvccExtras();
 
-        if (cand != null)
-            cand.mappedNodeIds(dhtNodeIds, nearNodeIds);
+            GridCacheMvccCandidate cand = mvcc == null ? null : mvcc.candidate(ver);
 
-        return cand;
+            if (cand != null)
+                cand.mappedNodeIds(dhtNodeIds, nearNodeIds);
+
+            return cand;
+        } finally {
+            unlockEntry();
+        }
     }
 
     /**
      * @param ver Version.
      * @param mappedNode Mapped node to remove.
      */
-    public synchronized void removeMapping(GridCacheVersion ver, ClusterNode mappedNode) {
-        GridCacheMvcc mvcc = mvccExtras();
+    public void removeMapping(GridCacheVersion ver, ClusterNode mappedNode) {
+        lockEntry();
 
-        GridCacheMvccCandidate cand = mvcc == null ? null : mvcc.candidate(ver);
+        try {
+            GridCacheMvcc mvcc = mvccExtras();
 
-        if (cand != null)
-            cand.removeMappedNode(mappedNode);
+            GridCacheMvccCandidate cand = mvcc == null ? null : mvcc.candidate(ver);
+
+            if (cand != null)
+                cand.removeMappedNode(mappedNode);
+        } finally {
+            unlockEntry();
+        }
     }
 
     /**
@@ -719,10 +794,16 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized String toString() {
-        return S.toString(GridDhtCacheEntry.class, this,
-            "part", locPart.id(),
-            "super", super.toString());
+    @Override public String toString() {
+        lockEntry();
+
+        try {
+            return S.toString(GridDhtCacheEntry.class, this,
+                "part", locPart.id(),
+                "super", super.toString());
+        } finally {
+            unlockEntry();
+        }
     }
 
     /** {@inheritDoc} */
