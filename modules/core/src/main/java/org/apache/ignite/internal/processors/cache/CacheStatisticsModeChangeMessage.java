@@ -62,15 +62,14 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * @param req Request message.
      */
     private CacheStatisticsModeChangeMessage(CacheStatisticsModeChangeMessage req) {
-        this.flags = 0;
-        this.reqId = req.reqId;
-        this.caches = null;
+        reqId = req.reqId;
+        caches = null;
 
         if (req.enabled())
-            this.flags |= ENABLED_MASK;
+            flags |= ENABLED_MASK;
 
         if (req.success())
-            this.flags |= SUCCESS_MASK;
+            flags |= SUCCESS_MASK;
     }
 
     /**
@@ -79,14 +78,15 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * @param caches Collection of cache names.
      */
     public CacheStatisticsModeChangeMessage(UUID reqId, Collection<String> caches, boolean enabled) {
-        this.flags = INITIAL_MESSAGE_MASK;
         this.reqId = reqId;
         this.caches = Collections.unmodifiableCollection(caches);
 
-        if (enabled)
-            this.flags |= ENABLED_MASK;
+        flags = INITIAL_MESSAGE_MASK;
 
-        this.flags |= SUCCESS_MASK;
+        if (enabled)
+            flags |= ENABLED_MASK;
+
+        flags |= SUCCESS_MASK;
     }
 
     /** {@inheritDoc} */
@@ -118,6 +118,13 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     }
 
     /**
+     * Initial message flag.
+     */
+    public boolean initial() {
+        return (flags & INITIAL_MESSAGE_MASK) != 0;
+    }
+
+    /**
      * @return Statistic enabled.
      */
     public boolean enabled() {
@@ -146,13 +153,6 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      */
     public UUID requestId() {
         return reqId;
-    }
-
-    /**
-     * Initial message flag.
-     */
-    public boolean initial() {
-        return (flags & INITIAL_MESSAGE_MASK) != 0;
     }
 
     /** {@inheritDoc} */
