@@ -15,7 +15,6 @@ The examples folder contains he following subfolders:
    Java 8 lambdas ones.
 - `src/main/scala` - contains examples demonstrating usage of API provided by Scalar.
 - `src/main/java-lgpl` - contains lgpl-based examples for different Ignite modules and features.
-- `src/main/ml` - contains Java examples for Ignite-ML module.
 
 Starting Remote Nodes
 =====================
@@ -40,11 +39,3 @@ This case will install lgpl-based libs to local maven repository.
 2) Run "mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=fabric-lgpl" at Apache Ignite sources.
 Required libs will appear at /target/release-package/libs/optional subfolders.
 Found libs should be copied to global or project's classpath.
-
-ML
-==
-Math/Machine Learning examples can be activated by turning ml profile on.
-
-This module requires ignite-ml module.
-
-Like the lgpl examples we could build required module running "mvn clean install -Pml -DskipTests -pl modules/ml -am".
