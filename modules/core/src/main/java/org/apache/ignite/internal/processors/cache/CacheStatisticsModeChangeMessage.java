@@ -51,7 +51,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     private final Collection<String> caches;
 
     /** Flags. */
-    private byte flags;
+    private final byte flags;
 
     /**
      * Constructor for response.
@@ -63,7 +63,9 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
         caches = null;
 
         if (req.enabled())
-            flags |= ENABLED_MASK;
+            flags = ENABLED_MASK;
+        else
+            flags = 0;
     }
 
     /**
@@ -75,10 +77,12 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
         this.reqId = reqId;
         this.caches = Collections.unmodifiableCollection(caches);
 
-        flags = INITIAL_MESSAGE_MASK;
+        byte flags = INITIAL_MESSAGE_MASK;
 
         if (enabled)
             flags |= ENABLED_MASK;
+
+        this.flags = flags;
     }
 
     /** {@inheritDoc} */
