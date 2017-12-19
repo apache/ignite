@@ -168,9 +168,10 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        IgniteClientConfiguration IIgniteClient.Configuration
+        public IgniteClientConfiguration GetConfiguration()
         {
-            get { return _configuration; }
+            // Return a copy to allow modifications by the user.
+            return new IgniteClientConfiguration(_configuration);
         }
 
         /** <inheritDoc /> */

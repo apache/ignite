@@ -104,6 +104,7 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Gets the configuration.
         /// </summary>
-        IgniteClientConfiguration Configuration { get; }
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IgniteClientConfiguration GetConfiguration();
     }
 }

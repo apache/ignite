@@ -134,7 +134,13 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestStartFromAppConfig()
         {
-            
+            using (Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                using (var client = Ignition.StartClient())
+                {
+                    Assert.AreEqual("127.0.0.1", client.GetConfiguration().Host);
+                }
+            }
         }
     }
 }
