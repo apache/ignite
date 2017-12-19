@@ -399,8 +399,6 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         requestWalModeChangeAndFail(igniteId, true);
 
-        startGrid(igniteId);
-
         requestWalModeChangeAndFail(igniteId, false);
     }
 
@@ -441,6 +439,7 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         startGrid(id1);
+        startGrid(igniteId);
         startGrid(id2);
 
         final int g1 = grid(id1).context().cache().cacheDescriptor(CACHE1).groupId();
