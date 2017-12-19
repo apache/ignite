@@ -167,7 +167,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
