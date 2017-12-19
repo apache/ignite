@@ -84,8 +84,8 @@ public class RecoveryDebug implements AutoCloseable {
                 if (!tmpDir.mkdir())
                     return;
 
-            File f = new File(tmpDir, "recovery-" + constId + "-" +
-                sdf.get().format(new Date(time)) + ".log");
+            File f = new File(tmpDir, "recovery-" +
+                sdf.get().format(new Date(time)) + "-" + constId  +".log");
 
             f.createNewFile();
 

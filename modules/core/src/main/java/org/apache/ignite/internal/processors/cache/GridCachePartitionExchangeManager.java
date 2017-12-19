@@ -2354,12 +2354,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             for (final CacheGroupContext grp : cctx.cache().cacheGroups()) {
                                 long delay = grp.config().getRebalanceDelay();
 
-                                boolean allowRebalance = snp.allowRebalance(grp);
+                                boolean disableRebalance = snp.partitionsAreFrozen(grp);
 
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || forcePreload) && allowRebalance)
+                                if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().assign(exchId, exchFut);
 
                                 assignsMap.put(grp.groupId(), assigns);

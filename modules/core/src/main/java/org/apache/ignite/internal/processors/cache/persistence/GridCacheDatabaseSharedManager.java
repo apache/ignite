@@ -1922,30 +1922,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Apply update from some iterator and with specific filters.
      *
+     * @param it WalIterator.
+     * @param recPredicate Wal record filter.
+     * @param entryPredicate Entry filter.
+     * @param partStates Partition to restore state.
      */
     public void applyUpdatesOnRecovery(
-        WALPointer pnt,
+        WALIterator it,
         IgnitePredicate<IgniteBiTuple<WALPointer, WALRecord>> recPredicate,
         IgnitePredicate<DataEntry> entryPredicate,
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
-        cctx.kernalContext().query().skipFieldLookup(true);
+        while (it.hasNextX()) {
+            IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
 
-        try (WALIterator it = cctx.wal().replay(pnt)) {
-            while (it.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+            WALRecord rec = next.get2();
 
-                WALRecord rec = next.get2();
+            if (!recPredicate.apply(next))
+                break;
 
-                if (!recPredicate.apply(next))
-                    break;
+            switch (rec.type()) {
+                case DATA_RECORD:
+                    checkpointReadLock();
 
-                FileWALPointer p = (FileWALPointer)next.get1();
-
-                switch (rec.type()) {
-                    case DATA_RECORD:
-                        DataRecord dataRec = (DataRecord)rec;
+                    try {
+                        DataRecord dataRec = (DataRecord) rec;
 
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
                             if (entryPredicate.apply(dataEntry)) {
@@ -1966,18 +1969,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 }
                             }
                         }
+                    }
+                    finally {
+                        checkpointReadUnlock();
+                    }
 
-                        break;
+                    break;
 
-                    default:
-                        // Skip other records.
-                }
+                default:
+                    // Skip other records.
             }
+        }
 
+        checkpointReadLock();
+
+        try {
             restorePartitionState(partStates);
         }
         finally {
-            cctx.kernalContext().query().skipFieldLookup(false);
+            checkpointReadUnlock();
         }
     }
 
@@ -2117,27 +2127,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                     changed = updateState(part, stateId);
 
-                                    if (stateId == GridDhtPartitionState.MOVING.ordinal() ||
-                                        stateId == GridDhtPartitionState.OWNING.ordinal()) {
+                                if (stateId == GridDhtPartitionState.OWNING.ordinal()
+                                    || (stateId == GridDhtPartitionState.MOVING.ordinal()
 
-                                        if (part.initialUpdateCounter() < restore.get2() ||
-                                            stateId == GridDhtPartitionState.MOVING.ordinal()) {
-                                            part.initialUpdateCounter(restore.get2());
+                                    &&part.initialUpdateCounter() < restore.get2() )) {
+                                        part.initialUpdateCounter(restore.get2());
 
-                                            changed = true;
-                                        }
+                                        changed = true;
                                     }
                                 }
-                                else
-                                    changed = updateState(part, (int)io.getPartitionState(pageAddr));
-                            }
-                            finally {
-                                pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
-                            }
+
+                            else
+                                changed = updateState(part, (int)io.getPartitionState(pageAddr));
                         }
                         finally {
-                            pageMem.releasePage(grpId, partMetaId, partMetaPage);
+                            pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
                         }
+                    }
+                    finally {
+                        pageMem.releasePage(grpId, partMetaId, partMetaPage);}
                     }
                     finally {
                         checkpointReadUnlock();
@@ -2162,8 +2170,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @param highBound WALPointer.
      */
-    public void onWalTruncate(WALPointer highBound) {
-        checkpointHist.onWalTruncate(highBound);
+    public void onWalTruncated(WALPointer highBound) {
+        checkpointHist.onWalTruncated(highBound);
     }
 
     /**
@@ -3372,7 +3380,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * Callback on truncate wal.
          */
-        private void onWalTruncate(WALPointer ptr) {
+        private void onWalTruncated(WALPointer ptr) {
             FileWALPointer highBound = (FileWALPointer)ptr;
 
             List<CheckpointEntry> cpToRemove = new ArrayList<>();

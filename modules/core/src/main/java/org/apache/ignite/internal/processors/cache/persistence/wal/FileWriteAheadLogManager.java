@@ -30,8 +30,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.sql.Time;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -219,6 +222,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
 
+    /** Next segment archived monitor. */
+    private final Object nextSegmentArchivedMonitor = new Object();
+
     /** Updater for {@link #currentHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandle> currentHndUpd =
         AtomicReferenceFieldUpdater.newUpdater(FileWriteAheadLogManager.class, FileWriteHandle.class, "currentHnd");
@@ -356,6 +362,54 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             else
                 U.quietAndWarn(log, "Started write-ahead log manager in NONE mode, persisted data may be lost in " +
                     "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
+        }
+    }
+
+    /**
+     *
+     */
+    public Collection<File> getAndReserveWalFiles(FileWALPointer low, FileWALPointer high) throws IgniteCheckedException {
+        FileArchiver archiver0 = archiver;
+
+        final long awaitIdx = high.index() - 1;
+
+        awaitSegmentArchived(archiver0, awaitIdx);
+
+        if (!reserve(low))
+            throw new IgniteCheckedException("WAL archive segment has been deleted [idx=" + low.index() + "]");
+
+        List<File> res = new ArrayList<>();
+
+        for (long i = low.index(); i < high.index(); i++) {
+            String segmentName = FileDescriptor.fileName(i);
+
+            File file = new File(walArchiveDir, segmentName);
+
+            if (file.exists())
+                res.add(file);
+            else if ((file = new File(walArchiveDir, segmentName + ".zip")).exists())
+                res.add(file);
+            else
+                throw new IgniteCheckedException("WAL archive segment has been deleted [idx=" + i + "]");
+        }
+
+        return res;
+    }
+
+    /**
+     * @param archiver0 Archiver.
+     * @param awaitIdx Method will wait archivation of that index.
+     */
+    private void awaitSegmentArchived(FileArchiver archiver0, long awaitIdx) throws IgniteInterruptedCheckedException {
+        synchronized (nextSegmentArchivedMonitor) {
+            while (archiver0.lastArchivedAbsoluteIndex() < awaitIdx) {
+                try {
+                    nextSegmentArchivedMonitor.wait(2000);
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteInterruptedCheckedException(e);
+                }
+            }
         }
     }
 
@@ -744,8 +798,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (archiver0 != null && archiver0.reserved(desc.idx))
                 return deleted;
 
+            long lastArchived = archiver0 != null ? archiver0.lastArchivedAbsoluteIndex() : lastArchivedIndex();
+
             // We need to leave at least one archived segment to correctly determine the archive index.
-            if (desc.idx + 1 < highPtr.index()) {
+            if (desc.idx < highPtr.index() && desc.idx < lastArchived) {
                 if (!desc.file.delete())
                     U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                         desc.file.getAbsolutePath());
@@ -1186,7 +1242,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** current thread stopping advice */
         private volatile boolean stopped;
 
-        /** */
+        /**
+         * Maps absolute segment index to reservation counter. If counter > 0 then we wouldn't delete all segments
+         * which >= reserved segment index.
+         */
         private NavigableMap<Long, Integer> reserved = new TreeMap<>();
 
         /** Formatted index. */
@@ -1330,7 +1389,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         synchronized (this) {
                             // Then increase counter to allow rollover on clean working file
-                            changeLastArchivedIndexAndWakeupCompressor(toArchive);
+                            changeLastArchivedIndexAndNotifyWaiters(toArchive);
 
                             notifyAll();
                         }
@@ -1356,11 +1415,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @param idx Index.
          */
-        private void changeLastArchivedIndexAndWakeupCompressor(long idx) {
+        private void changeLastArchivedIndexAndNotifyWaiters(long idx) {
             lastAbsArchivedIdx = idx;
 
             if (compressor != null)
                 compressor.onNextSegmentArchived();
+
+            synchronized (nextSegmentArchivedMonitor) {
+                nextSegmentArchivedMonitor.notifyAll();
+            }
         }
 
         /**

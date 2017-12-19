@@ -82,8 +82,8 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     /**
      *
      */
-    public boolean allowRebalance(CacheGroupContext grp) {
-        return true;
+    public boolean partitionsAreFrozen(CacheGroupContext grp) {
+        return false;
     }
 
     /**
