@@ -1602,9 +1602,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr);
         }
 
-        for (Integer grpId : cctx.pageStore().walDisabledGroups())
-            cctx.pageStore().walDisabled(grpId, false);
-
         checkpointHist.loadHistory(cpDir);
 
         return lastRead == null ? null : lastRead.next();
@@ -1646,6 +1643,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long start = U.currentTimeMillis();
         int applied = 0;
 
+        Collection<Integer> ignoreGrps = cctx.pageStore().walDisabledGroups();
+
         try (WALIterator it = cctx.wal().replay(status.startPtr)) {
             Map<T2<Integer, Integer>, T2<Integer, Long>> partStates = new HashMap<>();
 
@@ -1661,11 +1660,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
                             int cacheId = dataEntry.cacheId();
 
-                            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                            int grpId = cctx.cache().cacheDescriptor(cacheId).groupId();
 
-                            applyUpdate(cacheCtx, dataEntry);
+                            if (!ignoreGrps.contains(grpId)) {
+                                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                            applied++;
+                                applyUpdate(cacheCtx, dataEntry);
+
+                                applied++;
+                            }
                         }
 
                         break;
@@ -1673,8 +1676,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     case PART_META_UPDATE_STATE:
                         PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
 
-                        partStates.put(new T2<>(metaStateRecord.groupId(), metaStateRecord.partitionId()),
-                            new T2<>((int)metaStateRecord.state(), metaStateRecord.updateCounter()));
+                        if (!ignoreGrps.contains(metaStateRecord.groupId())) {
+                            partStates.put(new T2<>(metaStateRecord.groupId(), metaStateRecord.partitionId()),
+                                new T2<>((int)metaStateRecord.state(), metaStateRecord.updateCounter()));
+                        }
 
                         break;
 
@@ -1683,7 +1688,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-            restorePartitionState(partStates);
+            restorePartitionState(partStates, ignoreGrps);
+
+            for (Integer grpId : cctx.pageStore().walDisabledGroups())
+                cctx.pageStore().walDisabled(grpId, false);
         }
         finally {
             cctx.kernalContext().query().skipFieldLookup(false);
@@ -1699,10 +1707,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed to restore.
      */
     private void restorePartitionState(
-        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
+        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates,
+        Collection<Integer> ignoreGrps
     ) throws IgniteCheckedException {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.isLocal() || !grp.affinityNode()) {
+            if (grp.isLocal() || !grp.affinityNode() || ignoreGrps.contains(grp.groupId())) {
                 // Local cache has no partitions and its states.
                 continue;
             }

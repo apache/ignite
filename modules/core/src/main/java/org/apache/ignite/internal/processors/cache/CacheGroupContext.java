@@ -1014,9 +1014,9 @@ public class CacheGroupContext {
     public void walDisabled(boolean disabled) {
         assert this.walDisabled != disabled;
 
-        this.walDisabled = disabled;
-
         persistWalDisabled(disabled);
+
+        this.walDisabled = disabled;
     }
 
     /**
