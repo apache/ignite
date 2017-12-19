@@ -36,7 +36,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * </ul>
  */
 public class KNNMultipleLinearRegression extends KNNModel {
-    /** {@inheritDoc} */
+    /** */
     public KNNMultipleLinearRegression(int k, DistanceMeasure distanceMeasure, KNNStrategy stgy,
         LabeledDataset training) {
         super(k, distanceMeasure, stgy, training);
