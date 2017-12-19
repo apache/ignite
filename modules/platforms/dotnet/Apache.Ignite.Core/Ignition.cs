@@ -809,7 +809,7 @@ namespace Apache.Ignite.Core
 
             if (section == null)
             {
-                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'",
+                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'.",
                     typeof(IgniteClientConfigurationSection).Name, sectionName));
             }
 

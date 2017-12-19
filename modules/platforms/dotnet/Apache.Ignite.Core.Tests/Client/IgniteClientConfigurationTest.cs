@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using System.Configuration;
     using System.Text;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
@@ -136,11 +137,43 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
+                // Default section.
                 using (var client = Ignition.StartClient())
                 {
                     Assert.AreEqual("127.0.0.1", client.GetConfiguration().Host);
+                    Assert.AreEqual(0, client.GetConfiguration().SocketSendBufferSize);
                 }
+
+                // Custom section.
+                using (var client = Ignition.StartClient("igniteClientConfiguration2"))
+                {
+                    Assert.AreEqual("127.0.0.1", client.GetConfiguration().Host);
+                    Assert.AreEqual(2048, client.GetConfiguration().SocketSendBufferSize);
+                }
+
+                // Custom file.
+
+                // Missing file.
+
+                // Missing section content.
+                var ex = Assert.Throws<ConfigurationErrorsException>(() => 
+                    Ignition.StartClient("igniteClientConfiguration3"));
+                Assert.AreEqual("IgniteClientConfigurationSection with name 'igniteClientConfiguration3' is " +
+                                "defined in <configSections>, but not present in configuration.", ex.Message);
+
+                // Missing section.
+                ex = Assert.Throws<ConfigurationErrorsException>(() => Ignition.StartClient("foo"));
+                Assert.AreEqual("Could not find IgniteClientConfigurationSection with name 'foo'.", ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Tests the schema validation.
+        /// </summary>
+        [Test]
+        public void TestSchemaValidation()
+        {
+            // TODO
         }
     }
 }
