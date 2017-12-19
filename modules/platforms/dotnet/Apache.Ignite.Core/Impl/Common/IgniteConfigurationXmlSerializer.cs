@@ -23,6 +23,8 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.ComponentModel;
     using System.Configuration;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Xml;
@@ -47,6 +49,27 @@ namespace Apache.Ignite.Core.Impl.Common
 
         /** Schema. */
         private const string Schema = "http://ignite.apache.org/schema/dotnet/{0}Section";
+
+        /// <summary>
+        /// Deserializes configuration of specified type from XML string.
+        /// </summary>
+        /// <param name="xml">Xml string.</param>
+        /// <returns>Resulting configuration.</returns>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        [SuppressMessage("Microsoft.Usage", "CA2202: Do not call Dispose more than one time on an object")]
+        public static T Deserialize<T>(string xml) where T : new()
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
+
+            using (var stringReader = new StringReader(xml))
+            using (var xmlReader = XmlReader.Create(stringReader))
+            {
+                // Skip XML header.
+                xmlReader.MoveToContent();
+
+                return Deserialize<T>(xmlReader);
+            }
+        }
 
         /// <summary>
         /// Deserializes configuration of specified type from specified <see cref="XmlReader"/>.

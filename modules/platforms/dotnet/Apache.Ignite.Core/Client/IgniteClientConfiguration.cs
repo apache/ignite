@@ -18,8 +18,13 @@
 namespace Apache.Ignite.Core.Client
 {
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
+    using System.IO;
+    using System.Text;
+    using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Ignite thin client configuration.
@@ -100,5 +105,58 @@ namespace Apache.Ignite.Core.Client
         /// Gets or sets custom binary processor. Internal property for tests.
         /// </summary>
         internal IBinaryProcessor BinaryProcessor { get; set; }
+
+        /// <summary>
+        /// Serializes this instance to the specified XML writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="rootElementName">Name of the root element.</param>
+        public void ToXml(XmlWriter writer, string rootElementName)
+        {
+            IgniteArgumentCheck.NotNull(writer, "writer");
+            IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
+
+            IgniteConfigurationXmlSerializer.Serialize(this, writer, rootElementName);
+        }
+
+        /// <summary>
+        /// Serializes this instance to an XML string.
+        /// </summary>
+        public string ToXml()
+        {
+            var sb = new StringBuilder();
+
+            var settings = new XmlWriterSettings
+            {
+                Indent = true
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
+            {
+                ToXml(xmlWriter, "igniteClientConfiguration");
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Deserializes IgniteClientConfiguration from the XML reader.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns>Deserialized instance.</returns>
+        public static IgniteClientConfiguration FromXml(XmlReader reader)
+        {
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteClientConfiguration>(reader);
+        }
+
+        /// <summary>
+        /// Deserializes IgniteClientConfiguration from the XML string.
+        /// </summary>
+        /// <param name="xml">Xml string.</param>
+        /// <returns>Deserialized instance.</returns>
+        public static IgniteClientConfiguration FromXml(string xml)
+        {
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteClientConfiguration>(xml);
+        }
     }
 }
