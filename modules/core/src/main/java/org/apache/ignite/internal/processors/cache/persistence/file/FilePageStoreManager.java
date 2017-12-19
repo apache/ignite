@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -640,12 +641,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             assert dir.exists();
 
-            for (File file : dir.listFiles())
-                if (!file.isDirectory()) {
-                    boolean res = file.delete();
+            boolean res = IgniteUtils.delete(dir);
 
-                    assert res;
-                }
+            assert res;
         }
     }
 

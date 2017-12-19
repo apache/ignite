@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -2328,7 +2327,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (prepare) {
             if (desc.walMode() == (disable ? CacheGroupWalMode.DISABLED : CacheGroupWalMode.ENABLED)) {
                 if (fut != null)
-                    fut.onDone();
+                    fut.onDone(false);
 
                 return false;
             }
@@ -2342,7 +2341,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             fut0.listen(
                                 new CI1() {
                                     @Override public void apply(Object o) {
-                                        fut.onDone();
+                                        fut.onDone(false);
                                     }
                                 }
                             );
@@ -2361,7 +2360,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (desc.walMode() == (disable ? CacheGroupWalMode.ENABLING : CacheGroupWalMode.DISABLING)) {
                 if (fut != null) {
-                    fut.onDone(new ConcurrentModificationException("Another thread is trying to " +
+                    fut.onDone(false, new IgniteCheckedException("Another thread is trying to " +
                         (disable ? "enable" : "disable") + " WAL for same cache."));
 
                     return false;
@@ -2388,33 +2387,44 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             walModeChangeFuts.get(msg.uid()).init();
+
+            return true;
         }
         else {
-            if (fut != null)
-                fut.onDone();
-        }
+            if (fut != null) {
+                fut.onDone(true);
 
-        return true;
+                return fut.active;
+            }
+            else
+                return false;
+        }
     }
 
     /**
      * @param msg Message.
      */
-    void onWalModeDynamicChangeMessageEvent(WalModeDynamicChangeMessage msg) {
+    boolean onWalModeDynamicChangeMessageEvent(WalModeDynamicChangeMessage msg) {
         boolean disable = msg.disable();
         boolean prepare = msg.prepare();
 
         if (prepare) {
             WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
 
-            if (fut != null && fut.active && disable && !ctx.clientNode()) {
-                sharedCtx.cache().cacheGroup(msg.grpId()).walDisabled(true);
+            if (fut != null && fut.active) {
+                if (disable && !ctx.clientNode()) {
+                    sharedCtx.cache().cacheGroup(msg.grpId()).walDisabled(true);
 
-                ackWalModeDynamicChangeMessage(msg.initiatingNodeId(), msg.uid());
+                    ackWalModeDynamicChangeMessage(msg.initiatingNodeId(), msg.uid());
 
-                fut.prepFut.onDone();
+                    fut.prepFut.onDone();
+                }
+
+                return true;
             }
         }
+
+        return false;
     }
 
     /**
@@ -2430,19 +2440,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sharedCtx.wal() != null) {
             final WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
 
-            assert fut.active;
+            if (fut != null) {
+                assert fut.active;
 
-            IgniteInternalFuture cpFut = sharedCtx.cache().context().database().doCheckpoint("wal-mode-change");
+                IgniteInternalFuture cpFut = sharedCtx.cache().context().database().doCheckpoint("wal-mode-change");
 
-            cpFut.listen(new CI1<Object>() {
-                @Override public void apply(Object o) {
-                    sharedCtx.cache().cacheGroup(msg.grpId()).walDisabled(false);
+                cpFut.listen(new CI1<Object>() {
+                    @Override public void apply(Object o) {
+                        sharedCtx.cache().cacheGroup(msg.grpId()).walDisabled(false);
 
-                    ackWalModeDynamicChangeMessage(msg.initiatingNodeId(), msg.uid());
+                        ackWalModeDynamicChangeMessage(msg.initiatingNodeId(), msg.uid());
 
-                    fut.prepFut.onDone();
-                }
-            });
+                        fut.prepFut.onDone();
+                    }
+                });
+            }
         }
     }
 
@@ -3079,7 +3091,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param disable Disable.
      * @param explicit Explicit.
      */
-    public IgniteInternalFuture<?> changeWalMode(
+    public IgniteInternalFuture<Boolean> changeWalMode(
         String cacheName,
         boolean disable,
         boolean explicit) throws IgniteException {
@@ -3088,20 +3100,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (desc.caches().size() > 1 && explicit)
             throw new IgniteException("Cache group contains more than one cache.");
 
-        if (desc.walMode() == (disable ? CacheGroupWalMode.DISABLED : CacheGroupWalMode.ENABLED))
-            return new GridFinishedFuture<>();
-
         int grpId = desc.groupId();
-
-        // Checking same fut already registered
-        for (WalModeChangeFuture fut0 : walModeChangeFuts.values()) {
-            if (fut0.grpId == grpId && fut0.disable == disable)
-                return fut0;
-        }
 
         UUID uid = UUID.randomUUID();
 
-        WalModeChangeFuture fut = new WalModeChangeFuture(uid, ctx.localNodeId(), grpId, disable);
+        final WalModeChangeFuture fut = new WalModeChangeFuture(uid, ctx.localNodeId(), grpId, disable);
+
+        if (desc.walMode() == (disable ? CacheGroupWalMode.DISABLED : CacheGroupWalMode.ENABLED)) {
+            fut.onDone(false);
+
+            return fut;
+        }
+
+        // Checking same fut already registered
+        for (WalModeChangeFuture fut0 : walModeChangeFuts.values()) {
+            if (fut0.grpId == grpId && fut0.disable == disable) {
+                fut0.listen(
+                    new CI1() {
+                        @Override public void apply(Object o) {
+                            fut.onDone(false);
+                        }
+                    }
+                );
+
+                return fut;
+            }
+        }
 
         WalModeChangeFuture old = walModeChangeFuts.put(uid, fut);
 
@@ -4293,7 +4317,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private class WalModeChangeFuture extends GridFutureAdapter<Void> {
+    private class WalModeChangeFuture extends GridFutureAdapter<Boolean> {
         /** */
         private final UUID uid;
 
@@ -4491,7 +4515,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
+        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
             if (discoLsnr != null) {
                 ctx.event().removeLocalEventListener(discoLsnr);
 

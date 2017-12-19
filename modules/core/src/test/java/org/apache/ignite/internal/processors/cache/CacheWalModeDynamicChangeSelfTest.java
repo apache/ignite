@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -300,62 +302,66 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testConcurrent() throws Exception {
-        testAlreadyDone(false, true);
-        testAlreadyDone(false, false);
+        final IgniteEx ignite1 = startGrid(1);
+        final IgniteEx ignite2 = startGrid(2);
+        final IgniteEx client3 = startGrid(3);
+        final IgniteEx ignite4 = startGrid(4);
+        final IgniteEx ignite5 = startGrid(5);
+
+        ignite1.active(true);
+
+        testAlreadyDone(ignite1, false, true);
+        testAlreadyDone(ignite1, false, false);
+
+        testAlreadyDone(ignite1, true, true);
+        testAlreadyDone(ignite1, true, false);
     }
 
     /**
      *
      */
-    public void testConcurrentOnAlreadyChanged() throws Exception {
-        testAlreadyDone(true, true);
-        testAlreadyDone(true, false);
-    }
+    private void testAlreadyDone(IgniteEx ignite1, boolean alreadyChanged, final boolean disable) throws Exception {
+        final int size = G.allGrids().size() * G.allGrids().size();
 
-    /**
-     *
-     */
-    private void testAlreadyDone(boolean alreadyChanged, final boolean disable) throws Exception {
-        try {
-            final IgniteEx ignite1 = startGrid(1);
-            final IgniteEx ignite2 = startGrid(2);
-            final IgniteEx client3 = startGrid(3);
-            final IgniteEx ignite4 = startGrid(4);
-            final IgniteEx ignite5 = startGrid(5);
+        if (alreadyChanged)
+            assertTrue(ignite1.context().cache().changeWalMode(CACHE1, disable, true).get());
 
-            ignite1.active(true);
+        Collection<Thread> threads = new HashSet<>();
 
-            final int size = G.allGrids().size() * G.allGrids().size();
+        final AtomicReference<IgniteCheckedException> err = new AtomicReference();
+        final AtomicInteger fails = new AtomicInteger();
 
-            if (alreadyChanged)
-                ignite1.context().cache().changeWalMode(CACHE1, disable, true).get();
+        for (int i = 0; i < size; i++) {
+            final int finalI = i;
 
-            Collection<Thread> threads = new HashSet<>();
+            Thread th = new Thread() {
+                @Override public void run() {
+                    IgniteEx ignite = ((IgniteEx)G.allGrids().get(finalI % G.allGrids().size()));
 
-            for (int i = 0; i < size; i++) {
-                final int finalI = i;
-
-                Thread th = new Thread() {
-                    @Override public void run() {
-                        IgniteEx ignite = ((IgniteEx)G.allGrids().get(finalI % G.allGrids().size()));
-
-                        ignite.context().cache().changeWalMode(CACHE1, disable, true);
+                    try {
+                        if (!ignite.context().cache().changeWalMode(CACHE1, disable, true).get())
+                            fails.incrementAndGet();
                     }
-                };
+                    catch (IgniteCheckedException e) {
+                        err.set(e);
+                    }
+                }
+            };
 
-                threads.add(th);
+            threads.add(th);
 
-                th.start();
-            }
-
-            for (Thread th : threads)
-                th.join();
-
-            checkWal(disable);
+            th.start();
         }
-        finally {
-            stopAllGrids();
-        }
+
+        for (Thread th : threads)
+            th.join();
+
+        if (err.get() != null)
+            throw err.get();
+
+        assertEquals(alreadyChanged ? size : size - 1, fails.get());
+
+        checkWal(disable);
     }
 
     /**

@@ -428,17 +428,19 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Enables Write Ahead Log for specified caches.
      *
      * @param cacheName Cache name.
+     * @return Whether WAL enabled by this call.
      * @throws CacheException If error occurs.
      */
-    public void enableWal(String cacheName) throws IgniteException;
+    public boolean enableWal(String cacheName) throws IgniteException;
 
     /**
      * Disables Write Ahead Log for specified caches.
      *
      * @param cacheName Cache name.
+     * @return Whether WAL disabled by this call.
      * @throws CacheException If error occurs.
      */
-    public void disableWal(String cacheName) throws IgniteException;
+    public boolean disableWal(String cacheName) throws IgniteException;
 
     /**
      * Checks if WAL enabled for this cache.

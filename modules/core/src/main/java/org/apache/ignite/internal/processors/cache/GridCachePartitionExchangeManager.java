@@ -454,10 +454,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             else if (customMsg instanceof WalModeDynamicChangeMessage) {
                 WalModeDynamicChangeMessage msg = (WalModeDynamicChangeMessage)customMsg;
 
-                cctx.cache().onWalModeDynamicChangeMessageEvent(msg);
-
-                // We have to finish all operations to gain consistence state before starting checkpoints.
-                if (msg.needExchange()) {
+                if (cctx.cache().onWalModeDynamicChangeMessageEvent(msg) && msg.needExchange()) {
                     exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
                     exchFut = exchangeFuture(exchId, evt, cache, null, null);
