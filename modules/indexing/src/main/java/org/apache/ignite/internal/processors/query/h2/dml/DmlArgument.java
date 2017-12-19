@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
-import org.apache.ignite.internal.util.lang.GridPlainClosure;
-
 /**
- * Operand for fast UPDATE or DELETE (single item operation that does not involve any SELECT).
+ * DML argument
  */
-public interface FastUpdateArgument extends GridPlainClosure<Object[], Object> {
-    // No-op.
+public interface DmlArgument {
+    /**
+     * Get argument from parameter list.
+     *
+     * @param params Query input parameters.
+     * @return value.
+     */
+    Object get(Object[] params);
 }

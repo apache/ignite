@@ -20,26 +20,21 @@ package org.apache.ignite.internal.processors.query.h2.dml;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Arguments for fast, query-less UPDATE or DELETE - key and, optionally, value and new value.
  */
 public final class FastUpdate {
-    /** Operand that always evaluates as {@code null}. */
-    private final static FastUpdateArgument NULL_ARG = new ConstantArgument(null);
-
     /** Operand to compute key. */
-    private final FastUpdateArgument keyArg;
+    private final DmlArgument keyArg;
 
     /** Operand to compute value. */
-    private final FastUpdateArgument valArg;
+    private final DmlArgument valArg;
 
     /** Operand to compute new value. */
-    private final FastUpdateArgument newValArg;
+    private final DmlArgument newValArg;
 
     /**
      * Create fast update instance.
@@ -50,9 +45,9 @@ public final class FastUpdate {
      * @return Fast update.
      */
     public static FastUpdate create(GridSqlElement key, GridSqlElement val, @Nullable GridSqlElement newVal) {
-        FastUpdateArgument keyArg = argument(key);
-        FastUpdateArgument valArg = argument(val);
-        FastUpdateArgument newValArg = argument(newVal);
+        DmlArgument keyArg = DmlArguments.create(key);
+        DmlArgument valArg = DmlArguments.create(val);
+        DmlArgument newValArg = DmlArguments.create(newVal);
 
         return new FastUpdate(keyArg, valArg, newValArg);
     }
@@ -64,7 +59,7 @@ public final class FastUpdate {
      * @param valArg Value argument.
      * @param newValArg New value argument.
      */
-    private FastUpdate(FastUpdateArgument keyArg, FastUpdateArgument valArg, FastUpdateArgument newValArg) {
+    private FastUpdate(DmlArgument keyArg, DmlArgument valArg, DmlArgument newValArg) {
         this.keyArg = keyArg;
         this.valArg = valArg;
         this.newValArg = newValArg;
@@ -80,12 +75,12 @@ public final class FastUpdate {
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     public UpdateResult execute(GridCacheAdapter cache, Object[] args) throws IgniteCheckedException {
-        Object key = keyArg.apply(args);
+        Object key = keyArg.get(args);
 
         assert key != null;
 
-        Object val = valArg.apply(args);
-        Object newVal = newValArg.apply(args);
+        Object val = valArg.get(args);
+        Object newVal = newValArg.get(args);
 
         boolean res;
 
@@ -105,71 +100,5 @@ public final class FastUpdate {
         }
 
         return res ? UpdateResult.ONE : UpdateResult.ZERO;
-    }
-
-    /**
-     * Create argument for AST element.
-     *
-     * @param el Element.
-     * @return Argument.
-     */
-    private static FastUpdateArgument argument(@Nullable GridSqlElement el) {
-        assert el == null ^ (el instanceof GridSqlConst || el instanceof GridSqlParameter);
-
-        if (el == null)
-            return NULL_ARG;
-
-        if (el instanceof GridSqlConst)
-            return new ConstantArgument(((GridSqlConst)el).value().getObject());
-        else
-            return new ParamArgument(((GridSqlParameter)el).index());
-    }
-
-    /**
-     * Value argument.
-     */
-    private static class ConstantArgument implements FastUpdateArgument {
-        /** Value to return. */
-        private final Object val;
-
-        /**
-         * Constructor.
-         *
-         * @param val Value.
-         */
-        private ConstantArgument(Object val) {
-            this.val = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-            return val;
-        }
-    }
-
-    /**
-     * Parameter argument.
-     */
-    private static class ParamArgument implements FastUpdateArgument {
-        /** Value to return. */
-        private final int paramIdx;
-
-        /**
-         * Constructor.
-         *
-         * @param paramIdx Parameter index.
-         */
-        private ParamArgument(int paramIdx) {
-            assert paramIdx >= 0;
-
-            this.paramIdx = paramIdx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-            assert arg.length > paramIdx;
-
-            return arg[paramIdx];
-        }
     }
 }
