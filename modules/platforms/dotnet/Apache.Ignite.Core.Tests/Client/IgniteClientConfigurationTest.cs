@@ -152,8 +152,10 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
 
                 // Custom file.
-
-                // Missing file.
+                using (var client = Ignition.StartClient("igniteClientConfiguration", "custom_app.config"))
+                {
+                    Assert.AreEqual(512, client.GetConfiguration().SocketSendBufferSize);
+                }
 
                 // Missing section content.
                 var ex = Assert.Throws<ConfigurationErrorsException>(() => 
@@ -164,6 +166,10 @@ namespace Apache.Ignite.Core.Tests.Client
                 // Missing section.
                 ex = Assert.Throws<ConfigurationErrorsException>(() => Ignition.StartClient("foo"));
                 Assert.AreEqual("Could not find IgniteClientConfigurationSection with name 'foo'.", ex.Message);
+
+                // Missing file.
+                ex = Assert.Throws<ConfigurationErrorsException>(() => Ignition.StartClient("foo", "bar"));
+                Assert.AreEqual("Specified config file does not exist: bar", ex.Message);
             }
         }
 
