@@ -4117,7 +4117,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param caches Collection of cache names.
      * @param enabled Statistics enabled flag.
-     * @return {@code True} if success.
      */
     public void enableStatistics(Collection<String> caches, boolean enabled) throws IgniteCheckedException {
         assert caches != null;
