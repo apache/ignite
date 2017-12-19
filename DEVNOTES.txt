@@ -73,11 +73,11 @@ Ignite C++ Build Instructions
 Instructions can be found at modules/platforms/cpp/DEVNOTES.txt.
 
 
-Ignite RPM Package Build Instructions
-=====================================
+Apache Ignite RPM Package Build Instructions
+============================================
 1) Install dependencies
 
-	yum install rpmdevtools rpm-build
+	yum install -y rpmdevtools rpm-build
 
 2) Create directory layout
 
@@ -85,17 +85,32 @@ Ignite RPM Package Build Instructions
 
 3) Copy build specification and additional sources required for build
 
-	cp -rfv packages/rpm/* ~/rpmbuild
+	cp -rfv packaging/rpm/* ~/rpmbuild
 
 4) Copy built binary from target/bin to sources directory
 
-	cp -rfv target/bin/apache-ignite-fabric-*.zip ~/rpmbuild/SOURCES/apache-ignite-fabric.zip
+	cp -rfv target/bin/apache-ignite-<version>-bin.zip ~/rpmbuild/SOURCES/apache-ignite.zip
 
 5) Run build process
 
-	rpmbuild -bb ~/rpmbuild/SPECS/apache-ignite-fabric.spec
+	rpmbuild -bb ~/rpmbuild/SPECS/apache-ignite.spec
 
    NOTE: to build also SRPM package, run with -ba flag instead
+
+   Package will be available in ~/rpmbuild/RPMS/noarch
+
+
+Install and Run Apache Ignite from RPM
+======================================
+1) Install package
+
+	yum localinstall -y apache-ignite-<version>.rpm
+
+2) Start Apache Ignite service
+
+	systemctl start apache-ignite
+
+3) See logs in /var/log/apache-ignite or execute journalctl -qe
 
 
 Ignite Release Instructions

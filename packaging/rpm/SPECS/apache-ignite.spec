@@ -6,10 +6,10 @@
 # Packages' descriptions
 #
 
-Name:		apache-ignite-fabric
+Name:		apache-ignite
 Version:	2.4.0
 Release:	1%{?dist}
-Summary:	Apache Ignite Fabric
+Summary:	Apache Ignite In-Memory Computing Platform
 Group:		Development/System
 License:	ASL 2.0
 URL:		https://ignite.apache.org/
@@ -221,7 +221,7 @@ EOF
 # Setup systemctl services for PE, EE and UE packages
 cat <<EOF > %{buildroot}%{_sysconfdir}/systemd/system/%{name}.service
 [Unit]
-Description=Apache Ignite Fabric Service
+Description=Apache Ignite In Memory Computing Platform Service
 After=syslog.target network.target
 
 [Service]
