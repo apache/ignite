@@ -38,5 +38,27 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual(IgniteClientConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
             Assert.AreEqual(IgniteClientConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
         }
+
+        /// <summary>
+        /// Tests the FromXml method.
+        /// </summary>
+        [Test]
+        public void TestFromXml()
+        {
+
+        }
+
+        /// <summary>
+        /// Tests the ToXml method.
+        /// </summary>
+        [Test]
+        public void TestToXml()
+        {
+            // Empty config.
+            // Empty config
+            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<igniteClientConfiguration " +
+                            "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection\" />",
+                new IgniteClientConfiguration().ToXml());
+        }
     }
 }
