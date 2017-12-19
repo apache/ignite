@@ -808,6 +808,18 @@ public class GridToStringBuilder {
     /**
      * Print value with length limitation
      * @param buf buffer to print to.
+     * @param val value to print, can be {@code null}.
+     */
+    private static void toString(SB buf, Object val) {
+        if (val == null)
+            buf.a("null");
+        else
+            toString(buf, val.getClass(), val);
+    }
+
+    /**
+     * Print value with length limitation
+     * @param buf buffer to print to.
      * @param valClass value class.
      * @param val value to print
      */
@@ -1495,7 +1507,7 @@ public class GridToStringBuilder {
 
                 buf.a(addNames[i]).a('=');
 
-                toString(buf, addVal.getClass(), addVal);
+                toString(buf, addVal);
             }
         }
     }
