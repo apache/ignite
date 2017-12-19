@@ -126,6 +126,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** */
     private static final long serialVersionUID = 0L;
 
+    public static AtomicInteger fastFinishCnt = new AtomicInteger();
+
     /** Prepare future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, IgniteInternalFuture> PREP_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "prepFut");
@@ -3282,7 +3284,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
-        log.info("Starting rollback TRANSACTION " + xidVersion());
+        //log.info("Starting rollback TRANSACTION " + xidVersion());
 
         // TODO do we need this ?
         if (!clearThreadMap && !onTimeout && state() == ACTIVE)
@@ -3294,7 +3296,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         NearTxFinishFuture fut = finishFut;
 
         if (fut != null) {
-            log.info("Wait finish TRANSACTION " + xidVersion());
+            //log.info("Wait finish TRANSACTION " + xidVersion());
 
             return chainFinishFuture(finishFut, false);
         }
@@ -3304,15 +3306,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         IgniteInternalFuture<Boolean> lockFut0 = lockFut;
 
         if (rollingBackNoLocking && fastFinish()) {
-            log.info("fastFinish TRANSACTION " + xidVersion() + " " + state() + " " + lockFut);
+            //log.info("fastFinish TRANSACTION " + xidVersion() + " " + state() + " " + lockFut);
 
             GridNearTxFastFinishFuture fut0;
 
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false))) {
-                log.info("fastFinish 2 TRANSACTION " + xidVersion() + " " + state());
+                //log.info("fastFinish 2 TRANSACTION " + xidVersion() + " " + state());
 
                 return chainFinishFuture(finishFut, false);
             }
+
+            fastFinishCnt.incrementAndGet();
 
             fut0.finish(clearThreadMap);
 
@@ -3322,7 +3326,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final GridNearTxFinishFuture fut0;
 
         if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false))) {
-            log.info("Fail set finish TRANSACTION " + xidVersion());
+            //log.info("Fail set finish TRANSACTION " + xidVersion());
 
             return chainFinishFuture(finishFut, false);
         }

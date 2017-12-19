@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -82,6 +83,12 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
  */
 public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boolean>
     implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
+    public static final AtomicInteger undoCounter = new AtomicInteger();
+
+    public static final AtomicInteger createCounter = new AtomicInteger();
+
+    public static final AtomicInteger lockFastFailCountr = new AtomicInteger();
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -226,6 +233,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
 
+        createCounter.incrementAndGet();
+
         if (tx != null)
             tx.topologyVersion(topVer);
 
@@ -253,10 +262,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
 
         if (tx != null && !tx.updateLockFuture(null, this)) {
+            lockFastFailCountr.incrementAndGet();
+
             onError(new IgniteTxRollbackCheckedException("Failed to acquire lock because transaction " +
                 "has started to roll back [tx=" + CU.txString(tx) + ']'));
-
-            onComplete(false, false, false);
         }
     }
 
@@ -426,6 +435,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param dist If {@code true}, then remove locks from remote nodes as well.
      */
     private void undoLocks(boolean dist) {
+        undoCounter.incrementAndGet();
+
         // Transactions will undo during rollback.
         Collection<GridDhtCacheEntry> entriesCp = entriesCopy();
 

@@ -1389,8 +1389,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             U.error(log, "Failed to acquire lock for request: " + req, err);
 
         try {
-            // Don't send reply message to this node or if lock was cancelled.
-            if (!nearNode.id().equals(ctx.nodeId()) && !X.hasCause(err, GridDistributedLockCancelledException.class)) {
+            // Don't send reply message to this node or if lock was cancelled or tx was rolled back asynchronously.
+            if (!nearNode.id().equals(ctx.nodeId()) && !X.hasCause(err, GridDistributedLockCancelledException.class) &&
+                !X.hasCause(err, IgniteTxRollbackCheckedException.class)) {
                 ctx.io().send(nearNode, res, ctx.ioPolicy());
 
                 if (txLockMsgLog.isDebugEnabled()) {

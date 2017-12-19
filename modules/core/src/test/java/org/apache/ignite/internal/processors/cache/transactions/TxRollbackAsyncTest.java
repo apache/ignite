@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -591,6 +593,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     }
                 }
 
+                assertEquals("Unexpected size", txCnt, rolledBackVers.size());
+
 //                for (IgniteFuture<?> fut : futs)
 //                    try {
 //                        fut.get();
@@ -606,6 +610,15 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         txFut.get();
 
         log.info("All transactions are rolled back");
+
+        int fc = GridDhtTxLocal.finishCntr.get();
+        int ffc = GridNearTxLocal.fastFinishCnt.get();
+        int undoC = GridDhtLockFuture.undoCounter.get();
+        int lc = GridDhtLockFuture.createCounter.get();
+        int fastFailCntr = GridDhtLockFuture.lockFastFailCountr.get();
+
+        assertEquals("finCntr=" + fc + ", fastFinCntr=" + ffc + ", lockUndoCntr=" + undoC + ", lockCreateCntr=" + lc +
+            ", fastFailCntr=" + fastFailCntr, txCnt, fc + ffc);
 
         commitLatch.countDown();
 
@@ -832,6 +845,10 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      * Checks if all tx futures are finished.
      */
     private void checkFutures() {
+        checkFutures(true);
+    }
+
+    private void checkFutures(boolean fail) {
         for (Ignite ignite : G.allGrids()) {
             IgniteEx ig = (IgniteEx)ignite;
 
@@ -840,7 +857,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             for (GridCacheFuture<?> fut : futs)
                 log.info("Waiting for future: " + fut);
 
-            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
+            if (fail)
+                assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
         }
     }
 

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -65,6 +66,8 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMappedVersion {
     /** */
     private static final long serialVersionUID = 0L;
+
+    public static final AtomicInteger finishCntr = new AtomicInteger();
 
     /** */
     private UUID nearNodeId;
@@ -414,6 +417,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param fut Finish future.
      */
     private void finishTx(boolean commit, @Nullable IgniteInternalFuture prepFut, GridDhtTxFinishFuture fut) {
+        finishCntr.incrementAndGet();
+
         assert prepFut == null || prepFut.isDone();
 
         boolean primarySync = syncMode() == PRIMARY_SYNC;
