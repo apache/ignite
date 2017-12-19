@@ -53,7 +53,7 @@ public class RegularDataUtils {
         // длины слов, которые мы сгенерируем
         int[] lengths = new int[n];
 
-        Random random = new Random();
+        Random random = new Random(31);
 
         for (int i = 0; i < n; i++)
             lengths[i] = 1+getIndex(probabilities, random.nextDouble());
@@ -85,7 +85,7 @@ public class RegularDataUtils {
 
         byte[][] words = new byte[n][];
 
-        Random random = new Random();
+        Random random = new Random(314);
 
         for (int i = 0; i < n; i++) {
             byte[] word = new byte[lengths[i]];
@@ -123,7 +123,7 @@ public class RegularDataUtils {
 
         Words words = getWords(n);
 
-        Random random = new Random();
+        Random random = new Random(3);
 
         while (buffer.hasRemaining()) {
             byte[] word = words.words[getIndex(words.probabilities, random.nextDouble())];

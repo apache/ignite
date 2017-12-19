@@ -3,6 +3,7 @@ package org.apache.ignite.internal.benchmarks.jmh.tcp;
 import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
@@ -222,8 +223,15 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     @Param({"false", "true"})
     boolean isCompress = false;
 
+    @Param({"false", "true"})
+    boolean isSsl = false;
+
     @Override protected boolean isCompress() {
         return isCompress;
+    }
+
+    @Override protected boolean isSsl() {
+        return isSsl;
     }
 
     /**

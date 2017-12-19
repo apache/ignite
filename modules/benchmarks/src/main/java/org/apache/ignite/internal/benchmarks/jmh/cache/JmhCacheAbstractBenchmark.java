@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
+import org.apache.ignite.internal.benchmarks.jmh.tcp.GridTestUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -165,17 +166,8 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
-        if (isSsl()) {
-            SslContextFactory factory = new SslContextFactory();
-
-            factory.setKeyStoreFilePath("keystore/server.jks");
-            factory.setKeyStorePassword("123456".toCharArray());
-            factory.setTrustStoreFilePath("keystore/trust.jks");
-            factory.setTrustStorePassword("123456".toCharArray());
-
-            cfg.setSslContextFactory(factory);
-        }
-
+        if (isSsl())
+            cfg.setSslContextFactory(GridTestUtils.sslFactory());
 
         cfg.setNetworkCompressingEnabled(isCompress());
 
