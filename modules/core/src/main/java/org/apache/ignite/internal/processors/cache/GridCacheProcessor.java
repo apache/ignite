@@ -3120,7 +3120,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 EnableStatisticsFuture fut = enableStatisticsFuts.get(msg0.requestId());
 
                 if (fut != null)
-                    fut.onDone(msg0.success());
+                    fut.onDone();
             }
         }
 
@@ -4064,7 +4064,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param enabled Statistics enabled flag.
      * @return {@code True} if success.
      */
-    public boolean enableStatistics(Collection<String> caches, boolean enabled) throws IgniteCheckedException {
+    public void enableStatistics(Collection<String> caches, boolean enabled) throws IgniteCheckedException {
         assert caches != null;
 
         Collection<String> globalCaches = new ArrayList<>(caches.size());
@@ -4085,7 +4085,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (globalCaches.isEmpty())
-            return true;
+            return;
 
         UUID reqId = UUID.randomUUID();
 
@@ -4097,9 +4097,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.grid().context().discovery().sendCustomEvent(msg);
 
-        boolean res = fut.get();
-
-        return res;
+        fut.get();
     }
 
     /**
@@ -4311,7 +4309,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Enable statistics future.
      */
-    private class EnableStatisticsFuture extends GridFutureAdapter<Boolean> {
+    private class EnableStatisticsFuture extends GridFutureAdapter<Void> {
         /** */
         private UUID id;
 
@@ -4323,11 +4321,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-            if (!res)
-                log.warning("Failed to enable/disable statistics for caches on some nodes "
-                    + "(check other nodes logs for details)");
-
+        @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
             // Make sure to remove future before completion.
             enableStatisticsFuts.remove(id, this);
 

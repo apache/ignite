@@ -1439,7 +1439,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Sets statistics enabled flag cluster wide for this cache.
      *
      * @param enabled Statistics enabled flag.
-     * @return {@code True} if success.
      */
-    public boolean enableStatistics(boolean enabled);
+    public void enableStatistics(boolean enabled);
 }

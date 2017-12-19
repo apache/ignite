@@ -145,11 +145,11 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
         assertCachesStatisticsMode(false, true);
 
-        assertTrue(cache1.enableStatistics(true));
+        cache1.enableStatistics(true);
 
         assertCachesStatisticsMode(true, true);
 
-        assertTrue(ig1.cluster().enableStatistics(Arrays.asList(CACHE1, CACHE2), false));
+        ig1.cluster().enableStatistics(Arrays.asList(CACHE1, CACHE2), false);
 
         assertCachesStatisticsMode(false, false);
     }
@@ -180,19 +180,19 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
                     barrier.await();
 
-                    assertTrue(ignite.cluster().enableStatistics(Arrays.asList(CACHE1, CACHE2), true));
+                    ignite.cluster().enableStatistics(Arrays.asList(CACHE1, CACHE2), true);
 
                     assertCachesStatisticsMode(true, true);
 
                     barrier.await();
 
-                    assertTrue(ignite.cluster().enableStatistics(Arrays.asList(CACHE1, CACHE2), false));
+                    ignite.cluster().enableStatistics(Arrays.asList(CACHE1, CACHE2), false);
 
                     assertCachesStatisticsMode(false, false);
 
                     barrier.await();
 
-                    assertTrue(ignite.cluster().enableStatistics(Arrays.asList(CACHE1), true));
+                    ignite.cluster().enableStatistics(Arrays.asList(CACHE1), true);
 
                     assertCachesStatisticsMode(true, false);
                 }

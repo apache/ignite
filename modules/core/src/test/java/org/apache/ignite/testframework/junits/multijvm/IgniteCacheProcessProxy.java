@@ -678,7 +678,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enableStatistics(boolean enabled) {
+    @Override public void enableStatistics(boolean enabled) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 

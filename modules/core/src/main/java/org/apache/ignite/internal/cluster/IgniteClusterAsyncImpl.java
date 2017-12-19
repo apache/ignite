@@ -166,8 +166,8 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enableStatistics(Collection<String> caches, boolean enabled) {
-        return cluster.enableStatistics(caches, enabled);
+    @Override public void enableStatistics(Collection<String> caches, boolean enabled) {
+        cluster.enableStatistics(caches, enabled);
     }
 
     /** {@inheritDoc} */

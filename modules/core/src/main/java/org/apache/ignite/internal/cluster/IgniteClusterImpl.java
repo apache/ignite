@@ -284,11 +284,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enableStatistics(Collection<String> caches, boolean enabled) {
+    @Override public void enableStatistics(Collection<String> caches, boolean enabled) {
         guard();
 
         try {
-            return ctx.cache().enableStatistics(caches, enabled);
+            ctx.cache().enableStatistics(caches, enabled);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -431,7 +431,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                     Collections.<ClusterStartNodeResult>emptyList());
 
             // Exceeding max line width for readability.
-            GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>> fut = 
+            GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>> fut =
                 new GridCompoundFuture<>(CU.<ClusterStartNodeResult>objectsReducer());
 
             AtomicInteger cnt = new AtomicInteger(nodeCallCnt);

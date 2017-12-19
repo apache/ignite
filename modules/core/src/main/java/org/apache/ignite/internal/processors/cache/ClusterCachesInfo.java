@@ -402,19 +402,14 @@ class ClusterCachesInfo {
                         ctx.cache().saveCacheConfiguration(desc);
                     }
                     catch (IgniteCheckedException e) {
-                        msg.success(false);
-
                         log.error("Error while saving cache configuration to disk, cfg = "
                             + desc.cacheConfiguration(), e);
                     }
                 }
             }
-            else {
-                msg.success(false);
-
+            else
                 log.warning("Failed to change cache descriptor configuration, cache not found [cacheName="
                     + cacheName + ']');
-            }
         }
     }
 

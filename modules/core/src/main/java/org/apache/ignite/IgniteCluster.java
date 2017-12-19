@@ -416,9 +416,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @param caches Collection of cache names.
      * @param enabled Statistics enabled flag.
-     * @return {@code True} if success.
      */
-    public boolean enableStatistics(Collection<String> caches, boolean enabled);
+    public void enableStatistics(Collection<String> caches, boolean enabled);
 
     /**
      * If local client node disconnected from cluster returns future

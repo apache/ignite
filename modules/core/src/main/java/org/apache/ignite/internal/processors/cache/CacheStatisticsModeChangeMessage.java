@@ -41,9 +41,6 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     /** Statistics enabled flag mask. */
     private static final byte ENABLED_MASK = 0x02;
 
-    /** Success flag mask. */
-    private static final byte SUCCESS_MASK = 0x04;
-
     /** Custom message ID. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
@@ -67,9 +64,6 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
 
         if (req.enabled())
             flags |= ENABLED_MASK;
-
-        if (req.success())
-            flags |= SUCCESS_MASK;
     }
 
     /**
@@ -85,8 +79,6 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
 
         if (enabled)
             flags |= ENABLED_MASK;
-
-        flags |= SUCCESS_MASK;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +93,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return initial();
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -129,23 +121,6 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      */
     public boolean enabled() {
         return (flags & ENABLED_MASK) != 0;
-    }
-
-    /**
-     * Gets success flag.
-     */
-    public boolean success() {
-        return (flags & SUCCESS_MASK) != 0;
-    }
-
-    /**
-     * Sets success flag.
-     */
-    public void success(boolean success) {
-        if (success)
-            flags |= SUCCESS_MASK;
-        else
-            flags &= ~SUCCESS_MASK;
     }
 
     /**

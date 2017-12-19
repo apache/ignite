@@ -1619,13 +1619,13 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enableStatistics(boolean enabled) {
+    @Override public void enableStatistics(boolean enabled) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
-            return delegate.enableStatistics(enabled);
+            delegate.enableStatistics(enabled);
         }
         finally {
             onLeave(gate, prev);

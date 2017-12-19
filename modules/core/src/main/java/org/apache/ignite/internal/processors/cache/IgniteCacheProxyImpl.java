@@ -1696,9 +1696,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enableStatistics(boolean enabled) {
+    @Override public void enableStatistics(boolean enabled) {
         try {
-            return ctx.kernalContext().cache().enableStatistics(Collections.singleton(getName()), enabled);
+            ctx.kernalContext().cache().enableStatistics(Collections.singleton(getName()), enabled);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
