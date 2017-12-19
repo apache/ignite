@@ -50,6 +50,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -204,8 +205,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private StatisticsPrinter statsPrinter;
 
-    /** Failed nodes (but still in topology). */
+    /** Failed nodes (but still in topology) associated with detector(sender)'s id. */
     private final Map<TcpDiscoveryNode, UUID> failedNodes = new HashMap<>();
+
+    /** Failed nodes (but still in topology) associated with message.  */
+    private final Map<TcpDiscoveryNode, String> failedNodesMsgs = new ConcurrentHashMap<>();
 
     /** */
     private final Collection<UUID> failedNodesMsgSent = new HashSet<>();
@@ -518,6 +522,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             // Clear stored data.
             leavingNodes.clear();
             failedNodes.clear();
+            failedNodesMsgs.clear();
 
             spiState = DISCONNECTED;
         }
@@ -794,11 +799,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         TcpDiscoveryNode node = ring.node(nodeId);
 
         if (node != null) {
-            TcpDiscoveryNodeFailedMessage msg = new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
-                node.id(),
-                node.internalOrder());
-
-            msg.warning(warning);
+            TcpDiscoveryNodeFailedMessage msg = createNodeFailedMessage(node, warning);
 
             msg.force(true);
 
@@ -1709,9 +1710,13 @@ class ServerImpl extends TcpDiscoveryImpl {
             next = ring.nextNode(failedNodes.keySet());
         }
 
-        if (next != null)
-            msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(), next.id(),
-                next.internalOrder()));
+        if (next != null) {
+            TcpDiscoveryNodeFailedMessage nodeFailedMsg = createNodeFailedMessage(next,
+                "Node failed by \"forceNextNodeFailure()\" method call. " +
+                    "This method is used for tests only.");
+
+            msgWorker.addMessage(nodeFailedMsg);
+        }
     }
 
     /**
@@ -2068,6 +2073,35 @@ class ServerImpl extends TcpDiscoveryImpl {
         finally {
             SecurityUtils.restoreDefaultSerializeVersion();
         }
+    }
+
+    /**
+     * Creates {@link TcpDiscoveryNodeFailedMessage} with specified message. This message will be showed on other nodes.
+     *
+     * @param failedNode Failed node.
+     * @param wrn Message to show on other nodes.
+     * @return Message about failed node.
+     */
+    private TcpDiscoveryNodeFailedMessage createNodeFailedMessage(TcpDiscoveryNode failedNode, String wrn) {
+        TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(
+            getLocalNodeId(), failedNode.id(), failedNode.internalOrder());
+
+        nodeFailedMsg.warning(wrn);
+
+        putNodeFailedMsgIfAbsent(failedNode, wrn);
+
+        return nodeFailedMsg;
+    }
+
+    /**
+     * @param failedNode Failed node.
+     * @param wrn wrn Message to show on other nodes.
+     */
+    private void putNodeFailedMsgIfAbsent(TcpDiscoveryNode failedNode, String wrn) {
+        String s = failedNodesMsgs.get(failedNode);
+
+        if (s == null && wrn != null)
+            failedNodesMsgs.put(failedNode, wrn);
     }
 
     /**
@@ -3217,6 +3251,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (!failedNodes.contains(next)) {
                         failedNodes.add(next);
 
+                        putNodeFailedMsgIfAbsent(next, "Node failed to send message to next node [msg=" + msg +
+                            ", next=" + U.toShortString(next) + ']');
+
                         if (state == CONNECTED) {
                             Exception err = errs != null ?
                                 U.exceptionWithSuppressed("Failed to send message to next node [msg=" + msg +
@@ -3262,8 +3299,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                         failedNodesMsgSent.add(failedNode.id());
                 }
 
-                for (TcpDiscoveryNode n : failedNodes)
-                    msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
+                for (TcpDiscoveryNode n : failedNodes) {
+                    TcpDiscoveryNodeFailedMessage failMsg = new TcpDiscoveryNodeFailedMessage(locNodeId, n.id(),
+                        n.internalOrder());
+
+                    failMsg.warning(failedNodesMsgs.get(n));
+
+                    msgWorker.addMessage(failMsg);
+                }
 
                 if (!sent) {
                     assert next == null : next;
@@ -3410,8 +3453,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (!pingNode(existingNode)) {
                             U.warn(log, "Sending node failed message for existing node: " + node);
 
-                            addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
-                                existingNode.id(), existingNode.internalOrder()));
+                            TcpDiscoveryNodeFailedMessage failMsg = createNodeFailedMessage(existingNode,
+                                "Coordinator failed to ping node during process join request message " +
+                                    "[node=" + existingNode +']');
+
+                            addMessage(failMsg);
 
                             // Ignore this join request since existing node is about to fail
                             // and new node can continue.
@@ -4135,8 +4181,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     "[node=" + node + ", err=" + e.getMessage() + ']', e);
                             }
 
-                            addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, node.id(),
-                                node.internalOrder()));
+                            TcpDiscoveryNodeFailedMessage nodeFailedMsg = createNodeFailedMessage(node,
+                                "Authentication failed during joining the cluster.");
+
+                            addMessage(nodeFailedMsg);
                         }
                     }
                 }
@@ -4624,6 +4672,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 synchronized (mux) {
                     failedNodes.remove(leftNode);
 
+                    failedNodesMsgs.remove(leftNode);
+
                     leavingNodes.remove(leftNode);
 
                     failedNodesMsgSent.remove(leftNode.id());
@@ -4782,6 +4832,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 synchronized (mux) {
                     failedNodes.remove(failedNode);
+
+                    failedNodesMsgs.remove(failedNode);
 
                     leavingNodes.remove(failedNode);
 
@@ -5070,14 +5122,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     }
 
                                     if (!failedNode) {
-                                        U.warn(log, "Failing client node due to not receiving metrics updates " +
+                                        String warning = "Failing client node due to not receiving metrics updates " +
                                             "from client node within " +
                                             "'IgniteConfiguration.clientFailureDetectionTimeout' " +
                                             "(consider increasing configuration property) " +
-                                            "[timeout=" + spi.clientFailureDetectionTimeout() + ", node=" + clientNode + ']');
+                                            "[timeout=" + spi.clientFailureDetectionTimeout() +
+                                            ", node=" + clientNode + ']';
 
-                                        TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(
-                                            locNodeId, clientNode.id(), clientNode.internalOrder());
+                                        U.warn(log, warning);
+
+                                        TcpDiscoveryNodeFailedMessage nodeFailedMsg = createNodeFailedMessage(
+                                            clientNode, warning);
 
                                         processNodeFailedMessage(nodeFailedMsg);
                                     }
@@ -5329,6 +5384,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (ring.node(node.id()) == null) {
                             it.remove();
 
+                            failedNodesMsgs.remove(e.getKey());
+
                             continue;
                         }
 
@@ -5336,7 +5393,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (msgs == null)
                                 msgs = new ArrayList<>();
 
-                            msgs.add(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(), node.id(), node.internalOrder()));
+                            TcpDiscoveryNodeFailedMessage msg = new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
+                                node.id(), node.internalOrder());
+
+                            msg.warning(failedNodesMsgs.get(node));
+
+                            msgs.add(msg);
 
                             failedNodesMsgSent.add(node.id());
                         }
@@ -6232,12 +6294,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             msg.verify(locNodeId);
 
-                            if (log.isDebugEnabled())
-                                log.debug("Failing reconnecting client node because failed to restore pending " +
-                                    "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+                            String warning = "Failing reconnecting client node because failed to restore pending " +
+                                "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']';
 
-                            TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(locNodeId,
-                                node.id(), node.internalOrder());
+                            if (log.isDebugEnabled())
+                                log.debug(warning);
+
+                            TcpDiscoveryNodeFailedMessage nodeFailedMsg = createNodeFailedMessage(node,
+                                warning);
 
                             msgWorker.addMessage(nodeFailedMsg);
                         }
