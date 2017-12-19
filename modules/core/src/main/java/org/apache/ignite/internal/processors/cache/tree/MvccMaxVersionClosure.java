@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.tree;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionWithoutTxs;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -60,8 +60,8 @@ public class MvccMaxVersionClosure extends SearchRow implements BPlusTree.TreeRo
     {
         RowLinkIO rowIo = (RowLinkIO)io;
 
-        res = new MvccVersionInfo(unmaskCoordinatorVersion(rowIo.getMvccCoordinatorVersion(pageAddr, idx)),
-            rowIo.getMvccCounter(pageAddr, idx));
+        res = new MvccVersionWithoutTxs(unmaskCoordinatorVersion(rowIo.getMvccCoordinatorVersion(pageAddr, idx)),
+            rowIo.getMvccCounter(pageAddr, idx), Long.MIN_VALUE);
 
         return false;  // Stop search.
     }
