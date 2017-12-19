@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
-    using System.IO;
     using System.Text;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
@@ -74,10 +73,14 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
             };
 
-            var xml = File.ReadAllText("Config\\Client\\IgniteClientConfiguration.xml");
-            cfg = IgniteClientConfiguration.FromXml(xml);
+            using (var xmlReader = XmlReader.Create("Config\\Client\\IgniteClientConfiguration.xml"))
+            {
+                xmlReader.MoveToContent();
 
-            Assert.AreEqual(cfg.ToXml(), fullCfg.ToXml());
+                cfg = IgniteClientConfiguration.FromXml(xmlReader);
+
+                Assert.AreEqual(cfg.ToXml(), fullCfg.ToXml());
+            }
         }
 
         /// <summary>
