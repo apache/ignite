@@ -367,21 +367,35 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testOriginatingNodeLeft() throws Exception {
-        testOriginatingLeft(false);
+    public void testDisableOriginatingNodeLeft() throws Exception {
+        testOriginatingLeft(false, true);
     }
 
     /**
      *
      */
-    public void testOriginatingClientLeft() throws Exception {
-        testOriginatingLeft(true);
+    public void testDisableOriginatingClientLeft() throws Exception {
+        testOriginatingLeft(true, true);
     }
 
     /**
      *
      */
-    private void testOriginatingLeft(boolean client) throws Exception {
+    public void testEnableOriginatingNodeLeft() throws Exception {
+        testOriginatingLeft(false, false);
+    }
+
+    /**
+     *
+     */
+    public void testEnableOriginatingClientLeft() throws Exception {
+        testOriginatingLeft(true, false);
+    }
+
+    /**
+     *
+     */
+    private void testOriginatingLeft(boolean client, boolean disable) throws Exception {
         startGrid(10);
         startGrid(11);
         startGrid(12);
@@ -397,8 +411,13 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
 
         ignite.active(true);
 
-        requestWalModeChangeAndFail(igniteId, true);
-        requestWalModeChangeAndFail(igniteId, false);
+        if (disable)
+            requestWalModeChangeAndFail(igniteId, true);
+        else {
+            ignite.cluster().disableWal(CACHE1);
+
+            requestWalModeChangeAndFail(igniteId, false);
+        }
     }
 
     /**
@@ -435,16 +454,15 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         stopGrid(igniteId, true);
         stopGrid(id2, true);
 
+        startGrid(20);
+        startGrid(21);
+
         awaitPartitionMapExchange();
 
-        startGrid(id1);
-        startGrid(igniteId);
-        startGrid(id2);
-
-        final int g1 = grid(id1).context().cache().cacheDescriptor(CACHE1).groupId();
+        final int g1 = ((IgniteEx)G.allGrids().get(0)).context().cache().cacheDescriptor(CACHE1).groupId();
 
         // Initial message can be lost due to massive nodes failure, but state should be exactly the same at all nodes.
-        checkWal(grid(id1).context().cache().context().cache().cacheGroup(g1).walDisabled());
+        checkWal(((IgniteEx)G.allGrids().get(0)).context().cache().context().cache().cacheGroup(g1).walDisabled());
     }
 
     /**
