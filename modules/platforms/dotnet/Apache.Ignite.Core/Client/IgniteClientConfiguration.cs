@@ -59,6 +59,31 @@ namespace Apache.Ignite.Core.Client
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteClientConfiguration"/> class.
+        /// </summary>
+        /// <param name="cfg">The configuration to copy.</param>
+        public IgniteClientConfiguration(IgniteClientConfiguration cfg) : this()
+        {
+            if (cfg == null)
+            {
+                return;
+            }
+
+            Host = cfg.Host;
+            Port = cfg.Port;
+            SocketSendBufferSize = cfg.SocketSendBufferSize;
+            SocketReceiveBufferSize = cfg.SocketReceiveBufferSize;
+            TcpNoDelay = cfg.TcpNoDelay;
+
+            if (cfg.BinaryConfiguration != null)
+            {
+                BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
+            }
+
+            BinaryProcessor = cfg.BinaryProcessor;
+        }
+
+        /// <summary>
         /// Gets or sets the host. Should not be null.
         /// </summary>
         public string Host { get; set; }

@@ -100,5 +100,10 @@ namespace Apache.Ignite.Core.Client
         /// <returns>Instance of <see cref="IBinary"/> interface</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IBinary GetBinary();
+
+        /// <summary>
+        /// Gets the configuration.
+        /// </summary>
+        IgniteClientConfiguration Configuration { get; }
     }
 }
