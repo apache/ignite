@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using System.IO;
     using System.Text;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
@@ -48,7 +49,35 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestFromXml()
         {
+            // Empty (root element name does not matter).
+            var cfg = IgniteClientConfiguration.FromXml("<foo />");
+            Assert.AreEqual(new IgniteClientConfiguration().ToXml(), cfg.ToXml());
 
+            // Properties.
+            cfg = IgniteClientConfiguration.FromXml("<a host='h' port='123' />");
+            Assert.AreEqual("h", cfg.Host);
+            Assert.AreEqual(123, cfg.Port);
+
+            // Full config.
+            var fullCfg = new IgniteClientConfiguration
+            {
+                Host = "test1",
+                Port = 345,
+                SocketReceiveBufferSize = 222,
+                SocketSendBufferSize = 333,
+                TcpNoDelay = false,
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    CompactFooter = false,
+                    KeepDeserialized = false,
+                    Types = new[] {"foo", "bar"}
+                }
+            };
+
+            var xml = File.ReadAllText("Config\\Client\\IgniteClientConfiguration.xml");
+            cfg = IgniteClientConfiguration.FromXml(xml);
+
+            Assert.AreEqual(cfg.ToXml(), fullCfg.ToXml());
         }
 
         /// <summary>
