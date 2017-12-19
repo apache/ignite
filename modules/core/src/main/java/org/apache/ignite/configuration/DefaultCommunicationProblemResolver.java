@@ -20,6 +20,7 @@ package org.apache.ignite.configuration;
 import java.util.BitSet;
 import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  *
@@ -38,6 +39,27 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
                 if (!cluster.get(i))
                     ctx.killNode(nodes.get(i));
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ClusterSearch {
+        /** */
+        int srvCnt;
+
+        /** */
+        int nodeCnt;
+
+        /** */
+        final BitSet nodesBitSet;
+
+        /**
+         * @param nodes Total nodes.
+         */
+        ClusterSearch(int nodes) {
+            nodesBitSet = new BitSet(nodes);
         }
     }
 
@@ -95,26 +117,21 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
          * @return Cluster nodes bit set.
          */
         BitSet findLargestIndependentCluster() {
-            BitSet maxCluster = null;
-            int maxClusterSize = 0;
+            ClusterSearch maxCluster = null;
 
             for (int i = 0; i < nodeCnt; i++) {
                 if (getBit(visitBitSet, i))
                     continue;
 
-                BitSet cluster = new BitSet(nodeCnt);
+                ClusterSearch cluster = new ClusterSearch(nodeCnt);
 
                 search(cluster, i);
 
-                int size = cluster.cardinality();
-
-                if (maxCluster == null || size > maxClusterSize) {
+                if (maxCluster == null || cluster.srvCnt > maxCluster.srvCnt)
                     maxCluster = cluster;
-                    maxClusterSize = size;
-                }
             }
 
-            return maxCluster;
+            return maxCluster != null ? maxCluster.nodesBitSet : null;
         }
 
         /**
@@ -154,12 +171,18 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
          * @param cluster Current cluster bit set.
          * @param idx Node index.
          */
-        void search(BitSet cluster, int idx) {
+        void search(ClusterSearch cluster, int idx) {
+            assert !getBit(visitBitSet, idx);
+
             setBit(visitBitSet, idx);
 
-            cluster.set(idx);
+            cluster.nodesBitSet.set(idx);
+            cluster.nodeCnt++;
 
             ClusterNode node1 = nodes.get(idx);
+
+            if (!CU.clientNode(node1))
+                cluster.srvCnt++;
 
             for (int i = 0; i < nodeCnt; i++) {
                 if (i == idx || getBit(visitBitSet, i))

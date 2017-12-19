@@ -2088,7 +2088,7 @@ public class ZookeeperDiscoveryImpl {
         assert node != null : msg.nodeId;
 
         if (node.isLocal())
-            throw localNodeFail("Received force EVT_NODE_FAILED event for local node.");
+            throw localNodeFail("Received force EVT_NODE_FAILED event for local node.", true);
         else
             notifyNodeFail(node.internalId(), evtData.topologyVersion());
     }
@@ -2137,7 +2137,7 @@ public class ZookeeperDiscoveryImpl {
                             deleteAliveNodes(res.killedNodes);
 
                         throw localNodeFail("Local node is forced to stop by communication error resolver " +
-                            "[nodeId=" + locNode.id() + ']');
+                            "[nodeId=" + locNode.id() + ']', false);
                     }
 
                     ZookeeperClusterNode node = rtState.top.nodesByInternalId.get(internalId);
@@ -2527,14 +2527,15 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param msg Message to log.
+     * @param clientReconnect {@code True} if allow client reconnect.
      * @return Exception to be thrown.
      */
-    private Exception localNodeFail(String msg) {
+    private Exception localNodeFail(String msg, boolean clientReconnect) {
         U.warn(log, msg);
 
         rtState.onCloseStart();
 
-        if (clientReconnectEnabled) {
+        if (clientReconnect && clientReconnectEnabled) {
             assert locNode.isClient() : locNode;
 
             boolean reconnect = false;

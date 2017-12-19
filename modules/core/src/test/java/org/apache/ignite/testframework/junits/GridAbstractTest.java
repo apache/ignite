@@ -2188,7 +2188,7 @@ public abstract class GridAbstractTest extends TestCase {
 
                 return true;
             }
-        }, 15_000));
+        }, 30_000));
     }
 
     /**

@@ -1718,23 +1718,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO ZK
-     *
-     * @throws Exception If failed.
-     */
-    public void _testCommunicationFailure() throws Exception {
-        Ignite srv0 = startGrid(0);
-
-        Ignite srv1 = startGrid(1);
-
-        info("Close communication");
-
-        ((TcpCommunicationSpi)srv1.configuration().getCommunicationSpi()).simulateNodeFailure();
-
-        Thread.sleep(60_000);
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testPing() throws Exception {
@@ -2035,23 +2018,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         startGrids(3);
 
-        {
-            ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.forNode(ignite(0));
-            commSpi.checkRes = new BitSet(3);
-            commSpi.checkRes.set(0);
-            commSpi.checkRes.set(1);
-        }
-        {
-            ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.forNode(ignite(1));
-            commSpi.checkRes = new BitSet(3);
-            commSpi.checkRes.set(0);
-            commSpi.checkRes.set(1);
-        }
-        {
-            ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.forNode(ignite(2));
-            commSpi.checkRes = new BitSet(3);
-            commSpi.checkRes.set(2);
-        }
+        ZkTestCommunicationSpi.forNode(ignite(0)).initCheckResult(3, 0, 1);
+        ZkTestCommunicationSpi.forNode(ignite(1)).initCheckResult(3, 0, 1);
+        ZkTestCommunicationSpi.forNode(ignite(0)).initCheckResult(3, 2);
 
         UUID killedId = nodeId(2);
 
@@ -2064,6 +2033,47 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         waitForTopology(2);
 
         assertNull(ignite(0).cluster().node(killedId));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDefaultCommunicationErrorResolver2() throws Exception {
+        testCommSpi = true;
+        sesTimeout = 5000;
+
+        startGrids(3);
+
+        client = true;
+
+        startGridsMultiThreaded(3, 2);
+
+        ZkTestCommunicationSpi.forNode(ignite(0)).initCheckResult(5, 0, 1);
+        ZkTestCommunicationSpi.forNode(ignite(1)).initCheckResult(5, 0, 1);
+        ZkTestCommunicationSpi.forNode(ignite(2)).initCheckResult(5, 2, 3, 4);
+        ZkTestCommunicationSpi.forNode(ignite(3)).initCheckResult(5, 2, 3, 4);
+        ZkTestCommunicationSpi.forNode(ignite(4)).initCheckResult(5, 2, 3, 4);
+
+        ZookeeperDiscoverySpi spi = spi(ignite(0));
+
+        spi.resolveCommunicationError(spi.getNode(ignite(1).cluster().localNode().id()), new Exception("test"));
+
+        waitForTopology(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDefaultCommunicationErrorResolver3() throws Exception {
+        sesTimeout = 5000;
+
+        startGridsMultiThreaded(3);
+
+        info("Close communication");
+
+        ((TcpCommunicationSpi)ignite(1).configuration().getCommunicationSpi()).simulateNodeFailure();
+
+        waitForTopology(2);
     }
 
     /**
@@ -2830,6 +2840,17 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
          */
         static ZkTestCommunicationSpi forNode(Ignite ignite) {
             return (ZkTestCommunicationSpi)ignite.configuration().getCommunicationSpi();
+        }
+
+        /**
+         * @param nodes Number of nodes.
+         * @param setBitIdxs Bits indexes to set in check result.
+         */
+        void initCheckResult(int nodes, Integer... setBitIdxs) {
+            checkRes = new BitSet(nodes);
+
+            for (Integer bitIdx : setBitIdxs)
+                checkRes.set(bitIdx);
         }
 
         /** {@inheritDoc} */
