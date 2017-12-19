@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
     using System.Xml;
     using System.Xml.Serialization;
     using Apache.Ignite.Core.Events;
@@ -101,6 +102,29 @@ namespace Apache.Ignite.Core.Impl.Common
             IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
 
             WriteElement(configuration, writer, rootElementName, configuration.GetType(), writeSchema: true);
+        }
+
+        /// <summary>
+        /// Serializes specified configuration to <see cref="XmlWriter" />.
+        /// </summary>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="rootElementName">Name of the root element.</param>
+        /// <returns>XML string.</returns>
+        public static string Serialize(object configuration, string rootElementName)
+        {
+            var sb = new StringBuilder();
+
+            var settings = new XmlWriterSettings
+            {
+                Indent = true
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
+            {
+                Serialize(configuration, xmlWriter, "igniteConfiguration");
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>
