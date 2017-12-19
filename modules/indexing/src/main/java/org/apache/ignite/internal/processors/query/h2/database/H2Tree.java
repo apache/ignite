@@ -238,13 +238,13 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     }
 
     /**
-     * Compare two rows.
+     * Compares two H2 rows.
      *
      * @param r1 Row 1.
      * @param r2 Row 2.
-     * @return Compare result.
+     * @return Compare result: see {@link Comparator#compare(Object, Object)} for values.
      */
-    private int compareRows(GridH2Row r1, SearchRow r2) {
+    public int compareRows(SearchRow r1, SearchRow r2) {
         if (r1 == r2)
             return 0;
 

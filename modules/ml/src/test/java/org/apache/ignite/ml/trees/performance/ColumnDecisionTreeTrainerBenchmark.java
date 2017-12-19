@@ -45,6 +45,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.estimators.Estimators;
@@ -163,14 +164,14 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         ColumnDecisionTreeTrainer<GiniSplitCalculator.GiniData> trainer =
             new ColumnDecisionTreeTrainer<>(10, ContinuousSplitCalculators.GINI.apply(ignite), RegionCalculators.GINI, RegionCalculators.MOST_COMMON, ignite);
 
-        System.out.println(">>> Training started");
+        X.println("Training started.");
         long before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new BiIndexedCacheColumnDecisionTreeTrainerInput(cache, new HashMap<>(), ptsCnt, featCnt));
-        System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
+        X.println("Training finished in " + (System.currentTimeMillis() - before));
 
         IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.errorsPercentage();
         Double accuracy = mse.apply(mdl, testMnistStream.map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
-        System.out.println(">>> Errs percentage: " + accuracy);
+        X.println("Errors percentage: " + accuracy);
 
         Assert.assertEquals(0, SplitCache.getOrCreate(ignite).size());
         Assert.assertEquals(0, FeaturesCache.getOrCreate(ignite).size());
@@ -204,14 +205,14 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         ColumnDecisionTreeTrainer<GiniSplitCalculator.GiniData> trainer =
             new ColumnDecisionTreeTrainer<>(10, ContinuousSplitCalculators.GINI.apply(ignite), RegionCalculators.GINI, RegionCalculators.MOST_COMMON, ignite);
 
-        System.out.println(">>> Training started");
+        X.println("Training started");
         long before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new MatrixColumnDecisionTreeTrainerInput(m, new HashMap<>()));
-        System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
+        X.println("Training finished in " + (System.currentTimeMillis() - before));
 
         IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.errorsPercentage();
         Double accuracy = mse.apply(mdl, testMnistStream.map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
-        System.out.println(">>> Errs percentage: " + accuracy);
+        X.println("Errors percentage: " + accuracy);
 
         Assert.assertEquals(0, SplitCache.getOrCreate(ignite).size());
         Assert.assertEquals(0, FeaturesCache.getOrCreate(ignite).size());
@@ -252,10 +253,10 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
         SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage)m.getStorage();
         long before = System.currentTimeMillis();
-        System.out.println(">>> Batch loading started...");
+        X.println("Batch loading started...");
         loadVectorsIntoSparseDistributedMatrixCache(sto.cache().getName(), sto.getUUID(), gen.
             points(ptsPerReg, (i, rn) -> i).map(IgniteBiTuple::get2).iterator(), featCnt + 1);
-        System.out.println(">>> Batch loading took " + (System.currentTimeMillis() - before) + " ms.");
+        X.println("Batch loading took " + (System.currentTimeMillis() - before) + " ms.");
 
         for (IgniteBiTuple<Integer, DenseLocalOnHeapVector> bt : lst) {
             byRegion.putIfAbsent(bt.get1(), new LinkedList<>());
@@ -268,13 +269,13 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new MatrixColumnDecisionTreeTrainerInput(m, catsInfo));
 
-        System.out.println(">>> Took time(ms): " + (System.currentTimeMillis() - before));
+        X.println("Training took: " + (System.currentTimeMillis() - before) + " ms.");
 
         byRegion.keySet().forEach(k -> {
             LabeledVectorDouble sp = byRegion.get(k).get(0);
-            Tracer.showAscii(sp.vector());
-            System.out.println("Prediction: " + mdl.predict(sp.vector()) + "label: " + sp.doubleLabel());
-            assert mdl.predict(sp.vector()) == sp.doubleLabel();
+            Tracer.showAscii(sp.features());
+            X.println("Predicted value and label [pred=" + mdl.predict(sp.features()) + ", label=" + sp.doubleLabel() + "]");
+            assert mdl.predict(sp.features()) == sp.doubleLabel();
         });
     }
 
@@ -307,16 +308,16 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
             new ColumnDecisionTreeTrainer<>(10, ContinuousSplitCalculators.VARIANCE, RegionCalculators.VARIANCE, regCalc, ignite);
 
-        System.out.println(">>> Training started");
+        X.println("Training started.");
         long before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new MatrixColumnDecisionTreeTrainerInput(m, new HashMap<>()));
-        System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
+        X.println("Training finished in: " + (System.currentTimeMillis() - before) + " ms.");
 
         Vector[] testVectors = vecsFromRanges(ranges, featCnt, defRng, new Random(123L), 20, f1);
 
         IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.MSE();
         Double accuracy = mse.apply(mdl, Arrays.stream(testVectors).map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
-        System.out.println(">>> MSE: " + accuracy);
+        X.println("MSE: " + accuracy);
     }
 
     /**
@@ -358,7 +359,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
                 for (int i = 0; i < vectorSize; i++)
                     batch.get(i).put(sampleIdx, next.getX(i));
 
-                System.out.println(sampleIdx);
+                X.println("Sample index: " + sampleIdx);
                 if (sampleIdx % batchSize == 0) {
                     batch.keySet().forEach(fi -> streamer.addData(new SparseMatrixKey(fi, uuid, fi), batch.get(fi)));
                     IntStream.range(0, vectorSize).forEach(i -> batch.put(i, new HashMap<>()));
@@ -396,7 +397,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
                 sampleIdx++;
 
                 if (sampleIdx % 1000 == 0)
-                    System.out.println(">>> Loaded " + sampleIdx + " vectors.");
+                    System.out.println("Loaded: " + sampleIdx + " vectors.");
             }
         }
     }

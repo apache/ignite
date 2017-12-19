@@ -75,9 +75,10 @@ namespace Apache.Ignite.Core.Tests.Log
 
             // Test that all levels are present
             foreach (var level in AllLevels.Where(x => x != LogLevel.Error))
+            {
                 Assert.IsTrue(TestLogger.Entries.Any(x => x.Level == level), "No messages with level " + level);
+            }
         }
-
 
         /// <summary>
         /// Tests startup error in Java.
