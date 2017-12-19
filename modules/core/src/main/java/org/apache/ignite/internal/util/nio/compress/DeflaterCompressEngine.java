@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.nio.compress;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
@@ -36,12 +35,12 @@ public class DeflaterCompressEngine implements CompressEngine {
     private final Deflater deflater = new Deflater();
     private final byte[] deflateArray = new byte[1024];
     private byte[] inputWrapArray = new byte[1024];
-    private final ByteArrayOutputStream deflateBaos = new ByteArrayOutputStream(1024);
+    private final ExtendedByteArrayOutputStream deflateBaos = new ExtendedByteArrayOutputStream(1024);
 
     private final Inflater inflater = new Inflater();
     private final byte[] inflateArray = new byte[1024];
     private byte[] inputUnwapArray = new byte[1024];
-    private final ByteArrayOutputStream inflateBaos = new ByteArrayOutputStream(1024);
+    private final ExtendedByteArrayOutputStream inflateBaos = new ExtendedByteArrayOutputStream(1024);
 
 
     public DeflaterCompressEngine(){
@@ -50,12 +49,12 @@ public class DeflaterCompressEngine implements CompressEngine {
 
     /** */
     public CompressEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
-        bytesBefore += src.remaining();
-
-        while (inputWrapArray.length < src.remaining())
-            inputWrapArray = new byte[inputWrapArray.length * 2];
-
         int len = src.remaining();
+
+        bytesBefore += len;
+
+        while (inputWrapArray.length < len)
+            inputWrapArray = new byte[inputWrapArray.length * 2];
 
         src.get(inputWrapArray, 0, len);
 
@@ -71,14 +70,15 @@ public class DeflaterCompressEngine implements CompressEngine {
             deflateBaos.write(deflateArray, 0, count);
         }
 
-        byte[] bytes = deflateBaos.toByteArray();
+        bytesAfter += deflateBaos.size();
 
-        bytesAfter += bytes.length;
+        if (deflateBaos.size() > buf.remaining()) {
+            src.rewind();
 
-        if (bytes.length > buf.remaining())
             return BUFFER_OVERFLOW;
+        }
 
-        buf.put(bytes);
+        buf.put(deflateBaos.getByteArray(), 0, deflateBaos.size());
 
         return OK;
     }
@@ -86,22 +86,41 @@ public class DeflaterCompressEngine implements CompressEngine {
     /** */
     public void closeInbound() throws IOException{
         //No-op
-        System.out.println("MY bytesBefore:"+bytesBefore+" bytesAfter;"+bytesAfter+ " cr="+bytesBefore*1.0/bytesAfter);
+        System.out.println("MY deflate bytesBefore:"+bytesBefore+" bytesAfter;"+bytesAfter+ " cr="+bytesBefore*1.0/bytesAfter);
     }
 
+    private int inputUnwrapPos = 0;
+    private int inputUnwapLen = 0;
     /** */
     public CompressEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
-        if (src.remaining() == 0)
-            return BUFFER_UNDERFLOW;
+        if (inflateBaos.size() > 0){
+            if (buf.remaining() < inflateBaos.size())
+                return BUFFER_OVERFLOW;
+
+            buf.put(inflateBaos.getByteArray(), 0, inflateBaos.size());
+
+            inflateBaos.reset();
+        }
+
+        int len = src.remaining();
 
         while (inputUnwapArray.length < src.remaining())
             inputUnwapArray = new byte[inputUnwapArray.length * 2];
 
-        int len = src.remaining();
+//        assert inputUnwrapPos <= inputUnwapLen;
 
-        src.get(inputUnwapArray, 0, len);
+        if (inputUnwrapPos < inputUnwapLen) {
+            inflater.setInput(inputUnwapArray, inputUnwrapPos, inputUnwapLen - inputUnwrapPos);
+        }
+        else if (len > 0) {
+            src.get(inputUnwapArray, 0, len);
 
-        inflater.setInput(inputUnwapArray, 0, len);
+            inputUnwapLen = len;
+            inputUnwrapPos = 0;
+
+            inflater.setInput(inputUnwapArray, 0, len);
+        } else
+            return BUFFER_UNDERFLOW;
 
         while (!inflater.finished() && !inflater.needsInput()) {
             try {
@@ -112,28 +131,26 @@ public class DeflaterCompressEngine implements CompressEngine {
             }
         }
 
-        if (inflater.finished()) {
-            if (inflater.getRemaining() > 0)
-                src.position(src.position() - inflater.getRemaining());
+        assert inflater.getBytesRead() <= Integer.MAX_VALUE;
+        int readed = (int)inflater.getBytesRead();
 
+        inputUnwrapPos += readed;
+
+        if (inflater.finished()) {
             inflater.reset();
 
-            byte[] output = inflateBaos.toByteArray();
+            if (buf.remaining() < inflateBaos.size())
+                return BUFFER_OVERFLOW;
+
+            buf.put(inflateBaos.getByteArray(), 0, inflateBaos.size());
+
             inflateBaos.reset();
 
-            if (buf.remaining() < output.length) {
-                src.rewind();
-
-                return BUFFER_OVERFLOW;
-            }
-
-            buf.put(output);
-
-            if (src.remaining() == 0)
+            if (src.remaining() == 0 && inputUnwrapPos == inputUnwapLen)
                 return BUFFER_UNDERFLOW;
         }
-       /* else
-            return BUFFER_UNDERFLOW;*/
+        else
+            return BUFFER_UNDERFLOW;
 
         return OK;
     }
