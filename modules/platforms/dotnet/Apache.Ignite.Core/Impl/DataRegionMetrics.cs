@@ -34,10 +34,19 @@ namespace Apache.Ignite.Core.Impl
 
             Name = reader.ReadString();
             TotalAllocatedPages = reader.ReadLong();
+            TotalAllocatedSize = reader.ReadLong();
             AllocationRate = reader.ReadFloat();
             EvictionRate = reader.ReadFloat();
             LargeEntriesPagesPercentage = reader.ReadFloat();
             PageFillFactor = reader.ReadFloat();
+            DirtyPages = reader.ReadLong();
+            PageReplaceRate = reader.ReadFloat();
+            PageReplaceAge = reader.ReadFloat();
+            PhysicalMemoryPages = reader.ReadLong();
+            PhysicalMemorySize = reader.ReadLong();
+            CheckpointBufferPages = reader.ReadLong();
+            CheckpointBufferSize = reader.ReadLong();
+            PageSize = reader.ReadInt();
         }
 
         /** <inheritdoc /> */
@@ -47,15 +56,42 @@ namespace Apache.Ignite.Core.Impl
         public long TotalAllocatedPages { get; private set; }
 
         /** <inheritdoc /> */
+        public long TotalAllocatedSize { get; private set; }
+
+        /** <inheritdoc /> */
         public float AllocationRate { get; private set; }
         
         /** <inheritdoc /> */
         public float EvictionRate { get; private set; }
 
         /** <inheritdoc /> */
+        public long DirtyPages { get; private set; }
+
+        /** <inheritdoc /> */
+        public float PageReplaceRate { get; private set; }
+
+        /** <inheritdoc /> */
+        public float PageReplaceAge { get; private set; }
+
+        /** <inheritdoc /> */
         public float LargeEntriesPagesPercentage { get; private set; }
 
         /** <inheritdoc /> */
         public float PageFillFactor { get; private set; }
+
+        /** <inheritdoc /> */
+        public long PhysicalMemoryPages { get; private set; }
+
+        /** <inheritdoc /> */
+        public long PhysicalMemorySize { get; private set; }
+
+        /** <inheritdoc /> */
+        public long CheckpointBufferPages { get; private set; }
+
+        /** <inheritdoc /> */
+        public long CheckpointBufferSize { get; private set; }
+
+        /** <inheritdoc /> */
+        public int PageSize { get; private set; }
     }
 }

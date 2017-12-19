@@ -28,15 +28,13 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /** Known name mappings. */
         private static readonly Dictionary<string, string> KnownMappings = new Dictionary<string, string>
         {
-            {"PagesFillFactor", "PageFillFactor"}
+            {"PagesFillFactor", "PageFillFactor"},
+            {"PagesReplaceRate", "PageReplaceRate"},
+            {"PagesReplaceAge", "PageReplaceAge"}
         };
 
         /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties =
-        {
-            // IGNITE-7128
-            "DirtyPages", "PagesReplaceRate", "PagesReplaceAge", "PhysicalMemoryPages"
-        };
+        private static readonly string[] MissingProperties = {};
 
         /// <summary>
         /// Tests the API parity.
