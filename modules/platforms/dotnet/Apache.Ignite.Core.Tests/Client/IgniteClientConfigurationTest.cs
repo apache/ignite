@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using System.Text;
+    using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
@@ -80,6 +82,18 @@ namespace Apache.Ignite.Core.Tests.Client
             };
 
             Assert.IsTrue(cfg.ToXml().Contains("<binaryConfiguration compactFooter=\"false\" />"), cfg.ToXml());
+
+            // Custom element name.
+            var sb = new StringBuilder();
+
+            using (var xmlWriter = XmlWriter.Create(sb))
+            {
+                new IgniteClientConfiguration().ToXml(xmlWriter, "fooBar");
+            }
+
+            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?><fooBar " +
+                            "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection\" />",
+                sb.ToString());
         }
     }
 }
