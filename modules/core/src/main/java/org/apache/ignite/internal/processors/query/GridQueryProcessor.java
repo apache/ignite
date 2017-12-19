@@ -115,9 +115,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -2004,22 +2001,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
         final boolean keepBinary, final boolean failOnMultipleStmts) {
-        return querySqlFieldsNoCache(qry, keepBinary, failOnMultipleStmts, null);
-    }
-
-    /**
-     * Query SQL fields without strict dependency on concrete cache.
-     *
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
-     *      more then one SQL statement.
-     * @param nestedTxMode Nested transactions handling mode, or {@code null} for default behavior (error).
-     * @return Cursor.
-     * @see NestedTxMode
-     */
-    public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
-        final boolean keepBinary, final boolean failOnMultipleStmts, @Nullable final NestedTxMode nestedTxMode) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
@@ -2046,7 +2027,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null,
-                        failOnMultipleStmts, nestedTxMode, null);
+                        failOnMultipleStmts, null);
                 }
             };
 
@@ -2058,14 +2039,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
-    }
-
-    /**
-     * @return Newly started SQL transaction.
-     */
-    public Transaction sqlUserTxStart() {
-        return ctx.grid().transactions().txStart(TransactionConcurrency.PESSIMISTIC,
-            TransactionIsolation.REPEATABLE_READ);
     }
 
     /**

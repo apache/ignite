@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -55,7 +54,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
@@ -313,11 +311,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             String sql = req.sqlQuery();
 
-            SqlFieldsQuery qry;
+            SqlFieldsQueryEx qry;
 
             switch(req.expectedStatementType()) {
                 case ANY_STATEMENT_TYPE:
-                    qry = new SqlFieldsQuery(sql);
+                    qry = new SqlFieldsQueryEx(sql, null);
 
                     break;
 
@@ -332,7 +330,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry = new SqlFieldsQueryEx(sql, false);
 
                     if (skipReducerOnUpdate)
-                        ((SqlFieldsQueryEx)qry).setSkipReducerOnUpdate(true);
+                        qry.setSkipReducerOnUpdate(true);
             }
 
             qry.setArgs(req.arguments());
@@ -342,6 +340,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setCollocated(collocated);
             qry.setReplicatedOnly(replicatedOnly);
             qry.setLazy(lazy);
+            qry.setNestedTxMode(nestedTxMode);
+            qry.setAutoCommit(req.autoCommit());
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
@@ -355,8 +355,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = query(qry, protocolVer.compareTo(VER_2_3_0) < 0,
-                req.autoCommit());
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
+                protocolVer.compareTo(VER_2_3_0) < 0);
 
             if (results.size() == 1) {
                 FieldsQueryCursor<List<?>> qryCur = results.get(0);
@@ -428,25 +428,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             return exceptionToResult(e);
         }
-    }
-
-    /**
-     * @param qry Query.
-     * @param failOnMultipleStmts Multiple statements flag.
-     * @param autoCommit Auto commit flag.
-     * @return Query results.
-     * @throws IgniteCheckedException if failed.
-     */
-    private List<FieldsQueryCursor<List<?>>> query(SqlFieldsQuery qry,
-        final boolean failOnMultipleStmts, boolean autoCommit) throws IgniteCheckedException {
-        Transaction tx = ctx.grid().transactions().tx();
-
-        boolean txAutoStart = !autoCommit && tx == null;
-
-        if (txAutoStart)
-            ctx.query().sqlUserTxStart();
-
-        return ctx.query().querySqlFieldsNoCache(qry, true, failOnMultipleStmts, nestedTxMode);
     }
 
     /**
@@ -557,7 +538,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 if (q.sql() != null)
                     sql = q.sql();
 
-                SqlFieldsQuery qry = new SqlFieldsQueryEx(sql, false);
+                SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, false);
 
                 qry.setArgs(q.args());
 
@@ -566,10 +547,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 qry.setCollocated(collocated);
                 qry.setReplicatedOnly(replicatedOnly);
                 qry.setLazy(lazy);
+                qry.setNestedTxMode(nestedTxMode);
+                qry.setAutoCommit(req.autoCommit());
 
                 qry.setSchema(schemaName);
 
-                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)query(qry, true, req.autoCommit()).get(0);
+                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFieldsNoCache(qry, true,
+                    true).get(0);
 
                 assert !qryCur.isQuery();
 

@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -255,8 +254,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName,
-            SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId,
-            boolean failOnMultipleStmts, NestedTxMode nestedTxMode, @Nullable MvccQueryTracker mvccTracker)
+                                                                                    SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId,
+                                                                                    boolean failOnMultipleStmts, @Nullable MvccQueryTracker mvccTracker)
             throws IgniteCheckedException {
             return null;
         }

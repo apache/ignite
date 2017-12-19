@@ -157,6 +157,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
@@ -355,9 +357,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private final GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
         new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
-
-    /** Transaction state to keep track of automatically started transactions. */
-    private final ThreadLocal<Transaction> txState = new ThreadLocal<>();
 
     /** */
     private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = new IgniteInClosure<IgniteInternalFuture<?>>() {
@@ -1487,12 +1486,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param schemaName Schema name.
      * @param qry Query.
-     * @param nestedTxMode Nested transactions handling mode.
      * @return Result or {@code null} if cannot parse/process this query.
      */
     @SuppressWarnings({"ConstantConditions", "StatementWithEmptyBody"})
-    private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry,
-        @Nullable NestedTxMode nestedTxMode) {
+    private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry) {
         // Heuristic check for fast return.
         if (!isNativelyParseable(qry.getSql()))
             return null;
@@ -1531,11 +1528,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Failed to parse DDL statement: " + qry.getSql(), code, e);
         }
 
-        Transaction prevTxState = txState.get();
+        boolean autoCommit = !(qry instanceof SqlFieldsQueryEx) || ((SqlFieldsQueryEx)qry).isAutoCommit();
 
-        Transaction tx = userTx();
+        boolean txAutoStart = false;
 
-        boolean txAutoStarted = (prevTxState == null) && (tx != null);
+        NestedTxMode nestedTxMode = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx)qry).getNestedTxMode() :
+            NestedTxMode.DEFAULT;
+
+        Transaction tx = null;
+
+        if (mvccEnabled()) {
+            tx = userTx();
+
+            txAutoStart = (tx == null && !autoCommit);
+
+            if (txAutoStart)
+                txStart();
+        }
 
         // Execute.
         try {
@@ -1551,39 +1560,37 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 // We honor txStarted flag in order to avoid processing situations when transaction is started
                 // outside of SQL engine (say, in JDBC driver via autocommit flag) and user fires BEGIN right away.
-                if (tx != null) {
-                    if (!txAutoStarted) {
-                        if (nestedTxMode == null)
-                            nestedTxMode = NestedTxMode.DEFAULT;
+                if (tx != null && !txAutoStart) {
+                    if (nestedTxMode == null)
+                        nestedTxMode = NestedTxMode.DEFAULT;
 
-                        switch (nestedTxMode) {
-                            case COMMIT:
-                                tx.commit();
+                    switch (nestedTxMode) {
+                        case COMMIT:
+                            tx.commit();
 
-                                ctx.query().sqlUserTxStart();
+                            txStart();
 
-                                break;
+                            break;
 
-                            case IGNORE:
-                                log.warning("Transaction has already been started, ignoring BEGIN command.");
+                        case IGNORE:
+                            log.warning("Transaction has already been started, ignoring BEGIN command.");
 
-                                break;
+                            break;
 
-                            case ERROR:
-                                throw new IgniteSQLException("Transaction has already been started.",
-                                    IgniteQueryErrorCode.TRANSACTION_EXISTS);
+                        case ERROR:
+                            throw new IgniteSQLException("Transaction has already been started.",
+                                IgniteQueryErrorCode.TRANSACTION_EXISTS);
 
-                            default:
-                                throw new IgniteSQLException("Unexpected nested transaction handling mode: " +
-                                    nestedTxMode.name());
-                        }
-                    }
-                    else {
-                        // No-op - we want to quietly ignore BEGIN right after transaction has been auto-started.
+                        default:
+                            throw new IgniteSQLException("Unexpected nested transaction handling mode: " +
+                                nestedTxMode.name());
                     }
                 }
+                else if (txAutoStart) {
+                    // No-op - we want to quietly ignore BEGIN right after transaction has been auto-started.
+                }
                 else
-                    ctx.query().sqlUserTxStart();
+                    txStart();
             }
             else if (cmd instanceof SqlCommitTransactionCommand) {
                 // Do nothing if there's no transaction.
@@ -1604,9 +1611,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
         }
-        finally {
-            txState.set(userTx());
-        }
+    }
+
+    /**
+     * @return Newly started SQL transaction.
+     */
+    private Transaction txStart() {
+        return ctx.grid().transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+            TransactionIsolation.REPEATABLE_READ);
     }
 
     /**
@@ -1619,15 +1631,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
         boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts) {
-        return queryDistributedSqlFields(schemaName, qry, keepBinary, cancel, mainCacheId, failOnMultipleStmts, null,
-        null);
+        return queryDistributedSqlFields(schemaName, qry, keepBinary, cancel, mainCacheId, failOnMultipleStmts,
+            null);
      }
 
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
         boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts,
-        @Nullable NestedTxMode nestedTxMode, MvccQueryTracker mvccTracker) {
-        List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry, nestedTxMode);
+        MvccQueryTracker mvccTracker) {
+        List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry);
 
         if (res != null)
             return res;
