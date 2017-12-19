@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -28,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Field descriptor.
  */
-public class QueryFieldMetadataImpl implements GridQueryFieldMetadata {
+public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,7 +48,7 @@ public class QueryFieldMetadataImpl implements GridQueryFieldMetadata {
     /**
      * Required by {@link Externalizable}.
      */
-    public QueryFieldMetadataImpl() {
+    public H2SqlFieldMetadata() {
         // No-op
     }
 
@@ -57,7 +58,7 @@ public class QueryFieldMetadataImpl implements GridQueryFieldMetadata {
      * @param name Name.
      * @param type Type.
      */
-    public QueryFieldMetadataImpl(@Nullable String schemaName, @Nullable String typeName, String name, String type) {
+    H2SqlFieldMetadata(@Nullable String schemaName, @Nullable String typeName, String name, String type) {
         assert name != null && type != null : schemaName + " | " + typeName + " | " + name + " | " + type;
 
         this.schemaName = schemaName;
@@ -104,6 +105,6 @@ public class QueryFieldMetadataImpl implements GridQueryFieldMetadata {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryFieldMetadataImpl.class, this);
+        return S.toString(H2SqlFieldMetadata.class, this);
     }
 }

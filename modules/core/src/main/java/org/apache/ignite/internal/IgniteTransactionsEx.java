@@ -50,11 +50,4 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
     public GridNearTxLocal txStartEx(GridCacheContext ctx,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation);
-
-    /**
-     * @param concurrency Concurrency.
-     * @param isolation Isolation.
-     * @return New transaction.
-     */
-    public GridNearTxLocal txStartSql(TransactionConcurrency concurrency, TransactionIsolation isolation);
 }

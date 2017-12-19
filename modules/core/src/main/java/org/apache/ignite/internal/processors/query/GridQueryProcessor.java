@@ -66,9 +66,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -117,6 +115,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -130,9 +129,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCH
  * Indexing processor.
  */
 public class GridQueryProcessor extends GridProcessorAdapter {
-    /** Dummy metadata for update result. */
-    public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
-        singletonList(new QueryFieldMetadataImpl(null, null, "UPDATED", Long.class.getName()));
 
     /** Queries detail metrics eviction frequency. */
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
@@ -240,19 +236,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     U.warn(log, "Unsupported IO message: " + msg);
             }
         };
-    }
-
-    /**
-     * @return Non empty dummy result set to return as a result of transactional and DDL operations.
-     */
-    @SuppressWarnings("unchecked")
-    public static FieldsQueryCursor<List<?>> dummyCursor() {
-        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-            (Collections.singletonList(0L)), null, false);
-
-        resCur.fieldsMeta(UPDATE_RESULT_META);
-
-        return resCur;
     }
 
     /** {@inheritDoc} */
@@ -2022,6 +2005,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
         final boolean keepBinary, final boolean failOnMultipleStmts) {
+        return querySqlFieldsNoCache(qry, keepBinary, failOnMultipleStmts, null);
+    }
+
+    /**
+     * Query SQL fields without strict dependency on concrete cache.
+     *
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
+     *      more then one SQL statement.
+     * @param nestedTxMode Nested transactions handling mode, or {@code null} for default behavior (error).
+     * @return Cursor.
+     * @see NestedTxMode
+     */
+    public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
+        final boolean keepBinary, final boolean failOnMultipleStmts, @Nullable final NestedTxMode nestedTxMode) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
@@ -2048,7 +2047,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null,
-                        failOnMultipleStmts);
+                        failOnMultipleStmts, nestedTxMode, null);
                 }
             };
 
@@ -2065,16 +2064,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @return Newly started SQL transaction.
      */
-    public GridNearTxLocal sqlUserTxStart() {
-        return ctx.cache().transactions().txStartSql(TransactionConcurrency.PESSIMISTIC,
+    public Transaction sqlUserTxStart() {
+        return ctx.grid().transactions().txStart(TransactionConcurrency.PESSIMISTIC,
             TransactionIsolation.REPEATABLE_READ);
-    }
-
-    /**
-     * @return Currently started transaction, or {@code null} if none started.
-     */
-    @Nullable public GridNearTxLocal userTx() throws IgniteSQLException {
-        return ctx.cache().context().tm().userTx();
     }
 
     /**

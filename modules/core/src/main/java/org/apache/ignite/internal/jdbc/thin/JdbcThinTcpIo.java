@@ -163,7 +163,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
         writer.writeBoolean(connProps.isLazy());
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
-        writer.writeString(connProps.nestedTxMode().name());
+        writer.writeString(connProps.nestedTxMode());
 
         send(writer.array());
 

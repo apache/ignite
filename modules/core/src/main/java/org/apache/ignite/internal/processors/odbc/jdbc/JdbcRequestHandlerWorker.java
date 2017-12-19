@@ -77,9 +77,14 @@ class JdbcRequestHandlerWorker extends GridWorker {
 
                 GridFutureAdapter<ClientListenerResponse> fut = req.get2();
 
-                ClientListenerResponse res = hnd.doHandle(req.get1());
+                try {
+                    ClientListenerResponse res = hnd.doHandle(req.get1());
 
-                fut.onDone(res);
+                    fut.onDone(res);
+                }
+                catch (Exception e) {
+                    fut.onDone(e);
+                }
             }
         }
         finally {

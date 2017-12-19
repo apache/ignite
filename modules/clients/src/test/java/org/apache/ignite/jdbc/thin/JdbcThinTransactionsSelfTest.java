@@ -17,16 +17,20 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -112,18 +116,22 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
      *
      */
     public void testTransactionsBeginCommitRollback() throws IgniteCheckedException {
-        GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     try (Connection c = c(false, NestedTxMode.ERROR)) {
-                        try (Statement s = c.createStatement())  {
-                            s.execute("BEGIN");
+                        while (!stop.get()) {
+                            try (Statement s = c.createStatement()) {
+                                s.execute("BEGIN");
 
-                            c.commit();
+                                c.commit();
 
-                            s.execute("BEGIN");
+                                s.execute("BEGIN");
 
-                            c.rollback();
+                                c.rollback();
+                            }
                         }
                     }
                 }
@@ -131,7 +139,13 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
                     throw new AssertionError(e);
                 }
             }
-        }, 8, "jdbc-transactions").get();
+        }, 8, "jdbc-transactions");
+
+        U.sleep(5000);
+
+        stop.set(true);
+
+        fut.get();
     }
 
     /**
@@ -262,5 +276,121 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
                 throw new AssertionError();
             }
         }, SQLException.class, "Transaction has already been started.");
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testIgnoreNestedTxAutocommitOffBatched() throws SQLException {
+        try (Connection c = c(false, NestedTxMode.IGNORE)) {
+            try (Statement s = c.createStatement()) {
+                s.addBatch("BEGIN");
+
+                s.addBatch("BEGIN");
+
+                s.executeBatch();
+            }
+        }
+
+        assertTrue(log.toString().contains("ignoring BEGIN command"));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testCommitNestedTxAutocommitOffBatched() throws SQLException {
+        try (Connection c = c(false, NestedTxMode.COMMIT)) {
+            try (Statement s = c.createStatement()) {
+                s.addBatch("BEGIN");
+
+                s.addBatch("BEGIN");
+
+                s.executeBatch();
+            }
+        }
+
+        assertFalse(log.toString().contains("ignoring BEGIN command"));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testErrorNestedTxAutocommitOffBatched() throws SQLException {
+        GridTestUtils.assertThrows(null, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try (Connection c = c(false, NestedTxMode.ERROR)) {
+                    try (Statement s = c.createStatement()) {
+                        s.addBatch("BEGIN");
+
+                        s.addBatch("BEGIN");
+
+                        s.executeBatch();
+                    }
+                }
+
+                throw new AssertionError();
+            }
+        }, BatchUpdateException.class, "Transaction has already been started.");
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testIgnoreNestedTxAutocommitOnBatched() throws SQLException {
+        try (Connection c = c(true, NestedTxMode.IGNORE)) {
+            try (Statement s = c.createStatement()) {
+                s.addBatch("BEGIN");
+
+                s.addBatch("BEGIN");
+
+                s.executeBatch();
+            }
+        }
+
+        assertTrue(log.toString().contains("ignoring BEGIN command"));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testCommitNestedTxAutocommitOnBatched() throws SQLException {
+        try (Connection c = c(true, NestedTxMode.COMMIT)) {
+            try (Statement s = c.createStatement()) {
+                s.addBatch("BEGIN");
+
+                s.addBatch("BEGIN");
+
+                s.executeBatch();
+            }
+        }
+
+        assertFalse(log.toString().contains("ignoring BEGIN command"));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testErrorNestedTxAutocommitOnBatched() throws SQLException {
+        GridTestUtils.assertThrows(null, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try (Connection c = c(true, NestedTxMode.ERROR)) {
+                    try (Statement s = c.createStatement()) {
+                        s.addBatch("BEGIN");
+
+                        s.addBatch("BEGIN");
+
+                        s.executeBatch();
+                    }
+                }
+
+                throw new AssertionError();
+            }
+        }, BatchUpdateException.class, "Transaction has already been started.");
     }
 }

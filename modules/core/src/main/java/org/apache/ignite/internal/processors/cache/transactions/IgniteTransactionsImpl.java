@@ -133,26 +133,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             ctx.systemTx() ? ctx : null);
     }
 
-    /** {@inheritDoc} */
-    @Override public GridNearTxLocal txStartSql(TransactionConcurrency concurrency, TransactionIsolation isolation) {
-        A.notNull(concurrency, "concurrency");
-        A.notNull(isolation, "isolation");
-
-        TransactionConfiguration cfg = CU.transactionConfiguration(null, cctx.kernalContext().config());
-
-        return txStart0(concurrency,
-            isolation,
-            cfg.getDefaultTxTimeout(),
-            0,
-            null);
-    }
-
     /**
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.
      * @param timeout Transaction timeout.
      * @param txSize Expected transaction size.
-     * @param sysCacheCtx System cache context.    @return Transaction.
+     * @param sysCacheCtx System cache context.
+     * @return Transaction.
      */
     @SuppressWarnings("unchecked")
     private GridNearTxLocal txStart0(

@@ -428,7 +428,8 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Batch is empty.");
 
         try {
-            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch));
+            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch,
+                conn.getAutoCommit()));
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
                 throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),

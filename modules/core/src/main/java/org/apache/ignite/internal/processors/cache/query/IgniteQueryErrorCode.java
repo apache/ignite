@@ -102,17 +102,11 @@ public final class IgniteQueryErrorCode {
 
     /* 5xxx - transactions related runtime errors. */
 
-    /** No transaction is present. */
-    public final static int NO_TRANSACTION = 5001;
-
-    /** Transaction type mismatch (SQL/non SQL). */
-    public final static int TRANSACTION_TYPE_MISMATCH = 5002;
-
     /** Transaction is already open. */
-    public final static int TRANSACTION_EXISTS = 5003;
+    public final static int TRANSACTION_EXISTS = 5001;
 
     /** MVCC disabled. */
-    public final static int MVCC_DISABLED = 5004;
+    public final static int MVCC_DISABLED = 5002;
 
     /** */
     private IgniteQueryErrorCode() {
@@ -165,8 +159,6 @@ public final class IgniteQueryErrorCode {
             case KEY_UPDATE:
                 return SqlStateCode.PARSING_EXCEPTION;
 
-            case NO_TRANSACTION:
-            case TRANSACTION_TYPE_MISMATCH:
             case TRANSACTION_EXISTS:
             case MVCC_DISABLED:
                 return SqlStateCode.TRANSACTION_STATE_EXCEPTION;

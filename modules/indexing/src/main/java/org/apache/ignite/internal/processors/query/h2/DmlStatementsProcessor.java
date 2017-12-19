@@ -81,7 +81,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
-import static org.apache.ignite.internal.processors.query.GridQueryProcessor.UPDATE_RESULT_META;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
 /**
  *
@@ -814,7 +814,7 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.queryDistributedSqlFields(schema, newFieldsQry, true,
-                cancel, cctx.cacheId(), true, new MvccQueryTracker(cctx, mvccVer, topVer)).get(0);
+                cancel, cctx.cacheId(), true, null, new MvccQueryTracker(cctx, mvccVer, topVer)).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),

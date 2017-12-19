@@ -37,7 +37,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -57,6 +55,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
@@ -356,7 +355,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = query(qry, true, protocolVer.compareTo(VER_2_3_0) < 0, req.autoCommit());
+            List<FieldsQueryCursor<List<?>>> results = query(qry, protocolVer.compareTo(VER_2_3_0) < 0,
+                req.autoCommit());
 
             if (results.size() == 1) {
                 FieldsQueryCursor<List<?>> qryCur = results.get(0);
@@ -432,55 +432,21 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /**
      * @param qry Query.
-     * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Multiple statements flag.
      * @param autoCommit Auto commit flag.
      * @return Query results.
      * @throws IgniteCheckedException if failed.
      */
-    private List<FieldsQueryCursor<List<?>>> query(SqlFieldsQuery qry, final boolean keepBinary,
+    private List<FieldsQueryCursor<List<?>>> query(SqlFieldsQuery qry,
         final boolean failOnMultipleStmts, boolean autoCommit) throws IgniteCheckedException {
-        GridNearTxLocal tx = ctx.query().userTx();
+        Transaction tx = ctx.grid().transactions().tx();
 
         boolean txAutoStart = !autoCommit && tx == null;
 
         if (txAutoStart)
             ctx.query().sqlUserTxStart();
 
-        try {
-            return ctx.query().querySqlFieldsNoCache(qry, keepBinary, failOnMultipleStmts);
-        }
-        catch (IgniteSQLException e) {
-            if (e.statusCode() == IgniteQueryErrorCode.TRANSACTION_EXISTS) {
-                // We have started transaction automatically and got BEGIN from the user
-                // at the same time - should silently ignore this error.
-                if (txAutoStart)
-                    return Collections.singletonList(GridQueryProcessor.dummyCursor());
-
-                switch (nestedTxMode) {
-                    case COMMIT:
-                        assert tx != null;
-
-                        tx.commit();
-
-                        return ctx.query().querySqlFieldsNoCache(qry, keepBinary, failOnMultipleStmts);
-
-                    case IGNORE:
-                        log.warning("Transaction has already been started, ignoring BEGIN command.");
-
-                        return Collections.singletonList(GridQueryProcessor.dummyCursor());
-
-                    case ERROR:
-                        throw e;
-
-                    default:
-                        throw new AssertionError("Unexpected nested transaction handling mode: " +
-                            nestedTxMode.name());
-                }
-            }
-            else
-                throw e;
-        }
+        return ctx.query().querySqlFieldsNoCache(qry, true, failOnMultipleStmts, nestedTxMode);
     }
 
     /**
@@ -603,8 +569,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 qry.setSchema(schemaName);
 
-                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)query(qry, true, true, req.autoCommit())
-                    .get(0);
+                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)query(qry, true, req.autoCommit()).get(0);
 
                 assert !qryCur.isQuery();
 

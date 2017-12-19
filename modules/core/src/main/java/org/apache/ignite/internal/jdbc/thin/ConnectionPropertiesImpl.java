@@ -98,9 +98,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
     /** Nested transactions handling strategy. */
-    private StringProperty nestedTx = new StringProperty(
+    private StringProperty nestedTxMode = new StringProperty(
         "nestedTransactionsMode", "Way to handle nested transactions", NestedTxMode.ERROR.name(),
-        null, false, new PropertyValidator() {
+        new String[] { NestedTxMode.COMMIT.name(), NestedTxMode.ERROR.name(), NestedTxMode.IGNORE.name() },
+        false, new PropertyValidator() {
         private static final long serialVersionUID = 0L;
 
         @Override public void validate(String mode) throws SQLException {
@@ -109,7 +110,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
                     NestedTxMode.valueOf(mode.toUpperCase());
                 }
                 catch (IllegalArgumentException e) {
-                    throw new SQLException();
+                    throw new SQLException("Invalid  transaction", SqlStateCode.CLIENT_CONNECTION_FAILED);
                 }
             }
         }
@@ -119,7 +120,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private final ConnectionProperty [] propsArray = {
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTx
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTxMode
     };
 
     /** {@inheritDoc} */
@@ -243,20 +244,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public NestedTxMode nestedTxMode() {
-        try {
-            String val = nestedTx.value();
-
-            return !F.isEmpty(val) ? NestedTxMode.valueOf(val.toUpperCase()) : NestedTxMode.DEFAULT;
-        }
-        catch (IllegalArgumentException e) {
-            throw new AssertionError(e);
-        }
+    @Override public String nestedTxMode() {
+        return nestedTxMode.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void nestedTxMode(NestedTxMode nestedTxMode) {
-        nestedTx.setValue(nestedTxMode.name());
+    @Override public void nestedTxMode(String val) {
+        nestedTxMode.setValue(val);
     }
 
     /**

@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionState;
@@ -55,7 +54,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
 
         assertTxPresent();
 
-        assertTxState(tx().proxy(), TransactionState.ACTIVE);
+        assertTxState(tx(), TransactionState.ACTIVE);
     }
 
     /**
@@ -66,7 +65,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
 
         assertTxPresent();
 
-        Transaction tx = tx().proxy();
+        Transaction tx = tx();
 
         assertTxState(tx, TransactionState.ACTIVE);
 
@@ -99,7 +98,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
 
         assertTxPresent();
 
-        Transaction tx = tx().proxy();
+        Transaction tx = tx();
 
         assertTxState(tx, TransactionState.ACTIVE);
 
@@ -120,8 +119,8 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * @return Currently open transaction.
      */
-    private GridNearTxLocal tx() {
-        return node().context().cache().context().tm().userTx();
+    private Transaction tx() {
+        return node().transactions().tx();
     }
 
     /**

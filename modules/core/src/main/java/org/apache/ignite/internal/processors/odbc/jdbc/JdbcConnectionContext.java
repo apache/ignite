@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * ODBC Connection Context.
@@ -65,6 +67,9 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Request handler. */
     private JdbcRequestHandler handler = null;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
         SUPPORTED_VERS.add(VER_2_3_0);
@@ -82,6 +87,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
+        this.log = ctx.log(getClass());
     }
 
     /** {@inheritDoc} */
@@ -123,7 +129,8 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
                     nestedTxMode = NestedTxMode.valueOf(nestedTxModeName);
                 }
                 catch (IllegalArgumentException e) {
-                    throw new AssertionError("Unexpected nested TX mode: " + nestedTxModeName);
+                    U.warn(log, "Unexpected nested TX mode: " + nestedTxModeName + ", falling back " +
+                        "to default behavior (error).");
                 }
             }
         }

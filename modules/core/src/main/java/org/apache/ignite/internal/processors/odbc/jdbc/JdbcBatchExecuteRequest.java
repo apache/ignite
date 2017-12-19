@@ -52,8 +52,9 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     /**
      * @param schemaName Schema name.
      * @param queries Queries.
+     * @param autoCommit Client auto commit flag state.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries) {
+    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit) {
         super(BATCH_EXEC);
 
         assert !F.isEmpty(queries);

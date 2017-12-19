@@ -63,8 +63,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.Gri
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -177,7 +177,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** */
     private MvccQueryTracker mvccTracker;
-
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -1834,7 +1833,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean single = keysCnt == 1;
 
         try {
-            beforePut(cacheCtx, false);
             checkValid();
 
             final Map<K, V> retMap = new GridLeanMap<>(keysCnt);

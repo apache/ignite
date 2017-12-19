@@ -102,13 +102,14 @@ public interface GridQueryIndexing {
      * @param mainCacheId Main cache ID.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
+     * @param nestedTxMode Nested transactions handling mode, or {@code null} for default behavior (error).
      * @param mvccTracker Query tracker.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts, @Nullable MvccQueryTracker mvccTracker)
-        throws IgniteCheckedException;
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts,
+        NestedTxMode nestedTxMode, @Nullable MvccQueryTracker mvccTracker) throws IgniteCheckedException;
 
     /**
      * Perform a MERGE statement using data streamer as receiver.
