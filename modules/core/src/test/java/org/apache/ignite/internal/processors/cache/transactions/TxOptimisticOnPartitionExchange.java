@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -49,7 +50,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
-import sun.java2d.xr.MutableInteger;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -201,6 +201,7 @@ public class TxOptimisticOnPartitionExchange extends GridCommonAbstractTest {
     /**
      *
      */
+    @SuppressWarnings("ConstantConditions")
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** Partition single message sent from added node. */
         private static volatile CountDownLatch partSingleMsgSentFromAddedNode;
@@ -259,14 +260,14 @@ public class TxOptimisticOnPartitionExchange extends GridCommonAbstractTest {
                         else if (msg0 instanceof GridNearTxFinishRequest || msg0 instanceof GridDhtTxFinishRequest) {
                             GridTestUtils.runAsync(new Callable<Void>() {
                                 @Override public Void call() throws Exception {
-                                    final MutableInteger i = new MutableInteger(0);
+                                    final T1<Integer> i = new T1<>(0);
 
                                     while (waitForCondition(new GridAbsPredicate() {
                                         @Override public boolean apply() {
-                                            return partSupplyMsgSentCnt.get() > i.getValue();
+                                            return partSupplyMsgSentCnt.get() > i.get();
                                         }
-                                    }, i.getValue() == 0 ? 5_000 : 500))
-                                        i.setValue(partSupplyMsgSentCnt.get());
+                                    }, i.get() == 0 ? 5_000 : 500))
+                                        i.set(partSupplyMsgSentCnt.get());
 
                                     sendMessage(node, msg, ackC, true);
 
