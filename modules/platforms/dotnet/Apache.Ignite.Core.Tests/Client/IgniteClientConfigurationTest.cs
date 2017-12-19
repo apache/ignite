@@ -127,5 +127,14 @@ namespace Apache.Ignite.Core.Tests.Client
                             "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection\" />",
                 sb.ToString());
         }
+
+        /// <summary>
+        /// Tests client start from application configuration.
+        /// </summary>
+        [Test]
+        public void TestStartFromAppConfig()
+        {
+            
+        }
     }
 }
