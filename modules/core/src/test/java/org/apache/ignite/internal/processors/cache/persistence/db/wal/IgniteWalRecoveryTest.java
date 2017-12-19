@@ -1112,12 +1112,20 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             GridCacheSharedContext<Object, Object> sharedCtx0 = ignite0.context().cache().context();
 
-            MetaStorage storage = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
+            MetaStorage storage = sharedCtx0.database().metaStorage();
 
             assert storage != null;
 
-            for (int i = 0; i < cnt; i++)
-                storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
+            for (int i = 0; i < cnt; i++) {
+                sharedCtx0.database().checkpointReadLock();
+
+                try {
+                    storage.putData(String.valueOf(i), new byte[]{1, 2, 3});
+                }
+                finally {
+                    sharedCtx0.database().checkpointReadUnlock();
+                }
+            }
 
             for (int i = 0; i < cnt; i++) {
                 byte[] value = storage.getData(String.valueOf(i));
@@ -1127,13 +1135,13 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             stopGrid(0);
 
-            ignite0 = (IgniteEx)startGrid(0);
+            ignite0 = startGrid(0);
 
             ignite0.active(true);
 
             sharedCtx0 = ignite0.context().cache().context();
 
-            storage = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
+            storage = sharedCtx0.database().metaStorage();
 
             assert storage != null;
 
