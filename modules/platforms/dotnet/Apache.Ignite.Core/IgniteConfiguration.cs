@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Xml;
     using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;

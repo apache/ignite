@@ -94,9 +94,10 @@ namespace Apache.Ignite.Core.Tests.Client
             };
 
             using (Ignition.Start(servCfg))
-            using (Ignition.StartClient(clientCfg))
+            using (var client = Ignition.StartClient(clientCfg))
             {
-                // No-op.
+                Assert.AreNotEqual(clientCfg, client.Configuration);
+                Assert.AreEqual(clientCfg.ToXml(), client.Configuration.ToXml());
             }
         }
 
