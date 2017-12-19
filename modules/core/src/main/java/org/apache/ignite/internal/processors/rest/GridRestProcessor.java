@@ -205,14 +205,12 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     private IgniteInternalFuture<GridRestResponse> handleRequest(final GridRestRequest req) {
-        if (startLatch.getCount() > 0) {
-            try {
-                startLatch.await();
-            }
-            catch (InterruptedException e) {
-                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to handle request " +
-                    "(protocol handler was interrupted when awaiting grid start).", e));
-            }
+        try {
+            startLatch.await();
+        }
+        catch (InterruptedException e) {
+            return new GridFinishedFuture<>(new IgniteCheckedException("Failed to handle request " +
+                "(protocol handler was interrupted when awaiting grid start).", e));
         }
 
         if (log.isDebugEnabled())
