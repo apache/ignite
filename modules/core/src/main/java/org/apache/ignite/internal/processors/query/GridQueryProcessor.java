@@ -129,7 +129,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCH
  * Indexing processor.
  */
 public class GridQueryProcessor extends GridProcessorAdapter {
-
     /** Queries detail metrics eviction frequency. */
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
 

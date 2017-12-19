@@ -818,7 +818,8 @@ public class DmlStatementsProcessor {
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
-                F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), qry.getTimeout(), cancel, new MvccQueryTracker(cctx, mvccVer, topVer));
+                F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), qry.getTimeout(), cancel,
+                new MvccQueryTracker(cctx, mvccVer, topVer));
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
