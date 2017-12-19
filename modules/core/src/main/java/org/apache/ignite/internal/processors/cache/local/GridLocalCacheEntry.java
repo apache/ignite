@@ -227,7 +227,7 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
     /** {@inheritDoc} */
     @Override protected void checkThreadChain(GridCacheMvccCandidate owner) {
-        assert !Thread.holdsLock(this);
+        assert !holdsLock();
 
         assert owner != null;
         assert owner.owner() || owner.used() : "Neither owner or used flags are set on ready local candidate: " +

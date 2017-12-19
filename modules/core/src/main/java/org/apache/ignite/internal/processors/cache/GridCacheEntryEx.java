@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessorResult;
@@ -1034,4 +1035,14 @@ public interface GridCacheEntryEx {
      * Unlocks entry previously locked by {@link GridCacheEntryEx#lockEntry()}.
      */
     public void unlockEntry();
+
+    /**
+     * Tests whether the entry is locked currently.
+     *
+     * @see GridCacheEntryEx#lockEntry().
+     * @see GridCacheEntryEx#unlockEntry().
+     *
+     * @return {@code true} if the entry is locked.
+     */
+    public boolean holdsLock();
 }
