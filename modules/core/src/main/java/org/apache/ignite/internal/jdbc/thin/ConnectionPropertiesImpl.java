@@ -39,14 +39,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Host name property. */
     private StringProperty host = new StringProperty(
-        "host", "Ignite node IP to connect", null, null, true, new PropertyValidator() {
-        private static final long serialVersionUID = 0L;
-
-        @Override public void validate(String host) throws SQLException {
-            if (F.isEmpty(host))
-                throw new SQLException("Host name is empty", SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
-    });
+        "host", "Ignite node IP to connect", null, null, true,
+        new EmptyStringValidator("Host name is empty"));
 
     /** Connection port property. */
     private IntegerProperty port = new IntegerProperty(
@@ -430,6 +424,30 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @throws SQLException On validation fails.
          */
         void validate(String val) throws SQLException;
+    }
+
+    /**
+     *
+     */
+    private static class EmptyStringValidator implements PropertyValidator {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Error message. */
+        private final String errMsg;
+
+        /**
+         * @param msg Error message.
+         */
+        private EmptyStringValidator(String msg) {
+            errMsg = msg;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void validate(String val) throws SQLException {
+            if (F.isEmpty(val))
+                throw new SQLException(errMsg, SqlStateCode.CLIENT_CONNECTION_FAILED);
+        }
     }
 
     /**
