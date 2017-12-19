@@ -107,8 +107,8 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-                                                                      boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts,
-                                                                      @Nullable MvccQueryTracker mvccTracker) throws IgniteCheckedException;
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts,
+        @Nullable MvccQueryTracker mvccTracker) throws IgniteCheckedException;
 
     /**
      * Perform a MERGE statement using data streamer as receiver.

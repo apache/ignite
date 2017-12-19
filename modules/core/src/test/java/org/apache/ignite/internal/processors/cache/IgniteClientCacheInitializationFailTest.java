@@ -254,9 +254,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName,
-                                                                                    SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId,
-                                                                                    boolean failOnMultipleStmts, @Nullable MvccQueryTracker mvccTracker)
-            throws IgniteCheckedException {
+            SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId,
+            boolean failOnMultipleStmts, @Nullable MvccQueryTracker mvccTracker) throws IgniteCheckedException {
             return null;
         }
 

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -29,6 +27,9 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Sql query request.
