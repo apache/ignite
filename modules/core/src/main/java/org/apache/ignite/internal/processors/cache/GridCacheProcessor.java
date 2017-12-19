@@ -3114,8 +3114,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof CacheStatisticsModeChangeMessage) {
             CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
 
-            if (msg0.initial())
+            if (msg0.initial()) {
+                EnableStatisticsFuture fut = enableStatisticsFuts.get(msg0.requestId());
+
+                if (fut != null && !cacheNames().containsAll(msg0.caches()))
+                    fut.onDone(new IgniteCheckedException("One or more cache descriptors not found [caches="
+                        + caches + ']'));
+
                 cachesInfo.onCacheStatisticsModeChange(msg0);
+            }
             else {
                 EnableStatisticsFuture fut = enableStatisticsFuts.get(msg0.requestId());
 
