@@ -1128,16 +1128,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             private void nonHeapMemoryUsed(ClusterMetricsSnapshot nm) {
                 long nonHeapUsed = metrics.getNonHeapMemoryUsed();
 
-                Map<Integer, CacheMetrics> nodeCacheMetrics = cacheMetrics();
+                Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
 
-                if (nodeCacheMetrics != null) {
-                    for (Map.Entry<Integer, CacheMetrics> entry : nodeCacheMetrics.entrySet()) {
-                        CacheMetrics e = entry.getValue();
-
-                        if (e != null)
-                            nonHeapUsed += e.getOffHeapAllocatedSize();
-                    }
-                }
+                for (GridCacheAdapter<?, ?> cache : caches)
+                    if (cache.configuration().isStatisticsEnabled() && cache.context().started()
+                        && cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0)
+                        nonHeapUsed += cache.metrics0().getOffHeapAllocatedSize();
 
                 nm.setNonHeapMemoryUsed(nonHeapUsed);
             }
