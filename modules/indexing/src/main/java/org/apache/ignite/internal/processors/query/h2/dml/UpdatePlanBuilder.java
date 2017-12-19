@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
@@ -91,10 +94,57 @@ public final class UpdatePlanBuilder {
         throws IgniteCheckedException {
         assert !prepared.isQuery();
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlQueryParser parser = new GridSqlQueryParser(false);
+
+        GridSqlStatement stmt = parser.parse(prepared);
+
+        boolean mvccEnabled = false;
+
+        GridCacheContext cctx = null;
+
+        // check all involved caches
+        for (Object o : parser.objectsMap().values()) {
+            if (o instanceof GridSqlInsert)
+                o = ((GridSqlInsert)o).into();
+            else if (o instanceof GridSqlMerge)
+                o = ((GridSqlMerge)o).into();
+            else if (o instanceof GridSqlDelete)
+                o = ((GridSqlDelete)o).from();
+
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                if (cctx == null)
+                    mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
+                else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
+                    throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
+            }
+        }
+
+        if (mvccEnabled) {
+            if (!(fieldsQuery instanceof SqlFieldsQueryEx)) {
+                SqlFieldsQueryEx tmp = new SqlFieldsQueryEx(fieldsQuery.getSql(), false);
+                tmp.setSkipReducerOnUpdate(true);
+
+                tmp.setSchema(fieldsQuery.getSchema());
+                tmp.setCollocated(fieldsQuery.isCollocated());
+                tmp.setDistributedJoins(fieldsQuery.isDistributedJoins());
+                tmp.setEnforceJoinOrder(fieldsQuery.isEnforceJoinOrder());
+                tmp.setTimeout(fieldsQuery.getTimeout(), TimeUnit.MILLISECONDS);
+                tmp.setLocal(fieldsQuery.isLocal());
+                tmp.setLazy(fieldsQuery.isLazy());
+                tmp.setPageSize(fieldsQuery.getPageSize());
+                tmp.setArgs(fieldsQuery.getArgs());
+
+                fieldsQuery = tmp;
+            }
+            else if (!((SqlFieldsQueryEx)fieldsQuery).isSkipReducerOnUpdate())
+                ((SqlFieldsQueryEx)fieldsQuery).setSkipReducerOnUpdate(true);
+        }
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(stmt, loc, idx, conn, fieldsQuery);
+            return planForInsert(stmt, loc, idx, conn, fieldsQuery, mvccEnabled);
         else
             return planForUpdate(stmt, loc, idx, conn, fieldsQuery, errKeysPos);
     }
@@ -112,7 +162,7 @@ public final class UpdatePlanBuilder {
      */
     @SuppressWarnings("ConstantConditions")
     private static UpdatePlan planForInsert(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery) throws IgniteCheckedException {
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, boolean mvccEnabled) throws IgniteCheckedException {
         GridSqlQuery sel;
 
         GridSqlElement target;
@@ -212,7 +262,7 @@ public final class UpdatePlanBuilder {
 
         String selectSql = sel.getSQL();
 
-        DmlDistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
+        DmlDistributedPlanInfo distributed = ((mvccEnabled || rowsNum == 0) && !F.isEmpty(selectSql)) ?
             checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
 
         UpdateMode mode = stmt instanceof GridSqlMerge ? UpdateMode.MERGE : UpdateMode.INSERT;

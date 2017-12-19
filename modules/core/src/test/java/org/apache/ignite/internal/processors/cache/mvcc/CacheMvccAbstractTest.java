@@ -112,6 +112,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     /** */
     protected boolean persistence;
 
+    /** */
+    protected CacheConfiguration ccfg;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -126,6 +129,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setClientMode(client);
+
+        if (ccfg != null)
+            cfg.setCacheConfiguration(ccfg);
 
         if (nodeAttr != null)
             cfg.setUserAttributes(F.asMap(nodeAttr, true));

@@ -22,9 +22,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,13 +60,7 @@ import org.apache.ignite.internal.processors.query.h2.dml.FastUpdate;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -361,53 +353,58 @@ public class DmlStatementsProcessor {
 
         GridCacheContext cctx0 = plan.cacheContext();
 
-        if (cctx0.mvccEnabled() && cctx0.transactional()) {
+        if (cctx0.mvccEnabled()) {
+            assert cctx0.transactional();
+
             GridNearTxLocal tx = cctx0.tm().userTx();
 
-            if (tx != null) {
-                int flags = fieldsQry.isEnforceJoinOrder() ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
+            if(tx == null)
+                throw new UnsupportedOperationException("Implicit transactions are unsupported at the moment.");
 
-                int[] ids;
+            DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
-                DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
+            if (distributedPlan == null)
+                throw new UnsupportedOperationException("Only distributed updates are supported at the moment");
 
-                if (distributedPlan != null) {
-                    List<Integer> cacheIds = distributedPlan.getCacheIds();
+            if (plan.mode() == UpdateMode.INSERT && !plan.isLocalSubquery())
+                throw new UnsupportedOperationException("Insert from select is unsupported at the moment.");
 
-                    ids = new int[cacheIds.size()];
+            int flags = fieldsQry.isEnforceJoinOrder() ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
 
-                    for (int i = 0; i < ids.length; i++)
-                        ids[i] = cacheIds.get(i);
+            List<Integer> cacheIds = distributedPlan.getCacheIds();
 
-                    if (distributedPlan.isReplicatedOnly())
-                        flags |= GridH2QueryRequest.FLAG_REPLICATED;
-                }
-                else
-                    ids = collectCacheIds(cctx0.cacheId(), prepared);
+            int[] ids = new int[cacheIds.size()];
 
-                long tm1 = tx.remainingTime(), tm2 = fieldsQry.getTimeout();
+            for (int i = 0; i < ids.length; i++)
+                ids[i] = cacheIds.get(i);
 
-                long timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : tm1 > 0 ? tm1 : tm2;
+            if (distributedPlan.isReplicatedOnly())
+                flags |= GridH2QueryRequest.FLAG_REPLICATED;
 
-                IgniteInternalFuture<Long> fut = tx.updateAsync(
-                    cctx0,
-                    ids,
-                    fieldsQry.getPartitions(),
-                    schemaName,
-                    fieldsQry.getSql(),
-                    fieldsQry.getArgs(),
-                    flags,
-                    fieldsQry.getPageSize(),
-                    timeout);
+            long tm1 = tx.remainingTime(), tm2 = fieldsQry.getTimeout();
 
-                try {
-                    return new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Error during update [localNodeId=" + cctx0.localNodeId() + "]", e);
+            long timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : tm1 > 0 ? tm1 : tm2;
 
-                    throw new CacheException("Failed to run update. " + e.getMessage(), e);
-                }
+            int[] parts = fieldsQry.getPartitions();
+
+            IgniteInternalFuture<Long> fut = tx.updateAsync(
+                cctx0,
+                ids,
+                parts,
+                schemaName,
+                fieldsQry.getSql(),
+                fieldsQry.getArgs(),
+                flags,
+                fieldsQry.getPageSize(),
+                timeout);
+
+            try {
+                return new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Error during update [localNodeId=" + cctx0.localNodeId() + "]", e);
+
+                throw new CacheException("Failed to run update. " + e.getMessage(), e);
             }
         }
 
@@ -464,49 +461,6 @@ public class DmlStatementsProcessor {
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
         return processDmlSelectResult(cctx, plan, cur, pageSize);
-    }
-
-    /** */
-    private int[] collectCacheIds(int mainCacheId, Prepared p) {
-        GridSqlQueryParser parser = new GridSqlQueryParser(false);
-
-        parser.parse(p);
-
-        Collection<Integer> ids = new HashSet<>();
-
-        GridCacheContext cctx = null;
-        boolean mvccEnabled = false;
-
-        // check all involved caches
-        for (Object o : parser.objectsMap().values()) {
-            if (o instanceof GridSqlInsert)
-                o = ((GridSqlInsert)o).into();
-            else if (o instanceof GridSqlMerge)
-                o = ((GridSqlMerge)o).into();
-            else if (o instanceof GridSqlDelete)
-                o = ((GridSqlDelete)o).from();
-
-            if (o instanceof GridSqlAlias)
-                o = GridSqlAlias.unwrap((GridSqlAst)o);
-
-            if (o instanceof GridSqlTable) {
-                if (cctx == null)
-                    mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
-                else if ((cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled() != mvccEnabled)
-                    throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
-
-                ids.add(cctx.cacheId());
-            }
-        }
-
-        int cntr = ids.size(); int[] res = new int[cntr];
-
-        for (Integer id : ids)
-            res[id == mainCacheId ? 0 : --cntr] = id;
-
-        assert cntr == 1;
-
-        return res;
     }
 
     /**
@@ -869,7 +823,7 @@ public class DmlStatementsProcessor {
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), idx.objectContext(), true);
+                        return res.iterator();
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
