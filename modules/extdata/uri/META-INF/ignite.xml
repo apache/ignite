@@ -34,5 +34,7 @@
     -->
     <util:list id="tasks">
         <value>org.apache.ignite.spi.deployment.uri.tasks.GarHelloWorldTask</value>
+        <value>org.apache.ignite.spi.deployment.uri.tasks.GarUseServiceTask</value>
+        <value>org.apache.ignite.spi.deployment.uri.tasks.GarDelegatingTask</value>
     </util:list>
 </beans>

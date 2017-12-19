@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jsr166.ConcurrentHashMap8;
@@ -80,7 +81,7 @@ public final class GridClassLoaderCache {
         if (clsLdr == null)
             clsLdr = U.gridClassLoader();
 
-        if (U.p2pLoader(ctxClsLdr))
+        if (U.p2pLoader(ctxClsLdr) || isInternal(cls))
             return clsLdr;
 
         if (ctxClsLdr != null) {
@@ -100,6 +101,15 @@ public final class GridClassLoaderCache {
         }
 
         return clsLdr;
+    }
+
+    /**
+     * @param cls Class.
+     * @return {@code true} if class is Ignite internal.
+     */
+    private static boolean isInternal(Class<?> cls) {
+        return cls.getName().startsWith("org.apache.ignite.")
+            || cls.getAnnotation(GridInternal.class) != null;
     }
 
     /**

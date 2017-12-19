@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridTaskUriDeploymentDeadlockSelfTest;
+import org.apache.ignite.internal.GridTaskUriDeploymentServiceDependencyTest;
 import org.apache.ignite.p2p.GridP2PDisabledSelfTest;
 import org.apache.ignite.spi.deployment.uri.GridUriDeploymentClassLoaderMultiThreadedSelfTest;
 import org.apache.ignite.spi.deployment.uri.GridUriDeploymentClassLoaderSelfTest;
@@ -57,6 +58,7 @@ public class IgniteUriDeploymentTestSuite {
         suite.addTest(IgniteToolsSelfTestSuite.suite());
 
         suite.addTestSuite(GridTaskUriDeploymentDeadlockSelfTest.class);
+        suite.addTestSuite(GridTaskUriDeploymentServiceDependencyTest.class);
         suite.addTest(new TestSuite(GridP2PDisabledSelfTest.class));
 
         return suite;
