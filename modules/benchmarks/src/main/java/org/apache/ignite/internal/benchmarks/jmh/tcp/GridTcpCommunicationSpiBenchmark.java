@@ -38,11 +38,10 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 /**
  *
  */
-@Warmup(iterations = 20)
+@Warmup(iterations = 15)
 @Measurement(iterations = 20)
 @Fork(1)
 public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark {
-    /** Number threads per node. */
     static final int THREADS_PER_NODE = 1;
 
     /** */
@@ -65,7 +64,6 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             messaging = from.message(from.cluster().forNodeId(to.cluster().localNode().id()));
 
             msg = new Object();
-            //msg = String.valueOf(System.nanoTime());
 
             to.message().localListen(null, new MessagingListenActor<Object>() {
                 @Override protected void receive(UUID nodeId, Object rcvMsg) throws Throwable {
@@ -75,11 +73,24 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         }
     }
 
+    @Benchmark
+    public void sendAndReceiveBaseline(IoSendReceiveBaselineState state){
+        state.latch.set(new CountDownLatch(1));
+
+        state.messaging.send(null, state.msg);
+        try {
+            state.latch.get().await();
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
-     * Test IgniteCache.lock() with fixed key and no-op inside.
+     *
      */
     @Benchmark
-    public void sendAndReceiveBaseline(final IoSendReceiveBaselineState state, EventCounters counters) {
+    public void sendAndReceiveStatBaseline(IoSendReceiveBaselineState state, EventCounters counters) {
         long b = from.cluster().localNode().metrics().getSentBytesCount();
 
         state.latch.set(new CountDownLatch(1));
@@ -128,7 +139,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     }
 
     /**
-     * Test IgniteCache.lock() with fixed key and no-op inside.
+     *
      */
     @Benchmark
     public void sendAndReceiveSize(final IoSendReceiveSizeState state, EventCounters counters) {
@@ -144,13 +155,6 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             e.printStackTrace();
         }
 
-        counters.sentBytes += (from.cluster().localNode().metrics().getSentBytesCount() - b);
-        counters.sentMessages++;
-    }
-
-    @Benchmark
-    public void baseline(EventCounters counters){
-        long b = from.cluster().localNode().metrics().getSentBytesCount();
         counters.sentBytes += (from.cluster().localNode().metrics().getSentBytesCount() - b);
         counters.sentMessages++;
     }
@@ -190,12 +194,12 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
         @Setup(Level.Trial)
         public void setup() {
-            msg = new byte[size];
+            msg = RegularDataUtils.generateRegularData(size, 10);
         }
     }
 
     /**
-     * Test IgniteCache.lock() with fixed key and no-op inside.
+     *
      */
     @Benchmark
     public void sendAndReceiveSizeNice(final IoSendReceiveSizeNiceState state, EventCounters counters) {
@@ -239,6 +243,11 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
+        // Use in linux for emulate slow network
+        // sudo tc qdisc add dev lo root tbf rate 1Gbit burst 100kb latency 5ms
+        // And remove it: sudo tc qdisc del dev lo root
+        // Check your network: sudo tc -s qdisc ls dev lo
+
         final String simpleClsName = GridTcpCommunicationSpiBenchmark.class.getSimpleName();
         final int threads = THREADS_PER_NODE;
         final boolean client = false;
@@ -272,9 +281,9 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
         System.out.println(results1.size());
 
-        EnumMap<Type, Result> statTime = new EnumMap<Type, Result>(Type.class);
-
         EnumMap<Type, Result> baseline = new EnumMap<Type, Result>(Type.class);
+
+        EnumMap<Type, Result> baselineStat = new EnumMap<Type, Result>(Type.class);
 
         TreeMap<Integer, EnumMap<Type, Result>> sizedResults = new TreeMap<>();
 
@@ -288,15 +297,18 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
                 double value = benchmarkResult.getPrimaryResult().getScore();
                 double error = benchmarkResult.getPrimaryResult().getScoreError();
+
+                if (benchmarkResult.getPrimaryResult().getLabel().equals("sendAndReceiveBaseline")) {
+                    baseline.put(type, new Result(value, error, 0));
+                    continue;
+                }
+
                 double avgSize = benchmarkResult.getSecondaryResults().get("sentBytes").getScore() /
                     benchmarkResult.getSecondaryResults().get("sentMessages").getScore();
 
                 switch (benchmarkResult.getPrimaryResult().getLabel()) {
-                    case "baseline":
-                        statTime.put(type, new Result(value, error, avgSize));
-                        break;
-                    case "sendAndReceiveBaseline":
-                        baseline.put(type, new Result(value, error, avgSize));
+                    case "sendAndReceiveStatBaseline":
+                        baselineStat.put(type, new Result(value, error, avgSize));
                         break;
                     case "sendAndReceiveSize": {
                         int size = Integer.valueOf(benchmarkResult.getParams().getParam("size"));
@@ -330,54 +342,37 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             }
         }
 
-        DecimalFormat df = new DecimalFormat("#0.00");
-
         for (Map.Entry<Type, Result> entry : baseline.entrySet()) {
             System.out.println("Latency for " + entry.getKey() + " time = " +
-                (entry.getValue().value-statTime.get(entry.getKey()).value) + " ± " + entry.getValue().error +
-                " net footprint = " + entry.getValue().avgSize);
+                entry.getValue().value + " ± " + entry.getValue().error +
+                " net footprint = " + baselineStat.get(entry.getKey()).avgSize);
         }
 
-        for (Map.Entry<Integer, EnumMap<Type, Result>> entry : sizedResults.entrySet()) {
+        printThroughput(sizedResults, baselineStat, baseline, "bad case");
+
+        printThroughput(sizedNiceResults, baselineStat, baseline, "good case");
+    }
+
+    /** */
+    static void printThroughput(Map<Integer, EnumMap<Type, Result>> results, EnumMap<Type, Result> baselineStat,
+        EnumMap<Type, Result> baseline, String name) {
+
+        DecimalFormat df = new DecimalFormat("#0.00");
+
+        for (Map.Entry<Integer, EnumMap<Type, Result>> entry : results.entrySet()) {
             int size = entry.getKey();
 
             for (Map.Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
-                double baselineValue = baseline.get(resultEntry.getKey()).value;
-                double baselineError = baseline.get(resultEntry.getKey()).error;
-                double baselineAvgSize = baseline.get(resultEntry.getKey()).avgSize;
+                double statTime = baselineStat.get(resultEntry.getKey()).value -
+                    baseline.get(resultEntry.getKey()).value;
 
-                double statT = statTime.get(resultEntry.getKey()).value;
+                double baselineAvgSize = baselineStat.get(resultEntry.getKey()).avgSize;
 
-                double value = resultEntry.getValue().value - statT;
+                double value = resultEntry.getValue().value - statTime;
                 double error = resultEntry.getValue().error;
                 double avgSize = resultEntry.getValue().avgSize;
 
-                System.out.println("Throughput bad case. Type = " + resultEntry.getKey() + " message size =" + size +
-                    "\n\t Message/s = " + df.format(1E6 / value) + " ∈ [" +
-                    df.format(1E6 / (value + error)) + " : " + df.format(1E6 / (value - error)) + "]" +
-                    "\n\t real Mbps = " + df.format(avgSize / value * 8) + " ∈ [" +
-                    df.format(avgSize / (value + error) * 8) + " : " + df.format(avgSize / (value - error) * 8) + "]" +
-                    "\n\t effective Mbps = " + df.format(size / value * 8) + " ∈ [" +
-                    df.format(size / (value + error) * 8) + " : " + df.format(size / (value - error) * 8) + "]" +
-                    "\n\t comp rate = " + df.format(size / (avgSize - baselineAvgSize)));
-            }
-        }
-
-        for (Map.Entry<Integer, EnumMap<Type, Result>> entry : sizedNiceResults.entrySet()) {
-            int size = entry.getKey();
-
-            for (Map.Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
-                double baselineValue = baseline.get(resultEntry.getKey()).value;
-                double baselineError = baseline.get(resultEntry.getKey()).error;
-                double baselineAvgSize = baseline.get(resultEntry.getKey()).avgSize;
-
-                double statT = statTime.get(resultEntry.getKey()).value;
-
-                double value = resultEntry.getValue().value - statT;
-                double error = resultEntry.getValue().error;
-                double avgSize = resultEntry.getValue().avgSize;
-
-                System.out.println("Throughput good case. Type = " + resultEntry.getKey() + " message size = " + size +
+                System.out.println("Throughput "+name+". Type = " + resultEntry.getKey() + " message size = " + size +
                     "\n\t Message/s = " + df.format(1E6 / value) + " ∈ [" +
                     df.format(1E6 / (value + error)) + " : " + df.format(1E6 / (value - error)) + "]" +
                     "\n\t real Mbps = " + df.format(avgSize / value * 8) + " ∈ [" +
