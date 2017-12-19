@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -70,6 +71,15 @@ namespace Apache.Ignite.Core.Tests.Client
                             "host=\"myHost\" port=\"123\" " +
                             "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection\" />",
                 cfg.ToXml());
+
+            // Nested objects.
+            cfg = new IgniteClientConfiguration
+            {
+                SocketSendBufferSize = 2,
+                BinaryConfiguration = new BinaryConfiguration {CompactFooter = false}
+            };
+
+            Assert.IsTrue(cfg.ToXml().Contains("<binaryConfiguration compactFooter=\"false\" />"), cfg.ToXml());
         }
     }
 }
