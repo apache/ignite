@@ -2099,9 +2099,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (!cache.active())
                         newProxy.restart();
 
-                    CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(cacheCtx.groupId());
+                    CacheGroupDescriptor desc = cachesInfo.registeredCacheGroups().get(cacheCtx.groupId());
 
-                    if (desc.walMode() == CacheGroupWalMode.ENABLING) // Joined at WAL enabling.
+                    if (desc != null && desc.walMode() == CacheGroupWalMode.ENABLING) // Joined at WAL enabling.
                         newProxy.disableProxy();
 
                     jCacheProxies.putIfAbsent(cacheCtx.name(), newProxy);
