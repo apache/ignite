@@ -531,6 +531,9 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);
 
+            if (err != null)
+                tx.setRollbackOnly();
+
             return true;
         }
 
