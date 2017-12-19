@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -82,6 +84,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
  *
@@ -356,11 +360,6 @@ public class DmlStatementsProcessor {
         if (cctx0.mvccEnabled()) {
             assert cctx0.transactional();
 
-            GridNearTxLocal tx = cctx0.tm().userTx();
-
-            if(tx == null)
-                throw new UnsupportedOperationException("Implicit transactions are unsupported at the moment.");
-
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
             if (distributedPlan == null)
@@ -368,6 +367,25 @@ public class DmlStatementsProcessor {
 
             if (plan.mode() == UpdateMode.INSERT && !plan.isLocalSubquery())
                 throw new UnsupportedOperationException("Insert from select is unsupported at the moment.");
+
+            GridNearTxLocal tx = cctx0.tm().userTx();
+
+            boolean implicit = tx == null;
+
+            if(implicit) {
+                TransactionConfiguration tcfg = CU.transactionConfiguration(cctx0, cctx0.kernalContext().config());
+
+                tx = cctx0.tm().newTx(
+                    true,
+                    false,
+                    cctx0.systemTx() ? cctx0 : null,
+                    PESSIMISTIC,
+                    READ_COMMITTED,
+                    tcfg.getDefaultTxTimeout(),
+                    !cctx0.skipStore(),
+                    0
+                );
+            }
 
             int flags = fieldsQry.isEnforceJoinOrder() ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
 
@@ -387,24 +405,35 @@ public class DmlStatementsProcessor {
 
             int[] parts = fieldsQry.getPartitions();
 
-            IgniteInternalFuture<Long> fut = tx.updateAsync(
-                cctx0,
-                ids,
-                parts,
-                schemaName,
-                fieldsQry.getSql(),
-                fieldsQry.getArgs(),
-                flags,
-                fieldsQry.getPageSize(),
-                timeout);
-
             try {
-                return new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
+                IgniteInternalFuture<Long> fut = tx.updateAsync(
+                    cctx0,
+                    ids,
+                    parts,
+                    schemaName,
+                    fieldsQry.getSql(),
+                    fieldsQry.getArgs(),
+                    flags,
+                    fieldsQry.getPageSize(),
+                    timeout);
+
+                Long res = fut.get();
+
+                assert !implicit || tx.done();
+
+                return new UpdateResult(res, X.EMPTY_OBJECT_ARRAY);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Error during update [localNodeId=" + cctx0.localNodeId() + "]", e);
 
                 throw new CacheException("Failed to run update. " + e.getMessage(), e);
+            }
+            finally {
+                if (implicit) {
+                    cctx0.tm().resetContext();
+
+                    tx.close();
+                }
             }
         }
 

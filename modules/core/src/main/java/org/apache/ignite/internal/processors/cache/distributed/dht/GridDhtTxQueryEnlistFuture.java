@@ -263,13 +263,6 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
     }
 
     /**
-     * @return {@code True} if transaction is implicit.
-     */
-    private boolean implicitSingle() {
-        return tx != null && tx.implicitSingle();
-    }
-
-    /**
      *
      */
     public void init() {
@@ -594,7 +587,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
             timeout,
             false,
             true,
-            implicitSingle(),
+            false,
             false
         );
 
