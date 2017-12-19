@@ -56,7 +56,7 @@ namespace ignite
             mag()
         {
             assert(val != 0);
-            assert(len > 0);
+            assert(len >= 0);
             assert(sign == 1 || sign == 0 || sign == -1);
 
             if (bigEndian)
@@ -66,7 +66,11 @@ namespace ignite
                     ++firstNonZero;
 
                 if (firstNonZero == len)
+                {
                     AssignInt64(0);
+
+                    return;
+                }
 
                 int32_t intLength = (len - firstNonZero + 3) / 4;
 
@@ -109,11 +113,16 @@ namespace ignite
             else
             {
                 int32_t firstNonZero = len - 1;
-                while (firstNonZero > 0 && val[firstNonZero] == 0)
+
+                while (firstNonZero >= 0 && val[firstNonZero] == 0)
                     --firstNonZero;
 
                 if (firstNonZero == -1)
+                {
                     AssignInt64(0);
+
+                    return;
+                }
 
                 int32_t intLength = (firstNonZero + 4) / 4;
 
