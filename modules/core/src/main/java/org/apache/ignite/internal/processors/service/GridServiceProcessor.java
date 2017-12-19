@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -160,10 +161,13 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private ThreadLocal<String> svcName = new ThreadLocal<>();
 
     /** Service cache. */
-    private IgniteInternalCache<Object, Object> cache;
+    private volatile IgniteInternalCache<Object, Object> serviceCache;
 
     /** Topology listener. */
     private DiscoveryEventListener topLsnr = new TopologyListener();
+
+    /** */
+    private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /**
      * @param ctx Kernal context.
@@ -223,19 +227,20 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @throws IgniteCheckedException If failed.
      */
     private void onKernalStart0() throws IgniteCheckedException {
-        updateUtilityCache();
-
         if (!ctx.clientNode())
             ctx.event().addDiscoveryEventListener(topLsnr, EVTS);
+
+        updateUtilityCache();
+        startLatch.countDown();
 
         try {
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
             if (!ctx.clientNode()) {
-                assert cache.context().affinityNode();
+                assert serviceCache.context().affinityNode();
 
-                cache.context().continuousQueries().executeInternalQuery(
+                serviceCache.context().continuousQueries().executeInternalQuery(
                     new ServiceEntriesListener(), null, true, true, false
                 );
             }
@@ -246,7 +251,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                     @Override public void run() {
                         try {
                             Iterable<CacheEntryEvent<?, ?>> entries =
-                                cache.context().continuousQueries().existingEntries(false, null);
+                                serviceCache.context().continuousQueries().existingEntries(false, null);
 
                             onSystemCacheUpdated(entries);
                         }
@@ -275,7 +280,17 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      *
      */
     public void updateUtilityCache() {
-        cache = ctx.cache().utilityCache();
+        serviceCache = ctx.cache().utilityCache();
+    }
+
+    /**
+     * @return Service cache.
+     */
+    private IgniteInternalCache<Object, Object> serviceCache() {
+        if (serviceCache == null)
+            U.awaitQuiet(startLatch);
+
+        return serviceCache;
     }
 
     /** {@inheritDoc} */
@@ -291,6 +306,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             this.busyLock = null;
         }
+
+        startLatch.countDown();
 
         U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
@@ -617,7 +634,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 if (cfgsCp.size() == 1)
                     writeServiceToCache(res, cfgsCp.get(0));
                 else if (cfgsCp.size() > 1) {
-                    try (Transaction tx = cache.txStart(PESSIMISTIC, READ_COMMITTED)) {
+                    try (Transaction tx = serviceCache().txStart(PESSIMISTIC, READ_COMMITTED)) {
                         for (ServiceConfiguration cfg : cfgsCp) {
                             try {
                                 writeServiceToCache(res, cfg);
@@ -709,7 +726,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             GridServiceDeploymentKey key = new GridServiceDeploymentKey(name);
 
-            GridServiceDeployment dep = (GridServiceDeployment)cache.getAndPutIfAbsent(key,
+            GridServiceDeployment dep = (GridServiceDeployment)serviceCache().getAndPutIfAbsent(key,
                 new GridServiceDeployment(ctx.localNodeId(), cfg));
 
             if (dep != null) {
@@ -809,7 +826,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             List<String> toRollback = new ArrayList<>();
 
-            try (Transaction tx = cache.txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (Transaction tx = serviceCache().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 for (String name : svcNames) {
                     if (res == null)
                         res = new GridCompoundFuture<>();
@@ -882,7 +899,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             GridServiceDeploymentKey key = new GridServiceDeploymentKey(name);
 
             try {
-                if (cache.getAndRemove(key) == null) {
+                if (serviceCache().getAndRemove(key) == null) {
                     // Remove future from local map if service was not deployed.
                     undepFuts.remove(name, fut);
 
@@ -910,6 +927,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @throws IgniteCheckedException On error.
      */
     public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
+        IgniteInternalCache<Object, Object> cache = serviceCache();
+
         ClusterNode node = cache.affinity().mapKeyToNode(name);
 
         final ServiceTopologyCallable call = new ServiceTopologyCallable(name);
@@ -952,7 +971,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             ServiceDescriptorImpl desc = new ServiceDescriptorImpl(dep);
 
             try {
-                GridServiceAssignments assigns = (GridServiceAssignments)cache.getForcePrimary(
+                GridServiceAssignments assigns = (GridServiceAssignments)serviceCache().getForcePrimary(
                     new GridServiceAssignmentsKey(dep.configuration().getName()));
 
                 if (assigns != null) {
@@ -1117,8 +1136,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @throws IgniteCheckedException If failed.
      */
     private void reassign(GridServiceDeployment dep, AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        ServiceConfiguration cfg = dep.configuration();
+        IgniteInternalCache<Object, Object> cache = serviceCache();
 
+        ServiceConfiguration cfg = dep.configuration();
         Object nodeFilter = cfg.getNodeFilter();
 
         if (nodeFilter != null)
@@ -1475,6 +1495,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     @SuppressWarnings("unchecked")
     private Iterator<Cache.Entry<Object, Object>> serviceEntries(IgniteBiPredicate<Object, Object> p) {
         try {
+            IgniteInternalCache<Object, Object> cache = serviceCache();
+
             GridCacheQueryManager qryMgr = cache.context().queries();
 
             CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
@@ -1615,6 +1637,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(name);
 
             // Remove assignment on primary node in case of undeploy.
+            IgniteInternalCache<Object, Object> cache = serviceCache();
+
             if (cache.cache().affinity().isPrimary(ctx.discovery().localNode(), key)) {
                 try {
                     cache.getAndRemove(key);
@@ -1783,6 +1807,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         Iterator<Cache.Entry<Object, Object>> it = serviceEntries(ServiceAssignmentsPredicate.INSTANCE);
 
                         // Clean up zombie assignments.
+                        IgniteInternalCache<Object, Object> cache = serviceCache();
+
                         while (it.hasNext()) {
                             Cache.Entry<Object, Object> e = it.next();
 
