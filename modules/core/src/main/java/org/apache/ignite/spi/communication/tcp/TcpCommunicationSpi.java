@@ -3409,22 +3409,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             boolean commErrResolve = false;
 
-            if (connectionError(errs)) {
-                DiscoverySpi discoverySpi = ignite.configuration().getDiscoverySpi();
+            IgniteSpiContext ctx = getSpiContext();
 
-                if (discoverySpi instanceof IgniteDiscoverySpi) {
-                    IgniteDiscoverySpi discoverySpi0 = (IgniteDiscoverySpi)discoverySpi;
+            if (connectionError(errs) && ctx.communicationErrorResolveSupported()) {
+                commErrResolve = true;
 
-                    if (discoverySpi0.supportsCommunicationErrorResolve()) {
-                        commErrResolve = true;
-
-                        discoverySpi0.onCommunicationConnectionError(node, errs);
-                    }
-                }
+                ctx.resolveCommunicationError(node, errs);
             }
 
             if (!commErrResolve && enableForcibleNodeKill) {
-                if (getSpiContext().node(node.id()) != null
+                if (ctx.node(node.id()) != null
                     && (CU.clientNode(node) ||  !CU.clientNode(getLocalNode())) &&
                     connectionError(errs)) {
                     String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
@@ -3435,7 +3429,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     else
                         U.warn(log, msg);
 
-                    getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
+                    ctx.failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
                         "rmtNode=" + node +
                         ", errs=" + errs +
                         ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');

@@ -358,4 +358,8 @@ public interface IgniteSpiContext {
      * @return Current node attributes.
      */
     public Map<String, Object> nodeAttributes();
+
+    public boolean communicationErrorResolveSupported();
+
+    public void resolveCommunicationError(ClusterNode node, Exception err);
 }

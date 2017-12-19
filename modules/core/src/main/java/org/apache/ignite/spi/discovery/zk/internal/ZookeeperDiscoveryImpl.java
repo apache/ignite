@@ -49,6 +49,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.GridIntList;
@@ -247,17 +248,17 @@ public class ZookeeperDiscoveryImpl {
      * @param node0 Problem node ID
      * @param err Connect error.
      */
-    public void onCommunicationConnectionError(ClusterNode node0, Exception err) {
-        checkState();
-
+    public void resolveCommunicationError(ClusterNode node0, Exception err) {
         ZookeeperClusterNode node = node(node0.id());
 
         if (node == null)
-            return;
+            throw new IgniteSpiException(new ClusterTopologyCheckedException("Node failed: " + node0.id()));
 
         IgniteInternalFuture<Boolean> nodeStatusFut;
 
         for (;;) {
+            checkState();
+
             ZkCommunicationErrorProcessFuture fut = commErrProcFut.get();
 
             if (fut == null || fut.isDone()) {
@@ -273,16 +274,16 @@ public class ZookeeperDiscoveryImpl {
                             ", err= " + err + ']');
                     }
 
-                    ConnectionState connState;
+                    try {
+                        checkState();
+                    }
+                    catch (Exception e) {
+                        fut.onError(e);
 
-                    synchronized (this) {
-                        connState = this.connState;
+                        throw e;
                     }
 
-                    if (connState != ConnectionState.STARTED)
-                        fut.onError(new IgniteCheckedException("Node stopped."));
-                    else
-                        fut.scheduleCheckOnTimeout();
+                    fut.scheduleCheckOnTimeout();
                 }
                 else
                     fut = commErrProcFut.get();
@@ -303,7 +304,8 @@ public class ZookeeperDiscoveryImpl {
         }
 
         try {
-            nodeStatusFut.get();
+            if (!nodeStatusFut.get())
+                throw new IgniteSpiException(new ClusterTopologyCheckedException("Node failed: " + node0.id()));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException(e);
@@ -2240,7 +2242,7 @@ public class ZookeeperDiscoveryImpl {
 
         runInWorkerThread(new ZkRunnable(rtState, this) {
             @Override protected void run0() throws Exception {
-                fut0.pingNodesAndNotifyFuture(rtState, futPath, rtState.commErrProcNodes);
+                fut0.checkConnection(rtState, futPath, rtState.commErrProcNodes);
             }
         });
     }
@@ -2341,7 +2343,8 @@ public class ZookeeperDiscoveryImpl {
                             ", rslvr=" + rslvr.getClass().getSimpleName() + ']');
                     }
 
-                    ZkCommunicationProblemContext ctx = new ZkCommunicationProblemContext(topSnapshot,
+                    ZkCommunicationProblemContext ctx = new ZkCommunicationProblemContext(
+                        topSnapshot,
                         initialNodes,
                         nodesRes);
 
@@ -2352,7 +2355,7 @@ public class ZookeeperDiscoveryImpl {
 
                         if (killedNodes != null) {
                             if (log.isInfoEnabled()) {
-                                log.info("Communication error resolver forces nodes stop [reqId=" + futId +
+                                log.info("Communication error resolver forced nodes stop [reqId=" + futId +
                                     ", killNodeCnt=" + killedNodes.size() +
                                     ", nodeIds=" + U.nodeIds(killedNodes) + ']');
                             }

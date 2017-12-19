@@ -2696,6 +2696,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         objs.add(cfg.getGridLogger());
         objs.add(cfg.getMBeanServer());
 
+        if (cfg.getCommunicationProblemResolver() != null)
+            objs.add(cfg.getCommunicationProblemResolver());
+
         return objs;
     }
 

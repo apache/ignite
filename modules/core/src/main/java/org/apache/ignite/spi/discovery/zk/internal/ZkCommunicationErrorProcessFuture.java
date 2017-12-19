@@ -148,7 +148,7 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
      * @param futPath Future path.
      * @param nodes Nodes to ping.
      */
-    void pingNodesAndNotifyFuture(final ZkRuntimeState rtState, final String futPath, List<ClusterNode> nodes) throws Exception {
+    void checkConnection(final ZkRuntimeState rtState, final String futPath, List<ClusterNode> nodes) {
         final TcpCommunicationSpi spi = (TcpCommunicationSpi)impl.spi.ignite().configuration().getCommunicationSpi();
 
         IgniteFuture<BitSet> fut = spi.checkConnection(nodes);

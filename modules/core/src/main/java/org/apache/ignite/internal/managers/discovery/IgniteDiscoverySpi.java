@@ -22,7 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 /**
- * TODO ZK
+ *
  */
 public interface IgniteDiscoverySpi extends DiscoverySpi {
     /**
@@ -63,5 +63,5 @@ public interface IgniteDiscoverySpi extends DiscoverySpi {
      * @param node Problem node.
      * @param err Connection error.
      */
-    public void onCommunicationConnectionError(ClusterNode node, Exception err);
+    public void resolveCommunicationError(ClusterNode node, Exception err);
 }

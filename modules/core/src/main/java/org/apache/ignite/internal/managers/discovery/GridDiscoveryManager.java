@@ -53,8 +53,11 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CommunicationProblemResolver;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DefaultCommunicationProblemResolver;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
@@ -108,6 +111,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -544,6 +549,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             });
         }
+
+        if (ctx.config().getCommunicationProblemResolver() != null)
+            ctx.resource().injectGeneric(ctx.config().getCommunicationProblemResolver());
 
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
@@ -2334,6 +2342,66 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
         ).start();
+    }
+
+    /**
+     * @param cfg Configuration.
+     * @throws IgniteCheckedException If configuration is not valid.
+     */
+    public static void initCommunicationErrorResolveConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
+        CommunicationProblemResolver rslvr = cfg.getCommunicationProblemResolver();
+        CommunicationSpi commSpi = cfg.getCommunicationSpi();
+        DiscoverySpi discoverySpi = cfg.getDiscoverySpi();
+
+        if (rslvr != null) {
+            if (!supportsCommunicationErrorResolve(commSpi))
+                throw new IgniteCheckedException("CommunicationProblemResolver is configured, but communication SPI does not support communication" +
+                    "problem resolve: " + commSpi.getClass().getName());
+
+            if (!supportsCommunicationErrorResolve(discoverySpi))
+                throw new IgniteCheckedException("CommunicationProblemResolver is configured, but discovery SPI does not support communication" +
+                    "problem resolve: " + discoverySpi.getClass().getName());
+        }
+        else {
+            if (supportsCommunicationErrorResolve(commSpi) && supportsCommunicationErrorResolve(discoverySpi))
+                cfg.setCommunicationProblemResolver(new DefaultCommunicationProblemResolver());
+        }
+    }
+
+    /**
+     * @param spi Discovery SPI.
+     * @return {@code True} if SPI supports communication error resolve.
+     */
+    private static boolean supportsCommunicationErrorResolve(DiscoverySpi spi) {
+        return spi instanceof IgniteDiscoverySpi && ((IgniteDiscoverySpi)spi).supportsCommunicationErrorResolve();
+    }
+
+    /**
+     * @param spi Discovery SPI.
+     * @return {@code True} if SPI supports communication error resolve.
+     */
+    private static boolean supportsCommunicationErrorResolve(CommunicationSpi spi) {
+        return spi instanceof TcpCommunicationSpi;
+    }
+
+    /**
+     * @return {@code True} if communication error resolve is supported.
+     */
+    public boolean communicationErrorResolveSupported() {
+        return ctx.config().getCommunicationProblemResolver() != null;
+    }
+
+    /**
+     * @param node Problem node.
+     * @param err Error.
+     */
+    public void resolveCommunicationError(ClusterNode node, Exception err) {
+        DiscoverySpi spi = getSpi();
+
+        if (!supportsCommunicationErrorResolve(spi) || !supportsCommunicationErrorResolve(ctx.config().getCommunicationSpi()))
+            throw new UnsupportedOperationException();
+
+        ((IgniteDiscoverySpi)spi).resolveCommunicationError(node, err);
     }
 
     /** Worker for network segment checks. */

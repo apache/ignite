@@ -595,12 +595,22 @@ public class IgniteConfiguration {
         warmupClos = cfg.getWarmupClosure();
     }
 
+    /**
+     * TODO ZK
+     * @return
+     */
     public CommunicationProblemResolver getCommunicationProblemResolver() {
         return commProblemRslvr;
     }
 
-    public void setCommunicationProblemResolver(CommunicationProblemResolver commProblemRslvr) {
+    /**
+     * TODO ZK
+     * @param commProblemRslvr
+     */
+    public IgniteConfiguration setCommunicationProblemResolver(CommunicationProblemResolver commProblemRslvr) {
         this.commProblemRslvr = commProblemRslvr;
+
+        return this;
     }
 
     /**

@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery;
+package org.apache.ignite.configuration;
 
 import java.util.BitSet;
 import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CommunicationProblemContext;
-import org.apache.ignite.configuration.CommunicationProblemResolver;
 
 /**
  *
@@ -70,6 +68,9 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
         /** */
         private final List<ClusterNode> nodes;
 
+        /**
+         * @param ctx Context.
+         */
         ClusterGraph(CommunicationProblemContext ctx) {
             this.ctx = ctx;
 
@@ -82,10 +83,17 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
             visitBitSet = initBitSet(nodeCnt);
         }
 
+        /**
+         * @param bitCnt Number of bits.
+         * @return Bit set words.
+         */
         static long[] initBitSet(int bitCnt) {
             return new long[wordIndex(bitCnt - 1) + 1];
         }
 
+        /**
+         * @return Cluster nodes bit set.
+         */
         BitSet findLargestIndependentCluster() {
             BitSet maxCluster = null;
             int maxClusterSize = 0;
@@ -109,6 +117,10 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
             return maxCluster;
         }
 
+        /**
+         * @param cluster Cluster nodes bit set.
+         * @return {@code True} if all cluster nodes are able to connect to each other.
+         */
         boolean checkFullyConnected(BitSet cluster) {
             int startIdx = 0;
 
@@ -128,7 +140,7 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
 
                     ClusterNode node2 = nodes.get(i);
 
-                    if (cluster.get(i) && ctx.connectionAvailable(node1, node2))
+                    if (cluster.get(i) && !ctx.connectionAvailable(node1, node2))
                         return false;
                 }
 
@@ -138,6 +150,10 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
             return true;
         }
 
+        /**
+         * @param cluster Current cluster bit set.
+         * @param idx Node index.
+         */
         void search(BitSet cluster, int idx) {
             setBit(visitBitSet, idx);
 
@@ -159,12 +175,21 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
             }
         }
 
+        /**
+         * @param words Bit set words.
+         * @param bitIndex Bit index.
+         */
         static void setBit(long words[], int bitIndex) {
             int wordIndex = wordIndex(bitIndex);
 
             words[wordIndex] |= (1L << bitIndex);
         }
 
+        /**
+         * @param words Bit set words.
+         * @param bitIndex Bit index.
+         * @return Bit value.
+         */
         static boolean getBit(long[] words, int bitIndex) {
             int wordIndex = wordIndex(bitIndex);
 

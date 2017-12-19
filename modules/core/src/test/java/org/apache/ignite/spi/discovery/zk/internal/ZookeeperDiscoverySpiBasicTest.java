@@ -61,6 +61,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
@@ -72,9 +73,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.configuration.CommunicationProblemContext;
 import org.apache.ignite.configuration.CommunicationProblemResolver;
@@ -147,7 +150,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private boolean persistence;
 
     /** */
-    private CommunicationProblemResolver commProblemRslvr;
+    private IgniteOutClosure<CommunicationProblemResolver> commProblemRslvr;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -248,7 +251,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             cfg.setCommunicationSpi(new ZkTestCommunicationSpi());
 
         if (commProblemRslvr != null)
-            cfg.setCommunicationProblemResolver(commProblemRslvr);
+            cfg.setCommunicationProblemResolver(commProblemRslvr.apply());
 
         return cfg;
     }
@@ -1808,7 +1811,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         assert nodes > 1;
 
         sesTimeout = 2000;
-        commProblemRslvr = new NoOpCommunicationProblemResolver();
+        commProblemRslvr = NoOpCommunicationProblemResolver.FACTORY;
 
         startGridsMultiThreaded(nodes);
 
@@ -1828,7 +1831,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
             ZookeeperDiscoverySpi spi = spi(ignite(idx1));
 
-            spi.onCommunicationConnectionError(ignite(idx2).cluster().localNode(), new Exception("test"));
+            spi.resolveCommunicationError(ignite(idx2).cluster().localNode(), new Exception("test"));
 
             checkInternalStructuresCleanup();
         }
@@ -1840,7 +1843,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     public void testNoOpCommunicationErrorResolve_3() throws Exception {
         // One node fails before sending communication status.
         sesTimeout = 2000;
-        commProblemRslvr = new NoOpCommunicationProblemResolver();
+        commProblemRslvr = NoOpCommunicationProblemResolver.FACTORY;
 
         startGridsMultiThreaded(3);
 
@@ -1855,7 +1858,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             @Override public Object call() {
                 ZookeeperDiscoverySpi spi = spi(ignite(0));
 
-                spi.onCommunicationConnectionError(ignite(1).cluster().localNode(), new Exception("test"));
+                spi.resolveCommunicationError(ignite(1).cluster().localNode(), new Exception("test"));
 
                 return null;
             }
@@ -1883,11 +1886,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoOpCommunicationErrorResolve_4() throws Exception {
-        // Coordinator changes while resolve process is in progress.
+        // Coordinator fails while resolve process is in progress.
         testCommSpi = true;
 
         sesTimeout = 2000;
-        commProblemRslvr = new NoOpCommunicationProblemResolver();
+        commProblemRslvr = NoOpCommunicationProblemResolver.FACTORY;
 
         startGrid(0);
 
@@ -1901,7 +1904,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             @Override public Object call() {
                 ZookeeperDiscoverySpi spi = spi(ignite(1));
 
-                spi.onCommunicationConnectionError(ignite(2).cluster().localNode(), new Exception("test"));
+                spi.resolveCommunicationError(ignite(2).cluster().localNode(), new Exception("test"));
 
                 return null;
             }
@@ -1970,6 +1973,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO ZK: kill random, kill coordinator multiple times.
+     *
      * @param startNodes Number of nodes to start.
      * @param killNodes Nodes to kill by resolve process.
      * @throws Exception If failed.
@@ -1977,7 +1982,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private void communicationErrorResolve_KillNodes(int startNodes, Collection<Long> killNodes) throws Exception {
         testCommSpi = true;
 
-        commProblemRslvr = new TestNodeKillCommunicationProblemResolver(killNodes);
+        commProblemRslvr = TestNodeKillCommunicationProblemResolver.factory(killNodes);
 
         startGrids(startNodes);
 
@@ -1986,20 +1991,28 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         commSpi.checkRes = new BitSet(startNodes);
 
         ZookeeperDiscoverySpi spi = null;
+        UUID killNodeId = null;
 
         for (Ignite node : G.allGrids()) {
             ZookeeperDiscoverySpi spi0 = spi(node);
 
-            if (!killNodes.contains(node.cluster().localNode().order())) {
+            if (!killNodes.contains(node.cluster().localNode().order()))
                 spi = spi0;
-
-                break;
-            }
+            else
+                killNodeId = node.cluster().localNode().id();
         }
 
         assertNotNull(spi);
+        assertNotNull(killNodeId);
 
-        spi.onCommunicationConnectionError(ignite(1).cluster().localNode(), new Exception("test"));
+        try {
+            spi.resolveCommunicationError(spi.getNode(killNodeId), new Exception("test"));
+
+            fail("Exception is not thrown");
+        }
+        catch (IgniteSpiException e) {
+            assertTrue("Unexpected exception: " + e, e.getCause() instanceof ClusterTopologyCheckedException);
+        }
 
         int expNodes = startNodes - killNodes.size();
 
@@ -2011,6 +2024,46 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         startGrid(startNodes);
 
         waitForTopology(expNodes + 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDefaultCommunicationErrorResolver1() throws Exception {
+        testCommSpi = true;
+        sesTimeout = 5000;
+
+        startGrids(3);
+
+        {
+            ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.forNode(ignite(0));
+            commSpi.checkRes = new BitSet(3);
+            commSpi.checkRes.set(0);
+            commSpi.checkRes.set(1);
+        }
+        {
+            ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.forNode(ignite(1));
+            commSpi.checkRes = new BitSet(3);
+            commSpi.checkRes.set(0);
+            commSpi.checkRes.set(1);
+        }
+        {
+            ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.forNode(ignite(2));
+            commSpi.checkRes = new BitSet(3);
+            commSpi.checkRes.set(2);
+        }
+
+        UUID killedId = nodeId(2);
+
+        assertNotNull(ignite(0).cluster().node(killedId));
+
+        ZookeeperDiscoverySpi spi = spi(ignite(0));
+
+        spi.resolveCommunicationError(spi.getNode(ignite(1).cluster().localNode().id()), new Exception("test"));
+
+        waitForTopology(2);
+
+        assertNull(ignite(0).cluster().node(killedId));
     }
 
     /**
@@ -2709,6 +2762,13 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      *
      */
     static class NoOpCommunicationProblemResolver implements CommunicationProblemResolver {
+        /** */
+        static final IgniteOutClosure<CommunicationProblemResolver> FACTORY = new IgniteOutClosure<CommunicationProblemResolver>() {
+            @Override public CommunicationProblemResolver apply() {
+                return new NoOpCommunicationProblemResolver();
+            }
+        };
+
         /** {@inheritDoc} */
         @Override public void resolve(CommunicationProblemContext ctx) {
             // No-op.
@@ -2719,6 +2779,18 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      *
      */
     static class TestNodeKillCommunicationProblemResolver implements CommunicationProblemResolver {
+        /**
+         * @param killOrders Killed nodes order.
+         * @return Factory.
+         */
+        static IgniteOutClosure<CommunicationProblemResolver> factory(final Collection<Long> killOrders)  {
+            return new IgniteOutClosure<CommunicationProblemResolver>() {
+                @Override public CommunicationProblemResolver apply() {
+                    return new TestNodeKillCommunicationProblemResolver(killOrders);
+                }
+            };
+        }
+
         /** */
         final Collection<Long> killNodeOrders;
 

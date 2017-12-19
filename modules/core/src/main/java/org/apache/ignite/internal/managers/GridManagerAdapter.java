@@ -604,6 +604,14 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return ctx.nodeAttributes();
                     }
 
+                    @Override public boolean communicationErrorResolveSupported() {
+                        return ctx.discovery().communicationErrorResolveSupported();
+                    }
+
+                    @Override public void resolveCommunicationError(ClusterNode node, Exception err) {
+                        ctx.discovery().resolveCommunicationError(node, err);
+                    }
+
                     /**
                      * @param e Exception to handle.
                      * @return GridSpiException Converted exception.

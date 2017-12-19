@@ -957,5 +957,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         @Override public Map<String, Object> nodeAttributes() {
             return Collections.emptyMap();
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean communicationErrorResolveSupported() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resolveCommunicationError(ClusterNode node, Exception err) {
+            throw new UnsupportedOperationException();
+        }
     }
 }
