@@ -769,13 +769,81 @@ namespace Apache.Ignite.Core
         /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
         /// </summary>
         /// <param name="clientConfiguration">The client configuration.</param>
-        /// <returns>Ignite instance.</returns>
+        /// <returns>Ignite client instance.</returns>
         public static IIgniteClient StartClient(IgniteClientConfiguration clientConfiguration)
         {
             IgniteArgumentCheck.NotNull(clientConfiguration, "clientConfiguration");
             IgniteArgumentCheck.NotNull(clientConfiguration.Host, "clientConfiguration.Host");
 
             return new IgniteClient(clientConfiguration);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteClientConfiguration"/> from application configuration
+        /// <see cref="IgniteClientConfigurationSection"/> with <see cref="ClientConfigurationSectionName"/>
+        /// name and connects Ignite lightweight (thin) client to an Ignite node.
+        /// <para />
+        /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
+        /// </summary>
+        /// <returns>Ignite client instance.</returns>
+        public static IIgniteClient StartClient()
+        {
+            // ReSharper disable once IntroduceOptionalParameters.Global
+            return StartClient(ClientConfigurationSectionName);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteClientConfiguration" /> from application configuration
+        /// <see cref="IgniteClientConfigurationSection" /> with specified name and connects
+        /// Ignite lightweight (thin) client to an Ignite node.
+        /// <para />
+        /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
+        /// </summary>
+        /// <param name="sectionName">Name of the configuration section.</param>
+        /// <returns>Ignite client instance.</returns>
+        public static IIgniteClient StartClient(string sectionName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
+
+            var section = ConfigurationManager.GetSection(sectionName) as IgniteClientConfigurationSection;
+
+            if (section == null)
+            {
+                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'",
+                    typeof(IgniteClientConfigurationSection).Name, sectionName));
+            }
+
+            if (section.IgniteClientConfiguration == null)
+            {
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteClientConfigurationSection).Name, sectionName));
+            }
+
+            return StartClient(section.IgniteClientConfiguration);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteConfiguration" /> from application configuration
+        /// <see cref="IgniteConfigurationSection" /> with specified name and starts Ignite.
+        /// </summary>
+        /// <param name="sectionName">Name of the section.</param>
+        /// <param name="configPath">Path to the configuration file.</param>
+        /// <returns>Started Ignite.</returns>
+        public static IIgniteClient StartClient(string sectionName, string configPath)
+        {
+            var section = GetConfigurationSection<IgniteClientConfigurationSection>(sectionName, configPath);
+
+            if (section.IgniteClientConfiguration == null)
+            {
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' in file '{2}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteClientConfigurationSection).Name, sectionName, configPath));
+            }
+
+            return StartClient(section.IgniteClientConfiguration);
         }
 
         /// <summary>
