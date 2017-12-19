@@ -360,7 +360,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else if (task instanceof CacheStatisticsModeChangeTask) {
             CacheStatisticsModeChangeTask task0 = (CacheStatisticsModeChangeTask)task;
 
-            cachesInfo.processStatisticsModeChange(task0.message());
+            processStatisticsModeChange(task0.message());
         }
         else
             U.warn(log, "Unsupported custom exchange task: " + task);
@@ -2413,6 +2413,71 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Cache statistics flag change message received.
+     *
+     * @param msg Message.
+     */
+    public void onCacheStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
+        assert msg != null;
+
+        if (msg.initial()) {
+            EnableStatisticsFuture fut = enableStatisticsFuts.get(msg.requestId());
+
+            if (fut != null && !cacheNames().containsAll(msg.caches())) {
+                fut.onDone(new IgniteCheckedException("One or more cache descriptors not found [caches="
+                    + caches + ']'));
+
+                return;
+            }
+
+            for (String cacheName : msg.caches()) {
+                DynamicCacheDescriptor desc = cachesInfo.registeredCaches().get(cacheName);
+
+                if (desc != null) {
+                    if (desc.cacheConfiguration().isStatisticsEnabled() != msg.enabled()) {
+                        desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
+
+                        try {
+                            ctx.cache().saveCacheConfiguration(desc);
+                        }
+                        catch (IgniteCheckedException e) {
+                            log.error("Error while saving cache configuration to disk, cfg = "
+                                + desc.cacheConfiguration(), e);
+                        }
+                    }
+                }
+                else
+                    log.warning("Failed to change cache descriptor configuration, cache not found [cacheName="
+                        + cacheName + ']');
+            }
+        }
+        else {
+            EnableStatisticsFuture fut = enableStatisticsFuts.get(msg.requestId());
+
+            if (fut != null)
+                fut.onDone();
+        }
+    }
+
+    /**
+     * Cache statistics flag change task processed by exchange worker.
+     *
+     * @param msg Message.
+     */
+    public void processStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
+        assert msg != null;
+
+        for (String cacheName : msg.caches()) {
+            IgniteInternalCache<Object, Object> cache = cache(cacheName);
+
+            if (cache != null)
+                cache.context().statisticsEnabled(msg.enabled());
+            else
+                log.warning("Failed to change cache configuration, cache not found [cacheName=" + cacheName + ']');
+        }
+    }
+
+    /**
      * @return {@code True} if need locally start all existing caches on client node start.
      */
     private boolean startAllCachesOnClientStart() {
@@ -3111,25 +3176,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);
 
-        if (msg instanceof CacheStatisticsModeChangeMessage) {
-            CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
-
-            if (msg0.initial()) {
-                EnableStatisticsFuture fut = enableStatisticsFuts.get(msg0.requestId());
-
-                if (fut != null && !cacheNames().containsAll(msg0.caches()))
-                    fut.onDone(new IgniteCheckedException("One or more cache descriptors not found [caches="
-                        + caches + ']'));
-
-                cachesInfo.onCacheStatisticsModeChange(msg0);
-            }
-            else {
-                EnableStatisticsFuture fut = enableStatisticsFuts.get(msg0.requestId());
-
-                if (fut != null)
-                    fut.onDone();
-            }
-        }
+        if (msg instanceof CacheStatisticsModeChangeMessage)
+            onCacheStatisticsModeChange((CacheStatisticsModeChangeMessage)msg);
 
         return false;
     }

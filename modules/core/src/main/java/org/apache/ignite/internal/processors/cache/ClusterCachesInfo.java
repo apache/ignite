@@ -386,50 +386,6 @@ class ClusterCachesInfo {
     }
 
     /**
-     * @param msg Message.
-     */
-    public void onCacheStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
-        assert msg != null;
-
-        for (String cacheName : msg.caches()) {
-            DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
-
-            if (desc != null) {
-                if (desc.cacheConfiguration().isStatisticsEnabled() != msg.enabled()) {
-                    desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
-
-                    try {
-                        ctx.cache().saveCacheConfiguration(desc);
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.error("Error while saving cache configuration to disk, cfg = "
-                            + desc.cacheConfiguration(), e);
-                    }
-                }
-            }
-            else
-                log.warning("Failed to change cache descriptor configuration, cache not found [cacheName="
-                    + cacheName + ']');
-        }
-    }
-
-    /**
-     * @param msg Message.
-     */
-    public void processStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
-        assert msg != null;
-
-        for (String cacheName : msg.caches()) {
-            IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
-
-            if (cache != null)
-                cache.context().statisticsEnabled(msg.enabled());
-            else
-                log.warning("Failed to change cache configuration, cache not found [cacheName=" + cacheName + ']');
-        }
-    }
-
-    /**
      * @param batch Cache change request.
      * @param topVer Topology version.
      * @return {@code True} if minor topology version should be increased.
