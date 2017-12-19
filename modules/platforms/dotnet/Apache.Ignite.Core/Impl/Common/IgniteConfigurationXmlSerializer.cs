@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             using (var xmlWriter = XmlWriter.Create(sb, settings))
             {
-                Serialize(configuration, xmlWriter, "igniteConfiguration");
+                Serialize(configuration, xmlWriter, rootElementName);
             }
 
             return sb.ToString();
