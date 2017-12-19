@@ -18,9 +18,6 @@
 namespace Apache.Ignite.Core.Client
 {
     using System.ComponentModel;
-    using System.Diagnostics.CodeAnalysis;
-    using System.IO;
-    using System.Text;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
