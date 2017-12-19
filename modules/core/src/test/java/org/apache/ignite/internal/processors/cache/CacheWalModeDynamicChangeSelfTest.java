@@ -398,7 +398,6 @@ public class CacheWalModeDynamicChangeSelfTest extends GridCommonAbstractTest {
         ignite.active(true);
 
         requestWalModeChangeAndFail(igniteId, true);
-
         requestWalModeChangeAndFail(igniteId, false);
     }
 
