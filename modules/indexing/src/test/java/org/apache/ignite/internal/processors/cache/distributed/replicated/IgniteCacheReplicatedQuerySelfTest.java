@@ -196,7 +196,22 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If test failed.
      */
-    public void testLocalQuery() throws Exception {
+    public void testLocalQueryWithExplicitFlag() throws Exception {
+        doTestLocalQuery(true);
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testLocalQueryWithoutExplicitFlag() throws Exception {
+        doTestLocalQuery(false);
+    }
+
+    /**
+     * @param loc Explicit query locality flag.
+     * @throws Exception if failed.
+     */
+    private void doTestLocalQuery(boolean loc) throws Exception {
         cache1.clear();
 
         Transaction tx = ignite1.transactions().txStart();
@@ -217,9 +232,9 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
             throw e;
         }
 
-        checkQueryResults(cache1);
-        checkQueryResults(cache2);
-        checkQueryResults(cache3);
+        checkLocalQueryResults(cache1, loc);
+        checkLocalQueryResults(cache2, loc);
+        checkLocalQueryResults(cache3, loc);
     }
 
     /**
@@ -403,11 +418,13 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
     /**
      * @param cache Cache.
+     * @param loc Explicit query locality flag.
      * @throws Exception If check failed.
      */
-    private void checkQueryResults(IgniteCache<CacheKey, CacheValue> cache) throws Exception {
+    private void checkLocalQueryResults(IgniteCache<CacheKey, CacheValue> cache, boolean loc) throws Exception {
         QueryCursor<Cache.Entry<CacheKey, CacheValue>> qry =
-            cache.query(new SqlQuery<CacheKey, CacheValue>(CacheValue.class, "val > 1 and val < 4").setLocal(true));
+            cache.query(new SqlQuery<CacheKey, CacheValue>(CacheValue.class, "val > 1 and val < 4")
+                .setReplicatedOnly(true).setLocal(loc));
 
         Iterator<Cache.Entry<CacheKey, CacheValue>> iter = qry.iterator();
 
