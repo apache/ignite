@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private const string KeyValPairElement = "pair";
 
         /** Schema. */
-        private const string Schema = "http://ignite.apache.org/schema/dotnet/";
+        private const string Schema = "http://ignite.apache.org/schema/dotnet/{0}Section";
 
         /// <summary>
         /// Deserializes configuration of specified type from specified <see cref="XmlReader"/>.
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Common
             if (writeSchema)
             {
                 // Write xmlns for the root element.
-                writer.WriteStartElement(rootElementName, Schema + valueType.Name);
+                writer.WriteStartElement(rootElementName, string.Format(Schema, valueType.Name));
             }
             else
             {
