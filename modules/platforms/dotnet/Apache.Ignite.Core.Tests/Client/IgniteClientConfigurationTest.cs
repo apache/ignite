@@ -55,10 +55,21 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestToXml()
         {
             // Empty config.
-            // Empty config
             Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<igniteClientConfiguration " +
                             "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection\" />",
                 new IgniteClientConfiguration().ToXml());
+
+            // Some properties.
+            var cfg = new IgniteClientConfiguration
+            {
+                Host = "myHost",
+                Port = 123
+            };
+
+            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<igniteClientConfiguration " +
+                            "host=\"myHost\" port=\"123\" " +
+                            "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection\" />",
+                cfg.ToXml());
         }
     }
 }
