@@ -184,6 +184,7 @@ namespace Apache.Ignite.Core.Tests.Client
             // TODO
         }
 
+#if !NETCOREAPP2_0
         /// <summary>
         /// Tests that all properties are present in the schema.
         /// </summary>
@@ -193,6 +194,6 @@ namespace Apache.Ignite.Core.Tests.Client
             IgniteConfigurationSerializerTest.CheckAllPropertiesArePresentInSchema(
                 "IgniteClientConfigurationSection.xsd", "igniteClientConfiguration", typeof(IgniteClientConfiguration));
         }
-
+#endif
     }
 }
