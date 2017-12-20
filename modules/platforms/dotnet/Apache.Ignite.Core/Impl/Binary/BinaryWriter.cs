@@ -1339,13 +1339,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else if (type == typeof(IntPtr))
             {
-                var val0 = TypeCaster<IntPtr>.Cast(val);
-                WriteLongField(val0.ToInt64());
+                var val0 = TypeCaster<IntPtr>.Cast(val).ToInt64();
+                WriteLongField(val0);
             }
             else if (type == typeof(UIntPtr))
             {
-                var val0 = TypeCaster<UIntPtr>.Cast(val);
-                WriteLongField((long) val0.ToUInt64());
+                var val0 = TypeCaster<UIntPtr>.Cast(val).ToUInt64();
+                WriteLongField(*(long*)&val0);
             }
             else
                 throw BinaryUtils.GetUnsupportedTypeException(type, val);
