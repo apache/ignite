@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     /// <summary>
     /// Tests [Serializable] mechanism handling primitive types.
     /// </summary>
-    public unsafe class PrimitivesTest
+    public class PrimitivesTest
     {
         /** */
         private IIgnite _ignite;
@@ -249,6 +249,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
                 Assert.AreEqual(val.IntPtr, res.IntPtr);
                 Assert.AreEqual(val.IntPtr, bin.GetField<IntPtr>("intptr"));
+
+                Assert.AreEqual(val.IntPtrs, res.IntPtrs);
+                Assert.AreEqual(val.IntPtrs, bin.GetField<IntPtr[]>("intptrs"));
 
                 VerifyFieldTypes(bin);
             }
@@ -528,10 +531,8 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             public DateTime[] DateTimes { get; set; }
             public string String { get; set; }
             public string[] Strings { get; set; }
-
             public IntPtr IntPtr { get; set; }
             public IntPtr[] IntPtrs { get; set; }
-            
             public UIntPtr UIntPtr { get; set; }
             public UIntPtr[] UIntPtrs { get; set; }
 
@@ -592,10 +593,8 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 String = info.GetString("string");
                 Strings = (string[]) info.GetValue("strings", typeof(string[]));
 
-                foreach (var x in info)
-                {
-                    Console.WriteLine(x);
-                }
+                IntPtr = (IntPtr) info.GetInt64("intptr");
+                IntPtrs = (IntPtr[]) info.GetValue("intptrs", typeof(IntPtr[]));
             }
 
             public void GetObjectData(SerializationInfo info, StreamingContext context)
