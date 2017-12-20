@@ -481,7 +481,7 @@ public class IgniteConfiguration {
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
     /** */
-    private boolean mvccEnabled;
+    private boolean mvccEnabled = true;
 
     /**
      * Creates valid grid configuration with all default values.
