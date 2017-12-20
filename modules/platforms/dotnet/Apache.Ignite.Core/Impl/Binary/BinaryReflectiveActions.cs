@@ -513,7 +513,11 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else if (type.IsPointer)
             {
-                writeAction = GetWriter<long>(field, (f, w, o) => w.WriteLong(f, o));
+                // Object way causes "Operation could destabilize the runtime." error.
+                //writeAction = GetWriter<object>(field, (f, w, o) => w.WriteLong(f, (long) o), true);
+                //readAction = GetReader<object>(field, (f, r) => r.ReadLong(f));
+
+                writeAction = GetWriter<long>(field, (f, w, o) => w.WriteLong(f, o), true);
                 readAction = GetReader(field, (f, r) => r.ReadLong(f));
             }
             else
@@ -579,8 +583,11 @@ namespace Apache.Ignite.Core.Impl.Binary
             var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
             Expression fldExpr = Expression.Field(targetParamConverted, field);
 
+            // TODO: Can we just compare field.FieldType and typeof(T)?
             if (convertFieldVal)
             {
+                // TODO: Expression trees do not support pointers..
+                // Combine field reading with a delegate?
                 fldExpr = Expression.Convert(fldExpr, typeof(T));
             }
 

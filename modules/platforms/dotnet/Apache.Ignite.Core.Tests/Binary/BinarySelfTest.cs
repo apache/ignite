@@ -1606,7 +1606,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var ptrs = new Pointers
             {
                 ByteP = (byte*) 123,
-                BytePs = new[] {(byte*) 1, (byte*) long.MaxValue}
+                //BytePs = new[] {(byte*) 1, (byte*) long.MaxValue}
             };
             Assert.AreEqual(ptrs, TestUtils.SerializeDeserialize(ptrs));
         }
@@ -2728,7 +2728,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             //public UIntPtr UIntPtr { get; set; }
             //public UIntPtr[] UIntPtrs { get; set; }
             public byte* ByteP { get; set; }
-            public byte*[] BytePs { get; set; }
+            //public byte*[] BytePs { get; set; }
         }
     }
 }
