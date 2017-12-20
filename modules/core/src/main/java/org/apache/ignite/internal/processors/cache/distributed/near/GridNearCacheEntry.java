@@ -314,7 +314,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void recordNodeId(UUID primaryNodeId, AffinityTopologyVersion topVer) {
-        assert holdsLock();
+        assert isLockedByCurrentThread();
 
         assert topVer.compareTo(cctx.affinity().affinityTopologyVersion()) <= 0 : "Affinity not ready [" +
             "topVer=" + topVer +
@@ -330,7 +330,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      */
     public final boolean recordDhtVersion(GridCacheVersion dhtVer) {
         assert dhtVer != null;
-        assert holdsLock();
+        assert isLockedByCurrentThread();
 
         if (this.dhtVer == null || this.dhtVer.compareTo(dhtVer) <= 0) {
             this.dhtVer = dhtVer;
@@ -730,7 +730,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected boolean evictionDisabled() {
-        assert holdsLock();
+        assert isLockedByCurrentThread();
 
         return evictReservations > 0;
     }
@@ -740,7 +740,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param topVer Topology version.
      */
     private void primaryNode(UUID nodeId, AffinityTopologyVersion topVer) {
-        assert holdsLock();
+        assert isLockedByCurrentThread();
         assert nodeId != null;
 
         ClusterNode primary = null;

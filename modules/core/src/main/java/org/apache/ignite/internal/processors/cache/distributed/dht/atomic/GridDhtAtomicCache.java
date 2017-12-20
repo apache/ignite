@@ -86,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConfl
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioBackPressureControl;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
@@ -2651,7 +2650,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             for (int i = 0; i < entries.size(); i++) {
                 GridDhtCacheEntry entry = entries.get(i);
 
-                assert entry.holdsLock();
+                assert entry.isLockedByCurrentThread();
 
                 if (entry.obsolete()) {
                     assert req.operation() == DELETE : "Entry can become obsolete only after remove: " + entry;

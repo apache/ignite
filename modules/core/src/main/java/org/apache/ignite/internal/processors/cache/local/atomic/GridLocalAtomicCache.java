@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -1349,7 +1348,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         for (int i = 0; i < entries.size(); i++) {
             GridCacheEntryEx entry = entries.get(i);
 
-            assert entry.holdsLock();
+            assert entry.isLockedByCurrentThread();
 
             if (entry.obsolete() ||
                 (storeErr != null && storeErr.failedKeys().contains(entry.key().value(ctx.cacheObjectContext(), false))))

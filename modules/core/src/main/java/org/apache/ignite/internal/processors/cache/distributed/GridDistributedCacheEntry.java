@@ -428,7 +428,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @throws GridDistributedLockCancelledException If lock is cancelled.
      */
     protected void checkRemoved(GridCacheVersion ver) throws GridDistributedLockCancelledException {
-        assert holdsLock();
+        assert isLockedByCurrentThread();
 
         GridCacheVersion obsoleteVer = obsoleteVersionExtras();
 
@@ -442,7 +442,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @return {@code True} if removed.
      */
     public boolean addRemoved(GridCacheVersion ver) {
-        assert holdsLock();
+        assert isLockedByCurrentThread();
 
         return cctx.mvcc().addRemoved(cctx, ver);
     }
@@ -706,7 +706,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @param emptyAfter Empty flag after operation.
      */
     protected void checkCallbacks(boolean emptyBefore, boolean emptyAfter) {
-        assert holdsLock();
+        assert isLockedByCurrentThread();
 
         if (emptyBefore != emptyAfter) {
             if (emptyBefore)
@@ -719,7 +719,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
     /** {@inheritDoc} */
     @Override final protected void checkThreadChain(GridCacheMvccCandidate owner) {
-        assert !holdsLock();
+        assert !isLockedByCurrentThread();
 
         assert owner != null;
         assert owner.owner() || owner.used() : "Neither owner or used flags are set on ready local candidate: " +

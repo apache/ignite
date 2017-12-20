@@ -203,7 +203,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param val Value to store.
      */
     protected void value(@Nullable CacheObject val) {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         this.val = val;
     }
@@ -273,7 +273,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean isNew() throws GridCacheEntryRemovedException {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         checkObsolete();
 
@@ -448,7 +448,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return Value bytes and flag indicating whether value is byte array.
      */
     protected IgniteBiTuple<byte[], Byte> valueBytes0() {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         assert val != null;
 
@@ -2258,7 +2258,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return {@code True} if entry is obsolete, {@code false} if entry is still used by other threads or nodes.
      */
     protected final boolean markObsolete0(GridCacheVersion ver, boolean clear, GridCacheObsoleteEntryExtras extras) {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         if (evictionDisabled()) {
             assert !obsolete() : this;
@@ -2364,7 +2364,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     protected final void update(@Nullable CacheObject val, long expireTime, long ttl, GridCacheVersion ver, boolean addTracked) {
         assert ver != null;
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
         assert ttl != CU.TTL_ZERO && ttl != CU.TTL_NOT_CHANGED && ttl >= 0 : ttl;
 
         boolean trackNear = addTracked && isNear() && cctx.config().isEagerTtl();
@@ -2419,7 +2419,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     private void updateTtl(long ttl) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         long expireTime;
 
@@ -2439,7 +2439,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
     protected void checkObsolete() throws GridCacheEntryRemovedException {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         if (obsoleteVersionExtras() != null)
             throw new GridCacheEntryRemovedException();
@@ -2585,7 +2585,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @throws IgniteCheckedException In case of failure.
      */
     private boolean checkExpired() throws IgniteCheckedException {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         long expireTime = expireTimeExtras();
 
@@ -2630,7 +2630,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return {@code True} if this entry has value.
      */
     protected final boolean hasValueUnlocked() {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         return val != null;
     }
@@ -2894,7 +2894,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     private void addReaderIfNeed(@Nullable ReaderArguments readerArgs) {
         if (readerArgs != null) {
             assert this instanceof GridDhtCacheEntry : this;
-            assert lock.isLocked();
+            assert lock.isHeldByCurrentThread();
 
             try {
                 ((GridDhtCacheEntry)this).addReader(readerArgs.reader(),
@@ -3195,7 +3195,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public long expireTimeUnlocked() {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         return expireTimeExtras();
     }
@@ -3456,7 +3456,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         long expireTime,
         GridCacheVersion ver,
         @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
         assert val != null : "null values in update for key: " + key;
 
         cctx.offheap().invoke(cctx, key,  localPartition(), new UpdateClosure(this, val, ver, expireTime));
@@ -3499,7 +3499,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @throws IgniteCheckedException If failed.
      */
     protected void removeValue() throws IgniteCheckedException {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         cctx.offheap().remove(cctx, key, partition(), localPartition());
     }
@@ -3611,7 +3611,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     private void ensureFreeSpace() throws IgniteCheckedException {
         // Deadlock alert: evicting data page causes removing (and locking) all entries on the page one by one.
-        assert !lock.isLocked();
+        assert !lock.isHeldByCurrentThread();
 
         cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
     }
@@ -3832,7 +3832,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     @SuppressWarnings("SimplifiableIfStatement")
     protected final boolean deletedUnlocked() {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
 
         if (!cctx.deferredDelete())
             return false;
@@ -3844,7 +3844,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param deleted {@code True} if deleted.
      */
     protected final void deletedUnlocked(boolean deleted) {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
         assert cctx.deferredDelete();
 
         if (deleted) {
@@ -3961,7 +3961,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected final void checkOwnerChanged(@Nullable CacheLockCandidates prevOwners,
         @Nullable CacheLockCandidates owners,
         CacheObject val) {
-        assert !lock.isLocked();
+        assert !lock.isHeldByCurrentThread();
 
         if (prevOwners != null && owners == null) {
             cctx.mvcc().callback().onOwnerChanged(this, null);
@@ -4090,8 +4090,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean holdsLock() {
-        return lock.isLocked();
+    @Override public boolean isLockedByCurrentThread() {
+        return lock.isHeldByCurrentThread();
     }
 
     /** {@inheritDoc} */

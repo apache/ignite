@@ -138,7 +138,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override public void onMarkedObsolete() {
-        assert !holdsLock();
+        assert !isLockedByCurrentThread();
 
         // Remove this entry from partition mapping.
         cctx.topology().onRemoved(this);
@@ -673,7 +673,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Readers.
      */
     @Nullable public ReaderId[] readersLocked() {
-        assert holdsLock();
+        assert isLockedByCurrentThread();
 
         return this.rdrs;
     }
@@ -684,7 +684,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      */
     @SuppressWarnings({"unchecked", "ManualArrayToCollectionCopy"})
     protected Collection<ReaderId> checkReadersLocked() throws GridCacheEntryRemovedException {
-        assert holdsLock();
+        assert isLockedByCurrentThread();
 
         checkObsolete();
 

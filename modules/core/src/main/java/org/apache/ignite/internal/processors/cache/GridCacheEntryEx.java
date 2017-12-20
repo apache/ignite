@@ -1044,5 +1044,5 @@ public interface GridCacheEntryEx {
      *
      * @return {@code true} if the entry is locked.
      */
-    public boolean holdsLock();
+    public boolean isLockedByCurrentThread();
 }

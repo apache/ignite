@@ -890,7 +890,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean holdsLock() {
+    @Override public boolean isLockedByCurrentThread() {
         return false;
     }
 }
