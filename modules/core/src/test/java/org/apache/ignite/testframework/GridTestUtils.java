@@ -58,6 +58,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManagerFactory;
@@ -289,12 +290,13 @@ public final class GridTestUtils {
      * @param log Logger (optional).
      * @param call Callable.
      * @param cls Exception class.
-     * @param msg Exception message (optional). If provided exception message
-     *      and this message should be equal.
+     * @param msgRe Optional exception message regexp. If not null, the exception message
+     *      should match provided regexp.
      * @return Thrown throwable.
      */
-    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
-        Class<? extends Throwable> cls, @Nullable String msg) {
+    public static Throwable assertThrowsRe(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable Pattern msgRe) {
+
         assert call != null;
         assert cls != null;
 
@@ -302,33 +304,116 @@ public final class GridTestUtils {
             call.call();
         }
         catch (Throwable e) {
-            if (cls != e.getClass()) {
-                if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
-                    e = e.getCause();
-                else {
-                    U.error(log, "Unexpected exception.", e);
-
-                    fail("Exception class is not as expected [expected=" + cls + ", actual=" + e.getClass() + ']', e);
-                }
-            }
-
-            if (msg != null && (e.getMessage() == null || !e.getMessage().contains(msg))) {
-                U.error(log, "Unexpected exception message.", e);
-
-                fail("Exception message is not as expected [expected=" + msg + ", actual=" + e.getMessage() + ']', e);
-            }
-
-            if (log != null) {
-                if (log.isInfoEnabled())
-                    log.info("Caught expected exception: " + e.getMessage());
-            }
-            else
-                X.println("Caught expected exception: " + e.getMessage());
-
-            return e;
+            return handleAssertThrowsException(log, cls, StringOrPattern.ofNullable(msgRe), e);
         }
 
         throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks whether callable throws expected exception or not.
+     *
+     * @param log Logger (optional).
+     * @param call Callable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable String msg) {
+
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.call();
+        }
+        catch (Throwable e) {
+            return handleAssertThrowsException(log, cls, StringOrPattern.ofNullable(msg), e);
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks whether callable throws expected exception or not.
+     *
+     * @param log Logger (optional).
+     * @param call Callable.
+     * @param cls Exception class.
+     * @param msgRe Optional exception message fragment or regexp. If not null, the exception message
+     *      should match provided fragment or regexp.
+     * @return The throwable thrown.
+     */
+    public static Throwable assertThrowsSR(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable StringOrPattern msgRe) {
+
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.call();
+        }
+        catch (Throwable e) {
+            return handleAssertThrowsException(log, cls, msgRe, e);
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /** FIXME */
+    @NotNull
+    private static Throwable handleAssertThrowsException(@Nullable IgniteLogger log, Class<? extends Throwable> cls,
+        @Nullable StringOrPattern msgRe, Throwable e) {
+
+        if (cls != e.getClass()) {
+            if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
+                e = e.getCause();
+            else {
+                U.error(log, "Unexpected exception.", e);
+
+                fail("Exception class is not as expected [expected=" + cls + ", actual=" + e.getClass() + ']', e);
+            }
+        }
+
+        boolean isMatching = true;
+
+        if (msgRe != null) {
+
+            if (e.getMessage() == null)
+
+                isMatching = false;
+
+            else {
+                if (msgRe.isString())
+                    isMatching = e.getMessage().contains(msgRe.s());
+
+                else if (msgRe.isPattern())
+                    isMatching = (msgRe.p()).matcher(e.getMessage()).matches();
+
+                else {
+                    assert false : "Can't handle class " + msgRe.getClass();
+                    isMatching = false;
+                }
+            }
+        }
+
+        if (!isMatching) {
+            U.error(log, "Unexpected exception message.", e);
+
+            fail("Exception message is not as expected [expected=" + msgRe + ", actual="
+                + e.getMessage() + ']', e);
+        }
+
+        if (log != null) {
+            if (log.isInfoEnabled())
+                log.info("Caught expected exception: " + e.getMessage());
+        }
+        else
+            X.println("Caught expected exception: " + e.getMessage());
+
+        return e;
     }
 
     /**

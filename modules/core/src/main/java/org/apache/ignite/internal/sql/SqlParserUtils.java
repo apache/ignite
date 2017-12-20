@@ -239,11 +239,14 @@ public class SqlParserUtils {
     }
 
     /** FIXME */
-    public static void parseKeywordOrQuoted(SqlLexer lex, String paramDesc, Setter<String> setter) {
+    public static void parseKeywordOrQuoted(SqlLexer lex, String paramDesc, boolean isIdentifier, Setter<String> setter) {
         SqlLexerToken nextTok = lex.lookAhead();
 
         switch (nextTok.tokenType()) {
             case QUOTED:
+                if (isIdentifier && !isValidIdentifier(nextTok))
+                    throw errorUnexpectedToken(nextTok, "[optionally quoted identifier " + paramDesc + "]");
+
                 lex.shift();
 
                 setter.apply(lex.token(), false, true);
@@ -251,6 +254,9 @@ public class SqlParserUtils {
                 return;
 
             case KEYWORD:
+                if (isIdentifier && !isValidIdentifier(nextTok))
+                    throw errorUnexpectedToken(nextTok, "[optionally quoted identifier " + paramDesc + "]");
+
                 lex.shift();
 
                 setter.apply(lex.token(), false, false);
@@ -401,7 +407,7 @@ public class SqlParserUtils {
 
     /** FIXME */
     public static boolean tryParseStringParam(SqlLexer lex, String keyword, String description,
-        @Nullable Set<String> parsedParams, boolean allowDefault, Setter<String> setter) {
+        @Nullable Set<String> parsedParams, boolean isIdentifier, boolean allowDefault, Setter<String> setter) {
 
         if (!matchesKeyword(lex.lookAhead(), keyword))
             return false;
@@ -420,7 +426,7 @@ public class SqlParserUtils {
             setter.apply(null, true, false);
         }
         else
-            parseKeywordOrQuoted(lex, description, setter);
+            parseKeywordOrQuoted(lex, description, isIdentifier, setter);
 
         if (parsedParams != null)
             parsedParams.add(keyword);

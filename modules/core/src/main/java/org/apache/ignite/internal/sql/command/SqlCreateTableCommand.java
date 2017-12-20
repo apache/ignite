@@ -653,7 +653,7 @@ public class SqlCreateTableCommand implements SqlCommand {
      */
     private void parseParametersSection(SqlLexer lex) {
 
-        while (lex.tokenType() != SqlLexerTokenType.EOF) {
+        while (lex.lookAhead().tokenType() != SqlLexerTokenType.EOF) {
 
             if (!tryParseTemplate(lex) &&
                 !tryParseBackups(lex) &&
@@ -668,14 +668,14 @@ public class SqlCreateTableCommand implements SqlCommand {
                 !tryParseWrapKey(lex) &&
                 !tryParseWrapValue(lex))
 
-                throw errorUnexpectedToken(lex.currentToken());
+                throw errorUnexpectedToken(lex.lookAhead());
         }
     }
 
     /** FIXME */
     private boolean tryParseTemplate(final SqlLexer lex) {
 
-        return SqlParserUtils.tryParseStringParam(lex, TEMPLATE, "template name" , parsedParams, true,
+        return SqlParserUtils.tryParseStringParam(lex, TEMPLATE, "template name" , parsedParams, false, true,
 
             new SqlParserUtils.Setter<String>() {
 
@@ -740,7 +740,7 @@ public class SqlCreateTableCommand implements SqlCommand {
 
         return SqlParserUtils.tryParseStringParam(lex, CACHE_GROUP, "cache group name" , parsedParams,
 
-            false, new SqlParserUtils.Setter<String>() {
+            false, false, new SqlParserUtils.Setter<String>() {
 
                 @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
 
@@ -757,7 +757,7 @@ public class SqlCreateTableCommand implements SqlCommand {
 
         return SqlParserUtils.tryParseStringParam(lex, AFFINITY_KEY, "affinity key", parsedParams,
 
-            false, new SqlParserUtils.Setter<String>() {
+            false, false, new SqlParserUtils.Setter<String>() {
 
                 @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
 
@@ -791,8 +791,8 @@ public class SqlCreateTableCommand implements SqlCommand {
     private boolean tryParseCacheName(SqlLexer lex) {
 
         return SqlParserUtils.tryParseStringParam(lex, CACHE_NAME, "cache name" , parsedParams,
-
-            false, new SqlParserUtils.Setter<String>() {
+            false, false,
+            new SqlParserUtils.Setter<String>() {
 
                 @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
 
@@ -807,8 +807,8 @@ public class SqlCreateTableCommand implements SqlCommand {
     /** FIXME */
     private boolean tryParseDataRegion(final SqlLexer lex) {
 
-        return SqlParserUtils.tryParseStringParam(lex, DATA_REGION, "data region" , parsedParams, true,
-
+        return SqlParserUtils.tryParseStringParam(lex, DATA_REGION, "data region" , parsedParams,
+            false, true,
             new SqlParserUtils.Setter<String>() {
 
                 @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
@@ -822,8 +822,8 @@ public class SqlCreateTableCommand implements SqlCommand {
     /** FIXME */
     private boolean tryParseKeyType(final SqlLexer lex) {
 
-        return SqlParserUtils.tryParseStringParam(lex, KEY_TYPE, "key type" , parsedParams, false,
-
+        return SqlParserUtils.tryParseStringParam(lex, KEY_TYPE, "key type" , parsedParams,
+            true, false,
             new SqlParserUtils.Setter<String>() {
 
                 @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
@@ -840,8 +840,8 @@ public class SqlCreateTableCommand implements SqlCommand {
     private boolean tryParseValueType(final SqlLexer lex) {
 
         return SqlParserUtils.tryParseStringParam(lex, VAL_TYPE, "value type" , parsedParams,
-
-            false, new SqlParserUtils.Setter<String>() {
+            true, false,
+            new SqlParserUtils.Setter<String>() {
 
                 @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
 
@@ -857,7 +857,6 @@ public class SqlCreateTableCommand implements SqlCommand {
     private boolean tryParseWrapKey(final SqlLexer lex) {
 
         return tryParseBoolean(lex, WRAP_KEY, NO_WRAP_KEY, parsedParams,true,
-
             new SqlParserUtils.Setter<Boolean>() {
 
                 @Override public void apply(Boolean val, boolean isDflt, boolean isQuoted) {
@@ -871,7 +870,6 @@ public class SqlCreateTableCommand implements SqlCommand {
     private boolean tryParseWrapValue(final SqlLexer lex) {
 
         return tryParseBoolean(lex, WRAP_VALUE, NO_WRAP_VALUE, parsedParams, true,
-
             new SqlParserUtils.Setter<Boolean>() {
 
             @Override public void apply(Boolean val, boolean isDflt, boolean isQuoted) {

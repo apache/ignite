@@ -17,9 +17,16 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.param.TestParamDef;
+import org.apache.ignite.internal.sql.param.ParamTests;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.StringOrPattern;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 
 /**
@@ -35,12 +42,72 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
      * @param msg Expected error message.
      */
     protected static void assertParseError(final String schema, final String sql, String msg) {
-        GridTestUtils.assertThrows(null, new Callable<Void>() {
+        assertParseError(schema, sql, StringOrPattern.of(msg));
+    }
+
+    /**
+     * Make sure that parse error occurs.
+     *
+     * @param schema Schema.
+     * @param sql SQL.
+     * @param msgRe Expected error message.
+     */
+    protected static void assertParseError(final String schema, final String sql, StringOrPattern msgRe) {
+        GridTestUtils.assertThrowsSR(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 new SqlParser(schema, sql).nextCommand();
 
                 return null;
             }
-        }, SqlParseException.class, msg);
+        }, SqlParseException.class, msgRe);
+    }
+
+    /** FIXME */
+    protected <T> void testParameter(final String schema, final String cmdPrefix, TestParamDef<T> def)
+        throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+
+        for (TestParamDef.Value<T> val : def.testValues()) {
+
+            for (TestParamDef.Syntax syn : TestParamDef.Syntax.values()) {
+
+                if (!val.supportedSyntaxes().contains(syn))
+                    continue;
+
+                try {
+                    String sql = ParamTests.makeSqlWithParams(cmdPrefix,
+                        new TestParamDef.DefValPair<>(def, val, syn));
+
+                    if (val instanceof TestParamDef.InvalidValue)
+
+                        assertParseError(schema, sql, ((TestParamDef.InvalidValue)val).errorMsgFragment());
+
+                    else {
+                        X.println("Checking command: " + sql);
+
+                        SqlCommand cmd = new SqlParser(schema, sql).nextCommand();
+
+                        checkField(cmd, def, val);
+                    }
+                }
+                catch (Exception | AssertionError e) {
+                    throw new AssertionError(
+                        "When testing " + def + " with expected value " + val + "\n" + e.getMessage(), e);
+                }
+            }
+        }
+    }
+
+    /** FIXME */
+    protected <T> void checkField(SqlCommand cmd, TestParamDef<T> def, TestParamDef.Value<T> val)
+        throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+
+        Method getter = cmd.getClass().getMethod(def.cmdFieldName());
+
+        Object cmdVal = getter.invoke(cmd);
+
+        if (cmdVal != null)
+            assertTrue(def.fieldClass().isAssignableFrom(cmdVal.getClass()));
+
+        assertEquals(val.fieldValue(), cmdVal);
     }
 }

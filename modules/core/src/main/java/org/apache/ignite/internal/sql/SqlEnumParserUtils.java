@@ -44,11 +44,15 @@ public final class SqlEnumParserUtils {
             switch (val.outcome()) {
                 case PARSED:
                     setter.apply(val.value(), false, false);
+
                     break;
 
                 case DEFAULT:
-                    if (allowDflt)
+                    if (allowDflt) {
                         setter.apply(null, true, false);
+
+                        break;
+                    }
                     else {
                         assert false : "Internal error";
 
@@ -56,7 +60,7 @@ public final class SqlEnumParserUtils {
                     }
 
                 default:
-                    assert val.isError() || val.isMissing();
+                    assert val.isError() || val.isMissing() : val;
 
                     throw errorEnumValue(lex.lookAhead(), enumCls);
             }
@@ -64,21 +68,10 @@ public final class SqlEnumParserUtils {
         else {
             ParsedEnum<T> val = parseEnumIfSpecified(lex, enumCls, allowDflt);
 
-            if (val.outcome == ParsedEnum.Outcome.MISSING)
+            if (val.outcome != ParsedEnum.Outcome.PARSED)
                 return false;
 
-            switch (val.outcome()) {
-                case DEFAULT:
-                    setter.apply(null, true, false);
-                    break;
-
-                case PARSED:
-                    setter.apply(val.value(), false, false);
-                    break;
-
-                case ERROR:
-                    throw errorEnumValue(lex.lookAhead(), enumCls);
-            }
+            setter.apply(val.value(), false, false);
         }
 
         if (parsedParams != null)
@@ -204,6 +197,11 @@ public final class SqlEnumParserUtils {
             return outcome == Outcome.PARSED;
         }
 
+        @Override public String toString() {
+            return "ParsedEnum{outcome=" + outcome.name()
+                + (isValue() ? ("; value=" + value()) : "" )
+                + "}";
+        }
     }
 
     /** FIXME */
