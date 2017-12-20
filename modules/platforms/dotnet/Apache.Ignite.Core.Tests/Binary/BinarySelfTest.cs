@@ -1587,7 +1587,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests pointer types.
         /// </summary>
         [Test]
-        public void TestPointers()
+        public unsafe void TestPointers()
         {
             // Values.
             var vals = new[] {IntPtr.Zero, new IntPtr(long.MinValue), new IntPtr(long.MaxValue)};
@@ -1603,6 +1603,12 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
 
             // Type fields.
+            var ptrs = new Pointers
+            {
+                ByteP = (byte*) 123,
+                BytePs = new[] {(byte*) 1, (byte*) long.MaxValue}
+            };
+            Assert.AreEqual(ptrs, TestUtils.SerializeDeserialize(ptrs));
         }
 
         /// <summary>
