@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -62,6 +64,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
@@ -69,6 +72,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
+import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.zookeeper.AsyncCallback;
@@ -183,9 +187,14 @@ public class ZookeeperDiscoveryImpl {
         DiscoverySpiDataExchange exchange) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
 
-        MarshallerUtils.setNodeName(marsh, igniteInstanceName);
+        zkRootPath = zkRootPath.trim();
+
+        if (zkRootPath.endsWith(ZkIgnitePaths.PATH_SEPARATOR))
+            zkRootPath = zkRootPath.substring(0, zkRootPath.length() - 1);
 
         ZkIgnitePaths.validatePath(zkRootPath);
+
+        MarshallerUtils.setNodeName(marsh, igniteInstanceName);
 
         zkPaths = new ZkIgnitePaths(zkRootPath);
 
@@ -430,7 +439,7 @@ public class ZookeeperDiscoveryImpl {
         try {
             locNode.onClientDisconnected(newId);
 
-            joinTopology0(rtState.joined);
+            joinTopology0(true, rtState.joined);
         }
         catch (Exception e) {
             U.error(log, "Failed to reconnect: " + e, e);
@@ -627,7 +636,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws InterruptedException If interrupted.
      */
     public void joinTopology() throws InterruptedException {
-        joinTopology0(false);
+        joinTopology0(false, false);
 
         for (;;) {
             try {
@@ -644,16 +653,71 @@ public class ZookeeperDiscoveryImpl {
         }
     }
 
+    private SecurityCredentials unmarshalCredentials(ZookeeperClusterNode node) throws IgniteCheckedException {
+        byte[] credBytes = (byte[])node.getAttributes().get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+        if (credBytes == null)
+            return null;
+
+        return U.unmarshal(marsh, credBytes, null);
+    }
+
     /**
+     * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
+     *
+     * @param node Node to marshall credentials for.
+     * @throws IgniteSpiException If marshalling failed.
+     */
+    private void marshalCredentials(ZookeeperClusterNode node) throws IgniteSpiException {
+        try {
+            // Use security-unsafe getter.
+            Map<String, Object> attrs0 = node.getAttributes();
+
+            Object creds = attrs0.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+            if (creds != null) {
+                Map<String, Object> attrs = new HashMap<>(attrs0);
+
+                assert !(creds instanceof byte[]);
+
+                attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, U.marshal(marsh, creds));
+
+                node.setAttributes(attrs);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to marshal node security credentials: " + node.id(), e);
+        }
+    }
+
+    /**
+     * @param reconnect  {@code True} if client node reconnects.
      * @param prevJoined {@code True} if reconnect after already joined topology
      *    in this case (need produce EVT_CLIENT_NODE_RECONNECTED event).
      * @throws InterruptedException If interrupted.
      */
-    private void joinTopology0(boolean prevJoined) throws InterruptedException {
+    private void joinTopology0(boolean reconnect, boolean prevJoined) throws InterruptedException {
         IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
 
         if (internalLsnr != null)
             internalLsnr.beforeJoin(log);
+
+        if (!locNode.isClient()) {
+            DiscoverySpiNodeAuthenticator nodeAuth = spi.getAuthenticator();
+
+            if (nodeAuth != null && nodeAuth.isGlobalNodeAuthentication()) {
+                SecurityCredentials locCred = (SecurityCredentials)locNode.getAttributes()
+                    .get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+                localAuthentication(nodeAuth, locCred);
+            }
+        }
+        else {
+            if (reconnect)
+                locNode.setAttributes(spi.getSpiContext().nodeAttributes());
+        }
+
+        marshalCredentials(locNode);
 
         rtState = new ZkRuntimeState(prevJoined);
 
@@ -687,16 +751,50 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * Authenticate local node.
+     *
+     * @param nodeAuth Authenticator.
+     * @param locCred Local security credentials for authentication.
+     * @throws IgniteSpiException If any error occurs.
+     */
+    private void localAuthentication(DiscoverySpiNodeAuthenticator nodeAuth, SecurityCredentials locCred){
+        assert nodeAuth != null;
+        assert locCred != null;
+
+        try {
+            SecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
+
+            if (subj == null)
+                throw new IgniteSpiException("Authentication failed for local node.");
+
+            if (!(subj instanceof Serializable))
+                throw new IgniteSpiException("Authentication subject is not Serializable.");
+
+            Map<String, Object> attrs = new HashMap<>(locNode.attributes());
+
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, subj));
+
+            locNode.setAttributes(attrs);
+
+        } catch (IgniteException | IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
+        }
+    }
+
+    /**
      * @throws InterruptedException If interrupted.
      */
     private void initZkNodes() throws InterruptedException {
         try {
-            if (rtState.zkClient.exists(zkPaths.aliveNodesDir))
+            ZookeeperClient client = rtState.zkClient;
+
+            if (client.exists(zkPaths.aliveNodesDir))
                 return; // This path is created last, assume all others dirs are created.
 
-            List<String> dirs = new ArrayList<>();
+            if (!client.exists(zkPaths.aliveNodesDir))
+                createRootPathParents(zkPaths.clusterDir, client);
 
-            // TODO ZK: test create all parents?
+            List<String> dirs = new ArrayList<>();
 
             dirs.add(zkPaths.clusterDir);
             dirs.add(zkPaths.evtsPath);
@@ -707,18 +805,44 @@ public class ZookeeperDiscoveryImpl {
             dirs.add(zkPaths.aliveNodesDir);
 
             try {
-                rtState.zkClient.createAll(dirs, PERSISTENT);
+                client.createAll(dirs, PERSISTENT);
             }
             catch (KeeperException.NodeExistsException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to create nodes using bulk operation: " + e);
 
                 for (String dir : dirs)
-                    rtState.zkClient.createIfNeeded(dir, null, PERSISTENT);
+                    client.createIfNeeded(dir, null, PERSISTENT);
             }
         }
         catch (ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
+        }
+    }
+
+    /**
+     * @param rootDir Root directory.
+     * @param client Client.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
+    private void createRootPathParents(String rootDir, ZookeeperClient client)
+        throws ZookeeperClientFailedException, InterruptedException {
+        int startIdx = 0;
+
+        for (;;) {
+            int separatorIdx = rootDir.indexOf(ZkIgnitePaths.PATH_SEPARATOR, startIdx);
+
+            if (separatorIdx == -1)
+                break;
+
+            if (separatorIdx > 0) {
+                String path = rootDir.substring(0, separatorIdx);
+
+                client.createIfNeeded(path, null, CreateMode.PERSISTENT);
+            }
+
+            startIdx = separatorIdx + 1;
         }
     }
 
@@ -901,7 +1025,8 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
-    private class CheckJoinStateTimeoutObject extends ZkAbstractWatcher implements IgniteSpiTimeoutObject, AsyncCallback.DataCallback {
+    private class CheckJoinStateTimeoutObject extends ZkAbstractWatcher
+        implements IgniteSpiTimeoutObject, AsyncCallback.DataCallback {
         /** */
         private final IgniteUuid id = IgniteUuid.randomUuid();
 
@@ -970,6 +1095,9 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void process0(WatchedEvent evt) {
+            if (rtState.closing || rtState.joined)
+                return;
+
             if (evt.getType() == Event.EventType.NodeDataChanged)
                 rtState.zkClient.getDataAsync(evt.getPath(), this, this);
         }
@@ -1124,6 +1252,24 @@ public class ZookeeperDiscoveryImpl {
         else {
             if (log.isInfoEnabled())
                 log.info("Node is first cluster node [locId=" + locNode.id() + ']');
+
+            DiscoverySpiNodeAuthenticator nodeAuth = spi.getAuthenticator();
+
+            if (nodeAuth != null && !nodeAuth.isGlobalNodeAuthentication()) {
+                try {
+                    localAuthentication(nodeAuth, unmarshalCredentials(locNode));
+                }
+                catch (Exception e) {
+                    U.warn(log, "Local node authentication failed: " + e, e);
+
+                    rtState.onCloseStart();
+
+                    joinFut.onDone(e);
+
+                    // Stop any further processing.
+                    throw new ZookeeperClientFailedException("Local node authentication failed: " + e);
+                }
+            }
 
             newClusterStarted(locInternalId);
         }
@@ -1425,12 +1571,58 @@ public class ZookeeperDiscoveryImpl {
             return "Node with the same ID already exists: " + node0;
         }
 
+        String authErr = authenticateNode(node);
+
+        if (authErr != null)
+            return null;
+
         IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
 
         if (err != null) {
             LT.warn(log, err.message());
 
             return err.sendMessage();
+        }
+
+        return null;
+    }
+
+    @Nullable private String authenticateNode(ZookeeperClusterNode node) {
+        DiscoverySpiNodeAuthenticator nodeAuth = spi.getAuthenticator();
+
+        if (nodeAuth == null)
+            return null;
+
+        SecurityCredentials cred;
+
+        try {
+            cred = unmarshalCredentials(node);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to unmarshal node credentials: " + e, e);
+
+            return "Failed to unmarshal node credentials";
+        }
+
+        SecurityContext subj = nodeAuth.authenticateNode(node, cred);
+
+        if (subj == null) {
+            U.warn(log, "Authentication failed [nodeId=" + node.id() +
+                    ", addrs=" + U.addressesAsString(node) + ']',
+                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
+                    U.addressesAsString(node) + ']');
+
+            return "Authentication failed";
+        }
+
+        if (!(subj instanceof Serializable)) {
+            U.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
+                    ", addrs=" + U.addressesAsString(node) + ']',
+                "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
+                    ", addrs=" +
+                    U.addressesAsString(node) + ']');
+
+            return "Authentication subject is not serializable";
         }
 
         return null;
@@ -2690,7 +2882,7 @@ public class ZookeeperDiscoveryImpl {
                             if (log.isDebugEnabled())
                                 log.debug("Create ack event: " + path);
 
-                            // TODO ZK: delete is previous exists?
+                            // TODO ZK: delete if previous exists?
                             rtState.zkClient.createIfNeeded(
                                 path,
                                 ackBytes,

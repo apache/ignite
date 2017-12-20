@@ -92,7 +92,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** */
     @GridToStringExclude
-    private DiscoverySpiNodeAuthenticator auth;
+    DiscoverySpiNodeAuthenticator nodeAuth;
 
     /** */
     @GridToStringExclude
@@ -129,6 +129,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         return zkRootPath;
     }
 
+    @IgniteSpiConfiguration(optional = true)
     public ZookeeperDiscoverySpi setZkRootPath(String zkRootPath) {
         this.zkRootPath = zkRootPath;
 
@@ -139,6 +140,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         return sesTimeout;
     }
 
+    @IgniteSpiConfiguration(optional = true)
     public ZookeeperDiscoverySpi setSessionTimeout(int sesTimeout) {
         this.sesTimeout = sesTimeout;
 
@@ -149,6 +151,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         return zkConnectionString;
     }
 
+    @IgniteSpiConfiguration(optional = false)
     public ZookeeperDiscoverySpi setZkConnectionString(String zkConnectionString) {
         this.zkConnectionString = zkConnectionString;
 
@@ -322,13 +325,19 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void disconnect() throws IgniteSpiException {
-        // TODO ZK
+        impl.stop();
     }
 
     /** {@inheritDoc} */
     @Override public void setAuthenticator(DiscoverySpiNodeAuthenticator auth) {
-        // TODO ZK
-        this.auth = auth;
+        this.nodeAuth = auth;
+    }
+
+    /**
+     * @return Authenticator.
+     */
+    public DiscoverySpiNodeAuthenticator getAuthenticator() {
+        return nodeAuth;
     }
 
     /** {@inheritDoc} */

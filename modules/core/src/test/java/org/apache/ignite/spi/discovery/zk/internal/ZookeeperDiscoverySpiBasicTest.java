@@ -157,6 +157,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
     private IgniteOutClosure<CommunicationProblemResolver> commProblemRslvr;
 
+    /** */
+    private String zkRootPath;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         if (testSockNio)
@@ -180,6 +183,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             assert zkCluster != null;
 
             zkSpi.setZkConnectionString(zkCluster.getConnectString());
+
+            if (zkRootPath != null)
+                zkSpi.setZkRootPath(zkRootPath);
         }
         else
             zkSpi.setZkConnectionString("localhost:2181");
@@ -391,6 +397,25 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }, 30_000);
 
             assertNull(res.get());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZkRootNotExists() throws Exception {
+        zkRootPath = "/a/b/c";
+
+        for (int i = 0; i < 3; i++) {
+            reset();
+
+            startGridsMultiThreaded(5);
+
+            waitForTopology(5);
+
+            stopAllGrids();
+
+            checkEventsConsistency();
         }
     }
 

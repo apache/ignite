@@ -155,20 +155,28 @@ final class BinaryMetadataTransport {
      * @param metadata Metadata proposed for update.
      * @return Future to wait for update result on.
      */
-    GridFutureAdapter<MetadataUpdateResult> requestMetadataUpdate(BinaryMetadata metadata) throws IgniteCheckedException {
+    GridFutureAdapter<MetadataUpdateResult> requestMetadataUpdate(BinaryMetadata metadata) {
         MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture();
 
         if (log.isDebugEnabled())
             log.debug("Requesting metadata update for " + metadata.typeId());
 
-        synchronized (this) {
-            unlabeledFutures.add(resFut);
+        try {
+            synchronized (this) {
+                unlabeledFutures.add(resFut);
 
-            if (!stopping)
-                discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, ctx.localNodeId()));
-            else
-                resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
+                if (!stopping)
+                    discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, ctx.localNodeId()));
+                else
+                    resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
+            }
         }
+        catch (Exception e) {
+            resFut.onDone(e);
+        }
+
+        if (ctx.clientDisconnected())
+            onDisconnected();
 
         return resFut;
     }

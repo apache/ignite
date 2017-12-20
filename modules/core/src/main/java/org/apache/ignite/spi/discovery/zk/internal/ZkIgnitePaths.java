@@ -24,6 +24,9 @@ import java.util.UUID;
  */
 class ZkIgnitePaths {
     /** */
+    static final String PATH_SEPARATOR = "/";
+
+    /** */
     private static final int UUID_LEN = 36;
 
     /** Directory to store joined node data. */

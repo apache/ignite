@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -169,6 +170,24 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
             return null;
 
         return (T)attrs.get(name);
+    }
+
+    /**
+     * Sets node attributes.
+     *
+     * @param attrs Node attributes.
+     */
+    void setAttributes(Map<String, Object> attrs) {
+        this.attrs = U.sealMap(attrs);
+    }
+
+    /**
+     * Gets node attributes without filtering.
+     *
+     * @return Node attributes without filtering.
+     */
+    Map<String, Object> getAttributes() {
+        return attrs;
     }
 
     /** {@inheritDoc} */
