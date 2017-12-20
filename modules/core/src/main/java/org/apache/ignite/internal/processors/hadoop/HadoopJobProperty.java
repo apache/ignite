@@ -28,40 +28,52 @@ public enum HadoopJobProperty {
      * <p>
      * Setting it right allows to avoid rehashing.
      */
-    COMBINER_HASHMAP_SIZE,
+    COMBINER_HASHMAP_SIZE("ignite.combiner.hashmap.size"),
 
     /**
      * Initial size for hashmap which stores output of mapper or combiner and will be used as input of reducer.
      * <p>
      * Setting it right allows to avoid rehashing.
      */
-    PARTITION_HASHMAP_SIZE,
+    PARTITION_HASHMAP_SIZE("ignite.partition.hashmap.size"),
 
     /**
      * Specifies number of concurrently running mappers for external execution mode.
      * <p>
      * If not specified, defaults to {@code Runtime.getRuntime().availableProcessors()}.
      */
-    EXTERNAL_CONCURRENT_MAPPERS,
+    EXTERNAL_CONCURRENT_MAPPERS("ignite.external.concurrent.mappers"),
 
     /**
      * Specifies number of concurrently running reducers for external execution mode.
      * <p>
      * If not specified, defaults to {@code Runtime.getRuntime().availableProcessors()}.
      */
-    EXTERNAL_CONCURRENT_REDUCERS,
+    EXTERNAL_CONCURRENT_REDUCERS("ignite.external.concurrent.reducers"),
 
     /**
      * Delay in milliseconds after which Ignite server will reply job status.
      */
-    JOB_STATUS_POLL_DELAY,
+    JOB_STATUS_POLL_DELAY("ignite.job.status.poll.delay"),
+
+    /**
+     * Whether job classloader can be shared between all tasks.
+     * <p>
+     * Defaults to {@code true}.
+     */
+    JOB_SHARED_CLASSLOADER("ignite.job.shared.classloader"),
+
+    /**
+     * Fully qualified name of partially raw comparator which should be used on sorting phase.
+     */
+    JOB_PARTIALLY_RAW_COMPARATOR("ignite.job.partially.raw.comparator"),
 
     /**
      * Size in bytes of single memory page which will be allocated for data structures in shuffle.
      * <p>
-     * By default is {@code 32 * 1024}.
+     * Defaults to {@code 1Mb}.
      */
-    SHUFFLE_OFFHEAP_PAGE_SIZE,
+    SHUFFLE_OFFHEAP_PAGE_SIZE("ignite.shuffle.offheap.page.size"),
 
     /**
      * If set to {@code true} then input for combiner will not be sorted by key.
@@ -71,7 +83,7 @@ public enum HadoopJobProperty {
      * <p>
      * By default is {@code false}.
      */
-    SHUFFLE_COMBINER_NO_SORTING,
+    SHUFFLE_COMBINER_NO_SORTING("ignite.shuffle.combiner.no.sorting"),
 
     /**
      * If set to {@code true} then input for reducer will not be sorted by key.
@@ -81,23 +93,54 @@ public enum HadoopJobProperty {
      * <p>
      * By default is {@code false}.
      */
-    SHUFFLE_REDUCER_NO_SORTING;
-
-    /** */
-    private final String ptyName;
+    SHUFFLE_REDUCER_NO_SORTING("ignite.shuffle.reducer.no.sorting"),
 
     /**
-     *
+     * Defines approximate size in bytes of shuffle message which will be passed over wire from mapper to reducer.
+     * <p>
+     * Defaults to {@code 1Mb}.
      */
-    HadoopJobProperty() {
-        ptyName = "ignite." + name().toLowerCase().replace('_', '.');
+    SHUFFLE_MSG_SIZE("ignite.shuffle.message.size"),
+
+    /**
+     * Whether shuffle message should be compressed with GZIP.
+     * <p>
+     * Defaults to {@code false}.
+     */
+    SHUFFLE_MSG_GZIP("ignite.shuffle.message.gzip"),
+
+    /**
+     * Whether to stripe mapper output for remote reducers.
+     * <p>
+     * Defaults to {@code true}.
+     */
+    SHUFFLE_MAPPER_STRIPED_OUTPUT("ignite.shuffle.mapper.striped.output"),
+
+    /**
+     * Shuffle job throttle in milliseconds. When job is executed with separate shuffle thread, this parameter
+     * controls sleep duration between iterations through intermediate reducer maps.
+     * <p>
+     * Defaults to {@code 0}.
+     */
+    SHUFFLE_JOB_THROTTLE("ignite.shuffle.job.throttle");
+
+    /** Property name. */
+    private final String propName;
+
+    /**
+     * Constrcutor.
+     *
+     * @param propName Property name.
+     */
+    HadoopJobProperty(String propName) {
+        this.propName = propName;
     }
 
     /**
      * @return Property name.
      */
     public String propertyName() {
-        return ptyName;
+        return propName;
     }
 
     /**

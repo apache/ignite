@@ -17,7 +17,8 @@
   limitations under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -28,7 +29,7 @@
     </parent>
 
     <artifactId>ignite-examples</artifactId>
-    <version>1.8.0-SNAPSHOT</version>
+    <version>1.9.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -82,13 +83,7 @@
         <dependency>
             <groupId>com.google.code.simple-spring-memcached</groupId>
             <artifactId>spymemcached</artifactId>
-            <version>2.7.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-codec</groupId>
-                    <artifactId>commons-codec</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>2.8.4</version>
         </dependency>
 
         <dependency>
@@ -111,6 +106,8 @@
         <!-- will be changed by profile activation. allows to combine profiles. -->
         <lgpl.folder>src/main/java</lgpl.folder>
         <java8.folder>src/main/java</java8.folder>
+        <spark.folder>src/main/java</spark.folder>
+        <spark.test.folder>src/test/java</spark.test.folder>
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <java8.test.folder>src/test/java</java8.test.folder>
     </properties>
@@ -118,6 +115,11 @@
     <profiles>
         <profile>
             <id>scala</id>
+
+            <properties>
+                <spark.folder>src/main/spark</spark.folder>
+                <spark.test.folder>src/test/spark</spark.test.folder>
+            </properties>
 
             <dependencies>
                 <dependency>
@@ -138,6 +140,18 @@
                         </exclusion>
                     </exclusions>
                 </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-spark</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.jboss.netty</groupId>
+                    <artifactId>netty</artifactId>
+                    <version>3.2.9.Final</version>
+                </dependency>
             </dependencies>
 
             <build>
@@ -152,6 +166,11 @@
 
         <profile>
             <id>scala-2.10</id>
+
+            <properties>
+                <spark.folder>src/main/spark</spark.folder>
+                <spark.test.folder>src/test/spark</spark.test.folder>
+            </properties>
 
             <dependencies>
                 <dependency>
@@ -171,6 +190,18 @@
                             <artifactId>scala-library</artifactId>
                         </exclusion>
                     </exclusions>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-spark_2.10</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.jboss.netty</groupId>
+                    <artifactId>netty</artifactId>
+                    <version>3.2.9.Final</version>
                 </dependency>
             </dependencies>
 
@@ -248,6 +279,7 @@
                                 <source>schema-import/src/main/java</source>
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
+                                <source>${spark.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -261,6 +293,7 @@
                         <configuration>
                             <sources>
                                 <source>${lgpl.test.folder}</source>
+                                <source>${spark.test.folder}</source>
                                 <source>${java8.test.folder}</source>
                             </sources>
                         </configuration>

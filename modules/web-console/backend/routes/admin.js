@@ -43,7 +43,7 @@ module.exports.factory = function(_, express, settings, mongo, spacesService, ma
          * Get list of user accounts.
          */
         router.post('/list', (req, res) => {
-            usersService.list()
+            usersService.list(req.body)
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

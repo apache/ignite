@@ -95,7 +95,7 @@ namespace ignite
                  * @return Number of rows affected by the statement.
                  */
                 virtual int64_t AffectedRows() const;
-                
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(TypeInfoQuery);
 

@@ -30,8 +30,11 @@ import org.apache.ignite.cache.affinity.AffinityNodeIdHashResolver;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.cache.eviction.random.RandomEvictionPolicy;
+import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -377,6 +380,27 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    public void testDifferentEvictionPolicyEnabled() throws Exception {
+        checkSecondGridStartFails(
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
+                    return null;
+                }
+            },
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    return null;
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDifferentEvictionPolicies() throws Exception {
         checkSecondGridStartFails(
             new C1<CacheConfiguration, Void>() {
@@ -390,6 +414,28 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionPolicy(new FifoEvictionPolicy());
+                    return null;
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDifferentEvictionPolicyFactories() throws Exception {
+        checkSecondGridStartFails(
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setEvictionPolicyFactory(new SortedEvictionPolicyFactory());
+                    return null;
+                }
+            },
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
                     return null;
                 }
             }
@@ -632,6 +678,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
+                nearCfg.setNearEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
                 nearCfg.setNearEvictionPolicy(new RandomEvictionPolicy());
 
                 cfg.setNearConfiguration(nearCfg);
@@ -646,6 +693,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
+                nearCfg.setNearEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
                 nearCfg.setNearEvictionPolicy(new FifoEvictionPolicy());
 
                 cfg.setNearConfiguration(nearCfg);
@@ -671,6 +719,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setAffinity(new TestRendezvousAffinityFunction());
 
+                cfg.setEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
                 cfg.setEvictionPolicy(new FifoEvictionPolicy());
 
                 cfg.setCacheStoreFactory(new IgniteCacheAbstractTest.TestStoreFactory());
@@ -689,6 +738,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setAffinity(new RendezvousAffinityFunction());
 
+                cfg.setEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
                 cfg.setEvictionPolicy(new LruEvictionPolicy());
 
                 cfg.setCacheStoreFactory(null);

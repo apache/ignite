@@ -165,14 +165,28 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
     /**
      * @param tx Transaction.
      * @param commit Commit.
+     * @param last {@code True} if this is last store in transaction.
+     * @param storeSessionEnded {@code True} if session for underlying store already ended.
      * @throws IgniteCheckedException If failed.
      */
-    public void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last) throws IgniteCheckedException;
+    public void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last, boolean storeSessionEnded) throws IgniteCheckedException;
 
     /**
-     * End session initiated by write-behind store.
+     * Start session initiated by write-behind store.
+     *
+     * @throws IgniteCheckedException If failed.
      */
-    public void writeBehindSessionInit();
+    public void writeBehindSessionInit() throws IgniteCheckedException;
+
+    /**
+     * Notifies cache store session listeners.
+     *
+     * This method is called by write-behind store in case of back-pressure mechanism is initiated.
+     * It is assumed that cache store session was started by CacheStoreManager before.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void writeBehindCacheStoreSessionListenerStart()  throws IgniteCheckedException;
 
     /**
      * End session initiated by write-behind store.

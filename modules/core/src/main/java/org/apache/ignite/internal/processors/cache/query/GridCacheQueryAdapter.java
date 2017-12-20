@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -82,6 +83,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private final String clsName;
 
     /** */
+    @GridToStringInclude(sensitive = true)
     private final String clause;
 
     /** */
@@ -430,7 +432,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @throws IgniteCheckedException If query is invalid.
      */
     public void validate() throws IgniteCheckedException {
-        if ((type != SCAN && type != SET) && !GridQueryProcessor.isEnabled(cctx.config()))
+        if ((type != SCAN && type != SET && type != SPI) && !GridQueryProcessor.isEnabled(cctx.config()))
             throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 
@@ -567,9 +569,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (prj != null || part != null)
                     return nodes(cctx, prj, part);
 
-                return cctx.affinityNode() ?
-                    Collections.singletonList(cctx.localNode()) :
-                    Collections.singletonList(F.rand(nodes(cctx, null, null)));
+                if (cctx.affinityNode())
+                    return Collections.singletonList(cctx.localNode());
+
+                Collection<ClusterNode> affNodes = nodes(cctx, null, null);
+
+                return affNodes.isEmpty() ? affNodes : Collections.singletonList(F.rand(affNodes));
 
             case PARTITIONED:
                 return nodes(cctx, prj, part);
