@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 IntPtr = new IntPtr(12345),
                 IntPtrs = new[] {IntPtr.Zero, new IntPtr(1), new IntPtr(-1), new IntPtr(long.MaxValue)},
                 UIntPtr = new UIntPtr(1234567),
-                UIntPtrs = new[] {UIntPtr.Zero, new UIntPtr(1), new UIntPtr(long.MaxValue)}
+                UIntPtrs = new[] {UIntPtr.Zero, new UIntPtr(1), new UIntPtr(long.MaxValue), new UIntPtr(ulong.MaxValue)}
             };
 
             var vals = new[] {new Primitives(), val1};
