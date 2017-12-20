@@ -302,7 +302,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * Default count of selectors for TCP server equals to
      * {@code "Math.max(4, Runtime.getRuntime().availableProcessors() / 2)"}.
      */
-    public static final int DFLT_SELECTORS_CNT = Math.max(16, Runtime.getRuntime().availableProcessors() / 2);
+    public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
     /**
      * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
