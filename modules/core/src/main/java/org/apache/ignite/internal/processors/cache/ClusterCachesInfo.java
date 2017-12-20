@@ -1564,9 +1564,14 @@ class ClusterCachesInfo {
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "mvccEnabled", "MVCC mode",
-            CacheGroupContext.mvccEnabled(ctx.config(), cfg, cacheType),
-            CacheGroupContext.mvccEnabled(ctx.config(), startCfg, cacheType),
+            ctx.config().isMvccEnabled(), ctx.config().isMvccEnabled(),
             true);
+
+        // TODO: Enable
+//        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "mvccEnabled", "MVCC mode",
+//            CacheGroupContext.mvccEnabled(ctx.config(), cfg, cacheType),
+//            CacheGroupContext.mvccEnabled(ctx.config(), startCfg, cacheType),
+//            true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "affinity", "Affinity function",
             attr1.cacheAffinityClassName(), attr2.cacheAffinityClassName(), true);
