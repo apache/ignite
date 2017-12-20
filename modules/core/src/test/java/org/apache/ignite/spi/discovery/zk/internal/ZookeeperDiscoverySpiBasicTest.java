@@ -2664,7 +2664,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private ZookeeperDiscoverySpi waitSpi(final String nodeName) throws Exception {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return spis.containsKey(nodeName);
+                ZookeeperDiscoverySpi spi = spis.get(nodeName);
+
+                return spi != null && GridTestUtils.getFieldValue(spi, "impl") != null;
+
             }
         }, 5000);
 
