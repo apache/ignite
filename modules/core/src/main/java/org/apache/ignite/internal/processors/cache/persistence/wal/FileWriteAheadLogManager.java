@@ -203,7 +203,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private static final int BUF_SIZE = 1024 * 1024;
 
     /** Use mapped byte buffer. */
-    private static boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
+    private static boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, false);
 
     /** */
     private final boolean alwaysWriteFullPages;
