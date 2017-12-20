@@ -171,7 +171,6 @@ namespace Apache.Ignite.Core.Tests.Client
                 // Missing section.
                 ex = Assert.Throws<ConfigurationErrorsException>(() => Ignition.StartClient("foo"));
                 Assert.AreEqual("Could not find IgniteClientConfigurationSection with name 'foo'.", ex.Message);
-
 #endif
             }
         }
