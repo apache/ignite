@@ -2354,8 +2354,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (exchCtx.newMvccCoordinator())
                     exchCtx.addActiveQueries(e.getKey(), msg.activeQueries());
-                else
-                    assert msg.activeQueries() == null : msg;
 
                 // Apply update counters after all single messages are received.
                 for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
