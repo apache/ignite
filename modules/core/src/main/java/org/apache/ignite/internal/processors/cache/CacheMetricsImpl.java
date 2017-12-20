@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
@@ -773,8 +774,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         if (cctx.isLocal())
             return res;
 
-        for (Map.Entry<Integer, GridDhtPartitionState> e : cctx.topology().localPartitionMap().entrySet()) {
-            if (e.getValue() == GridDhtPartitionState.OWNING || e.getValue() == GridDhtPartitionState.MOVING)
+        for (GridDhtLocalPartition part : cctx.topology().localPartitions()) {
+            if (part.state() == GridDhtPartitionState.OWNING || part.state() == GridDhtPartitionState.MOVING)
                 res++;
         }
 
@@ -788,8 +789,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         if (cctx.isLocal())
             return res;
 
-        for (Map.Entry<Integer, GridDhtPartitionState> e : cctx.topology().localPartitionMap().entrySet()) {
-            if (e.getValue() == GridDhtPartitionState.MOVING)
+        for (GridDhtLocalPartition part : cctx.topology().localPartitions()) {
+            if (part.state() == GridDhtPartitionState.MOVING)
                 res++;
         }
 
