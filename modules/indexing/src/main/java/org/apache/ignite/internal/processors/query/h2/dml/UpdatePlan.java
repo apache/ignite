@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -30,6 +34,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -39,10 +44,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
@@ -54,7 +56,7 @@ public final class UpdatePlan {
     /** Initial statement to drive the rest of the logic. */
     private final UpdateMode mode;
 
-    /** Target table to be affected by initial DML statement. */
+    /**  to be affected by initial DML statement. */
     private final GridH2Table tbl;
 
     /** Column names to set or update. */
@@ -81,6 +83,9 @@ public final class UpdatePlan {
     /** Subquery flag - {@code true} if {@link #selectQry} is an actual subquery that retrieves data from some cache. */
     private final boolean isLocSubqry;
 
+    /** Rows for query-less MERGE or INSERT. */
+    private final List<List<DmlArgument>> rows;
+
     /** Number of rows in rows based MERGE or INSERT. */
     private final int rowsNum;
 
@@ -103,6 +108,7 @@ public final class UpdatePlan {
      * @param valColIdx value column index.
      * @param selectQry Select query.
      * @param isLocSubqry Local subquery flag.
+     * @param rows Rows for query-less INSERT or MERGE.
      * @param rowsNum Rows number.
      * @param fastUpdate Fast update (if any).
      * @param distributed Distributed plan (if any)
@@ -118,12 +124,14 @@ public final class UpdatePlan {
         int valColIdx,
         String selectQry,
         boolean isLocSubqry,
+        List<List<DmlArgument>> rows,
         int rowsNum,
         @Nullable FastUpdate fastUpdate,
         @Nullable DmlDistributedPlanInfo distributed
     ) {
         this.colNames = colNames;
         this.colTypes = colTypes;
+        this.rows = rows;
         this.rowsNum = rowsNum;
 
         assert mode != null;
@@ -168,6 +176,7 @@ public final class UpdatePlan {
             -1,
             selectQry,
             false,
+            null,
             0,
             fastUpdate,
             distributed
@@ -346,6 +355,61 @@ public final class UpdatePlan {
     }
 
     /**
+     * Process fast DML operation if possible.
+     *
+     * @param args QUery arguments.
+     * @return Update result or {@code null} if fast update is not applicable for plan.
+     * @throws IgniteCheckedException If failed.
+     */
+    public UpdateResult processFast(Object[] args) throws IgniteCheckedException {
+        if (fastUpdate != null)
+            return fastUpdate.execute(cacheContext().cache(), args);
+
+        return null;
+    }
+
+    /**
+     * @return {@code True} if predefined rows exist.
+     */
+    public boolean hasRows() {
+        return !F.isEmpty(rows);
+    }
+
+    /**
+     * Extract rows from plan without performing any query.
+     * @param args Original query arguments.
+     * @return Rows from plan.
+     * @throws IgniteCheckedException if failed.
+     */
+    public List<List<?>> createRows(Object[] args) throws IgniteCheckedException {
+        assert rowsNum > 0 && !F.isEmpty(colNames);
+
+        List<List<?>> res = new ArrayList<>(rowsNum);
+
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        for (List<DmlArgument> row : rows) {
+            List<Object> resRow = new ArrayList<>();
+
+            for (int j = 0; j < colNames.length; j++) {
+                Object colVal = row.get(j).get(args);
+
+                if (j == keyColIdx || j == valColIdx) {
+                    Class<?> colCls = j == keyColIdx ? desc.type().keyClass() : desc.type().valueClass();
+
+                    colVal = DmlUtils.convert(colVal, desc, colCls, colTypes[j]);
+                }
+
+                resRow.add(colVal);
+            }
+
+            res.add(resRow);
+        }
+
+        return res;
+    }
+
+    /**
      * Create iterator for transaction.
      *
      * @param cur Cursor.
@@ -407,13 +471,6 @@ public final class UpdatePlan {
      */
     @Nullable public boolean isLocalSubquery() {
         return isLocSubqry;
-    }
-
-    /**
-     * @return Fast update.
-     */
-    @Nullable public FastUpdate fastUpdate() {
-        return fastUpdate;
     }
 
     /**

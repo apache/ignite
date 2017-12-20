@@ -411,7 +411,7 @@ public class MvccProcessor extends GridProcessorAdapter {
 
     /**
      * @param mvccVer Read version.
-     * @return
+     * @return Tracker counter.
      */
     private long queryTrackCounter(MvccVersion mvccVer) {
         long trackCntr = mvccVer.counter();
@@ -1161,6 +1161,10 @@ public class MvccProcessor extends GridProcessorAdapter {
         MvccCoordinator crd = discoCache.mvccCoordinator();
 
         assert crd != null;
+
+        // No need to re-initialize if coordinator version hasn't changed (e.g. it was cluster activation).
+        if (crdVer == crd.coordinatorVersion())
+            return;
 
         crdVer = crd.coordinatorVersion();
 

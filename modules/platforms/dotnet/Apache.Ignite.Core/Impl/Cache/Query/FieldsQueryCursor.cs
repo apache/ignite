@@ -18,7 +18,11 @@
 namespace Apache.Ignite.Core.Impl.Cache.Query
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Cursor for entry-based queries.
@@ -45,6 +49,41 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             })
         {
             // No-op.
+        }
+    }
+
+    /// <summary>
+    /// Cursor for entry-based queries.
+    /// </summary>
+    internal class FieldsQueryCursor : FieldsQueryCursor<IList<object>>, IFieldsQueryCursor
+    {
+        /** */
+        private const int OpGetFieldNames = 7;
+
+        /** */
+        private IList<string> _fieldNames;
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="target">Target.</param>
+        /// <param name="keepBinary">Keep poratble flag.</param>
+        /// <param name="readerFunc">The reader function.</param>
+        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
+            Func<IBinaryRawReader, int, IList<object>> readerFunc) : base(target, keepBinary, readerFunc)
+        {
+            // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public IList<string> FieldNames
+        {
+            get
+            {
+                return _fieldNames ??
+                       (_fieldNames = new ReadOnlyCollection<string>(
+                           Target.OutStream(OpGetFieldNames, reader => reader.ReadStringCollection())));
+            }
         }
     }
 }
