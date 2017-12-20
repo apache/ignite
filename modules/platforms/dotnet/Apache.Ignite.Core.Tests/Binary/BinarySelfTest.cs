@@ -2723,10 +2723,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
         private unsafe class Pointers
         {
-            //public IntPtr IntPtr { get; set; }
-            //public IntPtr[] IntPtrs { get; set; }
-            //public UIntPtr UIntPtr { get; set; }
-            //public UIntPtr[] UIntPtrs { get; set; }
+            public IntPtr IntPtr { get; set; }
+            public IntPtr[] IntPtrs { get; set; }
+            public UIntPtr UIntPtr { get; set; }
+            public UIntPtr[] UIntPtrs { get; set; }
             public byte* ByteP { get; set; }
         }
     }
