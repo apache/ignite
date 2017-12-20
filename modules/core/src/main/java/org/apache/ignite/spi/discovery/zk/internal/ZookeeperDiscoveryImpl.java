@@ -1209,6 +1209,17 @@ public class ZookeeperDiscoveryImpl {
             Integer internalId = e.getKey();
 
             if (!rtState.top.nodesByInternalId.containsKey(internalId)) {
+                UUID rslvFutId = rtState.evtsData.communicationErrorResolveFutureId();
+
+                if (rslvFutId != null) {
+                    if (log.isInfoEnabled()) {
+                        log.info("Delay alive nodes change process while communication error resolve " +
+                            "is in progress [reqId=" + rslvFutId + ']');
+                    }
+
+                    break;
+                }
+
                 if (processJoinOnCoordinator(curTop, internalId, e.getValue())) {
                     newEvts++;
 
@@ -2467,6 +2478,9 @@ public class ZookeeperDiscoveryImpl {
         evtsData.addEvent(rtState.top.nodesByOrder.values(), evtData);
 
         saveAndProcessNewEvents();
+
+        // Need re-check alive nodes in case join was delayed.
+        rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, rtState.watcher, rtState.watcher);
     }
 
     /**

@@ -94,6 +94,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -1841,10 +1842,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests case when one node fails before sending communication status.
+     *
      * @throws Exception If failed.
      */
     public void testNoOpCommunicationErrorResolve_3() throws Exception {
-        // One node fails before sending communication status.
         sesTimeout = 2000;
         commProblemRslvr = NoOpCommunicationProblemResolver.FACTORY;
 
@@ -1886,10 +1888,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests case when Coordinator fails while resolve process is in progress.
+     *
      * @throws Exception If failed.
      */
     public void testNoOpCommunicationErrorResolve_4() throws Exception {
-        // Coordinator fails while resolve process is in progress.
         testCommSpi = true;
 
         sesTimeout = 2000;
@@ -1924,6 +1927,69 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         fut.get();
 
         waitForTopology(3);
+    }
+
+    /**
+     * Tests that nodes join is delayed while resolve is in progress.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNoOpCommunicationErrorResolve_5() throws Exception {
+        testCommSpi = true;
+
+        sesTimeout = 2000;
+        commProblemRslvr = NoOpCommunicationProblemResolver.FACTORY;
+
+        startGrid(0);
+
+        startGridsMultiThreaded(1, 3);
+
+        ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.spi(ignite(3));
+
+        commSpi.pingStartLatch = new CountDownLatch(1);
+        commSpi.pingLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() {
+                ZookeeperDiscoverySpi spi = spi(ignite(1));
+
+                spi.resolveCommunicationError(ignite(2).cluster().localNode(), new Exception("test"));
+
+                return null;
+            }
+        });
+
+        assertTrue(commSpi.pingStartLatch.await(10, SECONDS));
+
+        try {
+            assertFalse(fut.isDone());
+
+            final AtomicInteger nodeIdx = new AtomicInteger(3);
+
+            IgniteInternalFuture<?> startFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    startGrid(nodeIdx.incrementAndGet());
+
+                    return null;
+                }
+            }, 3, "start-node");
+
+            U.sleep(1000);
+
+            assertFalse(startFut.isDone());
+
+            assertEquals(4, ignite(0).cluster().nodes().size());
+
+            commSpi.pingLatch.countDown();
+
+            startFut.get();
+            fut.get();
+
+            waitForTopology(7);
+        }
+        finally {
+            commSpi.pingLatch.countDown();
+        }
     }
 
     /**
@@ -2098,6 +2164,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
                 spi = spi(node);
             }
+
+            assert spi != null;
 
             try {
                 spi.resolveCommunicationError(spi.getRemoteNodes().iterator().next(), new Exception("test"));
@@ -3028,6 +3096,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      */
     static class ZkTestCommunicationSpi extends TcpCommunicationSpi {
         /** */
+        private volatile CountDownLatch pingStartLatch;
+
+        /** */
         private volatile CountDownLatch pingLatch;
 
         /** */
@@ -3054,6 +3125,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
+            CountDownLatch pingStartLatch = this.pingStartLatch;
+
+            if (pingStartLatch != null)
+                pingStartLatch.countDown();
+
             CountDownLatch pingLatch = this.pingLatch;
 
             try {
