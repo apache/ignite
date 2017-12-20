@@ -119,6 +119,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -130,7 +131,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
-import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
@@ -1985,39 +1985,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @param includeBackups Include backups.
-     * @return Predicate.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable public <K, V> IndexingQueryFilter backupsFilter(boolean includeBackups) {
-        if (includeBackups)
-            return null;
-
-        return new IndexingQueryFilter() {
-            @Nullable @Override public IgniteBiPredicate<K, V> forCache(final String cacheName) {
-                final GridKernalContext ctx = cctx.kernalContext();
-
-                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
-
-                if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
-                    return null;
-
-                return new IgniteBiPredicate<K, V>() {
-                    @Override public boolean apply(K k, V v) {
-                        return cache.context().affinity().primaryByKey(ctx.discovery().localNode(), k, NONE);
-                    }
-                };
-            }
-
-            @Override public boolean isValueRequired() {
-                return false;
-            }
-        };
-    }
-
-    /**
      * @return Topology version for query requests.
      */
     public AffinityTopologyVersion queryTopologyVersion() {
@@ -2029,7 +1996,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Filter.
      */
     private IndexingQueryFilter filter(GridCacheQueryAdapter<?> qry) {
-        return backupsFilter(qry.includeBackups());
+        if (qry.includeBackups())
+            return null;
+
+        return new IndexingQueryFilterImpl(cctx.kernalContext(), AffinityTopologyVersion.NONE, null);
     }
 
     /**

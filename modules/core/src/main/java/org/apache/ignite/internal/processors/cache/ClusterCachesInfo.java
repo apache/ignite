@@ -275,6 +275,9 @@ class ClusterCachesInfo {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
                 locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
 
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicyFactory", "Eviction policy factory",
+                locAttr.evictionPolicyFactoryClassName(), rmtAttr.evictionPolicyFactoryClassName(), true);
+
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
                 "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
                 rmtAttr.transactionManagerLookupClassName(), false);
@@ -332,6 +335,10 @@ class ClusterCachesInfo {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "nearEvictionPolicy",
                     "Near eviction policy", locAttr.nearEvictionPolicyClassName(),
                     rmtAttr.nearEvictionPolicyClassName(), false);
+
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "nearEvictionPolicyFactory",
+                    "Near eviction policy factory", locAttr.nearEvictionPolicyFactoryClassName(),
+                    rmtAttr.nearEvictionPolicyFactoryClassName(), false);
 
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityIncludeNeighbors",
                     "Affinity include neighbors", locAttr.affinityIncludeNeighbors(),
@@ -1748,16 +1755,14 @@ class ClusterCachesInfo {
      * Use DIRECT comparator for ordering cache start operations.
      * Use REVERSE comparator for ordering cache stop operations.
      */
-    private static class CacheComparators {
+    static class CacheComparators {
         /**
          * DIRECT comparator for cache descriptors (first system caches).
          */
         static Comparator<DynamicCacheDescriptor> DIRECT = new Comparator<DynamicCacheDescriptor>() {
             @Override public int compare(DynamicCacheDescriptor o1, DynamicCacheDescriptor o2) {
-                if (!o1.cacheType().userCache())
-                    return -1;
-                if (!o2.cacheType().userCache())
-                    return 1;
+                if (o1.cacheType().userCache() ^ o2.cacheType().userCache())
+                    return o2.cacheType().userCache() ? -1 : 1;
 
                 return o1.cacheId().compareTo(o2.cacheId());
             }

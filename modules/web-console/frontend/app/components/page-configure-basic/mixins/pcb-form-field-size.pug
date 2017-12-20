@@ -63,6 +63,7 @@ mixin pcb-form-field-size(label, model, name, disabled, required, placeholder, m
             +pcb-form-field-feedback(form, name, 'min', `Value is less than allowable minimum: ${min}`)
             +pcb-form-field-feedback(form, name, 'max', `Value is more than allowable maximum: ${max}`)
             +pcb-form-field-feedback(form, name, 'number', 'Only numbers allowed')
+            +pcb-form-field-feedback(form, name, 'step', 'Step is invalid')
 
             .input-tip
                 +pcb-form-field-input(attributes=attributes)

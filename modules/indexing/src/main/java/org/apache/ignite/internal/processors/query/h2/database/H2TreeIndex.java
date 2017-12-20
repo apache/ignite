@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -34,8 +35,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -103,26 +104,35 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             segments = new H2Tree[segmentsCnt];
 
-            for (int i = 0; i < segments.length; i++) {
-                RootPage page = getMetaPage(name, i);
+            IgniteCacheDatabaseSharedManager db = cctx.shared().database();
 
-                segments[i] = new H2Tree(
-                    name,
-                    cctx.offheap().reuseListForIndex(name),
-                    cctx.groupId(),
-                    cctx.dataRegion().pageMemory(),
-                    cctx.shared().wal(),
-                    cctx.offheap().globalRemoveId(),
-                    tbl.rowFactory(),
-                    page.pageId().pageId(),
-                    page.isAllocated(),
-                    cols,
-                    inlineIdxs,
-                    computeInlineSize(inlineIdxs, inlineSize)) {
-                    @Override public int compareValues(Value v1, Value v2) {
-                        return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
-                    }
-                };
+            for (int i = 0; i < segments.length; i++) {
+                db.checkpointReadLock();
+
+                try {
+                    RootPage page = getMetaPage(name, i);
+
+                    segments[i] = new H2Tree(
+                        name,
+                        cctx.offheap().reuseListForIndex(name),
+                        cctx.groupId(),
+                        cctx.dataRegion().pageMemory(),
+                        cctx.shared().wal(),
+                        cctx.offheap().globalRemoveId(),
+                        tbl.rowFactory(),
+                        page.pageId().pageId(),
+                        page.isAllocated(),
+                        cols,
+                        inlineIdxs,
+                        computeInlineSize(inlineIdxs, inlineSize)) {
+                        @Override public int compareValues(Value v1, Value v2) {
+                            return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+                        }
+                    };
+                }
+                finally {
+                    db.checkpointReadUnlock();
+                }
             }
         }
         else {
@@ -166,7 +176,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
             IndexingQueryFilter f = threadLocalFilter();
-            IgniteBiPredicate<Object, Object> p = null;
+            IndexingQueryCacheFilter p = null;
 
             if (f != null) {
                 String cacheName = getTable().cacheName();
@@ -178,7 +188,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            return new H2Cursor(tree.find(lower, upper), p);
+            return new H2Cursor(tree.find(lower, upper, p));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -193,6 +203,8 @@ public class H2TreeIndex extends GridH2IndexBase {
             int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
+
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             return tree.put(row);
         }
@@ -213,6 +225,8 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
+
             return tree.remove(row);
         }
         catch (IgniteCheckedException e) {
@@ -231,6 +245,8 @@ public class H2TreeIndex extends GridH2IndexBase {
             int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
+
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             tree.removex(row);
         }
@@ -295,6 +311,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void destroy(boolean rmvIndex) {
         try {
             if (cctx.affinityNode() && rmvIndex) {
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
                 for (int i = 0; i < segments.length; i++) {
                     H2Tree tree = segments[i];
 
@@ -318,19 +336,27 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCursor<GridH2Row> doFind0(
+    @Override protected H2Cursor doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
         IndexingQueryFilter filter) {
         try {
-            GridCursor<GridH2Row> range = t.find(first, last);
+            IndexingQueryCacheFilter p = null;
+
+            if (filter != null) {
+                String cacheName = getTable().cacheName();
+
+                p = filter.forCache(cacheName);
+            }
+
+            GridCursor<GridH2Row> range = t.find(first, last, p);
 
             if (range == null)
-                return EMPTY_CURSOR;
+                range = EMPTY_CURSOR;
 
-            return filter(range, filter);
+            return new H2Cursor(range);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);

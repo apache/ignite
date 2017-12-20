@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
+import org.apache.ignite.p2p.DeploymentClassLoaderCallableTest;
 import org.apache.ignite.p2p.GridP2PClassLoadingSelfTest;
 import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
 import org.apache.ignite.p2p.GridP2PDifferentClassLoaderSelfTest;
@@ -34,6 +35,7 @@ import org.apache.ignite.p2p.GridP2PRemoteClassLoadersSelfTest;
 import org.apache.ignite.p2p.GridP2PSameClassLoaderSelfTest;
 import org.apache.ignite.p2p.GridP2PTimeoutSelfTest;
 import org.apache.ignite.p2p.GridP2PUndeploySelfTest;
+import org.apache.ignite.p2p.SharedDeploymentTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -70,6 +72,8 @@ public class IgniteP2PSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridP2PTimeoutSelfTest.class));
         suite.addTest(new TestSuite(GridP2PMissedResourceCacheSizeSelfTest.class));
         suite.addTest(new TestSuite(GridP2PContinuousDeploymentSelfTest.class));
+        suite.addTest(new TestSuite(DeploymentClassLoaderCallableTest.class));
+        suite.addTest(new TestSuite(SharedDeploymentTest.class));
         GridTestUtils.addTestIfNeeded(suite, GridDeploymentMessageCountSelfTest.class, ignoredTests);
 
         return suite;

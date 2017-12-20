@@ -17,19 +17,16 @@
 
 package org.apache.ignite.visor.commands.config
 
+import java.util.UUID
 import org.apache.ignite.cluster.ClusterGroupEmptyException
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
 import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
 
-import java.lang.System._
-import java.util.UUID
-
-import org.apache.ignite.internal.visor.node.{VisorSpiDescription, VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
+import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask, VisorSpiDescription}
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
@@ -240,6 +237,26 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
 
         spisT.render()
 
+        println("\nClient connector configuration")
+
+        val cliConnCfg = cfg.getClientConnectorConfiguration
+        val cliConnTbl = VisorTextTable()
+
+        if (cliConnCfg != null) {
+            cliConnTbl += ("Host", safe(cliConnCfg.getHost, safe(basic.getLocalHost)))
+            cliConnTbl += ("Port", cliConnCfg.getPort)
+            cliConnTbl += ("Port range", cliConnCfg.getPortRange)
+            cliConnTbl += ("Socket send buffer size", formatMemory(cliConnCfg.getSocketSendBufferSize))
+            cliConnTbl += ("Socket receive buffer size", formatMemory(cliConnCfg.getSocketReceiveBufferSize))
+            cliConnTbl += ("Max connection cursors", cliConnCfg.getMaxOpenCursorsPerConnection)
+            cliConnTbl += ("Pool size", cliConnCfg.getThreadPoolSize)
+            cliConnTbl += ("TCP_NODELAY", bool2Str(cliConnCfg.isTcpNoDelay))
+
+            cliConnTbl.render()
+        }
+        else
+            println("Client Connection is not configured")
+
         println("\nPeer-to-Peer:")
 
         val p2pT = VisorTextTable()
@@ -273,7 +290,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.getPeerClassLoadingThreadPoolSize))
         execSvcT += ("Rebalance Thread Pool size", execCfg.getRebalanceThreadPoolSize)
         execSvcT += ("REST thread pool size", safe(execCfg.getRestThreadPoolSize))
-        execSvcT += ("SQL processor thread pool size", safe(execCfg.getSqlConnectorConfigurationThreadPoolSize))
+        execSvcT += ("Client connector thread pool size", safe(execCfg.getClientConnectorConfigurationThreadPoolSize))
 
         execSvcT.render()
 
@@ -371,7 +388,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
      * @return List of strings.
      */
     private[this] def compactProperty(name: String, value: String): List[String] = {
-        val ps = getProperty("path.separator")
+        val ps = System.getProperty("path.separator")
 
         // Split all values having path separator into multiple lines (with few exceptions...).
         val lst =
