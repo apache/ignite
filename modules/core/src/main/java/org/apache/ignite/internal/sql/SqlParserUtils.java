@@ -442,7 +442,7 @@ public class SqlParserUtils {
             return false;
 
         if (parsedParams != null && parsedParams.contains(keyword))
-            throw error(lex.currentToken(), "Duplicate parameter: " + keyword);
+            throw error(lex.currentToken(), "Only one " + keyword + " clause may be specified.");
 
         lex.shift();
 

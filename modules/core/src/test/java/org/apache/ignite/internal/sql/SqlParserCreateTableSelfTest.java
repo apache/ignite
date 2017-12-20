@@ -22,8 +22,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.sql.command.SqlCreateTableCommand;
+import org.apache.ignite.internal.sql.param.ParamTestUtils;
 import org.apache.ignite.internal.sql.param.TestParamDef;
-import org.apache.ignite.internal.sql.param.ParamTests;
 import org.apache.ignite.testframework.StringOrPattern;
 
 import java.util.Arrays;
@@ -55,18 +55,27 @@ import static org.apache.ignite.internal.sql.SqlKeyword.WRITE_SYNC_MODE;
 @SuppressWarnings({"UnusedReturnValue", "ThrowableNotThrown"})
 public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
 
+    /** FIXME */
     private static final String PARTITIONED_TMPL_NAME = CacheMode.PARTITIONED.name();
+    /** FIXME */
     private static final String REPLICATED_TMPL_NAME = CacheMode.REPLICATED.name();
 
+    /** FIXME */
     private static final String PK_NAME = "pk";
+    /** FIXME */
     private static final String WRONG_PK_NAME = "wrong-pk";
 
+    /** FIXME */
     private static final String[] GOOD_IDS = new String[] { "test" };
+    /** FIXME */
     private static final String[] BAD_IDS = new String[] { "1badId", "`badId" };
 
+    /** FIXME */
     private static final String GOOD_STR = "test";
 
+    /** FIXME */
     private static final List<TestParamDef<?>> PARAM_TESTS = new LinkedList<>();
+    /** FIXME */
     private static final List<TestParamDef.DefValPair<?>> DEFAULT_PARAM_VALS;
 
     static {
@@ -91,17 +100,17 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
                     StringOrPattern.of("Number of backups should be positive"))
         )));
 
-        PARAM_TESTS.add(ParamTests.makeBasicEnumDef(ATOMICITY, "atomicityMode", CacheAtomicityMode.class,
+        PARAM_TESTS.add(ParamTestUtils.makeBasicEnumDef(ATOMICITY, "atomicityMode", CacheAtomicityMode.class,
             Optional.<CacheAtomicityMode>fromNullable(null),
             Optional.<CacheAtomicityMode>fromNullable(null)));
 
-        PARAM_TESTS.add(ParamTests.makeBasicEnumDef(WRITE_SYNC_MODE, "writeSynchronizationMode",
+        PARAM_TESTS.add(ParamTestUtils.makeBasicEnumDef(WRITE_SYNC_MODE, "writeSynchronizationMode",
             CacheWriteSynchronizationMode.class,
             Optional.<CacheWriteSynchronizationMode>fromNullable(null),
             Optional.<CacheWriteSynchronizationMode>fromNullable(null)));
 
         PARAM_TESTS.add(new TestParamDef<>(CACHE_GROUP, "cacheGroup", String.class,
-            ParamTests.makeBasicStrTestValues(
+            ParamTestUtils.makeBasicStrTestValues(
                 Optional.<String>fromNullable(null), Optional.<String>fromNullable(null),
                 GOOD_STR)));
 
@@ -115,29 +124,29 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
             )));
 
         PARAM_TESTS.add(new TestParamDef<>(CACHE_NAME, "cacheName", String.class,
-            ParamTests.makeBasicStrTestValues(
+            ParamTestUtils.makeBasicStrTestValues(
                 Optional.<String>fromNullable(null), Optional.<String>fromNullable(null),
                 GOOD_STR)));
 
         PARAM_TESTS.add(new TestParamDef<>(DATA_REGION, "dataRegionName", String.class,
-            ParamTests.makeBasicStrTestValues(
+            ParamTestUtils.makeBasicStrTestValues(
                 Optional.<String>fromNullable(null), Optional.<String>fromNullable(null),
                 GOOD_STR)));
 
         PARAM_TESTS.add(new TestParamDef<>(KEY_TYPE, "keyTypeName", String.class,
-            ParamTests.makeBasicIdTestValues(GOOD_IDS, BAD_IDS,
+            ParamTestUtils.makeBasicIdTestValues(GOOD_IDS, BAD_IDS,
                 Optional.<String>fromNullable(null), Optional.<String>fromNullable(null),
                 StringOrPattern.of("optionally quoted identifier key type"))));
 
         PARAM_TESTS.add(new TestParamDef<>(VAL_TYPE, "valueTypeName", String.class,
-            ParamTests.makeBasicIdTestValues(GOOD_IDS, BAD_IDS,
+            ParamTestUtils.makeBasicIdTestValues(GOOD_IDS, BAD_IDS,
                 Optional.<String>fromNullable(null), Optional.<String>fromNullable(null),
                 StringOrPattern.of("optionally quoted identifier value type"))));
 
-        PARAM_TESTS.add(ParamTests.makeBasicBoolDef(WRAP_KEY, NO_WRAP_KEY, "wrapKey",
+        PARAM_TESTS.add(ParamTestUtils.makeBasicBoolDef(WRAP_KEY, NO_WRAP_KEY, "wrapKey",
             Optional.<Boolean>fromNullable(null), Optional.<Boolean>fromNullable(null)));
 
-        PARAM_TESTS.add(ParamTests.makeBasicBoolDef(WRAP_VALUE, NO_WRAP_VALUE, "wrapValue",
+        PARAM_TESTS.add(ParamTestUtils.makeBasicBoolDef(WRAP_VALUE, NO_WRAP_VALUE, "wrapValue",
             Optional.<Boolean>fromNullable(null), Optional.<Boolean>fromNullable(null)));
 
         DEFAULT_PARAM_VALS = createDefaultParamVals(PARAM_TESTS);
@@ -205,6 +214,7 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
             "Column already defined: A");
     }
 
+    /** FIXME */
     public void testParams() throws Exception {
 
         String baseCmd = "CREATE TABLE tbl (" + PK_NAME + " INT PRIMARY KEY, b VARCHAR)";

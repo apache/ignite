@@ -259,12 +259,12 @@ public class SqlCreateIndexCommand implements SqlCommand {
      * @param lex Lexer.
      */
     private void parseParameters(SqlLexer lex) {
-        while (lex.tokenType() != SqlLexerTokenType.EOF) {
+        while (lex.lookAhead().tokenType() != SqlLexerTokenType.EOF) {
 
             if (!tryParseParallel(lex) &&
                 !tryParseInlineSize(lex))
 
-                throw errorUnexpectedToken(lex.currentToken());
+                throw errorUnexpectedToken(lex.lookAhead());
         }
     }
 
@@ -277,7 +277,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
                 assert val != null;
 
                 if (val < 0)
-                    throw error(lex, "Illegal " + PARALLEL + " value. Should be positive: " + parallel);
+                    throw error(lex, "Illegal " + PARALLEL + " value. Should be positive: " + val);
 
                 parallel(val);
             }
@@ -293,7 +293,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
                 assert isDflt || val != null;
 
                 if (val < 0)
-                    throw error(lex, "Illegal " + INLINE_SIZE + " value. Should be positive: " + parallel);
+                    throw error(lex, "Illegal " + INLINE_SIZE + " value. Should be positive: " + val);
 
                 inlineSize(isDflt ? QueryIndex.DFLT_INLINE_SIZE : val);
             }

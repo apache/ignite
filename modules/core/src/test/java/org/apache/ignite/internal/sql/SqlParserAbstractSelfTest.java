@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.param.ParamTestUtils;
 import org.apache.ignite.internal.sql.param.TestParamDef;
-import org.apache.ignite.internal.sql.param.ParamTests;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.StringOrPattern;
@@ -78,7 +78,7 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
                     continue;
 
                 try {
-                    String sql = ParamTests.makeSqlWithParams(cmdPrefix,
+                    String sql = ParamTestUtils.makeSqlWithParams(cmdPrefix,
                         new TestParamDef.DefValPair<>(def, val, syn));
 
                     if (val instanceof TestParamDef.InvalidValue)

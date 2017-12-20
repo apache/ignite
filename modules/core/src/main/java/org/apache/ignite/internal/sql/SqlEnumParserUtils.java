@@ -24,6 +24,7 @@ import java.util.Set;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 
+/** FIXME */
 public final class SqlEnumParserUtils {
 
     /** FIXME */
@@ -85,10 +86,12 @@ public final class SqlEnumParserUtils {
         return parseEnum(lex, enumCls, true, null);
     }
 
+    /** FIXME */
     public static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls, T defaultVal) {
         return parseEnum(lex, enumCls, true, defaultVal);
     }
 
+    /** FIXME */
     public static <T extends Enum<T>> SqlParseException errorEnumValue(SqlLexerToken tok, Class<T> enumCls) {
         throw SqlParserUtils.errorUnexpectedToken(tok, "[" + enumCls.getCanonicalName()
             + " constant, one of " + Arrays.toString(enumCls.getEnumConstants()));
@@ -146,57 +149,79 @@ public final class SqlEnumParserUtils {
         }
     }
 
+    /** FIXME */
     public static class ParsedEnum<T extends Enum<T>> {
+        /** FIXME */
         public enum Outcome {
+            /** FIXME */
             MISSING,
+            /** FIXME */
             PARSED,
+            /** FIXME */
             DEFAULT,
+            /** FIXME */
             ERROR;
         }
+
+        /** FIXME */
         public final static ParsedEnum ERROR = new ParsedEnum(Outcome.ERROR);
 
+        /** FIXME */
         public final static ParsedEnum DEFAULT = new ParsedEnum(Outcome.DEFAULT);
 
+        /** FIXME */
         public final static ParsedEnum MISSING = new ParsedEnum(Outcome.MISSING);
 
+        /** FIXME */
         private final Outcome outcome;
 
+        /** FIXME */
         private final T value;
+
+        /** FIXME */
         private ParsedEnum(Outcome outcome) {
             this.outcome = outcome;
             this.value = null;
         }
 
+        /** FIXME */
         private ParsedEnum(T value) {
             this.outcome = Outcome.PARSED;
             this.value = value;
         }
 
+        /** FIXME */
         public Outcome outcome() {
             return outcome;
         }
 
+        /** FIXME */
         public T value() {
             assert outcome == Outcome.PARSED;
             return value;
         }
 
+        /** FIXME */
         public boolean isMissing() {
             return outcome == Outcome.MISSING;
         }
 
+        /** FIXME */
         public boolean isError() {
             return outcome == Outcome.ERROR;
         }
 
+        /** FIXME */
         public boolean isDefault() {
             return outcome == Outcome.DEFAULT;
         }
 
+        /** FIXME */
         public boolean isValue() {
             return outcome == Outcome.PARSED;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "ParsedEnum{outcome=" + outcome.name()
                 + (isValue() ? ("; value=" + value()) : "" )
@@ -244,7 +269,12 @@ public final class SqlEnumParserUtils {
         return true;
     }
 
-    /** FIXME */
+    /**
+     * Parses a boolean value allownig additional values defined in {@link BooleanEnum} and possible default value.
+     *
+     * @param lex The lexer.
+     * @param allowDflt Allow {@code DEFAULT} keyword to be used instead of boolean value.
+     */
     public static Boolean parseBoolean(SqlLexer lex, boolean allowDflt) {
 
         BooleanEnum val = parseEnum(lex, BooleanEnum.class, allowDflt, null);
@@ -252,36 +282,44 @@ public final class SqlEnumParserUtils {
         return val == null ? null : val.toBoolean();
     }
 
-    /** FIXME */
+    /** Enum listing boolean values with additional values like YES and NO. */
     public enum BooleanEnum {
 
-        /** FIXME */
+        /** true. */
         TRUE(true),
 
-        /** FIXME */
+        /** false. */
         FALSE(false),
 
-        /** FIXME */
+        /** yes (true). */
         YES(true),
 
-        /** FIXME */
+        /** no (false). */
         NO(false);
 
-        /** FIXME */
+        /** Boolean value of the enum. */
         private final boolean val;
 
-        /** FIXME */
+        /**
+         * Creates an enum value.
+         *
+         * @param val Boolean value for this enum value.
+         */
         BooleanEnum(boolean val) {
             this.val = val;
         }
 
-        /** FIXME */
+        /**
+         * Converts enum value to boolean.
+         *
+         * @return Boolean value of the enum.
+         */
         public boolean toBoolean() {
             return val;
         }
     }
 
-    /** FIXME */
+    /** Deprecates creating of an object of this type. */
     private SqlEnumParserUtils() {
         // Noop.
     }

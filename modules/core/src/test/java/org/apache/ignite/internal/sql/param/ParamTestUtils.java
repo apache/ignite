@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_WITH_
 import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.VAL;
 
 /** FIXME */
-public final class ParamTests {
+public final class ParamTestUtils {
 
     /** FIXME */
     private static final String BAD_BOOLEAN_VALUE = "Gnip_gnop";
@@ -138,7 +138,7 @@ public final class ParamTests {
         String fldName, Class<T> fldCls, Optional<T> dfltVal, Optional<T> missingVal) {
 
         return new TestParamDef<>(cmdParamName, fldName, fldCls,
-            ParamTests.makeBasicEnumTestValues(fldCls, dfltVal, missingVal));
+            ParamTestUtils.makeBasicEnumTestValues(fldCls, dfltVal, missingVal));
     }
 
     /** FIXME */
@@ -172,7 +172,7 @@ public final class ParamTests {
         String fldName, Optional<Boolean> dfltVal, Optional<Boolean> missingVal) {
 
         return new BoolTestParamDef(trueKeyword, falseKeyword, fldName,
-            ParamTests.makeBoolTestValues(dfltVal, missingVal));
+            ParamTestUtils.makeBoolTestValues(dfltVal, missingVal));
     }
 
     /** FIXME */
@@ -201,7 +201,7 @@ public final class ParamTests {
     }
 
     /** FIXME */
-    private ParamTests() {
+    private ParamTestUtils() {
         // Prevent instance creation
     }
 }
