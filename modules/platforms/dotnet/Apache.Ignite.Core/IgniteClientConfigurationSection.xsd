@@ -17,7 +17,7 @@
   limitations under the License.
 -->
 
-<xs:schema id="IgniteConfigurationSection"
+<xs:schema id="IgniteClientConfigurationSection"
     targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection"
     elementFormDefault="qualified"
     xmlns="http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection"
