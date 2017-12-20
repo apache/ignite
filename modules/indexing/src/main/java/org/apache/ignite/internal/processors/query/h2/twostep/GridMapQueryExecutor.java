@@ -171,7 +171,7 @@ public class GridMapQueryExecutor {
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (!busyLock.enterBusy())
                     return;
 
@@ -459,8 +459,11 @@ public class GridMapQueryExecutor {
             req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
 
         final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
+        final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
 
-        for (int i = 1; i < mainCctx.config().getQueryParallelism(); i++) {
+        int segments = explain ? 1 : mainCctx.config().getQueryParallelism();
+
+        for (int i = 1; i < segments; i++) {
             final int segment = i;
 
             ctx.closure().callLocal(
@@ -551,7 +554,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new QueryResults(reqId, qrys.size(), mainCctx);
+            qr = new QueryResults(reqId, qrys.size(), mainCctx, cacheIds);
 
             if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
@@ -579,7 +582,7 @@ public class GridMapQueryExecutor {
 
                     Objects.requireNonNull(tbl, identifier);
 
-                    tbl.snapshotIndexes(qctx);
+                    tbl.snapshotIndexes(qctx, segmentId);
 
                     snapshotedTbls.add(tbl);
                 }
@@ -587,7 +590,6 @@ public class GridMapQueryExecutor {
 
             Connection conn = h2.connectionForSpace(mainCctx.name());
 
-            // Here we enforce join order to have the same behavior on all the nodes.
             setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 
             GridH2QueryContext.set(qctx);
@@ -610,28 +612,34 @@ public class GridMapQueryExecutor {
                 boolean evt = ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
                 for (GridCacheSqlQuery qry : qrys) {
-                    ResultSet rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
-                        F.asList(qry.parameters()), true,
-                        timeout,
-                        qr.cancels[qryIdx]);
+                    ResultSet rs = null;
 
-                    if (evt) {
-                        ctx.event().record(new CacheQueryExecutedEvent<>(
-                            node,
-                            "SQL query executed.",
-                            EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL.name(),
-                            mainCctx.namex(),
-                            null,
-                            qry.query(),
-                            null,
-                            null,
-                            qry.parameters(),
-                            node.id(),
-                            null));
+                    // If we are not the target node for this replicated query, just ignore it.
+                    if (qry.node() == null ||
+                        (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
+                        rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
+                            F.asList(qry.parameters()), true,
+                            timeout,
+                            qr.cancels[qryIdx]);
+
+                        if (evt) {
+                            ctx.event().record(new CacheQueryExecutedEvent<>(
+                                node,
+                                "SQL query executed.",
+                                EVT_CACHE_QUERY_EXECUTED,
+                                CacheQueryType.SQL.name(),
+                                mainCctx.namex(),
+                                null,
+                                qry.query(),
+                                null,
+                                null,
+                                qry.parameters(),
+                                node.id(),
+                                null));
+                        }
+
+                        assert rs instanceof JdbcResultSet : rs.getClass();
                     }
-
-                    assert rs instanceof JdbcResultSet : rs.getClass();
 
                     qr.addResult(qryIdx, qry, node.id(), rs);
 
@@ -640,6 +648,12 @@ public class GridMapQueryExecutor {
 
                         throw new QueryCancelledException();
                     }
+
+                    // Validate cache
+                    Throwable exc = qr.validateCaches();
+
+                    if (exc != null)
+                        throw exc;
 
                     // Send the first page.
                     sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
@@ -733,8 +747,17 @@ public class GridMapQueryExecutor {
             sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
         else if (qr.canceled)
             sendError(node, req.queryRequestId(), new QueryCancelledException());
-        else
-            sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+        else {
+            Throwable exc = qr.validateCaches();
+
+            if (exc == null)
+                sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+            else {
+                nodeRess.remove(req.queryRequestId(), req.segmentId(), qr);
+
+                sendError(node, req.queryRequestId(), new CacheException(exc.getMessage(), exc));
+            }
+        }
     }
 
     /**
@@ -750,6 +773,9 @@ public class GridMapQueryExecutor {
         QueryResult res = qr.result(qry);
 
         assert res != null;
+
+        if (res.closed)
+            return;
 
         int page = res.page;
 
@@ -960,17 +986,23 @@ public class GridMapQueryExecutor {
         private final GridCacheContext<?,?> cctx;
 
         /** */
+        private final List<Integer> cacheIds;
+
+        /** */
         private volatile boolean canceled;
 
         /**
          * @param qryReqId Query request ID.
          * @param qrys Number of queries.
          * @param cctx Cache context.
+         * @param cacheIds Cache IDs.
          */
         @SuppressWarnings("unchecked")
-        private QueryResults(long qryReqId, int qrys, GridCacheContext<?, ?> cctx) {
+        private QueryResults(long qryReqId, int qrys, GridCacheContext<?, ?> cctx,
+            List<Integer> cacheIds) {
             this.qryReqId = qryReqId;
             this.cctx = cctx;
+            this.cacheIds = cacheIds;
 
             results = new AtomicReferenceArray<>(qrys);
             cancels = new GridQueryCancel[qrys];
@@ -1038,6 +1070,27 @@ public class GridMapQueryExecutor {
                 }
             }
         }
+
+        /**
+         * Validate caches.
+         *
+         * @return {@link Throwable} if cache is not valid or {@code null} otherwise.
+         */
+        Throwable validateCaches() {
+            // Validate cache
+            for (Integer cacheId : cacheIds) {
+                GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
+
+                if (!cctx.isLocal()) {
+                    Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
+
+                    if (exc != null)
+                        return exc;
+                }
+            }
+
+            return null;
+        }
     }
 
     /**
@@ -1081,21 +1134,31 @@ public class GridMapQueryExecutor {
          * @param qry Query.
          */
         private QueryResult(ResultSet rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
-            this.rs = rs;
             this.cctx = cctx;
             this.qry = qry;
             this.qrySrcNodeId = qrySrcNodeId;
             this.cpNeeded = cctx.isLocalNode(qrySrcNodeId);
 
-            try {
-                res = (ResultInterface)RESULT_FIELD.get(rs);
-            }
-            catch (IllegalAccessException e) {
-                throw new IllegalStateException(e); // Must not happen.
-            }
+            if (rs != null) {
+                this.rs = rs;
+                try {
+                    res = (ResultInterface)RESULT_FIELD.get(rs);
+                }
+                catch (IllegalAccessException e) {
+                    throw new IllegalStateException(e); // Must not happen.
+                }
 
-            rowCnt = res.getRowCount();
-            cols = res.getVisibleColumnCount();
+                rowCnt = res.getRowCount();
+                cols = res.getVisibleColumnCount();
+            }
+            else {
+                this.rs = null;
+                this.res = null;
+                this.cols = -1;
+                this.rowCnt = -1;
+
+                closed = true;
+            }
         }
 
         /**

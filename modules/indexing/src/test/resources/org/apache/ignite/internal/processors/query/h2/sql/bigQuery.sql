@@ -26,21 +26,25 @@ from (
 	
 	select  date, orderId, rootOrderId, refOrderId as origOrderId, archSeq, alias
 	from "part".ReplaceOrder where alias='CUSTOM'
-  ) co, "part".OrderParams op
-  where co.date = op.date and co.orderId = op.orderId and co.archSeq = -- TODO: replace with 'dateToLong(co.date)+archSeq'.
-	(
-	  select max(archSeq) -- TODO: replace with 'dateToLong(co.date)+archSeq'.
-	  from (
-		  select  date, orderId, rootOrderId, origOrderId, archSeq, alias 
-		  from "part".CustOrder where alias='CUSTOM'
-		  
-		  union all
-		  
-		  select  date, orderId, rootOrderId, refOrderId as origOrderId, archSeq, alias
-		  from "part".ReplaceOrder where alias='CUSTOM'
-	  ) 
-	  where origOrderId = co.origOrderId and date = co.date
-	) and co.alias='CUSTOM'
+  ) co,
+  "part".OrderParams op,
+    (
+      select origOrderId, date, max(archSeq) maxArchSeq
+      from (
+          select  date, orderId, rootOrderId, origOrderId, archSeq, alias
+          from "part".CustOrder where alias='CUSTOM'
+
+          union all
+
+          select  date, orderId, rootOrderId, refOrderId as origOrderId, archSeq, alias
+          from "part".ReplaceOrder where alias='CUSTOM'
+      )
+      group by origOrderId, date
+   ) h
+  where co.date = op.date and co.orderId = op.orderId
+    and h.origOrderId = co.origOrderId and h.date = co.date
+    and co.archSeq = h.maxArchSeq
+	and co.alias='CUSTOM'
 ) cop 
 inner join (
   select e.date, e.rootOrderId as eRootOrderId, e.rootOrderId, sum(e.execShares) as execShares, 

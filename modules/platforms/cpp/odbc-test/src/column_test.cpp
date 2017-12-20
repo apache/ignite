@@ -66,9 +66,8 @@ BOOST_AUTO_TEST_CASE(TestColumnShort)
 
     short shortBuf = 0;
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_SIGNED_SHORT, &shortBuf, sizeof(shortBuf), &reslen, &offset);
+    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_SIGNED_SHORT, &shortBuf, sizeof(shortBuf), &reslen);
 
     BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
 
@@ -114,9 +113,8 @@ BOOST_AUTO_TEST_CASE(TestColumnString)
 
     char strBuf[1024] = {};
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, &offset);
+    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen);
 
     BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
 
@@ -164,9 +162,8 @@ BOOST_AUTO_TEST_CASE(TestColumnStringSeveral)
 
     std::string strBuf(data.size() / 3 + 2, 0);
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf[0], strBuf.size(), &reslen, &offset);
+    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf[0], strBuf.size(), &reslen);
 
     BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
 
@@ -246,9 +243,8 @@ BOOST_AUTO_TEST_CASE(TestColumnMultiString)
 
     char strBuf[1024] = {};
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, &offset);
+    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen);
 
     BOOST_REQUIRE(column1.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
 
@@ -312,9 +308,8 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArray)
 
     std::vector<int8_t> buf(data.size());
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf[0], buf.size(), &reslen, &offset);
+    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf[0], buf.size(), &reslen);
 
     BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
 
@@ -362,9 +357,8 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
 
     std::vector<int8_t> buf(data.size()/2);
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf[0], buf.size(), &reslen, &offset);
+    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf[0], buf.size(), &reslen);
 
     BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
 
@@ -435,9 +429,8 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayTwoColumns)
 
     int8_t buf[1024] = {};
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf, sizeof(buf), &reslen, &offset);
+    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf, sizeof(buf), &reslen);
 
     BOOST_REQUIRE(column1.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
 

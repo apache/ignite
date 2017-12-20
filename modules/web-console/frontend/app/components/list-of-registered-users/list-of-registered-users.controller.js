@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import headerTemplate from 'app/components/ui-grid-header/ui-grid-header.jade';
+import headerTemplate from 'app/components/ui-grid-header/ui-grid-header.tpl.pug';
 
 import columnDefs from './list-of-registered-users.column-defs';
 import categories from './list-of-registered-users.categories';
@@ -30,34 +30,21 @@ const rowTemplate = `<div
   ui-grid-cell/>`;
 
 export default class IgniteListOfRegisteredUsersCtrl {
-    static $inject = ['$scope', '$state', '$filter', '$templateCache', 'User', 'uiGridConstants', 'IgniteAdminData', 'IgniteNotebookData', 'IgniteConfirm', 'IgniteActivitiesUserDialog'];
+    static $inject = ['$scope', '$state', '$filter', 'User', 'uiGridGroupingConstants', 'IgniteAdminData', 'IgniteNotebookData', 'IgniteConfirm', 'IgniteActivitiesUserDialog'];
 
-    constructor($scope, $state, $filter, $templateCache, User, uiGridConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
+    constructor($scope, $state, $filter, User, uiGridGroupingConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
         const $ctrl = this;
-
-        const companySelectOptions = [];
-        const countrySelectOptions = [];
 
         const dtFilter = $filter('date');
 
+        $ctrl.groupBy = 'user';
+
         $ctrl.params = {
-            startDate: new Date()
+            startDate: new Date(),
+            endDate: new Date()
         };
 
-        const columnCompany = _.find(columnDefs, { displayName: 'Company' });
-        const columnCountry = _.find(columnDefs, { displayName: 'Country' });
-
-        columnCompany.filter = {
-            selectOptions: companySelectOptions,
-            type: uiGridConstants.filter.SELECT,
-            condition: uiGridConstants.filter.EXACT
-        };
-
-        columnCountry.filter = {
-            selectOptions: countrySelectOptions,
-            type: uiGridConstants.filter.SELECT,
-            condition: uiGridConstants.filter.EXACT
-        };
+        $ctrl.uiGridGroupingConstants = uiGridGroupingConstants;
 
         const becomeUser = (user) => {
             AdminData.becomeUser(user._id)
@@ -105,12 +92,17 @@ export default class IgniteListOfRegisteredUsersCtrl {
             return renderableRows;
         };
 
+        $ctrl._userGridOptions = {
+            columnDefs,
+            categories
+        };
+
         $ctrl.gridOptions = {
             data: [],
             columnVirtualizationThreshold: 30,
             columnDefs,
             categories,
-            headerTemplate: $templateCache.get(headerTemplate),
+            headerTemplate,
             rowTemplate,
             enableFiltering: true,
             enableRowSelection: true,
@@ -134,19 +126,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
             }
         };
 
-        const usersToFilterOptions = (column) => {
-            return _.sortBy(
-                _.map(
-                    _.groupBy($ctrl.gridOptions.data, (usr) => {
-                        const fld = usr[column];
-
-                        return _.isNil(fld) ? fld : fld.toUpperCase();
-                    }),
-                    (arr, value) => ({label: `${_.head(arr)[column] || 'Not set'} (${arr.length})`, value})
-                ),
-                'value');
-        };
-
         /**
          * @param {{startDate: number, endDate: number}} params
          */
@@ -154,28 +133,32 @@ export default class IgniteListOfRegisteredUsersCtrl {
             AdminData.loadUsers(params)
                 .then((data) => $ctrl.gridOptions.data = data)
                 .then((data) => {
-                    companySelectOptions.push(...usersToFilterOptions('company'));
-                    countrySelectOptions.push(...usersToFilterOptions('countryCode'));
-
                     this.gridApi.grid.refresh();
 
+                    this.companies = _.values(_.groupBy(data, (b) => b.company.toLowerCase()));
+                    this.countries = _.values(_.groupBy(data, (b) => b.countryCode));
+
                     return data;
-                })
-                .then((data) => $ctrl.adjustHeight(data.length));
+                });
+        };
+
+        const fitlerDates = (sdt, edt) => {
+            $ctrl.gridOptions.exporterCsvFilename = `web_console_users_${dtFilter(sdt, 'yyyy_MM')}.csv`;
+
+            const startDate = Date.UTC(sdt.getFullYear(), sdt.getMonth(), 1);
+            const endDate = Date.UTC(edt.getFullYear(), edt.getMonth() + 1, 1);
+
+            reloadUsers({ startDate, endDate });
         };
 
         $scope.$watch(() => $ctrl.params.companiesExclude, () => {
             $ctrl.gridApi.grid.refreshRows();
         });
 
-        $scope.$watch(() => $ctrl.params.startDate, (dt) => {
-            $ctrl.gridOptions.exporterCsvFilename = `web_console_users_${dtFilter(dt, 'yyyy_MM')}.csv`;
+        $scope.$watch(() => $ctrl.params.startDate, (sdt) => fitlerDates(sdt, $ctrl.params.endDate));
+        $scope.$watch(() => $ctrl.params.endDate, (edt) => fitlerDates($ctrl.params.startDate, edt));
 
-            const startDate = Date.UTC(dt.getFullYear(), dt.getMonth(), 1);
-            const endDate = Date.UTC(dt.getFullYear(), dt.getMonth() + 1, 1);
-
-            reloadUsers({ startDate, endDate });
-        });
+        $scope.$watch(() => $ctrl.gridApi.grid.getVisibleRows().length, (length) => $ctrl.adjustHeight(length >= 20 ? 20 : length));
     }
 
     adjustHeight(rows) {
@@ -231,5 +214,122 @@ export default class IgniteListOfRegisteredUsersCtrl {
 
     exportCsv() {
         this.gridApi.exporter.csvExport('visible', 'visible');
+    }
+
+    groupByUser() {
+        this.groupBy = 'user';
+
+        this.gridApi.grouping.clearGrouping();
+
+        this.gridOptions.categories = this._userGridOptions.categories;
+        this.gridOptions.columnDefs = this._userGridOptions.columnDefs;
+    }
+
+    groupByCompany() {
+        this.groupBy = 'company';
+
+        this.gridApi.grouping.clearGrouping();
+        this.gridApi.grouping.groupColumn('company');
+        this.gridApi.grouping.aggregateColumn('user', this.uiGridGroupingConstants.aggregation.COUNT);
+
+        if (this._companyGridOptions) {
+            this.gridOptions.categories = this._companyGridOptions.categories;
+            this.gridOptions.columnDefs = this._companyGridOptions.columnDefs;
+
+            return;
+        }
+
+        const _categories = _.cloneDeep(categories);
+        const _columnDefs = _.cloneDeep(columnDefs);
+
+        // Cut company category;
+        const company = _categories.splice(3, 1)[0];
+
+        // Hide Actions category;
+        _categories.splice(0, 1);
+
+        _.forEach(_.filter(_columnDefs, {displayName: 'Actions'}), (col) => {
+            col.visible = false;
+        });
+
+        // Add company as first column;
+        _categories.unshift(company);
+
+        _.forEach(_columnDefs, (col) => {
+            col.enableSorting = true;
+
+            if (col.type !== 'number')
+                return;
+
+            col.treeAggregationType = this.uiGridGroupingConstants.aggregation.SUM;
+            col.customTreeAggregationFinalizerFn = (agg) => agg.rendered = agg.value;
+        });
+
+        // Set grouping to last activity column
+        const lastactivity = _.find(_columnDefs, { name: 'lastactivity' });
+
+        if (_.nonNil(lastactivity)) {
+            lastactivity.treeAggregationType = this.uiGridGroupingConstants.aggregation.MAX;
+            lastactivity.customTreeAggregationFinalizerFn = (agg) => agg.rendered = agg.value;
+        }
+
+        this._companyGridOptions = {
+            categories: this.gridOptions.categories = _categories,
+            columnDefs: this.gridOptions.columnDefs = _columnDefs
+        };
+    }
+
+    groupByCountry() {
+        this.groupBy = 'country';
+
+        this.gridApi.grouping.clearGrouping();
+        this.gridApi.grouping.groupColumn('country');
+        this.gridApi.grouping.aggregateColumn('user', this.uiGridGroupingConstants.aggregation.COUNT);
+
+        if (this._countryGridOptions) {
+            this.gridOptions.categories = this._countryGridOptions.categories;
+            this.gridOptions.columnDefs = this._countryGridOptions.columnDefs;
+
+            return;
+        }
+
+        const _categories = _.cloneDeep(categories);
+        const _columnDefs = _.cloneDeep(columnDefs);
+
+        // Cut country category;
+        const country = _categories.splice(4, 1)[0];
+
+        // Hide Actions category;
+        _categories.splice(0, 1);
+
+        _.forEach(_.filter(_columnDefs, {displayName: 'Actions'}), (col) => {
+            col.visible = false;
+        });
+
+        // Add company as first column;
+        _categories.unshift(country);
+
+        _.forEach(_columnDefs, (col) => {
+            col.enableSorting = true;
+
+            if (col.type !== 'number')
+                return;
+
+            col.treeAggregationType = this.uiGridGroupingConstants.aggregation.SUM;
+            col.customTreeAggregationFinalizerFn = (agg) => agg.rendered = agg.value;
+        });
+
+        // Set grouping to last activity column
+        const lastactivity = _.find(_columnDefs, { name: 'lastactivity' });
+
+        if (_.nonNil(lastactivity)) {
+            lastactivity.treeAggregationType = this.uiGridGroupingConstants.aggregation.MAX;
+            lastactivity.customTreeAggregationFinalizerFn = (agg) => agg.rendered = agg.value;
+        }
+
+        this._countryGridOptions = {
+            categories: this.gridOptions.categories = _categories,
+            columnDefs: this.gridOptions.columnDefs = _columnDefs
+        };
     }
 }

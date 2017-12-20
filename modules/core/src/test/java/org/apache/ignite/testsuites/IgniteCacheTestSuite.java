@@ -27,11 +27,17 @@ import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
 import org.apache.ignite.cache.affinity.fair.FairAffinityDynamicCacheSelfTest;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionNodesSelfTest;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionSelfTest;
+import org.apache.ignite.cache.affinity.fair.FairAffinityNodesRestart;
 import org.apache.ignite.cache.affinity.local.LocalAffinityFunctionTest;
+import org.apache.ignite.cache.store.CacheStoreReadFromBackupTest;
+import org.apache.ignite.cache.store.CacheTransactionalStoreReadFromBackupTest;
 import org.apache.ignite.cache.store.GridCacheBalancingStoreSelfTest;
 import org.apache.ignite.cache.store.GridCacheLoadOnlyStoreAdapterSelfTest;
+import org.apache.ignite.cache.store.GridStoreLoadCacheTest;
 import org.apache.ignite.cache.store.StoreResourceInjectionSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreBinaryMarshallerSelfTest;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreBinaryMarshallerStoreKeepBinarySelfTest;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreBinaryMarshallerStoreKeepBinaryWithSqlEscapeSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreBinaryMarshallerWithSqlEscapeSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreMultitreadedSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreOptimizedMarshallerSelfTest;
@@ -39,12 +45,13 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreOptimizedMarshallerW
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreMultithreadedSelfTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreSelfTest;
+import org.apache.ignite.cache.store.jdbc.JdbcTypesDefaultTransformerTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalancePairedConnectionsTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceTest;
+import org.apache.ignite.internal.managers.communication.IgniteCommunicationSslBalanceTest;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessagesTest;
 import org.apache.ignite.internal.managers.communication.IgniteVariousConnectionNumberTest;
-import org.apache.ignite.cache.store.jdbc.JdbcTypesDefaultTransformerTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
@@ -232,6 +239,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(FairAffinityFunctionNodesSelfTest.class);
         suite.addTestSuite(FairAffinityFunctionSelfTest.class);
         suite.addTestSuite(FairAffinityDynamicCacheSelfTest.class);
+        suite.addTestSuite(FairAffinityNodesRestart.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
         suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
         suite.addTestSuite(AffinityClientNodeSelfTest.class);
@@ -263,7 +271,9 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(CacheJdbcPojoStoreOptimizedMarshallerSelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreOptimizedMarshallerWithSqlEscapeSelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreBinaryMarshallerSelfTest.class);
+        suite.addTestSuite(CacheJdbcPojoStoreBinaryMarshallerStoreKeepBinarySelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreBinaryMarshallerWithSqlEscapeSelfTest.class);
+        suite.addTestSuite(CacheJdbcPojoStoreBinaryMarshallerStoreKeepBinaryWithSqlEscapeSelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreMultitreadedSelfTest.class);
         suite.addTestSuite(GridCacheBalancingStoreSelfTest.class);
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
@@ -344,7 +354,12 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCommunicationBalanceTest.class);
         suite.addTestSuite(IgniteCommunicationBalancePairedConnectionsTest.class);
         suite.addTestSuite(IgniteCommunicationBalanceMultipleConnectionsTest.class);
+        suite.addTestSuite(IgniteCommunicationSslBalanceTest.class);
         suite.addTestSuite(IgniteIoTestMessagesTest.class);
+
+        suite.addTestSuite(GridStoreLoadCacheTest.class);
+        suite.addTestSuite(CacheStoreReadFromBackupTest.class);
+        suite.addTestSuite(CacheTransactionalStoreReadFromBackupTest.class);
 
         return suite;
     }

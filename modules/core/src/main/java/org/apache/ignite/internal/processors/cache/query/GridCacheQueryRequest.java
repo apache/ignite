@@ -477,10 +477,18 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         return taskHash;
     }
 
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return Integer.MIN_VALUE;
+    }
+
     /**
+     * This method needed for scan query. {@link #partition()} method related with IO policy and cannot be used
+     * for this role. Otherwise Query will be processed in striped pool.
+     *
      * @return partition.
      */
-    public int partition() {
+    public int partitionId() {
         return part;
     }
 

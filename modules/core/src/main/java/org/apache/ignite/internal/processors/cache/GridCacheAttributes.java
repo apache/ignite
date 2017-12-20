@@ -170,13 +170,25 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Eviction policy class name.
+     *
+     * @deprecated Use evictionPolicyFactoryClassName() instead.
      */
+    @Deprecated
     public String evictionPolicyClassName() {
         return className(ccfg.getEvictionPolicy());
     }
 
     /**
+     * @return Eviction policy factory class name.
+     */
+    public String evictionPolicyFactoryClassName() {
+        return className(ccfg.getEvictionPolicyFactory());
+    }
+
+    /**
      * @return Near eviction policy class name.
+     *
+     * @deprecated Use nearEvictionPolicyFactoryClassName() instead.
      */
     public String nearEvictionPolicyClassName() {
         NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
@@ -185,6 +197,13 @@ public class GridCacheAttributes implements Serializable {
             return null;
 
         return className(nearCfg.getNearEvictionPolicy());
+    }
+
+    /**
+     * @return Near eviction policy factory class name.
+     */
+    public String nearEvictionPolicyFactoryClassName() {
+        return className(ccfg.getEvictionPolicyFactory());
     }
 
     /**
@@ -300,6 +319,13 @@ public class GridCacheAttributes implements Serializable {
      */
     public int writeBehindBatchSize() {
         return ccfg.getWriteBehindBatchSize();
+    }
+
+    /**
+     * @return Write-behind cache store write coalescing.
+     */
+    public boolean writeBehindCoalescing() {
+        return ccfg.getWriteBehindCoalescing();
     }
 
     /**

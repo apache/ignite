@@ -108,28 +108,53 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, loc, getArgs(),
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        JdbcResultSet rs;
+        if (conn.isEnforceJoinOrder()) {
+            JdbcQueryTaskV3 qryTask = new JdbcQueryTaskV3(loc ? ignite : null, conn.cacheName(), sql, true,
+                loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                conn.isDistributedJoins(), true);
 
-        try {
-            JdbcQueryTask.QueryResult res =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+            try {
+                JdbcQueryTaskV3.QueryResult res =
+                    loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            JdbcResultSet rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(), res.getTypes(),
-                res.getRows(), res.isFinished());
+                rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(), res.getTypes(),
+                    res.getRows(), res.isFinished());
 
-            rs.setFetchSize(fetchSize);
-
-            resSets.add(rs);
-
-            return rs;
+                rs.setFetchSize(fetchSize);
+            }
+            catch (IgniteSQLException e) {
+                throw e.toJdbcException();
+            }
+            catch (Exception e) {
+                throw new SQLException("Failed to query Ignite.", e);
+            }
         }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
+        else {
+            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, loc, getArgs(),
+                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                conn.isDistributedJoins());
+
+            try {
+                JdbcQueryTask.QueryResult res =
+                    loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+                rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(), res.getTypes(),
+                    res.getRows(), res.isFinished());
+
+                rs.setFetchSize(fetchSize);
+            }
+            catch (IgniteSQLException e) {
+                throw e.toJdbcException();
+            }
+            catch (Exception e) {
+                throw new SQLException("Failed to query Ignite.", e);
+            }
         }
-        catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
-        }
+
+        resSets.add(rs);
+
+        return rs;
     }
 
     /** {@inheritDoc} */
@@ -165,8 +190,15 @@ public class JdbcStatement implements Statement {
         if (!conn.isDmlSupported())
             throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
 
-        JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        JdbcQueryTaskV2 qryTask;
+        if (conn.isEnforceJoinOrder()) {
+            qryTask = new JdbcQueryTaskV3(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
+                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins(), true);
+        }
+        else {
+            qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
+                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        }
 
         try {
             JdbcQueryTaskV2.QueryResult qryRes =
@@ -219,6 +251,7 @@ public class JdbcStatement implements Statement {
 
     /**
      * Marks statement as closed and closes all result sets.
+     * @throws SQLException On error.
      */
     void closeInternal() throws SQLException {
         for (Iterator<JdbcResultSet> it = resSets.iterator(); it.hasNext(); ) {
@@ -332,8 +365,17 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        JdbcQueryTaskV2 qryTask;
+        if (conn.isEnforceJoinOrder()) {
+            qryTask = new JdbcQueryTaskV3(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
+                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                conn.isDistributedJoins(), true);
+        }
+        else {
+            qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
+                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                conn.isDistributedJoins());
+        }
 
         try {
             JdbcQueryTaskV2.QueryResult res =

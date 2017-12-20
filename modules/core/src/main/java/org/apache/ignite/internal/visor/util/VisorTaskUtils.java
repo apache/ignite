@@ -30,7 +30,10 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -495,14 +498,45 @@ public class VisorTaskUtils {
     }
 
     /**
+     * @param path Path to resolve only relative to IGNITE_HOME.
+     * @return Resolved path as file, or {@code null} if path cannot be resolved.
+     * @throws IOException If failed to resolve path.
+     */
+    public static File resolveIgnitePath(String path) throws IOException {
+        File folder = U.resolveIgnitePath(path);
+
+        if (folder == null)
+            return null;
+
+        if (!folder.toPath().toRealPath(LinkOption.NOFOLLOW_LINKS).startsWith(Paths.get(U.getIgniteHome())))
+            return null;
+
+        return folder;
+    }
+
+    /**
+     * @param file File to resolve.
+     * @return Resolved file if it is a symbolic link or original file.
+     * @throws IOException If failed to resolve symlink.
+     */
+    public static File resolveSymbolicLink(File file) throws IOException {
+        Path path = file.toPath();
+
+        return Files.isSymbolicLink(path) ? Files.readSymbolicLink(path).toFile() : file;
+    }
+
+    /**
      * Finds all files in folder and in it's sub-tree of specified depth.
      *
      * @param file Starting folder
      * @param maxDepth Depth of the tree. If 1 - just look in the folder, no sub-folders.
      * @param filter file filter.
      * @return List of found files.
+     * @throws IOException If failed to list files.
      */
-    public static List<VisorLogFile> fileTree(File file, int maxDepth, @Nullable FileFilter filter) {
+    public static List<VisorLogFile> fileTree(File file, int maxDepth, @Nullable FileFilter filter) throws IOException {
+        file = resolveSymbolicLink(file);
+
         if (file.isDirectory()) {
             File[] files = (filter == null) ? file.listFiles() : file.listFiles(filter);
 
@@ -525,12 +559,13 @@ public class VisorTaskUtils {
     }
 
     /**
-     * @param fld Folder with files to match.
+     * @param file Folder with files to match.
      * @param ptrn Pattern to match against file name.
      * @return Collection of matched files.
+     * @throws IOException If failed to filter files.
      */
-    public static List<VisorLogFile> matchedFiles(File fld, final String ptrn) {
-        List<VisorLogFile> files = fileTree(fld, MAX_FOLDER_DEPTH,
+    public static List<VisorLogFile> matchedFiles(File file, final String ptrn) throws IOException {
+        List<VisorLogFile> files = fileTree(file, MAX_FOLDER_DEPTH,
             new FileFilter() {
                 @Override public boolean accept(File f) {
                     return !f.isHidden() && (f.isDirectory() || f.isFile() && f.getName().matches(ptrn));
@@ -873,8 +908,6 @@ public class VisorTaskUtils {
         if (cmdFilePath == null || !cmdFilePath.exists())
             throw new FileNotFoundException(String.format("File not found: %s", cmdFile));
 
-        String ignite = cmdFilePath.getCanonicalPath();
-
         File nodesCfgPath = U.resolveIgnitePath(cfgPath);
 
         if (nodesCfgPath == null || !nodesCfgPath.exists())
@@ -887,6 +920,8 @@ public class VisorTaskUtils {
         List<Process> run = new ArrayList<>();
 
         try {
+            String ignite = cmdFilePath.getCanonicalPath();
+
             for (int i = 0; i < nodesToStart; i++) {
                 if (U.isMacOs()) {
                     Map<String, String> macEnv = new HashMap<>(System.getenv());

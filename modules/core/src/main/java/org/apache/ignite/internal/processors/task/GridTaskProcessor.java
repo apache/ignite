@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -82,7 +83,9 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
@@ -477,8 +480,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         else
             taskClsName = taskCls != null ? taskCls.getName() : taskName;
 
-        ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE, null);
-
         // Get values from thread-local context.
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
 
@@ -487,6 +488,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         else
             // Reset thread-local context.
             thCtx.set(null);
+
+        if (map.get(TC_SKIP_AUTH) == null)
+            ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE, null);
 
         Long timeout = (Long)map.get(TC_TIMEOUT);
 
@@ -596,17 +600,30 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Task deployment: " + dep);
 
-        boolean fullSup = dep != null && taskCls!= null &&
+        boolean fullSup = dep != null && taskCls != null &&
             dep.annotation(taskCls, ComputeTaskSessionFullSupport.class) != null;
 
-        Collection<? extends ClusterNode> nodes = (Collection<? extends ClusterNode>)map.get(TC_SUBGRID);
+        Collection<UUID> top = null;
 
-        Collection<UUID> top = nodes != null ? F.nodeIds(nodes) : null;
+        final IgnitePredicate<ClusterNode> topPred = (IgnitePredicate<ClusterNode>)map.get(TC_SUBGRID_PREDICATE);
+
+        if (topPred == null) {
+            final Collection<ClusterNode> nodes = (Collection<ClusterNode>)map.get(TC_SUBGRID);
+
+            top = nodes != null ? F.nodeIds(nodes) : null;
+        }
 
         UUID subjId = getThreadContext(TC_SUBJ_ID);
 
         if (subjId == null)
             subjId = ctx.localNodeId();
+
+        boolean internal = false;
+
+        if (dep == null || taskCls == null)
+            assert deployEx != null;
+        else
+            internal = dep.internalTask(task, taskCls);
 
         // Creates task session with task name and task version.
         GridTaskSessionImpl ses = ctx.session().createTaskSession(
@@ -616,12 +633,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             dep,
             taskCls == null ? null : taskCls.getName(),
             top,
+            topPred,
             startTime,
             endTime,
             Collections.<ComputeJobSibling>emptyList(),
             Collections.emptyMap(),
             fullSup,
-            dep != null && dep.internalTask(task, taskCls),
+            internal,
             subjId);
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
@@ -1216,7 +1234,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (msg instanceof GridJobExecuteResponse)
                 processJobExecuteResponse(nodeId, (GridJobExecuteResponse)msg);
             else if (jobResOnly)
@@ -1260,7 +1278,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      */
     private class JobSiblingsMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (!(msg instanceof GridJobSiblingsRequest)) {
                 U.warn(log, "Received unexpected message instead of siblings request: " + msg);
 
@@ -1332,7 +1350,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      */
     private class TaskCancelMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg != null;
 
             if (!(msg instanceof GridTaskCancelRequest)) {

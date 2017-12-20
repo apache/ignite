@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.io.EOFException;
 import java.io.IOException;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 
@@ -28,7 +29,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridLuceneOutpu
 /**
  * A memory-resident {@link IndexInput} implementation.
  */
-public class GridLuceneInputStream extends IndexInput {
+public class GridLuceneInputStream extends IndexInput implements Cloneable {
     /** */
     private GridLuceneFile file;
 
@@ -53,6 +54,11 @@ public class GridLuceneInputStream extends IndexInput {
     /** */
     private final GridUnsafeMemory mem;
 
+    /** */
+    private volatile boolean closed;
+
+    /** */
+    private boolean isClone;
     /**
      * Constructor.
      *
@@ -80,7 +86,24 @@ public class GridLuceneInputStream extends IndexInput {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // nothing to do here
+        if (!isClone) {
+            closed = true;
+
+            file.releaseRef();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexInput clone() {
+        GridLuceneInputStream clone = (GridLuceneInputStream) super.clone();
+
+        if(closed)
+            throw new AlreadyClosedException(toString());
+
+        clone.isClone = true;
+
+        return clone;
+
     }
 
     /** {@inheritDoc} */

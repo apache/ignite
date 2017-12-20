@@ -19,6 +19,7 @@ package org.apache.ignite.spi;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
@@ -352,4 +353,9 @@ public interface IgniteSpiContext {
      * @param c Timeout object.
      */
     public void removeTimeoutObject(IgniteSpiTimeoutObject c);
+
+    /**
+     * @return Current node attributes.
+     */
+    public Map<String, Object> nodeAttributes();
 }

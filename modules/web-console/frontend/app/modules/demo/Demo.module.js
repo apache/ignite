@@ -18,6 +18,7 @@
 import angular from 'angular';
 
 import DEMO_INFO from 'app/data/demo-info.json';
+import templateUrl from 'views/templates/demo-info.tpl.pug';
 
 angular
 .module('ignite-console.demo', [
@@ -129,7 +130,7 @@ angular
     }
 
     const dialog = $modal({
-        templateUrl: '/templates/demo-info.html',
+        templateUrl,
         scope,
         placement: 'center',
         show: false,

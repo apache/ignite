@@ -201,23 +201,11 @@ public interface GridCacheEntryEx {
     /**
      * Invalidates this entry.
      *
-     * @param curVer Current version to match ({@code null} means always match).
      * @param newVer New version to set.
      * @return {@code true} if entry is obsolete.
      * @throws IgniteCheckedException If swap could not be released.
      */
-    public boolean invalidate(@Nullable GridCacheVersion curVer, GridCacheVersion newVer) throws IgniteCheckedException;
-
-    /**
-     * Invalidates this entry if it passes given filter.
-     *
-     * @param filter Optional filter that entry should pass before invalidation.
-     * @return {@code true} if entry was actually invalidated.
-     * @throws IgniteCheckedException If swap could not be released.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public boolean invalidate(@Nullable CacheEntryPredicate[] filter)
-        throws GridCacheEntryRemovedException, IgniteCheckedException;
+    public boolean invalidate(GridCacheVersion newVer) throws IgniteCheckedException;
 
     /**
      * @param swap Swap flag.
@@ -363,9 +351,8 @@ public interface GridCacheEntryEx {
 
     /**
      * @param ver Expected entry version.
-     * @throws IgniteCheckedException If failed.
      */
-    public void clearReserveForLoad(GridCacheVersion ver) throws IgniteCheckedException;
+    public void clearReserveForLoad(GridCacheVersion ver);
 
     /**
      * Reloads entry from underlying storage.

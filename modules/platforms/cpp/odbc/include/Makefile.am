@@ -22,6 +22,7 @@ noinst_HEADERS = \
     ignite/odbc/query/table_metadata_query.h \
     ignite/odbc/query/special_columns_query.h \
     ignite/odbc/query/type_info_query.h \
+    ignite/odbc/query/batch_query.h \
     ignite/odbc/query/data_query.h \
     ignite/odbc/query/foreign_keys_query.h \
     ignite/odbc/query/column_metadata_query.h \
@@ -35,6 +36,7 @@ noinst_HEADERS = \
     ignite/odbc/parser.h \
     ignite/odbc/app/application_data_buffer.h \
     ignite/odbc/app/parameter.h \
+    ignite/odbc/app/parameter_set.h \
     ignite/odbc/row.h \
     ignite/odbc/utility.h \
     ignite/odbc/environment.h \
