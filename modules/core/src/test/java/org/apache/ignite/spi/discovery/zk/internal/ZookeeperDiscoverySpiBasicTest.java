@@ -388,7 +388,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return res.get() == null;
                 }
-            }, 5000);
+            }, 30_000);
 
             assertNull(res.get());
         }
@@ -2193,7 +2193,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         ZkTestCommunicationSpi.spi(ignite(0)).initCheckResult(3, 0, 1);
         ZkTestCommunicationSpi.spi(ignite(1)).initCheckResult(3, 0, 1);
-        ZkTestCommunicationSpi.spi(ignite(0)).initCheckResult(3, 2);
+        ZkTestCommunicationSpi.spi(ignite(2)).initCheckResult(3, 2);
 
         UUID killedId = nodeId(2);
 

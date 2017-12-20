@@ -3001,6 +3001,11 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void run() {
+            ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
+
+            if (commErrFut != null)
+                commErrFut.onError(new IgniteCheckedException("Client node disconnected."));
+
             rtState.closing = true;
 
             busyLock.block();
@@ -3269,6 +3274,7 @@ public class ZookeeperDiscoveryImpl {
         private final ZkRuntimeState rtState;
 
         /**
+         * @param rtState Runtime state.
          * @param node Node.
          */
         PingFuture(ZkRuntimeState rtState, ZookeeperClusterNode node) {
@@ -3321,7 +3327,7 @@ public class ZookeeperDiscoveryImpl {
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
             if (super.onDone(res, err)) {
-                pingFuts.remove(node.id(), this);
+                pingFuts.remove(node.order(), this);
 
                 return true;
             }
