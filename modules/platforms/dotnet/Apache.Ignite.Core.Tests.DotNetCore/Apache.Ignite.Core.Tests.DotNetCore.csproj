@@ -136,6 +136,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\Apache.Ignite.Core.Tests\custom_app.config" Link="custom_app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Common\TestUtils.DotNetCore.cs" />
   </ItemGroup>
 

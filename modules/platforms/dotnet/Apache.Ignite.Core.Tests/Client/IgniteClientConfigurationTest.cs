@@ -137,6 +137,17 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
+                // Custom file.
+                using (var client = Ignition.StartClient("igniteClientConfiguration", "custom_app.config"))
+                {
+                    Assert.AreEqual(512, client.GetConfiguration().SocketSendBufferSize);
+                }
+
+                // Missing file.
+                var ex = Assert.Throws<ConfigurationErrorsException>(() => Ignition.StartClient("foo", "bar"));
+                Assert.AreEqual("Specified config file does not exist: bar", ex.Message);
+
+#if !NETCOREAPP2_0  // Test runners do not pick up default config.
                 // Default section.
                 using (var client = Ignition.StartClient())
                 {
@@ -151,14 +162,8 @@ namespace Apache.Ignite.Core.Tests.Client
                     Assert.AreEqual(2048, client.GetConfiguration().SocketSendBufferSize);
                 }
 
-                // Custom file.
-                using (var client = Ignition.StartClient("igniteClientConfiguration", "custom_app.config"))
-                {
-                    Assert.AreEqual(512, client.GetConfiguration().SocketSendBufferSize);
-                }
-
                 // Missing section content.
-                var ex = Assert.Throws<ConfigurationErrorsException>(() => 
+                ex = Assert.Throws<ConfigurationErrorsException>(() => 
                     Ignition.StartClient("igniteClientConfiguration3"));
                 Assert.AreEqual("IgniteClientConfigurationSection with name 'igniteClientConfiguration3' is " +
                                 "defined in <configSections>, but not present in configuration.", ex.Message);
@@ -167,9 +172,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 ex = Assert.Throws<ConfigurationErrorsException>(() => Ignition.StartClient("foo"));
                 Assert.AreEqual("Could not find IgniteClientConfigurationSection with name 'foo'.", ex.Message);
 
-                // Missing file.
-                ex = Assert.Throws<ConfigurationErrorsException>(() => Ignition.StartClient("foo", "bar"));
-                Assert.AreEqual("Specified config file does not exist: bar", ex.Message);
+#endif
             }
         }
 
