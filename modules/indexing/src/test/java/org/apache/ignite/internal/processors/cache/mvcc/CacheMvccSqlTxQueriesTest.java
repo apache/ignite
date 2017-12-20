@@ -984,7 +984,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         Random rnd = ThreadLocalRandom.current();
 
         Ignite checkNode  = grid(rnd.nextInt(4));
-        Ignite updateNode = grid(rnd.nextInt(4));
+        final Ignite updateNode = grid(rnd.nextInt(4));
 
         IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
