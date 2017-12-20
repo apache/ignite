@@ -89,7 +89,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.VARCHAR2;
 import static org.apache.ignite.internal.sql.SqlKeyword.VARCHAR_CASESENSITIVE;
 import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_KEY;
 import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_VALUE;
-import static org.apache.ignite.internal.sql.SqlKeyword.WRITE_SYNC_MODE;
+import static org.apache.ignite.internal.sql.SqlKeyword.WRITE_SYNCHRONIZATION_MODE;
 import static org.apache.ignite.internal.sql.SqlKeyword.YEAR;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
@@ -724,7 +724,7 @@ public class SqlCreateTableCommand implements SqlCommand {
     /** FIXME */
     private boolean tryParseWriteSyncMode(final SqlLexer lex) {
 
-        return SqlEnumParserUtils.tryParseEnumParam(lex, WRITE_SYNC_MODE, CacheWriteSynchronizationMode.class,
+        return SqlEnumParserUtils.tryParseEnumParam(lex, WRITE_SYNCHRONIZATION_MODE, CacheWriteSynchronizationMode.class,
 
             parsedParams, true, new SqlParserUtils.Setter<CacheWriteSynchronizationMode>() {
 
@@ -779,7 +779,7 @@ public class SqlCreateTableCommand implements SqlCommand {
                         throw error(lex.currentToken(), "Affinity key column with given name not found");
 
                     if (!pkColNames.contains(affCol.name()))
-                        throw error(lex.currentToken(), "Affinity key column should be a primary key column");
+                        throw error(lex.currentToken(), "Affinity key column must be one of key columns: " + affCol.name());
 
                     affinityKey(affCol.name());
                 }

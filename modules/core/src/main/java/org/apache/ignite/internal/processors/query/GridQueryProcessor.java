@@ -1380,8 +1380,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
         @Nullable CacheWriteSynchronizationMode writeSyncMode, Integer backups, boolean ifNotExists)
         throws IgniteCheckedException {
-        assert !F.isEmpty(templateName);
-        assert backups >= 0;
+
+        if (backups == null)
+            backups = 0;
 
         if (F.isEmpty(templateName))
             templateName = QueryUtils.TEMPLATE_PARTITIONED;

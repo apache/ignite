@@ -243,8 +243,8 @@ public class SqlKeyword {
     /** Keyword: WRAP_VALUE. */
     public static final String WRAP_VALUE = "WRAP_VALUE";
 
-    /** Keyword: WRITE_SYNC_MODE. */
-    public static final String WRITE_SYNC_MODE = "WRITE_SYNC_MODE";
+    /** Keyword: WRITE_SYNCHRONIZATION_MODE. */
+    public static final String WRITE_SYNCHRONIZATION_MODE = "WRITE_SYNCHRONIZATION_MODE";
 
     /** Keyword: YEAR. */
     public static final String YEAR = "YEAR";

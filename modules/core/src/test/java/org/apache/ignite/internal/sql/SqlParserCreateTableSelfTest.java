@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.TEMPLATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.VAL_TYPE;
 import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_KEY;
 import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_VALUE;
-import static org.apache.ignite.internal.sql.SqlKeyword.WRITE_SYNC_MODE;
+import static org.apache.ignite.internal.sql.SqlKeyword.WRITE_SYNCHRONIZATION_MODE;
 
 /**
  * Tests for SQL parser: CREATE TABLE.
@@ -104,7 +104,7 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
             Optional.<CacheAtomicityMode>fromNullable(null),
             Optional.<CacheAtomicityMode>fromNullable(null)));
 
-        PARAM_TESTS.add(ParamTestUtils.makeBasicEnumDef(WRITE_SYNC_MODE, "writeSynchronizationMode",
+        PARAM_TESTS.add(ParamTestUtils.makeBasicEnumDef(WRITE_SYNCHRONIZATION_MODE, "writeSynchronizationMode",
             CacheWriteSynchronizationMode.class,
             Optional.<CacheWriteSynchronizationMode>fromNullable(null),
             Optional.<CacheWriteSynchronizationMode>fromNullable(null)));

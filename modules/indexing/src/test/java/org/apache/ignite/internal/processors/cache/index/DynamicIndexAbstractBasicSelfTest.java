@@ -24,7 +24,6 @@ import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.H2FallbackTempDisabler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -681,11 +681,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         initialize(mode, atomicityMode, near);
 
-        String prevFallbackPropVal = System.getProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
-
-        try {
-            System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "true");
-
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)){
             checkNoIndexIsCreatedForInlineSize(-2, IgniteQueryErrorCode.PARSING);
             checkNoIndexIsCreatedForInlineSize(Integer.MIN_VALUE, IgniteQueryErrorCode.PARSING);
 
@@ -694,12 +690,6 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             checkIndexCreatedForInlineSize(1);
             loadInitialData();
             checkIndexCreatedForInlineSize(Integer.MAX_VALUE);
-        }
-        finally {
-            if (prevFallbackPropVal != null)
-                System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, prevFallbackPropVal);
-            else
-                System.clearProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
         }
     }
 
@@ -811,11 +801,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         initialize(mode, atomicityMode, near);
 
-        String prevFallbackPropVal = System.getProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
-
-        try {
-            System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "true");
-
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)){
             checkNoIndexIsCreatedForParallelism(-2, IgniteQueryErrorCode.PARSING);
             checkNoIndexIsCreatedForParallelism(Integer.MIN_VALUE, IgniteQueryErrorCode.PARSING);
 
@@ -824,12 +810,6 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             checkIndexCreatedForParallelism(1);
             loadInitialData();
             checkIndexCreatedForParallelism(5);
-        }
-        finally {
-            if (prevFallbackPropVal != null)
-                System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, prevFallbackPropVal);
-            else
-                System.clearProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
         }
     }
 
