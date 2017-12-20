@@ -1506,7 +1506,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (parser.nextCommand() != null)
                 return null;
 
-            // Only CREATE/DROP INDEX is supported for now.
             if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand ||
                 cmd instanceof SqlBeginTransactionCommand || cmd instanceof SqlCommitTransactionCommand ||
                 cmd instanceof SqlRollbackTransactionCommand))

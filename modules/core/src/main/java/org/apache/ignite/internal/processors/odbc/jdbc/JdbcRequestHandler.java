@@ -84,6 +84,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
+    /** Worker. */
     private final JdbcRequestHandlerWorker worker;
 
     /** Maximum allowed cursors. */
@@ -552,8 +553,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 qry.setSchema(schemaName);
 
-                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFieldsNoCache(qry, true,
-                    true).get(0);
+                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
+                    .querySqlFieldsNoCache(qry, true, true).get(0);
 
                 assert !qryCur.isQuery();
 
