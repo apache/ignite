@@ -124,6 +124,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * @throws Exception if failed.
      */
     private void doTest(boolean mvccEnabled) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7259");
+
         IgniteEx srv = startServer(mvccEnabled);
 
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +
