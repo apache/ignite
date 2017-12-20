@@ -65,7 +65,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-public class TxOptimisticOnPartitionExchange extends GridCommonAbstractTest {
+public class TxOptimisticOnPartitionExchangeTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODES_CNT = 3;
 
@@ -151,15 +151,15 @@ public class TxOptimisticOnPartitionExchange extends GridCommonAbstractTest {
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() {
                 try (Transaction tx = ignite(0).transactions().txStart(OPTIMISTIC, isolation)) {
-                    log().info(">>> TX started.");
-
-                    cache.putAll(txValues);
+                    info(">>> TX started.");
 
                     txStarted.countDown();
 
+                    cache.putAll(txValues);
+
                     tx.commit();
 
-                    log().info(">>> TX committed.");
+                    info(">>> TX committed.");
                 }
 
                 return null;
@@ -169,11 +169,11 @@ public class TxOptimisticOnPartitionExchange extends GridCommonAbstractTest {
         txStarted.await();
 
         try {
-            log().info(">>> Grid starting.");
+            info(">>> Grid starting.");
 
             IgniteEx ignite = startGrid(NODES_CNT);
 
-            log().info(">>> Grid started.");
+            info(">>> Grid started.");
 
             fut.get();
 
