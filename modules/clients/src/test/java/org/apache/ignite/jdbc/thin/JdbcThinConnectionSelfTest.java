@@ -17,6 +17,9 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -33,14 +36,19 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.jdbc.thin.ConnectionProperties;
+import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -81,6 +89,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setMarshaller(new BinaryMarshaller());
+
+        cfg.setGridLogger(new GridStringLogger());
 
         return cfg;
     }
@@ -1753,6 +1763,57 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 }
             });
         }
+    }
+
+    /**
+     * Test that attempting to
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testInvalidNestedTxMode() {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                DriverManager.getConnection(URL + "/?nestedTransactionsMode=invalid");
+
+                return null;
+            }
+        }, SQLException.class, "Invalid nested transactions handling mode");
+    }
+
+    /**
+     * Test that attempting to send unexpected name of nested TX mode to server on handshake yields a warning.
+     * We have to do this without explicit {@link Connection} as long as there's no other way to bypass validation and
+     * supply a malformed {@link ConnectionProperties} to {@link JdbcThinTcpIo}.
+     */
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ThrowFromFinallyBlock"})
+    public void testInvalidNestedTxModeOnServerSide() throws SQLException, NoSuchMethodException,
+        IllegalAccessException, InvocationTargetException, InstantiationException, IOException {
+        ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
+
+        connProps.setHost("127.0.0.1");
+
+        connProps.nestedTxMode("invalid");
+
+        Constructor ctor = JdbcThinTcpIo.class.getDeclaredConstructor(ConnectionProperties.class);
+
+        boolean acc = ctor.isAccessible();
+
+        ctor.setAccessible(true);
+
+        JdbcThinTcpIo io = (JdbcThinTcpIo)ctor.newInstance(connProps);
+
+        try {
+            io.start();
+        }
+        finally {
+            ctor.setAccessible(acc);
+        }
+
+        IgniteLogger log = grid(0).log();
+
+        GridStringLogger strLog = U.field(log, "impl");
+
+        assertTrue(strLog.toString().contains("Unexpected nested TX mode: invalid, falling back " +
+            "to default behavior (error)."));
     }
 
     /**

@@ -1787,6 +1787,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         try {
                             res.add(dmlProc.updateSqlFieldsDistributed(schemaName, c, prepared,
                                 qry.copy().setSql(sqlQry).setArgs(args), cancel));
+
+                            continue;
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +

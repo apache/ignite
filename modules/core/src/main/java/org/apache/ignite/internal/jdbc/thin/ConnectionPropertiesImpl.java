@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.Serializable;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Properties;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
@@ -110,7 +111,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
                     NestedTxMode.valueOf(mode.toUpperCase());
                 }
                 catch (IllegalArgumentException e) {
-                    throw new SQLException("Invalid  transaction", SqlStateCode.CLIENT_CONNECTION_FAILED);
+                    throw new SQLException("Invalid nested transactions handling mode, allowed values: " +
+                        Arrays.toString(nestedTxMode.choices), SqlStateCode.CLIENT_CONNECTION_FAILED);
                 }
             }
         }

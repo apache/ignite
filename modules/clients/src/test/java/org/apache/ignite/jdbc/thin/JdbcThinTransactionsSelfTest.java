@@ -393,4 +393,33 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
             }
         }, BatchUpdateException.class, "Transaction has already been started.");
     }
+
+    /**
+     * Test that exception in one of the statements does not kill connection worker altogether.
+     * @throws SQLException
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testExceptionHandling() throws SQLException {
+        try (Connection c = c(true, NestedTxMode.ERROR)) {
+            try (Statement s = c.createStatement()) {
+                s.execute("CREATE TABLE INTS (k int primary key, v int) WITH \"cache_name=ints,wrap_value=false\"");
+
+                s.execute("INSERT INTO INTS(k, v) values(1, 1)");
+
+                assertEquals(1, grid(0).cache("ints").get(1));
+
+                GridTestUtils.assertThrows(null, new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        s.execute("INSERT INTO INTS(x, y) values(1, 1)");
+
+                        return null;
+                    }
+                }, SQLException.class, "Failed to parse query");
+
+                s.execute("INSERT INTO INTS(k, v) values(2, 2)");
+
+                assertEquals(2, grid(0).cache("ints").get(2));
+            }
+        }
+    }
 }
