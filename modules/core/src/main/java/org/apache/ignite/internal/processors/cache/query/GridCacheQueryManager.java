@@ -643,7 +643,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @SuppressWarnings("unchecked")
     private QueryResult<K, V> executeQuery(GridCacheQueryAdapter<?> qry,
-        @Nullable Object[] args, boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object rcpt)
+        @Nullable Object[] args, @Nullable IgniteClosure<Cache.Entry<K, V>, Object> transformer,
+        boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object rcpt)
         throws IgniteCheckedException {
         if (qry.type() == null) {
             assert !loc;
@@ -671,7 +672,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 resKey = null;
         }
         else
-            res = new QueryResult<>(qry.type(), rcpt);
+            res = new QueryResult<>(qry.type(), rcpt, transformer);
 
         GridCloseableIterator<IgniteBiTuple<K, V>> iter;
 
@@ -1533,7 +1534,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 GridCacheQueryType type;
 
                 res = loc ?
-                    executeQuery(qry, qryInfo.arguments(), loc, qry.subjectId(), taskName,
+                    executeQuery(qry, qryInfo.arguments(), trans, loc, qry.subjectId(), taskName,
                         recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     queryResult(qryInfo, taskName);
 
@@ -1542,6 +1543,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 iter = res.iterator(recipient(qryInfo.senderId(), qryInfo.requestId()));
                 type = res.type();
+                trans = res.transformer();
 
                 final GridCacheAdapter<K, V> cache = cctx.cache();
 
@@ -1833,6 +1835,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
+            final IgniteClosure<Cache.Entry<K, V>, Object> transformer =
+                (IgniteClosure<Cache.Entry<K, V>, Object>)qry.transform();
+
+            injectResources(transformer);
+
             return new GridCloseableIteratorAdapter<Object>() {
                 @Override protected Object onNext() throws IgniteCheckedException {
                     long start = statsEnabled ? System.nanoTime() : 0L;
@@ -1867,9 +1874,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             null));
                     }
 
-                    IgniteClosure transform = qry.transform();
-
-                    if (transform == null)
+                    if (transformer == null)
                         return next;
 
                     Cache.Entry<K, V> entry;
@@ -1879,7 +1884,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     else
                         entry = cctx.cache().getEntry(next.getKey());
 
-                    return transform.apply(entry);
+                    return transformer.apply(entry);
                 }
 
                 @Override protected boolean onHasNext() throws IgniteCheckedException {
@@ -1964,7 +1969,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (exec) {
             try {
-                fut.onDone(executeQuery(qryInfo.query(), qryInfo.arguments(), false,
+                fut.onDone(executeQuery(qryInfo.query(), qryInfo.arguments(),
+                    (IgniteClosure<Cache.Entry<K, V>, Object>) qryInfo.transformer(),false,
                     qryInfo.query().subjectId(), taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
             }
             catch (Throwable e) {
@@ -2749,6 +2755,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private final GridCacheQueryType type;
 
+        /** */
+        private final IgniteClosure<Cache.Entry<K, V>, Object> transformer;
+
         /**
          * @param type Query type.
          * @param rcpt ID of the recipient.
@@ -2757,6 +2766,21 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             super(rcpt);
 
             this.type = type;
+
+            this.transformer = null;
+        }
+
+        /**
+         * @param type Query type.
+         * @param rcpt ID of the recipient.
+         * @param transformer Transformer.
+         */
+        private QueryResult(GridCacheQueryType type, Object rcpt, IgniteClosure<Cache.Entry<K, V>, Object> transformer) {
+            super(rcpt);
+
+            this.type = type;
+
+            this.transformer = transformer;
         }
 
         /**
@@ -2764,6 +2788,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          */
         public GridCacheQueryType type() {
             return type;
+        }
+
+        /**
+         * Returns transformer.
+         * @return Transformer.
+         */
+        public IgniteClosure<Cache.Entry<K, V>, Object> transformer() {
+            return transformer;
         }
     }
 
