@@ -237,11 +237,16 @@ public class MvccProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        discoData = (MvccDiscoveryData)data.commonData();
+        MvccDiscoveryData discoData0 = (MvccDiscoveryData)data.commonData();
 
-        log.info("Received mvcc coordinator on node join: " + discoData.coordinator());
+        // Disco data might be null in case the first joined node is daemon.
+        if (discoData0 != null) {
+            discoData = discoData0;
 
-        assert discoData != null;
+            log.info("Received mvcc coordinator on node join: " + discoData.coordinator());
+
+            assert discoData != null;
+        }
     }
 
     /**
