@@ -1766,7 +1766,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test that attempting to
+     * Test that attempting to supply invalid nested TX mode to driver fails on the client.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testInvalidNestedTxMode() {
@@ -1780,7 +1780,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test that attempting to send unexpected name of nested TX mode to server on handshake yields a warning.
+     * Test that attempting to send unexpected name of nested TX mode to server on handshake yields an error.
      * We have to do this without explicit {@link Connection} as long as there's no other way to bypass validation and
      * supply a malformed {@link ConnectionProperties} to {@link JdbcThinTcpIo}.
      */
@@ -1799,21 +1799,22 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         ctor.setAccessible(true);
 
-        JdbcThinTcpIo io = (JdbcThinTcpIo)ctor.newInstance(connProps);
+        final JdbcThinTcpIo io = (JdbcThinTcpIo)ctor.newInstance(connProps);
 
         try {
-            io.start();
+            GridTestUtils.assertThrows(null, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    io.start();
+
+                    return null;
+                }
+            }, SQLException.class, "err=Invalid nested transactions handling mode: invalid");
         }
         finally {
+            io.close();
+
             ctor.setAccessible(acc);
         }
-
-        IgniteLogger log = grid(0).log();
-
-        GridStringLogger strLog = U.field(log, "impl");
-
-        assertTrue(strLog.toString().contains("Unexpected nested TX mode: invalid, falling back " +
-            "to default behavior (error)."));
     }
 
     /**

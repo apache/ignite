@@ -68,7 +68,6 @@ import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -83,8 +82,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
  *
@@ -178,7 +175,7 @@ public class DmlStatementsProcessor {
             UpdateResult r;
 
             try {
-                r = executeUpdateStatement(schemaName, cctx, conn, prepared, fieldsQry, loc, filters, cancel);
+                r = executeUpdateStatement(schemaName, plan, fieldsQry, loc, filters, cancel);
             }
             finally {
                 cctx.operationContextPerCall(opCtx);
@@ -339,9 +336,7 @@ public class DmlStatementsProcessor {
      * Actually perform SQL DML operation locally.
      *
      * @param schemaName Schema name.
-     * @param cctx Cache context.
-     * @param c Connection.
-     * @param prepared Prepared statement for DML query.
+     * @param plan Cache context.
      * @param fieldsQry Fields query.
      * @param loc Local query flag.
      * @param filters Cache name and key filter.
@@ -350,19 +345,15 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx, Connection c,
-        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
+    private UpdateResult executeUpdateStatement(String schemaName, final UpdatePlan plan,
+        SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
+        GridCacheContext cctx = plan.cacheContext();
+
         int mainCacheId = cctx.cacheId();
 
-        Integer errKeysPos = null;
-
-        UpdatePlan plan = getPlanForStatement(schemaName, c, prepared, fieldsQry, loc, errKeysPos);
-
-        GridCacheContext cctx0 = plan.cacheContext();
-
-        if (cctx0.mvccEnabled()) {
-            assert cctx0.transactional();
+        if (cctx.mvccEnabled()) {
+            assert cctx.transactional();
 
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
@@ -372,24 +363,12 @@ public class DmlStatementsProcessor {
             if (plan.mode() == UpdateMode.INSERT && !plan.isLocalSubquery())
                 throw new UnsupportedOperationException("Insert from select is unsupported at the moment.");
 
-            GridNearTxLocal tx = cctx0.tm().userTx();
+            GridNearTxLocal tx = idx.userTx();
 
-            boolean implicit = tx == null;
+            boolean implicit = (tx == null);
 
-            if(implicit) {
-                TransactionConfiguration tcfg = CU.transactionConfiguration(cctx0, cctx0.kernalContext().config());
-
-                tx = cctx0.tm().newTx(
-                    true,
-                    false,
-                    cctx0.systemTx() ? cctx0 : null,
-                    PESSIMISTIC,
-                    READ_COMMITTED,
-                    tcfg.getDefaultTxTimeout(),
-                    !cctx0.skipStore(),
-                    0
-                );
-            }
+            if (implicit)
+                tx = idx.txStart(cctx, true);
 
             int flags = fieldsQry.isEnforceJoinOrder() ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
 
@@ -411,7 +390,7 @@ public class DmlStatementsProcessor {
 
             try {
                 IgniteInternalFuture<Long> fut = tx.updateAsync(
-                    cctx0,
+                    cctx,
                     ids,
                     parts,
                     schemaName,
@@ -428,13 +407,13 @@ public class DmlStatementsProcessor {
                 return new UpdateResult(res, X.EMPTY_OBJECT_ARRAY);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Error during update [localNodeId=" + cctx0.localNodeId() + "]", e);
+                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
 
                 throw new CacheException("Failed to run update. " + e.getMessage(), e);
             }
             finally {
                 if (implicit) {
-                    cctx0.tm().resetContext();
+                    cctx.tm().resetContext();
 
                     tx.close();
                 }
@@ -491,18 +470,17 @@ public class DmlStatementsProcessor {
 
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
-        return processDmlSelectResult(cctx, plan, cur, pageSize);
+        return processDmlSelectResult(plan, cur, pageSize);
     }
 
     /**
-     * @param cctx Cache context.
      * @param plan Update plan.
      * @param cursor Cursor over select results.
      * @param pageSize Page size.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
-    private UpdateResult processDmlSelectResult(GridCacheContext cctx, UpdatePlan plan, Iterable<List<?>> cursor,
+    private UpdateResult processDmlSelectResult(UpdatePlan plan, Iterable<List<?>> cursor,
         int pageSize) throws IgniteCheckedException {
         switch (plan.mode()) {
             case MERGE:
@@ -515,7 +493,7 @@ public class DmlStatementsProcessor {
                 return doUpdate(plan, cursor, pageSize);
 
             case DELETE:
-                return doDelete(cctx, cursor, pageSize);
+                return doDelete(plan.cacheContext(), cursor, pageSize);
 
             default:
                 throw new IgniteSQLException("Unexpected DML operation [mode=" + plan.mode() + ']',

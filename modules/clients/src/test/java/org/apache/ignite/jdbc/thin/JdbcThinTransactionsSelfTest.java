@@ -20,16 +20,19 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -47,6 +50,9 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
 
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+
+    /** */
+    private static final String INSERT = "INSERT INTO INTS(k, v) values(1, 1)";
 
     /** Logger. */
     private GridStringLogger log;
@@ -91,6 +97,13 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         super.beforeTest();
 
         startGrid(0);
+
+        try (Connection c = c(true, NestedTxMode.ERROR)) {
+            try (Statement s = c.createStatement()) {
+                s.execute("CREATE TABLE INTS (k int primary key, v int) WITH \"cache_name=ints,wrap_value=false," +
+                    "atomicity=transactional\"");
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -180,11 +193,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIgnoreNestedTxAutocommitOff() throws SQLException {
         try (Connection c = c(false, NestedTxMode.IGNORE)) {
-            try (Statement s = c.createStatement()) {
-                s.execute("BEGIN");
-
-                s.execute("BEGIN");
-            }
+            doNestedTxStart(c, false);
         }
 
         assertTrue(log.toString().contains("ignoring BEGIN command"));
@@ -196,11 +205,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCommitNestedTxAutocommitOff() throws SQLException {
         try (Connection c = c(false, NestedTxMode.COMMIT)) {
-            try (Statement s = c.createStatement()) {
-                s.execute("BEGIN");
-
-                s.execute("BEGIN");
-            }
+            doNestedTxStart(c, false);
         }
 
         assertFalse(log.toString().contains("ignoring BEGIN command"));
@@ -214,11 +219,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try (Connection c = c(false, NestedTxMode.ERROR)) {
-                    try (Statement s = c.createStatement()) {
-                        s.execute("BEGIN");
-
-                        s.execute("BEGIN");
-                    }
+                    doNestedTxStart(c, false);
                 }
 
                 throw new AssertionError();
@@ -232,11 +233,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIgnoreNestedTxAutocommitOn() throws SQLException {
         try (Connection c = c(true, NestedTxMode.IGNORE)) {
-            try (Statement s = c.createStatement()) {
-                s.execute("BEGIN");
-
-                s.execute("BEGIN");
-            }
+            doNestedTxStart(c, false);
         }
 
         assertTrue(log.toString().contains("ignoring BEGIN command"));
@@ -248,11 +245,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCommitNestedTxAutocommitOn() throws SQLException {
         try (Connection c = c(true, NestedTxMode.COMMIT)) {
-            try (Statement s = c.createStatement()) {
-                s.execute("BEGIN");
-
-                s.execute("BEGIN");
-            }
+            doNestedTxStart(c, false);
         }
 
         assertFalse(log.toString().contains("ignoring BEGIN command"));
@@ -266,11 +259,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try (Connection c = c(true, NestedTxMode.ERROR)) {
-                    try (Statement s = c.createStatement()) {
-                        s.execute("BEGIN");
-
-                        s.execute("BEGIN");
-                    }
+                    doNestedTxStart(c, false);
                 }
 
                 throw new AssertionError();
@@ -284,13 +273,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIgnoreNestedTxAutocommitOffBatched() throws SQLException {
         try (Connection c = c(false, NestedTxMode.IGNORE)) {
-            try (Statement s = c.createStatement()) {
-                s.addBatch("BEGIN");
-
-                s.addBatch("BEGIN");
-
-                s.executeBatch();
-            }
+            doNestedTxStart(c, true);
         }
 
         assertTrue(log.toString().contains("ignoring BEGIN command"));
@@ -302,13 +285,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCommitNestedTxAutocommitOffBatched() throws SQLException {
         try (Connection c = c(false, NestedTxMode.COMMIT)) {
-            try (Statement s = c.createStatement()) {
-                s.addBatch("BEGIN");
-
-                s.addBatch("BEGIN");
-
-                s.executeBatch();
-            }
+            doNestedTxStart(c, true);
         }
 
         assertFalse(log.toString().contains("ignoring BEGIN command"));
@@ -322,13 +299,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try (Connection c = c(false, NestedTxMode.ERROR)) {
-                    try (Statement s = c.createStatement()) {
-                        s.addBatch("BEGIN");
-
-                        s.addBatch("BEGIN");
-
-                        s.executeBatch();
-                    }
+                    doNestedTxStart(c, true);
                 }
 
                 throw new AssertionError();
@@ -342,13 +313,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIgnoreNestedTxAutocommitOnBatched() throws SQLException {
         try (Connection c = c(true, NestedTxMode.IGNORE)) {
-            try (Statement s = c.createStatement()) {
-                s.addBatch("BEGIN");
-
-                s.addBatch("BEGIN");
-
-                s.executeBatch();
-            }
+            doNestedTxStart(c, true);
         }
 
         assertTrue(log.toString().contains("ignoring BEGIN command"));
@@ -360,13 +325,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCommitNestedTxAutocommitOnBatched() throws SQLException {
         try (Connection c = c(true, NestedTxMode.COMMIT)) {
-            try (Statement s = c.createStatement()) {
-                s.addBatch("BEGIN");
-
-                s.addBatch("BEGIN");
-
-                s.executeBatch();
-            }
+            doNestedTxStart(c, true);
         }
 
         assertFalse(log.toString().contains("ignoring BEGIN command"));
@@ -380,18 +339,97 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try (Connection c = c(true, NestedTxMode.ERROR)) {
-                    try (Statement s = c.createStatement()) {
-                        s.addBatch("BEGIN");
-
-                        s.addBatch("BEGIN");
-
-                        s.executeBatch();
-                    }
+                    doNestedTxStart(c, true);
                 }
 
                 throw new AssertionError();
             }
         }, BatchUpdateException.class, "Transaction has already been started.");
+    }
+
+    /**
+     * Try to start nested transaction via batch as well as separate statements.
+     * @param conn Connection.
+     * @param batched Whether {@link Statement#executeBatch()} should be used.
+     * @throws SQLException if failed.
+     */
+    private void doNestedTxStart(Connection conn, boolean batched) throws SQLException {
+        try (Statement s = conn.createStatement()) {
+            s.executeQuery("SELECT * FROM INTS");
+
+            if (batched) {
+                s.addBatch("BEGIN");
+
+                s.addBatch("BEGIN");
+
+                s.executeBatch();
+            }
+            else {
+                s.execute("BEGIN");
+
+                s.execute("BEGIN");
+            }
+        }
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testAutoCommitSingle() throws SQLException {
+        doTestAutoCommit(false);
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testAutoCommitBatched() throws SQLException {
+        doTestAutoCommit(true);
+    }
+
+    /**
+     * @param batched Batch mode flag.
+     * @throws SQLException if failed.
+     */
+    private void doTestAutoCommit(boolean batched) throws SQLException {
+        IgniteCache<Integer, ?> cache = grid(0).cache("ints");
+
+        try (Connection c = c(false, NestedTxMode.ERROR)) {
+            // First, let's start a transaction.
+            try (Statement s = c.createStatement()) {
+                assertFalse(s.executeQuery("SELECT * from INTS").next());
+            }
+
+            // We need this weird expression to make DML engine think it's a "distributed" insert.
+            try (PreparedStatement ps =
+                     c.prepareStatement("INSERT INTO INTS(k, v) values(1, case when ? > 0 then 1 else 1 end)")) {
+
+                ps.setInt(1, 1);
+
+                if (batched) {
+                    ps.addBatch();
+
+                    ps.executeBatch();
+                }
+                else
+                    ps.execute();
+            }
+
+            try (Statement s = c.createStatement()) {
+                // We haven't committed anything yet - this check shows that autoCommit flag is in effect.
+                assertNull(cache.get(1));
+
+                // No commit happened upon this query, too.
+                assertFalse(s.executeQuery("SELECT * from INTS").next());
+
+                c.commit();
+
+                c.setAutoCommit(true);
+
+                assertEquals(1, cache.get(1));
+
+                assertTrue(s.executeQuery("SELECT * from INTS").next());
+            }
+        }
     }
 
     /**
@@ -402,9 +440,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     public void testExceptionHandling() throws SQLException {
         try (Connection c = c(true, NestedTxMode.ERROR)) {
             try (Statement s = c.createStatement()) {
-                s.execute("CREATE TABLE INTS (k int primary key, v int) WITH \"cache_name=ints,wrap_value=false\"");
-
-                s.execute("INSERT INTO INTS(k, v) values(1, 1)");
+                s.execute(INSERT);
 
                 assertEquals(1, grid(0).cache("ints").get(1));
 

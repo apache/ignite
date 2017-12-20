@@ -1997,7 +1997,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
      * @return Cursor.
-     * @see NestedTxMode
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
         final boolean keepBinary, final boolean failOnMultipleStmts) {
@@ -2027,7 +2026,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null,
-                        failOnMultipleStmts, null);
+                        failOnMultipleStmts);
                 }
             };
 

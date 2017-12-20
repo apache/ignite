@@ -61,6 +61,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
         this.schemaName = schemaName;
         this.queries = queries;
+        this.autoCommit = autoCommit;
     }
 
     /**
