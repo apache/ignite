@@ -40,6 +40,9 @@ class ZkJoiningNodeData implements Serializable {
     @GridToStringInclude
     private Map<Integer, Serializable> discoData;
 
+    /**
+     * @param partCnt Number of parts in multi-parts message.
+     */
     ZkJoiningNodeData(int partCnt) {
         this.partCnt = partCnt;
     }
@@ -56,6 +59,9 @@ class ZkJoiningNodeData implements Serializable {
         this.discoData = discoData;
     }
 
+    /**
+     * @return Number of parts in multi-parts message.
+     */
     int partCount() {
         return partCnt;
     }

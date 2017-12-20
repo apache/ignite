@@ -50,6 +50,9 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
      * @param topVer Topology version.
      * @param nodeId Joined node ID.
      * @param joinedInternalId Joined node internal ID.
+     * @param joinDataPrefixId Join data unique prefix.
+     * @param joinDataPartCnt Join data part count.
+     * @param dataForJoinedPartCnt Data for joined part count.
      */
     ZkDiscoveryNodeJoinEventData(long evtId,
         long topVer,

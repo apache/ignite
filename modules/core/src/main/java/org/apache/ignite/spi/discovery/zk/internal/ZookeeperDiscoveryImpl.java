@@ -46,6 +46,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationProblemResolver;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -1182,7 +1183,7 @@ public class ZookeeperDiscoveryImpl {
             if (evtData instanceof ZkDiscoveryCustomEventData) {
                 ZkDiscoveryCustomEventData evtData0 = (ZkDiscoveryCustomEventData)evtData;
 
-                // It is possible previous coordinator failed before finished message processing.
+                // It is possible previous coordinator failed before finished cleanup.
                 if (evtData0.msg instanceof ZkCommunicationErrorResolveFinishMessage) {
                     try {
                         ZkCommunicationErrorResolveFinishMessage msg =
@@ -1207,8 +1208,6 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void onBecomeCoordinator(List<String> aliveNodes, int locInternalId) throws Exception {
-        long topVer0 = rtState.evtsData != null ? rtState.evtsData.topVer : -1L;
-
         byte[] evtsDataBytes = rtState.zkClient.getData(zkPaths.evtsPath);
 
         if (evtsDataBytes.length > 0)
@@ -1224,9 +1223,6 @@ public class ZookeeperDiscoveryImpl {
             assert rtState.evtsData != null;
 
             previousCoordinatorCleanup(rtState.evtsData);
-
-            if (topVer0 > rtState.evtsData.topVer)
-                rtState.evtsData.topVer = topVer0;
 
             UUID futId = rtState.evtsData.communicationErrorResolveFutureId();
 
@@ -1508,90 +1504,108 @@ public class ZookeeperDiscoveryImpl {
 
         Object data = unmarshalJoinDataOnCoordinator(nodeId, prefixId, aliveNodePath);
 
-        ZkInternalJoinErrorMessage joinErr = null;
-        ZkJoiningNodeData joiningNodeData = null;
-
         if (data instanceof ZkJoiningNodeData) {
-            joiningNodeData = (ZkJoiningNodeData)data;
+            ZkJoiningNodeData joiningNodeData = (ZkJoiningNodeData)data;
 
-            String err = validateJoiningNode(joiningNodeData.node());
+            ZkNodeValidateResult validateRes = validateJoiningNode(joiningNodeData.node());
 
-            if (err != null)
-                joinErr = new ZkInternalJoinErrorMessage(ZkIgnitePaths.aliveInternalId(aliveNodePath), err);
+            if (validateRes.err == null) {
+                ZookeeperClusterNode joinedNode = joiningNodeData.node();
+
+                assert nodeId.equals(joinedNode.id()) : joiningNodeData.node();
+
+                generateNodeJoin(curTop, joiningNodeData, internalId, prefixId);
+
+                watchAliveNodeData(aliveNodePath);
+
+                return true;
+            }
+            else {
+                ZkInternalJoinErrorMessage joinErr = new ZkInternalJoinErrorMessage(
+                    ZkIgnitePaths.aliveInternalId(aliveNodePath),
+                    validateRes.err);
+
+                processJoinError(aliveNodePath, nodeId, prefixId, joinErr);
+
+                return false;
+            }
         }
         else {
             assert data instanceof ZkInternalJoinErrorMessage : data;
 
-            joinErr = (ZkInternalJoinErrorMessage)data;
-        }
-
-        if (joinErr == null) {
-            ZookeeperClusterNode joinedNode = joiningNodeData.node();
-
-            assert nodeId.equals(joinedNode.id()) : joiningNodeData.node();
-
-            generateNodeJoin(curTop, joiningNodeData, internalId, prefixId);
-
-            watchAliveNodeData(aliveNodePath);
-
-            return true;
-        }
-        else {
-            ZookeeperClient client = rtState.zkClient;
-
-            if (joinErr.notifyNode) {
-                String joinDataPath = zkPaths.joiningNodeDataPath(nodeId, prefixId);
-
-                client.setData(joinDataPath, marshalZip(joinErr), -1);
-
-                client.deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
-            }
-            else {
-                if (log.isInfoEnabled())
-                    log.info("Ignore join data, node was failed by previous coordinator: " + aliveNodePath);
-
-                client.deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
-            }
+            processJoinError(aliveNodePath, nodeId, prefixId, (ZkInternalJoinErrorMessage)data);
 
             return false;
         }
     }
 
     /**
-     * @param node Joining node.
-     * @return Non null error message if validation failed.
+     * @param aliveNodePath Joined node path.
+     * @param nodeId Node ID.
+     * @param prefixId Path prefix ID.
+     * @param joinErr Join error message.
+     * @throws Exception If failed.
      */
-    @Nullable private String validateJoiningNode(ZookeeperClusterNode node) {
+    private void processJoinError(String aliveNodePath,
+        UUID nodeId,
+        UUID prefixId,
+        ZkInternalJoinErrorMessage joinErr) throws Exception {
+        ZookeeperClient client = rtState.zkClient;
+
+        if (joinErr.notifyNode) {
+            String joinDataPath = zkPaths.joiningNodeDataPath(nodeId, prefixId);
+
+            client.setData(joinDataPath, marshalZip(joinErr), -1);
+
+            client.deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
+        }
+        else {
+            if (log.isInfoEnabled())
+                log.info("Ignore join data, node was failed by previous coordinator: " + aliveNodePath);
+
+            client.deleteIfExists(zkPaths.aliveNodesDir + "/" + aliveNodePath, -1);
+        }
+    }
+
+    /**
+     * @param node Joining node.
+     * @return Validation result.
+     */
+    private ZkNodeValidateResult validateJoiningNode(ZookeeperClusterNode node) {
         ZookeeperClusterNode node0 = rtState.top.nodesById.get(node.id());
 
         if (node0 != null) {
             U.error(log, "Failed to include node in cluster, node with the same ID already exists [joiningNode=" + node +
                 ", existingNode=" + node0 + ']');
 
-            return "Node with the same ID already exists: " + node0;
+            return new ZkNodeValidateResult("Node with the same ID already exists: " + node0);
         }
 
-        String authErr = authenticateNode(node);
+        ZkNodeValidateResult res = authenticateNode(node);
 
-        if (authErr != null)
-            return null;
+        if (res.err != null)
+            return res;
 
         IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
 
         if (err != null) {
             LT.warn(log, err.message());
 
-            return err.sendMessage();
+            res.err = err.sendMessage();
         }
 
-        return null;
+        return res;
     }
 
-    @Nullable private String authenticateNode(ZookeeperClusterNode node) {
+    /**
+     * @param node Node.
+     * @return Validation result.
+     */
+    private ZkNodeValidateResult authenticateNode(ZookeeperClusterNode node) {
         DiscoverySpiNodeAuthenticator nodeAuth = spi.getAuthenticator();
 
         if (nodeAuth == null)
-            return null;
+            return new ZkNodeValidateResult(null);
 
         SecurityCredentials cred;
 
@@ -1601,7 +1615,7 @@ public class ZookeeperDiscoveryImpl {
         catch (Exception e) {
             U.error(log, "Failed to unmarshal node credentials: " + e, e);
 
-            return "Failed to unmarshal node credentials";
+            return new ZkNodeValidateResult("Failed to unmarshal node credentials");
         }
 
         SecurityContext subj = nodeAuth.authenticateNode(node, cred);
@@ -1612,7 +1626,7 @@ public class ZookeeperDiscoveryImpl {
                 "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
                     U.addressesAsString(node) + ']');
 
-            return "Authentication failed";
+            return new ZkNodeValidateResult("Authentication failed");
         }
 
         if (!(subj instanceof Serializable)) {
@@ -1622,10 +1636,10 @@ public class ZookeeperDiscoveryImpl {
                     ", addrs=" +
                     U.addressesAsString(node) + ']');
 
-            return "Authentication subject is not serializable";
+            return new ZkNodeValidateResult("Authentication subject is not serializable");
         }
 
-        return null;
+        return new ZkNodeValidateResult((Serializable)subj);
     }
 
     /**
@@ -3105,12 +3119,22 @@ public class ZookeeperDiscoveryImpl {
         if (zkClient != null)
             zkClient.close();
 
+        finishFutures(new IgniteCheckedException("Node stopped."));
+
+        IgniteUtils.shutdownNow(ZookeeperDiscoveryImpl.class, utilityPool, log);
+    }
+
+    /**
+     * @param err Error.
+     */
+    private void finishFutures(IgniteCheckedException err) {
         ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
 
         if (commErrFut != null)
-            commErrFut.onError(new IgniteCheckedException("Node stopped."));
+            commErrFut.onError(err);
 
-        IgniteUtils.shutdownNow(ZookeeperDiscoveryImpl.class, utilityPool, log);
+        for (PingFuture fut : pingFuts.values())
+            fut.onDone(err);
     }
 
     /**
@@ -3193,10 +3217,7 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
-
-            if (commErrFut != null)
-                commErrFut.onError(new IgniteCheckedException("Client node disconnected."));
+            finishFutures(new IgniteClientDisconnectedCheckedException(null, "Client node disconnected."));
 
             rtState.closing = true;
 

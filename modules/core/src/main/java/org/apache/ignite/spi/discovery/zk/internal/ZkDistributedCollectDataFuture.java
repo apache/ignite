@@ -68,6 +68,8 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
 
         ZkClusterNodes top = rtState.top;
 
+        // Assume new nodes can not join while future is in progress.
+
         remainingNodes = U.newHashSet(top.nodesByOrder.size());
 
         for (ZookeeperClusterNode node : top.nodesByInternalId.values())

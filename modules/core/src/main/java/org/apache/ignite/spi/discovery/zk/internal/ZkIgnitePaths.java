@@ -290,6 +290,14 @@ class ZkIgnitePaths {
 
     /**
      * @param evtId Event ID.
+     * @return Event zk path.
+     */
+    String joinEventSecuritySubject(long evtId) {
+        return evtsPath + "/s-" + evtId;
+    }
+
+    /**
+     * @param evtId Event ID.
      * @return Path for custom event ack.
      */
     String ackEventDataPath(long evtId) {
