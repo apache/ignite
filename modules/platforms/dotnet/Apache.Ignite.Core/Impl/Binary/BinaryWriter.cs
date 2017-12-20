@@ -1337,6 +1337,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var val0 = TypeCaster<ulong>.Cast(val);
                 WriteLongField(*(long*)&val0);
             }
+            else if (type == typeof(IntPtr) || type == typeof(UIntPtr))
+            {
+                var val0 = TypeCaster<long>.Cast(val);
+                WriteLongField(val0);
+            }
             else
                 throw BinaryUtils.GetUnsupportedTypeException(type, val);
         }
