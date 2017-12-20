@@ -59,10 +59,10 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     protected static final String ATTR_FILTERED = "FILTERED";
 
     /** Key range limit for "before" step. */
-    protected static final int KEY_BEFORE = 1;
+    protected static final int KEY_BEFORE = 100;
 
     /** Key range limit for "after" step. */
-    protected static final int KEY_AFTER = 2;
+    protected static final int KEY_AFTER = 200;
 
     /** SQL to check index on the field 1. */
     protected static final String SQL_SIMPLE_FIELD_1 = "SELECT * FROM " + TBL_NAME + " WHERE " + FIELD_NAME_1_ESCAPED + " >= ?";
@@ -76,7 +76,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         "SELECT * FROM " + TBL_NAME + " WHERE " + alias(FIELD_NAME_2_ESCAPED) + " >= ?";
 
     /** Argument for simple SQL (1). */
-    protected static final int SQL_ARG_1 = 0;
+    protected static final int SQL_ARG_1 = 40;
 
     /** Argument for simple SQL (2). */
     protected static final int SQL_ARG_2 = 80;
