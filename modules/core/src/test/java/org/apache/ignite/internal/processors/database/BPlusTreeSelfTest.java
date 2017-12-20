@@ -2164,6 +2164,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIterateConcurrentPutRemove_1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7265");
+
         MAX_PER_PAGE = 1;
 
         iterateConcurrentPutRemove();
