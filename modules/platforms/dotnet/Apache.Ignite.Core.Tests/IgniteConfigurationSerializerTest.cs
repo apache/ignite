@@ -46,7 +46,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.PersistentStore;
@@ -570,16 +569,22 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Checks the schema validation.
         /// </summary>
-        /// <param name="xml">The XML.</param>
         private static void CheckSchemaValidation(string xml)
         {
+            var xmlns = "http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection";
+            var schemaFile = "IgniteConfigurationSection.xsd";
+
+            CheckSchemaValidation(xml, xmlns, schemaFile);
+        }
+
+        /// <summary>
+        /// Checks the schema validation.
+        /// </summary>
+        public static void CheckSchemaValidation(string xml, string xmlns, string schemaFile)
+        {
             var document = new XmlDocument();
-
-            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection",
-                XmlReader.Create("IgniteConfigurationSection.xsd"));
-
+            document.Schemas.Add(xmlns, XmlReader.Create(schemaFile));
             document.Load(new StringReader(xml));
-
             document.Validate(null);
         }
 
