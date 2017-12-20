@@ -2595,7 +2595,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         sendMessage0(node, msg, null);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param nodes Nodes to check connection with.
+     * @return Result future (each bit in result BitSet contains connection status to corresponding node).
+     */
     public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
         TcpCommunicationConnectionCheckFuture fut = new TcpCommunicationConnectionCheckFuture(
             this,
@@ -2603,7 +2606,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             nioSrvr,
             nodes);
 
-        fut.init(failureDetectionTimeoutEnabled() ? failureDetectionTimeout() : connTimeout);
+        long timeout = failureDetectionTimeoutEnabled() ? failureDetectionTimeout() : connTimeout;
+
+        if (log.isInfoEnabled())
+            log.info("Start check connection process [nodeCnt=" + nodes.size() + ", timeout=" + timeout + ']');
+
+        fut.init(timeout);
 
         return new IgniteFutureImpl<>(fut);
     }

@@ -334,6 +334,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
         /**
          *
          */
+        @SuppressWarnings("unchecked")
         void cancel() {
             if (finish(false))
                 nioSrvr.cancelConnect(ch, sesMeta);
@@ -440,7 +441,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
 
                 futs[idx++] = fut;
 
-                if (done())
+                if (resCnt == Integer.MAX_VALUE)
                     return;
             }
 

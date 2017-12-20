@@ -19,27 +19,92 @@ package org.apache.ignite.configuration;
 
 import java.util.BitSet;
 import java.util.List;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoggerResource;
 
 /**
  *
  */
 public class DefaultCommunicationProblemResolver implements CommunicationProblemResolver {
+    @LoggerResource
+    private IgniteLogger log;
+
     /** {@inheritDoc} */
     @Override public void resolve(CommunicationProblemContext ctx) {
-        ClusterGraph graph = new ClusterGraph(ctx);
+        ClusterGraph graph = new ClusterGraph(log, ctx);
 
-        BitSet cluster = graph.findLargestIndependentCluster();
+        ClusterSearch cluster = graph.findLargestIndependentCluster();
 
         List<ClusterNode> nodes = ctx.topologySnapshot();
 
-        if (graph.checkFullyConnected(cluster) && cluster.cardinality() < nodes.size()) {
-            for (int i = 0; i < nodes.size(); i++) {
-                if (!cluster.get(i))
-                    ctx.killNode(nodes.get(i));
+        assert nodes.size() > 0;
+        assert cluster != null;
+
+        if (graph.checkFullyConnected(cluster.nodesBitSet)) {
+            assert cluster.nodeCnt <= nodes.size();
+
+            if (cluster.nodeCnt < nodes.size()) {
+                if (log.isInfoEnabled()) {
+                    log.info("Communication problem resolver found fully connected independent cluster [" +
+                        "clusterSrvCnt=" + cluster.srvCnt +
+                        ", clusterTotalNodes=" + cluster.nodeCnt +
+                        ", totalAliveNodes=" + nodes.size() + "]");
+                }
+
+                for (int i = 0; i < nodes.size(); i++) {
+                    if (!cluster.nodesBitSet.get(i))
+                        ctx.killNode(nodes.get(i));
+                }
+            }
+            else
+                U.warn(log, "All alive nodes are fully connected, this should be resolved automatically.");
+        }
+        else {
+            if (log.isInfoEnabled()) {
+                log.info("Communication problem resolver failed to find fully connected independent cluster.");
             }
         }
+    }
+
+    /**
+     * @param cluster Cluster nodes mask.
+     * @param nodes Nodes.
+     * @param limit IDs limit.
+     * @return Cluster node IDs string.
+     */
+    private static String clusterNodeIds(BitSet cluster, List<ClusterNode> nodes, int limit) {
+        int startIdx = 0;
+
+        StringBuilder builder = new StringBuilder();
+
+        int cnt = 0;
+
+        for (;;) {
+            int idx = cluster.nextSetBit(startIdx);
+
+            if (idx == -1)
+                break;
+
+            startIdx = idx + 1;
+
+            if (builder.length() == 0) {
+                builder.append('[');
+            }
+            else
+                builder.append(", ");
+
+            builder.append(nodes.get(idx).id());
+
+            if (cnt++ > limit)
+                builder.append(", ...");
+        }
+
+        builder.append(']');
+
+        return builder.toString();
     }
 
     /**
@@ -70,13 +135,8 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
         /** */
         private final static int WORD_IDX_SHIFT = 6;
 
-        /**
-         * @param bitIndex Bit index.
-         * @return Word index containing bit with given index.
-         */
-        private static int wordIndex(int bitIndex) {
-            return bitIndex >> WORD_IDX_SHIFT;
-        }
+        /** */
+        private final IgniteLogger log;
 
         /** */
         private final int nodeCnt;
@@ -91,9 +151,11 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
         private final List<ClusterNode> nodes;
 
         /**
+         * @param log Logger.
          * @param ctx Context.
          */
-        ClusterGraph(CommunicationProblemContext ctx) {
+        ClusterGraph(IgniteLogger log, CommunicationProblemContext ctx) {
+            this.log = log;
             this.ctx = ctx;
 
             nodes = ctx.topologySnapshot();
@@ -103,6 +165,14 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
             assert nodeCnt > 0;
 
             visitBitSet = initBitSet(nodeCnt);
+        }
+
+        /**
+         * @param bitIndex Bit index.
+         * @return Word index containing bit with given index.
+         */
+        private static int wordIndex(int bitIndex) {
+            return bitIndex >> WORD_IDX_SHIFT;
         }
 
         /**
@@ -116,7 +186,7 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
         /**
          * @return Cluster nodes bit set.
          */
-        BitSet findLargestIndependentCluster() {
+        ClusterSearch findLargestIndependentCluster() {
             ClusterSearch maxCluster = null;
 
             for (int i = 0; i < nodeCnt; i++) {
@@ -127,11 +197,17 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
 
                 search(cluster, i);
 
+                if (log.isInfoEnabled()) {
+                    log.info("Communication problem resolver found cluster [srvCnt=" + cluster.srvCnt +
+                        ", totalNodeCnt=" + cluster.nodeCnt +
+                        ", nodeIds=" + clusterNodeIds(cluster.nodesBitSet, nodes, 1000) + "]");
+                }
+
                 if (maxCluster == null || cluster.srvCnt > maxCluster.srvCnt)
                     maxCluster = cluster;
             }
 
-            return maxCluster != null ? maxCluster.nodesBitSet : null;
+            return maxCluster;
         }
 
         /**
