@@ -538,16 +538,14 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public CacheObject value() {
-        // TODO: This should be returned back and fixed properly!
-//        assert val != null : "Value is not ready: " + this;
+        assert val != null : "Value is not ready: " + this;
 
         return val;
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
-        // TODO: This should be returned back and fixed properly!
-//        assert ver != null : "Version is not ready: " + this;
+        assert ver != null : "Version is not ready: " + this;
 
         return ver;
     }
