@@ -1298,7 +1298,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="type">Type.</param>
         private unsafe void WritePrimitive<T>(T val, Type type)
         {
-            // .Net defines 14 primitive types. We support 12 - excluding IntPtr and UIntPtr.
+            // .NET defines 14 primitive types. We support 12 - excluding IntPtr and UIntPtr.
             // Types check sequence is designed to minimize comparisons for the most frequent types.
 
             if (type == typeof(int))
