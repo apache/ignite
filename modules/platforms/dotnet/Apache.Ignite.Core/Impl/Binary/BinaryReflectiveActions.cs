@@ -479,8 +479,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 !new[] {typeof(long), typeof(ulong)}.Contains(Enum.GetUnderlyingType(nullableType ?? type)))
             {
                 writeAction = raw
-                    ? GetRawWriter<object>(field, (w, o) => w.WriteEnum(o), true)
-                    : GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);
+                    ? GetRawWriter<object>(field, (w, o) => w.WriteEnum(o))
+                    : GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o));
                 readAction = raw ? GetRawReader(field, MthdReadEnumRaw) : GetReader(field, MthdReadEnum);
             }
             else if (type == typeof(IDictionary) || type == typeof(Hashtable))
@@ -517,7 +517,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 //writeAction = GetWriter<object>(field, (f, w, o) => w.WriteLong(f, (long) o), true);
                 //readAction = GetReader<object>(field, (f, r) => r.ReadLong(f));
 
-                writeAction = GetWriter<long>(field, (f, w, o) => w.WriteLong(f, o), true);
+                writeAction = GetWriter<long>(field, (f, w, o) => w.WriteLong(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadLong(f));
             }
             else
@@ -571,8 +571,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the reader with a specified write action.
         /// </summary>
         private static BinaryReflectiveWriteAction GetWriter<T>(FieldInfo field,
-            Expression<Action<string, IBinaryWriter, T>> write,
-            bool convertFieldVal = false)
+            Expression<Action<string, IBinaryWriter, T>> write)
         {
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
@@ -583,11 +582,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
             Expression fldExpr = Expression.Field(targetParamConverted, field);
 
-            // TODO: Can we just compare field.FieldType and typeof(T)?
-            if (convertFieldVal)
+            if (field.FieldType != typeof(T))
             {
-                // TODO: Expression trees do not support pointers..
-                // Combine field reading with a delegate?
                 fldExpr = Expression.Convert(fldExpr, typeof(T));
             }
 
@@ -604,8 +600,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the reader with a specified write action.
         /// </summary>
         private static BinaryReflectiveWriteAction GetRawWriter<T>(FieldInfo field,
-            Expression<Action<IBinaryRawWriter, T>> write,
-            bool convertFieldValToObject = false)
+            Expression<Action<IBinaryRawWriter, T>> write)
         {
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
@@ -616,8 +611,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
             Expression fldExpr = Expression.Field(targetParamConverted, field);
 
-            if (convertFieldValToObject)
-                fldExpr = Expression.Convert(fldExpr, typeof (object));
+            if (field.FieldType != typeof(T))
+                fldExpr = Expression.Convert(fldExpr, typeof (T));
 
             // Call Writer method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
@@ -692,7 +687,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             Expression readExpr = Expression.Invoke(read, fldNameParam, readerParam);
 
             if (typeof(T) != field.FieldType)
+            {
                 readExpr = Expression.Convert(readExpr, field.FieldType);
+            }
 
             // Assign field value
             var targetParam = Expression.Parameter(typeof(object));
