@@ -641,7 +641,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (it.hasNext())
                     nextRow = it.next();
 
-                if (nextRow != null) {
+                if (nextRow != null && !nextRow.removed()) {
                     KeyCacheObject key = nextRow.key();
                     CacheObject val = nextRow.value();
 
