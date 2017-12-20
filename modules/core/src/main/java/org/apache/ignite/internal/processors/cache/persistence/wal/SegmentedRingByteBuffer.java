@@ -23,8 +23,8 @@ import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import sun.nio.ch.DirectBuffer;
@@ -45,6 +45,14 @@ public class SegmentedRingByteBuffer {
     /** Close mask. */
     private static final long CLOSE_MASK = 0x8000000000000000L;
 
+    /** Tail field atomic updater. */
+    private static final AtomicLongFieldUpdater<SegmentedRingByteBuffer> TAIL_UPD =
+        AtomicLongFieldUpdater.newUpdater(SegmentedRingByteBuffer.class, "tail");
+
+    /** Producers count field atomic updater. */
+    private static final AtomicIntegerFieldUpdater<SegmentedRingByteBuffer> PRODUCERS_CNT_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(SegmentedRingByteBuffer.class, "producersCnt");
+
     /** Capacity. */
     private final int cap;
 
@@ -58,15 +66,15 @@ public class SegmentedRingByteBuffer {
     private final long maxSegmentSize;
 
     /** Head. */
-    private final AtomicLong head = new AtomicLong();
+    private volatile long head;
 
     /** Tail. */
-    private final AtomicLong tail = new AtomicLong();
+    private volatile long tail;
 
     /**
      * Producers count. Uses by consumer in order to wait for ending of data writing by all producers.
      */
-    private final AtomicInteger producersCnt = new AtomicInteger();
+    private volatile int producersCnt;
 
     /**
      * Wait for consumer flag. Prevents producers from writing data to the ring buffer while consumer waiting for finish
@@ -138,8 +146,8 @@ public class SegmentedRingByteBuffer {
      * @param pos Position.
      */
     public void init(long pos) {
-        head.set(pos);
-        tail.set(pos);
+        head = pos;
+        tail = pos;
     }
 
     /**
@@ -157,7 +165,7 @@ public class SegmentedRingByteBuffer {
      * @return Buffer tail.
      */
     public long tail() {
-        return tail.get() & SegmentedRingByteBuffer.OPEN_MASK;
+        return tail & SegmentedRingByteBuffer.OPEN_MASK;
     }
 
     /**
@@ -207,17 +215,17 @@ public class SegmentedRingByteBuffer {
 
         for (;;) {
             if (!waitForConsumer) {
-                int cur = producersCnt.get();
+                int cur = producersCnt;
 
-                if (cur >= 0 && producersCnt.compareAndSet(cur, cur + 1))
+                if (cur >= 0 && PRODUCERS_CNT_UPD.compareAndSet(this, cur, cur + 1))
                     break;
             }
         }
 
         for (;;) {
-            long currTail = tail.get();
+            long currTail = tail;
 
-            assert !safe || currTail < 0 : "Unsafe usage of segment ring byte buffer";
+            assert !safe || currTail < 0 : "Unsafe usage of segment ring byte buffer currTail=" + currTail;
 
             if (currTail < 0) {
                 if (safe)
@@ -226,7 +234,7 @@ public class SegmentedRingByteBuffer {
                     return new WriteSegment(null, -1);
             }
 
-            long head0 = head.get();
+            long head0 = head;
 
             long currTailIdx = toIndex(currTail);
 
@@ -235,7 +243,7 @@ public class SegmentedRingByteBuffer {
             long newTail = fitsSeg ? currTail + size : currTail;
 
             if (head0 < newTail - cap) { // Not enough space.
-                producersCnt.decrementAndGet();
+                PRODUCERS_CNT_UPD.decrementAndGet(this);
 
                 return null;
             }
@@ -243,7 +251,7 @@ public class SegmentedRingByteBuffer {
                 // If safe we should keep buffer closed.
                 long tail0 = fitsSeg ? (safe ? newTail | CLOSE_MASK : newTail) : newTail | CLOSE_MASK;
 
-                boolean upd = tail.compareAndSet(safe ? currTail | CLOSE_MASK : currTail, tail0);
+                boolean upd = TAIL_UPD.compareAndSet(this, safe ? currTail | CLOSE_MASK : currTail, tail0);
 
                 assert !safe || upd : "Unsafe usage of segment ring byte buffer";
 
@@ -269,32 +277,18 @@ public class SegmentedRingByteBuffer {
     }
 
     /**
-     * Behaves like as {@link #offer(int)} method but as side effect the buffer will be open for the further updates.
-     *
-     * @param size Amount of bytes for reserve..
+     * Closes the buffer.
      */
-    public WriteSegment offerAndOpen(int size) {
-        if (size > cap)
-            throw new IllegalArgumentException("Record is too long [capacity=" + cap + ", size=" + size + ']');
-
+    public void close() {
         for (;;) {
-            int cur = producersCnt.get();
+            long currTail = tail;
 
-            if (cur >= 0 && producersCnt.compareAndSet(cur, cur + 1))
-                break;
+            if (currTail < 0)
+                return;
+
+            if(TAIL_UPD.compareAndSet(this, currTail, currTail | CLOSE_MASK))
+                return;
         }
-
-        long currTail = tail.get();
-
-        head.set(0);
-
-        boolean init = tail.compareAndSet(currTail, size);
-
-        assert init;
-
-        ByteBuffer slice = slice(0, size, false);
-
-        return new WriteSegment(slice, size);
     }
 
     /**
@@ -335,7 +329,7 @@ public class SegmentedRingByteBuffer {
         int spins = 0;
 
         for (;;) {
-            if (producersCnt.compareAndSet(0, -1))
+            if (PRODUCERS_CNT_UPD.compareAndSet(this, 0, -1))
                 break;
 
             spins++;
@@ -344,11 +338,11 @@ public class SegmentedRingByteBuffer {
         if (metrics != null && metrics.metricsEnabled())
             metrics.onBuffPollSpin(spins);
 
-        long head = this.head.get();
+        long head = this.head;
 
-        long tail = this.tail.get() & OPEN_MASK;
+        long tail = this.tail & OPEN_MASK;
 
-        producersCnt.set(0);
+        producersCnt = 0;
 
         waitForConsumer = false;
 
@@ -383,6 +377,13 @@ public class SegmentedRingByteBuffer {
     public void free() {
         if (mode == DIRECT || mode == MAPPED)
             ((DirectBuffer)buf).cleaner().clean();
+    }
+
+    /**
+     * Resets the state of the buffer and returns new instance but with the same underlying buffer.
+     */
+    public SegmentedRingByteBuffer reset() {
+        return new SegmentedRingByteBuffer(buf.capacity(), maxSegmentSize, buf, mode, metrics);
     }
 
     /**
@@ -530,9 +531,9 @@ public class SegmentedRingByteBuffer {
                 copy(seg, len, buf, 0, seg.array().length - len);
             }
 
-            assert producersCnt.get() >= 0;
+            assert producersCnt >= 0;
 
-            producersCnt.decrementAndGet();
+            PRODUCERS_CNT_UPD.decrementAndGet(SegmentedRingByteBuffer.this);
         }
 
         /** {@inheritDoc} */
@@ -562,7 +563,7 @@ public class SegmentedRingByteBuffer {
         /** {@inheritDoc} */
         @Override public void release() {
             if (newHead >= 0)
-                head.set(newHead);
+                head = newHead;
         }
 
         /** {@inheritDoc} */
