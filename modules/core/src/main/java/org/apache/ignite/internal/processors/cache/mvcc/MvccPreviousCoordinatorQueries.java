@@ -69,6 +69,9 @@ class MvccPreviousCoordinatorQueries {
 
             initDone = waitNodes.isEmpty();
 
+            if (initDone)
+                System.out.println("DONE 1");
+
             if (nodeQueries != null) {
                 for (Map.Entry<UUID, Map<MvccCounter, Integer>> e : nodeQueries.entrySet())
                     addAwaitedActiveQueries(e.getKey(), e.getValue());
