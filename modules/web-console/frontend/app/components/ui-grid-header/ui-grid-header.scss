@@ -28,6 +28,12 @@
         height: 30px;
     }
 
+    .ui-grid-header-cell {
+        .ui-grid-cell-contents > span:not(.ui-grid-header-cell-label) {
+            right: 3px;
+        }
+    }
+
     .ui-grid-header-cell [role="columnheader"] {
         display: flex;
         
@@ -50,6 +56,7 @@
     .ui-grid-header-span {
         position: relative;
         border-right: 0;
+        background: #f5f5f5;
 
         .ng-hide + .ui-grid-header-cell-row .ui-grid-header-cell {
             height: 58px;

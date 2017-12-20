@@ -769,7 +769,7 @@ public class PlatformUtils {
      * @param resObj Result.
      * @param err Error.
      */
-    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Exception err)
+    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Throwable err)
     {
         if (err == null) {
             writer.writeBoolean(true);

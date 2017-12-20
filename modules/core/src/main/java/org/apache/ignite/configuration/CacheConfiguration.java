@@ -192,6 +192,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default batch size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_BATCH_SIZE = 512;
 
+    /** Default write coalescing for write-behind cache store. */
+    public static final boolean DFLT_WRITE_BEHIND_COALESCING = true;
+
     /** Default maximum number of query iterators that can be stored. */
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
@@ -239,8 +242,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Rebalance timeout. */
     private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
 
-    /** Cache expiration policy. */
+    /** Cache eviction policy. */
+    @Deprecated
     private EvictionPolicy evictPlc;
+
+    /** Cache eviction policy factory. */
+    private Factory evictPlcFactory;
 
     /** Flag indicating whether eviction is synchronized. */
     private boolean evictSync = DFLT_EVICT_SYNCHRONIZED;
@@ -343,6 +350,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
+
+    /** Write coalescing flag for write-behind cache store */
+    private boolean writeBehindCoalescing = DFLT_WRITE_BEHIND_COALESCING;
 
     /** Maximum number of query iterators that can be stored. */
     private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
@@ -460,6 +470,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         evictKeyBufSize = cc.getEvictSynchronizedKeyBufferSize();
         evictMaxOverflowRatio = cc.getEvictMaxOverflowRatio();
         evictPlc = cc.getEvictionPolicy();
+        evictPlcFactory = cc.getEvictionPolicyFactory();
         evictSync = cc.isEvictSynchronized();
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
@@ -505,6 +516,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         topValidator = cc.getTopologyValidator();
         typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
+        writeBehindCoalescing = cc.getWriteBehindCoalescing();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
@@ -542,7 +554,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * which means that evictions are disabled for cache.
      *
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
+     *
+     * @deprecated Use {@link #getEvictionPolicyFactory()} instead.
      */
+    @Deprecated
     @SuppressWarnings({"unchecked"})
     @Nullable public EvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
@@ -551,11 +566,39 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache eviction policy.
      *
-     * @param evictPlc Cache expiration policy.
+     * @param evictPlc Cache eviction policy.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link #setEvictionPolicyFactory(Factory)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setEvictionPolicy(@Nullable EvictionPolicy evictPlc) {
         this.evictPlc = evictPlc;
+
+        return this;
+    }
+
+    /**
+     * Gets cache eviction policy factory. By default, returns {@code null}
+     * which means that evictions are disabled for cache.
+     *
+     * @return Cache eviction policy factory or {@code null} if evictions should be disabled
+     * or if {@link #getEvictionPolicy()} should be used instead.
+     */
+    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
+        return evictPlcFactory;
+    }
+
+    /**
+     * Sets cache eviction policy factory.
+     * Note: Eviction policy factory should be {@link Serializable}.
+     *
+     * @param evictPlcFactory Cache eviction policy factory.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEvictionPolicyFactory(
+        @Nullable Factory<? extends EvictionPolicy<? super K, ? super V>> evictPlcFactory) {
+        this.evictPlcFactory = evictPlcFactory;
 
         return this;
     }
@@ -779,7 +822,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * never be evicted.
      * <p>
      * If not provided, any entry may be evicted depending on
-     * {@link #getEvictionPolicy() eviction policy} configuration.
+     * {@link #getEvictionPolicyFactory()} eviction policy} configuration.
      *
      * @return Eviction filter or {@code null}.
      */
@@ -1456,6 +1499,32 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setWriteBehindBatchSize(int writeBehindBatchSize) {
         this.writeBehindBatchSize = writeBehindBatchSize;
+
+        return this;
+    }
+
+    /**
+     * Write coalescing flag for write-behind cache store operations. Store operations (get or remove)
+     * with the same key are combined or coalesced to single, resulting operation
+     * to reduce pressure to underlying cache store.
+     * <p/>
+     * If not provided, default value is {@link #DFLT_WRITE_BEHIND_COALESCING}.
+     *
+     * @return Write coalescing flag.
+     */
+    public boolean getWriteBehindCoalescing() {
+        return writeBehindCoalescing;
+    }
+
+    /**
+     * Sets write coalescing flag for write-behind cache.
+     *
+     * @param writeBehindCoalescing Write coalescing flag.
+     * @see #getWriteBehindCoalescing()
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setWriteBehindCoalescing(boolean writeBehindCoalescing) {
+        this.writeBehindCoalescing = writeBehindCoalescing;
 
         return this;
     }

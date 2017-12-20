@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
@@ -53,10 +54,10 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -234,13 +235,23 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        AffinityTopologyVersion topVer
+        final AffinityTopologyVersion topVer
     ) {
         Collection<ClusterNode> cacheNodes = CU.affinityNodes(cctx, topVer);
 
         if (cacheNodes.isEmpty()) {
             onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
                 "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']'));
+
+            return;
+        }
+
+        GridDhtTopologyFuture exchFut = cctx.topologyVersionFuture();
+
+        Throwable exc = exchFut.validateCache(cctx);
+
+        if (exc != null) {
+            onDone(exc);
 
             return;
         }
@@ -281,6 +292,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
+                final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+                final long start = (statsEnabled)? System.nanoTime() : 0L;
+
                 final GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
                     cache().getDhtAsync(n.id(),
                         -1,
@@ -316,7 +331,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 add(fut.chain(new C1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>, Map<K, V>>() {
                     @Override public Map<K, V> apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut) {
                         try {
-                            return createResultMap(fut.get());
+                            Map<K, V> result = createResultMap(fut.get());
+
+                            if (!skipVals && statsEnabled && fut.error() == null)
+                                cctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
+
+                            return result;
                         }
                         catch (Exception e) {
                             U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
@@ -329,7 +349,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }));
             }
             else {
-                MiniFuture fut = new MiniFuture(n, mappedKeys, topVer);
+                MiniFuture fut = new MiniFuture(n, mappedKeys, topVer,
+                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, expiryPlc, readThrough, skipVals));
 
                 GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),
@@ -435,89 +456,129 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private boolean localGet(KeyCacheObject key, int part, Map<K, V> locVals) {
         assert cctx.affinityNode() : this;
 
+        boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+        long start = (statsEnabled)? System.nanoTime() : 0L;
+
         GridDhtCacheAdapter<K, V> cache = cache();
 
+        boolean offheapRead = cctx.offheapRead(expiryPlc, false);
+        boolean evt = !skipVals;
+
         while (true) {
-            GridCacheEntryEx entry;
-
             try {
-                entry = cache.context().isSwapOrOffheapEnabled() ? cache.entryEx(key) : cache.peekEx(key);
+                boolean skipEntry = false;
 
-                // If our DHT cache do has value, then we peek it.
-                if (entry != null) {
-                    boolean isNew = entry.isNewLocked();
+                EntryGetResult getRes = null;
+                CacheObject v = null;
+                GridCacheVersion ver = null;
 
-                    EntryGetResult getRes = null;
-                    CacheObject v = null;
-                    GridCacheVersion ver = null;
+                if (offheapRead) {
+                    GridCacheSwapEntry swapEntry = cctx.swap().readSwapEntry(key);
 
-                    if (needVer) {
-                        getRes = entry.innerGetVersioned(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            !deserializeBinary,
-                            null);
+                    if (swapEntry != null) {
+                        long expireTime = swapEntry.expireTime();
 
-                        if (getRes != null) {
-                            v = getRes.value();
-                            ver = getRes.version();
+                        if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
+                            skipEntry = true;
+
+                            v = swapEntry.value();
+
+                            if (needVer)
+                                ver = swapEntry.version();
+
+                            if (evt) {
+                                cctx.events().readEvent(key,
+                                    null,
+                                    swapEntry.value(),
+                                    subjId,
+                                    taskName,
+                                    !deserializeBinary);
+                            }
                         }
                     }
-                    else {
-                        v = entry.innerGet(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*read-through*/false,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            /*temporary*/false,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            !deserializeBinary);
-                    }
+                }
 
-                    cache.context().evicts().touch(entry, topVer);
+                if (!skipEntry) {
+                    GridCacheEntryEx entry =
+                        cache.context().isSwapOrOffheapEnabled() ? cache.entryEx(key) : cache.peekEx(key);
 
-                    // Entry was not in memory or in swap, so we remove it from cache.
-                    if (v == null) {
-                        if (isNew && entry.markObsoleteIfEmpty(ver))
-                            cache.removeEntry(entry);
-                    }
-                    else {
-                        cctx.addResult(locVals,
-                            key,
-                            v,
-                            skipVals,
-                            keepCacheObjects,
-                            deserializeBinary,
-                            true,
-                            getRes,
-                            ver,
-                            0,
-                            0,
-                            needVer);
+                    // If our DHT cache do has value, then we peek it.
+                    if (entry != null) {
+                        boolean isNew = entry.isNewLocked();
 
-                        return true;
+                        if (needVer) {
+                            getRes = entry.innerGetVersioned(
+                                null,
+                                null,
+                                /*swap*/true,
+                                /*unmarshal*/true,
+                                /*update-metrics*/false,
+                                /*event*/evt,
+                                subjId,
+                                null,
+                                taskName,
+                                expiryPlc,
+                                !deserializeBinary,
+                                null);
+
+                            if (getRes != null) {
+                                v = getRes.value();
+                                ver = getRes.version();
+                            }
+                        }
+                        else {
+                            v = entry.innerGet(
+                                null,
+                                null,
+                                /*swap*/true,
+                                /*read-through*/false,
+                                /*update-metrics*/false,
+                                /*event*/evt,
+                                /*temporary*/false,
+                                subjId,
+                                null,
+                                taskName,
+                                expiryPlc,
+                                !deserializeBinary);
+                        }
+
+                        cache.context().evicts().touch(entry, topVer);
+
+                        // Entry was not in memory or in swap, so we remove it from cache.
+                        if (v == null) {
+                            if (isNew && entry.markObsoleteIfEmpty(ver))
+                                cache.removeEntry(entry);
+                        }
                     }
+                }
+
+                if (v != null) {
+                    cctx.addResult(locVals,
+                        key,
+                        v,
+                        skipVals,
+                        keepCacheObjects,
+                        deserializeBinary,
+                        true,
+                        getRes,
+                        ver,
+                        0,
+                        0,
+                        needVer);
+
+                    return true;
                 }
 
                 boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
 
                 // Entry not found, do not continue search if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
-                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                    if (!skipVals && statsEnabled) {
                         cache.metrics0().onRead(false);
+
+                        cache.metrics0().addGetTimeNanos(System.nanoTime() - start);
+                    }
 
                     return true;
                 }
@@ -617,6 +678,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         /** Topology version on which this future was mapped. */
         private final AffinityTopologyVersion topVer;
 
+        /** Post processing closure. */
+        private final IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos;
+
         /** {@code True} if remapped after node left. */
         private boolean remapped;
 
@@ -624,11 +688,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
          * @param node Node.
          * @param keys Keys.
          * @param topVer Topology version.
+         * @param postProcessingClos Post processing closure.
          */
-        MiniFuture(ClusterNode node, LinkedHashMap<KeyCacheObject, Boolean> keys, AffinityTopologyVersion topVer) {
+        MiniFuture(ClusterNode node, LinkedHashMap<KeyCacheObject, Boolean> keys, AffinityTopologyVersion topVer,
+            @Nullable IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos) {
             this.node = node;
             this.keys = keys;
             this.topVer = topVer;
+            this.postProcessingClos = postProcessingClos;
         }
 
         /**
@@ -746,6 +813,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         }
                     }), F.t(node, keys), topVer);
 
+                    postProcessResult(res);
+
                     onDone(createResultMap(res.entries()));
 
                     return;
@@ -766,18 +835,30 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             }
                         }), F.t(node, keys), topVer);
 
+                        postProcessResult(res);
+
                         onDone(createResultMap(res.entries()));
                     }
                 });
             }
             else {
                 try {
+                    postProcessResult(res);
+
                     onDone(createResultMap(res.entries()));
                 }
                 catch (Exception e) {
                     onDone(e);
                 }
             }
+        }
+
+        /**
+         * @param res Response.
+         */
+        private void postProcessResult(final GridNearGetResponse res) {
+            if (postProcessingClos != null)
+                postProcessingClos.apply(res.entries());
         }
 
         /** {@inheritDoc} */

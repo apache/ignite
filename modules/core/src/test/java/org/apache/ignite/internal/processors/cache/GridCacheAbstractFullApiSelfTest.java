@@ -2741,6 +2741,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testRemoveLoad() throws Exception {
+        if (memoryMode() == OFFHEAP_TIERED)
+            fail("https://ggsystems.atlassian.net/browse/GG-13126");
+
         int cnt = 10;
 
         Set<String> keys = new HashSet<>();

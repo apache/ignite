@@ -249,10 +249,12 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         X.println(bigQry);
         X.println();
 
-        X.println("Plan: " + pCache.query(new SqlFieldsQuery("EXPLAIN " + bigQry)
+        X.println("   Plan: \n" + pCache.query(new SqlFieldsQuery("EXPLAIN " + bigQry)
             .setDistributedJoins(distributedJoins())).getAll());
 
         List<List<?>> res = compareQueryRes0(pCache, bigQry, distributedJoins(), new Object[0], Ordering.RANDOM);
+
+        X.println("   Result size: " + res.size());
 
         assertTrue(!res.isEmpty()); // Ensure we set good testing data at database.
     }

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.resources.JobContextResource;
@@ -126,7 +127,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
                     if (callAsync(cache.<Integer>future(), 1))
                         return null;
                 }
-                
+
                 if (futs[2] == null) {
                     cache.size(CachePeekMode.PRIMARY);
 
@@ -143,6 +144,60 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(VisorCacheClearJob.class, this);
+        }
+    }
+
+    /**
+     * Callable to get cache size.
+     *
+     * @deprecated This class needed only for compatibility.
+     */
+    @GridInternal @Deprecated
+    private static class VisorCacheSizeCallable implements IgniteCallable<Integer> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final IgniteCache cache;
+
+        /**
+         * @param cache Cache to take size from.
+         */
+        private VisorCacheSizeCallable(IgniteCache cache) {
+            this.cache = cache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer call() throws Exception {
+            return cache.size(CachePeekMode.PRIMARY);
+        }
+    }
+
+    /**
+     * Callable to clear cache.
+     *
+     * @deprecated This class needed only for compatibility.
+     */
+    @GridInternal @Deprecated
+    private static class VisorCacheClearCallable implements IgniteCallable<Integer> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final IgniteCache cache;
+
+        /**
+         * @param cache Cache to clear.
+         */
+        private VisorCacheClearCallable(IgniteCache cache) {
+            this.cache = cache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer call() throws Exception {
+            cache.clear();
+
+            return 0;
         }
     }
 }
