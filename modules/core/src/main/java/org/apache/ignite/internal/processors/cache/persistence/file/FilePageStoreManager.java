@@ -341,21 +341,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      *
      */
     public Path getPath(boolean isSharedGroup, String cacheOrGroupName, int partId) {
-        return getPartitionFile(cacheWorkDirectory(isSharedGroup, cacheOrGroupName), partId).toPath();
-    }
-
-    /**
-     *
-     */
-    private File cacheWorkDirectory(boolean isSharedGroup, String cacheOrGroupName) {
-        String dirName;
-
-        if (isSharedGroup)
-            dirName = CACHE_GRP_DIR_PREFIX + cacheOrGroupName;
-        else
-            dirName = CACHE_DIR_PREFIX + cacheOrGroupName;
-
-        return new File(storeWorkDir, dirName);
+        return getPartitionFile(cacheWorkDir(isSharedGroup, cacheOrGroupName), partId).toPath();
     }
 
     /**
@@ -602,7 +588,21 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public File cacheWorkDir(CacheConfiguration ccfg) {
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
-        return cacheWorkDirectory(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
+        return cacheWorkDir(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
+    }
+
+    /**
+     *
+     */
+    public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
+        String dirName;
+
+        if (isSharedGroup)
+            dirName = CACHE_GRP_DIR_PREFIX + cacheOrGroupName;
+        else
+            dirName = CACHE_DIR_PREFIX + cacheOrGroupName;
+
+        return new File(storeWorkDir, dirName);
     }
 
     /**
