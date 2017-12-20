@@ -514,12 +514,17 @@ namespace Apache.Ignite.Core.Impl.Binary
             else if (type.IsPointer)
                 unsafe
                 {
-                    // Expression trees do not work with pointers properly.
-                    // TODO: Raw mode
+                    // Expression trees do not work with pointers properly, use reflection.
                     var fieldName = BinaryUtils.CleanFieldName(field.Name);
-                    writeAction = (o, w) => w.WriteLong(fieldName, (long) Pointer.Unbox(field.GetValue(o)));
-                    readAction = (o, r) =>
-                        field.SetValue(o, Pointer.Box((void*) r.ReadLong(fieldName), field.FieldType));
+                    writeAction = raw
+                        ? (BinaryReflectiveWriteAction) ((o, w) =>
+                            w.GetRawWriter().WriteLong((long) Pointer.Unbox(field.GetValue(o))))
+                        : ((o, w) => w.WriteLong(fieldName, (long) Pointer.Unbox(field.GetValue(o))));
+
+                    readAction = raw
+                        ? (BinaryReflectiveReadAction) ((o, r) =>
+                            field.SetValue(o, Pointer.Box((void*) r.GetRawReader().ReadLong(), field.FieldType)))
+                        : ((o, r) => field.SetValue(o, Pointer.Box((void*) r.ReadLong(fieldName), field.FieldType)));
                 }
             else
             {
