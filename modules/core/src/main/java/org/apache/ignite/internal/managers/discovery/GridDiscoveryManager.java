@@ -82,7 +82,7 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -847,7 +847,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
                     // NodeAdded msg reached joining node after round-trip over the ring.
-                    GridClusterStateProcessor stateProc = ctx.state();
+                    IGridClusterStateProcessor stateProc = ctx.state();
 
                     stateProc.onGridDataReceived(dataBag.gridDiscoveryData(
                         stateProc.discoveryDataType().ordinal()));
@@ -859,7 +859,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
                 else {
                     // Discovery data from newly joined node has to be applied to the current old node.
-                    GridClusterStateProcessor stateProc = ctx.state();
+                    IGridClusterStateProcessor stateProc = ctx.state();
 
                     JoiningNodeDiscoveryData data0 = dataBag.newJoinerDiscoveryData(
                         stateProc.discoveryDataType().ordinal());
