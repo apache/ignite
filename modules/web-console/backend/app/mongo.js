@@ -17,6 +17,8 @@
 
 'use strict';
 
+const passportMongo = require('passport-local-mongoose');
+
 // Fire me up!
 
 /**
@@ -24,10 +26,10 @@
  */
 module.exports = {
     implements: 'mongo',
-    inject: ['require(passport-local-mongoose)', 'settings', 'mongoose']
+    inject: ['settings', 'mongoose']
 };
 
-const defineSchema = (passportMongo, mongoose) => {
+const defineSchema = (mongoose) => {
     const Schema = mongoose.Schema;
     const ObjectId = mongoose.Schema.Types.ObjectId;
     const result = { connection: mongoose.connection };
@@ -39,8 +41,10 @@ const defineSchema = (passportMongo, mongoose) => {
         firstName: String,
         lastName: String,
         email: String,
+        phone: String,
         company: String,
         country: String,
+        registered: Date,
         lastLogin: Date,
         lastActivity: Date,
         admin: Boolean,
@@ -58,12 +62,14 @@ const defineSchema = (passportMongo, mongoose) => {
         return {
             _id: ret._id,
             email: ret.email,
+            phone: ret.phone,
             firstName: ret.firstName,
             lastName: ret.lastName,
             company: ret.company,
             country: ret.country,
             admin: ret.admin,
             token: ret.token,
+            registered: ret.registered,
             lastLogin: ret.lastLogin,
             lastActivity: ret.lastActivity
         };
@@ -1150,7 +1156,7 @@ const defineSchema = (passportMongo, mongoose) => {
     return result;
 };
 
-module.exports.factory = function(passportMongo, settings, mongoose) {
+module.exports.factory = function(settings, mongoose) {
     // Use native promises
     mongoose.Promise = global.Promise;
 
@@ -1204,5 +1210,5 @@ module.exports.factory = function(passportMongo, settings, mongoose) {
                     return Promise.reject(err);
                 });
         })
-        .then(() => defineSchema(passportMongo, mongoose));
+        .then(() => defineSchema(mongoose));
 };

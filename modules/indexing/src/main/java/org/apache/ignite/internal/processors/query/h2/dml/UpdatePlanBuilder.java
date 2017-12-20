@@ -21,6 +21,7 @@ import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.sql.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
@@ -128,6 +128,8 @@ public final class UpdatePlanBuilder {
 
         GridH2RowDescriptor desc;
 
+        List<GridSqlElement[]> elRows = null;
+
         if (stmt instanceof GridSqlInsert) {
             GridSqlInsert ins = (GridSqlInsert) stmt;
             target = ins.into();
@@ -137,6 +139,10 @@ public final class UpdatePlanBuilder {
 
             cols = ins.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
+
+            if (sel == null)
+                elRows = ins.rows();
+
             isTwoStepSubqry = (ins.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
         }
@@ -150,6 +156,10 @@ public final class UpdatePlanBuilder {
 
             cols = merge.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
+
+            if (sel == null)
+                elRows = merge.rows();
+
             isTwoStepSubqry = (merge.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
         }
@@ -159,7 +169,7 @@ public final class UpdatePlanBuilder {
         }
 
         // Let's set the flag only for subqueries that have their FROM specified.
-        isTwoStepSubqry = (isTwoStepSubqry && (sel instanceof GridSqlUnion ||
+        isTwoStepSubqry &= (sel != null && (sel instanceof GridSqlUnion ||
             (sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null)));
 
         int keyColIdx = -1;
@@ -211,17 +221,49 @@ public final class UpdatePlanBuilder {
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
-        String selectSql = sel.getSQL();
+        String selectSql = sel != null ? sel.getSQL() : null;
 
-        UpdatePlan.DistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
+        DmlDistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
             checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
 
-        if (stmt instanceof GridSqlMerge)
-            return UpdatePlan.forMerge(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
-                valColIdx, selectSql, !isTwoStepSubqry, rowsNum, distributed);
-        else
-            return UpdatePlan.forInsert(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
-                valColIdx, selectSql, !isTwoStepSubqry, rowsNum, distributed);
+        UpdateMode mode = stmt instanceof GridSqlMerge ? UpdateMode.MERGE : UpdateMode.INSERT;
+
+        List<List<DmlArgument>> rows = null;
+
+        if (elRows != null) {
+            assert sel == null;
+
+            rows = new ArrayList<>(elRows.size());
+
+            for (GridSqlElement[] elRow : elRows) {
+                List<DmlArgument> row = new ArrayList<>(cols.length);
+
+                for (GridSqlElement el : elRow) {
+                    DmlArgument arg = DmlArguments.create(el);
+
+                    row.add(arg);
+                }
+
+                rows.add(row);
+            }
+        }
+
+        return new UpdatePlan(
+            mode,
+            tbl.dataTable(),
+            colNames,
+            colTypes,
+            keySupplier,
+            valSupplier,
+            keyColIdx,
+            valColIdx,
+            selectSql,
+            !isTwoStepSubqry,
+            rows,
+            rowsNum,
+            null,
+            distributed
+        );
     }
 
     /**
@@ -241,7 +283,7 @@ public final class UpdatePlanBuilder {
         throws IgniteCheckedException {
         GridSqlElement target;
 
-        FastUpdateArguments fastUpdate;
+        FastUpdate fastUpdate;
 
         UpdateMode mode;
 
@@ -249,7 +291,7 @@ public final class UpdatePlanBuilder {
             // Let's verify that user is not trying to mess with key's columns directly
             verifyUpdateColumns(stmt);
 
-            GridSqlUpdate update = (GridSqlUpdate) stmt;
+            GridSqlUpdate update = (GridSqlUpdate)stmt;
             target = update.target();
             fastUpdate = DmlAstUtils.getFastUpdateArgs(update);
             mode = UpdateMode.UPDATE;
@@ -266,16 +308,23 @@ public final class UpdatePlanBuilder {
 
         GridSqlTable tbl = DmlAstUtils.gridTableForElement(target);
 
-        GridH2Table gridTbl = tbl.dataTable();
+        GridH2Table h2Tbl = tbl.dataTable();
 
-        GridH2RowDescriptor desc = gridTbl.rowDescriptor();
+        GridH2RowDescriptor desc = h2Tbl.rowDescriptor();
 
         if (desc == null)
-            throw new IgniteSQLException("Row descriptor undefined for table '" + gridTbl.getName() + "'",
+            throw new IgniteSQLException("Row descriptor undefined for table '" + h2Tbl.getName() + "'",
                 IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
-        if (fastUpdate != null)
-            return UpdatePlan.forFastUpdate(mode, gridTbl, fastUpdate);
+        if (fastUpdate != null) {
+            return new UpdatePlan(
+                mode,
+                h2Tbl,
+                null,
+                fastUpdate,
+                null
+            );
+        }
         else {
             GridSqlSelect sel;
 
@@ -311,28 +360,48 @@ public final class UpdatePlanBuilder {
 
                 int newValColIdx = (hasNewVal ? valColIdx : 1);
 
-                KeyValueSupplier newValSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps,
+                KeyValueSupplier valSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps,
                     false, true);
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
                 String selectSql = sel.getSQL();
 
-                UpdatePlan.DistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
+                DmlDistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
                     checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName());
 
-                return UpdatePlan.forUpdate(gridTbl, colNames, colTypes, newValSupplier, valColIdx, selectSql,
-                    distributed);
+                return new UpdatePlan(
+                    UpdateMode.UPDATE,
+                    h2Tbl,
+                    colNames,
+                    colTypes,
+                    null,
+                    valSupplier,
+                    -1,
+                    valColIdx,
+                    selectSql,
+                    false,
+                    null,
+                    0,
+                    null,
+                    distributed
+                );
             }
             else {
                 sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
 
                 String selectSql = sel.getSQL();
 
-                UpdatePlan.DistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
+                DmlDistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
                     checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName());
 
-                return UpdatePlan.forDelete(gridTbl, selectSql, distributed);
+                return new UpdatePlan(
+                    UpdateMode.DELETE,
+                    h2Tbl,
+                    selectSql,
+                    null,
+                    distributed
+                );
             }
         }
     }
@@ -546,7 +615,7 @@ public final class UpdatePlanBuilder {
      * @return distributed update plan info, or {@code null} if cannot be distributed.
      * @throws IgniteCheckedException if failed.
      */
-    private static UpdatePlan.DistributedPlanInfo checkPlanCanBeDistributed(IgniteH2Indexing idx,
+    private static DmlDistributedPlanInfo checkPlanCanBeDistributed(IgniteH2Indexing idx,
         Connection conn, SqlFieldsQuery fieldsQry, boolean loc, String selectQry, String cacheName)
         throws IgniteCheckedException {
 
@@ -570,7 +639,7 @@ public final class UpdatePlanBuilder {
                 boolean distributed = qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
                     !qry.mapQueries().get(0).hasSubQueries();
 
-                return distributed ? new UpdatePlan.DistributedPlanInfo(qry.isReplicatedOnly(),
+                return distributed ? new DmlDistributedPlanInfo(qry.isReplicatedOnly(),
                     idx.collectCacheIds(CU.cacheId(cacheName), qry)): null;
             }
         }
