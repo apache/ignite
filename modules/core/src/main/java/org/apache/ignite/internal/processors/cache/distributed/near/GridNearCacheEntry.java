@@ -442,6 +442,12 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
+    @Override protected void logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr)
+        throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public CacheDataRow unswap(CacheDataRow row, boolean checkExpire) {
         return null;
     }

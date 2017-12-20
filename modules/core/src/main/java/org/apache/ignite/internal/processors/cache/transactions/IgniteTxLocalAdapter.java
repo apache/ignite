@@ -677,22 +677,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
 
-                                        //TODO
-                                        if (cacheCtx.group().persistenceEnabled()) {
-                                            if (!writeEntries().isEmpty() && op != NOOP && op != RELOAD &&
-                                                    (op != READ || cctx.snapshot().needTxReadLogging()))
-                                                ptr = cctx.wal().log(new DataRecord(new DataEntry(
-                                                        cacheCtx.cacheId(),
-                                                        txEntry.key(),
-                                                        val,
-                                                        op,
-                                                        nearXidVersion(),
-                                                        writeVersion(),
-                                                        0,
-                                                        txEntry.key().partition(),
-                                                        txEntry.updateCounter())));
-                                        }
-
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerSet(
                                                 null,
@@ -741,22 +725,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
 
-                                        //TODO
-                                        if (cacheCtx.group().persistenceEnabled()) {
-                                            if (!writeEntries().isEmpty() && op != NOOP && op != RELOAD &&
-                                                    (op != READ || cctx.snapshot().needTxReadLogging()))
-                                                ptr = cctx.wal().log(new DataRecord(new DataEntry(
-                                                        cacheCtx.cacheId(),
-                                                        txEntry.key(),
-                                                        val,
-                                                        op,
-                                                        nearXidVersion(),
-                                                        writeVersion(),
-                                                        0,
-                                                        txEntry.key().partition(),
-                                                        txEntry.updateCounter())));
-                                        }
-
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerRemove(
                                                 null,
@@ -785,6 +753,19 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             nearCached.innerReload();
                                     }
                                     else if (op == READ) {
+                                        if (cacheCtx.group().persistenceEnabled() && cctx.snapshot().needTxReadLogging()) {
+                                            ptr = cctx.wal().log(new DataRecord(new DataEntry(
+                                                cacheCtx.cacheId(),
+                                                txEntry.key(),
+                                                val,
+                                                op,
+                                                nearXidVersion(),
+                                                writeVersion(),
+                                                0,
+                                                txEntry.key().partition(),
+                                                txEntry.updateCounter())));
+                                        }
+
                                         ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                         if (expiry != null) {
