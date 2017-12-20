@@ -66,8 +66,9 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param schemaName Schema name to look for the table in.
      * @param tblName Table name to check.
      * @param cols Columns whose presence must be checked.
+     * @return Number of other columns.
      */
-    static void checkTableState(IgniteEx node, String schemaName, String tblName, QueryField... cols)
+    static int checkTableState(IgniteEx node, String schemaName, String tblName, QueryField... cols)
         throws SQLException {
         List<QueryField> flds = new ArrayList<>();
 
@@ -103,6 +104,8 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
             assertEquals(exp.isNullable(), act.isNullable());
         }
+
+        return flds.size() - cols.length;
     }
 
     /**
@@ -202,5 +205,24 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
                 return null;
             }
         }, IgniteSQLException.class, msg);
+    }
+
+    /**
+     * Run specified statement expected to throw an exception with specified class and message.
+     *
+     * @param sql Statement.
+     * @param cls Expected exception class.
+     * @param msg Expected message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    protected void assertThrowsAnyCause(final Ignite node, final String sql, Class<? extends Throwable> cls,
+        String msg) {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                run(node, sql);
+
+                return null;
+            }
+        }, cls, msg);
     }
 }

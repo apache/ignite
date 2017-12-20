@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.h2.jdbc.JdbcSQLException;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 
@@ -99,10 +100,11 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param cols Columns to look for.
+     * @return Number of other columns.
      * @throws SQLException if failed.
      */
-    private void checkTableState(String schemaName, String tblName, QueryField... cols) throws SQLException {
-        checkTableState(grid(nodeIndex()), schemaName, tblName, cols);
+    private int checkTableState(String schemaName, String tblName, QueryField... cols) throws SQLException {
+        return checkTableState(grid(nodeIndex()), schemaName, tblName, cols);
     }
 
     /**
@@ -340,6 +342,185 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumn() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR)");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true),
+                new QueryField("A", Integer.class.getName(), true),
+                new QueryField("B", String.class.getName(), true)));
+
+            run("ALTER TABLE test DROP COLUMN a");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true),
+                new QueryField("B", String.class.getName(), true)));
+
+            run("ALTER TABLE test DROP COLUMN IF EXISTS a");
+
+            assertThrowsAnyCause("ALTER TABLE test DROP COLUMN a", JdbcSQLException.class, "Column \"A\" not found");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropMultipleColumns() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR, c INT)");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true),
+                new QueryField("A", Integer.class.getName(), true),
+                new QueryField("B", String.class.getName(), true),
+                new QueryField("C", Integer.class.getName(), true)));
+
+            run("ALTER TABLE test DROP COLUMN a, c");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true),
+                new QueryField("B", String.class.getName(), true)));
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropNonExistingColumn() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT)");
+
+            assertThrowsAnyCause("ALTER TABLE test DROP COLUMN b", JdbcSQLException.class, "Column \"B\" not found");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnNonExistingTable() throws Exception {
+        assertThrowsAnyCause("ALTER TABLE nosuchtable DROP COLUMN a", JdbcSQLException.class,
+            "Table \"NOSUCHTABLE\" not found");
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnIfTableExists() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR)");
+
+            run("ALTER TABLE IF EXISTS test DROP COLUMN a");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnIfExists() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT)");
+
+            run("ALTER TABLE IF EXISTS test DROP COLUMN IF EXISTS a");
+
+            run("ALTER TABLE IF EXISTS test DROP COLUMN IF EXISTS b");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnIndexPresent() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b INT)");
+
+            run("CREATE INDEX b_index ON test(b)");
+
+            assertThrows("ALTER TABLE test DROP COLUMN b",
+                "Cannot drop column \"B\" because an index exists (\"B_INDEX\") that uses the column.");
+
+            run("DROP INDEX b_index");
+
+            run("ALTER TABLE test DROP COLUMN b");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnOnRealClassValuedTable() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, x VARCHAR) with \"wrap_value=false\"");
+
+            assertThrows("ALTER TABLE test DROP COLUMN x",
+                "Cannot drop column(s) because table was created with WRAP_VALUE=false option.");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnThatIsPartOfKey() throws Exception {
+        try {
+            run("CREATE TABLE test(id INT, a INT, b CHAR, PRIMARY KEY(id, a))");
+
+            assertThrows("ALTER TABLE test DROP COLUMN a",
+                "Cannot drop column \"A\" because it is a part of a cache key");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnThatIsKey() throws Exception {
+        try {
+            run("CREATE TABLE test(id INT PRIMARY KEY, a INT, b CHAR)");
+
+            assertThrows("ALTER TABLE test DROP COLUMN id",
+                "Cannot drop column \"ID\" because it represents a cache key");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
      * Test that {@code ADD COLUMN} fails for tables that have flat value.
      * @param tblName table name.
      */
@@ -361,6 +542,18 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrows(final String sql, String msg) {
         assertThrows(grid(nodeIndex()), sql, msg);
+    }
+
+    /**
+     * Run specified statement expected to throw an exception of specified class and message.
+     *
+     * @param sql Statement.
+     * @param cls Expected exception class.
+     * @param msg Expected message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    protected void assertThrowsAnyCause(final String sql, Class<? extends Throwable> cls, String msg) {
+        assertThrowsAnyCause(grid(nodeIndex()), sql, cls, msg);
     }
 
     /**

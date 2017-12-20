@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -41,8 +43,10 @@ import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableAddColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableDropColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
@@ -361,6 +365,84 @@ public class DdlStatementsProcessor {
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
                             tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
+                    }
+                }
+            }
+            else if (stmt0 instanceof GridSqlAlterTableDropColumn) {
+                GridSqlAlterTableDropColumn cmd = (GridSqlAlterTableDropColumn)stmt0;
+
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+                if (tbl == null && cmd.ifTableExists()) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                }
+
+                if (tbl == null) {
+                    if (!cmd.ifTableExists())
+                        throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                            cmd.tableName());
+                }
+                else {
+                    if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
+                        throw new SchemaOperationException("Cannot drop column(s) because table was created " +
+                            "with " + PARAM_WRAP_VALUE + "=false option.");
+
+                    List<String> cols = new ArrayList<>(cmd.columns().length);
+
+                    GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
+
+                    GridQueryTypeDescriptor type = rowDesc.type();
+
+                    Collection<GridQueryIndexDescriptor> indexes = type.indexes().values();
+
+                    for (String colName : cmd.columns()) {
+                        if (!tbl.doesColumnExist(colName)) {
+                            if ((!cmd.ifExists() || cmd.columns().length != 1)) {
+                                throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
+                                    colName);
+                            }
+                            else {
+                                cols = null;
+
+                                break;
+                            }
+                        }
+
+                        Column col = tbl.getColumn(colName);
+
+                        int colId = col.getColumnId();
+
+                        if (rowDesc.isKeyColumn(colId))
+                            throw new SchemaOperationException("Cannot drop column \"" + colName +
+                            "\" because it represents a cache key");
+
+                        if (rowDesc.isValueColumn(col.getColumnId()))
+                            throw new SchemaOperationException("Cannot drop column \"" + colName +
+                                "\" because it represents a cache value");
+
+                        GridQueryProperty prop = type.property(colName);
+
+                        if (prop != null && prop.key())
+                            throw new SchemaOperationException("Cannot drop column \"" + colName +
+                                "\" because it is a part of a cache key");
+
+                        for (GridQueryIndexDescriptor idxDesc : indexes) {
+                            if (idxDesc.fields().contains(colName))
+                                throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS,
+                                    "Cannot drop column \"" + colName + "\" because an index exists (\"" +
+                                    idxDesc.name() + "\") that uses the column.");
+                        }
+
+                        cols.add(colName);
+                    }
+
+                    if (cols != null) {
+                        assert tbl.rowDescriptor() != null;
+
+                        fut = ctx.query().dynamicColumnRemove(tbl.cacheName(), cmd.schemaName(),
+                            tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifExists());
                     }
                 }
             }
