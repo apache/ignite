@@ -59,12 +59,16 @@ public class MvccAckRequestTx implements MvccMessage {
         this.txCntr = txCntr;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Query counter.
+     */
     public long queryCounter() {
         return MvccProcessor.MVCC_COUNTER_NA;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Query coordinator version.
+     */
     public long queryCoordinatorVersion() {
         return 0;
     }
