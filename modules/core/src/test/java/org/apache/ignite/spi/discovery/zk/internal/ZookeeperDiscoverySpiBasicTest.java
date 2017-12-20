@@ -1006,6 +1006,20 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentStartStop2_EventsThrottle() throws Exception {
+        System.setProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_MAX_EVTS, "1");
+
+        try {
+            concurrentStartStop(5);
+        }
+        finally {
+            System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_MAX_EVTS);
+        }
+    }
+
+    /**
      * @param initNodes Number of initially started nnodes.
      * @throws Exception If failed.
      */
