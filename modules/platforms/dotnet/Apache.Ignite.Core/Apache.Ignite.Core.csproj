@@ -599,6 +599,10 @@
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
     <None Include="Apache.Ignite.Core.Schema.nuspec" />
+    <None Include="IgniteClientConfigurationSection.xsd">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />
     <None Include="NuGet\Install.ps1" />
