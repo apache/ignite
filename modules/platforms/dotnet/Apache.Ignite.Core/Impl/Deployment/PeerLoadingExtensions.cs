@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
                 try
                 {
                     writer.WrapperFunc = WrapperFunc;
-                    writer.WriteObject(o);
+                    writer.WriteObjectDetached(o);
                 }
                 finally
                 {
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
             }
             else
             {
-                writer.WriteObject(o);
+                writer.WriteObjectDetached(o);
             }
         }
 

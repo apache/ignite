@@ -366,13 +366,18 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         startWithCaches1(srvs, clients);
 
-        if (initiallyActive && persistenceEnabled())
+        int minorVer = 1;
+
+        if (initiallyActive && persistenceEnabled()) {
             ignite(0).active(true);
+
+            minorVer++;
+        }
 
         if (blockMsgNodes.length == 0)
             blockMsgNodes = new int[]{1};
 
-        final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(srvs + clients, 1);
+        final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(srvs + clients, minorVer);
 
         List<TestRecordingCommunicationSpi> spis = new ArrayList<>();
 
@@ -1082,7 +1087,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         client = false;
 
-        // Start one more nodes while transition is in progress.
+        // Start more nodes while transition is in progress.
         IgniteInternalFuture startFut1 = GridTestUtils.runAsync(new Callable() {
             @Override public Object call() throws Exception {
                 startGrid(8);
@@ -1101,7 +1106,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         U.sleep(500);
 
         // Stop coordinator.
-        stopGrid(0);
+        stopGrid(getTestIgniteInstanceName(0), true, false);
 
         stopGrid(getTestIgniteInstanceName(1), true, false);
         stopGrid(getTestIgniteInstanceName(4), true, false);

@@ -53,6 +53,7 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -532,6 +533,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @param cfg Configuration.
      */
+    @SuppressWarnings("deprecation")
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
@@ -679,6 +681,12 @@ public class PlatformConfigurationUtils {
 
         if (in.readBoolean())
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
+
+        if (in.readBoolean())
+            cfg.setClientConnectorConfiguration(readClientConnectorConfiguration(in));
+
+        if (!in.readBoolean())  // ClientConnectorConfigurationEnabled override
+            cfg.setClientConnectorConfiguration(null);
 
         if (in.readBoolean())
             cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
@@ -983,6 +991,7 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      * @param cfg Configuration.
      */
+    @SuppressWarnings("deprecation")
     public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg) {
         assert w != null;
         assert cfg != null;
@@ -1144,6 +1153,10 @@ public class PlatformConfigurationUtils {
         writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
 
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
+
+        writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration());
+
+        w.writeBoolean(cfg.getClientConnectorConfiguration() != null);
 
         writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
 
@@ -1442,6 +1455,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Config.
      */
+    @SuppressWarnings("deprecation")
     private static SqlConnectorConfiguration readSqlConnectorConfiguration(BinaryRawReader in) {
         return new SqlConnectorConfiguration()
                 .setHost(in.readString())
@@ -1459,7 +1473,50 @@ public class PlatformConfigurationUtils {
      *
      * @param w Writer.
      */
+    @SuppressWarnings("deprecation")
     private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
+        assert w != null;
+
+        if (cfg != null) {
+            w.writeBoolean(true);
+
+            w.writeString(cfg.getHost());
+            w.writeInt(cfg.getPort());
+            w.writeInt(cfg.getPortRange());
+            w.writeInt(cfg.getSocketSendBufferSize());
+            w.writeInt(cfg.getSocketReceiveBufferSize());
+            w.writeBoolean(cfg.isTcpNoDelay());
+            w.writeInt(cfg.getMaxOpenCursorsPerConnection());
+            w.writeInt(cfg.getThreadPoolSize());
+        } else {
+            w.writeBoolean(false);
+        }
+    }
+
+    /**
+     * Reads the client connector configuration.
+     *
+     * @param in Reader.
+     * @return Config.
+     */
+    private static ClientConnectorConfiguration readClientConnectorConfiguration(BinaryRawReader in) {
+        return new ClientConnectorConfiguration()
+                .setHost(in.readString())
+                .setPort(in.readInt())
+                .setPortRange(in.readInt())
+                .setSocketSendBufferSize(in.readInt())
+                .setSocketReceiveBufferSize(in.readInt())
+                .setTcpNoDelay(in.readBoolean())
+                .setMaxOpenCursorsPerConnection(in.readInt())
+                .setThreadPoolSize(in.readInt());
+    }
+
+    /**
+     * Writes the client connector configuration.
+     *
+     * @param w Writer.
+     */
+    private static void writeClientConnectorConfiguration(BinaryRawWriter w, ClientConnectorConfiguration cfg) {
         assert w != null;
 
         if (cfg != null) {

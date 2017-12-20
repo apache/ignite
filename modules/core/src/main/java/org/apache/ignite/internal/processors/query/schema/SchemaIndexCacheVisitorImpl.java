@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
@@ -118,6 +119,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 KeyCacheObject key = row.key();
 
                 processKey(key, row.link(), clo);
+
+                if (part.state() == RENTING)
+                    break;
             }
         }
         finally {
@@ -147,6 +151,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                     cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
                 }
 
+                break;
+            }
+            catch (GridDhtInvalidPartitionException ignore) {
                 break;
             }
             catch (GridCacheEntryRemovedException ignored) {

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
@@ -589,6 +590,21 @@ public final class DmlAstUtils {
                 return false;
             }
         });
+    }
+
+    /**
+     * @param target Expression to extract the table from.
+     * @return Back end table for this element.
+     */
+    public static GridSqlTable gridTableForElement(GridSqlElement target) {
+        Set<GridSqlTable> tbls = new HashSet<>();
+
+        collectAllGridTablesInTarget(target, tbls);
+
+        if (tbls.size() != 1)
+            throw new IgniteSQLException("Failed to determine target table", IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+        return tbls.iterator().next();
     }
 
     /** Simple constant value based operand. */

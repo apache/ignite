@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
@@ -98,6 +100,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** Logger. */
     private static IgniteLogger msgLog;
+
+    /** Done field updater. */
+    private static final AtomicIntegerFieldUpdater<GridDhtColocatedLockFuture> DONE_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridDhtColocatedLockFuture.class, "done");
 
     /** Cache registry. */
     @GridToStringExclude
@@ -145,6 +151,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** Map of current values. */
     private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
+
+    /** */
+    @SuppressWarnings("UnusedDeclaration")
+    private volatile int done;
 
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
@@ -224,12 +234,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (log == null) {
             msgLog = cctx.shared().txLockMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtColocatedLockFuture.class);
-        }
-
-        if (timeout > 0) {
-            timeoutObj = new LockTimeoutObject();
-
-            cctx.time().addTimeoutObject(timeoutObj);
         }
 
         valMap = new ConcurrentHashMap8<>();
@@ -322,6 +326,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             else {
                 IgniteTxEntry txEntry = tx.entry(txKey);
 
+                assert txEntry != null;
+
                 txEntry.cached(entry);
 
                 // Check transaction entries (corresponding tx entries must be enlisted in transaction).
@@ -332,7 +338,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     threadId,
                     lockVer,
                     true,
-                    tx.entry(txKey).locked(),
+                    txEntry.locked(),
                     inTx(),
                     inTx() && tx.implicitSingle(),
                     false,
@@ -399,7 +405,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param success Success flag.
      */
     public void complete(boolean success) {
-        onComplete(success, true);
+        onComplete(success, true, true);
     }
 
     /**
@@ -533,7 +539,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** {@inheritDoc} */
     @Override public boolean cancel() {
         if (onCancelled())
-            onComplete(false, true);
+            onComplete(false, true, true);
 
         return isCancelled();
     }
@@ -556,7 +562,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (err != null)
             success = false;
 
-        return onComplete(success, true);
+        return onComplete(success, true, true);
     }
 
     /**
@@ -564,18 +570,31 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      *
      * @param success {@code True} if lock was acquired.
      * @param distribute {@code True} if need to distribute lock removal in case of failure.
+     * @param restoreTimeout {@code True} if need restore tx timeout callback.
      * @return {@code True} if complete by this operation.
      */
-    private boolean onComplete(boolean success, boolean distribute) {
-        if (log.isDebugEnabled())
+    private boolean onComplete(boolean success, boolean distribute, boolean restoreTimeout) {
+        if (log.isDebugEnabled()) {
             log.debug("Received onComplete(..) callback [success=" + success + ", distribute=" + distribute +
                 ", fut=" + this + ']');
+        }
+
+        if (!DONE_UPD.compareAndSet(this, 0, 1))
+            return false;
 
         if (!success)
             undoLocks(distribute, true);
 
-        if (tx != null)
+        if (tx != null) {
             cctx.tm().txContext(tx);
+
+            if (restoreTimeout && tx.trackTimeout()) {
+                // Need restore timeout before onDone is called and next tx operation can proceed.
+                boolean add = tx.addTimeoutHandler();
+
+                assert add;
+            }
+        }
 
         if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
@@ -675,6 +694,30 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * part. Note that if primary node leaves grid, the future will fail and transaction will be rolled back.
      */
     void map() {
+        if (tx != null && tx.trackTimeout()) {
+            if (!tx.removeTimeoutHandler()) {
+                tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                        IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Failed to " +
+                            "acquire lock, transaction was rolled back on timeout [timeout=" + tx.timeout() +
+                            ", tx=" + tx + ']');
+
+                        onError(err);
+
+                        onComplete(false, false, false);
+                    }
+                });
+
+                return;
+            }
+        }
+
+        if (timeout > 0) {
+            timeoutObj = new LockTimeoutObject();
+
+            cctx.time().addTimeoutObject(timeoutObj);
+        }
+
         // Obtain the topology version to use.
         AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 
@@ -690,7 +733,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
-                if (fut.topologyVersion().equals(topVer)) {
+                if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)) {
                     Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                     if (err != null) {
@@ -930,7 +973,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                             if (log.isDebugEnabled())
                                 log.debug("Entry being locked did not pass filter (will not lock): " + entry);
 
-                            onComplete(false, false);
+                            onComplete(false, false, true);
 
                             return;
                         }
@@ -1307,7 +1350,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (log.isDebugEnabled())
                 log.debug("Entry being locked did not pass filter (will not lock): " + entry);
 
-            onComplete(false, false);
+            onComplete(false, false, true);
 
             return false;
         }
@@ -1419,12 +1462,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                             U.warn(log, "Failed to detect deadlock.", e);
                         }
 
-                        onComplete(false, true);
+                        onComplete(false, true, true);
                     }
                 });
             }
             else
-                onComplete(false, true);
+                onComplete(false, true, true);
         }
 
         /** {@inheritDoc} */

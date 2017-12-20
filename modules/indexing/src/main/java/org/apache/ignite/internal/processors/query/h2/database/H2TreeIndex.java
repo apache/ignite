@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -103,26 +104,35 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             segments = new H2Tree[segmentsCnt];
 
-            for (int i = 0; i < segments.length; i++) {
-                RootPage page = getMetaPage(name, i);
+            IgniteCacheDatabaseSharedManager db = cctx.shared().database();
 
-                segments[i] = new H2Tree(
-                    name,
-                    cctx.offheap().reuseListForIndex(name),
-                    cctx.groupId(),
-                    cctx.memoryPolicy().pageMemory(),
-                    cctx.shared().wal(),
-                    cctx.offheap().globalRemoveId(),
-                    tbl.rowFactory(),
-                    page.pageId().pageId(),
-                    page.isAllocated(),
-                    cols,
-                    inlineIdxs,
-                    computeInlineSize(inlineIdxs, inlineSize)) {
-                    @Override public int compareValues(Value v1, Value v2) {
-                        return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
-                    }
-                };
+            for (int i = 0; i < segments.length; i++) {
+                db.checkpointReadLock();
+
+                try {
+                    RootPage page = getMetaPage(name, i);
+
+                    segments[i] = new H2Tree(
+                        name,
+                        cctx.offheap().reuseListForIndex(name),
+                        cctx.groupId(),
+                        cctx.memoryPolicy().pageMemory(),
+                        cctx.shared().wal(),
+                        cctx.offheap().globalRemoveId(),
+                        tbl.rowFactory(),
+                        page.pageId().pageId(),
+                        page.isAllocated(),
+                        cols,
+                        inlineIdxs,
+                        computeInlineSize(inlineIdxs, inlineSize)) {
+                        @Override public int compareValues(Value v1, Value v2) {
+                            return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+                        }
+                    };
+                }
+                finally {
+                    db.checkpointReadUnlock();
+                }
             }
         }
         else {
@@ -145,7 +155,11 @@ public class H2TreeIndex extends GridH2IndexBase {
             if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType()))
                 break;
 
-            InlineIndexHelper idx = new InlineIndexHelper(col.column.getType(), col.column.getColumnId(), col.sortType);
+            InlineIndexHelper idx = new InlineIndexHelper(
+                col.column.getType(),
+                col.column.getColumnId(),
+                col.sortType,
+                table.getCompareMode());
 
             res.add(idx);
         }
@@ -204,26 +218,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
+
             return tree.put(row);
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
-        finally {
-            InlineIndexHelper.clearCurrentInlineIndexes();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putx(GridH2Row row) {
-        try {
-            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-
-            int seg = segmentForRow(row);
-
-            H2Tree tree = treeForRead(seg);
-
-            return tree.putx(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -241,6 +238,8 @@ public class H2TreeIndex extends GridH2IndexBase {
             int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
+
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             return tree.remove(row);
         }
@@ -260,6 +259,8 @@ public class H2TreeIndex extends GridH2IndexBase {
             int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
+
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             tree.removex(row);
         }
@@ -321,17 +322,17 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy() {
+    @Override public void destroy(boolean rmvIndex) {
         try {
-            if (cctx.affinityNode()) {
-                if (!cctx.kernalContext().cache().context().database().persistenceEnabled()) {
-                    for (int i = 0; i < segments.length; i++) {
-                        H2Tree tree = segments[i];
+            if (cctx.affinityNode() && rmvIndex) {
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-                        tree.destroy();
+                for (int i = 0; i < segments.length; i++) {
+                    H2Tree tree = segments[i];
 
-                        dropMetaPage(tree.getName(), i);
-                    }
+                    tree.destroy();
+
+                    dropMetaPage(tree.getName(), i);
                 }
             }
         }
@@ -339,15 +340,8 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw new IgniteException(e);
         }
         finally {
-            super.destroy();
+            super.destroy(rmvIndex);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override protected IgniteTree<SearchRow, GridH2Row> doTakeSnapshot() {
-        int seg = threadLocalSegment();
-
-        return treeForRead(seg);
     }
 
     /** {@inheritDoc} */

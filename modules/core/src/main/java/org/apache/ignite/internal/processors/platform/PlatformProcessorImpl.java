@@ -41,17 +41,13 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtensi
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinity;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterGroup;
-import org.apache.ignite.internal.processors.platform.compute.PlatformCompute;
 import org.apache.ignite.internal.processors.platform.datastreamer.PlatformDataStreamer;
 import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicLong;
 import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicReference;
 import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicSequence;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCacheStore;
-import org.apache.ignite.internal.processors.platform.events.PlatformEvents;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
-import org.apache.ignite.internal.processors.platform.messaging.PlatformMessaging;
-import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.platform.transactions.PlatformTransactions;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -74,7 +70,73 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * GridGain platform processor.
  */
 @SuppressWarnings({"ConditionalExpressionWithIdenticalBranches", "unchecked"})
-public class PlatformProcessorImpl extends GridProcessorAdapter implements PlatformProcessor {
+public class PlatformProcessorImpl extends GridProcessorAdapter implements PlatformProcessor, PlatformTarget {
+    /** */
+    private static final int OP_GET_CACHE = 1;
+
+    /** */
+    private static final int OP_CREATE_CACHE = 2;
+
+    /** */
+    private static final int OP_GET_OR_CREATE_CACHE = 3;
+
+    /** */
+    private static final int OP_CREATE_CACHE_FROM_CONFIG = 4;
+
+    /** */
+    private static final int OP_GET_OR_CREATE_CACHE_FROM_CONFIG = 5;
+
+    /** */
+    private static final int OP_DESTROY_CACHE = 6;
+
+    /** */
+    private static final int OP_GET_AFFINITY = 7;
+
+    /** */
+    private static final int OP_GET_DATA_STREAMER = 8;
+
+    /** */
+    private static final int OP_GET_TRANSACTIONS = 9;
+
+    /** */
+    private static final int OP_GET_CLUSTER_GROUP = 10;
+
+    /** */
+    private static final int OP_GET_EXTENSION = 11;
+
+    /** */
+    private static final int OP_GET_ATOMIC_LONG = 12;
+
+    /** */
+    private static final int OP_GET_ATOMIC_REFERENCE = 13;
+
+    /** */
+    private static final int OP_GET_ATOMIC_SEQUENCE = 14;
+
+    /** */
+    private static final int OP_GET_IGNITE_CONFIGURATION = 15;
+
+    /** */
+    private static final int OP_GET_CACHE_NAMES = 16;
+
+    /** */
+    private static final int OP_CREATE_NEAR_CACHE = 17;
+
+    /** */
+    private static final int OP_GET_OR_CREATE_NEAR_CACHE = 18;
+
+    /** */
+    private static final int OP_LOGGER_IS_LEVEL_ENABLED = 19;
+
+    /** */
+    private static final int OP_LOGGER_LOG = 20;
+
+    /** */
+    private static final int OP_GET_BINARY_PROCESSOR = 21;
+
+    /** */
+    private static final int OP_RELEASE_START = 22;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -157,7 +219,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             out.synchronize();
 
-            platformCtx.gateway().onStart(this, mem.pointer());
+            platformCtx.gateway().onStart(new PlatformTargetProxyImpl(this, platformCtx), mem.pointer());
         }
 
         // At this moment all necessary native libraries must be loaded, so we can process with store creation.
@@ -218,134 +280,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTargetProxy cache(@Nullable String name) throws IgniteCheckedException {
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().cache(name);
-
-        if (cache == null)
-            throw new IllegalArgumentException("Cache doesn't exist: " + name);
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy createCache(@Nullable String name) throws IgniteCheckedException {
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(name);
-
-        assert cache != null;
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy getOrCreateCache(@Nullable String name) throws IgniteCheckedException {
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(name);
-
-        assert cache != null;
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy createCacheFromConfig(long memPtr) throws IgniteCheckedException {
-        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
-        CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
-
-        IgniteCacheProxy cache = reader.readBoolean()
-            ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
-            : (IgniteCacheProxy)ctx.grid().createCache(cfg);
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
-        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
-        CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
-
-        IgniteCacheProxy cache = reader.readBoolean()
-            ? (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg,
-                    PlatformConfigurationUtils.readNearConfiguration(reader))
-            : (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroyCache(@Nullable String name) throws IgniteCheckedException {
-        ctx.grid().destroyCache(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy affinity(@Nullable String name) throws IgniteCheckedException {
-        return proxy(new PlatformAffinity(platformCtx, ctx, name));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy dataStreamer(@Nullable String cacheName, boolean keepBinary)
-        throws IgniteCheckedException {
-        IgniteDataStreamer ldr = ctx.dataStream().dataStreamer(cacheName);
-
-        ldr.keepBinary(true);
-
-        return proxy(new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy transactions() {
-        return proxy(new PlatformTransactions(platformCtx));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy projection() throws IgniteCheckedException {
-        return proxy(new PlatformClusterGroup(platformCtx, ctx.grid().cluster()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy compute(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
-
-        return proxy(new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy message(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
-
-        return proxy(new PlatformMessaging(platformCtx, grp0.projection().ignite().message(grp0.projection())));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy events(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
-
-        return proxy(new PlatformEvents(platformCtx, grp0.projection().ignite().events(grp0.projection())));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy services(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
-
-        return proxy(new PlatformServices(platformCtx, grp0.projection().ignite().services(grp0.projection()), false));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy extensions() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy extension(int id) {
-        if (extensions != null && id < extensions.length) {
-            PlatformPluginExtension ext = extensions[id];
-
-            if (ext != null)
-                return proxy(ext.createTarget());
-        }
-
-        throw new IgniteException("Platform extension is not registered [id=" + id + ']');
-    }
-
-    /** {@inheritDoc} */
     @Override public void registerStore(PlatformCacheStore store, boolean convertBinary)
         throws IgniteCheckedException {
         storeLock.readLock().lock();
@@ -363,35 +297,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         finally {
             storeLock.readLock().unlock();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy atomicLong(String name, long initVal, boolean create) throws IgniteException {
-        GridCacheAtomicLongImpl atomicLong = (GridCacheAtomicLongImpl)ignite().atomicLong(name, initVal, create);
-
-        if (atomicLong == null)
-            return null;
-
-        return proxy(new PlatformAtomicLong(platformCtx, atomicLong));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy atomicSequence(String name, long initVal, boolean create)
-        throws IgniteException {
-        IgniteAtomicSequence atomicSeq = ignite().atomicSequence(name, initVal, create);
-
-        if (atomicSeq == null)
-            return null;
-
-        return proxy(new PlatformAtomicSequence(platformCtx, atomicSeq));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy atomicReference(String name, long memPtr, boolean create)
-        throws IgniteException {
-        PlatformAtomicReference ref = PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create);
-
-        return ref != null ? proxy(ref) : null;
     }
 
     /** {@inheritDoc} */
@@ -415,58 +320,22 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void getIgniteConfiguration(long memPtr) {
-        PlatformOutputStream stream = platformCtx.memory().get(memPtr).output();
-        BinaryRawWriterEx writer = platformCtx.writer(stream);
-
-        PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
-
-        stream.synchronize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void getCacheNames(long memPtr) {
-        PlatformOutputStream stream = platformCtx.memory().get(memPtr).output();
-        BinaryRawWriterEx writer = platformCtx.writer(stream);
-
-        Collection<String> names = ignite().cacheNames();
-
-        writer.writeInt(names.size());
-
-        for (String name : names)
-            writer.writeString(name);
-
-        stream.synchronize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy createNearCache(@Nullable String cacheName, long memPtr) {
-        NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
-
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
-        NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
-
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
-
-        return createPlatformCache(cache);
-    }
-
     /**
      * Creates new platform cache.
      */
-    private PlatformTargetProxy createPlatformCache(IgniteCacheProxy cache) {
-        return proxy(new PlatformCache(platformCtx, cache, false, cacheExts));
+    private PlatformTarget createPlatformCache(IgniteCacheProxy cache) {
+        assert cache != null;
+
+        return new PlatformCache(platformCtx, cache, false, cacheExts);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean loggerIsLevelEnabled(int level) {
+    /**
+     * Checks whether logger level is enabled.
+     *
+     * @param level Level.
+     * @return Result.
+     */
+    private boolean loggerIsLevelEnabled(int level) {
         IgniteLogger log = ctx.grid().log();
 
         switch (level) {
@@ -487,8 +356,15 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public void loggerLog(int level, String message, String category, String errorInfo) {
+    /**
+     * Logs to the Ignite logger.
+     *
+     * @param level Level.
+     * @param message Message.
+     * @param category Category.
+     * @param errorInfo Exception.
+     */
+    private void loggerLog(int level, String message, String category, String errorInfo) {
         IgniteLogger log = ctx.grid().log();
 
         if (category != null)
@@ -518,21 +394,246 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTargetProxy binaryProcessor() {
-        return proxy(new PlatformBinaryProcessor(platformCtx));
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_LOGGER_IS_LEVEL_ENABLED: {
+                return loggerIsLevelEnabled((int) val) ? PlatformAbstractTarget.TRUE : PlatformAbstractTarget.FALSE;
+            }
+
+            case OP_RELEASE_START: {
+                releaseStart();
+
+                return 0;
+            }
+        }
+
+        return PlatformAbstractTarget.throwUnsupported(type);
     }
 
-    /**
-     * Gets the near cache config.
-     *
-     * @param memPtr Memory pointer.
-     * @return Near config.
-     */
-    private NearCacheConfiguration getNearCacheConfiguration(long memPtr) {
-        assert memPtr != 0;
+    /** {@inheritDoc} */
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_DESTROY_CACHE: {
+                ctx.grid().destroyCache(reader.readString());
 
-        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
-        return PlatformConfigurationUtils.readNearConfiguration(reader);
+                return 0;
+            }
+
+            case OP_LOGGER_LOG: {
+                loggerLog(reader.readInt(), reader.readString(), reader.readString(), reader.readString());
+
+                return 0;
+            }
+        }
+
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
+        return processInStreamOutLong(type, reader);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_GET_CACHE: {
+                String name = reader.readString();
+
+                IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().cache(name);
+
+                if (cache == null)
+                    throw new IllegalArgumentException("Cache doesn't exist: " + name);
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_CREATE_CACHE: {
+                String name = reader.readString();
+
+                IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(name);
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_GET_OR_CREATE_CACHE: {
+                String name = reader.readString();
+
+                IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(name);
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_CREATE_CACHE_FROM_CONFIG: {
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+
+                IgniteCacheProxy cache = reader.readBoolean()
+                        ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
+                        : (IgniteCacheProxy)ctx.grid().createCache(cfg);
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_GET_OR_CREATE_CACHE_FROM_CONFIG: {
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+
+                IgniteCacheProxy cache = reader.readBoolean()
+                        ? (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg,
+                        PlatformConfigurationUtils.readNearConfiguration(reader))
+                        : (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_GET_AFFINITY: {
+                return new PlatformAffinity(platformCtx, ctx, reader.readString());
+            }
+
+            case OP_GET_DATA_STREAMER: {
+                String cacheName = reader.readString();
+                boolean keepBinary = reader.readBoolean();
+
+                IgniteDataStreamer ldr = ctx.dataStream().dataStreamer(cacheName);
+
+                ldr.keepBinary(true);
+
+                return new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary);
+            }
+
+            case OP_GET_EXTENSION: {
+                int id = reader.readInt();
+
+                if (extensions != null && id < extensions.length) {
+                    PlatformPluginExtension ext = extensions[id];
+
+                    if (ext != null) {
+                        return ext.createTarget();
+                    }
+                }
+
+                throw new IgniteException("Platform extension is not registered [id=" + id + ']');
+            }
+
+            case OP_GET_ATOMIC_LONG: {
+                String name = reader.readString();
+                long initVal = reader.readLong();
+                boolean create = reader.readBoolean();
+
+                GridCacheAtomicLongImpl atomicLong = (GridCacheAtomicLongImpl)ignite().atomicLong(name, initVal, create);
+
+                if (atomicLong == null)
+                    return null;
+
+                return new PlatformAtomicLong(platformCtx, atomicLong);
+            }
+
+            case OP_GET_ATOMIC_REFERENCE: {
+                String name = reader.readString();
+                Object initVal = reader.readObjectDetached();
+                boolean create = reader.readBoolean();
+
+                return PlatformAtomicReference.createInstance(platformCtx, name, initVal, create);
+            }
+
+            case OP_GET_ATOMIC_SEQUENCE: {
+                String name = reader.readString();
+                long initVal = reader.readLong();
+                boolean create = reader.readBoolean();
+
+                IgniteAtomicSequence atomicSeq = ignite().atomicSequence(name, initVal, create);
+
+                if (atomicSeq == null)
+                    return null;
+
+                return new PlatformAtomicSequence(platformCtx, atomicSeq);
+            }
+
+            case OP_CREATE_NEAR_CACHE: {
+                String cacheName = reader.readString();
+
+                NearCacheConfiguration cfg = PlatformConfigurationUtils.readNearConfiguration(reader);
+
+                IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_GET_OR_CREATE_NEAR_CACHE: {
+                String cacheName = reader.readString();
+
+                NearCacheConfiguration cfg = PlatformConfigurationUtils.readNearConfiguration(reader);
+
+                IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
+
+                return createPlatformCache(cache);
+            }
+        }
+
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg,
+                                                                         BinaryRawReaderEx reader,
+                                                                         BinaryRawWriterEx writer)
+            throws IgniteCheckedException {
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        switch (type) {
+            case OP_GET_IGNITE_CONFIGURATION: {
+                PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
+
+                return;
+            }
+
+            case OP_GET_CACHE_NAMES: {
+                Collection<String> names = ignite().cacheNames();
+
+                writer.writeInt(names.size());
+
+                for (String name : names)
+                    writer.writeString(name);
+
+                return;
+            }
+        }
+
+        PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_GET_TRANSACTIONS:
+                return new PlatformTransactions(platformCtx);
+
+            case OP_GET_CLUSTER_GROUP:
+                return new PlatformClusterGroup(platformCtx, ctx.grid().cluster());
+
+            case OP_GET_BINARY_PROCESSOR: {
+                return new PlatformBinaryProcessor(platformCtx);
+            }
+        }
+
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Exception convertException(Exception e) {
+        return e;
     }
 
     /**
@@ -632,13 +733,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         else
             //noinspection ZeroLengthArrayAllocation
             return new PlatformPluginExtension[0];
-    }
-
-    /**
-     * Wraps target in a proxy.
-     */
-    private PlatformTargetProxy proxy(PlatformTarget target) {
-        return new PlatformTargetProxyImpl(target, platformCtx);
     }
 
     /**

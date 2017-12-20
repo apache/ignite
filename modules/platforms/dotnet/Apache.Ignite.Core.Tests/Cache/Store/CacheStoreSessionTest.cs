@@ -28,16 +28,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// <summary>
     /// Tests for store session.
     /// </summary>
-    public sealed class CacheStoreSessionTest
+    public class CacheStoreSessionTest
     {
-        /** Grid name. */
-        private const string IgniteName = "grid";
-
         /** Cache 1 name. */
-        private const string Cache1 = "cache1";
+        protected const string Cache1 = "cache1";
 
         /** Cache 2 name. */
-        private const string Cache2 = "cache2";
+        protected const string Cache2 = "cache2";
 
         /** Operations. */
         private static ConcurrentBag<ICollection<Operation>> _dumps;
@@ -48,11 +45,26 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public void BeforeTests()
         {
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            Ignition.Start(GetIgniteConfiguration());
+        }
+
+        /// <summary>
+        /// Gets the ignite configuration.
+        /// </summary>
+        protected virtual IgniteConfiguration GetIgniteConfiguration()
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                IgniteInstanceName = IgniteName,
                 SpringConfigUrl = @"config\cache\store\cache-store-session.xml"
-            });
+            };
+        }
+
+        /// <summary>
+        /// Gets the store count.
+        /// </summary>
+        protected virtual int StoreCount
+        {
+            get { return 2; }
         }
 
         /// <summary>
@@ -61,21 +73,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureTearDown]
         public void AfterTests()
         {
-            Ignition.StopAll(true);
+            try
+            {
+                TestUtils.AssertHandleRegistryHasItems(Ignition.GetIgnite(), 2, 1000);
+            }
+            finally 
+            {
+                Ignition.StopAll(true);
+            }
         }
         
         /// <summary>
         /// Test basic session API.
         /// </summary>
         [Test]
+        [Timeout(30000)]
         public void TestSession()
         {
             _dumps = new ConcurrentBag<ICollection<Operation>>();
 
-            var ignite = Ignition.GetIgnite(IgniteName);
+            var ignite = Ignition.GetIgnite();
 
-            var cache1 = Ignition.GetIgnite(IgniteName).GetCache<int, int>(Cache1);
-            var cache2 = Ignition.GetIgnite(IgniteName).GetCache<int, int>(Cache2);
+            var cache1 = ignite.GetCache<int, int>(Cache1);
+            var cache2 = ignite.GetCache<int, int>(Cache2);
 
             // 1. Test rollback.
             using (var tx = ignite.GetTransactions().TxStart())
@@ -86,13 +106,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 tx.Rollback();
             }
 
-            Assert.AreEqual(1, _dumps.Count);
-            var ops = _dumps.First();
-            Assert.AreEqual(1, ops.Count);
-
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.SesEnd && !op.Commit));
-
-            _dumps = new ConcurrentBag<ICollection<Operation>>();
+            // SessionEnd should not be called.
+            Assert.AreEqual(0, _dumps.Count);
 
             // 2. Test puts.
             using (var tx = ignite.GetTransactions().TxStart())
@@ -103,13 +118,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 tx.Commit();
             }
 
-            Assert.AreEqual(1, _dumps.Count);
-            ops = _dumps.First();
-            Assert.AreEqual(3, ops.Count);
+            Assert.AreEqual(StoreCount, _dumps.Count);
 
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write && Cache1.Equals(op.CacheName) && 1.Equals(op.Key) && 1.Equals(op.Value)));
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write && Cache2.Equals(op.CacheName) && 2.Equals(op.Key) && 2.Equals(op.Value)));
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.SesEnd && op.Commit));
+            foreach (var ops in _dumps)
+            {
+                Assert.AreEqual(2 + StoreCount, ops.Count);
+                Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write
+                                                   && Cache1 == op.CacheName && 1 == op.Key && 1 == op.Value));
+                Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write
+                                                   && Cache2 == op.CacheName && 2 == op.Key && 2 == op.Value));
+                Assert.AreEqual(StoreCount, ops.Count(op => op.Type == OperationType.SesEnd && op.Commit));
+            }
 
             _dumps = new ConcurrentBag<ICollection<Operation>>();
 
@@ -122,13 +141,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 tx.Commit();
             }
 
-            Assert.AreEqual(1, _dumps.Count);
-            ops = _dumps.First();
-            Assert.AreEqual(3, ops.Count);
+            Assert.AreEqual(StoreCount, _dumps.Count);
+            foreach (var ops in _dumps)
+            {
+                Assert.AreEqual(2 + StoreCount, ops.Count);
 
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Delete && Cache1.Equals(op.CacheName) && 1.Equals(op.Key)));
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Delete && Cache2.Equals(op.CacheName) && 2.Equals(op.Key)));
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.SesEnd && op.Commit));
+                Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Delete
+                                                   && Cache1 == op.CacheName && 1 == op.Key));
+                Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Delete
+                                                   && Cache2 == op.CacheName && 2 == op.Key));
+                Assert.AreEqual(StoreCount, ops.Count(op => op.Type == OperationType.SesEnd && op.Commit));
+            }
         }
 
         /// <summary>

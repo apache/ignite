@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
@@ -151,6 +152,11 @@ namespace Apache.Ignite.Core.Tests.Compute
             _grid1 = Ignition.Start(Configuration(configs.Item1));
             _grid2 = Ignition.Start(Configuration(configs.Item2));
             _grid3 = Ignition.Start(Configuration(configs.Item3));
+
+            // Wait for rebalance.
+            var events = _grid1.GetEvents();
+            events.EnableLocal(EventType.CacheRebalanceStopped);
+            events.WaitForLocal(EventType.CacheRebalanceStopped);
         }
 
         /// <summary>

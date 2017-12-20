@@ -154,13 +154,25 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Eviction policy class name.
+     *
+     * @deprecated Use evictionPolicyFactoryClassName() instead.
      */
+    @Deprecated
     public String evictionPolicyClassName() {
         return className(ccfg.getEvictionPolicy());
     }
 
     /**
+     * @return Eviction policy factory class name.
+     */
+    public String evictionPolicyFactoryClassName() {
+        return className(ccfg.getEvictionPolicyFactory());
+    }
+
+    /**
      * @return Near eviction policy class name.
+     *
+     * @deprecated Use nearEvictionPolicyFactoryClassName() instead.
      */
     public String nearEvictionPolicyClassName() {
         NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
@@ -169,6 +181,13 @@ public class GridCacheAttributes implements Serializable {
             return null;
 
         return className(nearCfg.getNearEvictionPolicy());
+    }
+
+    /**
+     * @return Near eviction policy factory class name.
+     */
+    public String nearEvictionPolicyFactoryClassName() {
+        return className(ccfg.getEvictionPolicyFactory());
     }
 
     /**
@@ -200,6 +219,41 @@ public class GridCacheAttributes implements Serializable {
      */
     public int rebalanceBatchSize() {
         return ccfg.getRebalanceBatchSize();
+    }
+
+    /**
+     * @return Rebalance delay.
+     */
+    public long rebalanceDelay() {
+        return ccfg.getRebalanceDelay();
+    }
+
+    /**
+     * @return Rebalance prefetch count.
+     */
+    public long rebalanceBatchesPrefetchCount() {
+        return ccfg.getRebalanceBatchesPrefetchCount();
+    }
+
+    /**
+     * @return Rebalance order.
+     */
+    public int rebalanceOrder() {
+        return ccfg.getRebalanceOrder();
+    }
+
+    /**
+     * @return Rebalance throttle.
+     */
+    public long rebalanceThrottle() {
+        return ccfg.getRebalanceThrottle();
+    }
+
+    /**
+     * @return Rebalance timeout.
+     */
+    public long rebalanceTimeout() {
+        return ccfg.getRebalanceTimeout();
     }
 
     /**

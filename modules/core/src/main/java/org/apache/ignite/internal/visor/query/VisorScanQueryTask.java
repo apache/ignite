@@ -100,7 +100,7 @@ public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryTaskArg, 
         /** {@inheritDoc} */
         @Override protected VisorEither<VisorQueryResult> run(final VisorScanQueryTaskArg arg) {
             try {
-                IgniteCache<Object, Object> c = ignite.context().cache().jcache(arg.getCacheName());
+                IgniteCache<Object, Object> c = ignite.cache(arg.getCacheName());
                 UUID nid = ignite.localNode().id();
 
                 String filterText = arg.getFilter();

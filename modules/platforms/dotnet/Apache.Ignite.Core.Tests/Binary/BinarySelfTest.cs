@@ -1302,8 +1302,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
 
-            Assert.IsFalse(newOuter == newOuter.Inner.Outer);
-            Assert.IsFalse(newOuter == newOuter.Inner.RawOuter);
             Assert.IsFalse(newOuter == newOuter.RawInner.RawOuter);
             Assert.IsFalse(newOuter == newOuter.RawInner.RawOuter);
 
@@ -1313,7 +1311,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(newOuter.RawInner.Outer == newOuter.RawInner.RawOuter);
 
             Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.Inner);
-            Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.RawInner);
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.Inner);
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.RawInner);
         }
@@ -1532,18 +1529,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(nGuidArr, obj2.NGuidArr);
             Assert.AreEqual(dateArr, obj2.DateArr);
             Assert.AreEqual(nDateArr, obj2.NDateArr);
-        }
-
-        [Test]
-        public void TestBinaryConfigurationValidation()
-        {
-            var cfg = new BinaryConfiguration(typeof (PropertyType))
-            {
-                Types = new[] {typeof(PropertyType).AssemblyQualifiedName}
-            };
-
-            // ReSharper disable once ObjectCreationAsStatement
-            Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
         }
 
         /// <summary>
@@ -2353,7 +2338,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 writer.WriteString("before", Before);
 
-                writer0.WithDetach(w => w.WriteObject("inner", Inner));
+                writer0.WriteObject("inner", Inner);
                 
                 writer.WriteString("after", After);
 
@@ -2361,7 +2346,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 rawWriter.WriteString(RawBefore);
 
-                writer0.WithDetach(w => w.WriteObject(RawInner));
+                writer0.WriteObjectDetached(RawInner);
 
                 rawWriter.WriteString(RawAfter);
             }

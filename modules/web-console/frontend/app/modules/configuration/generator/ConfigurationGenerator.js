@@ -25,7 +25,7 @@ import IgniteCacheDefaults from './defaults/Cache.service';
 import IgniteIGFSDefaults from './defaults/IGFS.service';
 
 import JavaTypes from '../../../services/JavaTypes.service';
-import VersionService from 'app/modules/configuration/Version.service';
+import VersionService from 'app/services/Version.service';
 
 const clusterDflts = new IgniteClusterDefaults();
 const cacheDflts = new IgniteCacheDefaults();
@@ -91,7 +91,7 @@ export default class IgniteConfigurationGenerator {
 
         // Since ignite 2.0
         if (available('2.0.0'))
-            this.clusterMemory(cluster.memoryConfiguration, cfg);
+            this.clusterMemory(cluster.memoryConfiguration, available, cfg);
 
         this.clusterMisc(cluster, available, cfg);
         this.clusterMetrics(cluster, available, cfg);
@@ -887,7 +887,7 @@ export default class IgniteConfigurationGenerator {
             cfg.intProperty('peerClassLoadingMissedResourcesCacheSize')
                 .intProperty('peerClassLoadingThreadPoolSize')
                 .varArgProperty('p2pLocClsPathExcl', 'peerClassLoadingLocalClassPathExclude',
-                   cluster.peerClassLoadingLocalClassPathExclude);
+                    cluster.peerClassLoadingLocalClassPathExclude);
         }
 
         // Since ignite 2.0
@@ -974,6 +974,35 @@ export default class IgniteConfigurationGenerator {
         return discoSpi;
     }
 
+    // Execute event filtration in accordance to generated project version.
+    static filterEvents(eventGrps, available) {
+        if (available('2.0.0')) {
+            return _.reduce(eventGrps, (acc, eventGrp) => {
+                switch (eventGrp.value) {
+                    case 'EVTS_SWAPSPACE':
+                        // Removed.
+
+                        break;
+                    case 'EVTS_CACHE':
+                        const eventGrpX2 = _.cloneDeep(eventGrp);
+
+                        eventGrpX2.events = _.filter(eventGrpX2.events, (ev) =>
+                            !_.includes(['EVT_CACHE_OBJECT_SWAPPED', 'EVT_CACHE_OBJECT_UNSWAPPED'], ev));
+
+                        acc.push(eventGrpX2);
+
+                        break;
+                    default:
+                        acc.push(eventGrp);
+                }
+
+                return acc;
+            }, []);
+        }
+
+        return eventGrps;
+    }
+
     // Generate events group.
     static clusterEvents(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         const eventStorage = cluster.eventStorage;
@@ -1009,33 +1038,7 @@ export default class IgniteConfigurationGenerator {
             if (_.nonEmpty(cluster.includeEventTypes)) {
                 const eventGrps = _.filter(this.eventGrps, ({value}) => _.includes(cluster.includeEventTypes, value));
 
-                if (available('2.0.0')) {
-                    const events = _.reduce(eventGrps, (acc, eventGrp) => {
-                        switch (eventGrp.value) {
-                            case 'EVTS_SWAPSPACE':
-                                // Removed.
-
-                                break;
-                            case 'EVTS_CACHE':
-                                const eventGrpX2 = _.cloneDeep(eventGrp);
-
-                                eventGrpX2.events = _.filter(eventGrpX2.events, (ev) =>
-                                    !_.includes(['EVT_CACHE_OBJECT_SWAPPED', 'EVT_CACHE_OBJECT_UNSWAPPED'], ev));
-
-                                acc.push(eventGrpX2);
-
-                                break;
-                            default:
-                                acc.push(eventGrp);
-                        }
-
-                        return acc;
-                    }, []);
-
-                    cfg.eventTypes('evts', 'includeEventTypes', events);
-                }
-                else
-                    cfg.eventTypes('evts', 'includeEventTypes', eventGrps);
+                cfg.eventTypes('evts', 'includeEventTypes', this.filterEvents(eventGrps, available));
             }
         }
 
@@ -1282,8 +1285,8 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
-    // Generate logger group.
-    static clusterMemory(memoryConfiguration, cfg = this.igniteConfigurationBean()) {
+    // Generate memory configuration.
+    static clusterMemory(memoryConfiguration, available, cfg = this.igniteConfigurationBean()) {
         const memoryBean = new Bean('org.apache.ignite.configuration.MemoryConfiguration', 'memoryConfiguration', memoryConfiguration, clusterDflts.memoryConfiguration);
 
         memoryBean.intProperty('pageSize')
@@ -1307,9 +1310,12 @@ export default class IgniteConfigurationGenerator {
                 .enumProperty('pageEvictionMode')
                 .doubleProperty('evictionThreshold')
                 .intProperty('emptyPagesPoolSize')
-                .intProperty('subIntervals')
-                .longProperty('rateTimeInterval')
                 .boolProperty('metricsEnabled');
+
+            if (available('2.1.0')) {
+                plcBean.intProperty('subIntervals')
+                    .longProperty('rateTimeInterval');
+            }
 
             if (plcBean.isEmpty()) return;
 
@@ -1675,7 +1681,7 @@ export default class IgniteConfigurationGenerator {
     static domainModelQuery(domain, available, cfg = this.domainConfigurationBean(domain)) {
         if (cfg.valueOf('queryMetadata') === 'Configuration') {
             const fields = _.filter(_.map(domain.fields,
-                (e) => ({name: e.name, className: javaTypes.fullClassName(e.className)})), (field) => {
+                (e) => ({name: e.name, className: javaTypes.stringClassName(e.className)})), (field) => {
                 return field.name !== domain.keyFieldName && field.name !== domain.valueFieldName;
             });
 
@@ -1689,13 +1695,14 @@ export default class IgniteConfigurationGenerator {
                 const valFieldName = cfg.valueOf('valueFieldName');
 
                 if (keyFieldName)
-                    fields.push({name: keyFieldName, className: javaTypes.fullClassName(domain.keyType)});
+                    fields.push({name: keyFieldName, className: javaTypes.stringClassName(domain.keyType)});
 
                 if (valFieldName)
-                    fields.push({name: valFieldName, className: javaTypes.fullClassName(domain.valueType)});
+                    fields.push({name: valFieldName, className: javaTypes.stringClassName(domain.valueType)});
             }
 
-            cfg.mapProperty('fields', fields, 'fields', true)
+            cfg.collectionProperty('keyFields', 'keyFields', domain.queryKeyFields, 'java.lang.String', 'java.util.HashSet')
+                .mapProperty('fields', fields, 'fields', true)
                 .mapProperty('aliases', 'aliases');
 
             const indexes = _.map(domain.indexes, (index) =>

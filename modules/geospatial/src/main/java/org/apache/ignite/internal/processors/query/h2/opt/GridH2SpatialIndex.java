@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
-import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -51,7 +50,6 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.h2.value.ValueGeometry;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 
@@ -158,11 +156,6 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected IgniteTree doTakeSnapshot() {
-        return null; // TODO We do not support snapshots, but probably this is possible.
-    }
-
-    /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
         assert row instanceof GridH2AbstractKeyValueRow : "requires key to be at 0";
 
@@ -256,7 +249,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy() {
+    @Override public void destroy(boolean rmIndex) {
         Lock l = lock.writeLock();
 
         l.lock();
@@ -270,7 +263,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             l.unlock();
         }
 
-        super.destroy();
+        super.destroy(rmIndex);
     }
 
     /** {@inheritDoc} */

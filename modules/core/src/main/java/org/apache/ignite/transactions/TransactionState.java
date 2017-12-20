@@ -48,7 +48,10 @@ public enum TransactionState {
     ROLLED_BACK,
 
     /** Transaction rollback failed or is otherwise unknown state. */
-    UNKNOWN;
+    UNKNOWN,
+
+    /** Transaction has been suspended by user. */
+    SUSPENDED;
 
     /** Enumerated values. */
     private static final TransactionState[] VALS = values();

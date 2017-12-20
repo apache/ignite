@@ -678,7 +678,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                                binaryReceiver.Deserialize<StreamReceiverHolder>();
 
                 if (receiver != null)
-                    receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream, keepBinary);
+                {
+                    var target = new PlatformJniTarget(new UnmanagedNonReleaseableTarget(_ctx, cache), 
+                        _ignite.Marshaller);
+                    receiver.Receive(_ignite, target, stream, keepBinary);
+                }
 
                 return 0;
             }
@@ -1007,7 +1011,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
-        private long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
+        private static long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
         {
             IgniteManager.Memory.Get(memPtr).Reallocate((int)cap);
 
@@ -1171,9 +1175,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 if (affBase != null)
                 {
-                    var baseFunc0 = UU.Acquire(_ctx, baseFunc);
+                    var baseFunc0 = new PlatformJniTarget(UU.Acquire(_ctx, baseFunc), _ignite.Marshaller);
 
-                    affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0, _ignite.Marshaller));
+                    affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0));
                 }
 
                 return _handleRegistry.Allocate(func);

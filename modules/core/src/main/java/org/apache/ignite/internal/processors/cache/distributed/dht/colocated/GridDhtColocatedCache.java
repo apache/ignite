@@ -712,7 +712,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     }
 
                     if (map == null) {
-                        Collection<ClusterNode> affNodes = CU.allNodes(ctx, topVer);
+                        Collection<ClusterNode> affNodes = CU.affinityNodes(ctx, topVer);
 
                         keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
@@ -815,7 +815,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     AffinityTopologyVersion topVer = lock.topologyVersion();
 
                     if (map == null) {
-                        Collection<ClusterNode> affNodes = CU.allNodes(ctx, topVer);
+                        Collection<ClusterNode> affNodes = CU.affinityNodes(ctx, topVer);
 
                         keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 

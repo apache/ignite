@@ -52,6 +52,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -423,6 +428,68 @@ public final class GridTestUtils {
         }
 
         throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks whether closure throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
+     * @param call Closure.
+     * @param p Parameter passed to closure.
+     * @param cls Expected class.
+     * @return Thrown throwable.
+     */
+    public static <P> Throwable assertThrowsWithCause(IgniteInClosure<P> call, P p, Class<? extends Throwable> cls) {
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.apply(p);
+        }
+        catch (Throwable e) {
+            if (!X.hasCause(e, cls))
+                fail("Exception is neither of a specified class, nor has a cause of the specified class: " + cls, e);
+
+            return e;
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Asserts that the specified runnable completes within the specified timeout.
+     *
+     * @param msg Assertion message in case of timeout.
+     * @param timeout Timeout.
+     * @param timeUnit Timeout {@link TimeUnit}.
+     * @param runnable {@link Runnable} to check.
+     * @throws Exception In case of any exception distinct from {@link TimeoutException}.
+     */
+    public static void assertTimeout(String msg, long timeout, TimeUnit timeUnit, Runnable runnable) throws Exception {
+        ExecutorService executorSvc = Executors.newSingleThreadExecutor();
+        Future<?> fut = executorSvc.submit(runnable);
+
+        try {
+            fut.get(timeout, timeUnit);
+        }
+        catch (TimeoutException ignored) {
+            fail(msg, null);
+        }
+        finally {
+            executorSvc.shutdownNow();
+        }
+    }
+
+    /**
+     * Asserts that the specified runnable completes within the specified timeout.
+     *
+     * @param timeout Timeout.
+     * @param timeUnit Timeout {@link TimeUnit}.
+     * @param runnable {@link Runnable} to check.
+     * @throws Exception In case of any exception distinct from {@link TimeoutException}.
+     */
+    public static void assertTimeout(long timeout, TimeUnit timeUnit, Runnable runnable) throws Exception {
+        assertTimeout("Timeout occurred.", timeout, timeUnit, runnable);
     }
 
     /**
@@ -1608,7 +1675,7 @@ public final class GridTestUtils {
             curTime = U.currentTimeMillis();
         }
 
-        return false;
+        return cond.apply();
     }
 
     /**

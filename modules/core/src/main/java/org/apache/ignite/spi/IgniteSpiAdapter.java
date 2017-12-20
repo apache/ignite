@@ -401,9 +401,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      * @param <T> Type of the MBean
      * @throws IgniteSpiException If registration failed.
      */
-    protected final <T extends IgniteSpiManagementMBean> void registerMBean(
-        String igniteInstanceName, T impl, Class<T> mbeanItf
-    ) throws IgniteSpiException {
+    protected final <T extends IgniteSpiManagementMBean> void registerMBean(String igniteInstanceName, T impl, Class<T> mbeanItf
+       ) throws IgniteSpiException {
+        if(ignite == null || U.IGNITE_MBEANS_DISABLED)
+            return;
+
         MBeanServer jmx = ignite.configuration().getMBeanServer();
 
         assert mbeanItf == null || mbeanItf.isInterface();
@@ -428,6 +430,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
     protected final void unregisterMBean() throws IgniteSpiException {
         // Unregister SPI MBean.
         if (spiMBean != null && ignite != null) {
+            assert !U.IGNITE_MBEANS_DISABLED;
+
             MBeanServer jmx = ignite.configuration().getMBeanServer();
 
             assert jmx != null;

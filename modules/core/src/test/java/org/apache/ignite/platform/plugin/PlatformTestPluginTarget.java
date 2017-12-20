@@ -146,7 +146,12 @@ class PlatformTestPluginTarget implements PlatformTarget {
             case 1: {
                 // Async upper case.
                 final String val = reader.readString();
-                final GridFutureAdapter<String> fa = new GridFutureAdapter<>();
+
+                final GridFutureAdapter<String> fa = new GridFutureAdapter<String>() {
+                    @Override public boolean cancel() throws IgniteCheckedException {
+                        return onCancelled();
+                    }
+                };
 
                 new Thread(new Runnable() {
                     @Override public void run() {

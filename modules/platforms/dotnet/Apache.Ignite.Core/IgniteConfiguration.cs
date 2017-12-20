@@ -121,6 +121,11 @@ namespace Apache.Ignite.Core
         /// </summary>
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
 
+        /// <summary>
+        /// Default value for <see cref="ClientConnectorConfigurationEnabled"/>.
+        /// </summary>
+        public const bool DefaultClientConnectorConfigurationEnabled = true;
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -209,6 +214,7 @@ namespace Apache.Ignite.Core
         {
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
+            ClientConnectorConfigurationEnabled = DefaultClientConnectorConfigurationEnabled;
         }
 
         /// <summary>
@@ -436,16 +442,31 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
-            // SQL
+            // SQL connector.
+#pragma warning disable 618  // Obsolete
             if (SqlConnectorConfiguration != null)
             {
                 writer.WriteBoolean(true);
                 SqlConnectorConfiguration.Write(writer);
             }
+#pragma warning restore 618
             else
             {
                 writer.WriteBoolean(false);
             }
+
+            // Client connector.
+            if (ClientConnectorConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                ClientConnectorConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            writer.WriteBoolean(ClientConnectorConfigurationEnabled);
 
             // Persistence.
             if (PersistentStoreConfiguration != null)
@@ -609,11 +630,21 @@ namespace Apache.Ignite.Core
                 MemoryConfiguration = new MemoryConfiguration(r);
             }
 
-            // SQL
+            // SQL.
             if (r.ReadBoolean())
             {
+#pragma warning disable 618  // Obsolete
                 SqlConnectorConfiguration = new SqlConnectorConfiguration(r);
+#pragma warning restore 618
             }
+
+            // Client.
+            if (r.ReadBoolean())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration(r);
+            }
+
+            ClientConnectorConfigurationEnabled = r.ReadBoolean();
 
             // Persistence.
             if (r.ReadBoolean())
@@ -1196,7 +1227,22 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the SQL connector configuration (for JDBC and ODBC).
         /// </summary>
+        [Obsolete("Use ClientConnectorConfiguration instead.")]
         public SqlConnectorConfiguration SqlConnectorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the client connector configuration (for JDBC, ODBC, and thin clients).
+        /// </summary>
+        public ClientConnectorConfiguration ClientConnectorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether client connector is enabled:
+        /// allow thin clients, ODBC and JDBC drivers to work with Ignite
+        /// (see <see cref="ClientConnectorConfiguration"/>).
+        /// Default is <see cref="DefaultClientConnectorConfigurationEnabled"/>.
+        /// </summary>
+        [DefaultValue(DefaultClientConnectorConfigurationEnabled)]
+        public bool ClientConnectorConfigurationEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.

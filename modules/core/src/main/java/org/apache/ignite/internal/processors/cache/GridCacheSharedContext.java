@@ -158,6 +158,9 @@ public class GridCacheSharedContext<K, V> {
     /** Concurrent DHT atomic updates counters. */
     private AtomicIntegerArray dhtAtomicUpdCnt;
 
+    /** Rebalance enabled flag. */
+    private boolean rebalanceEnabled = true;
+
     /** */
     private final List<IgniteChangeGlobalStateSupport> stateAwareMgrs;
 
@@ -301,6 +304,23 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgniteLogger txRecoveryMessageLogger() {
         return txRecoveryMsgLog;
+    }
+
+    /**
+     * @return rebalance enabled flag.
+     */
+    public boolean isRebalanceEnabled() {
+        return this.rebalanceEnabled;
+    }
+
+    /**
+     * @param rebalanceEnabled rebalance enabled flag.
+     */
+    public void rebalanceEnabled(boolean rebalanceEnabled) {
+        this.rebalanceEnabled = rebalanceEnabled;
+
+        if (rebalanceEnabled)
+            cache().enableRebalance();
     }
 
     /**
@@ -809,12 +829,12 @@ public class GridCacheSharedContext<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     public IgniteInternalFuture<?> partitionReleaseFuture(AffinityTopologyVersion topVer) {
-        GridCompoundFuture f = new GridCompoundFuture();
+        GridCompoundFuture f = new CacheObjectsReleaseFuture("Partition", topVer);
 
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(tm().finishTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
-        f.add(mvcc().finishDataStreamerUpdates());
+        f.add(mvcc().finishDataStreamerUpdates(topVer));
 
         f.markInitialized();
 
@@ -941,6 +961,30 @@ public class GridCacheSharedContext<K, V> {
         tx.txState().awaitLastFut(this);
 
         return tx.rollbackNearTxLocalAsync();
+    }
+
+    /**
+     * Suspends transaction. It could be resume later. Supported only for optimistic transactions.
+     *
+     * @param tx Transaction to suspend.
+     * @throws IgniteCheckedException If suspension failed.
+     */
+    public void suspendTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.txState().awaitLastFut(this);
+
+        tx.suspend();
+    }
+
+    /**
+     * Resume transaction if it was previously suspended.
+     *
+     * @param tx Transaction to resume.
+     * @throws IgniteCheckedException If resume failed.
+     */
+    public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.txState().awaitLastFut(this);
+
+        tx.resume();
     }
 
     /**

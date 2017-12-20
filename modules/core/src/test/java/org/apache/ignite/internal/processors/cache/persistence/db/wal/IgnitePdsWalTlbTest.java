@@ -113,9 +113,7 @@ public class IgnitePdsWalTlbTest extends GridCommonAbstractTest {
 
         boolean locked = true;
 
-        try {
-            IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer(CACHE_NAME);
-
+        try (IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer(CACHE_NAME)) {
             for (int i = 0; i < 100_000; i++) {
                 streamer.addData(i, 1);
 

@@ -67,9 +67,9 @@ public class MemoryConfiguration implements Serializable {
     public static final long DFLT_MEMORY_POLICY_INITIAL_SIZE = 256L * 1024 * 1024;
 
     /** Fraction of available memory to allocate for default MemoryPolicy. */
-    private static final double DFLT_MEMORY_POLICY_FRACTION = 0.8;
+    private static final double DFLT_MEMORY_POLICY_FRACTION = 0.2;
 
-    /** Default memory policy's size is 80% of physical memory available on current machine. */
+    /** Default memory policy's size is 20% of physical memory available on current machine. */
     public static final long DFLT_MEMORY_POLICY_MAX_SIZE = Math.max(
         (long)(DFLT_MEMORY_POLICY_FRACTION * U.getTotalMemoryAvailable()),
         DFLT_MEMORY_POLICY_INITIAL_SIZE);
@@ -81,7 +81,7 @@ public class MemoryConfiguration implements Serializable {
     private static final long DFLT_SYS_CACHE_MAX_SIZE = 100 * 1024 * 1024;
 
     /** Default memory page size. */
-    public static final int DFLT_PAGE_SIZE = 2 * 1024;
+    public static final int DFLT_PAGE_SIZE = 4 * 1024;
 
     /** This name is assigned to default MemoryPolicy if no user-defined default MemPlc is specified */
     public static final String DFLT_MEM_PLC_DEFAULT_NAME = "default";
@@ -93,7 +93,7 @@ public class MemoryConfiguration implements Serializable {
     private long sysCacheMaxSize = DFLT_SYS_CACHE_MAX_SIZE;
 
     /** Memory page size. */
-    private int pageSize = DFLT_PAGE_SIZE;
+    private int pageSize;
 
     /** Concurrency level. */
     private int concLvl;
@@ -264,7 +264,7 @@ public class MemoryConfiguration implements Serializable {
      * Overrides size of default memory policy which is created automatically.
      *
      * If user doesn't specify any memory policy configuration, a default one with default size
-     * (80% of available RAM) is created by Ignite.
+     * (20% of available RAM) is created by Ignite.
      *
      * This property allows user to specify desired size of default memory policy
      * without having to use more verbose syntax of MemoryPolicyConfiguration elements.

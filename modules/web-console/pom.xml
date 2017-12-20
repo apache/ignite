@@ -31,55 +31,233 @@
     </parent>
 
     <artifactId>ignite-web-console</artifactId>
-    <version>2.1.0-SNAPSHOT</version>
+    <version>2.2.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
+    <properties>
+        <node.version>v8.9.0</node.version>
+    </properties>
+
+    <dependencies>
+        <!-- Ignite dependencies -->
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-web-agent</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
     <build>
+        <pluginManagement>
+            <plugins>
+                 <plugin>
+                     <groupId>com.github.eirslett</groupId>
+                     <artifactId>frontend-maven-plugin</artifactId>
+                     <version>1.6</version>
+                     <configuration>
+                         <nodeVersion>${node.version}</nodeVersion>
+                         <installDirectory>target</installDirectory>
+                     </configuration>
+                 </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
-                <version>1.0</version>
-
-                <configuration>
-                    <workingDirectory>frontend</workingDirectory>
-                </configuration>
 
                 <executions>
                     <execution>
-                        <id>install node and npm</id>
+                        <id>install node and npm for frontend</id>
                         <goals>
                             <goal>install-node-and-npm</goal>
                         </goals>
-                        <configuration>
-                            <nodeVersion>v4.4.7</nodeVersion>
-                            <npmVersion>3.8.6</npmVersion>
-                            <workingDirectory>frontend</workingDirectory>
-                        </configuration>
                     </execution>
 
                     <execution>
-                        <id>npm install</id>
+                        <id>download dependencies for frontend</id>
                         <goals>
                             <goal>npm</goal>
                         </goals>
 
                         <configuration>
+                            <workingDirectory>frontend</workingDirectory>
+                            <arguments>install --no-optional --prod</arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>download dependencies for backend</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+
+                        <configuration>
+                            <workingDirectory>backend</workingDirectory>
                             <arguments>install --no-optional</arguments>
                         </configuration>
                     </execution>
 
                     <execution>
-                        <id>gulp build</id>
+                        <id>build frontend</id>
                         <goals>
-                            <goal>gulp</goal>
+                            <goal>npm</goal>
                         </goals>
 
+                        <phase>compile</phase>
+
                         <configuration>
-                            <arguments>build</arguments>
+                            <workingDirectory>frontend</workingDirectory>
+                            <arguments>run build</arguments>
+                            <environmentVariables>
+                                <NODE_ENV>production</NODE_ENV>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>build backend</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+
+                        <phase>compile</phase>
+
+                        <configuration>
+                            <workingDirectory>backend</workingDirectory>
+                            <arguments>run build</arguments>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>2.5</version>
+                <executions>
+                    <execution>
+                        <id>clean-frontend-build</id>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.basedir}/frontend/build</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>clean-backend-build</id>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.basedir}/backend/build</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>remove-old-getos</id>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.basedir}/backend/node_modules/mongodb-download/node_modules</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>fixed-rhel-detection</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <target>
+                                <replace dir="${basedir}/backend/node_modules/mongodb-download/built"
+                                         token="/rhel/" value="/Red Hat Linux/i.test(os.dist) || /rhel/">
+                                    <include name="mongodb-download.js"/>
+                                </replace>
+                            </target>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>fixed-download-url</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <target>
+                                <replace dir="${basedir}/backend/node_modules/mongodb-download/built"
+                                         token="http://downloads.mongodb.org" value="https://fastdl.mongodb.org">
+                                    <include name="mongodb-download.js"/>
+                                </replace>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <inherited>false</inherited>
+
+                <executions>
+                    <execution>
+                        <id>release-web-agent</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/direct-install.xml</descriptor>
+                            </descriptors>
+                            <finalName>ignite-web-console-direct-install-${project.version}</finalName>
+                            <outputDirectory>target</outputDirectory>
+                            <appendAssemblyId>false</appendAssemblyId>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
 
             <plugin>

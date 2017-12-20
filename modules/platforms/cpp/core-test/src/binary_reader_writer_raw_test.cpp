@@ -1279,4 +1279,40 @@ BOOST_AUTO_TEST_CASE(TestUserType)
     BOOST_REQUIRE(actual == expected);
 }
 
+BOOST_AUTO_TEST_CASE(TestPrimitivePointers)
+{
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writer(&out, 0);
+    BinaryRawWriter rawWriter(&writer);
+
+    out.Position(IGNITE_DFLT_HDR_LEN);
+
+    std::string field1 = "Lorem ipsum";
+    int32_t field2 = 42;
+
+    rawWriter.WriteObject(&field1);
+    rawWriter.WriteObject<int8_t*>(0);
+    rawWriter.WriteObject(&field2);
+
+    writer.PostWrite();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    BinaryRawReader rawReader(&reader);
+
+    in.Position(IGNITE_DFLT_HDR_LEN);
+
+    std::auto_ptr<std::string> field1Res(rawReader.ReadObject<std::string*>());
+    std::auto_ptr<int8_t> fieldNullRes(rawReader.ReadObject<int8_t*>());
+    std::auto_ptr<int32_t> field2Res(rawReader.ReadObject<int32_t*>());
+
+    BOOST_CHECK_EQUAL(*field1Res, field1);
+    BOOST_CHECK(fieldNullRes.get() == 0);
+    BOOST_CHECK_EQUAL(*field2Res, field2);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

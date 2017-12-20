@@ -18,38 +18,20 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
-import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.h2.Driver;
-import org.h2.index.Cursor;
-import org.h2.index.Index;
-import org.h2.result.Row;
-import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
-import org.h2.table.IndexColumn;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests H2 Table.
@@ -172,47 +154,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             assertEquals(MAX_X, idx.getRowCountApproximation());
             assertEquals(MAX_X, idx.getRowCount(null));
         }
-
-        // Check correct rows order.
-        checkOrdered((GridH2TreeIndex)tbl.indexes().get(0), new Comparator<SearchRow>() {
-            @Override public int compare(SearchRow o1, SearchRow o2) {
-                UUID id1 = (UUID)o1.getValue(0).getObject();
-                UUID id2 = (UUID)o2.getValue(0).getObject();
-
-                return id1.compareTo(id2);
-            }
-        });
-
-        checkOrdered((GridH2TreeIndex)tbl.indexes().get(1), new Comparator<SearchRow>() {
-            @Override public int compare(SearchRow o1, SearchRow o2) {
-                Long x1 = (Long)o1.getValue(3).getObject();
-                Long x2 = (Long)o2.getValue(3).getObject();
-
-                int c = x2.compareTo(x1);
-
-                if (c != 0)
-                    return c;
-
-                Timestamp t1 = (Timestamp)o1.getValue(1).getObject();
-                Timestamp t2 = (Timestamp)o2.getValue(1).getObject();
-
-                return t1.compareTo(t2);
-            }
-        });
-
-        checkOrdered((GridH2TreeIndex)tbl.indexes().get(2), new Comparator<SearchRow>() {
-            @Override public int compare(SearchRow o1, SearchRow o2) {
-                String s1 = (String)o1.getValue(2).getObject();
-                String s2 = (String)o2.getValue(2).getObject();
-
-                return s2.compareTo(s1);
-            }
-        });
-
-        // Indexes data consistency.
-        ArrayList<? extends Index> idxs = tbl.indexes();
-
-        checkIndexesConsistent((ArrayList<Index>)idxs, null);
 
         // Check unique index.
         UUID id = UUID.randomUUID();
@@ -405,54 +346,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testIndexFindFirstOrLast() throws Exception {
-        Index index = tbl.getIndexes().get(2);
-        assertTrue(index instanceof GridH2TreeIndex);
-        assertTrue(index.canGetFirstOrLast());
-
-        //find first on empty data
-        Cursor cursor = index.findFirstOrLast(null, true);
-        assertFalse(cursor.next());
-        assertNull(cursor.get());
-
-        //find last on empty data
-        cursor = index.findFirstOrLast(null, false);
-        assertFalse(cursor.next());
-        assertNull(cursor.get());
-
-        //fill with data
-        int rows = 100;
-        long t = System.currentTimeMillis();
-        Random rnd = new Random();
-        UUID min = null;
-        UUID max = null;
-
-        for (int i = 0 ; i < rows; i++) {
-            UUID id = UUID.randomUUID();
-            if (min == null || id.compareTo(min) < 0)
-                min = id;
-            if (max == null || id.compareTo(max) > 0)
-                max = id;
-            GridH2Row row = row(id, t++, id.toString(), rnd.nextInt(100));
-            ((GridH2TreeIndex)index).put(row);
-        }
-
-        //find first
-        cursor = index.findFirstOrLast(null, true);
-        assertTrue(cursor.next());
-        assertEquals(min, cursor.get().getValue(0).getObject());
-        assertFalse(cursor.next());
-
-        //find last
-        cursor = index.findFirstOrLast(null, false);
-        assertTrue(cursor.next());
-        assertEquals(max, cursor.get().getValue(0).getObject());
-        assertFalse(cursor.next());
-    }
-
-    /**
      * Check query plan to correctly select index.
      *
      * @param conn Connection.
@@ -471,71 +364,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 assertTrue("Execution plan for '" + sql + "' query should contain '" + search + "'",
                         plan.contains(search));
             }
-        }
-    }
-
-    /**
-     * @param idxs Indexes.
-     * @param rowSet Rows.
-     * @return Rows.
-     */
-    private Set<Row> checkIndexesConsistent(ArrayList<Index> idxs, @Nullable Set<Row> rowSet) throws IgniteCheckedException {
-        for (Index idx : idxs) {
-            if (!(idx instanceof GridH2TreeIndex))
-                continue;
-
-            Set<Row> set = new HashSet<>();
-
-            GridCursor<GridH2Row> cursor = ((GridH2TreeIndex)idx).rows();
-
-            while(cursor.next())
-                assertTrue(set.add(cursor.get()));
-
-            //((GridH2SnapTreeSet)((GridH2Index)idx).tree).print();
-
-            if (rowSet == null || rowSet.isEmpty())
-                rowSet = set;
-            else
-                assertEquals(rowSet, set);
-        }
-
-        return rowSet;
-    }
-
-    /**
-     * @param idxs Indexes list.
-     */
-    private void checkOrdered(ArrayList<Index> idxs) throws IgniteCheckedException {
-        for (Index idx : idxs) {
-            if (!(idx instanceof GridH2TreeIndex))
-                continue;
-
-            GridH2TreeIndex h2Idx = (GridH2TreeIndex)idx;
-
-            checkOrdered(h2Idx, h2Idx);
-        }
-    }
-
-    /**
-     * @param idx Index.
-     * @param cmp Comparator.
-     */
-    private void checkOrdered(GridH2TreeIndex idx, Comparator<? super GridH2Row> cmp) throws IgniteCheckedException {
-        GridCursor<GridH2Row> cursor = idx.rows();
-
-        GridH2Row min = null;
-
-        while (cursor.next()) {
-            GridH2Row row = cursor.get();
-
-            System.out.println(row);
-
-            assertNotNull(row);
-
-            assertFalse("Incorrect row order in index: " + idx + "\n min: " + min + "\n row: " + row,
-                min != null && cmp.compare(min, row) > 0);
-
-            min = row;
         }
     }
 }

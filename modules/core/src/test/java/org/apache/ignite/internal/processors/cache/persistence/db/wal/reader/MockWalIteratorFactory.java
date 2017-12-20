@@ -43,9 +43,6 @@ public class MockWalIteratorFactory {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** */
-    private final FileIOFactory ioFactory;
-
     /** Page size. */
     private final int pageSize;
 
@@ -62,9 +59,8 @@ public class MockWalIteratorFactory {
      * @param consistentId Consistent id.
      * @param segments Segments.
      */
-    public MockWalIteratorFactory(@Nullable IgniteLogger log, FileIOFactory ioFactory, int pageSize, String consistentId, int segments) {
+    public MockWalIteratorFactory(@Nullable IgniteLogger log, int pageSize, String consistentId, int segments) {
         this.log = log == null ? Mockito.mock(IgniteLogger.class) : log;
-        this.ioFactory = ioFactory;
         this.pageSize = pageSize;
         this.consistentId = consistentId;
         this.segments = segments;
@@ -72,8 +68,8 @@ public class MockWalIteratorFactory {
 
     /**
      * Creates iterator
-     * @param wal WAL directory without node id
-     * @param walArchive WAL archive without node id
+     * @param wal WAL directory without node consistent id
+     * @param walArchive WAL archive without node consistent id
      * @return iterator
      * @throws IgniteCheckedException if IO failed
      */
@@ -85,7 +81,9 @@ public class MockWalIteratorFactory {
         when(persistentCfg1.getWalSegments()).thenReturn(segments);
         when(persistentCfg1.getTlbSize()).thenReturn(PersistentStoreConfiguration.DFLT_TLB_SIZE);
         when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(PersistentStoreConfiguration.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
-        when(persistentCfg1.getFileIOFactory()).thenReturn(ioFactory);
+
+        final FileIOFactory fileIOFactory = new PersistentStoreConfiguration().getFileIOFactory();
+        when(persistentCfg1.getFileIOFactory()).thenReturn(fileIOFactory);
 
         final IgniteConfiguration cfg = Mockito.mock(IgniteConfiguration.class);
 
@@ -106,6 +104,7 @@ public class MockWalIteratorFactory {
 
         when(sctx.kernalContext()).thenReturn(ctx);
         when(sctx.discovery()).thenReturn(disco);
+        when(sctx.gridConfig()).thenReturn(cfg);
 
         final GridCacheDatabaseSharedManager database = Mockito.mock(GridCacheDatabaseSharedManager.class);
 

@@ -157,8 +157,11 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             List<VisorMemoryMetrics> memoryMetrics = res.getMemoryMetrics();
 
-            for (MemoryMetrics m : ignite.memoryMetrics())
-                memoryMetrics.add(new VisorMemoryMetrics(m));
+            // TODO: Should be really fixed in IGNITE-7111.
+            if (ignite.active()) {
+                for (MemoryMetrics m : ignite.memoryMetrics())
+                    memoryMetrics.add(new VisorMemoryMetrics(m));
+            }
         }
         catch (Exception e) {
             res.setMemoryMetricsEx(new VisorExceptionWrapper(e));
@@ -192,7 +195,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                         if (ca == null || !ca.context().started())
                             continue;
 
-                        resCaches.add(new VisorCache(ignite, ca));
+                        resCaches.add(new VisorCache(ignite, ca, arg.isCollectCacheMetrics()));
                     }
                     catch(IllegalStateException | IllegalArgumentException e) {
                         if (debug && ignite.log() != null)

@@ -19,13 +19,11 @@ namespace Apache.Ignite.Core.Impl.DataStructures
 {
     using System.Diagnostics;
     using Apache.Ignite.Core.DataStructures;
-    using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Atomic long wrapper.
     /// </summary>
-    internal sealed class AtomicSequence: PlatformTarget, IAtomicSequence
+    internal sealed class AtomicSequence: PlatformTargetAdapter, IAtomicSequence
     {
         /** */
         private readonly string _name;
@@ -46,10 +44,9 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /// Initializes a new instance of the <see cref="Apache.Ignite.Core.Impl.DataStructures.AtomicLong"/> class.
         /// </summary>
         /// <param name="target">The target.</param>
-        /// <param name="marsh">The marshaller.</param>
         /// <param name="name">The name.</param>
-        public AtomicSequence(IUnmanagedTarget target, Marshaller marsh, string name)
-            : base(target, marsh)
+        public AtomicSequence(IPlatformTargetInternal target, string name)
+            : base(target)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
 
