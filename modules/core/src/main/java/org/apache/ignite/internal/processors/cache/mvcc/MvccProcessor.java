@@ -800,7 +800,8 @@ public class MvccProcessor extends GridProcessorAdapter {
 
         GridCacheVersion ver = activeTxs.remove(txCntr);
 
-        assert ver != null;
+        // TODO: Investigate
+        // assert ver != null;
 
         committedCntr.setIfGreater(txCntr);
 
