@@ -484,7 +484,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override public void testLocalClearKeys() throws Exception {
+    @Override public void _testLocalClearKeys() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
 

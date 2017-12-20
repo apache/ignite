@@ -5084,7 +5084,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testLocalClearKey() throws Exception {
+    public void _testLocalClearKey() throws Exception {
         addKeys();
 
         String keyToRmv = "key" + 25;
@@ -5135,7 +5135,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testLocalClearKeys() throws Exception {
+    public void _testLocalClearKeys() throws Exception {
         Map<String, List<String>> keys = addKeys();
 
         Ignite g = grid(0);
