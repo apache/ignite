@@ -36,9 +36,10 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCsprojToolsVersion()
         {
-            var projFiles = GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories);
+            var projFiles = GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
+                .Where(x => !x.FullName.ToLower().Contains("dotnetcore")).ToArray();
+            
             Assert.GreaterOrEqual(projFiles.Length, 7);
-
             CheckFiles(projFiles, x => !x.Contains("ToolsVersion=\"4.0\""), "Invalid csproj files: ");
         }
 
@@ -109,9 +110,10 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSlnToolsVersion()
         {
-            var slnFiles = GetDotNetSourceDir().GetFiles("*.sln", SearchOption.AllDirectories);
-            Assert.GreaterOrEqual(slnFiles.Length, 2);
+            var slnFiles = GetDotNetSourceDir().GetFiles("*.sln", SearchOption.AllDirectories)
+                .Where(x => !x.Name.Contains("DotNetCore")).ToArray();
 
+            Assert.GreaterOrEqual(slnFiles.Length, 2);
             CheckFiles(slnFiles, x => !x.Contains("# Visual Studio 2010") ||
                                       !x.Contains("Microsoft Visual Studio Solution File, Format Version 11.00"),
                 "Invalid sln files: ");
@@ -123,7 +125,13 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAsciiChars()
         {
-            var allowedFiles = new[] {"BinaryStringTest.cs", "BinarySelfTest.cs", "CacheDmlQueriesTest.cs"};
+            var allowedFiles = new[]
+            {
+                "BinaryStringTest.cs",
+                "BinarySelfTest.cs", 
+                "CacheDmlQueriesTest.cs",
+                "CacheTest.cs"
+            };
 
             var srcFiles = GetDotNetSourceDir()
                 .GetFiles("*.cs", SearchOption.AllDirectories)

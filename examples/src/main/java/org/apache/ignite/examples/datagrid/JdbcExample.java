@@ -51,7 +51,7 @@ public class JdbcExample {
 
                 // Create table based on PARTITIONED template with one backup.
                 stmt.executeUpdate("CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, " +
-                    "PRIMARY KEY (id, city_id)) WITH \"backups=1, affinityKey=city_id\"");
+                    "PRIMARY KEY (id, city_id)) WITH \"backups=1, affinity_key=city_id\"");
 
                 // Create an index.
                 stmt.executeUpdate("CREATE INDEX on Person (city_id)");

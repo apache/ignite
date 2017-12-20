@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Query
 {
+    using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Base for platform cursors.
@@ -44,10 +46,20 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="target">The target.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        protected PlatformQueryQursorBase(IPlatformTargetInternal target, bool keepBinary) 
-            : base(target.Marshaller, keepBinary)
+        /// <param name="readFunc"></param>
+        protected PlatformQueryQursorBase(IPlatformTargetInternal target, bool keepBinary, 
+            Func<BinaryReader, T> readFunc) 
+            : base(target.Marshaller, keepBinary, readFunc)
         {
             _target = target;
+        }
+
+        /// <summary>
+        /// Gets the target.
+        /// </summary>
+        public IPlatformTargetInternal Target
+        {
+            get { return _target; }
         }
 
         /** <inheritdoc /> */

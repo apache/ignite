@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.Properties;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.apache.ignite.IgniteJdbcThinDriver;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**

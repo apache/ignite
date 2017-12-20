@@ -81,10 +81,17 @@ namespace Apache.Ignite.Core.Tests.Cache
                             Name = "myMemPolicy",
                             InitialSize = 77 * 1024 * 1024,
                             MaxSize = 99 * 1024 * 1024
+                        },
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = MemoryConfiguration.DefaultDefaultMemoryPolicyName,
+                            InitialSize = 55 * 1024 * 1024,
+                            MaxSize = 88 * 1024 * 1024
                         }
                     }
                 },
 #pragma warning restore 618
+                DataStorageConfiguration = null,
                 SpringConfigUrl = "Config\\cache-default.xml"
             };
 
@@ -123,8 +130,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             var springConfig = _ignite.GetCache<int, int>(SpringCacheName).GetConfiguration();
 
             var ignoredProps = new[] {"AffinityFunction"};
-
-            TestUtils.AssertReflectionEqual(springConfig, new CacheConfiguration(SpringCacheName),
+            
+            AssertExtensions.ReflectionEqual(springConfig, new CacheConfiguration(SpringCacheName),
                 ignoredProperties: new HashSet<string>(ignoredProps));
             
             AssertConfigIsDefault(springConfig);
@@ -345,7 +352,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     y.PluginConfigurations.Select(p => p.GetType()));
             }
 
-            TestUtils.AssertReflectionEqual(x.KeyConfiguration, y.KeyConfiguration);
+            AssertExtensions.ReflectionEqual(x.KeyConfiguration, y.KeyConfiguration);
 
             Assert.AreEqual(x.OnheapCacheEnabled, y.OnheapCacheEnabled);
             Assert.AreEqual(x.StoreConcurrentLoadAllThreshold, y.StoreConcurrentLoadAllThreshold);
@@ -571,7 +578,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Gets the custom cache configuration.
         /// </summary>
-        private static CacheConfiguration GetCustomCacheConfiguration(string name = null)
+        public static CacheConfiguration GetCustomCacheConfiguration(string name = null)
         {
             return new CacheConfiguration
             {

@@ -59,7 +59,8 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// The default maximum size, equals to 20% of total RAM.
         /// </summary>
-        public static readonly long DefaultMaxSize = (long)((long)NativeMethods.GetTotalPhysicalMemory() * 0.2);
+        public static readonly long DefaultMaxSize =
+            (long)((long)MemoryInfo.GetTotalPhysicalMemory(2048L * 1024 * 1024) * 0.2);
 
         /// <summary>
         /// The default sub intervals.
@@ -104,6 +105,7 @@ namespace Apache.Ignite.Core.Configuration
             MetricsEnabled = reader.ReadBoolean();
             MetricsSubIntervalCount = reader.ReadInt();
             MetricsRateTimeInterval = reader.ReadLongAsTimespan();
+            CheckpointPageBufferSize = reader.ReadLong();
         }
 
         /// <summary>
@@ -122,6 +124,7 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteBoolean(MetricsEnabled);
             writer.WriteInt(MetricsSubIntervalCount);
             writer.WriteTimeSpanAsLong(MetricsRateTimeInterval);
+            writer.WriteLong(CheckpointPageBufferSize);
         }
 
         /// <summary>
@@ -209,5 +212,11 @@ namespace Apache.Ignite.Core.Configuration
             Justification = "Consistency with Java config")]
         public int MetricsSubIntervalCount { get; set; }
 
+        /// <summary>
+        /// Gets or sets the size of the checkpointing page buffer.
+        /// <para />
+        /// Default is <c>0</c>: Ignite will choose buffer size automatically.
+        /// </summary>
+        public long CheckpointPageBufferSize { get; set; }
     }
 }

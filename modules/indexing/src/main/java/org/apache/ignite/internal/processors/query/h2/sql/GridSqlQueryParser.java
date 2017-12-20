@@ -36,6 +36,7 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
@@ -457,10 +458,16 @@ public class GridSqlQueryParser {
     private static final String PARAM_ATOMICITY = "ATOMICITY";
 
     /** */
-    private static final String PARAM_CACHE_GROUP = "CACHEGROUP";
+    private static final String PARAM_CACHE_GROUP_OLD = "CACHEGROUP";
 
     /** */
-    private static final String PARAM_AFFINITY_KEY = "AFFINITYKEY";
+    private static final String PARAM_AFFINITY_KEY_OLD = "AFFINITYKEY";
+
+    /** */
+    private static final String PARAM_CACHE_GROUP = "CACHE_GROUP";
+
+    /** */
+    private static final String PARAM_AFFINITY_KEY = "AFFINITY_KEY";
 
     /** */
     private static final String PARAM_WRITE_SYNC = "WRITE_SYNCHRONIZATION_MODE";
@@ -1317,6 +1324,7 @@ public class GridSqlQueryParser {
 
                 break;
 
+            case PARAM_CACHE_GROUP_OLD:
             case PARAM_CACHE_GROUP:
                 ensureNotEmpty(name, val);
 
@@ -1324,6 +1332,7 @@ public class GridSqlQueryParser {
 
                 break;
 
+            case PARAM_AFFINITY_KEY_OLD:
             case PARAM_AFFINITY_KEY:
                 ensureNotEmpty(name, val);
 

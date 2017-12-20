@@ -17,9 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Query
 {
-    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Cursor for entry-based queries.
@@ -31,19 +29,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="keepBinary">Keep poratble flag.</param>
-        public QueryCursor(IPlatformTargetInternal target, bool keepBinary) : base(target, keepBinary)
+        public QueryCursor(IPlatformTargetInternal target, bool keepBinary)
+            : base(target, keepBinary,
+                r => new CacheEntry<TK, TV>(r.ReadObject<TK>(), r.ReadObject<TV>()))
         {
             // No-op.
-        }
-
-        /** <inheritdoc /> */
-        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        protected override ICacheEntry<TK, TV> Read(BinaryReader reader)
-        {
-            TK key = reader.ReadObject<TK>();
-            TV val = reader.ReadObject<TV>();
-
-            return new CacheEntry<TK, TV>(key, val);
         }
     }
 }

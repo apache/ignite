@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Client.Cache
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
@@ -98,6 +99,20 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <param name="scanQuery">Scan query.</param>
         /// <returns>Query cursor.</returns>
         IQueryCursor<ICacheEntry<TK, TV>> Query(ScanQuery<TK, TV> scanQuery);
+
+        /// <summary>
+        /// Executes an SQL query.
+        /// </summary>
+        /// <param name="sqlQuery">SQL query.</param>
+        /// <returns>Query cursor.</returns>
+        IQueryCursor<ICacheEntry<TK, TV>> Query(SqlQuery sqlQuery);
+
+        /// <summary>
+        /// Executes an SQL Fields query.
+        /// </summary>
+        /// <param name="sqlFieldsQuery">SQL query.</param>
+        /// <returns>Query cursor.</returns>
+        IFieldsQueryCursor Query(SqlFieldsQuery sqlFieldsQuery);
 
         /// <summary>
         /// Associates the specified value with the specified key in this cache,
@@ -220,5 +235,20 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
         /// <returns>Cache size across all nodes.</returns>
         long GetSize(params CachePeekMode[] modes);
+
+        /// <summary>
+        /// Gets the cache configuration.
+        /// </summary>
+        CacheClientConfiguration GetConfiguration();
+
+        /// <summary>
+        /// Gets cache with KeepBinary mode enabled, changing key and/or value types if necessary.
+        /// You can only change key/value types when transitioning from non-binary to binary cache;
+        /// Changing type of binary cache is not allowed and will throw an <see cref="InvalidOperationException"/>.
+        /// </summary>
+        /// <typeparam name="TK1">Key type in binary mode.</typeparam>
+        /// <typeparam name="TV1">Value type in binary mode.</typeparam>
+        /// <returns>Cache instance with binary mode enabled.</returns>
+        ICacheClient<TK1, TV1> WithKeepBinary<TK1, TV1>();
     }
 }

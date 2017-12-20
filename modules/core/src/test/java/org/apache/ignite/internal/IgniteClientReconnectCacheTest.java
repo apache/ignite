@@ -85,6 +85,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  *
@@ -1284,12 +1285,14 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      * @param c Cache operation closure.
      * @throws Exception If failed.
      */
-    private void checkOperationInProgressFails(IgniteEx client,
+    private void checkOperationInProgressFails(final IgniteEx client,
         final CacheConfiguration<Object, Object> ccfg,
         Class<?> msgToBlock,
         final IgniteInClosure<IgniteCache<Object, Object>> c)
         throws Exception {
         Ignite srv = clientRouter(client);
+
+        final UUID id = client.localNode().id();
 
         TestTcpDiscoverySpi srvSpi = spi(srv);
 
@@ -1306,6 +1309,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 IgniteClientDisconnectedException e0 = null;
 
                 try {
+                    assertEquals(id, client.localNode().id());
+
                     c.apply(cache);
 
                     fail();
@@ -1329,6 +1334,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                 e0.reconnectFuture().get();
 
+                assertNotEquals(id, client.localNode().id());
+
                 c.apply(cache);
 
                 return null;
@@ -1350,6 +1357,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             for (int i = 0; i < SRV_CNT; i++)
                 ((TestCommunicationSpi)grid(i).configuration().getCommunicationSpi()).stopBlock(false);
         }
+
+        assertNotEquals(id, client.localNode().id());
 
         cache.put(1, 1);
 

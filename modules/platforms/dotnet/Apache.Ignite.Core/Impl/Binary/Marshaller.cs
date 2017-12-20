@@ -694,7 +694,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (typeId == 0)
             {
-                typeId = BinaryUtils.GetStringHashCode(typeName);
+                typeId = BinaryUtils.GetStringHashCodeLowerCase(typeName);
             }
 
             AddType(type, typeId, typeName, false, false, null, null, serializer, affKeyFldName, false);
@@ -725,6 +725,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(0, r => new AssemblyRequest(r));
             AddSystemType(0, r => new AssemblyRequestResult(r));
             AddSystemType<PeerLoadingObjectHolder>(0, null, serializer: new PeerLoadingObjectHolderSerializer());
+            AddSystemType<MultidimensionalArrayHolder>(0, null, serializer: new MultidimensionalArraySerializer());
         }
 
         /// <summary>
@@ -826,7 +827,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (id == 0)
             {
-                id = BinaryUtils.GetStringHashCode(typeName);
+                id = BinaryUtils.GetStringHashCodeLowerCase(typeName);
             }
 
             return id;

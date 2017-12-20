@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.File;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
@@ -49,8 +48,8 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -95,6 +94,9 @@ import org.jetbrains.annotations.Nullable;
  * Dummy grid kernal context
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
+    /** Binary metadata file store folder. */
+    public static final String BINARY_META_FOLDER = "binary_meta";
+
     /** Config for fake Ignite instance. */
     private final IgniteConfiguration cfg;
 
@@ -123,13 +125,12 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
      */
     StandaloneGridKernalContext(IgniteLogger log,
-        @Nullable final File binaryMetadataFileStoreDir,
-        @Nullable final File marshallerMappingFileStoreDir) throws IgniteCheckedException {
+        @Nullable File binaryMetadataFileStoreDir,
+        @Nullable File marshallerMappingFileStoreDir) throws IgniteCheckedException {
         this.log = log;
 
         try {
-            pluginProc = new StandaloneIgnitePluginProcessor(
-                this, config());
+            pluginProc = new StandaloneIgnitePluginProcessor(this, config());
         }
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
@@ -137,7 +138,12 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         this.marshallerCtx = new MarshallerContextImpl(null);
         this.cfg = prepareIgniteConfiguration();
-        this.cacheObjProcessor = binaryMetadataFileStoreDir != null ? binaryProcessor(this, binaryMetadataFileStoreDir) : null;
+
+        // Fake folder provided to perform processor startup on empty folder.
+        if (binaryMetadataFileStoreDir == null)
+            binaryMetadataFileStoreDir = new File(BINARY_META_FOLDER).getAbsoluteFile();
+
+        this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
         if (marshallerMappingFileStoreDir != null) {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
