@@ -145,7 +145,7 @@ public final class UpdatePlanBuilder {
         }
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(stmt, loc, idx, conn, fieldsQuery, mvccEnabled);
+            return planForInsert(stmt, loc, idx, conn, fieldsQuery);
         else
             return planForUpdate(stmt, loc, idx, conn, fieldsQuery, errKeysPos);
     }
@@ -163,7 +163,7 @@ public final class UpdatePlanBuilder {
      */
     @SuppressWarnings("ConstantConditions")
     private static UpdatePlan planForInsert(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, boolean mvccEnabled) throws IgniteCheckedException {
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery) throws IgniteCheckedException {
         GridSqlQuery sel;
 
         GridSqlElement target;
@@ -273,7 +273,7 @@ public final class UpdatePlanBuilder {
 
         String selectSql = sel != null ? sel.getSQL() : null;
 
-        DmlDistributedPlanInfo distributed = ((mvccEnabled || rowsNum == 0) && !F.isEmpty(selectSql)) ?
+        DmlDistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
             checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
 
         UpdateMode mode = stmt instanceof GridSqlMerge ? UpdateMode.MERGE : UpdateMode.INSERT;
