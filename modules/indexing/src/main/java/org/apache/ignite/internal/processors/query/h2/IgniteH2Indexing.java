@@ -1586,10 +1586,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 nestedTxMode.name());
                     }
                 }
-                else if (txAutoStart) {
-                    // No-op - we want to quietly ignore BEGIN right after transaction has been auto-started.
-                }
-                else
+                else if (!txAutoStart)
                     txStart();
             }
             else if (cmd instanceof SqlCommitTransactionCommand) {
