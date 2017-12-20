@@ -127,7 +127,10 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 Guids = new[] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()},
                 String = "hello world",
                 Strings = new[] {"hello", "world"},
-                IntPtr = new IntPtr(12345)
+                IntPtr = new IntPtr(12345),
+                IntPtrs = new[] {IntPtr.Zero, new IntPtr(1), new IntPtr(-1), new IntPtr(long.MaxValue)},
+                UIntPtr = new UIntPtr(1234567),
+                UIntPtrs = new[] {UIntPtr.Zero, new UIntPtr(1), new UIntPtr(long.MaxValue)}
             };
 
             var vals = new[] {new Primitives(), val1};
@@ -483,6 +486,12 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             Assert.AreEqual("Object", binType.GetFieldTypeName("datetime"));
             Assert.AreEqual("Object", binType.GetFieldTypeName("datetimes"));
+
+            Assert.AreEqual("Object", binType.GetFieldTypeName("intptr"));
+            Assert.AreEqual("Object", binType.GetFieldTypeName("intptrs"));
+
+            Assert.AreEqual("Object", binType.GetFieldTypeName("uintptr"));
+            Assert.AreEqual("Object", binType.GetFieldTypeName("uintptrs"));
         }
 
         /// <summary>
