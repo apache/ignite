@@ -2729,6 +2729,24 @@ namespace Apache.Ignite.Core.Tests.Binary
             //public UIntPtr[] UIntPtrs { get; set; }
             public byte* ByteP { get; set; }
             //public byte*[] BytePs { get; set; }
+
+            private bool Equals(Pointers other)
+            {
+                return ByteP == other.ByteP;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != this.GetType()) return false;
+                return Equals((Pointers) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return 0;
+            }
         }
     }
 }

@@ -514,14 +514,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             else if (type.IsPointer)
                 unsafe
                 {
-                    // Object way causes "Operation could destabilize the runtime." error.
-                    //writeAction = GetWriter<object>(field, (f, w, o) => w.WriteLong(f, (long) o), true);
-                    //readAction = GetReader<object>(field, (f, r) => r.ReadLong(f));
-
-                    //writeAction = GetWriter<long>(field, (f, w, o) => w.WriteLong(f, o));
-                    //readAction = GetReader(field, (f, r) => r.ReadLong(f));
-
                     // Expression trees do not work with pointers properly.
+                    // TODO: Raw mode
                     var fieldName = BinaryUtils.CleanFieldName(field.Name);
                     writeAction = (o, w) => w.WriteLong(fieldName, (long) Pointer.Unbox(field.GetValue(o)));
                     readAction = (o, r) =>
