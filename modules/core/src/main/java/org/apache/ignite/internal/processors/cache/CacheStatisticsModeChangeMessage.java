@@ -36,7 +36,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     private static final long serialVersionUID = 0L;
 
     /** Initial message flag mask. */
-    private static final byte INITIAL_MESSAGE_MASK = 0x01;
+    private static final byte INITIAL_MSG_MASK = 0x01;
 
     /** Statistics enabled flag mask. */
     private static final byte ENABLED_MASK = 0x02;
@@ -77,7 +77,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
         this.reqId = reqId;
         this.caches = Collections.unmodifiableCollection(caches);
 
-        byte flags = INITIAL_MESSAGE_MASK;
+        byte flags = INITIAL_MSG_MASK;
 
         if (enabled)
             flags |= ENABLED_MASK;
@@ -117,7 +117,7 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * Initial message flag.
      */
     public boolean initial() {
-        return (flags & INITIAL_MESSAGE_MASK) != 0;
+        return (flags & INITIAL_MSG_MASK) != 0;
     }
 
     /**
