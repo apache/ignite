@@ -610,6 +610,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
                 IntPtr = (IntPtr) info.GetInt64("intptr");
                 IntPtrs = (IntPtr[]) info.GetValue("intptrs", typeof(IntPtr[]));
+
+                UIntPtr = (UIntPtr) info.GetInt64("uintptr");
+                UIntPtrs = (UIntPtr[]) info.GetValue("uintptrs", typeof(UIntPtr[]));
             }
 
             public void GetObjectData(SerializationInfo info, StreamingContext context)

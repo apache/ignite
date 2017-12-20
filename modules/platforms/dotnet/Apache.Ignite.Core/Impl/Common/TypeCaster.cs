@@ -82,7 +82,9 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
 
                 var paramExpr = Expression.Parameter(typeof(TFrom));
-                var convertExpr = Expression.Convert(paramExpr, typeof(T));
+                var convertExpr = (typeof(T) == typeof(UIntPtr) && typeof(TFrom) == typeof(long))
+                    ? Expression.Convert(Expression.Convert(paramExpr, typeof(uint)), typeof(T))
+                    : Expression.Convert(paramExpr, typeof(T));
 
                 return Expression.Lambda<Func<TFrom, T>>(convertExpr, paramExpr).Compile();
             }
