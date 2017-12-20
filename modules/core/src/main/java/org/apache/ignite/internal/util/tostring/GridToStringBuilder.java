@@ -889,7 +889,7 @@ public class GridToStringBuilder {
      * @param buf buffer to print to.
      * @param val value to print, can be {@code null}.
      */
-    private static void toString(SB buf, Object val) {
+    private static void toString(SBLimitedLength buf, Object val) {
         if (val == null)
             buf.a("null");
         else
@@ -902,7 +902,7 @@ public class GridToStringBuilder {
      * @param valClass value class.
      * @param val value to print
      */
-    private static void toString(SB buf, Class<?> valClass, Object val) {
+    private static void toString(SBLimitedLength buf, Class<?> valClass, Object val) {
         if (valClass.isArray())
             buf.a(arrayToString(valClass, val));
         else {
