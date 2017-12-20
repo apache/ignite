@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
@@ -36,6 +37,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -46,6 +48,7 @@ import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -985,29 +988,31 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
 
         IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
-        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TX_TIMEOUT);
+        assertThrows(log(), new Callable<Void>() {
+            @Override public Void call() {
+                try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    tx.timeout(TX_TIMEOUT);
 
-            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+                    SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
 
-            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+                    IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
-            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                assertEquals(3L, cur.iterator().next().get(0));
+                    try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                        assertEquals(3L, cur.iterator().next().get(0));
+                    }
+
+                    qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+
+                    try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                        cur.getAll();
+                    }
+
+                    tx.commit();
+                }
+
+                return null;
             }
-
-            qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
-
-            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                cur.getAll();
-            }
-
-            tx.commit();
-        }
-        catch (Throwable e) {
-            assertEquals("Failed to run update. One row cannot be changed twice in the same transaction. " +
-                "Operation is unsupported at the moment.", e.getMessage());
-        }
+        }, IgniteSQLException.class, "Failed to INSERT some keys because they are already in cache");
 
         for (int i = 1; i <= 6; i++)
             assertNull(cache.get(1));
