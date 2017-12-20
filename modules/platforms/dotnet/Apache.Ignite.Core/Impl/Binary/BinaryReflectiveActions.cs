@@ -511,6 +511,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteTimestamp(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));
             }
+            else if (type.IsPointer)
+            {
+                writeAction = GetWriter<long>(field, (f, w, o) => w.WriteLong(f, o));
+                readAction = GetReader(field, (f, r) => r.ReadLong(f));
+            }
             else
             {
                 writeAction = raw ? GetRawWriter(field, MthdWriteObjRaw) : GetWriter(field, MthdWriteObj);
@@ -563,7 +568,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static BinaryReflectiveWriteAction GetWriter<T>(FieldInfo field,
             Expression<Action<string, IBinaryWriter, T>> write,
-            bool convertFieldValToObject = false)
+            bool convertFieldVal = false)
         {
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
@@ -574,8 +579,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
             Expression fldExpr = Expression.Field(targetParamConverted, field);
 
-            if (convertFieldValToObject)
-                fldExpr = Expression.Convert(fldExpr, typeof (object));
+            if (convertFieldVal)
+            {
+                fldExpr = Expression.Convert(fldExpr, typeof(T));
+            }
 
             // Call Writer method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
