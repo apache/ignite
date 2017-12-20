@@ -256,6 +256,12 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 Assert.AreEqual(val.IntPtrs, res.IntPtrs);
                 Assert.AreEqual(val.IntPtrs, bin.GetField<IntPtr[]>("intptrs"));
 
+                Assert.AreEqual(val.UIntPtr, res.UIntPtr);
+                Assert.AreEqual(val.UIntPtr, bin.GetField<UIntPtr>("uintptr"));
+
+                Assert.AreEqual(val.UIntPtrs, res.UIntPtrs);
+                Assert.AreEqual(val.UIntPtrs, bin.GetField<UIntPtr[]>("uintptrs"));
+
                 VerifyFieldTypes(bin);
             }
         }
