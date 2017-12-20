@@ -1584,6 +1584,28 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Tests pointer types.
+        /// </summary>
+        [Test]
+        public void TestPointers()
+        {
+            // Values.
+            var vals = new[] {IntPtr.Zero, new IntPtr(long.MinValue), new IntPtr(long.MaxValue)};
+            foreach (var intPtr in vals)
+            {
+                Assert.AreEqual(intPtr, TestUtils.SerializeDeserialize(intPtr));
+            }
+
+            var uvals = new[] {UIntPtr.Zero, new UIntPtr(long.MaxValue), new UIntPtr(ulong.MaxValue)};
+            foreach (var uintPtr in uvals)
+            {
+                Assert.AreEqual(uintPtr, TestUtils.SerializeDeserialize(uintPtr));
+            }
+
+            // Type fields.
+        }
+
+        /// <summary>
         /// Tests the compact footer setting.
         /// </summary>
         [Test]
@@ -2691,6 +2713,16 @@ namespace Apache.Ignite.Core.Tests.Binary
                 MultidimInt = reader.ReadObject<int[,]>("MultidimInt");
                 MultidimUInt = reader.ReadObject<uint[,,]>("MultidimUInt");
             }
+        }
+
+        private unsafe class Pointers
+        {
+            //public IntPtr IntPtr { get; set; }
+            //public IntPtr[] IntPtrs { get; set; }
+            //public UIntPtr UIntPtr { get; set; }
+            //public UIntPtr[] UIntPtrs { get; set; }
+            public byte* ByteP { get; set; }
+            public byte*[] BytePs { get; set; }
         }
     }
 }
