@@ -80,7 +80,7 @@ public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnect
         else {
             reconnectClients(log, Collections.singletonList(client), new Runnable() {
                 @Override public void run() {
-                    stopGrid(0);
+                    stopGrid(0, false);
 
                     try {
                         startGrid(0);

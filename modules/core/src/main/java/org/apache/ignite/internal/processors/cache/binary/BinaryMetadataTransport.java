@@ -172,7 +172,7 @@ final class BinaryMetadataTransport {
             }
         }
         catch (Exception e) {
-            resFut.onDone(e);
+            resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult(), e);
         }
 
         if (ctx.clientDisconnected())
