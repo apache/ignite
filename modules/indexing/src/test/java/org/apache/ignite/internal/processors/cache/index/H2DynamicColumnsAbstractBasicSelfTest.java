@@ -513,7 +513,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             run("CREATE TABLE test(id INT PRIMARY KEY, a INT, b CHAR)");
 
             assertThrows("ALTER TABLE test DROP COLUMN id",
-                "Cannot drop column \"ID\" because it represents a cache key");
+                "Cannot drop column \"ID\" because it represents an entire cache key");
         }
         finally {
             run("DROP TABLE IF EXISTS test");

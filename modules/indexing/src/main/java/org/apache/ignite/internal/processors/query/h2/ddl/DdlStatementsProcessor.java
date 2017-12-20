@@ -415,24 +415,26 @@ public class DdlStatementsProcessor {
                         int colId = col.getColumnId();
 
                         if (rowDesc.isKeyColumn(colId))
-                            throw new SchemaOperationException("Cannot drop column \"" + colName +
-                            "\" because it represents a cache key");
+                            throw new IgniteSQLException("Cannot drop column \"" + colName +
+                                "\" because it represents an entire cache key",
+                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                         if (rowDesc.isValueColumn(col.getColumnId()))
-                            throw new SchemaOperationException("Cannot drop column \"" + colName +
-                                "\" because it represents a cache value");
+                            throw new IgniteSQLException("Cannot drop column \"" + colName +
+                                "\" because it represents an entire cache value",
+                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                         GridQueryProperty prop = type.property(colName);
 
                         if (prop != null && prop.key())
-                            throw new SchemaOperationException("Cannot drop column \"" + colName +
-                                "\" because it is a part of a cache key");
+                            throw new IgniteSQLException("Cannot drop column \"" + colName +
+                                "\" because it is a part of a cache key", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                         for (GridQueryIndexDescriptor idxDesc : indexes) {
                             if (idxDesc.fields().contains(colName))
-                                throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS,
-                                    "Cannot drop column \"" + colName + "\" because an index exists (\"" +
-                                    idxDesc.name() + "\") that uses the column.");
+                                throw new IgniteSQLException("Cannot drop column \"" + colName +
+                                    "\" because an index exists (\"" + idxDesc.name() + "\") that uses the column.",
+                                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                         }
 
                         cols.add(colName);
