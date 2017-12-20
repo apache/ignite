@@ -411,7 +411,7 @@ public class MvccProcessor extends GridProcessorAdapter {
 
     /**
      * @param mvccVer Read version.
-     * @return
+     * @return Tracker counter.
      */
     private long queryTrackCounter(MvccVersion mvccVer) {
         long trackCntr = mvccVer.counter();

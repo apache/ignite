@@ -1018,7 +1018,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * Returns a value mapped to the lowest key, or {@code null} if tree is empty or no entry matches the passed filter.
-     * @param c Filter closure.
+     * @param filter Filter closure.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
