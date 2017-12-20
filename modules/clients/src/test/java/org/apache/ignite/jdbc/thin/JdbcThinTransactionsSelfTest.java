@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -50,9 +49,6 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
 
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
-
-    /** */
-    private static final String INSERT = "INSERT INTO INTS(k, v) values(1, 1)";
 
     /** Logger. */
     private GridStringLogger log;
@@ -394,7 +390,6 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         IgniteCache<Integer, ?> cache = grid(0).cache("ints");
 
         try (Connection c = c(false, NestedTxMode.ERROR)) {
-            // First, let's start a transaction.
             try (Statement s = c.createStatement()) {
                 assertFalse(s.executeQuery("SELECT * from INTS").next());
             }
@@ -427,6 +422,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
 
                 assertEquals(1, cache.get(1));
 
+                // No commit happened upon this query, too.
                 assertTrue(s.executeQuery("SELECT * from INTS").next());
             }
         }
@@ -440,7 +436,12 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     public void testExceptionHandling() throws SQLException {
         try (Connection c = c(true, NestedTxMode.ERROR)) {
             try (Statement s = c.createStatement()) {
-                s.execute(INSERT);
+                try (PreparedStatement ps = c.prepareStatement("INSERT INTO INTS(k, v) values(1, " +
+                    "case when ? > 0 then 1 else 1 end)")) {
+                    ps.setInt(1, 1);
+
+                    ps.execute();
+                }
 
                 assertEquals(1, grid(0).cache("ints").get(1));
 
@@ -452,7 +453,12 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 }, SQLException.class, "Failed to parse query");
 
-                s.execute("INSERT INTO INTS(k, v) values(2, 2)");
+                try (PreparedStatement ps = c.prepareStatement("INSERT INTO INTS(k, v) values(2, " +
+                    "case when ? > 0 then 2 else 2 end)")) {
+                    ps.setInt(1, 2);
+
+                    ps.execute();
+                }
 
                 assertEquals(2, grid(0).cache("ints").get(2));
             }
