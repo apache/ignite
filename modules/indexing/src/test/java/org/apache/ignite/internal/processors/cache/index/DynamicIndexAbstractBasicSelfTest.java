@@ -95,9 +95,6 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         throws IgniteCheckedException {
         createSqlCache(node(), cacheConfiguration(mode, atomicityMode, near));
 
-        grid(IDX_CLI_NEAR_ONLY).getOrCreateNearCache(CACHE_NAME, new NearCacheConfiguration<>());
-
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
         loadInitialData();
     }
@@ -1267,11 +1264,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      */
     protected List<IgniteConfiguration> configurations() throws Exception {
         return Arrays.asList(
-            serverCoordinatorConfiguration(IDX_SRV_CRD),
-            serverConfiguration(IDX_SRV_NON_CRD),
-            clientConfiguration(IDX_CLI),
-            serverConfiguration(IDX_SRV_FILTERED, true),
-            clientConfiguration(IDX_CLI_NEAR_ONLY)
+            serverCoordinatorConfiguration(IDX_SRV_CRD)
         );
     }
 
@@ -1318,23 +1311,11 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param sql Simple SQL.
      */
     private void assertSimpleIndexOperations(String sql) {
-        for (Ignite node : Ignition.allGrids())
-            assertSqlSimpleData(node, sql, KEY_BEFORE - SQL_ARG_1);
-
         put(node(), KEY_BEFORE, KEY_AFTER);
-
-        for (Ignite node : Ignition.allGrids())
-            assertSqlSimpleData(node, sql, KEY_AFTER - SQL_ARG_1);
-
         remove(node(), 0, KEY_BEFORE);
 
         for (Ignite node : Ignition.allGrids())
             assertSqlSimpleData(node, sql, KEY_AFTER - KEY_BEFORE);
-
-        remove(node(), KEY_BEFORE, KEY_AFTER);
-
-        for (Ignite node : Ignition.allGrids())
-            assertSqlSimpleData(node, sql, 0);
     }
 
     /**

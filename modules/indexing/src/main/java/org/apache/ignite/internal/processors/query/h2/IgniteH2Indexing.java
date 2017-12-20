@@ -729,9 +729,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             SchemaIndexCacheVisitorClosure clo = new SchemaIndexCacheVisitorClosure() {
                 @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-                    if (rowDesc.context().mvccEnabled())
-                        row.mvccVersion(1, MVCC_START_CNTR);
-
                     GridH2Row h2Row = rowDesc.createRow(row, null);
 
                     h2Idx.putx(h2Row);
