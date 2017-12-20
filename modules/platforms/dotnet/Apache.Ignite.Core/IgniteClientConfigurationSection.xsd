@@ -173,12 +173,31 @@
                     </xs:complexType>
                 </xs:element>
             </xs:all>
-            <xs:attribute name="igniteInstanceName" type="xs:string">
+            <xs:attribute name="host" type="xs:string" use="required">
                 <xs:annotation>
-                    <xs:documentation>Local Ignite instance name to be used with Ignition.GetIgnite.</xs:documentation>
+                    <xs:documentation>Host to connect to, required property.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="port" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Target port.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="socketSendBufferSize" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Size of the socket send buffer. When set to 0, operating system default is used.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="socketReceiveBufferSize" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Size of the socket receive buffer. When set to 0, operating system default is used.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="tcpNoDelay" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Value for TCP_NODELAY socket option.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
-
