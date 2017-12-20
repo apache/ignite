@@ -390,6 +390,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         IgniteCache<Integer, ?> cache = grid(0).cache("ints");
 
         try (Connection c = c(false, NestedTxMode.ERROR)) {
+            // Why this affects whole transaction?
             try (Statement s = c.createStatement()) {
                 assertFalse(s.executeQuery("SELECT * from INTS").next());
             }
