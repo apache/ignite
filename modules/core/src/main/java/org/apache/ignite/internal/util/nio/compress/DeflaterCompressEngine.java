@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.util.nio.compress;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -91,6 +93,7 @@ public class DeflaterCompressEngine implements CompressEngine {
 
     private int inputUnwrapPos = 0;
     private int inputUnwapLen = 0;
+
     /** */
     public CompressEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
         if (inflateBaos.size() > 0){
@@ -107,20 +110,16 @@ public class DeflaterCompressEngine implements CompressEngine {
         while (inputUnwapArray.length < src.remaining())
             inputUnwapArray = new byte[inputUnwapArray.length * 2];
 
-//        assert inputUnwrapPos <= inputUnwapLen;
+        if (inputUnwrapPos >= inputUnwapLen)
+            if (len > 0) {
+                src.get(inputUnwapArray, 0, len);
 
-        if (inputUnwrapPos < inputUnwapLen) {
-            inflater.setInput(inputUnwapArray, inputUnwrapPos, inputUnwapLen - inputUnwrapPos);
-        }
-        else if (len > 0) {
-            src.get(inputUnwapArray, 0, len);
+                inputUnwapLen = len;
+                inputUnwrapPos = 0;
+            } else
+                return BUFFER_UNDERFLOW;
 
-            inputUnwapLen = len;
-            inputUnwrapPos = 0;
-
-            inflater.setInput(inputUnwapArray, 0, len);
-        } else
-            return BUFFER_UNDERFLOW;
+        inflater.setInput(inputUnwapArray, inputUnwrapPos, inputUnwapLen - inputUnwrapPos);
 
         while (!inflater.finished() && !inflater.needsInput()) {
             try {
@@ -131,10 +130,9 @@ public class DeflaterCompressEngine implements CompressEngine {
             }
         }
 
-        assert inflater.getBytesRead() <= Integer.MAX_VALUE;
-        int readed = (int)inflater.getBytesRead();
+        int readed = inflater.getRemaining();
 
-        inputUnwrapPos += readed;
+        inputUnwrapPos =  inputUnwapLen - readed ;
 
         if (inflater.finished()) {
             inflater.reset();
