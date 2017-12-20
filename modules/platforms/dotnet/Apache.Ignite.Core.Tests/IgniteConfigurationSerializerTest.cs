@@ -564,14 +564,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void CheckSchemaValidation()
         {
-            var sb = new StringBuilder();
-
-            using (var xmlWriter = XmlWriter.Create(sb))
-            {
-                IgniteConfigurationXmlSerializer.Serialize(GetTestConfig(), xmlWriter, "igniteConfiguration");
-            }
-
-            CheckSchemaValidation(sb.ToString());
+            CheckSchemaValidation(GetTestConfig().ToXml());
         }
 
         /// <summary>
