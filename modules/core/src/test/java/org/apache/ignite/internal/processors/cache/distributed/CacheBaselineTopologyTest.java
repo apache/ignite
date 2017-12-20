@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -37,9 +38,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -51,10 +54,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private static boolean persistent = false;
-
-    /** */
-    private boolean client = false;
+    private boolean client;
 
     /** */
     private static final int NODE_COUNT = 4;
@@ -72,11 +72,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        if (persistent) {
-            GridTestUtils.deleteDbFiles();
-
-            persistent = false;
-        }
+        GridTestUtils.deleteDbFiles();
 
         client = false;
     }
@@ -85,15 +81,15 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (persistent)
-            cfg.setDataStorageConfiguration(
-                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setPersistenceEnabled(true)
-                        .setMaxSize(100 * 1024 * 1024)
-                        .setInitialSize(100 * 1024 * 1024)
-                )
-            );
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)
+                    .setMaxSize(100 * 1024 * 1024)
+                    .setInitialSize(100 * 1024 * 1024)
+            )
+            .setWalMode(WALMode.LOG_ONLY)
+        );
 
         if (client)
             cfg.setClientMode(true);
@@ -107,9 +103,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     public void testTopologyChangesWithFixedBaseline() throws Exception {
         startGrids(NODE_COUNT);
 
-        awaitPartitionMapExchange();
-
         IgniteEx ignite = grid(0);
+
+        ignite.active(true);
+
+        awaitPartitionMapExchange();
 
         Map<ClusterNode, Ignite> nodes = new HashMap<>();
 
@@ -229,8 +227,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             assert found;
         }
 
-        assert topology.lostPartitions().contains(part);
-
         ignite.resetLostPartitions(Collections.singleton(CACHE_NAME));
 
         cache.put(key, 2);
@@ -254,8 +250,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testBaselineTopologyChanges(boolean fromClient) throws Exception {
-        persistent = true;
-
         startGrids(NODE_COUNT);
 
         IgniteEx ignite;
@@ -384,11 +378,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     public void testPrimaryLeft() throws Exception {
         startGrids(NODE_COUNT);
 
-        awaitPartitionMapExchange();
-
         IgniteEx ig = grid(0);
 
-        ig.cluster().setBaselineTopology(baselineNodes(ig.cluster().nodes()));
+        ig.cluster().active(true);
+
+        awaitPartitionMapExchange();
 
         IgniteCache<Integer, Integer> cache =
             ig.createCache(
@@ -464,15 +458,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPrimaryLeftAndClusterRestart() throws Exception {
-        persistent = true;
-
         startGrids(NODE_COUNT);
 
         IgniteEx ig = grid(0);
 
         ig.active(true);
-
-        ig.cluster().setBaselineTopology(baselineNodes(ig.cluster().nodes()));
 
         IgniteCache<Integer, Integer> cache =
             ig.createCache(
@@ -570,6 +560,89 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         assertEquals(val2, backup.cache(CACHE_NAME).get(key));
     }
 
+    /**
+     * @throws Exception if failed.
+     */
+    public void testMetadataUpdate() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7258");
+
+        startGrids(5);
+
+        Ignite ignite3 = grid(3);
+
+        ignite3.active(true);
+
+        CacheConfiguration<Object, Object> repCacheCfg = new CacheConfiguration<>("replicated")
+            .setCacheMode(CacheMode.REPLICATED)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        IgniteCache<Object, Object> cache = ignite3.getOrCreateCache(repCacheCfg);
+
+        stopGrid(0);
+        stopGrid(1);
+        stopGrid(2);
+        stopGrid(4);
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, new TestValue(i));
+
+        stopAllGrids();
+
+        startGrids(5);
+
+        GridTestUtils.waitForCondition(new PA() {
+            @Override
+            public boolean apply() {
+                return grid(0).cluster().active();
+            }
+        }, getTestTimeout());
+
+        for (int g = 0; g < 5; g++) {
+            for (int i = 0; i < 100; i++)
+                assertEquals(new TestValue(i), grid(g).cache("replicated").get(i));
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testClusterRestoredOnRestart() throws Exception {
+        startGrids(5);
+
+        Ignite ignite3 = grid(3);
+
+        ignite3.active(true);
+
+        stopGrid(0);
+
+        CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>("unknown_cache");
+
+        cacheConfiguration.setBackups(3);
+
+        IgniteCache<Object, Object> cache0 = ignite3.getOrCreateCache(cacheConfiguration);
+
+        for (int i = 0; i < 2048; i++)
+            cache0.put(i, 0);
+
+        awaitPartitionMapExchange();
+
+        stopAllGrids();
+
+        startGrids(5);
+
+        GridTestUtils.waitForCondition(new PA() {
+            @Override
+            public boolean apply() {
+                return grid(0).cluster().active();
+            }
+        }, getTestTimeout());
+
+        for (int g = 0; g < 5; g++) {
+            for (int i = 0; i < 2048; i++)
+                assertEquals("For key: " + i, 0, grid(g).cache("unknown_cache").get(i));
+        }
+    }
+
     /** */
     private Collection<BaselineNode> baselineNodes(Collection<ClusterNode> clNodes) {
         Collection<BaselineNode> res = new ArrayList<>(clNodes.size());
@@ -580,4 +653,56 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         return res;
     }
 
+    /**
+     *
+     */
+    private static class TestValue {
+        /** */
+        int f1;
+
+        /** */
+        int f2;
+
+        /** */
+        int f3;
+
+        /** */
+        int f4;
+
+        /**
+         * @param a Init value.
+         */
+        private TestValue(int a) {
+            f1 = f2 = f3 = f4 = a;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof TestValue))
+                return false;
+
+            TestValue other = (TestValue)o;
+
+            return
+                f1 == other.f1 &&
+                f2 == other.f2 &&
+                f3 == other.f3 &&
+                f4 == other.f4;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = f1;
+
+            result = 31 * result + f2;
+            result = 31 * result + f3;
+            result = 31 * result + f4;
+
+            return result;
+        }
+    }
 }
