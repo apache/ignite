@@ -537,6 +537,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testExecuteUpdate() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7271");
+
         final String sqlText = "update test set val=1 where _key=1";
 
         assertEquals(1, stmt.executeUpdate(sqlText));

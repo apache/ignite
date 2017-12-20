@@ -29,6 +29,8 @@ public class JdbcThinDeleteStatementSelfTest extends JdbcThinAbstractUpdateState
      * @throws SQLException If failed.
      */
     public void testExecute() throws SQLException {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7271");
+
         conn.createStatement().execute("delete from Person where cast(substring(_key, 2, 1) as int) % 2 = 0");
 
         assertFalse(jcache(0).containsKey("p2"));
@@ -39,6 +41,8 @@ public class JdbcThinDeleteStatementSelfTest extends JdbcThinAbstractUpdateState
      * @throws SQLException If failed.
      */
     public void testExecuteUpdate() throws SQLException {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7271");
+
         int res =
             conn.createStatement().executeUpdate("delete from Person where cast(substring(_key, 2, 1) as int) % 2 = 0");
 
