@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System.Configuration;
+    using System.IO;
     using System.Text;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
@@ -175,16 +176,20 @@ namespace Apache.Ignite.Core.Tests.Client
             }
         }
 
+#if !NETCOREAPP2_0
         /// <summary>
         /// Tests the schema validation.
         /// </summary>
         [Test]
         public void TestSchemaValidation()
         {
-            // TODO
+            var xml = File.ReadAllText("Config\\Client\\IgniteClientConfiguration.xml");
+            var xmlns = "http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection";
+            var schemaFile = "IgniteClientConfigurationSection.xsd";
+
+            IgniteConfigurationSerializerTest.CheckSchemaValidation(xml, xmlns, schemaFile);
         }
 
-#if !NETCOREAPP2_0
         /// <summary>
         /// Tests that all properties are present in the schema.
         /// </summary>
