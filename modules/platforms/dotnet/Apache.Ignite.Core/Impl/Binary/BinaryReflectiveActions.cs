@@ -268,7 +268,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
-            Type elemType = field.FieldType.GetElementType();
+            var elemType = field.FieldType.GetElementType();
+            Debug.Assert(elemType != null);
 
             if (elemType == typeof (bool))
             {
