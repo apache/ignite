@@ -193,6 +193,7 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
@@ -1227,34 +1228,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 // No-op.
                             }
 
-                            int pubPoolActiveThreads = 0;
-                            int pubPoolIdleThreads = 0;
-                            int pubPoolQSize = 0;
-
-                            if (execSvc instanceof ThreadPoolExecutor) {
-                                ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
-
-                                int poolSize = exec.getPoolSize();
-
-                                pubPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
-                                pubPoolIdleThreads = poolSize - pubPoolActiveThreads;
-                                pubPoolQSize = exec.getQueue().size();
-                            }
-
-                            int sysPoolActiveThreads = 0;
-                            int sysPoolIdleThreads = 0;
-                            int sysPoolQSize = 0;
-
-                            if (sysExecSvc instanceof ThreadPoolExecutor) {
-                                ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExecSvc;
-
-                                int poolSize = exec.getPoolSize();
-
-                                sysPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
-                                sysPoolIdleThreads = poolSize - sysPoolActiveThreads;
-                                sysPoolQSize = exec.getQueue().size();
-                            }
-
                             int loadedPages = 0;
 
                             Collection<DataRegion> policies = ctx.cache().context().database().dataRegions();
@@ -1278,11 +1251,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
                                 "    ^-- Non heap [used=" + dblFmt.format(nonHeapUsedInMBytes) + "MB, free=" +
                                 dblFmt.format(freeNonHeapPct) + "%, comm=" + dblFmt.format(nonHeapCommInMBytes) + "MB]" + NL +
-                                "    ^-- Public thread pool [active=" + pubPoolActiveThreads + ", idle=" +
-                                pubPoolIdleThreads + ", qSize=" + pubPoolQSize + "]" + NL +
-                                "    ^-- System thread pool [active=" + sysPoolActiveThreads + ", idle=" +
-                                sysPoolIdleThreads + ", qSize=" + sysPoolQSize + "]" + NL +
-                                "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
+                                "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]" + NL +
+                                "    ^-- " + createExecutorDescription("Public thread pool", execSvc) + NL +
+                                "    ^-- " + createExecutorDescription("System thread pool", sysExecSvc);
+
+                            if (customExecSvcs != null) {
+                                StringBuilder customSvcsMsg = new StringBuilder();
+                                for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet()) {
+                                    customSvcsMsg.append(NL).append("    ^-- ")
+                                        .append(createExecutorDescription(entry.getKey(), entry.getValue()));
+                                }
+                                msg = msg + customSvcsMsg;
+                            }
 
                             if (log.isInfoEnabled())
                                 log.info(msg);
@@ -1321,6 +1301,30 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (!isDaemon())
             ctx.discovery().ackTopology(localNode().order());
+    }
+
+    /**
+     * Create description of an executor service for logging.
+     *
+     * @param execSvcName name of the service
+     * @param execSvc service to create a description for
+     */
+    @NotNull private String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
+        int poolActiveThreads = 0;
+        int poolIdleThreads = 0;
+        int poolQSize = 0;
+
+        if (execSvc instanceof ThreadPoolExecutor) {
+            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
+
+            int poolSize = exec.getPoolSize();
+
+            poolActiveThreads = Math.min(poolSize, exec.getActiveCount());
+            poolIdleThreads = poolSize - poolActiveThreads;
+            poolQSize = exec.getQueue().size();
+        }
+
+        return execSvcName + " [active=" + poolActiveThreads + ", idle=" + poolIdleThreads + ", qSize=" + poolQSize + "]";
     }
 
     /**
