@@ -559,15 +559,12 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     public void testPageSize() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
-        try {
-            for (int i = 0; i < 50; i++)
-                cache.put(i, new Value("str" + i, i));
+        int numEntries = 10_000;
+        int pageSize = 3;
 
-            IgniteBiPredicate<Integer, Value> filter = new IgniteBiPredicate<Integer, Value>() {
-                @Override public boolean apply(Integer k, Value v) {
-                    return v.idx % 5 == 0;
-                }
-            };
+        try {
+            for (int i = 0; i < numEntries; i++)
+                cache.put(i, new Value("str" + i, i));
 
             IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
                 new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
@@ -576,17 +573,17 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                     }
                 };
 
-            ScanQuery<Integer, Value> query = new ScanQuery<>(filter);
-            query.setPageSize(2);
+            ScanQuery<Integer, Value> query = new ScanQuery<>();
+            query.setPageSize(pageSize);
 
             List<Integer> res = cache.query(query, transformer).getAll();
 
-            assertEquals(10, res.size());
+            assertEquals(numEntries, res.size());
 
             Collections.sort(res);
 
-            for (int i = 0; i < 10; i++)
-                assertEquals(i * 5, res.get(i).intValue());
+            for (int i = 0; i < numEntries; i++)
+                assertEquals(i, res.get(i).intValue());
         }
         finally {
             cache.destroy();
