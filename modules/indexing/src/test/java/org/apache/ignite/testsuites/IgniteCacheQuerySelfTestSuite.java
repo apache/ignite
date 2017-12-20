@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCheckClusterStateBefore
 import org.apache.ignite.internal.processors.cache.IgniteCrossCachesJoinsQueryTest;
 import org.apache.ignite.internal.processors.cache.IncorrectQueryEntityTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityCaseMismatchTest;
+import org.apache.ignite.internal.processors.cache.DdlTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledFieldsQuerySelfTest;
@@ -294,6 +295,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(H2DynamicIndexingComplexServerAtomicReplicatedTest.class);
         suite.addTestSuite(H2DynamicIndexingComplexServerTransactionalPartitionedTest.class);
         suite.addTestSuite(H2DynamicIndexingComplexServerTransactionalReplicatedTest.class);
+
+        suite.addTestSuite(DdlTransactionSelfTest.class);
 
         // Fields queries.
         suite.addTestSuite(SqlFieldsQuerySelfTest.class);
