@@ -89,6 +89,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
+
         this.log = ctx.log(getClass());
     }
 

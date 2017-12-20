@@ -28,8 +28,7 @@ public enum NestedTxMode {
     IGNORE,
 
     /** Exception will be thrown, previously started transaction will be rolled back. */
-    ERROR,
-    ;
+    ERROR;
 
     /** Default handling mode. */
     public final static NestedTxMode DEFAULT = ERROR;
