@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     /// <summary>
     /// Tests [Serializable] mechanism handling primitive types.
     /// </summary>
-    public class PrimitivesTest
+    public unsafe class PrimitivesTest
     {
         /** */
         private IIgnite _ignite;
@@ -126,7 +126,8 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 Guid = Guid.NewGuid(),
                 Guids = new[] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()},
                 String = "hello world",
-                Strings = new[] {"hello", "world"}
+                Strings = new[] {"hello", "world"},
+                IntPtr = new IntPtr(12345)
             };
 
             var vals = new[] {new Primitives(), val1};
@@ -246,6 +247,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 Assert.AreEqual(val.Strings, res.Strings);
                 Assert.AreEqual(val.Strings, bin.GetField<string[]>("strings"));
 
+                Assert.AreEqual(val.IntPtr, res.IntPtr);
+                Assert.AreEqual(val.IntPtr, bin.GetField<IntPtr>("intptr"));
+
                 VerifyFieldTypes(bin);
             }
         }
@@ -306,7 +310,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                     DateTime.Now, DateTime.MinValue, DateTime.MaxValue, DateTime.UtcNow, null
                 },
                 Guid = Guid.NewGuid(),
-                Guids = new Guid?[] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null},
+                Guids = new Guid?[] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null}
             };
 
             var vals = new[] {new PrimitivesNullable(), val1};
@@ -525,6 +529,12 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             public string String { get; set; }
             public string[] Strings { get; set; }
 
+            public IntPtr IntPtr { get; set; }
+            public IntPtr[] IntPtrs { get; set; }
+            
+            public UIntPtr UIntPtr { get; set; }
+            public UIntPtr[] UIntPtrs { get; set; }
+
             public Primitives()
             {
                 // No-op.
@@ -581,6 +591,11 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
                 String = info.GetString("string");
                 Strings = (string[]) info.GetValue("strings", typeof(string[]));
+
+                foreach (var x in info)
+                {
+                    Console.WriteLine(x);
+                }
             }
 
             public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -619,6 +634,10 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 info.AddValue("datetimes", DateTimes, typeof(DateTime[]));
                 info.AddValue("string", String, typeof(string));
                 info.AddValue("strings", Strings, typeof(string[]));
+                info.AddValue("intptr", IntPtr);
+                info.AddValue("intptrs", IntPtrs, typeof(IntPtr[]));
+                info.AddValue("uintptr", UIntPtr);
+                info.AddValue("uintptrs", UIntPtrs, typeof(UIntPtr[]));
             }
         }
 
