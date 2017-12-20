@@ -512,14 +512,21 @@ namespace Apache.Ignite.Core.Impl.Binary
                 readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));
             }
             else if (type.IsPointer)
-            {
-                // Object way causes "Operation could destabilize the runtime." error.
-                //writeAction = GetWriter<object>(field, (f, w, o) => w.WriteLong(f, (long) o), true);
-                //readAction = GetReader<object>(field, (f, r) => r.ReadLong(f));
+                unsafe
+                {
+                    // Object way causes "Operation could destabilize the runtime." error.
+                    //writeAction = GetWriter<object>(field, (f, w, o) => w.WriteLong(f, (long) o), true);
+                    //readAction = GetReader<object>(field, (f, r) => r.ReadLong(f));
 
-                writeAction = GetWriter<long>(field, (f, w, o) => w.WriteLong(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadLong(f));
-            }
+                    //writeAction = GetWriter<long>(field, (f, w, o) => w.WriteLong(f, o));
+                    //readAction = GetReader(field, (f, r) => r.ReadLong(f));
+
+                    // Expression trees do not work with pointers properly.
+                    var fieldName = BinaryUtils.CleanFieldName(field.Name);
+                    writeAction = (o, w) => w.WriteLong(fieldName, (long) Pointer.Unbox(field.GetValue(o)));
+                    readAction = (o, r) =>
+                        field.SetValue(o, Pointer.Box((void*) r.ReadLong(fieldName), field.FieldType));
+                }
             else
             {
                 writeAction = raw ? GetRawWriter(field, MthdWriteObjRaw) : GetWriter(field, MthdWriteObj);
