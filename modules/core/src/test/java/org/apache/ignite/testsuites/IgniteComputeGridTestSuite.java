@@ -39,6 +39,7 @@ import org.apache.ignite.internal.GridJobCheckpointCleanupSelfTest;
 import org.apache.ignite.internal.GridJobCollisionCancelSelfTest;
 import org.apache.ignite.internal.GridJobContextSelfTest;
 import org.apache.ignite.internal.GridJobMasterLeaveAwareSelfTest;
+import org.apache.ignite.internal.GridJobServicesAddNodeTest;
 import org.apache.ignite.internal.GridJobStealingSelfTest;
 import org.apache.ignite.internal.GridJobStealingZeroActiveJobsSelfTest;
 import org.apache.ignite.internal.GridJobSubjectIdSelfTest;
@@ -158,6 +159,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(PublicThreadpoolStarvationTest.class);
         suite.addTestSuite(IgniteComputeJobOneThreadTest.class);
         suite.addTestSuite(StripedExecutorTest.class);
+        suite.addTestSuite(GridJobServicesAddNodeTest.class);
 
         return suite;
     }
