@@ -554,6 +554,88 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPageSize() throws Exception {
+        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+
+        try {
+            for (int i = 0; i < 50; i++)
+                cache.put(i, new Value("str" + i, i));
+
+            IgniteBiPredicate<Integer, Value> filter = new IgniteBiPredicate<Integer, Value>() {
+                @Override public boolean apply(Integer k, Value v) {
+                    return v.idx % 5 == 0;
+                }
+            };
+
+            IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
+                new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
+                    @Override public Integer apply(Cache.Entry<Integer, Value> e) {
+                        return e.getValue().idx;
+                    }
+                };
+
+            ScanQuery<Integer, Value> query = new ScanQuery<>(filter);
+            query.setPageSize(2);
+
+            List<Integer> res = cache.query(query, transformer).getAll();
+
+            assertEquals(10, res.size());
+
+            Collections.sort(res);
+
+            for (int i = 0; i < 10; i++)
+                assertEquals(i * 5, res.get(i).intValue());
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalInjection() throws Exception {
+        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+
+        try {
+            for (int i = 0; i < 50; i++)
+                cache.put(i, new Value("str" + i, i * 100));
+
+            Collection<List<Boolean>> lists = grid().compute().broadcast(new IgniteCallable<List<Boolean>>() {
+                @IgniteInstanceResource
+                private Ignite ignite;
+
+                @Override public List<Boolean> call() throws Exception {
+                    IgniteClosure<Cache.Entry<Integer, Value>, Boolean> transformer =
+                        new IgniteClosure<Cache.Entry<Integer, Value>, Boolean>() {
+                            @IgniteInstanceResource
+                            Ignite ignite;
+
+                            @Override public Boolean apply(Cache.Entry<Integer, Value> e) {
+                                return ignite != null;
+                            }
+                        };
+
+                    return ignite.cache("test-cache").query(new ScanQuery<Integer, Value>().setLocal(true),
+                        transformer).getAll();
+                }
+            });
+
+            List<Boolean> res = new ArrayList<>(F.flatCollections(lists));
+
+            assertEquals(50, res.size());
+
+            for (int i = 0; i < 50; i++)
+                assertEquals(Boolean.TRUE, res.get(i));
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /**
      */
     private static class Value {
         /** */
