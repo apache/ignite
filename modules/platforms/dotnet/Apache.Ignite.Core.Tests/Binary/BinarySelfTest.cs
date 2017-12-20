@@ -1587,7 +1587,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests pointer types.
         /// </summary>
         [Test]
-        public unsafe void TestPointers()
+        public unsafe void TestPointers([Values(false, true)] bool raw)
         {
             // Values.
             var vals = new[] {IntPtr.Zero, new IntPtr(long.MinValue), new IntPtr(long.MaxValue)};
@@ -1608,7 +1608,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 ByteP = (byte*) 123,
                 //BytePs = new[] {(byte*) 1, (byte*) long.MaxValue}
             };
-            Assert.AreEqual(ptrs, TestUtils.SerializeDeserialize(ptrs));
+            Assert.AreEqual(ptrs, TestUtils.SerializeDeserialize(ptrs, raw));
         }
 
         /// <summary>
@@ -2739,7 +2739,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 if (ReferenceEquals(null, obj)) return false;
                 if (ReferenceEquals(this, obj)) return true;
-                if (obj.GetType() != this.GetType()) return false;
+                if (obj.GetType() != GetType()) return false;
                 return Equals((Pointers) obj);
             }
 

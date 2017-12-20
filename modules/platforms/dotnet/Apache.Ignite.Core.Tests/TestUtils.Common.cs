@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
@@ -341,11 +342,16 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Serializes and deserializes back an object.
         /// </summary>
-        public static T SerializeDeserialize<T>(T obj)
+        public static T SerializeDeserialize<T>(T obj, bool raw = false)
         {
+            var cfg = new BinaryConfiguration
+            {
+                Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+            };
+
 #if NETCOREAPP2_0
             var marshType = typeof(IIgnite).Assembly.GetType("Apache.Ignite.Core.Impl.Binary.Marshaller");
-            var marsh = Activator.CreateInstance(marshType, new object[] { null, null });
+            var marsh = Activator.CreateInstance(marshType, new object[] { cfg, null });
             marshType.GetProperty("CompactFooter").SetValue(marsh, false);
 
             var bytes = marshType.GetMethod("Marshal").MakeGenericMethod(typeof(object))
@@ -357,7 +363,7 @@ namespace Apache.Ignite.Core.Tests
 
             return (T)res;
 #else
-            var marsh = new Marshaller(null) { CompactFooter = false };
+            var marsh = new Marshaller(cfg) { CompactFooter = false };
 
             return marsh.Unmarshal<T>(marsh.Marshal(obj));
 #endif
