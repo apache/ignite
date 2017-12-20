@@ -758,7 +758,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                             curPart = ds.partId();
 
-                            cur = ds.cursor(cacheId, mvccVer);
+                            if (mvccVer == null)
+                                cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                            else {
+                                cur = cacheId == CU.UNDEFINED_CACHE_ID ?
+                                    ds.cursor(mvccVer) : ds.cursor(cacheId, mvccVer);
+                            }
                         }
                         else
                             break;
