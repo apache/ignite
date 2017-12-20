@@ -21,6 +21,7 @@ import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -177,6 +178,8 @@ public final class UpdatePlanBuilder {
 
         GridH2RowDescriptor desc;
 
+        List<GridSqlElement[]> elRows = null;
+
         if (stmt instanceof GridSqlInsert) {
             GridSqlInsert ins = (GridSqlInsert) stmt;
             target = ins.into();
@@ -186,6 +189,10 @@ public final class UpdatePlanBuilder {
 
             cols = ins.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
+
+            if (sel == null)
+                elRows = ins.rows();
+
             isTwoStepSubqry = (ins.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
         }
@@ -199,6 +206,10 @@ public final class UpdatePlanBuilder {
 
             cols = merge.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
+
+            if (sel == null)
+                elRows = merge.rows();
+
             isTwoStepSubqry = (merge.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
         }
@@ -208,7 +219,7 @@ public final class UpdatePlanBuilder {
         }
 
         // Let's set the flag only for subqueries that have their FROM specified.
-        isTwoStepSubqry = (isTwoStepSubqry && (sel instanceof GridSqlUnion ||
+        isTwoStepSubqry &= (sel != null && (sel instanceof GridSqlUnion ||
             (sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null)));
 
         int keyColIdx = -1;
@@ -260,12 +271,32 @@ public final class UpdatePlanBuilder {
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
-        String selectSql = sel.getSQL();
+        String selectSql = sel != null ? sel.getSQL() : null;
 
         DmlDistributedPlanInfo distributed = ((mvccEnabled || rowsNum == 0) && !F.isEmpty(selectSql)) ?
             checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
 
         UpdateMode mode = stmt instanceof GridSqlMerge ? UpdateMode.MERGE : UpdateMode.INSERT;
+
+        List<List<DmlArgument>> rows = null;
+
+        if (elRows != null) {
+            assert sel == null;
+
+            rows = new ArrayList<>(elRows.size());
+
+            for (GridSqlElement[] elRow : elRows) {
+                List<DmlArgument> row = new ArrayList<>(cols.length);
+
+                for (GridSqlElement el : elRow) {
+                    DmlArgument arg = DmlArguments.create(el);
+
+                    row.add(arg);
+                }
+
+                rows.add(row);
+            }
+        }
 
         return new UpdatePlan(
             mode,
@@ -278,6 +309,7 @@ public final class UpdatePlanBuilder {
             valColIdx,
             selectSql,
             !isTwoStepSubqry,
+            rows,
             rowsNum,
             null,
             distributed
@@ -399,6 +431,7 @@ public final class UpdatePlanBuilder {
                     valColIdx,
                     selectSql,
                     false,
+                    null,
                     0,
                     null,
                     distributed
