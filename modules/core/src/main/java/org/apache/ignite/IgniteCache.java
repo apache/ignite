@@ -1434,4 +1434,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Lost paritions.
      */
     public Collection<Integer> lostPartitions();
+
+    /**
+     * Sets statistics enabled flag cluster wide for this cache.
+     *
+     * @param enabled Statistics enabled flag.
+     */
+    public void enableStatistics(boolean enabled);
 }
