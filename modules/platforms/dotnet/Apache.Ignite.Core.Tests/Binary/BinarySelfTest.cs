@@ -1605,10 +1605,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Type fields.
             var ptrs = new Pointers
             {
-                ByteP = (byte*) 123,
-                //BytePs = new[] {(byte*) 1, (byte*) long.MaxValue}
+                ByteP = (byte*) 123
             };
-            Assert.AreEqual(ptrs, TestUtils.SerializeDeserialize(ptrs, raw));
+            var res = TestUtils.SerializeDeserialize(ptrs, raw);
+            Assert.IsTrue(ptrs.ByteP == res.ByteP);
         }
 
         /// <summary>
@@ -2728,25 +2728,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             //public UIntPtr UIntPtr { get; set; }
             //public UIntPtr[] UIntPtrs { get; set; }
             public byte* ByteP { get; set; }
-            //public byte*[] BytePs { get; set; }
-
-            private bool Equals(Pointers other)
-            {
-                return ByteP == other.ByteP;
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (ReferenceEquals(null, obj)) return false;
-                if (ReferenceEquals(this, obj)) return true;
-                if (obj.GetType() != GetType()) return false;
-                return Equals((Pointers) obj);
-            }
-
-            public override int GetHashCode()
-            {
-                return 0;
-            }
         }
     }
 }
