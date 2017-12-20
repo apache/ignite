@@ -1152,6 +1152,10 @@ public class MvccProcessor extends GridProcessorAdapter {
 
         assert crd != null;
 
+        // No need to re-initialize if coordinator version hasn't changed (e.g. it was cluster activation).
+        if (crdVer == crd.coordinatorVersion())
+            return;
+
         crdVer = crd.coordinatorVersion();
 
         log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
