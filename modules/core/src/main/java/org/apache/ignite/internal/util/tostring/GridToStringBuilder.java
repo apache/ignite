@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util.tostring;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -104,6 +103,14 @@ public class GridToStringBuilder {
             return queue;
         }
     };
+
+    /** */
+    private static ThreadLocal<SBLengthLimit> threadCurLen = new ThreadLocal<SBLengthLimit>() {
+        @Override protected SBLengthLimit initialValue() {
+            return new SBLengthLimit();
+        }
+    };
+
 
     /**
      * Produces auto-generated output of string presentation for given object and its declaration class.
@@ -282,11 +289,20 @@ public class GridToStringBuilder {
         addVals[4] = val4;
         addSens[4] = sens4;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 5);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 5);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -364,11 +380,20 @@ public class GridToStringBuilder {
         addVals[5] = val5;
         addSens[5] = sens5;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 6);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 6);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -454,11 +479,20 @@ public class GridToStringBuilder {
         addVals[6] = val6;
         addSens[6] = sens6;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 7);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 7);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -548,11 +582,20 @@ public class GridToStringBuilder {
         addVals[3] = val3;
         addSens[3] = sens3;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 4);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 4);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -631,11 +674,20 @@ public class GridToStringBuilder {
         addVals[2] = val2;
         addSens[2] = sens2;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 3);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 3);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -699,11 +751,20 @@ public class GridToStringBuilder {
         addVals[1] = val1;
         addSens[1] = sens1;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 2);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 2);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -754,11 +815,20 @@ public class GridToStringBuilder {
         addVals[0] = val;
         addSens[0] = sens;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 1);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 1);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -783,12 +853,21 @@ public class GridToStringBuilder {
         // in each string() apply.
         GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, tmp.getAdditionalNames(),
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, tmp.getAdditionalNames(),
                 tmp.getAdditionalValues(), null, 0);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -874,7 +953,10 @@ public class GridToStringBuilder {
      * @param <T> Type of object.
      */
     @SuppressWarnings({"unchecked"})
-    private static <T> String toStringImpl(Class<T> cls, SB buf, T obj,
+    private static <T> String toStringImpl(
+        Class<T> cls,
+        SBLimitedLength buf,
+        T obj,
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
@@ -1022,11 +1104,20 @@ public class GridToStringBuilder {
         propVals[0] = val;
         propSens[0] = sens;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 1);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 1);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1083,11 +1174,20 @@ public class GridToStringBuilder {
         propVals[1] = val1;
         propSens[1] = sens1;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 2);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 2);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1137,11 +1237,20 @@ public class GridToStringBuilder {
         propVals[2] = val2;
         propSens[2] = sens2;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 3);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 3);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1199,11 +1308,20 @@ public class GridToStringBuilder {
         propVals[3] = val3;
         propSens[3] = sens3;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 4);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 4);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1269,11 +1387,20 @@ public class GridToStringBuilder {
         propVals[4] = val4;
         propSens[4] = sens4;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 5);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 5);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1347,11 +1474,20 @@ public class GridToStringBuilder {
         propVals[5] = val5;
         propSens[5] = sens5;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 6);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 6);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1433,11 +1569,20 @@ public class GridToStringBuilder {
         propVals[6] = val6;
         propSens[6] = sens6;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 7);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 7);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1452,7 +1597,7 @@ public class GridToStringBuilder {
      * @param propCnt Properties count.
      * @return String presentation of the object.
      */
-    private static String toStringImpl(String str, SB buf, Object[] propNames, Object[] propVals,
+    private static String toStringImpl(String str, SBLimitedLength buf, Object[] propNames, Object[] propVals,
         boolean[] propSens, int propCnt) {
 
         buf.setLength(0);
@@ -1479,7 +1624,7 @@ public class GridToStringBuilder {
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
      */
-    private static void appendVals(SB buf,
+    private static void appendVals(SBLimitedLength buf,
         boolean first,
         Object[] addNames,
         Object[] addVals,
