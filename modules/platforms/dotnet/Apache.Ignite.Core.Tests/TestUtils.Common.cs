@@ -346,7 +346,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new BinaryConfiguration
             {
-                Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                Serializer = raw ? new BinaryReflectiveSerializer {RawMode = true} : null
             };
 
 #if NETCOREAPP2_0
