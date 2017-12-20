@@ -183,5 +183,16 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             // TODO
         }
+
+        /// <summary>
+        /// Tests that all properties are present in the schema.
+        /// </summary>
+        [Test]
+        public void TestAllPropertiesArePresentInSchema()
+        {
+            IgniteConfigurationSerializerTest.CheckAllPropertiesArePresentInSchema(
+                "IgniteClientConfigurationSection.xsd", "igniteClientConfiguration", typeof(IgniteClientConfiguration));
+        }
+
     }
 }

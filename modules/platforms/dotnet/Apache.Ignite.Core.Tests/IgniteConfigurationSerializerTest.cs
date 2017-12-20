@@ -356,14 +356,22 @@ namespace Apache.Ignite.Core.Tests
         /// Tests that all properties are present in the schema.
         /// </summary>
         [Test]
-        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public void TestAllPropertiesArePresentInSchema()
         {
-            var schema = XDocument.Load("IgniteConfigurationSection.xsd")
-                    .Root.Elements()
-                    .Single(x => x.Attribute("name").Value == "igniteConfiguration");
+            CheckAllPropertiesArePresentInSchema("IgniteConfigurationSection.xsd", "igniteConfiguration", 
+                typeof(IgniteConfiguration));
+        }
 
-            var type = typeof(IgniteConfiguration);
+        /// <summary>
+        /// Checks that all properties are present in schema.
+        /// </summary>
+        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
+        public static void CheckAllPropertiesArePresentInSchema(string xsd, string sectionName, Type type)
+        {
+            var schema = XDocument.Load(xsd)
+                .Root.Elements()
+                .Single(x => x.Attribute("name").Value == sectionName);
+
 
             CheckPropertyIsPresentInSchema(type, schema);
         }
