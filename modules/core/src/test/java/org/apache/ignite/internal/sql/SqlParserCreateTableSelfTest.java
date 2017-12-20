@@ -67,6 +67,8 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
     private static final String GOOD_STR = "test";
 
     private static final List<TestParamDef<?>> PARAM_TESTS = new LinkedList<>();
+    private static final List<TestParamDef.DefValPair<?>> DEFAULT_PARAM_VALS;
+
     static {
         PARAM_TESTS.add(new TestParamDef<>(TEMPLATE, "templateName", String.class,
             Arrays.asList(
@@ -137,6 +139,34 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
 
         PARAM_TESTS.add(ParamTests.makeBasicBoolDef(WRAP_VALUE, NO_WRAP_VALUE, "wrapValue",
             Optional.<Boolean>fromNullable(null), Optional.<Boolean>fromNullable(null)));
+
+        DEFAULT_PARAM_VALS = createDefaultParamVals(PARAM_TESTS);
+    }
+
+    /** FIXME */
+    @SuppressWarnings("unchecked")
+    private static List<TestParamDef.DefValPair<?>> createDefaultParamVals(List<TestParamDef<?>> paramTests) {
+        List<TestParamDef.DefValPair<?>> defParamVals = new LinkedList<>();
+
+        for (TestParamDef<?> def : paramTests) {
+
+            TestParamDef.Value<?> missingVal = null;
+
+            for (TestParamDef.Value<?> val : def.testValues()) {
+
+                if (val instanceof TestParamDef.MissingValue) {
+                    if (missingVal != null)
+                        assertEquals("Two or more different missing values", missingVal.fieldValue(), val.fieldValue());
+                    else
+                        missingVal = val;
+                }
+            }
+
+            if (missingVal != null)
+                defParamVals.add(new TestParamDef.DefValPair(def, missingVal, TestParamDef.Syntax.KEY_EQ_VAL));
+        }
+
+        return defParamVals;
     }
 
     /**
@@ -144,7 +174,7 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
-    public void testBaseCommand() throws Exception {
+    public void testBasicSyntax() throws Exception {
 
         assertParseError(null,
             "CREATE TABLE",
@@ -180,7 +210,7 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
         String baseCmd = "CREATE TABLE tbl (" + PK_NAME + " INT PRIMARY KEY, b VARCHAR)";
 
         for (TestParamDef testParamDef : PARAM_TESTS)
-            testParameter(null, baseCmd, testParamDef);
+            testParameter(null, baseCmd, testParamDef, DEFAULT_PARAM_VALS);
 
 
 //        // Base.

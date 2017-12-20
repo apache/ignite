@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.VAL;
 public final class ParamTests {
 
     /** FIXME */
-    private static final String BAD_BOOLEAN_VALUE = "Kewl";
+    private static final String BAD_BOOLEAN_VALUE = "Gnip_gnop";
 
     /** FIXME */
     @SuppressWarnings("unchecked")

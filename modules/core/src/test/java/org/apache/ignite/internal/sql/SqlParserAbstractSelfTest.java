@@ -24,9 +24,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.StringOrPattern;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -63,7 +65,9 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** FIXME */
-    protected <T> void testParameter(final String schema, final String cmdPrefix, TestParamDef<T> def)
+    @SuppressWarnings("unchecked")
+    protected <T> void testParameter(final String schema, final String cmdPrefix, TestParamDef<T> def,
+        @Nullable List<TestParamDef.DefValPair<?>> defaultParamVals)
         throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         for (TestParamDef.Value<T> val : def.testValues()) {
@@ -87,6 +91,17 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
                         SqlCommand cmd = new SqlParser(schema, sql).nextCommand();
 
                         checkField(cmd, def, val);
+
+                        if (defaultParamVals != null) {
+
+                            for (TestParamDef.DefValPair<?> defValPair : defaultParamVals) {
+
+                                if (!defValPair.def().cmdFieldName().equals(def.cmdFieldName()))
+                                    checkField(cmd,
+                                        (TestParamDef<Object>)defValPair.def(),
+                                        (TestParamDef.Value<Object>)defValPair.val());
+                            }
+                        }
                     }
                 }
                 catch (Exception | AssertionError e) {
@@ -100,6 +115,8 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
     /** FIXME */
     protected <T> void checkField(SqlCommand cmd, TestParamDef<T> def, TestParamDef.Value<T> val)
         throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+
+        assert def.testValues().contains(val);
 
         Method getter = cmd.getClass().getMethod(def.cmdFieldName());
 
