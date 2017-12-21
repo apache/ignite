@@ -33,7 +33,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(commonConfiguration(0));
+        startGrid(commonConfiguration(0).setMvccEnabled(true));
 
         super.execute(node(), "CREATE TABLE INTS(k int primary key, v int) WITH \"wrap_value=false,cache_name=ints," +
             "atomicity=transactional\"");

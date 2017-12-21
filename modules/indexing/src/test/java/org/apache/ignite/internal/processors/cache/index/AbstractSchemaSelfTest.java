@@ -119,7 +119,7 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx)).setMvccEnabled(true);
+        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
