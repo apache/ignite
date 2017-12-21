@@ -126,7 +126,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @param entry Entry to remove.
      */
     void removeTrackedEntry(GridNearCacheEntry entry) {
-        assert Thread.holdsLock(entry);
+        assert entry.isLockedByCurrentThread();
 
         pendingEntries.remove(new EntryWrapper(entry));
     }
