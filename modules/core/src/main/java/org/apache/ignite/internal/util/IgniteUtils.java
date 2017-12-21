@@ -3083,7 +3083,7 @@ public abstract class IgniteUtils {
     }
 
     /** */
-    static GridPlainInClosure<ByteBuffer> directByteBufferCleaner() {
+    private static GridPlainInClosure<ByteBuffer> directByteBufferCleaner() {
         if (!IgniteSystemProperties.getString("java.version", "").startsWith("1.8")) {
             try {
                 final Method cleaner = Unsafe.class.getMethod("invokeCleaner", ByteBuffer.class);
@@ -3120,7 +3120,9 @@ public abstract class IgniteUtils {
                     try {
                         cleanMtd.invoke(cleanerMtd.invoke(buf));
                     }
-                    catch (IllegalAccessException | InvocationTargetException ignored) {}
+                    catch (IllegalAccessException | InvocationTargetException e) {
+                        throw new RuntimeException("Failed to invoke direct buffer cleaner", e);
+                    }
                 }
             };
         }
