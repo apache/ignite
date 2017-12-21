@@ -307,9 +307,8 @@ public class MLP implements Model<Matrix, Matrix> {
     public MLP setWeight(int layerIdx, int fromNeuron, int toNeuron, double val) {
         // Should be transformation layer.
         assert layerIdx > 0;
-        assert architecture.transformationLayerArchitecture(layerIdx).hasBias();
 
-        weights(layerIdx).setX(fromNeuron, toNeuron, val);
+        weights(layerIdx).setX(toNeuron, fromNeuron, val);
 
         return this;
     }
@@ -364,7 +363,7 @@ public class MLP implements Model<Matrix, Matrix> {
 
         List<MLPLayer> layersParameters = new LinkedList<>();
 
-        for (int layer = lastLayer; layer > 0; layer++) {
+        for (int layer = lastLayer; layer > 0; layer--) {
             Matrix z = mlpState.linearOutput(layer).copy();
             Matrix dSigmaDz = differentiateNonlinearity(z, architecture().transformationLayerArchitecture(layer).activationFunction());
 
@@ -373,11 +372,12 @@ public class MLP implements Model<Matrix, Matrix> {
                 Matrix dLossDSigma = differentiateLoss(truthBatch, sigma, f);
                 dz = elementWiseTimes(dLossDSigma, dSigmaDz);
             }
-            else
+            else {
                 dz = weights(layer + 1).transpose().times(dz);
+                dz = elementWiseTimes(dz, dSigmaDz);
+            }
 
             Matrix a = mlpState.activatorsOutput(layer - 1);
-            dz = elementWiseTimes(dz, dSigmaDz);
             Matrix dw = dz.times(a.transpose()).times(invBatchSize);
 
             Vector db = null;

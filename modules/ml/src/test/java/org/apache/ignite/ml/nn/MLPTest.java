@@ -19,7 +19,10 @@ package org.apache.ignite.ml.nn;
 
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
@@ -102,6 +105,9 @@ public class MLPTest {
         Assert.assertEquals(predict, stackedPredict);
     }
 
+    /**
+     * Test parameters count works well.
+     */
     @Test
     public void paramsCountTest() {
         int inputSize = 10;
@@ -116,16 +122,19 @@ public class MLPTest {
             conf.parametersCount());
     }
 
+    /**
+     * test methods related to parameters flattening.
+     */
     @Test
-    public void setParamsTest() {
+    public void setParamsFlattening() {
         int inputSize = 3;
         int firstLayerNeuronsCnt = 2;
         int secondLayerNeurons = 1;
 
         DenseLocalOnHeapVector paramsVector = new DenseLocalOnHeapVector(new double[] {
-            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, // first layer weight matrix
-            7.0, 8.0, // second layer weight matrix
-            9.0 // second layer biases.
+            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, // First layer weight matrix.
+            7.0, 8.0, // Second layer weight matrix.
+            9.0 // Second layer biases.
         });
 
         DenseLocalOnHeapMatrix firstLayerWeights = new DenseLocalOnHeapMatrix(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
@@ -143,5 +152,53 @@ public class MLPTest {
         Assert.assertEquals(mlp.weights(1), firstLayerWeights);
         Assert.assertEquals(mlp.weights(2), secondLayerWeights);
         Assert.assertEquals(mlp.biases(2), secondLayerBiases);
+    }
+
+    @Test
+    public void testDifferentiation() {
+        int inputSize = 2;
+        int firstLayerNeuronsCnt = 1;
+
+        double w10 = 0.1;
+        double w11 = 0.2;
+
+        MLPArchitecture conf = new MLPArchitecture(inputSize).
+            withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID);
+
+        MLP mlp = new MLP(conf);
+
+        mlp.setWeight(1, 0, 0, w10);
+        mlp.setWeight(1, 1, 0, w11);
+        double x0 = 1.0;
+        double x1 = 3.0;
+
+        Matrix inputs = new DenseLocalOnHeapMatrix(new double[][] {{x0, x1}}).transpose();
+        double ytt = 1.0;
+        Matrix truth = new DenseLocalOnHeapMatrix(new double[][] {{ytt}}).transpose();
+
+        Vector grad = mlp.differentiateByParameters(Losses.MSE, inputs, truth);
+
+        // Let yt be y ground truth value.
+        // d/dw1i [1 / 2 (yt - sigma(w10 * x0 + w11 * x1))^2] =
+        // (yt - sigma(w10 * x0 + w11 * x1)) * (-1) * (sigma(w10 * x0 + w11 * x1)) * (1 - sigma(w10 * x0 + w11 * x1)) * xi =
+        // let z = sigma(w10 * x0 + w11 * x1)
+        // - (yt - z) * (z) * (1 - z) * xi.
+
+        IgniteTriFunction<Double, Vector, Vector, Vector> partialDer = (yt, w, x) -> {
+            Double z = Activators.SIGMOID.apply(w.dot(x));
+
+            return x.copy().map(xi -> -(yt - z) * z * (1 - z) * xi);
+        };
+
+        Vector weightsVec = mlp.weights(1).getRow(0);
+        Tracer.showAscii(weightsVec);
+
+        Vector trueGrad = partialDer.apply(ytt, weightsVec, inputs.getCol(0));
+
+        Tracer.showAscii(trueGrad);
+        Tracer.showAscii(grad);
+
+        Assert.assertEquals(mlp.architecture().parametersCount(), grad.size());
+        Assert.assertEquals(trueGrad, grad);
     }
 }
