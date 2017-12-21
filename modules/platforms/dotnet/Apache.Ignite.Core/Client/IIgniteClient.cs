@@ -25,7 +25,8 @@ namespace Apache.Ignite.Core.Client
 
     /// <summary>
     /// Main entry point for Ignite Thin Client APIs.
-    /// You can obtain an instance of <see cref="IIgniteClient"/> through <see cref="Ignition.StartClient"/>.
+    /// You can obtain an instance of <see cref="IIgniteClient"/> through one of the
+    /// <see cref="Ignition.StartClient()"/> overloads.
     /// <para />
     /// Instances of this class and all nested APIs are thread safe.
     /// </summary>
@@ -101,5 +102,11 @@ namespace Apache.Ignite.Core.Client
         /// <returns>Instance of <see cref="IBinary"/> interface</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IBinary GetBinary();
+
+        /// <summary>
+        /// Gets the configuration.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IgniteClientConfiguration GetConfiguration();
     }
 }
