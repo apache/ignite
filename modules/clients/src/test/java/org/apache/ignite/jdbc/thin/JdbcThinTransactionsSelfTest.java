@@ -392,23 +392,15 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection c = c(false, NestedTxMode.ERROR)) {
             try (Statement s = c.createStatement()) {
                 assertFalse(s.executeQuery("SELECT * from INTS").next());
-            }
-
-            try (PreparedStatement ps =
-                     c.prepareStatement("INSERT INTO INTS(k, v) values(1, 1)")) {
-
-                ps.setInt(1, 1);
 
                 if (batched) {
-                    ps.addBatch();
+                    s.addBatch("INSERT INTO INTS(k, v) values(1, 1)");
 
-                    ps.executeBatch();
+                    s.executeBatch();
                 }
                 else
-                    ps.execute();
-            }
+                    s.execute("INSERT INTO INTS(k, v) values(1, 1)");
 
-            try (Statement s = c.createStatement()) {
                 // We haven't committed anything yet - this check shows that autoCommit flag is in effect.
                 assertNull(cache.get(1));
 
