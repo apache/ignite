@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
