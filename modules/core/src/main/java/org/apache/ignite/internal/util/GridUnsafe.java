@@ -25,7 +25,6 @@ import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.lang.GridPlainInClosure;
 import sun.misc.JavaNioAccess;
@@ -100,10 +99,6 @@ public abstract class GridUnsafe {
 
     /** */
     public static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
-
-    /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
-    // TODO IGNITE-6743: change to Consumer<ByteBuffer> when Java 8 comes.
-    public static final GridPlainInClosure<ByteBuffer> DIRECT_BYTE_BUFFER_CLEANER = directByteBufferCleaner();
 
     /**
      * Ensure singleton.
@@ -1367,53 +1362,6 @@ public abstract class GridUnsafe {
         }
     }
 
-    /** */
-    private static GridPlainInClosure<ByteBuffer> directByteBufferCleaner() {
-        if (!IgniteSystemProperties.getString("java.version", "").startsWith("1.8")) {
-            try {
-                final Method cleaner = Unsafe.class.getMethod("invokeCleaner", ByteBuffer.class);
-
-                return new GridPlainInClosure<ByteBuffer>() {
-                    @Override public void apply(ByteBuffer buf) throws IgniteCheckedException {
-                        try {
-                            cleaner.invoke(UNSAFE, buf);
-                        }
-                        catch (IllegalAccessException | InvocationTargetException ignored) {}
-                    }
-                };
-            }
-            catch (NoSuchMethodException e) {
-                throw new RuntimeException("Reflection failure: no sun.misc.Unsafe.invokeCleaner() method found", e);
-            }
-        } else {
-            final Method cleanerMtd;
-            final Method cleanMtd;
-
-            try {
-                cleanerMtd = Class.forName("sun.nio.ch.DirectBuffer").getMethod("cleaner");
-
-            } catch (ClassNotFoundException | NoSuchMethodException e) {
-                throw new RuntimeException("Reflection failure: no sun.nio.ch.DirectBuffer.cleaner() method found", e);
-            }
-
-            try {
-                cleanMtd = Class.forName("sun.misc.Cleaner").getMethod("clean");
-            }
-            catch (ClassNotFoundException | NoSuchMethodException e) {
-                throw new RuntimeException("Reflection failure: no sun.misc.Cleaner.clean() method found", e);
-            }
-
-            return new GridPlainInClosure<ByteBuffer>() {
-                @Override public void apply(ByteBuffer buf) throws IgniteCheckedException {
-                    try {
-                        cleanMtd.invoke(cleanerMtd.invoke(buf));
-                    }
-                    catch (IllegalAccessException | InvocationTargetException ignored) {}
-                }
-            };
-        }
-    }
-
     /**
      * @param obj Object.
      * @param off Offset.
@@ -1727,16 +1675,17 @@ public abstract class GridUnsafe {
     }
 
     /**
-     * Cleans direct {@code java.nio.ByteBuffer}
+     * Invokes some method on {@code sun.misc.Unsafe} instance.
      *
-     * @param buf Direct buffer.
+     * @param mtd Method.
+     * @param args Arguments.
      */
-    public static void cleanDirectBuffer(ByteBuffer buf) {
-        assert buf.isDirect();
-
+    public static Object invoke(Method mtd, Object... args) {
         try {
-            DIRECT_BYTE_BUFFER_CLEANER.apply(buf);
+            return mtd.invoke(UNSAFE, args);
         }
-        catch (IgniteCheckedException ignored) {}
+        catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Unsafe invocation failed", e);
+        }
     }
 }

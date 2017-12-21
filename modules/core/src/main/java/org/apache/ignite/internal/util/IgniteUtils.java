@@ -204,6 +204,7 @@ import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.lang.GridPlainInClosure;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -303,6 +304,10 @@ public abstract class IgniteUtils {
 
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";
+
+    /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
+    // TODO IGNITE-6743: change to Consumer<ByteBuffer> when Java 8 comes.
+    public static final GridPlainInClosure<ByteBuffer> DIRECT_BYTE_BUFFER_CLEANER = directByteBufferCleaner();
 
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
     private static final ConcurrentMap<String, IgniteBiTuple<Class<?>, Collection<Field>>> p2pFields =
@@ -3061,6 +3066,64 @@ public abstract class IgniteUtils {
         String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
 
         return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+    }
+
+    /**
+     * Cleans direct {@code java.nio.ByteBuffer}
+     *
+     * @param buf Direct buffer.
+     */
+    public static void cleanDirectBuffer(ByteBuffer buf) {
+        assert buf.isDirect();
+
+        try {
+            DIRECT_BYTE_BUFFER_CLEANER.apply(buf);
+        }
+        catch (IgniteCheckedException ignored) {}
+    }
+
+    /** */
+    static GridPlainInClosure<ByteBuffer> directByteBufferCleaner() {
+        if (!IgniteSystemProperties.getString("java.version", "").startsWith("1.8")) {
+            try {
+                final Method cleaner = Unsafe.class.getMethod("invokeCleaner", ByteBuffer.class);
+
+                return new GridPlainInClosure<ByteBuffer>() {
+                    @Override public void apply(ByteBuffer buf) {
+                        GridUnsafe.invoke(cleaner, buf);
+                    }
+                };
+            }
+            catch (NoSuchMethodException e) {
+                throw new RuntimeException("Reflection failure: no sun.misc.Unsafe.invokeCleaner() method found", e);
+            }
+        } else {
+            final Method cleanerMtd;
+            final Method cleanMtd;
+
+            try {
+                cleanerMtd = Class.forName("sun.nio.ch.DirectBuffer").getMethod("cleaner");
+
+            } catch (ClassNotFoundException | NoSuchMethodException e) {
+                throw new RuntimeException("Reflection failure: no sun.nio.ch.DirectBuffer.cleaner() method found", e);
+            }
+
+            try {
+                cleanMtd = Class.forName("sun.misc.Cleaner").getMethod("clean");
+            }
+            catch (ClassNotFoundException | NoSuchMethodException e) {
+                throw new RuntimeException("Reflection failure: no sun.misc.Cleaner.clean() method found", e);
+            }
+
+            return new GridPlainInClosure<ByteBuffer>() {
+                @Override public void apply(ByteBuffer buf) throws IgniteCheckedException {
+                    try {
+                        cleanMtd.invoke(cleanerMtd.invoke(buf));
+                    }
+                    catch (IllegalAccessException | InvocationTargetException ignored) {}
+                }
+            };
+        }
     }
 
     /**
