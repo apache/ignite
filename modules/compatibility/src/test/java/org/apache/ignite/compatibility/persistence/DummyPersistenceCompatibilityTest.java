@@ -46,6 +46,9 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
     /** */
     protected static final String TEST_CACHE_NAME = DummyPersistenceCompatibilityTest.class.getSimpleName();
 
+    /** */
+    protected volatile boolean compactFooter;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -59,11 +62,17 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(true));
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                ));
 
-        cfg.setDataStorageConfiguration(memCfg);
+        cfg.setBinaryConfiguration(
+            new BinaryConfiguration()
+                .setCompactFooter(compactFooter)
+        );
 
         return cfg;
     }
@@ -102,7 +111,11 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
      * @throws Exception If failed.
      */
     protected void doTestStartupWithOldVersion(String igniteVer, boolean compactFooter) throws Exception {
+        boolean prev = this.compactFooter;
+
         try {
+            this.compactFooter = compactFooter;
+
             startGrid(1, igniteVer, new ConfigurationClosure(compactFooter), new PostStartupClosure());
 
             stopAllGrids();
@@ -113,10 +126,12 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
             ignite.active(true);
 
-            validateResultingCacheData(ignite.getOrCreateCache(TEST_CACHE_NAME));
+            validateResultingCacheData(ignite.cache(TEST_CACHE_NAME));
         }
         finally {
             stopAllGrids();
+
+            this.compactFooter = prev;
         }
     }
 
