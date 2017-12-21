@@ -210,14 +210,17 @@ public abstract class IgniteClientReconnectFailoverAbstractTest extends IgniteCl
             }
 
             if (err != null) {
-                log.error("Test error:" + err);
+                log.error("Test error: " + err);
 
                 U.dumpThreads(log);
 
                 CyclicBarrier barrier0 = barrier;
 
-                if (barrier0 != null)
+                if (barrier0 != null) {
+                    barrier = null;
+
                     barrier0.reset();
+                }
 
                 stop.set(true);
 

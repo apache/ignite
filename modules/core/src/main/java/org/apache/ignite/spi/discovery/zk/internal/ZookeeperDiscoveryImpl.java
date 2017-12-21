@@ -339,6 +339,8 @@ public class ZookeeperDiscoveryImpl {
      * @return Ping result.
      */
     public boolean pingNode(UUID nodeId) {
+        checkState();
+
         ZkRuntimeState rtState = this.rtState;
 
         ZookeeperClusterNode node = rtState.top.nodesById.get(nodeId);
@@ -2298,7 +2300,14 @@ public class ZookeeperDiscoveryImpl {
             if (log.isDebugEnabled())
                 log.debug("Update processed events: " + rtState.locNodeInfo.lastProcEvt);
 
-            zkClient.setData(rtState.locNodeZkPath, marshalZip(rtState.locNodeInfo), -1);
+            try {
+                zkClient.setData(rtState.locNodeZkPath, marshalZip(rtState.locNodeInfo), -1);
+            }
+            catch (KeeperException.NoNodeException e) {
+                // Possible if node is forcible failed.
+                if (log.isDebugEnabled())
+                    log.debug("Failed to update processed events, no node: " + rtState.locNodeInfo.lastProcEvt);
+            }
         }
 
         ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
@@ -2308,9 +2317,9 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * @param node
-     * @param evtData
-     * @throws Exception
+     * @param node Node.
+     * @param evtData Node join event data.
+     * @throws Exception If failed.
      */
     private void readAndInitSecuritySubject(ZookeeperClusterNode node, ZkDiscoveryNodeJoinEventData evtData) throws Exception {
         if (evtData.secSubjPartCnt > 0) {
