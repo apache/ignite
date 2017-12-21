@@ -629,7 +629,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (record.rollOver()){
                 assert cctx.database().checkpointLockIsHeldByThread();
 
+                long idx = currWrHandle.idx;
+
                 currWrHandle = rollOver(currWrHandle);
+
+                if (log != null && log.isDebugEnabled())
+                    log.debug("Rollover segment [" + idx + " to " + currWrHandle.idx + "], recordType=" + record.type());
             }
 
             WALPointer ptr = currWrHandle.addRecord(record);
