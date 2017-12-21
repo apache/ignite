@@ -1530,7 +1530,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         TcpDiscoveryAbstractMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
         if (internalLsnr != null && msg instanceof TcpDiscoveryJoinRequestMessage)
-            internalLsnr.beforeJoin(log);
+            internalLsnr.beforeJoin(locNode, log);
 
         assert sock != null;
         assert msg != null;

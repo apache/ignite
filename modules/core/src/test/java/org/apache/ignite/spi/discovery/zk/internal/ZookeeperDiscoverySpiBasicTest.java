@@ -63,15 +63,17 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -80,11 +82,17 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -101,6 +109,9 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD;
 import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
@@ -158,10 +169,13 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private IgniteOutClosure<CommunicationProblemResolver> commProblemRslvr;
 
     /** */
+    private IgniteOutClosure<DiscoverySpiNodeAuthenticator> auth;
+
+    /** */
     private String zkRootPath;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
         if (testSockNio)
             System.setProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET, ZkTestClientCnxnSocketNIO.class.getName());
 
@@ -176,6 +190,27 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
 
         zkSpi.setSessionTimeout(sesTimeout > 0 ? sesTimeout : 10_000);
+
+        // Set authenticator for basic sanity tests.
+        if (auth != null) {
+            zkSpi.setAuthenticator(auth.apply());
+
+            zkSpi.setInternalListener(new IgniteDiscoverySpiInternalListener() {
+                @Override public void beforeJoin(ClusterNode locNode, IgniteLogger log) {
+                    ZookeeperClusterNode locNode0 = (ZookeeperClusterNode)locNode;
+
+                    Map<String, Object> attrs = new HashMap<>(locNode0.getAttributes());
+
+                    attrs.put(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(null, null, igniteInstanceName));
+
+                    locNode0.setAttributes(attrs);
+                }
+
+                @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg) {
+                    return false;
+                }
+            });
+        }
 
         spis.put(igniteInstanceName, zkSpi);
 
@@ -475,11 +510,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids()) {
             ClusterNode locNode0 = node.cluster().localNode();
 
-            assertEquals(locNode0.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME),
+            assertEquals(locNode0.attribute(ATTR_IGNITE_INSTANCE_NAME),
                 locNode0.consistentId());
 
             for (ClusterNode node0 : node.cluster().nodes()) {
-                assertEquals(node0.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME),
+                assertEquals(node0.attribute(ATTR_IGNITE_INSTANCE_NAME),
                     node0.consistentId());
             }
         }
@@ -558,6 +593,138 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids()) {
             assertEquals(1, node.cluster().forClients().nodes().size());
             assertEquals(1, node.cluster().forServers().nodes().size());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalAuthenticationFails() throws Exception {
+        auth = ZkTestNodeAuthenticator.factory(getTestIgniteInstanceName(0));
+
+        Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(0);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        IgniteSpiException spiErr = X.cause(err, IgniteSpiException.class);
+
+        assertNotNull(spiErr);
+        assertTrue(spiErr.getMessage().contains("Authentication failed for local node"));
+
+        startGrid(1);
+        startGrid(2);
+
+        checkTestSecuritySubject(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAuthentication() throws Exception {
+        auth = ZkTestNodeAuthenticator.factory(getTestIgniteInstanceName(1),
+            getTestIgniteInstanceName(5));
+
+        startGrid(0);
+
+        checkTestSecuritySubject(1);
+
+        {
+            client = false;
+            checkStartFail(1);
+
+            client = true;
+            checkStartFail(1);
+
+            client = false;
+        }
+
+        startGrid(2);
+
+        checkTestSecuritySubject(2);
+
+        stopGrid(2);
+
+        checkTestSecuritySubject(1);
+
+        startGrid(2);
+
+        checkTestSecuritySubject(2);
+
+        stopGrid(0);
+
+        checkTestSecuritySubject(1);
+
+        checkStartFail(1);
+
+        client = false;
+
+        startGrid(3);
+
+        client = true;
+
+        startGrid(4);
+
+        client = false;
+
+        startGrid(0);
+
+        checkTestSecuritySubject(4);
+
+        checkStartFail(1);
+        checkStartFail(5);
+
+        client = true;
+
+        checkStartFail(1);
+        checkStartFail(5);
+    }
+
+    /**
+     * @param nodeIdx Node index.
+     */
+    private void checkStartFail(final int nodeIdx) {
+        Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(nodeIdx);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        IgniteSpiException spiErr = X.cause(err, IgniteSpiException.class);
+
+        assertNotNull(spiErr);
+        assertTrue(spiErr.getMessage().contains("Authentication failed"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkTestSecuritySubject(int expNodes) throws Exception {
+        waitForTopology(expNodes);
+
+        List<Ignite> nodes = G.allGrids();
+
+        JdkMarshaller marsh = new JdkMarshaller();
+
+        for (Ignite ignite : nodes) {
+            Collection<ClusterNode> nodes0 = ignite.cluster().nodes();
+
+            assertEquals(nodes.size(), nodes0.size());
+
+            for (ClusterNode node : nodes0) {
+                byte[] secSubj = node.attribute(ATTR_SECURITY_SUBJECT_V2);
+
+                assertNotNull(secSubj);
+
+                ZkTestNodeAuthenticator.TestSecurityContext secCtx = marsh.unmarshal(secSubj, null);
+
+                assertEquals(node.attribute(ATTR_IGNITE_INSTANCE_NAME), secCtx.nodeName);
+            }
         }
     }
 
@@ -2996,6 +3163,96 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      */
     private static class C2 implements Serializable {
         // No-op.
+    }
+
+    /**
+     *
+     */
+    static class ZkTestNodeAuthenticator implements DiscoverySpiNodeAuthenticator {
+        /**
+         * @param failAuthNodes Node names which should not pass authentication.
+         * @return Factory.
+         */
+        static IgniteOutClosure<DiscoverySpiNodeAuthenticator> factory(final String...failAuthNodes) {
+            return new IgniteOutClosure<DiscoverySpiNodeAuthenticator>() {
+                @Override public DiscoverySpiNodeAuthenticator apply() {
+                    return new ZkTestNodeAuthenticator(Arrays.asList(failAuthNodes));
+                }
+            };
+        }
+
+        /** */
+        private final Collection<String> failAuthNodes;
+
+        /**
+         * @param failAuthNodes Node names which should not pass authentication.
+         */
+        ZkTestNodeAuthenticator(Collection<String> failAuthNodes) {
+            this.failAuthNodes = failAuthNodes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
+            assertNotNull(cred);
+
+            String nodeName = node.attribute(ATTR_IGNITE_INSTANCE_NAME);
+
+            assertEquals(nodeName, cred.getUserObject());
+
+            boolean auth = !failAuthNodes.contains(nodeName);
+
+            System.out.println(Thread.currentThread().getName() + " authenticateNode [node=" + node.id() + ", res=" + auth + ']');
+
+            return auth ? new TestSecurityContext(nodeName) : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isGlobalNodeAuthentication() {
+            return false;
+        }
+
+        /**
+         *
+         */
+        private static class TestSecurityContext implements SecurityContext, Serializable {
+            /** Serial version uid. */
+            private static final long serialVersionUID = 0L;
+
+            /** */
+            final String nodeName;
+
+            /**
+             * @param nodeName Authenticated node name.
+             */
+            TestSecurityContext(String nodeName) {
+                this.nodeName = nodeName;
+            }
+
+            /** {@inheritDoc} */
+            @Override public SecuritySubject subject() {
+                return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean systemOperationAllowed(SecurityPermission perm) {
+                return true;
+            }
+        }
     }
 
     /**

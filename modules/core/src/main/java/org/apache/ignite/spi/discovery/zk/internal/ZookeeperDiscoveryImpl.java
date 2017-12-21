@@ -65,6 +65,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -183,6 +184,7 @@ public class ZookeeperDiscoveryImpl {
      * @param locNode Local node instance.
      * @param lsnr Discovery events listener.
      * @param exchange Discovery data exchange.
+     * @param internalLsnr Internal listener (used for testing only).
      */
     public ZookeeperDiscoveryImpl(
         ZookeeperDiscoverySpi spi,
@@ -191,7 +193,8 @@ public class ZookeeperDiscoveryImpl {
         String zkRootPath,
         ZookeeperClusterNode locNode,
         DiscoverySpiListener lsnr,
-        DiscoverySpiDataExchange exchange) {
+        DiscoverySpiDataExchange exchange,
+        IgniteDiscoverySpiInternalListener internalLsnr) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
 
         zkRootPath = zkRootPath.trim();
@@ -221,6 +224,9 @@ public class ZookeeperDiscoveryImpl {
             evtsAckThreshold = 1;
 
         this.evtsAckThreshold = evtsAckThreshold;
+
+        if (internalLsnr != null)
+            this.internalLsnr = internalLsnr;
     }
 
     /**
@@ -658,6 +664,11 @@ public class ZookeeperDiscoveryImpl {
                 U.warn(log, "Waiting for local join event [nodeId=" + locNode.id() + ", name=" + igniteInstanceName + ']');
             }
             catch (Exception e) {
+                IgniteSpiException spiErr = X.cause(e, IgniteSpiException.class);
+
+                if (spiErr != null)
+                    throw spiErr;
+
                 throw new IgniteSpiException("Failed to join cluster", e);
             }
         }
@@ -673,7 +684,7 @@ public class ZookeeperDiscoveryImpl {
         IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
 
         if (internalLsnr != null)
-            internalLsnr.beforeJoin(log);
+            internalLsnr.beforeJoin(locNode, log);
 
         if (locNode.isClient() && reconnect)
             locNode.setAttributes(spi.getSpiContext().nodeAttributes());
@@ -935,11 +946,11 @@ public class ZookeeperDiscoveryImpl {
                 joinDataPath,
                 rtState);
 
-            spi.getSpiContext().addTimeoutObject(rtState.joinTimeoutObj);
-
             zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback(rtState));
 
             zkClient.getDataAsync(zkPaths.evtsPath, rtState.watcher, rtState.watcher);
+
+            spi.getSpiContext().addTimeoutObject(rtState.joinTimeoutObj);
         }
         catch (IgniteCheckedException | ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
@@ -976,8 +987,8 @@ public class ZookeeperDiscoveryImpl {
             attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, subj));
 
             locNode.setAttributes(attrs);
-
-        } catch (IgniteException | IgniteCheckedException e) {
+        }
+        catch (Exception e) {
             throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
         }
     }
@@ -1075,7 +1086,7 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            if (rtState.joined)
+            if (rtState.errForClose != null || rtState.joined)
                 return;
 
             synchronized (stateMux) {

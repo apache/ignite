@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -69,7 +70,7 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeJoin(IgniteLogger log) {
+    @Override public void beforeJoin(ClusterNode locNode, IgniteLogger log) {
         try {
             CountDownLatch writeLatch0 = joinLatch;
 
