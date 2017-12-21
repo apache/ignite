@@ -38,7 +38,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -357,7 +356,7 @@ public class DmlStatementsProcessor {
 
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
-            if (distributedPlan == null)
+            if (!plan.hasRows() && distributedPlan == null)
                 throw new UnsupportedOperationException("Only distributed updates are supported at the moment");
 
             if (plan.mode() == UpdateMode.INSERT && !plan.isLocalSubquery())
@@ -368,27 +367,41 @@ public class DmlStatementsProcessor {
             boolean implicit = (tx == null);
 
             if (implicit)
-                tx = idx.txStart(cctx, true);
+                tx = idx.txStart(cctx, fieldsQry.getTimeout(), true);
 
-            int flags = fieldsQry.isEnforceJoinOrder() ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
-
-            List<Integer> cacheIds = distributedPlan.getCacheIds();
-
-            int[] ids = new int[cacheIds.size()];
-
-            for (int i = 0; i < ids.length; i++)
-                ids[i] = cacheIds.get(i);
-
-            if (distributedPlan.isReplicatedOnly())
-                flags |= GridH2QueryRequest.FLAG_REPLICATED;
-
-            long tm1 = tx.remainingTime(), tm2 = fieldsQry.getTimeout();
-
-            long timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : tm1 > 0 ? tm1 : tm2;
-
-            int[] parts = fieldsQry.getPartitions();
+            IgniteCheckedException ex = null;
 
             try {
+                UpdateResult fastResult = plan.processFast(fieldsQry.getArgs());
+
+                if (fastResult != null)
+                    return fastResult;
+
+                if (plan.hasRows())
+                    return processDmlSelectResult(plan, plan.createRows(fieldsQry.getArgs()), fieldsQry.getPageSize());
+
+                int[] ids = U.toIntArray(distributedPlan.getCacheIds());
+
+                int flags = 0;
+
+                if (fieldsQry.isEnforceJoinOrder())
+                    flags |= GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
+
+                if (distributedPlan.isReplicatedOnly())
+                    flags |= GridH2QueryRequest.FLAG_REPLICATED;
+
+                long timeout;
+
+                if (implicit)
+                    timeout = tx.remainingTime();
+                else {
+                    long tm1 = tx.remainingTime(), tm2 = fieldsQry.getTimeout();
+
+                    timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
+                }
+
+                int[] parts = fieldsQry.getPartitions();
+
                 IgniteInternalFuture<Long> fut = tx.updateAsync(
                     cctx,
                     ids,
@@ -402,21 +415,46 @@ public class DmlStatementsProcessor {
 
                 Long res = fut.get();
 
-                assert !implicit || tx.done();
-
                 return new UpdateResult(res, X.EMPTY_OBJECT_ARRAY);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
+                ex = e;
 
-                throw new CacheException("Failed to run update. " + e.getMessage(), e);
+                tx.setRollbackOnly();
             }
             finally {
                 if (implicit) {
-                    cctx.tm().resetContext();
+                    try {
+                        if (!tx.isRollbackOnly())
+                            tx.commit();
+                        else
+                            tx.rollback();
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (ex != null)
+                            ex.addSuppressed(e);
+                        else
+                            ex = e;
+                    }
 
-                    tx.close();
+                    try {
+                        tx.close();
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (ex != null)
+                            ex.addSuppressed(e);
+                        else
+                            ex = e;
+                    }
+
+                    cctx.tm().resetContext();
                 }
+            }
+
+            if (ex != null) {
+                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", ex);
+
+                throw new CacheException("Failed to run update. " + ex.getMessage(), ex);
             }
         }
 

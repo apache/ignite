@@ -158,7 +158,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
-import org.apache.ignite.transactions.Transaction;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
@@ -180,7 +179,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_START_CNTR;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
@@ -753,9 +751,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             SchemaIndexCacheVisitorClosure clo = new SchemaIndexCacheVisitorClosure() {
                 @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-                    if (rowDesc.context().mvccEnabled())
-                        row.mvccVersion(1, MVCC_START_CNTR);
-
                     GridH2Row h2Row = rowDesc.createRow(row, null);
 
                     h2Idx.putx(h2Row);
@@ -1575,7 +1570,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     case COMMIT:
                         tx.commit();
 
-                        txStart(null, false);
+                        txStart(null, qry.getTimeout(), false);
 
                         break;
 
@@ -1594,7 +1589,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
             else
-                txStart(null, false);
+                txStart(null, qry.getTimeout(), false);
         }
         else if (cmd instanceof SqlCommitTransactionCommand) {
             // Do nothing if there's no transaction.
@@ -1612,12 +1607,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * @param cctx Cache context.
+     * @param timeout Transaction timeout.
      * @param implicit Implicit transaction flag.
      * @return Newly started SQL transaction.
      */
-    GridNearTxLocal txStart(@Nullable GridCacheContext cctx, boolean implicit) {
-        TransactionConfiguration tcfg = cctx != null ? CU.transactionConfiguration(cctx, cctx.kernalContext().config())
-            : null;
+    GridNearTxLocal txStart(@Nullable GridCacheContext cctx, long timeout, boolean implicit) {
+        if (timeout == 0) {
+            TransactionConfiguration tcfg = cctx != null ?
+                CU.transactionConfiguration(cctx, cctx.kernalContext().config()) : null;
+
+            if (tcfg != null)
+                timeout = tcfg.getDefaultTxTimeout();
+        }
 
         return ctx.cache().context().tm().newTx(
             implicit,
@@ -1625,7 +1626,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cctx != null && cctx.systemTx() ? cctx : null,
             PESSIMISTIC,
             REPEATABLE_READ,
-            tcfg != null ? tcfg.getDefaultTxTimeout() : 0,
+            timeout,
             cctx == null || !cctx.skipStore(),
             0
         );
@@ -1803,7 +1804,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                         try {
                             if (txAutoStart)
-                                txStart(null, false);
+                                txStart(null, qry.getTimeout(), false);
 
                             res.add(dmlProc.updateSqlFieldsDistributed(schemaName, c, prepared,
                                 qry.copy().setSql(sqlQry).setArgs(args), cancel));
@@ -1853,7 +1854,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             if (txAutoStart)
-                txStart(null, false);
+                txStart(null, qry.getTimeout(), false);
 
             res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
                 qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,

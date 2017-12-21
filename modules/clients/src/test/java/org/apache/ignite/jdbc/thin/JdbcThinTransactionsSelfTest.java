@@ -390,14 +390,12 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         IgniteCache<Integer, ?> cache = grid(0).cache("ints");
 
         try (Connection c = c(false, NestedTxMode.ERROR)) {
-            // Why this affects whole transaction?
             try (Statement s = c.createStatement()) {
                 assertFalse(s.executeQuery("SELECT * from INTS").next());
             }
 
-            // We need this weird expression to make DML engine think it's a "distributed" insert.
             try (PreparedStatement ps =
-                     c.prepareStatement("INSERT INTO INTS(k, v) values(1, case when ? > 0 then 1 else 1 end)")) {
+                     c.prepareStatement("INSERT INTO INTS(k, v) values(1, 1)")) {
 
                 ps.setInt(1, 1);
 
@@ -423,7 +421,6 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
 
                 assertEquals(1, cache.get(1));
 
-                // No commit happened upon this query, too.
                 assertTrue(s.executeQuery("SELECT * from INTS").next());
             }
         }
@@ -437,12 +434,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     public void testExceptionHandling() throws SQLException {
         try (Connection c = c(true, NestedTxMode.ERROR)) {
             try (Statement s = c.createStatement()) {
-                try (PreparedStatement ps = c.prepareStatement("INSERT INTO INTS(k, v) values(1, " +
-                    "case when ? > 0 then 1 else 1 end)")) {
-                    ps.setInt(1, 1);
-
-                    ps.execute();
-                }
+                s.execute("INSERT INTO INTS(k, v) values(1, 1)");
 
                 assertEquals(1, grid(0).cache("ints").get(1));
 
@@ -454,12 +446,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 }, SQLException.class, "Failed to parse query");
 
-                try (PreparedStatement ps = c.prepareStatement("INSERT INTO INTS(k, v) values(2, " +
-                    "case when ? > 0 then 2 else 2 end)")) {
-                    ps.setInt(1, 2);
-
-                    ps.execute();
-                }
+                s.execute("INSERT INTO INTS(k, v) values(2, 2)");
 
                 assertEquals(2, grid(0).cache("ints").get(2));
             }

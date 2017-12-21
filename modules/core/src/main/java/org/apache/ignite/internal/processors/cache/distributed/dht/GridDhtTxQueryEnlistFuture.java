@@ -276,7 +276,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
             cctx.time().addTimeoutObject(timeoutObj);
         }
 
-        GridDhtCacheAdapter<?, ?> cache = cctx.dht();
+        GridDhtCacheAdapter<?, ?> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
         try {
             checkPartitions();
