@@ -493,7 +493,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ctx.addNodeAttribute(ATTR_PHY_RAM, totSysMemory);
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
 
-        DiscoverySpi spi = getSpi();
+        final DiscoverySpi spi = getSpi();
 
         discoOrdered = discoOrdered();
 
@@ -606,6 +606,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == EVT_NODE_METRICS_UPDATED)
                     verChanged = false;
                 else {
+                    spi.addLastEvent(type, topVer, node);
+
                     if (type != EVT_NODE_SEGMENTED &&
                         type != EVT_CLIENT_NODE_DISCONNECTED &&
                         type != EVT_CLIENT_NODE_RECONNECTED &&
@@ -2595,13 +2597,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         if (!isLocDaemon) {
                             U.warn(log, "Node FAILED: " + node);
 
+                            U.warn(log, getSpi().latestEventsString());
+
                             ackTopology(topVer.topologyVersion(), true);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Node FAILED: " + node);
                     }
-                    else if (log.isDebugEnabled())
+                    else if (log.isDebugEnabled()) {
                         log.debug("Daemon node FAILED: " + node);
+
+                        log.debug(getSpi().latestEventsString());
+                    }
 
                     break;
                 }
@@ -2626,10 +2633,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     segmented = true;
 
-                    if (!isLocDaemon)
+                    if (!isLocDaemon) {
                         U.warn(log, "Local node SEGMENTED: " + node);
-                    else if (log.isDebugEnabled())
+
+                        U.warn(log, getSpi().latestEventsString());
+                    }
+                    else if (log.isDebugEnabled()) {
                         log.debug("Local node SEGMENTED: " + node);
+
+                        log.debug(getSpi().latestEventsString());
+                    }
 
                     break;
                 }
@@ -2684,6 +2697,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             catch (IgniteSpiException e) {
                 U.error(log, "Failed to disconnect discovery SPI.", e);
             }
+
+            getSpi().latestEventsString();
 
             switch (segPlc) {
                 case RESTART_JVM:

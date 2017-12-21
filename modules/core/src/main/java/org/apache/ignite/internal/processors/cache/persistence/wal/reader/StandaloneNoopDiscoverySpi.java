@@ -116,6 +116,16 @@ public class StandaloneNoopDiscoverySpi extends IgniteSpiAdapter implements Disc
     }
 
     /** {@inheritDoc} */
+    @Override public String latestEventsString() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addLastEvent(int type, long topVer, ClusterNode node) {
+
+    }
+
+    /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
 
     }

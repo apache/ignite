@@ -37,7 +37,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,6 +57,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -106,6 +109,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
@@ -268,6 +272,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
+    /** Default size of discovery events history. */
+    public static final int DFLT_EVT_HISTORY_SIZE = 100;
+
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
@@ -402,6 +409,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** */
     protected IgniteSpiContext spiCtx;
 
+    /** Size of events history. */
+    private int evtHistSize = DFLT_EVT_HISTORY_SIZE;
+
+    /** Events history. */
+    private final Queue<String> evtHist = new ConcurrentLinkedQueue<>();
+
     /**
      * Gets current SPI state.
      *
@@ -487,6 +500,27 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
             throw new IllegalStateException("TcpDiscoverySpi has not started.");
 
         return impl instanceof ClientImpl;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String latestEventsString() {
+        GridStringBuilder sb = new GridStringBuilder("Last " + evtHistSize + " discovery events:");
+
+        for (String evt : evtHist)
+            sb.a(U.nl()).a(evt);
+
+        return sb.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addLastEvent(int type, long topVer, ClusterNode node) {
+        if (type == EVT_NODE_METRICS_UPDATED)
+            return;
+
+        if (evtHist.size() > evtHistSize)
+            evtHist.poll();
+
+        evtHist.add("Event=" + U.gridEventName(type) + ", topVer=" + topVer + ", node=" + node);
     }
 
     /**
@@ -938,6 +972,35 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         }
 
         this.topHistSize = topHistSize;
+
+        return this;
+    }
+
+    /**
+     * @return Size of topology snapshots history.
+     */
+    public int getEvtHistorySize() {
+        return evtHistSize;
+    }
+
+    /**
+     * Sets size of events history. Specified size should be greater than or equal to default size
+     * {@link #DFLT_EVT_HISTORY_SIZE}.
+     *
+     * @param evtHistSize Size of events history.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoverySpi setEvtHistorySize(int evtHistSize) {
+        if (evtHistSize < DFLT_EVT_HISTORY_SIZE) {
+            U.warn(log, "Events history size should be greater than or equal to default size. " +
+                "Specified size will not be set [curSize=" + this.evtHistSize + ", specifiedSize=" + evtHistSize +
+                ", defaultSize=" + DFLT_EVT_HISTORY_SIZE + ']');
+
+            return this;
+        }
+
+        this.evtHistSize = evtHistSize;
 
         return this;
     }

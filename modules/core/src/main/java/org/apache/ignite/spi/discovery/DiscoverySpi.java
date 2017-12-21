@@ -172,4 +172,18 @@ public interface DiscoverySpi extends IgniteSpi {
      * @throws IllegalStateException If discovery SPI has not started.
      */
     public boolean isClientMode() throws IllegalStateException;
+
+    /**
+     * Returns latest discovery events as string.
+     */
+    public String latestEventsString();
+
+    /**
+     * Remembers event. To get last events as string use {@link #latestEventsString()}.
+     *
+     * @param type Event type.
+     * @param topVer Topology version.
+     * @param node Node.
+     */
+    public void addLastEvent(int type, long topVer, ClusterNode node);
 }
