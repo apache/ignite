@@ -93,9 +93,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
      * Starts command in interactive mode.
      */
     def node() {
-        if (!isConnected)
-            adviseToConnect()
-        else
+        if (checkConnected()) {
             askForNode("Select node from:") match {
                 case Some(id) => ask("Detailed statistics (y/n) [n]: ", "n") match {
                     case "n" | "N" => nl(); node("-id=" + id)
@@ -104,6 +102,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
                 }
                 case None => ()
             }
+        }
     }
 
     /**
@@ -120,9 +119,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
      * @param args Command arguments.
      */
     def node(@Nullable args: String) = breakable {
-        if (!isConnected)
-            adviseToConnect()
-        else
+        if (checkConnected()) {
             try {
                 val argLst = parseArgs(args)
 
@@ -264,7 +261,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
                             t += ("Cur/avg CPU load %", formatDouble(m.getCurrentCpuLoad * 100) +
                                 "/" + formatDouble(m.getAverageCpuLoad * 100) + "%")
                             t += ("Heap memory used/max", formatMemory(m.getHeapMemoryUsed) +
-                                "/" +  formatMemory(m.getHeapMemoryMaximum))
+                                "/" + formatMemory(m.getHeapMemoryMaximum))
                         }
 
                         println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
@@ -279,6 +276,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
             catch {
                 case e: Exception => scold(e)
             }
+        }
     }
 }
 

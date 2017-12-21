@@ -18,8 +18,10 @@
 package org.apache.ignite.internal;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import javax.management.MBeanServer;
@@ -38,10 +40,10 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.messaging.MessagingListenActor;
+import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -388,26 +390,81 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         waitForDiscovery(node2, node1, node);
 
-        JmxClusterMetricsHelper h = new JmxClusterMetricsHelper(node.configuration());
+        UUID nodeId0 = node.cluster().localNode().id();
+        UUID nodeId1 = node1.cluster().localNode().id();
+        UUID nodeId2 = node2.cluster().localNode().id();
 
-        assertEquals(node.cluster().topologyVersion(), h.attr("TopologyVersion"));
+        Set<UUID> srvNodes = new HashSet<>(Arrays.asList(nodeId0, nodeId1));
+        Set<UUID> clientNodes = Collections.singleton(nodeId2);
+        Set<UUID> allNodes = new HashSet<>(Arrays.asList(nodeId0, nodeId1, nodeId2));
 
-        assertEquals(2, h.attr("TotalServerNodes"));
-        assertEquals(1, h.attr("TotalClientNodes"));
+        // ClusterMetricsMXBeanImpl test.
+        JmxClusterMetricsHelper helperCluster = new JmxClusterMetricsHelper(node.configuration(),
+            ClusterMetricsMXBeanImpl.class);
 
-        assertEquals(3, h.countNodes(ATTR_BUILD_VER, VER_STR, true, true));
-        assertEquals(2, h.countNodes(ATTR_BUILD_VER, VER_STR, true, false));
-        assertEquals(1, h.countNodes(ATTR_BUILD_VER, VER_STR, false, true));
-        assertEquals(0, h.countNodes(ATTR_BUILD_VER, VER_STR, false, false));
+        assertEquals(node.cluster().topologyVersion(), helperCluster.attr("TopologyVersion"));
 
-        assertEquals(2, h.countNodes(ATTR_CLIENT_MODE, "false", true, true));
-        assertEquals(0, h.countNodes(ATTR_CLIENT_MODE, "false", false, false));
-        assertEquals(1, h.countNodes(ATTR_CLIENT_MODE, "true", true, true));
+        assertEquals(2, helperCluster.attr("TotalServerNodes"));
+        assertEquals(1, helperCluster.attr("TotalClientNodes"));
 
-        assertEquals(F.asMap(false, 2, true, 1), h.groupNodes(ATTR_CLIENT_MODE, true, true));
-        assertEquals(F.asMap(false, 2), h.groupNodes(ATTR_CLIENT_MODE, true, false));
-        assertEquals(F.asMap(true, 1), h.groupNodes(ATTR_CLIENT_MODE, false, true));
-        assertEquals(Collections.emptyMap(), h.groupNodes(ATTR_CLIENT_MODE, false, false));
+        assertEquals(allNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, true));
+        assertEquals(srvNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, false));
+        assertEquals(clientNodes, helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, false, true));
+        assertEquals(Collections.emptySet(), helperCluster.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, false, false));
+
+        assertEquals(srvNodes, helperCluster.nodeIdsForAttribute(ATTR_CLIENT_MODE, "false", true, true));
+        assertEquals(Collections.emptySet(), helperCluster.nodeIdsForAttribute(ATTR_CLIENT_MODE, "false", false,
+            false));
+        assertEquals(clientNodes, helperCluster.nodeIdsForAttribute(ATTR_CLIENT_MODE, "true", true, true));
+
+        assertTrue(helperCluster.attributeNames().containsAll(node.cluster().localNode().attributes().keySet()));
+        assertTrue(helperCluster.attributeNames().containsAll(node1.cluster().localNode().attributes().keySet()));
+        assertTrue(helperCluster.attributeNames().containsAll(node2.cluster().localNode().attributes().keySet()));
+
+        assertEquals(new HashSet<>(Arrays.asList("true", "false")), helperCluster.attributeValues(ATTR_CLIENT_MODE));
+        assertEquals(Collections.emptySet(), helperCluster.attributeValues("NO_SUCH_ATTRIBUTE"));
+
+        // ClusterLocalNodeMetricsMXBeanImpl test.
+        JmxClusterMetricsHelper helperNode0 = new JmxClusterMetricsHelper(node.configuration(),
+            ClusterLocalNodeMetricsMXBeanImpl.class);
+        JmxClusterMetricsHelper helperNode2 = new JmxClusterMetricsHelper(node2.configuration(),
+            ClusterLocalNodeMetricsMXBeanImpl.class);
+
+        // For server node.
+        assertEquals(1, helperNode0.attr("TotalServerNodes"));
+        assertEquals(0, helperNode0.attr("TotalClientNodes"));
+
+        assertEquals(node.cluster().topologyVersion(), helperNode0.attr("TopologyVersion"));
+
+        assertEquals(node.cluster().localNode().attributes().keySet(), helperNode0.attributeNames());
+
+        assertEquals(Collections.singleton("false"), helperNode0.attributeValues(ATTR_CLIENT_MODE));
+        assertEquals(Collections.emptySet(), helperNode0.attributeValues("NO_SUCH_ATTRIBUTE"));
+
+        assertEquals(Collections.singleton(nodeId0), helperNode0.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true,
+            true));
+        assertEquals(Collections.singleton(nodeId0), helperNode0.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true,
+            false));
+        assertEquals(Collections.emptySet(), helperNode0.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, false, true));
+        assertEquals(Collections.emptySet(), helperNode0.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, false, false));
+
+        // For client node.
+        assertEquals(0, helperNode2.attr("TotalServerNodes"));
+        assertEquals(1, helperNode2.attr("TotalClientNodes"));
+
+        assertEquals(node.cluster().topologyVersion(), helperNode2.attr("TopologyVersion"));
+
+        assertEquals(node2.cluster().localNode().attributes().keySet(), helperNode2.attributeNames());
+
+        assertEquals(Collections.singleton("true"), helperNode2.attributeValues(ATTR_CLIENT_MODE));
+        assertEquals(Collections.emptySet(), helperNode2.attributeValues("NO_SUCH_ATTRIBUTE"));
+
+        assertEquals(Collections.singleton(nodeId2), helperNode2.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true,
+            true));
+        assertEquals(Collections.emptySet(), helperNode2.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, true, false));
+        assertEquals(Collections.singleton(nodeId2), helperNode2.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, false,
+            true));
+        assertEquals(Collections.emptySet(), helperNode2.nodeIdsForAttribute(ATTR_BUILD_VER, VER_STR, false, false));
     }
 
     /**
@@ -441,44 +498,10 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
          * @param cfg Ignite configuration.
          * @throws MalformedObjectNameException Thrown in case of any errors.
          */
-        private JmxClusterMetricsHelper(IgniteConfiguration cfg) throws MalformedObjectNameException {
+        private JmxClusterMetricsHelper(IgniteConfiguration cfg, Class<? extends ClusterMetricsMXBean> clazz) throws MalformedObjectNameException {
             this.mbeanSrv = cfg.getMBeanServer();
 
-            this.mbean = U.makeMBeanName(cfg.getIgniteInstanceName(), "Kernal",
-                ClusterMetricsMXBeanImpl.class.getSimpleName());
-        }
-
-        /**
-         * Invoke "countNodes" method through MBean server.
-         *
-         * @param attrName Node attribute name,
-         * @param attrVal Node attribute value,
-         * @param srv Include server nodes.
-         * @param client Include client nodes.
-         * @return Count of nodes filtered by node attribute.
-         * @throws Exception If failed.
-         */
-        private int countNodes(String attrName, String attrVal, boolean srv, boolean client) throws Exception {
-            String[] signature = {"java.lang.String", "java.lang.String", "boolean", "boolean"};
-            Object[] params = {attrName, attrVal, srv, client};
-
-            return (int)mbeanSrv.invoke(mbean, "countNodes", params, signature);
-        }
-
-        /**
-         * Invoke "groupNodes" method through MBean server.
-         *
-         * @param attrName Node attribute name.
-         * @param srv Include server nodes.
-         * @param client Include client nodes.
-         * @return The number of nodes grouped by node attribute name.
-         * @throws Exception If failed.
-         */
-        private Map groupNodes(String attrName, boolean srv, boolean client) throws Exception {
-            String[] signature = {"java.lang.String", "boolean", "boolean"};
-            Object[] params = {attrName, srv, client};
-
-            return (Map)mbeanSrv.invoke(mbean, "groupNodes", params, signature);
+            this.mbean = U.makeMBeanName(cfg.getIgniteInstanceName(), "Kernal", clazz.getSimpleName());
         }
 
         /**
@@ -490,6 +513,44 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
          */
         private Object attr(String name) throws Exception {
             return mbeanSrv.getAttribute(mbean, name);
+        }
+
+        /**
+         * Get distinct attribute names for given nodes projection.
+         */
+        public Set<String> attributeNames() throws Exception {
+            String[] signature = {};
+            Object[] params = {};
+
+            return (Set<String>)mbeanSrv.invoke(mbean, "attributeNames", params, signature);
+        }
+
+        /**
+         * Get distinct attribute values for given nodes projection.
+         *
+         * @param attrName Attribute name.
+         */
+        public Set<String> attributeValues(String attrName) throws Exception {
+            String[] signature = {"java.lang.String"};
+            Object[] params = {attrName};
+
+            return (Set<String>)mbeanSrv.invoke(mbean, "attributeValues", params, signature);
+        }
+
+        /**
+         * Get node IDs with the given attribute value.
+         *
+         * @param attrName Attribute name.
+         * @param attrVal Attribute value.
+         * @param includeSrvs Include server nodes.
+         * @param includeClients Include client nodes.
+         */
+        public Set<UUID> nodeIdsForAttribute(String attrName, String attrVal, boolean includeSrvs,
+            boolean includeClients) throws Exception {
+            String[] signature = {"java.lang.String", "java.lang.String", "boolean", "boolean"};
+            Object[] params = {attrName, attrVal, includeSrvs, includeClients};
+
+            return (Set<UUID>)mbeanSrv.invoke(mbean, "nodeIdsForAttribute", params, signature);
         }
     }
 }

@@ -103,6 +103,7 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 :: Set IGNITE_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
+call "%SCRIPTS_HOME%\include\build-classpath.bat"
 set CP=%IGNITE_LIBS%
 
 ::
