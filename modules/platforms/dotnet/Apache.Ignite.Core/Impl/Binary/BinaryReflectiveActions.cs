@@ -237,6 +237,24 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadDouble())
                     : GetReader(field, (f, r) => r.ReadDouble(f));
             }
+            else if (type == typeof(IntPtr))
+            {
+                writeAction = raw
+                    ? GetRawWriter<IntPtr>(field, (w, o) => w.WriteLong((long) o))
+                    : GetWriter<IntPtr>(field, (f, w, o) => w.WriteLong(f, (long) o));
+                readAction = raw
+                    ? GetRawReader(field, r => (IntPtr) r.ReadLong())
+                    : GetReader(field, (f, r) => (IntPtr) r.ReadLong(f));
+            }
+            else if (type == typeof(UIntPtr))
+            {
+                writeAction = raw
+                    ? GetRawWriter<UIntPtr>(field, (w, o) => w.WriteLong((long) o))
+                    : GetWriter<UIntPtr>(field, (f, w, o) => w.WriteLong(f, (long) o));
+                readAction = raw
+                    ? GetRawReader(field, r => (UIntPtr) r.ReadLong())
+                    : GetReader(field, (f, r) => (UIntPtr) r.ReadLong(f));
+            }
             else
             {
                 throw new IgniteException(string.Format("Unsupported primitive type '{0}' [Field={1}, " +
