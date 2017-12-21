@@ -194,6 +194,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             lock.writeUnlock();
         }
 
+        startLatch.countDown();
+
         int size = tasks.size();
 
         if (size > 0) {
