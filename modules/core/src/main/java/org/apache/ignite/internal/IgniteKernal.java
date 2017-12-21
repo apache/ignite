@@ -1087,7 +1087,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerKernalMBean();
             registerClusterMetricsMBeans();
             registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc, qryExecSvc,
-                schemaExecSvc);
+                schemaExecSvc, customExecSvcs);
 
             registerStripedExecutorMBean(stripedExecSvc);
 
@@ -1749,6 +1749,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param mgmtExecSvc Management executor service.
      * @param restExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
+     * @param customExecSvcs
      * @throws IgniteCheckedException If failed.
      */
     private void registerExecutorMBeans(ExecutorService execSvc,
@@ -1757,8 +1758,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService mgmtExecSvc,
         ExecutorService restExecSvc,
         ExecutorService qryExecSvc,
-        ExecutorService schemaExecSvc
-    ) throws IgniteCheckedException {if(U.IGNITE_MBEANS_DISABLED)
+        ExecutorService schemaExecSvc,
+        Map<String, ? extends ExecutorService> customExecSvcs
+    ) throws IgniteCheckedException {
+        if (U.IGNITE_MBEANS_DISABLED)
             return;
         pubExecSvcMBean = registerExecutorMBean(execSvc, "GridExecutionExecutor");
         sysExecSvcMBean = registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
@@ -1771,6 +1774,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (clientCfg != null)
             restExecSvcMBean = registerExecutorMBean(restExecSvc, "GridRestExecutor");
+
+        if (customExecSvcs != null) {
+            for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet()) {
+                schemaExecSvcMBean = registerExecutorMBean(entry.getValue(), entry.getKey());
+            }
+        }
     }
 
     /**
