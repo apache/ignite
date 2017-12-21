@@ -24,12 +24,17 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <!-- Imports no-ODBC Ignite configuration -->
     <import resource="queries-default.xml"/>
-
-    <bean parent="ignite.cfg">
-        <property name="clientConnectorConfiguration">
-            <null/>
+  
+    <bean parent="queries.cfg">
+        <!-- Provide Ssl context. -->
+        <property name="sslContextFactory">
+            <bean class="org.apache.ignite.ssl.SslContextFactory">
+                <property name="keyStoreFilePath" value="c:/work/ssl/server.jks"/>
+                <property name="keyStorePassword" value="123456"/>
+                <property name="trustStoreFilePath" value="c:/work/ssl/trust.jks"/>
+                <property name="trustStorePassword" value="123456"/>
+            </bean>
         </property>
 
         <property name="memoryConfiguration">

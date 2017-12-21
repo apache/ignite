@@ -158,7 +158,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\system_dsn.cpp" />
-    <ClCompile Include="..\..\os\win\src\system\socket_client.cpp" />
+    <ClCompile Include="..\..\os\win\src\system\tcp_socket_client.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\custom_window.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\window.cpp" />
@@ -236,10 +236,11 @@
     <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\secure_socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\system\tcp_socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h" />
     <ClInclude Include="..\..\include\ignite\odbc\type_traits.h" />
     <ClInclude Include="..\..\include\ignite\odbc\utility.h" />

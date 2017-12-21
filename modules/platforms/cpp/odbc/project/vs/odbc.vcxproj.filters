@@ -109,9 +109,6 @@
     <ClCompile Include="..\..\src\diagnostic\diagnosable_adapter.cpp">
       <Filter>Code\diagnostic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\src\system\socket_client.cpp">
-      <Filter>Code\system</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\query\type_info_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
@@ -153,6 +150,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ssl\secure_socket_client.cpp">
       <Filter>Code\ssl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\tcp_socket_client.cpp">
+      <Filter>Code\system</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -251,9 +251,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h">
       <Filter>Code\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h">
-      <Filter>Code\system</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h">
       <Filter>Code\query</Filter>
     </ClInclude>
@@ -292,6 +289,12 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\ssl\secure_socket_client.h">
       <Filter>Code\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\socket_client.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\system\tcp_socket_client.h">
+      <Filter>Code\system</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

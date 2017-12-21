@@ -35,11 +35,10 @@ namespace ignite
         namespace ssl
         {
             SecureSocketClient::SecureSocketClient(const std::string& certPath, const std::string& keyPath,
-                const std::string& caPath, const std::string& caDirPath):
+                const std::string& caPath):
                 certPath(certPath),
                 keyPath(keyPath),
                 caPath(caPath),
-                caDirPath(caDirPath),
                 context(0),
                 sslBio(0)
             {
@@ -58,7 +57,7 @@ namespace ignite
             {
                 if (!context)
                 {
-                    context = MakeContext(certPath, keyPath, caPath, caDirPath, diag);
+                    context = MakeContext(certPath, keyPath, caPath, diag);
 
                     if (!context)
                     {
@@ -220,8 +219,13 @@ namespace ignite
                 return res;
             }
 
+            bool SecureSocketClient::IsBlocking() const
+            {
+                return true;
+            }
+
             void* SecureSocketClient::MakeContext(const std::string& certPath, const std::string& keyPath,
-                const std::string& caPath, const std::string& caDirPath, diagnostic::Diagnosable& diag)
+                const std::string& caPath, diagnostic::Diagnosable& diag)
             {
                 static bool sslLibInited = false;
                 static common::concurrent::CriticalSection sslCs;
@@ -268,9 +272,8 @@ namespace ignite
                 SSL_CTX_set_options(ctx, flags);
 
                 const char* cCaPath = caPath.empty() ? 0 : caPath.c_str();
-                const char* cCaDirPath = caDirPath.empty() ? 0 : caDirPath.c_str();
 
-                long res = SSL_CTX_load_verify_locations(ctx, cCaPath, cCaDirPath);
+                long res = SSL_CTX_load_verify_locations(ctx, cCaPath, 0);
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
