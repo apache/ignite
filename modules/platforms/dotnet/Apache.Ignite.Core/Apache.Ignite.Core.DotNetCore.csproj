@@ -4,6 +4,8 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	<AssemblyName>Apache.Ignite.Core</AssemblyName>
+	<RootNamespace>Apache.Ignite.Core</RootNamespace>
   </PropertyGroup>  
   
   <ItemGroup>

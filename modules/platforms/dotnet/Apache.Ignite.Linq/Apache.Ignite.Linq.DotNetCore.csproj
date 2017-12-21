@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	<AssemblyName>Apache.Ignite.Linq</AssemblyName>
+	<RootNamespace>Apache.Ignite.Linq</RootNamespace>
   </PropertyGroup>  
   
   <ItemGroup>
