@@ -380,9 +380,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
      * @param args Command arguments.
      */
     def tasks(args: String) {
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             if (hasArgFlag("l", argLst)) {

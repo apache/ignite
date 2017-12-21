@@ -914,7 +914,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             FieldsResult res = null;
 
-            final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+            final boolean statsEnabled = cctx.statisticsEnabled();
 
             final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
@@ -1156,7 +1156,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-                final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+                final boolean statsEnabled = cctx.statisticsEnabled();
 
                 final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
@@ -1408,7 +1408,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (!enterBusy())
             throw new IllegalStateException("Failed to process query request (grid is stopping).");
 
-        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+        final boolean statsEnabled = cctx.statisticsEnabled();
 
         updateStatistics &= statsEnabled;
 
@@ -2984,7 +2984,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             this.log = log;
 
-            statsEnabled = locNode && cctx.config().isStatisticsEnabled();
+            statsEnabled = locNode && cctx.statisticsEnabled();
 
             readEvt = locNode && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
