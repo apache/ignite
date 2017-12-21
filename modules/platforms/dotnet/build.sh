@@ -21,7 +21,7 @@
 #
 
 pushd
-cd ..\..\..
+cd ../../..
 mvn clean package -DskipTests -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
 popd
 cd Apache.Ignite.Core.Tests.DotNetCore
