@@ -101,7 +101,7 @@ public abstract class GridUnsafe {
     /**
      * {@code java.nio.Buffer.address} field offset.
      */
-    private static final long DIRECT_NIO_BUFFER_ADDRESS_OFFSET = directNioBufferAddressOffset();
+    private static final long DIRECT_BUF_ADDR_OFF = bufferAddressOffset();
 
     /**
      * Ensure singleton.
@@ -1366,9 +1366,9 @@ public abstract class GridUnsafe {
     }
 
     /** */
-    private static long directNioBufferAddressOffset() {
+    private static long bufferAddressOffset() {
         try {
-            return unsafe().objectFieldOffset(Buffer.class.getDeclaredField("address"));
+            return UNSAFE.objectFieldOffset(Buffer.class.getDeclaredField("address"));
         }
         catch (NoSuchFieldException e) {
             throw new RuntimeException("Reflection failure: no java.nio.Buffer.address field found", e);
@@ -1680,10 +1680,10 @@ public abstract class GridUnsafe {
     }
 
     /**
-     * @param directBuffer Direct buffer.
+     * @param buf Direct buffer.
      * @return Buffer memory address.
      */
-    public static long bufferAddress(ByteBuffer directBuffer) {
-        return UNSAFE.getLong(directBuffer, DIRECT_NIO_BUFFER_ADDRESS_OFFSET);
+    public static long bufferAddress(ByteBuffer buf) {
+        return UNSAFE.getLong(buf, DIRECT_BUF_ADDR_OFF);
     }
 }
