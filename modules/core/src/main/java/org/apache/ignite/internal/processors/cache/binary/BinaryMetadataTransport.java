@@ -244,6 +244,8 @@ final class BinaryMetadataTransport {
         for (MetadataUpdateResultFuture fut : unlabeledFutures)
             fut.onDone(res);
 
+        unlabeledFutures.clear();
+
         for (MetadataUpdateResultFuture fut : syncMap.values())
             fut.onDone(res);
 
