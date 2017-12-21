@@ -294,7 +294,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             boolean needVer = this.needVer;
 
             final BackupPostProcessingClosure postClos = CU.createBackupPostProcessingClosure(topVer, log,
-                cctx, key, expiryPlc, readThrough, skipVals);
+                cctx, key, expiryPlc, 0, readThrough, skipVals);
 
             if (postClos != null) {
                 // Need version to correctly store value.
