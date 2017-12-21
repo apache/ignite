@@ -388,7 +388,7 @@ namespace Apache.Ignite.Core.Impl.Services
             return new ServiceProxy<T>((method, args) =>
                 InvokeProxyMethod(javaProxy, method, args, platform)).GetTransparentProxy();
 #else
-            throw new IgniteException("Service proxies are not supported on .NET Core: IGNITE-7281");
+            throw new Apache.Ignite.Core.Common.IgniteException("Service proxies are not supported on .NET Core: IGNITE-7281");
 #endif
         }
 
