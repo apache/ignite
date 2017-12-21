@@ -17,17 +17,18 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import java.util.{Collection => JavaCollection, List => JavaList, Collections, UUID}
+import java.util.{Collections, UUID, Collection => JavaCollection, List => JavaList}
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
-import org.apache.ignite.visor.commands.common.VisorTextTable
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
 import org.jetbrains.annotations._
 
@@ -161,18 +162,8 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *
  * }}}
  */
-class VisorCacheCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help cache' to see how to use this command.")
-    }
+class VisorCacheCommand extends VisorConsoleCommand {
+    @impl protected val name: String = "cache"
 
     /**
      * ===Command===
@@ -214,14 +205,7 @@ class VisorCacheCommand {
      * @param args Command arguments.
      */
     def cache(args: String) {
-        if (!isConnected)
-            adviseToConnect()
-        else if (!isActive) {
-            warn("Can not perform the operation because the cluster is inactive.",
-                "Note, that the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes join the cluster.",
-                "To activate the cluster execute following command: top -activate.")
-        }
-        else {
+        if (checkConnected() && checkActiveState()) {
             var argLst = parseArgs(args)
 
             if (hasArgFlag("i", argLst)) {
@@ -639,7 +623,6 @@ class VisorCacheCommand {
     def askForCache(title: String, node: Option[ClusterNode], showSystem: Boolean = false,
         aggrData: Seq[VisorCacheAggregatedMetrics]): Option[String] = {
         assert(title != null)
-        assert(visor.visor.isConnected)
 
         if (aggrData.isEmpty) {
             scold("No caches found.")

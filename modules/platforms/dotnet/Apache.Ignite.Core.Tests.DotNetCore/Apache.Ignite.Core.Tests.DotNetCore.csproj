@@ -89,6 +89,9 @@
     <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-query.xml" Link="Config\cache-query.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Client\IgniteClientConfiguration.xml" Link="Config\Client\IgniteClientConfiguration.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid1.xml" Link="Config\Compute\compute-grid1.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -126,12 +129,16 @@
     <Folder Include="Cache\Query\" />
     <Folder Include="Compute\" />
     <Folder Include="Config\Compute\" />
+    <Folder Include="Config\Client\" />
     <Folder Include="Log\" />
     <Folder Include="DataStructures\" />
     <Folder Include="ThinClient\Cache\" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\Apache.Ignite.Core.Tests\custom_app.config" Link="custom_app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Common\TestUtils.DotNetCore.cs" />
   </ItemGroup>
 
