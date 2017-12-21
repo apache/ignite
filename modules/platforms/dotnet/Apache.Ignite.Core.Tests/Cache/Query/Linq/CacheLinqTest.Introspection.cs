@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             Assert.AreEqual(new[] { 10 }, fq.Arguments);
             Assert.IsTrue(fq.Local);
-            Assert.AreEqual(PersonCount - 11, cache.QueryFields(fq).GetAll().Count);
+            Assert.AreEqual(PersonCount - 11, cache.Query(fq).GetAll().Count);
             Assert.AreEqual(999, fq.PageSize);
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsTrue(fq.EnforceJoinOrder);

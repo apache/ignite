@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
 
             // Test insert.
-            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) " +
+            var res = cache.Query(new SqlFieldsQuery("insert into foo(_key, id, name) " +
                                                            "values (?, ?, ?), (?, ?, ?)",
                 1, 2, "John", 3, 4, "Mary")).GetAll();
 
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
 
-            var ex = Assert.Throws<IgniteException>(() => cache.QueryFields(new SqlFieldsQuery(
+            var ex = Assert.Throws<IgniteException>(() => cache.Query(new SqlFieldsQuery(
                 "insert into foo(_key, name) values (?, ?)", 1, "bar")).GetAll());
 
             Assert.AreEqual("Null value is not allowed for column 'ID'", ex.Message);
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cfg = new CacheConfiguration("not_null_attr", new QueryEntity(typeof(int), typeof(Foo)));
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
 
-            var ex = Assert.Throws<IgniteException>(() => cache.QueryFields(new SqlFieldsQuery(
+            var ex = Assert.Throws<IgniteException>(() => cache.Query(new SqlFieldsQuery(
                 "insert into foo(_key, id) values (?, ?)", 1, 2)).GetAll());
 
             Assert.AreEqual("Null value is not allowed for column 'NAME'", ex.Message);
@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             foreach (var val in vals)
             {
-                var res = cache.QueryFields(new SqlFieldsQuery(
+                var res = cache.Query(new SqlFieldsQuery(
                     "insert into string(_key, _val) values (?, ?)", val, val.ToString())).GetAll();
 
                 Assert.AreEqual(1, res.Count);
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<Key, Foo>(cfg);
 
             // Test insert.
-            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(hi, lo, id, name) " +
+            var res = cache.Query(new SqlFieldsQuery("insert into foo(hi, lo, id, name) " +
                                                "values (-1, 65500, 3, 'John'), (255, 128, 6, 'Mary')")).GetAll();
 
             Assert.AreEqual(1, res.Count);
@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<Key2, Foo>(cfg);
 
             // Test insert.
-            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(hi, lo, str, id, name) " +
+            var res = cache.Query(new SqlFieldsQuery("insert into foo(hi, lo, str, id, name) " +
                                                "values (1, 2, 'Фу', 3, 'John'), (4, 5, 'Бар', 6, 'Mary')")).GetAll();
 
             Assert.AreEqual(1, res.Count);
@@ -293,7 +293,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<Key, Foo>(cfg);
 
             var ex = Assert.Throws<IgniteException>(
-                () => cache.QueryFields(new SqlFieldsQuery("insert into foo(lo, hi, id, name) " +
+                () => cache.Query(new SqlFieldsQuery("insert into foo(lo, hi, id, name) " +
                                                            "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")));
 
             Assert.AreEqual("Ownership flag not set for binary property. Have you set 'keyFields' " +
@@ -322,7 +322,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<object, object>(cfg)
                 .WithKeepBinary<IBinaryObject, IBinaryObject>();
 
-            var res = cache.QueryFields(new SqlFieldsQuery("insert into car(VIN, Id, Make, Year) " +
+            var res = cache.Query(new SqlFieldsQuery("insert into car(VIN, Id, Make, Year) " +
                                                            "values ('DLRDMC', 88, 'DeLorean', 1982)")).GetAll();
 
             Assert.AreEqual(1, res.Count);
@@ -362,7 +362,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             };
 
             // Test insert.
-            var res = cache.QueryFields(new SqlFieldsQuery(
+            var res = cache.Query(new SqlFieldsQuery(
                     "insert into string(byte, sbyte, short, ushort, int, uint, long, ulong, float, double, decimal, " +
                     "guid, string, key, _val) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     key.Byte, key.SByte, key.Short, key.UShort, key.Int, key.UInt, key.Long, key.ULong, key.Float,
