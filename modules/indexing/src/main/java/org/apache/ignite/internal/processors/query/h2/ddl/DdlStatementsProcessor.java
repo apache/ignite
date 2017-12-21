@@ -165,12 +165,7 @@ public class DdlStatementsProcessor {
             if (fut != null)
                 fut.get();
 
-            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                (Collections.singletonList(0L)), null, false);
-
-            resCur.fieldsMeta(UPDATE_RESULT_META);
-
-            return resCur;
+            return IgniteH2Indexing.dummyCursor();
         }
         catch (SchemaOperationException e) {
             throw convert(e);
@@ -398,7 +393,7 @@ public class DdlStatementsProcessor {
      * @throws IgniteCheckedException If failed.
      */
     private void finishActiveTxIfNecessary() throws IgniteCheckedException {
-        try (GridNearTxLocal tx = ctx.cache().context().tm().userTx()) {
+        try (GridNearTxLocal tx = idx.userTx()) {
             if (tx == null)
                 return;
 

@@ -20,11 +20,13 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.Serializable;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Properties;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -96,11 +98,31 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
+    /** Nested transactions handling strategy. */
+    private StringProperty nestedTxMode = new StringProperty(
+        "nestedTransactionsMode", "Way to handle nested transactions", NestedTxMode.ERROR.name(),
+        new String[] { NestedTxMode.COMMIT.name(), NestedTxMode.ERROR.name(), NestedTxMode.IGNORE.name() },
+        false, new PropertyValidator() {
+        private static final long serialVersionUID = 0L;
+
+        @Override public void validate(String mode) throws SQLException {
+            if (!F.isEmpty(mode)) {
+                try {
+                    NestedTxMode.valueOf(mode.toUpperCase());
+                }
+                catch (IllegalArgumentException e) {
+                    throw new SQLException("Invalid nested transactions handling mode, allowed values: " +
+                        Arrays.toString(nestedTxMode.choices), SqlStateCode.CLIENT_CONNECTION_FAILED);
+                }
+            }
+        }
+    });
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTxMode
     };
 
     /** {@inheritDoc} */
@@ -221,6 +243,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setSkipReducerOnUpdate(boolean val) {
         skipReducerOnUpdate.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String nestedTxMode() {
+        return nestedTxMode.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void nestedTxMode(String val) {
+        nestedTxMode.setValue(val);
     }
 
     /**

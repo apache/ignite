@@ -192,9 +192,16 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         String errMsg = null;
 
         if (connCtx.isVersionSupported(ver)) {
-            connCtx.initializeFromHandshake(ver, reader);
+            try {
+                connCtx.initializeFromHandshake(ver, reader);
 
-            ses.addMeta(CONN_CTX_META_KEY, connCtx);
+                ses.addMeta(CONN_CTX_META_KEY, connCtx);
+            }
+            catch (Exception e) {
+                log.warning("Exception during handshake", e);
+
+                errMsg = e.getMessage();
+            }
         }
         else {
             log.warning("Unsupported version: " + ver.toString());
