@@ -122,4 +122,19 @@ public class MLPArchitecture {
 
         return res;
     }
+
+    public int parametersCount() {
+        int res = 0;
+
+        for (int i = 1; i < layersCount(); i++) {
+            TransformationLayerArchitecture la = transformationLayerArchitecture(i);
+            res += layerArchitecture(i - 1).neuronsCount() * la.neuronsCount();
+
+            if (la.hasBias())
+                res += la.neuronsCount();
+
+        }
+
+        return res;
+    }
 }

@@ -101,4 +101,47 @@ public class MLPTest {
 
         Assert.assertEquals(predict, stackedPredict);
     }
+
+    @Test
+    public void paramsCountTest() {
+        int inputSize = 10;
+        int layerWithBiasNeuronsCnt = 13;
+        int layerWithoutBiasNeuronsCnt = 17;
+
+        MLPArchitecture conf = new MLPArchitecture(inputSize).
+            withAddedLayer(layerWithBiasNeuronsCnt, true, Activators.SIGMOID).
+            withAddedLayer(layerWithoutBiasNeuronsCnt, false, Activators.SIGMOID);
+
+        Assert.assertEquals(layerWithBiasNeuronsCnt * inputSize + layerWithBiasNeuronsCnt + (layerWithoutBiasNeuronsCnt * layerWithBiasNeuronsCnt),
+            conf.parametersCount());
+    }
+
+    @Test
+    public void setParamsTest() {
+        int inputSize = 3;
+        int firstLayerNeuronsCnt = 2;
+        int secondLayerNeurons = 1;
+
+        DenseLocalOnHeapVector paramsVector = new DenseLocalOnHeapVector(new double[] {
+            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, // first layer weight matrix
+            7.0, 8.0, // second layer weight matrix
+            9.0 // second layer biases.
+        });
+
+        DenseLocalOnHeapMatrix firstLayerWeights = new DenseLocalOnHeapMatrix(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
+        DenseLocalOnHeapMatrix secondLayerWeights = new DenseLocalOnHeapMatrix(new double[][] {{7.0, 8.0}});
+        DenseLocalOnHeapVector secondLayerBiases = new DenseLocalOnHeapVector(new double[] {9.0});
+
+        MLPArchitecture conf = new MLPArchitecture(inputSize).
+            withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID).
+            withAddedLayer(secondLayerNeurons, true, Activators.SIGMOID);
+
+        MLP mlp = new MLP(conf, new MLPConstInitializer(100, 200));
+
+        Assert.assertEquals(paramsVector, mlp.setParameters(paramsVector).parameters());
+
+        Assert.assertEquals(mlp.weights(1), firstLayerWeights);
+        Assert.assertEquals(mlp.weights(2), secondLayerWeights);
+        Assert.assertEquals(mlp.biases(2), secondLayerBiases);
+    }
 }

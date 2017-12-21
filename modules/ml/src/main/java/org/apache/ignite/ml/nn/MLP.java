@@ -18,17 +18,24 @@
 package org.apache.ignite.ml.nn;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.initializers.MLPInitializer;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.architecture.TransformationLayerArchitecture;
+
+import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 
 /**
  * Class encapsulating logic of multilayer perceptron.
@@ -346,5 +353,151 @@ public class MLP implements Model<Matrix, Matrix> {
         if (below != null)
             return below.architecture().add(architecture());
         return architecture;
+    }
+
+    public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> f, Matrix inputsBatch, Matrix truthBatch) {
+        int batchSize = inputsBatch.columnSize();
+        double invBatchSize = 1 / (double)batchSize;
+        int lastLayer = layersCount() - 1;
+        MLPState mlpState = computeState(inputsBatch);
+        Matrix dz = null;
+
+        List<MLPLayer> layersParameters = new LinkedList<>();
+
+        for (int layer = lastLayer; layer > 0; layer++) {
+            Matrix z = mlpState.linearOutput(layer).copy();
+            Matrix dSigmaDz = differentiateNonlinearity(z, architecture().transformationLayerArchitecture(layer).activationFunction());
+
+            if (layer == lastLayer) {
+                Matrix sigma = mlpState.activatorsOutput(lastLayer).copy();
+                Matrix dLossDSigma = differentiateLoss(truthBatch, sigma, f);
+                dz = elementWiseTimes(dLossDSigma, dSigmaDz);
+            }
+            else
+                dz = weights(layer + 1).transpose().times(dz);
+
+            Matrix a = mlpState.activatorsOutput(layer - 1);
+            dz = elementWiseTimes(dz, dSigmaDz);
+            Matrix dw = dz.times(a.transpose()).times(invBatchSize);
+
+            Vector db = null;
+            if (hasBiases(layer))
+                db = dz.foldRows(Vector::sum).times(invBatchSize);
+
+            // Because we go from last layer, add each layer to the begining.
+            layersParameters.add(0, new MLPLayer(dw, db));
+        }
+
+        return paramsAsVector(layersParameters);
+    }
+
+    public Vector parameters() {
+        return paramsAsVector(layers);
+    }
+
+    protected Vector paramsAsVector(List<MLPLayer> layersParams) {
+        int off = 0;
+        Vector res = new DenseLocalOnHeapVector(architecture().parametersCount());
+
+        for (MLPLayer layerParams : layersParams) {
+            off = writeToVector(res, layerParams.weights, off);
+
+            if (layerParams.biases != null)
+                off = writeToVector(res, layerParams.biases, off);
+        }
+
+        return res;
+    }
+
+    /**
+     * Set this MLP parameters from vector encoding them.
+     *
+     * @param vector
+     * @return
+     */
+    public MLP setParameters(Vector vector) {
+        int off = 0;
+
+        for (int l = 1; l < layersCount(); l++) {
+            MLPLayer layer = layers.get(l - 1);
+            IgniteBiTuple<Integer, Matrix> readRes = readFromVector(vector, layer.weights.rowSize(), layer.weights.columnSize(), off);
+            off = readRes.get1();
+            layer.weights = readRes.get2();
+
+            if (hasBiases(l)) {
+                IgniteBiTuple<Integer, Vector> readRes1 = readFromVector(vector, layer.biases.size(), off);
+                off = readRes1.get1();
+
+                layer.biases = readRes1.get2();
+            }
+        }
+
+        return this;
+    }
+
+    protected IgniteBiTuple<Integer, Matrix> readFromVector(Vector v, int rows, int cols, int offset) {
+        Matrix mtx = new DenseLocalOnHeapMatrix(rows, cols);
+
+        int size = rows * cols;
+        for (int i = 0; i < size; i++)
+            mtx.setX(i / cols, i % cols, v.getX(offset + i));
+
+        return new IgniteBiTuple<>(offset + size, mtx);
+    }
+
+    protected IgniteBiTuple<Integer, Vector> readFromVector(Vector v, int size, int offset) {
+        Vector vec = new DenseLocalOnHeapVector(size);
+
+        for (int i = 0; i < size; i++)
+            vec.setX(i, v.getX(offset + i));
+
+        return new IgniteBiTuple<>(offset + size, vec);
+    }
+
+    protected int writeToVector(Vector vec, Matrix mtx, int offset) {
+        int off = offset;
+        int rows = mtx.rowSize();
+        int cols = mtx.columnSize();
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                vec.setX(off, mtx.getX(r, c));
+                off++;
+            }
+        }
+
+        return off;
+    }
+
+    protected int writeToVector(Vector vec, Vector v, int offset) {
+        int off = offset;
+
+        for (int i = 0; i < v.size(); i++) {
+            vec.setX(off++, v.getX(i));
+            off++;
+        }
+
+        return off;
+    }
+
+    protected Matrix differentiateLoss(Matrix groundTruth, Matrix lastLayerOutput, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+        Matrix diff = groundTruth.like(groundTruth.rowSize(), groundTruth.columnSize());
+
+        for (int col = 0; col < groundTruth.columnSize(); col++) {
+            // TODO: IGNITE-7155 Couldn't use views here because copy on views doesn't do actual copy and all changes are propagated to original.
+            Vector gtCol = groundTruth.getCol(col);
+            Vector predCol = lastLayerOutput.getCol(col);
+            diff.assignColumn(col, loss.apply(gtCol).differential(predCol));
+        }
+
+        return diff;
+    }
+
+    protected Matrix differentiateNonlinearity(Matrix linearOut, IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
+        Matrix diff = linearOut.copy();
+
+        diff.map(nonlinearity::differential);
+
+        return diff;
     }
 }

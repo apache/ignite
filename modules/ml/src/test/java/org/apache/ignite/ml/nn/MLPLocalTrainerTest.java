@@ -50,6 +50,8 @@ public class MLPLocalTrainerTest {
 
         Matrix predict = mdl.apply(xorInputs);
 
+        Tracer.showAscii(predict);
+
         TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-2);
     }
 

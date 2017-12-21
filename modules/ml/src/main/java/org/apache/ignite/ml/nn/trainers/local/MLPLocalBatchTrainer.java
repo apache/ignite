@@ -225,6 +225,7 @@ public class MLPLocalBatchTrainer<P extends UpdaterParams> implements Trainer<ML
      * @param msg Message.
      */
     private void debug(String msg) {
+        System.out.println(msg);
         if (log != null && log.isDebugEnabled())
             log.debug(msg);
     }
