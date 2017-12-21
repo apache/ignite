@@ -92,6 +92,7 @@ namespace Apache.Ignite.Core.Tests
                 .Where(x => x.Name != "Apache.Ignite.csproj" &&
                             !x.Name.Contains("Test") &&
                             !x.Name.Contains("Example") &&
+                            !x.Name.Contains("DotNetCore") &&
                             !x.Name.Contains("Benchmark"));
         }
 
