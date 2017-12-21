@@ -19,86 +19,52 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.nn.MLP;
-
-import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 
 /**
  * Class encapsulating Nesterov algorithm for MLP parameters update.
  */
-public class NesterovUpdater extends BackpropUpdater<NesterovUpdaterParams> {
+public class NesterovUpdater implements MLPParameterUpdater<NesterovUpdaterParams> {
+    /**
+     * Learning rate.
+     */
+    private final double learningRate;
+
+    /**
+     * Loss function.
+     */
+    private IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
+
     /**
      * Momentum constant.
      */
     protected double momentum;
-
-    protected Matrix dz;
 
     /**
      * Construct NesterovUpdater.
      *
      * @param momentum Momentum constant.
      */
-    public NesterovUpdater(double momentum) {
+    public NesterovUpdater(double learningRate, double momentum) {
+        this.learningRate = learningRate;
         this.momentum = momentum;
     }
 
-    /** {@inheritDoc} */
-    @Override protected NesterovUpdaterParams initParameters(MLP mlp) {
-        return new NesterovUpdaterParams(mlp.layersCount());
+    @Override public NesterovUpdaterParams init(MLP mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+        this.loss = loss;
+
+        return new NesterovUpdaterParams(mlp.architecture().parametersCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void initIterationData(MLP mlp, NesterovUpdaterParams data, int iteration, double learningRate, Matrix inputs) {
-        int lastLayer = mlp.layersCount() - 1;
+    @Override public NesterovUpdaterParams updateParams(MLP mlp, NesterovUpdaterParams updaterParameters, int iteration,
+        Matrix inputs, Matrix groundTruth) {
+        if (iteration > 0)
+            mlp.setParameters(mlp.parameters().minus(updaterParameters.prevIterationUpdates().times(momentum)));
 
-        if (iteration > 0) {
-            // Compute everything in next parameter estimate.
-            for (int l = 1; l <= lastLayer; l++) {
-                mlp.setWeights(l, mlp.weights(l).minus(data.prevIterationWeightsUpdates[l].times(momentum)));
-                if (mlp.hasBiases(l))
-                    mlp.setBiases(l, mlp.biases(l).minus(data.prevIterationBiasesUpdates[l].times(momentum)));
-            }
-        }
+        updaterParameters.setPreviousUpdates(updaterParameters.prevIterationUpdates().plus(mlp.differentiateByParameters(loss, inputs, groundTruth).times(momentum)));
 
-        mlpState = mlp.computeState(inputs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public NesterovUpdaterParams updateLayerData(MLP mlp, NesterovUpdaterParams data, int layer, Matrix inputs, Matrix groundTruth) {
-        int batchSize = inputs.columnSize();
-        double invBatchSize = 1 / (double)batchSize;
-        int lastLayer = mlp.layersCount() - 1;
-        double normalizer = invBatchSize * learningRate;
-
-        Matrix z = mlpState.linearOutput(layer).copy();
-        Matrix dSigmaDz = differentiateNonlinearity(z, mlp.architecture().transformationLayerArchitecture(layer).activationFunction());
-
-        if (layer == lastLayer) {
-            Matrix sigma = mlpState.activatorsOutput(lastLayer).copy();
-            Matrix dLossDSigma = differentiateLoss(groundTruth, sigma, loss);
-            dz = elementWiseTimes(dLossDSigma, dSigmaDz);
-        }
-        else
-            dz = mlp.weights(layer + 1).transpose().times(dz);
-
-        Matrix a = mlpState.activatorsOutput(layer - 1);
-        dz = elementWiseTimes(dz, dSigmaDz);
-        Matrix dw = dz.times(a.transpose()).times(normalizer);
-
-        if (data.prevIterationWeightsUpdates[layer] != null)
-            dw = dw.plus(data.prevIterationWeightsUpdates[layer].times(momentum));
-
-        data.prevIterationWeightsUpdates[layer] = dw;
-
-        if (mlp.hasBiases(layer)) {
-            Vector db = dz.foldRows(Vector::sum).times(normalizer);
-            if (data.prevIterationBiasesUpdates[layer] != null)
-                db.plus(data.prevIterationBiasesUpdates[layer].times(momentum));
-            data.prevIterationBiasesUpdates[layer] = db;
-            mlp.biases(layer).map(db, (x, y) -> (x - learningRate * y));
-        }
-
-        return data;
+        return updaterParameters;
     }
 }

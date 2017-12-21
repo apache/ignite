@@ -70,8 +70,7 @@ public class MLPLocalTrainerTest {
         SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(12345L), xorInputs, xorOutputs, 4);
 
         MLP mdl = new MLPLocalBatchTrainer(Losses.MSE,
-            () -> new NesterovUpdater(0.9),
-            0.8,
+            () -> new NesterovUpdater(0.8, 0.9),
             0.0001,
             16000).train(trainerInput);
 

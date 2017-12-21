@@ -17,9 +17,9 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
-import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.MLP;
 
@@ -30,52 +30,40 @@ public class NesterovUpdaterParams implements UpdaterParams {
     /**
      * Previous step weights updates.
      */
-    protected Matrix[] prevIterationWeightsUpdates;
-
-    /**
-     * Previous step biases updates.
-     */
-    protected Vector[] prevIterationBiasesUpdates;
+    protected Vector prevIterationUpdates;
 
     /**
      * Construct NesterovUpdaterParams.
      *
-     * @param layersCnt Count of layers on which update happens.
+     * @param paramsCnt Count of parameters on which update happens.
      */
-    public NesterovUpdaterParams(int layersCnt) {
-        prevIterationWeightsUpdates = new Matrix[layersCnt];
-        prevIterationBiasesUpdates = new Vector[layersCnt];
+    public NesterovUpdaterParams(int paramsCnt) {
+        prevIterationUpdates = new DenseLocalOffHeapVector(paramsCnt);
     }
 
     /**
-     * Set previous step weights updates for layer with given index.
+     * Set previous step parameters updates.
      *
-     * @param layerIdx Layer index.
-     * @param weightsUpdates Weights updates.
-     * @return This object with updated weights updates.
+     * @param updates Parameters updates.
+     * @return This object with updated parameters updates.
      */
-    public NesterovUpdaterParams setPreviousWeights(int layerIdx, Matrix weightsUpdates) {
-        prevIterationWeightsUpdates[layerIdx] = weightsUpdates;
+    public NesterovUpdaterParams setPreviousUpdates(Vector updates) {
+        prevIterationUpdates = updates;
         return this;
     }
 
     /**
-     * Set previous step biases updates for layer with given index.
+     * Get previous step parameters updates.
      *
-     * @param layerIdx Layer index.
-     * @param biasesUpdates Biases updates.
-     * @return This object with updated biases updates.
+     * @return Previous step parameters updates.
      */
-    public NesterovUpdaterParams setPreviousBiases(int layerIdx, Vector biasesUpdates) {
-        prevIterationBiasesUpdates[layerIdx] = biasesUpdates;
-        return this;
+    public Vector prevIterationUpdates() {
+        return prevIterationUpdates;
     }
 
+    /** {@inheritDoc} */
     @Override public void updateMLP(MLP mlp) {
-        for (int layer = 1; layer < mlp.layersCount(); layer++) {
-            MatrixUtil.elementWiseMinus(mlp.weights(layer), prevIterationWeightsUpdates[layer]);
-            if (mlp.hasBiases(layer))
-                VectorUtils.elementWiseMinus(mlp.biases(layer), prevIterationBiasesUpdates[layer]);
-        }
+        Vector parameters = mlp.parameters();
+        mlp.setParameters(parameters.minus(prevIterationUpdates));
     }
 }

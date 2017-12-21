@@ -19,16 +19,16 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.MLP;
-
-import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 
 /**
  * Class encapsulating RProp algorithm.
  * @see <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf</a>.
  */
-public class RPropUpdater extends BackpropUpdater<RPropUpdaterParams> {
+public class RPropUpdater implements MLPParameterUpdater<RPropUpdaterParams> {
     /**
      * Default initial update.
      */
@@ -43,6 +43,11 @@ public class RPropUpdater extends BackpropUpdater<RPropUpdaterParams> {
      * Default deacceleration rate.
      */
     private static double DFLT_DEACCELERATION_RATE = 0.5;
+
+    /**
+     * Default learning rate.
+     */
+    private static double DFLT_LEARNING_RATE = 0.1;
 
     /**
      * Initial update.
@@ -70,9 +75,14 @@ public class RPropUpdater extends BackpropUpdater<RPropUpdaterParams> {
     private final static double UPDATE_MIN = 1E-6;
 
     /**
-     * Matrix encoding differential of (current layer linear output -> loss).
+     * Learning rate.
      */
-    protected Matrix dz;
+    private final double learningRate;
+
+    /**
+     * Losses function.
+     */
+    protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
     /**
      * Construct RPropUpdater.
@@ -81,7 +91,8 @@ public class RPropUpdater extends BackpropUpdater<RPropUpdaterParams> {
      * @param accelerationRate Acceleration rate.
      * @param deaccelerationRate Deacceleration rate.
      */
-    public RPropUpdater(double initUpdate, double accelerationRate, double deaccelerationRate) {
+    public RPropUpdater(double learningRate, double initUpdate, double accelerationRate, double deaccelerationRate) {
+        this.learningRate = learningRate;
         this.initUpdate = initUpdate;
         this.accelerationRate = accelerationRate;
         this.deaccelerationRate = deaccelerationRate;
@@ -91,112 +102,27 @@ public class RPropUpdater extends BackpropUpdater<RPropUpdaterParams> {
      * Construct RPropUpdater with default parameters.
      */
     public RPropUpdater() {
-        this(DFLT_INIT_UPDATE, DFLT_ACCELERATION_RATE, DFLT_DEACCELERATION_RATE);
+        this(DFLT_LEARNING_RATE, DFLT_INIT_UPDATE, DFLT_ACCELERATION_RATE, DFLT_DEACCELERATION_RATE);
     }
 
-    @Override protected RPropUpdaterParams initParameters(MLP mlp) {
-        return new RPropUpdaterParams(mlp.architecture(), initUpdate);
+    @Override public RPropUpdaterParams init(MLP mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+        this.loss = loss;
+        return new RPropUpdaterParams(mlp.architecture(), learningRate);
     }
 
-    /** {@inheritDoc} */
-    @Override public RPropUpdaterParams updateLayerData(MLP mlp, RPropUpdaterParams updaterParams, int layer,
-        Matrix inputs, Matrix groundTruth) {
-        int batchSize = inputs.columnSize();
-        double invBatchSize = 1 / (double)batchSize;
-        int lastLayer = mlp.layersCount() - 1;
-
-        Matrix z = mlpState.linearOutput(layer).copy();
-        Matrix dSigmaDz = differentiateNonlinearity(z, mlp.architecture().transformationLayerArchitecture(layer).activationFunction());
-
-        if (layer == lastLayer) {
-            Matrix sigma = mlpState.activatorsOutput(lastLayer).copy();
-            Matrix dLossDSigma = differentiateLoss(groundTruth, sigma, loss);
-            dz = elementWiseTimes(dLossDSigma, dSigmaDz);
-        }
-        else
-            dz = mlp.weights(layer + 1).transpose().times(dz);
-
-        Matrix a = mlpState.activatorsOutput(layer - 1);
-        dz = elementWiseTimes(dz, dSigmaDz);
-        Matrix dw = dz.times(a.transpose()).times(learningRate / batchSize);
-
-        updaterParams.setWeightGradients(layer, dw);
-        updateWeightsParameters(layer, mlp.weights(layer), dw, updaterParams);
-
-        if (mlp.hasBiases(layer)) {
-            Vector db = dz.foldRows(Vector::sum).times(invBatchSize);
-            updateBiasesParameters(layer, db, mlp.biases(layer), updaterParams);
-        }
-
-        return updaterParams;
-    }
-
-    /**
-     * Update weights of MLP and updater data for layer with given index.
-     *
-     * @param layerIdx Layer index.
-     */
-    private void updateWeightsParameters(int layerIdx, Matrix w, Matrix dw, RPropUpdaterParams updaterParams) {
-        Matrix prevDerivatives = updaterParams.prevIterationWeightsDerivatives(layerIdx);
-        Matrix derSigns;
-
-        if (prevDerivatives != null)
-            derSigns = MatrixUtil.zipWith(prevDerivatives, dw, (x, y) -> Math.signum(x * y));
-        else
-            derSigns = dw.like(dw.rowSize(), dw.columnSize()).assign(1.0);
-
-        updaterParams.weightDeltas(layerIdx).map(derSigns, (prevDelta, sign) -> {
-            if (sign > 0)
-                return Math.min(prevDelta * accelerationRate, UPDATE_MAX);
-            else if (sign < 0)
-                return Math.max(prevDelta * deaccelerationRate, UPDATE_MIN);
-            else
-                return prevDelta;
-        });
-
-        updaterParams.setPrevIterationWeightsUpdates(layerIdx, MatrixUtil.zipWith(dw, updaterParams.weightDeltas(layerIdx), (der, delta, coords) -> {
-            int row = coords.get1();
-            int col = coords.get2();
-
-            if (derSigns.getX(row, col) >= 0)
-                return -Math.signum(der) * delta;
-
-            return updaterParams.prevIterationWeightsUpdates(layerIdx).getX(row, col);
-        }));
-
-        Matrix weightsMask = MatrixUtil.zipWith(derSigns, updaterParams.prevIterationWeightsUpdates(layerIdx), (sign, upd, coords) -> {
-            int row = coords.get1();
-            int col = coords.get2();
-
-            if (sign < 0)
-                dw.setX(row, col, 0.0);
-
-            if (sign >= 0)
-                return 1.0;
-            else
-                return -1.0;
-        });
-
-        updaterParams.setWeighsUpdatesMask(layerIdx, weightsMask);
-        updaterParams.setPrevIterationWeightsDerivatives(layerIdx, dw.copy());
-    }
-
-    /**
-     * Update biases of MLP and updater data for layer with given index.
-     *
-     * @param layerIdx Layer index.
-     * @param db Differential of loss by bias of given layer.
-     * @param b Bias of given layer.
-     */
-    private void updateBiasesParameters(int layerIdx, Vector db, Vector b, RPropUpdaterParams updaterParams) {
-        Vector prevDerivatives = updaterParams.prevIterationBiasesDerivatives(layerIdx);
+    @Override
+    public RPropUpdaterParams updateParams(MLP mlp, RPropUpdaterParams updaterParams, int iteration, Matrix inputs,
+        Matrix groundTruth) {
+        Vector gradient = mlp.differentiateByParameters(loss, inputs, groundTruth);
+        Vector prevGradient = updaterParams.prevIterationGradient();
         Vector derSigns;
-        if (prevDerivatives != null)
-            derSigns = MatrixUtil.zipWith(prevDerivatives, db, (x, y) -> Math.signum(x * y));
-        else
-            derSigns = db.like(db.size()).assign(1.0);
 
-        updaterParams.biasDeltas(layerIdx).map(derSigns, (prevDelta, sign) -> {
+        if (prevGradient != null)
+            derSigns = MatrixUtil.zipWith(prevGradient, gradient, (x, y) -> Math.signum(x * y));
+        else
+            derSigns = gradient.like(gradient.size()).assign(1.0);
+
+        updaterParams.deltas().map(derSigns, (prevDelta, sign) -> {
             if (sign > 0)
                 return Math.min(prevDelta * accelerationRate, UPDATE_MAX);
             else if (sign < 0)
@@ -205,16 +131,16 @@ public class RPropUpdater extends BackpropUpdater<RPropUpdaterParams> {
                 return prevDelta;
         });
 
-        updaterParams.setPrevIterationBiasesUpdates(layerIdx, MatrixUtil.zipWith(db, updaterParams.biasDeltas(layerIdx), (der, delta, i) -> {
+        updaterParams.setPrevIterationBiasesUpdates(MatrixUtil.zipWith(gradient, updaterParams.deltas(), (der, delta, i) -> {
             if (derSigns.getX(i) >= 0)
                 return -Math.signum(der) * delta;
 
-            return updaterParams.prevIterationBiasesUpdates(layerIdx).getX(i);
+            return updaterParams.prevIterationUpdates().getX(i);
         }));
 
-        Vector newBiases = MatrixUtil.zipWith(derSigns, updaterParams.prevIterationBiasesUpdates(layerIdx), (sign, upd, i) -> {
+        Vector updatesMask = MatrixUtil.zipWith(derSigns, updaterParams.prevIterationUpdates(), (sign, upd, i) -> {
             if (sign < 0)
-                db.setX(i, 0.0);
+                gradient.setX(i, 0.0);
 
             if (sign >= 0)
                 return 1.0;
@@ -222,7 +148,9 @@ public class RPropUpdater extends BackpropUpdater<RPropUpdaterParams> {
                 return -1.0;
         });
 
-        updaterParams.setBiasUpdatesMask(layerIdx, newBiases);
-        updaterParams.setPrevIterationBiasesDerivatives(layerIdx, db.copy());
+        updaterParams.setUpdatesMask(updatesMask);
+        updaterParams.setPrevIterationWeightsDerivatives(gradient.copy());
+
+        return updaterParams;
     }
 }

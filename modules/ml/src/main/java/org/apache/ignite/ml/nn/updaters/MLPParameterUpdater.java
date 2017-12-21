@@ -33,10 +33,9 @@ public interface MLPParameterUpdater<P extends UpdaterParams> {
      * Initializes the updater.
      *
      * @param mlp Multilayer perceptron to be trained.
-     * @param learningRate Learning rate.
      * @param loss Losses function.
      */
-    P init(MLP mlp, double learningRate, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
+    P init(MLP mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 
     /**
      * Update updater parameters.

@@ -17,55 +17,32 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
-import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
-import org.apache.ignite.ml.math.util.MatrixUtil;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.MLP;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.architecture.TransformationLayerArchitecture;
 
 /**
  * Data needed for RProp updater.
  * @see <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf</a>.
  */
-public class RPropUpdaterParams extends Gradients {
+public class RPropUpdaterParams implements UpdaterParams {
     /**
      * Previous iteration weights updates. In original paper they are labeled with "delta w".
      */
-    protected Matrix[] prevIterationWeightsUpdates;
+    protected Vector prevIterationUpdates;
 
     /**
-     * Previous iteration weights updates. In original paper they are labeled with "delta w".
-     * (in the original paper there is no distinction between weights and biases).
+     * Previous iteration model partial derivatives by parameters.
      */
-    protected Vector[] prevIterationBiasesUpdates;
-
+    protected Vector prevIterationGradient;
     /**
-     * Previous iteration weights partial derivatives by weights.
+     * Previous iteration parameters deltas. In original paper they are labeled with "delta".
      */
-    protected Matrix[] prevIterationWeightsDerivatives;
+    protected Vector deltas;
 
-    /**
-     * Previous iteration biases partial derivatives by biases.
-     */
-    protected Vector[] prevIterationBiasesDerivatives;
-
-    /**
-     * Previous iteration weights deltas. In original paper they are labeled with "delta".
-     */
-    protected Matrix[] weightDeltas;
-
-    /**
-     * Previous iteration biases deltas. In original paper they are labeled with "delta".
-     */
-    protected Vector[] biasDeltas;
-
-    protected Matrix[] weighsUpdatesMask;
-
-    protected Vector[] biasUpdatesMask;
+    protected Vector updatesMask;
 
     /**
      * Construct RPropUpdaterParams.
@@ -74,174 +51,73 @@ public class RPropUpdaterParams extends Gradients {
      * @param initUpdate Initial update (in original work labeled as "delta_0").
      */
     RPropUpdaterParams(MLPArchitecture arch, double initUpdate) {
-        super(arch.layersCount());
-
-        int transformationLayersCount = arch.layersCount() - 1;
-
-        prevIterationWeightsUpdates = new Matrix[transformationLayersCount];
-        prevIterationBiasesUpdates = new Vector[transformationLayersCount];
-
-        prevIterationWeightsDerivatives = new Matrix[transformationLayersCount];
-        prevIterationBiasesDerivatives = new Vector[transformationLayersCount];
-
-        weightDeltas = new Matrix[transformationLayersCount];
-        biasDeltas = new Vector[transformationLayersCount];
-
-        weighsUpdatesMask = new Matrix[transformationLayersCount];
-        biasUpdatesMask = new Vector[transformationLayersCount];
-
-        for (int layer = 1; layer < arch.layersCount(); layer++) {
-            TransformationLayerArchitecture curLayerArch = arch.transformationLayerArchitecture(layer);
-            int rowSize = curLayerArch.neuronsCount();
-            int colSize = arch.layerArchitecture(layer - 1).neuronsCount();
-
-            weightDeltas[layer - 1] = new DenseLocalOnHeapMatrix(rowSize, colSize);
-            weightDeltas[layer - 1].assign(initUpdate);
-
-            if (curLayerArch.hasBias())
-                biasDeltas[layer - 1] = new DenseLocalOffHeapVector(rowSize).assign(initUpdate);
-        }
-    }
-
-    /**
-     * Get weight deltas.
-     *
-     * @param layer Layer index.
-     * @return Weight deltas.
-     */
-    Matrix weightDeltas(int layer) {
-        return weightDeltas[layer - 1];
+        int paramsCount = arch.parametersCount();
+        prevIterationUpdates = new DenseLocalOnHeapVector(paramsCount);
+        prevIterationGradient = new DenseLocalOnHeapVector(paramsCount);
+        deltas = new DenseLocalOnHeapVector(paramsCount).assign(initUpdate);
+        updatesMask = new DenseLocalOnHeapVector(paramsCount);
     }
 
     /**
      * Get bias deltas.
      *
-     * @param layer Layer index.
      * @return Bias deltas.
      */
-    Vector biasDeltas(int layer) {
-        return biasDeltas[layer - 1];
-    }
-
-    /**
-     * Get previous iteration weights updates. In original paper they are labeled with "delta w".
-     *
-     * @param layer Layer index.
-     * @return Weights updates.
-     */
-    Matrix prevIterationWeightsUpdates(int layer) {
-        return prevIterationWeightsUpdates[layer - 1];
-    }
-
-    /**
-     * Set previous iteration weights updates. In original paper they are labeled with "delta w".
-     *
-     * @param layer Layer index.
-     * @param weightsUpdates New weights updates value.
-     * @return This object.
-     */
-    RPropUpdaterParams setPrevIterationWeightsUpdates(int layer, Matrix weightsUpdates) {
-        prevIterationWeightsUpdates[layer - 1] = weightsUpdates;
-        return this;
+    Vector deltas() {
+        return deltas;
     }
 
     /**
      * Get previous iteration biases updates. In original paper they are labeled with "delta w".
      *
-     * @param layer Layer index.
      * @return Biases updates.
      */
-    Vector prevIterationBiasesUpdates(int layer) {
-        return prevIterationBiasesUpdates[layer - 1];
+    Vector prevIterationUpdates() {
+        return prevIterationUpdates;
     }
 
     /**
-     * Set previous iteration biases updates. In original paper they are labeled with "delta w".
+     * Set previous iteration parameters updates. In original paper they are labeled with "delta w".
      *
-     * @param layer Layer index.
-     * @param biasesUpdates New biases updates value.
+     * @param updates New parameters updates value.
      * @return This object.
      */
-    Vector setPrevIterationBiasesUpdates(int layer, Vector biasesUpdates) {
-        return prevIterationBiasesUpdates[layer - 1] = biasesUpdates;
+    Vector setPrevIterationBiasesUpdates(Vector updates) {
+        return prevIterationUpdates = updates;
     }
 
     /**
-     * Get previous iteration loss function partial derivatives by weights.
+     * Get previous iteration loss function partial derivatives by parameters.
      *
-     * @param layer Layer index.
-     * @return Previous iteration loss function partial derivatives by weights.
+     * @return Previous iteration loss function partial derivatives by parameters.
      */
-    Matrix prevIterationWeightsDerivatives(int layer) {
-        return prevIterationWeightsDerivatives[layer - 1];
+    Vector prevIterationGradient() {
+        return prevIterationGradient;
     }
 
     /**
-     * Set previous iteration loss function partial derivatives by weights.
+     * Set previous iteration loss function partial derivatives by parameters.
      *
-     * @param layer Layer index.
      * @return This object.
      */
-    RPropUpdaterParams setPrevIterationWeightsDerivatives(int layer, Matrix weightsDerivatives) {
-        prevIterationWeightsDerivatives[layer - 1] = weightsDerivatives;
+    RPropUpdaterParams setPrevIterationWeightsDerivatives(Vector gradient) {
+        prevIterationGradient = gradient;
         return this;
     }
 
-    /**
-     * Get previous iteration loss function partial derivatives by biases.
-     *
-     * @param layer Layer index.
-     * @return Previous iteration loss function partial derivatives by biases.
-     */
-    Vector prevIterationBiasesDerivatives(int layer) {
-        return prevIterationBiasesDerivatives[layer - 1];
+    public Vector updatesMask() {
+        return updatesMask;
     }
 
-    /**
-     * Set previous iteration loss function partial derivatives by biases.
-     *
-     * @param layer Layer index.
-     * @return This object.
-     */
-    RPropUpdaterParams setPrevIterationBiasesDerivatives(int layer, Vector biasesDerivatives) {
-        prevIterationBiasesDerivatives[layer - 1] = biasesDerivatives;
-        return this;
-    }
-
-    public Matrix weighsUpdatesMask(int layer) {
-        return weighsUpdatesMask[layer - 1];
-    }
-
-    public RPropUpdaterParams setWeighsUpdatesMask(int layer, Matrix weighsUpdatesMask) {
-        this.weighsUpdatesMask[layer - 1] = weighsUpdatesMask;
-
-        return this;
-    }
-
-    public Vector biasUpdatesMask(int layer) {
-        return biasUpdatesMask[layer - 1];
-    }
-
-    public RPropUpdaterParams setBiasUpdatesMask(int layer, Vector biasUpdatesMask) {
-        this.biasUpdatesMask[layer - 1] = biasUpdatesMask;
+    public RPropUpdaterParams setUpdatesMask(Vector updatesMask) {
+        this.updatesMask = updatesMask;
 
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public void updateMLP(MLP mlp) {
-        for (int l = 1; l < mlp.layersCount(); l++) {
-            updateWeights(mlp, l);
-            updateBiases(mlp, l);
-        }
-    }
-
-    private void updateWeights(MLP mlp, int layer) {
-        mlp.setWeights(layer, mlp.weights(layer).plus(MatrixUtil.elementWiseTimes(weighsUpdatesMask(layer).copy(), prevIterationWeightsUpdates(layer))));
-    }
-
-    private void updateBiases(MLP mlp, int layer) {
-        if (mlp.hasBiases(layer))
-            mlp.setBiases(layer, mlp.biases(layer).plus(VectorUtils.elementWiseTimes(biasUpdatesMask(layer).copy(), prevIterationBiasesUpdates(layer))));
+        Vector updatesToAdd = VectorUtils.elementWiseTimes(updatesMask.copy(), prevIterationUpdates);
+        mlp.setParameters(mlp.parameters().plus(updatesToAdd));
     }
 }

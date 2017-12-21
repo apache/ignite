@@ -92,8 +92,7 @@ public class Mnist {
             1000);
 
         MLP mdl = new MLPLocalBatchTrainer(Losses.MSE,
-            () -> new RPropUpdater(0.1, 1.2, 0.5),
-            0.1,
+            () -> new RPropUpdater(0.1, 0.1, 1.2, 0.5),
             1E-7,
             200).train(input);
 

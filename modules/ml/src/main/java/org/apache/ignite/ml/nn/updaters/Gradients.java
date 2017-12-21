@@ -17,42 +17,26 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
-import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.util.MatrixUtil;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.MLP;
 
 public class Gradients implements UpdaterParams {
-    private Matrix[] dw;
+    private Vector gradient;
+    private double learningRate;
 
-    private Vector[] db;
-
-    public Gradients(int layersCount) {
-        dw = new Matrix[layersCount - 1];
-        db = new Vector[layersCount - 1];
+    public Gradients(int paramsCount, double learningRate) {
+        gradient = new DenseLocalOnHeapVector(paramsCount);
+        this.learningRate = learningRate;
     }
 
-    public Matrix weightsGradients(int layerIdx) {
-        return dw[layerIdx - 1];
-    }
-
-    public void setWeightGradients(int layerIdx, Matrix dw) {
-        this.dw[layerIdx - 1] = dw;
-    }
-
-    public Vector biasGradients(int layerIdx) {
-        return db[layerIdx - 1];
-    }
-
-    public void setBiasGradients(int layerIdx, Vector db) {
-        this.db[layerIdx - 1] = db;
+    public Gradients(Vector gradient, double learningRate) {
+        this.gradient = gradient;
+        this.learningRate = learningRate;
     }
 
     @Override public void updateMLP(MLP mlp) {
-        for (int layer = 1; layer < mlp.layersCount(); layer++) {
-            MatrixUtil.elementWiseMinus(mlp.weights(layer), weightsGradients(layer));
-            VectorUtils.elementWiseMinus(mlp.biases(layer), biasGradients(layer));
-        }
+        Vector params = mlp.parameters();
+        mlp.setParameters(params.plus(gradient.times(learningRate)));
     }
 }

@@ -19,54 +19,35 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.nn.MLP;
-
-import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 
 /**
  * Simple gradient descent parameters updater.
  */
-public class SimpleGDUpdater extends BackpropUpdater<Gradients> {
+public class SimpleGDUpdater implements MLPParameterUpdater<Gradients> {
     /**
-     * Matrix encoding differential of (current layer linear output -> loss).
+     * Learning rate.
      */
-    protected Matrix dz;
+    double learningRate;
 
-    @Override protected Gradients initParameters(MLP mlp) {
-        return new Gradients(mlp.layersCount());
+    /**
+     * Loss function.
+     */
+    protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
+
+    public SimpleGDUpdater(double learningRate) {
+        this.learningRate = learningRate;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void initIterationData(MLP mlp, Gradients params, int iterationData, double learningRate, Matrix inputs) {
-        this.mlpState = mlp.computeState(inputs);
+    @Override public Gradients init(MLP mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+        this.loss = loss;
+        return new Gradients(mlp.architecture().parametersCount(), learningRate);
     }
 
-    /** {@inheritDoc} */
-    @Override public Gradients updateLayerData(MLP mlp, Gradients updaterParams, int layer, Matrix inputs, Matrix groundTruth) {
-        int batchSize = inputs.columnSize();
-        double invBatchSize = 1 / (double)batchSize;
-        int lastLayer = mlp.layersCount() - 1;
-
-        Matrix z = mlpState.linearOutput(layer).copy();
-        Matrix dSigmaDz = differentiateNonlinearity(z, mlp.architecture().transformationLayerArchitecture(layer).activationFunction());
-
-        if (layer == lastLayer) {
-            Matrix sigma = mlpState.activatorsOutput(lastLayer).copy();
-            Matrix dLossDSigma = differentiateLoss(groundTruth, sigma, loss);
-            dz = elementWiseTimes(dLossDSigma, dSigmaDz);
-        }
-        else
-            dz = mlp.weights(layer + 1).transpose().times(dz);
-
-        Matrix a = mlpState.activatorsOutput(layer - 1);
-        dz = elementWiseTimes(dz, dSigmaDz);
-        updaterParams.setWeightGradients(layer, dz.times(a.transpose()).times(learningRate / batchSize));
-
-        if (mlp.hasBiases(layer)) {
-            Vector db = dz.foldRows(Vector::sum).times(invBatchSize).times(learningRate);
-            updaterParams.setBiasGradients(layer, db);
-        }
-
-        return updaterParams;
+    @Override public Gradients updateParams(MLP mlp, Gradients updaterParameters, int iteration, Matrix inputs,
+        Matrix groundTruth) {
+        return new Gradients(mlp.differentiateByParameters(loss, inputs, groundTruth), learningRate);
     }
 }
