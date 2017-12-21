@@ -284,7 +284,8 @@ public class ZookeeperClient implements Watcher {
     /**
      * @param path Path.
      * @param data Data.
-     * @return {@code True}
+     * @param overhead Extra overhead.
+     * @return {@code True} If data size exceeds max request size and should be splitted into multiple parts.
      */
     boolean needSplitNodeData(String path, byte[] data, int overhead) {
         return requestOverhead(path) + data.length + overhead > MAX_REQ_SIZE;

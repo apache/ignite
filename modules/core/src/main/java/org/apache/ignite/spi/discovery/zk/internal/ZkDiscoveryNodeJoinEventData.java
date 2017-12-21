@@ -40,6 +40,9 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
     final int dataForJoinedPartCnt;
 
     /** */
+    final int secSubjPartCnt;
+
+    /** */
     final UUID joinDataPrefixId;
 
     /** */
@@ -53,6 +56,7 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
      * @param joinDataPrefixId Join data unique prefix.
      * @param joinDataPartCnt Join data part count.
      * @param dataForJoinedPartCnt Data for joined part count.
+     * @param secSubjPartCnt Security subject part count.
      */
     ZkDiscoveryNodeJoinEventData(long evtId,
         long topVer,
@@ -60,7 +64,8 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
         int joinedInternalId,
         UUID joinDataPrefixId,
         int joinDataPartCnt,
-        int dataForJoinedPartCnt)
+        int dataForJoinedPartCnt,
+        int secSubjPartCnt)
     {
         super(evtId, EventType.EVT_NODE_JOINED, topVer);
 
@@ -69,6 +74,7 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
         this.joinDataPrefixId = joinDataPrefixId;
         this.joinDataPartCnt = joinDataPartCnt;
         this.dataForJoinedPartCnt = dataForJoinedPartCnt;
+        this.secSubjPartCnt = secSubjPartCnt;
     }
 
     /** {@inheritDoc} */

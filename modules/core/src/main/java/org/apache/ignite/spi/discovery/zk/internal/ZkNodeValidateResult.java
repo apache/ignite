@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.io.Serializable;
-
 /**
  *
  */
@@ -27,7 +25,7 @@ class ZkNodeValidateResult {
     String err;
 
     /** */
-    Serializable secSubj;
+    byte[] secSubjZipBytes;
 
     /**
      * @param err Error.
@@ -37,9 +35,9 @@ class ZkNodeValidateResult {
     }
 
     /**
-     * @param secSubj Node security subject.
+     * @param secSubjZipBytes Marshalled security subject.
      */
-    ZkNodeValidateResult(Serializable secSubj) {
-        this.secSubj = secSubj;
+    ZkNodeValidateResult(byte[] secSubjZipBytes) {
+        this.secSubjZipBytes = secSubjZipBytes;
     }
 }
