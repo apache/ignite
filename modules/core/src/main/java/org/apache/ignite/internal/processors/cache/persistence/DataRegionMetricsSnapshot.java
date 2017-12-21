@@ -146,7 +146,7 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getPhysicalMemorySize() {
-        return physicalMemoryPages;
+        return physicalMemorySize;
     }
 
     /** {@inheritDoc} */
