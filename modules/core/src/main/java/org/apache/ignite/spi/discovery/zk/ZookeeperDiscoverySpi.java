@@ -125,6 +125,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** */
     private boolean clientReconnectDisabled;
 
+    /** */
+    private IgniteDiscoverySpiInternalListener internalLsnr;
+
     public String getZkRootPath() {
         return zkRootPath;
     }
@@ -393,7 +396,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             zkRootPath,
             locNode,
             lsnr,
-            exchange);
+            exchange,
+            internalLsnr);
 
         try {
             impl.joinTopology();
@@ -407,7 +411,10 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
-        impl.internalLsnr = lsnr;
+        if (impl != null)
+            impl.internalLsnr = lsnr;
+        else
+            internalLsnr = lsnr;
     }
 
     /** {@inheritDoc} */

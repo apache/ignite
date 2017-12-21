@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
@@ -26,9 +27,10 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
  */
 public interface IgniteDiscoverySpiInternalListener {
     /**
+     * @param locNode Local node.
      * @param log Log.
      */
-    public void beforeJoin(IgniteLogger log);
+    public void beforeJoin(ClusterNode locNode, IgniteLogger log);
 
     /**
      * @param spi SPI instance.
