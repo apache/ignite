@@ -79,7 +79,6 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Log\CustomLoggerTest.cs" Link="Log\CustomLoggerTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\MessagingTest.cs" Link="Common\MessagingTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Query\BinarizablePerson.cs" Link="Cache\Query\BinarizablePerson.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTest.cs" Link="Common\ServicesTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
   </ItemGroup>
 
@@ -111,17 +110,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Apache.Ignite" Version="0.0.1-test" />
-    <PackageReference Include="Apache.Ignite.Linq" Version="0.0.1-test" />
-    <PackageReference Include="Apache.Ignite.Schema" Version="0.0.1-test" />
-    <PackageReference Include="Apache.Ignite.NLog" Version="0.0.1-test" />
-    <PackageReference Include="Apache.Ignite.log4net" Version="0.0.1-test" />
     <PackageReference Include="log4net" Version="2.0.5" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
-    <PackageReference Include="NLog" Version="4.4.12" />
     <PackageReference Include="NUnit" Version="3.8.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
+	
+	<ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
+	<ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>
