@@ -366,6 +366,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name, bool sticky) where T : class
         {
+#if !NETCOREAPP2_0
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", "Service proxy type should be an interface: " + typeof(T));
 
@@ -386,6 +387,9 @@ namespace Apache.Ignite.Core.Impl.Services
 
             return new ServiceProxy<T>((method, args) =>
                 InvokeProxyMethod(javaProxy, method, args, platform)).GetTransparentProxy();
+#else
+            throw new IgniteException("Service proxies are not supported on .NET Core: IGNITE-7281");
+#endif
         }
 
         /// <summary>
