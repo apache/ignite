@@ -473,7 +473,7 @@ public class MLP implements Model<Matrix, Matrix> {
         int off = offset;
 
         for (int i = 0; i < v.size(); i++) {
-            vec.setX(off++, v.getX(i));
+            vec.setX(off, v.getX(i));
             off++;
         }
 

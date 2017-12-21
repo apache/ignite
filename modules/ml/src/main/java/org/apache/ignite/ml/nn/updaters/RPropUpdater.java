@@ -105,13 +105,14 @@ public class RPropUpdater implements MLPParameterUpdater<RPropUpdaterParams> {
         this(DFLT_LEARNING_RATE, DFLT_INIT_UPDATE, DFLT_ACCELERATION_RATE, DFLT_DEACCELERATION_RATE);
     }
 
+    /** {@inheritDoc} */
     @Override public RPropUpdaterParams init(MLP mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
         return new RPropUpdaterParams(mlp.architecture(), learningRate);
     }
 
-    @Override
-    public RPropUpdaterParams updateParams(MLP mlp, RPropUpdaterParams updaterParams, int iteration, Matrix inputs,
+    /** {@inheritDoc} */
+    @Override public RPropUpdaterParams updateParams(MLP mlp, RPropUpdaterParams updaterParams, int iteration, Matrix inputs,
         Matrix groundTruth) {
         Vector gradient = mlp.differentiateByParameters(loss, inputs, groundTruth);
         Vector prevGradient = updaterParams.prevIterationGradient();

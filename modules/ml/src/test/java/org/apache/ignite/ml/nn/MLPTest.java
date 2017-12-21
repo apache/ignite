@@ -21,7 +21,6 @@ import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
@@ -123,7 +122,7 @@ public class MLPTest {
     }
 
     /**
-     * test methods related to parameters flattening.
+     * Test methods related to parameters flattening.
      */
     @Test
     public void setParamsFlattening() {
@@ -154,6 +153,9 @@ public class MLPTest {
         Assert.assertEquals(mlp.biases(2), secondLayerBiases);
     }
 
+    /**
+     * Test differentiation.
+     */
     @Test
     public void testDifferentiation() {
         int inputSize = 2;

@@ -30,22 +30,29 @@ public class SimpleGDUpdater implements MLPParameterUpdater<Gradients> {
     /**
      * Learning rate.
      */
-    double learningRate;
+    private double learningRate;
 
     /**
      * Loss function.
      */
     protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
+    /**
+     * Construct SimpleGDUpdater.
+     *
+     * @param learningRate Learning rate.
+     */
     public SimpleGDUpdater(double learningRate) {
         this.learningRate = learningRate;
     }
 
+    /** {@inheritDoc} */
     @Override public Gradients init(MLP mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
         return new Gradients(mlp.architecture().parametersCount(), learningRate);
     }
 
+    /** {@inheritDoc} */
     @Override public Gradients updateParams(MLP mlp, Gradients updaterParameters, int iteration, Matrix inputs,
         Matrix groundTruth) {
         return new Gradients(mlp.differentiateByParameters(loss, inputs, groundTruth), learningRate);

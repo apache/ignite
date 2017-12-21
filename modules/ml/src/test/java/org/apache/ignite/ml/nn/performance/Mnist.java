@@ -24,6 +24,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Tracer;
@@ -89,17 +90,17 @@ public class Mnist {
             ds.get1(),
             ds.get2(),
 
-            1000);
+            2000);
 
-        MLP mdl = new MLPLocalBatchTrainer(Losses.MSE,
+        MLP mdl = new MLPLocalBatchTrainer<>(Losses.MSE,
             () -> new RPropUpdater(0.1, 0.1, 1.2, 0.5),
             1E-7,
             200).train(input);
 
-        System.out.println(">>> Training started");
+        X.println("Training started");
         long before = System.currentTimeMillis();
 
-        System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
+        X.println("Training finished in " + (System.currentTimeMillis() - before));
 
         Vector predicted = mdl.apply(testDs.get1()).foldColumns(VectorUtils::vec2Num);
         Vector truth = testDs.get2().foldColumns(VectorUtils::vec2Num);
@@ -108,7 +109,8 @@ public class Mnist {
         Tracer.showAscii(predicted);
     }
 
-    IgniteBiTuple<Matrix, Matrix> createDataset(Stream<DenseLocalOnHeapVector> s, int samplesCnt, int featCnt) {
+    /** */
+    private IgniteBiTuple<Matrix, Matrix> createDataset(Stream<DenseLocalOnHeapVector> s, int samplesCnt, int featCnt) {
         Matrix vectors = new DenseLocalOnHeapMatrix(featCnt, samplesCnt);
         Matrix labels = new DenseLocalOnHeapMatrix(10, samplesCnt);
         List<DenseLocalOnHeapVector> sc = s.collect(Collectors.toList());
@@ -121,8 +123,6 @@ public class Mnist {
 
         return new IgniteBiTuple<>(vectors, labels);
     }
-
-
 
     /** Load properties for MNIST tests. */
     private static Properties loadMNISTProperties() throws IOException {

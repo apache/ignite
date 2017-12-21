@@ -20,6 +20,7 @@ package org.apache.ignite.ml.nn.updaters;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.MLP;
 
@@ -38,7 +39,7 @@ public class NesterovUpdaterParams implements UpdaterParams {
      * @param paramsCnt Count of parameters on which update happens.
      */
     public NesterovUpdaterParams(int paramsCnt) {
-        prevIterationUpdates = new DenseLocalOffHeapVector(paramsCnt);
+        prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt).assign(0);
     }
 
     /**

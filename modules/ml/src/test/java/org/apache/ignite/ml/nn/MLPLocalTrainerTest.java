@@ -41,10 +41,10 @@ public class MLPLocalTrainerTest {
         Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}}, StorageConstants.ROW_STORAGE_MODE).transpose();
 
         MLPArchitecture conf = new MLPArchitecture(2).
-            withAddedLayer(5, true, Activators.RELU).
+            withAddedLayer(10, true, Activators.RELU).
             withAddedLayer(1, false, Activators.SIGMOID);
 
-        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(1234L), xorInputs, xorOutputs, 4);
+        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(123567L), xorInputs, xorOutputs, 4);
 
         MLP mdl = MLPLocalBatchTrainer.getDefault().train(trainerInput);
 
@@ -64,17 +64,19 @@ public class MLPLocalTrainerTest {
         Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}}, StorageConstants.ROW_STORAGE_MODE).transpose();
 
         MLPArchitecture conf = new MLPArchitecture(2).
-            withAddedLayer(5, true, Activators.RELU).
+            withAddedLayer(10, true, Activators.RELU).
             withAddedLayer(1, false, Activators.SIGMOID);
 
-        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(12345L), xorInputs, xorOutputs, 4);
+        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(1234L), xorInputs, xorOutputs, 4);
 
-        MLP mdl = new MLPLocalBatchTrainer(Losses.MSE,
-            () -> new NesterovUpdater(0.8, 0.9),
+        MLP mdl = new MLPLocalBatchTrainer<>(Losses.MSE,
+            () -> new NesterovUpdater(0.1, 0.7),
             0.0001,
             16000).train(trainerInput);
 
         Matrix predict = mdl.apply(xorInputs);
+
+        Tracer.showAscii(predict);
 
         TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-1);
     }

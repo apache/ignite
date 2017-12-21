@@ -60,10 +60,14 @@ public class NesterovUpdater implements MLPParameterUpdater<NesterovUpdaterParam
 
     @Override public NesterovUpdaterParams updateParams(MLP mlp, NesterovUpdaterParams updaterParameters, int iteration,
         Matrix inputs, Matrix groundTruth) {
-        if (iteration > 0)
-            mlp.setParameters(mlp.parameters().minus(updaterParameters.prevIterationUpdates().times(momentum)));
 
-        updaterParameters.setPreviousUpdates(updaterParameters.prevIterationUpdates().plus(mlp.differentiateByParameters(loss, inputs, groundTruth).times(momentum)));
+        if (iteration > 0) {
+            Vector curParams = mlp.parameters();
+            mlp.setParameters(curParams.minus(updaterParameters.prevIterationUpdates().times(momentum)));
+        }
+
+        Vector gradient = mlp.differentiateByParameters(loss, inputs, groundTruth);
+        updaterParameters.setPreviousUpdates(updaterParameters.prevIterationUpdates().plus(gradient.times(learningRate)));
 
         return updaterParameters;
     }
