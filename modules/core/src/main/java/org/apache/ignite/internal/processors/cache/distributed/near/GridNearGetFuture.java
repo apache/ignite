@@ -364,7 +364,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer,
-                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, expiryPlc, readThrough, skipVals));
+                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, expiryPlc, 0, readThrough, skipVals));
 
                 GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),

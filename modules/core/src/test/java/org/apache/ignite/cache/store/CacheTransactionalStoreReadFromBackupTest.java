@@ -20,6 +20,11 @@ package org.apache.ignite.cache.store;
 import org.apache.ignite.cache.CacheAtomicityMode;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
@@ -28,5 +33,46 @@ public class CacheTransactionalStoreReadFromBackupTest extends CacheStoreReadFro
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testReplicated() throws Exception {
+        super.testReplicated();
+
+        checkReadFromBackupUserTxs();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkReadFromBackupUserTxs() throws Exception {
+        checkReadFromBackup(OPTIMISTIC, READ_COMMITTED);
+        checkReadFromBackup(OPTIMISTIC, REPEATABLE_READ);
+        checkReadFromBackup(OPTIMISTIC, SERIALIZABLE);
+
+        checkReadFromBackup(PESSIMISTIC, READ_COMMITTED);
+        checkReadFromBackup(PESSIMISTIC, REPEATABLE_READ);
+        checkReadFromBackup(PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testPartitioned() throws Exception {
+        super.testPartitioned();
+
+        checkReadFromBackupUserTxs();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testNearReplicated() throws Exception {
+        super.testNearReplicated();
+
+        checkReadFromBackupUserTxs();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testNearPartitioned() throws Exception {
+        super.testNearPartitioned();
+
+        checkReadFromBackupUserTxs();
     }
 }
