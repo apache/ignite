@@ -36,6 +36,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -87,6 +89,8 @@ public class HadoopSetup {
      * </ul>
      */
     private static void configureHadoop() {
+        throwIfJavaIs9OrOlder();
+
         String igniteHome = U.getIgniteHome();
 
         println("IGNITE_HOME is set to '" + igniteHome + "'.");
@@ -537,5 +541,22 @@ public class HadoopSetup {
                 }
             }
         }
+    }
+
+    /** */
+    private static void throwIfJavaIs9OrOlder() {
+        String ver = System.getProperty("java.version");
+
+        if (ver == null)
+            throw new RuntimeException("Failed to get Java version");
+
+        Matcher m = Pattern.compile("^([0-9]+)\\.([0-9]+).*$").matcher(ver);
+
+        if (!m.matches())
+            throw new RuntimeException("Malformed Java version format");
+
+        if (10 * Integer.parseInt(m.group(1)) + Integer.parseInt(m.group(2)) >= 19)
+            throw new RuntimeException("Java version 9 and above " +
+                "is not supported by Ignite Hadoop module at the moment");
     }
 }
