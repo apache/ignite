@@ -3061,6 +3061,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             while (it.hasNext()) {
                 CacheDataRow row = it.next();
 
+                if (row.removed())
+                    continue;
+
                 KeyCacheObject key = row.key();
                 CacheObject val;
 
