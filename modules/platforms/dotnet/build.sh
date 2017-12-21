@@ -20,7 +20,7 @@
 # Builds and runs .NET tests.
 #
 
-pushd
+pushd .
 cd ../../..
 mvn clean package -DskipTests -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
 popd
