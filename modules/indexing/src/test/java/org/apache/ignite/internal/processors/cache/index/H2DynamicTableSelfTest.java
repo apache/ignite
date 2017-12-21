@@ -171,7 +171,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testInternalCreateTableWithCacheGroupAndLegacyParamName() throws Exception {
-        doTestCreateTable(CACHE_NAME, "MyGroup", null, null, true, true);
+        doTestCreateTable(CACHE_NAME, "MyGroup", null, null, false, true);
     }
 
     /**
@@ -1022,23 +1022,25 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testDropTable() throws Exception {
+
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(false)) {
 
             execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
                 " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
                 "\"template=cache\"");
-
+        }
+        finally {
             execute("DROP TABLE \"Person\"");
+        }
 
-            for (int i = 0; i < 4; i++) {
-                IgniteEx node = grid(i);
+        for (int i = 0; i < 4; i++) {
+            IgniteEx node = grid(i);
 
-                assertNull(node.cache("Person"));
+            assertNull(node.cache("Person"));
 
-                QueryTypeDescriptorImpl desc = type(node, "Person", "Person");
+            QueryTypeDescriptorImpl desc = type(node, "Person", "Person");
 
-                assertNull(desc);
-            }
+            assertNull(desc);
         }
     }
 
@@ -1053,18 +1055,19 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
                 " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) " +
                 "template=\"cache\"");
-
+        }
+        finally {
             execute("DROP TABLE \"Person\"");
+        }
 
-            for (int i = 0; i < 4; i++) {
-                IgniteEx node = grid(i);
+        for (int i = 0; i < 4; i++) {
+            IgniteEx node = grid(i);
 
-                assertNull(node.cache("Person"));
+            assertNull(node.cache("Person"));
 
-                QueryTypeDescriptorImpl desc = type(node, "Person", "Person");
+            QueryTypeDescriptorImpl desc = type(node, "Person", "Person");
 
-                assertNull(desc);
-            }
+            assertNull(desc);
         }
     }
 
@@ -1090,7 +1093,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 }
             }, IgniteSQLException.class, "DROP TABLE cannot be called from the same cache that holds the table " +
                 "being dropped");
-
+        }
+        finally {
             execute("DROP TABLE \"Person\"");
         }
     }
@@ -1325,7 +1329,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void checkAffinityKey(boolean useInternalCmd) throws Exception {
+
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
+
             if (useInternalCmd)
                 execute("CREATE TABLE \"City\" (\"name\" varchar primary key, \"code\" int) wrap_key wrap_value " +
                     "affinity_key=\"name\"");
@@ -1345,7 +1351,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             if (useInternalCmd)
                 execute("CREATE TABLE \"Person2\" (\"id\" int, \"city\" varchar," +
                     " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) " +
-                    "wrap_key wrap_value template=cache affinity_key=\"city\"");
+                    "wrap_key wrap_value template=\"cache\" affinity_key=\"city\"");
             else
                 execute("CREATE TABLE \"Person2\" (\"id\" int, \"city\" varchar," +
                     " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -1387,6 +1393,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                 assertEquals((int)personId2cityCode.get(id), code);
             }
+        }
+        finally {
+            execute("drop table \"City\"");
+            execute("drop table \"Person2\"");
         }
     }
 
@@ -1447,6 +1457,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertEquals(DATA_REGION_NAME, ccfg.getDataRegionName());
         }
+        finally {
+            execute("DROP TABLE TEST_DATA_REGION");
+        }
     }
 
     /**
@@ -1455,6 +1468,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testAffinityKeyCaseSensitivity() {
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(false)) {
+
             execute("CREATE TABLE \"A\" (\"name\" varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
                 "\"affinity_key='name'\"");
 
@@ -1501,6 +1515,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertAffinityCacheConfiguration("E", "Name");
 
+        }
+        finally {
             execute("drop table a");
 
             execute("drop table b");
@@ -1567,6 +1583,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertAffinityCacheConfiguration("E", "Name");
 
+        }
+        finally {
             execute("drop table a");
 
             execute("drop table b");
@@ -1708,9 +1726,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception If test failed.
      */
     public void checkQueryLocalWithRecreate(final boolean useInternalCmd) throws Exception {
+
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
+
             if (useInternalCmd)
-                execute("CREATE TABLE A(id int primary key, name varchar, surname varchar) cache_name=cache " +
+                execute("CREATE TABLE A(id int primary key, name varchar, surname varchar) cache_name=\"cache\" " +
                     "template=replicated");
             else
                 execute("CREATE TABLE A(id int primary key, name varchar, surname varchar) WITH \"cache_name=cache," +
@@ -1729,7 +1749,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             execute("DROP TABLE A");
 
             if (useInternalCmd)
-                execute("CREATE TABLE A(id int primary key, name varchar, surname varchar) cache_name=cache");
+                execute("CREATE TABLE A(id int primary key, name varchar, surname varchar) cache_name=\"cache\"");
             else
                 execute("CREATE TABLE A(id int primary key, name varchar, surname varchar) WITH \"cache_name=cache\"");
 
@@ -1737,12 +1757,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertNotNull(cache);
 
-            try {
-                executeLocal(cache.context(), "INSERT INTO A(id, name, surname) values (1, 'X', 'Y')");
-            }
-            finally {
-                execute("DROP TABLE A");
-            }
+            executeLocal(cache.context(), "INSERT INTO A(id, name, surname) values (1, 'X', 'Y')");
+        }
+        finally {
+            execute("DROP TABLE A");
         }
     }
 
@@ -1751,9 +1769,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testWrappedAndUnwrappedKeyTablesInteroperability() {
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(false)) {
-            {
-                execute("create table a (id int primary key, x varchar)");
 
+            execute("create table a (id int primary key, x varchar)");
+
+            try {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar) with wrap_key",
                     "Table already exists: A");
 
@@ -1763,12 +1782,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar) with wrap_key,wrap_value",
                     "Table already exists: A");
 
+            } finally {
                 execute("drop table a");
             }
 
-            {
-                execute("create table a (id int primary key, x varchar) with wrap_key");
+            execute("create table a (id int primary key, x varchar) with wrap_key");
 
+            try {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar)",
                     "Table already exists: A");
 
@@ -1778,12 +1798,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar) with wrap_key,wrap_value",
                     "Table already exists: A");
 
+            } finally {
                 execute("drop table a");
             }
 
-            {
-                execute("create table a (id int primary key, x varchar) with wrap_value");
+            execute("create table a (id int primary key, x varchar) with wrap_value");
 
+            try {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar)",
                     "Table already exists: A");
 
@@ -1793,12 +1814,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar) with wrap_key,wrap_value",
                     "Table already exists: A");
 
+            } finally {
                 execute("drop table a");
             }
 
-            {
-                execute("create table a (id int primary key, x varchar) with wrap_key,wrap_value");
+            execute("create table a (id int primary key, x varchar) with wrap_value");
 
+            try {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar)",
                     "Table already exists: A");
 
@@ -1808,6 +1830,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar) with wrap_key",
                     "Table already exists: A");
 
+            } finally {
                 execute("drop table a");
             }
         }
@@ -1818,8 +1841,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testWrappedAndUnwrappedKeyTablesInteroperabilityInternal() {
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
-            {
-                execute("create table a (id int primary key, x varchar)");
+
+            execute("create table a (id int primary key, x varchar)");
+
+            try {
 
                 assertDdlCommandThrows("create table a (id int primary key, x varchar) wrap_key",
                     "Table already exists: A");
@@ -1830,12 +1855,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar) wrap_key wrap_value",
                     "Table already exists: A");
 
+            } finally {
                 execute("drop table a");
             }
 
-            {
-                execute("create table a (id int primary key, x varchar) wrap_key");
+            execute("create table a (id int primary key, x varchar) wrap_key");
 
+            try {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar)",
                     "Table already exists: A");
 
@@ -1845,12 +1871,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar) wrap_key wrap_value",
                     "Table already exists: A");
 
+            } finally {
                 execute("drop table a");
             }
 
-            {
-                execute("create table a (id int primary key, x varchar) wrap_value");
+            execute("create table a (id int primary key, x varchar) wrap_value");
 
+            try {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar)",
                     "Table already exists: A");
 
@@ -1860,12 +1887,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar) wrap_key wrap_value",
                     "Table already exists: A");
 
+            } finally {
                 execute("drop table a");
             }
 
-            {
-                execute("create table a (id int primary key, x varchar) wrap_key wrap_value");
+            execute("create table a (id int primary key, x varchar) wrap_key wrap_value");
 
+            try {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar)",
                     "Table already exists: A");
 
@@ -1875,6 +1903,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 assertDdlCommandThrows("create table a (id int primary key, x varchar) wrap_key",
                     "Table already exists: A");
 
+            } finally {
                 execute("drop table a");
             }
         }
@@ -1892,7 +1921,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             execute("create table c (id int primary key, z long) with \"wrap_value=false\"");
 
             execute("create table d (id int primary key, w varchar) with \"wrap_value=false\"");
-
+        }
+        finally {
             execute("drop table a");
 
             execute("drop table b");
@@ -1910,12 +1940,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
             execute("create table a (id int primary key, x varchar) wrap_value=false");
 
-            execute("create table b (id long primary key, y varchar) with wrap_value=false");
+            execute("create table b (id long primary key, y varchar) wrap_value=false");
 
-            execute("create table c (id int primary key, z long) with wrap_value=false");
+            execute("create table c (id int primary key, z long) wrap_value=false");
 
-            execute("create table d (id int primary key, w varchar) with wrap_value=false");
-
+            execute("create table d (id int primary key, w varchar) wrap_value=false");
+        }
+        finally {
             execute("drop table a");
 
             execute("drop table b");
