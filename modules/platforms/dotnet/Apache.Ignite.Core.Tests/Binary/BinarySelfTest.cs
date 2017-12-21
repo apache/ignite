@@ -1605,10 +1605,25 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Type fields.
             var ptrs = new Pointers
             {
-                ByteP = (byte*) 123
+                ByteP = (byte*) 123,
+                IntP = (int*) 456,
+                VoidP = (void*) 789,
+                IntPtr = new IntPtr(long.MaxValue),
+                UIntPtr = new UIntPtr(ulong.MaxValue),
+                IntPtrs = new[] {new IntPtr(long.MinValue)},
+                UIntPtrs = new[] {new UIntPtr(long.MaxValue), new UIntPtr(ulong.MaxValue)}
             };
+
             var res = TestUtils.SerializeDeserialize(ptrs, raw);
+            
             Assert.IsTrue(ptrs.ByteP == res.ByteP);
+            Assert.IsTrue(ptrs.IntP == res.IntP);
+            Assert.IsTrue(ptrs.VoidP == res.VoidP);
+
+            Assert.AreEqual(ptrs.IntPtr, res.IntPtr);
+            Assert.AreEqual(ptrs.IntPtrs, res.IntPtrs);
+            Assert.AreEqual(ptrs.UIntPtr, res.UIntPtr);
+            Assert.AreEqual(ptrs.UIntPtrs, res.UIntPtrs);
         }
 
         /// <summary>
@@ -2728,6 +2743,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             public UIntPtr UIntPtr { get; set; }
             public UIntPtr[] UIntPtrs { get; set; }
             public byte* ByteP { get; set; }
+            public int* IntP { get; set; }
+            public void* VoidP { get; set; }
         }
     }
 }
