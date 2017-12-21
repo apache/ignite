@@ -1114,8 +1114,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout on flush.", e);
                     }
                     catch (IgniteCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to flush buffer: " + e);
+                        //if (log.isDebugEnabled())
+                            log.error("Failed to flush buffer: " + e, e);
 
                         err = true;
                     }
@@ -1146,9 +1146,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             if (doneCnt == activeFuts0.size())
                 return;
-
-            if (disconnectErr != null)
-                throw disconnectErr;
         }
     }
 

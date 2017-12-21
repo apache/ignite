@@ -44,20 +44,7 @@ public class IgniteClientReconnectTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Client Reconnect Test Suite");
 
-        suite.addTestSuite(IgniteClientConnectAfterCommunicationFailureTest.class);
-        suite.addTestSuite(IgniteClientReconnectStopTest.class);
-        suite.addTestSuite(IgniteClientReconnectApiExceptionTest.class);
-        suite.addTestSuite(IgniteClientReconnectDiscoveryStateTest.class);
-        suite.addTestSuite(IgniteClientReconnectCacheTest.class);
-        suite.addTestSuite(IgniteClientReconnectBinaryContexTest.class);
-        suite.addTestSuite(IgniteClientReconnectContinuousProcessorTest.class);
-        suite.addTestSuite(IgniteClientReconnectComputeTest.class);
-        suite.addTestSuite(IgniteClientReconnectAtomicsTest.class);
-        suite.addTestSuite(IgniteClientReconnectCollectionsTest.class);
-        suite.addTestSuite(IgniteClientReconnectServicesTest.class);
-        suite.addTestSuite(IgniteClientReconnectStreamerTest.class);
         suite.addTestSuite(IgniteClientReconnectFailoverTest.class);
-        suite.addTestSuite(IgniteClientRejoinTest.class);
 
         return suite;
     }
