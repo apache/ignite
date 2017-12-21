@@ -1146,6 +1146,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             if (doneCnt == activeFuts0.size())
                 return;
+
+            if (disconnectErr != null)
+                throw disconnectErr;
         }
     }
 

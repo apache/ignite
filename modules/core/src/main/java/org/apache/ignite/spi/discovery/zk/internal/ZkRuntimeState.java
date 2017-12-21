@@ -34,7 +34,7 @@ class ZkRuntimeState {
     ZkAliveNodeDataWatcher aliveNodeDataWatcher;
 
     /** */
-    volatile boolean closing;
+    volatile Exception errForClose;
 
     /** */
     final boolean prevJoined;
@@ -95,10 +95,12 @@ class ZkRuntimeState {
     }
 
     /**
-     *
+     * @param err Error.
      */
-    void onCloseStart() {
-        closing = true;
+    void onCloseStart(Exception err) {
+        assert err != null;
+
+        errForClose = err;
 
         ZookeeperClient zkClient = this.zkClient;
 

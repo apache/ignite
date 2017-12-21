@@ -47,7 +47,24 @@ abstract class ZkAbstractCallabck {
      * @return {@code True} if is able to start processing.
      */
     final boolean onProcessStart() {
-        return !rtState.closing && busyLock.enterBusy();
+        boolean start = rtState.errForClose == null && busyLock.enterBusy();
+
+        if (!start) {
+            assert rtState.errForClose != null;
+
+            onStartFailed();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     *
+     */
+    void onStartFailed() {
+        // No-op.
     }
 
     /**

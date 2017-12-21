@@ -175,6 +175,10 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
                             impl.localNode().order(),
                             impl.marshalZip(state));
                     }
+
+                    @Override void onStartFailed() {
+                        onError(rtState.errForClose);
+                    }
                 });
 
             }

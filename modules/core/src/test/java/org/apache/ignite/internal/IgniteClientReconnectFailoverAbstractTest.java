@@ -210,7 +210,7 @@ public abstract class IgniteClientReconnectFailoverAbstractTest extends IgniteCl
             }
 
             if (err != null) {
-                log.error(err);
+                log.error("Test error:" + err);
 
                 U.dumpThreads(log);
 

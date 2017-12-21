@@ -398,13 +398,14 @@ public class ZookeeperDiscoveryImpl {
         assert clientReconnectEnabled;
 
         synchronized (stateMux) {
-            if (connState == ConnectionState.STARTED)
+            if (connState == ConnectionState.STARTED) {
                 connState = ConnectionState.DISCONNECTED;
+
+                rtState.onCloseStart(disconnectError());
+            }
             else
                 return;
         }
-
-        rtState.onCloseStart();
 
         busyLock.block();
 
@@ -454,24 +455,17 @@ public class ZookeeperDiscoveryImpl {
      * @param e Error.
      */
     private void onSegmented(Exception e) {
+        rtState.errForClose = e;
+
         if (rtState.joined) {
             synchronized (stateMux) {
                 connState = ConnectionState.STOPPED;
             }
 
-            rtState.zkClient.zk().sync(zkPaths.clusterDir, new SegmentedWatcher(), null);
+            notifySegmented();
         }
         else
             joinFut.onDone(e);
-    }
-
-    /**
-     *
-     */
-    class SegmentedWatcher implements AsyncCallback.VoidCallback {
-        @Override public void processResult(int rc, String path, Object ctx) {
-            notifySegmented();
-        }
     }
 
     /**
@@ -511,6 +505,13 @@ public class ZookeeperDiscoveryImpl {
             case DISCONNECTED:
                 throw new IgniteClientDisconnectedException(null, "Client is disconnected.");
         }
+    }
+
+    /**
+     * @return Exception.
+     */
+    static IgniteClientDisconnectedCheckedException disconnectError() {
+        return new IgniteClientDisconnectedCheckedException(null, "Client node disconnected.");
     }
 
     /**
@@ -1096,7 +1097,7 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void process0(WatchedEvent evt) {
-            if (rtState.closing || rtState.joined)
+            if (rtState.errForClose != null || rtState.joined)
                 return;
 
             if (evt.getType() == Event.EventType.NodeDataChanged)
@@ -1258,7 +1259,7 @@ public class ZookeeperDiscoveryImpl {
                 catch (Exception e) {
                     U.warn(log, "Local node authentication failed: " + e, e);
 
-                    rtState.onCloseStart();
+                    rtState.onCloseStart(e);
 
                     joinFut.onDone(e);
 
@@ -1809,8 +1810,10 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
 
-        if (connState == ConnectionState.DISCONNECTED)
-            connState = ConnectionState.STARTED;
+        synchronized (stateMux) {
+            if (connState == ConnectionState.DISCONNECTED)
+                connState = ConnectionState.STARTED;
+        }
 
         lsnr.onDiscovery(EventType.EVT_NODE_JOINED,
             1L,
@@ -2294,8 +2297,10 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        if (connState == ConnectionState.DISCONNECTED)
-            connState = ConnectionState.STARTED;
+        synchronized (stateMux) {
+            if (connState == ConnectionState.DISCONNECTED)
+                connState = ConnectionState.STARTED;
+        }
 
         lsnr.onDiscovery(evtData.eventType(),
             evtData.topologyVersion(),
@@ -2723,7 +2728,7 @@ public class ZookeeperDiscoveryImpl {
 
         client.deleteIfExistsAsync(zkPaths.aliveNodesDir);
 
-        rtState.onCloseStart();
+        rtState.onCloseStart(new IgniteCheckedException("Simulate node failure error."));
 
         rtState.zkClient.close();
     }
@@ -2815,8 +2820,6 @@ public class ZookeeperDiscoveryImpl {
     private Exception localNodeFail(String msg, boolean clientReconnect) {
         U.warn(log, msg);
 
-        rtState.onCloseStart();
-
         if (clientReconnect && clientReconnectEnabled) {
             assert locNode.isClient() : locNode;
 
@@ -2827,6 +2830,8 @@ public class ZookeeperDiscoveryImpl {
                     reconnect = true;
 
                     connState = ConnectionState.DISCONNECTED;
+
+                    rtState.onCloseStart(disconnectError());
                 }
             }
 
@@ -2841,8 +2846,11 @@ public class ZookeeperDiscoveryImpl {
                 runInWorkerThread(new ReconnectClosure(newId));
             }
         }
-        else
+        else {
+            rtState.errForClose = new IgniteCheckedException(msg);
+
             notifySegmented();
+        }
 
         // Stop any further processing.
         return new ZookeeperClientFailedException(msg);
@@ -3102,11 +3110,13 @@ public class ZookeeperDiscoveryImpl {
         if (!stop.compareAndSet(false, true))
             return;
 
+        IgniteCheckedException err = new IgniteCheckedException("Node stopped.");
+
         synchronized (stateMux) {
             connState = ConnectionState.STOPPED;
-        }
 
-        rtState.onCloseStart();
+            rtState.onCloseStart(err);
+        }
 
         busyLock.block();
 
@@ -3119,7 +3129,7 @@ public class ZookeeperDiscoveryImpl {
         if (zkClient != null)
             zkClient.close();
 
-        finishFutures(new IgniteCheckedException("Node stopped."));
+        finishFutures(err);
 
         IgniteUtils.shutdownNow(ZookeeperDiscoveryImpl.class, utilityPool, log);
     }
@@ -3217,9 +3227,7 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            finishFutures(new IgniteClientDisconnectedCheckedException(null, "Client node disconnected."));
-
-            rtState.closing = true;
+            finishFutures(disconnectError());
 
             busyLock.block();
 
@@ -3240,8 +3248,11 @@ public class ZookeeperDiscoveryImpl {
         @Override public void run() {
             if (clientReconnectEnabled) {
                 synchronized (stateMux) {
-                    if (connState == ConnectionState.STARTED)
+                    if (connState == ConnectionState.STARTED) {
                         connState = ConnectionState.DISCONNECTED;
+
+                        rtState.onCloseStart(disconnectError());
+                    }
                     else
                         return;
                 }
@@ -3533,6 +3544,10 @@ public class ZookeeperDiscoveryImpl {
                             }
                         }
                     }
+
+                    @Override void onStartFailed() {
+                        onDone(rtState.errForClose);
+                    }
                 });
             }
         }
@@ -3552,6 +3567,17 @@ public class ZookeeperDiscoveryImpl {
          * @return {@code False} if future was completed.
          */
         boolean checkNodeAndState() {
+            if (isDone())
+                return false;
+
+            Exception err = rtState.errForClose;
+
+            if (err != null) {
+                onDone(err);
+
+                return false;
+            }
+
             ConnectionState connState = ZookeeperDiscoveryImpl.this.connState;
 
             if (connState == ConnectionState.DISCONNECTED) {
