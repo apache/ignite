@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -101,6 +102,13 @@ public class GridToStringBuilder {
             queue.offer(new GridToStringThreadLocal());
 
             return queue;
+        }
+    };
+
+    /** Contains objects currently printing in the string builder.*/
+    private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
+        @Override protected IdentityHashMap<Object, Integer> initialValue() {
+            return new IdentityHashMap<>();
         }
     };
 
@@ -282,7 +290,8 @@ public class GridToStringBuilder {
         addSens[4] = sens4;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 5);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 5, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -364,7 +373,8 @@ public class GridToStringBuilder {
         addSens[5] = sens5;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 6);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 6, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -454,7 +464,8 @@ public class GridToStringBuilder {
         addSens[6] = sens6;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 7);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 7, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -548,7 +559,8 @@ public class GridToStringBuilder {
         addSens[3] = sens3;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 4);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 4, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -631,7 +643,8 @@ public class GridToStringBuilder {
         addSens[2] = sens2;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 3);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 3, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -699,7 +712,8 @@ public class GridToStringBuilder {
         addSens[1] = sens1;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 2);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 2, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -754,7 +768,8 @@ public class GridToStringBuilder {
         addSens[0] = sens;
 
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 1);
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 1, true,
+                savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -784,7 +799,7 @@ public class GridToStringBuilder {
 
         try {
             return toStringImpl(cls, tmp.getStringBuilder(), obj, tmp.getAdditionalNames(),
-                tmp.getAdditionalValues(), null, 0);
+                tmp.getAdditionalValues(), null, 0, true, savedObjects.get());
         }
         finally {
             queue.offer(tmp);
@@ -807,6 +822,8 @@ public class GridToStringBuilder {
     /**
      * Creates an uniformed string presentation for the given object.
      *
+     *
+     * @param <T> Type of object.
      * @param cls Class of the object.
      * @param buf String builder buffer.
      * @param obj Object for which to get string presentation.
@@ -814,15 +831,17 @@ public class GridToStringBuilder {
      * @param addVals Additional values to be included.
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
+     * @param resetBuffer Flag to reset string builder.
      * @return String presentation of the given object.
-     * @param <T> Type of object.
      */
     @SuppressWarnings({"unchecked"})
     private static <T> String toStringImpl(Class<T> cls, SB buf, T obj,
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
-        int addLen) {
+        int addLen,
+        boolean resetBuffer,
+        IdentityHashMap<Object, Integer> savedObjects) {
         assert cls != null;
         assert buf != null;
         assert obj != null;
@@ -831,12 +850,21 @@ public class GridToStringBuilder {
         assert addNames.length == addVals.length;
         assert addLen <= addNames.length;
 
+        if (isPrimitiveWraper(cls)) {
+            buf.a(String.valueOf(obj));
+
+            return null;
+        }
+
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
 
             assert cd != null;
 
-            buf.setLength(0);
+            if (resetBuffer)
+                buf.setLength(0);
+
+            savedObjects.put(obj, buf.length());
 
             buf.a(cd.getSimpleClassName()).a(" [");
 
@@ -881,7 +909,12 @@ public class GridToStringBuilder {
                         val = tmp;
                     }
 
-                    buf.a(val);
+                    if (!addNameWithHashToBuffer(buf, val, savedObjects))
+                        if (val == null)
+                            buf.a("null");
+                        else
+                            toStringImpl((Class)val.getClass(), buf, val, new Object[]{}, new Object[]{}, null,
+                                0, false, savedObjects);
                 }
             }
 
@@ -906,7 +939,19 @@ public class GridToStringBuilder {
 
             // No other option here.
             throw new IgniteException(e);
+        } finally {
+            savedObjects.remove(obj);
         }
+    }
+
+    /**
+     * @param cls Class to be checked.
+     * @return True - if given class is primitive and is possible to call object's toString().
+     */
+    private static boolean isPrimitiveWraper(Class cls) {
+        return cls == Byte.class || cls == Short.class || cls == Integer.class || cls == Long.class ||
+            cls == Float.class || cls == Double.class  || cls == Boolean.class || cls == Character.class ||
+            cls == String.class || cls == StringBuilder.class;
     }
 
     /**
@@ -1464,7 +1509,13 @@ public class GridToStringBuilder {
                 else
                     first = false;
 
-                buf.a(addNames[i]).a('=').a(addVal);
+                buf.a(addNames[i]).a('=');
+
+                if (addVal == null)
+                    buf.a("null");
+                else
+                    toStringImpl((Class)addVal.getClass(), buf, addVal, new Object[]{}, new Object[]{}, null,
+                        0, false, savedObjects.get());
             }
         }
     }
@@ -1566,5 +1617,54 @@ public class GridToStringBuilder {
         }
 
         return cd;
+    }
+
+    /**
+     * @param buf String builder.
+     * @param obj Object.
+     * @param map Map with objects already presented in the buffer.
+     * @return True if object is already presented and simple class name with identity hash code
+     */
+    private static boolean addNameWithHashToBuffer(SB buf, Object obj, IdentityHashMap<Object, Integer> map) {
+        if (map.containsKey(obj)) {
+            Integer position = map.get(obj);
+
+            if (position == null) {
+                throw new IllegalStateException("Method \"getPosition(Object o)\" must be called " +
+                    "only after method isSaved(object) returned true.");
+            }
+
+            String hash = '@' + Integer.toHexString(System.identityHashCode(obj));
+
+            if (buf.impl().indexOf(hash, position) != position + obj.getClass().getSimpleName().length()) {
+                buf.i(position + obj.getClass().getSimpleName().length(), hash);
+
+                incValues(map, obj, hash.length());
+            }
+
+            buf.a(obj.getClass().getSimpleName() + hash);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Increment positions of already presented objects afterward object.
+     *
+     * @param map Map with objects already presented in the buffer.
+     * @param obj Object.
+     * @param hashLength Length of the object's hash.
+     */
+    private static void incValues(IdentityHashMap<Object, Integer> map, Object obj, int hashLength) {
+        Integer baseline = map.get(obj);
+
+        for (IdentityHashMap.Entry<Object, Integer> entry : map.entrySet()) {
+            Integer position = entry.getValue();
+
+            if (position > baseline)
+                entry.setValue(position + hashLength);
+        }
     }
 }
