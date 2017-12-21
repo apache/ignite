@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -284,7 +285,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
             long cnt = 0;
 
             try (GridCloseableIterator<?> it = cctx.kernalContext().query()
-                .prepareDistributedUpdate(cctx, cacheIds, this.parts, schema, qry, params, flags, pageSize, (int)timeout, topVer, mvccVer, cancel)) {
+                .prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry, params, flags, pageSize, (int)timeout, topVer, mvccVer, cancel)) {
                 while (it.hasNext()) {
                     Object row = it.next();
 
@@ -576,6 +577,9 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
         txEntry.cached(entry);
         txEntry.markValid();
         txEntry.queryEnlisted(true);
+
+        if (tx.local() && !tx.dht())
+            ((GridNearTxLocal)tx).colocatedLocallyMapped(true);
 
         GridCacheMvccCandidate c = entry.addDhtLocal(
             nearNodeId,
