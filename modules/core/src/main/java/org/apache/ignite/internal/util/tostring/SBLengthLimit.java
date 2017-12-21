@@ -28,11 +28,11 @@ class SBLengthLimit {
     /** */
     private static final int MAX_TO_STR_LEN = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_MAX_LENGTH, 10_000);
 
-    /** */
-    private int len;
+    /** Length of tail part of message */
+    private static final int TAIL_LEN = MAX_TO_STR_LEN / 10 * 2;
 
     /** */
-    private boolean done;
+    private int len;
 
     /**
      * @return Current length.
@@ -46,7 +46,6 @@ class SBLengthLimit {
      */
     void reset() {
         len = 0;
-        done = false;
     }
 
     /**
@@ -54,22 +53,21 @@ class SBLengthLimit {
      * @param writtenLen Written length.
      */
     void onWrite(SBLimitedLength sb, int writtenLen) {
-        if (done)
-            return;
 
         len += writtenLen;
 
-        if (len > MAX_TO_STR_LEN) {
-            sb.appendNoLimitCheck("...");
-
-            done = true;
+        if (len > MAX_TO_STR_LEN && sb.getTail() == null) {
+            CircularStringBuilder tail = new CircularStringBuilder(TAIL_LEN);
+            tail.append(sb.impl().substring(MAX_TO_STR_LEN - TAIL_LEN));
+            sb.setTail(tail);
+            sb.setLength(MAX_TO_STR_LEN - TAIL_LEN);
         }
     }
 
     /**
      * @return {@code True} if reached limit.
      */
-    boolean done() {
-        return done;
+    boolean overflowed() {
+        return len > MAX_TO_STR_LEN;
     }
 }

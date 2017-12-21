@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -49,7 +50,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         log.info(obj.toStringManual());
         log.info(obj.toStringAutomatic());
 
-        assert obj.toStringManual().equals(obj.toStringAutomatic());
+        assertEquals (obj.toStringManual(), obj.toStringAutomatic());
     }
 
     /**
@@ -66,7 +67,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         String automatic = obj.toStringWithAdditionalAutomatic();
         log.info(automatic);
 
-        assert manual.equals(automatic);
+        assertEquals(manual, automatic);
     }
 
     /**
@@ -187,6 +188,32 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testToStringSizeLimits() throws Exception {
+
+        int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_MAX_LENGTH, 10_000);
+        int tailLen = limit / 10 * 2;
+        StringBuilder sb = new StringBuilder(limit + 10);
+        for (int i = 0; i < limit - 100; i++) {
+            sb.append('a');
+        }
+        String actual = GridToStringBuilder.toString(TestClass2.class, new TestClass2(sb.toString()));
+        String expected = "TestClass2 [str=" + sb.toString() + "]";
+        assertEquals(expected, actual);
+
+        for (int i = 0; i < 100; i++) {
+            sb.append('b');
+        }
+        actual = GridToStringBuilder.toString(TestClass2.class, new TestClass2(sb.toString()));
+        expected = "TestClass2 [str=" + sb.toString() + "]";
+        assertEquals(expected.substring(0, limit - tailLen), actual.substring(0, limit - tailLen));
+        assertEquals(expected.substring(expected.length() - tailLen), actual.substring(actual.length() - tailLen));
+        assertTrue(actual.contains("... and"));
+        assertTrue(actual.contains("skipped ..."));
+    }
+
+    /**
      * Test class.
      */
     private static class TestClass1 {
@@ -298,6 +325,17 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
                 s.append(", newParam2=").append(2);
             s.append(']');
             return s.toString();
+        }
+    }
+
+    private static class TestClass2{
+        /** */
+        @SuppressWarnings("unused")
+        @GridToStringInclude
+        private String str;
+
+        public TestClass2(String str) {
+            this.str = str;
         }
     }
 }

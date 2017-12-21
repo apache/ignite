@@ -982,7 +982,7 @@ public class GridToStringBuilder {
 
             for (GridToStringFieldDescriptor fd : cd.getFields()) {
                 if (!first)
-                   buf.a(", ");
+                    buf.a(", ");
                 else
                     first = false;
 

@@ -19,6 +19,10 @@ package org.apache.ignite.internal.util.tostring;
 
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import sun.plugin2.jvm.CircularByteBuffer;
+
+import java.util.ArrayDeque;
+import java.util.Arrays;
 
 /**
  *
@@ -26,6 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 public class SBLimitedLength extends SB {
     /** */
     private SBLengthLimit lenLimit;
+
+    /** Additional string builder to get tail of message. */
+    private CircularStringBuilder tail;
 
     /**
      * @param cap Capacity.
@@ -35,17 +42,25 @@ public class SBLimitedLength extends SB {
     }
 
     /**
-     * @return {@code True} if reached length limit.
-     */
-    boolean done() {
-        return lenLimit.done();
-    }
-
-    /**
      * @param lenLimit Length limit.
      */
     void initLimit(SBLengthLimit lenLimit) {
         this.lenLimit = lenLimit;
+        tail = null;
+    }
+
+    /**
+     * @return tail string builder.
+     */
+    public CircularStringBuilder getTail() {
+        return tail;
+    }
+
+    /**
+     * @param tail tail CircularStringBuilder to set.
+     */
+    public void setTail(CircularStringBuilder tail) {
+        this.tail = tail;
     }
 
     /**
@@ -62,9 +77,11 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(Object obj) {
-        if (lenLimit.done())
-            return this; 
-            
+        if (lenLimit.overflowed()) {
+            tail.append(obj);
+            return this;
+        }
+
         int curLen = length();
 
         super.a(obj);
@@ -74,8 +91,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(String str) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(str);
             return this;
+        }
 
         int curLen = length();
 
@@ -86,8 +105,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(StringBuffer sb) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(sb);
             return this;
+        }
 
         int curLen = length();
 
@@ -98,8 +119,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(CharSequence s) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(s);
             return this;
+        }
 
         int curLen = length();
 
@@ -110,8 +133,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(CharSequence s, int start, int end) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(s.subSequence(start, end));
             return this;
+        }
 
         int curLen = length();
 
@@ -122,8 +147,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char[] str) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(str);
             return this;
+        }
 
         int curLen = length();
 
@@ -134,8 +161,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char[] str, int offset, int len) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(Arrays.copyOfRange(str, offset, len));
             return this;
+        }
 
         int curLen = length();
 
@@ -146,8 +175,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(boolean b) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(b);
             return this;
+        }
 
         int curLen = length();
 
@@ -158,8 +189,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char c) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(c);
             return this;
+        }
 
         int curLen = length();
 
@@ -170,8 +203,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(int i) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(i);
             return this;
+        }
 
         int curLen = length();
 
@@ -182,8 +217,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(long lng) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(lng);
             return this;
+        }
 
         int curLen = length();
 
@@ -194,8 +231,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(float f) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(f);
             return this;
+        }
 
         int curLen = length();
 
@@ -206,8 +245,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(double d) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(d);
             return this;
+        }
 
         int curLen = length();
 
@@ -218,8 +259,10 @@ public class SBLimitedLength extends SB {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder appendCodePoint(int codePoint) {
-        if (lenLimit.done())
+        if (lenLimit.overflowed()) {
+            tail.append(codePoint);
             return this;
+        }
 
         int curLen = length();
 
@@ -228,10 +271,25 @@ public class SBLimitedLength extends SB {
         return onWrite(curLen);
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        if (tail == null)
+            return super.toString();
+        else {
+            int tailLen = tail.length();
+            StringBuilder result = new StringBuilder(impl().capacity() + 100);
+            result.append(impl());
+            result.append("... and ").append(String.valueOf(tail.getSkipped() + tailLen))
+                .append(" skipped ...").append(tail.toString());
+            return result.toString();
+        }
+    }
+
     /**
      * @param str String.
      */
     void appendNoLimitCheck(String str) {
         super.a(str);
     }
+
 }
