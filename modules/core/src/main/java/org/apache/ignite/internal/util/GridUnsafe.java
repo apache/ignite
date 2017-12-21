@@ -1369,9 +1369,9 @@ public abstract class GridUnsafe {
 
     /** */
     private static GridPlainInClosure<ByteBuffer> directByteBufferCleaner() {
-        if (IgniteSystemProperties.getString("java.version", "").startsWith("9")) {
+        if (!IgniteSystemProperties.getString("java.version", "").startsWith("1.8")) {
             try {
-                Method cleaner = Unsafe.class.getMethod("invokeCleaner", ByteBuffer.class);
+                final Method cleaner = Unsafe.class.getMethod("invokeCleaner", ByteBuffer.class);
 
                 return new GridPlainInClosure<ByteBuffer>() {
                     @Override public void apply(ByteBuffer buf) throws IgniteCheckedException {
@@ -1386,8 +1386,8 @@ public abstract class GridUnsafe {
                 throw new RuntimeException("Reflection failure: no sun.misc.Unsafe.invokeCleaner() method found", e);
             }
         } else {
-            Method cleanerMtd;
-            Method cleanMtd;
+            final Method cleanerMtd;
+            final Method cleanMtd;
 
             try {
                 cleanerMtd = Class.forName("sun.nio.ch.DirectBuffer").getMethod("cleaner");
