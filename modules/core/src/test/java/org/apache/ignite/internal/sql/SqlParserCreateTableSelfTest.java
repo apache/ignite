@@ -24,6 +24,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.sql.command.SqlCreateTableCommand;
 import org.apache.ignite.internal.sql.param.ParamTestUtils;
 import org.apache.ignite.internal.sql.param.TestParamDef;
+import org.apache.ignite.internal.util.H2FallbackTempDisabler;
 import org.apache.ignite.testframework.StrOrRegex;
 
 import java.util.Arrays;
@@ -185,42 +186,96 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
      */
     public void testBasicSyntax() throws Exception {
 
-        assertParseError(null,
-            "CREATE TABLE",
-            "Unexpected end of command (expected: \"[qualified identifier]\", \"IF\")");
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
 
-        assertParseError(null,
-            "CREATE TABLE tbl",
-            "Unexpected end of command (expected: \"(\")");
+            assertParseError(null,
+                "CREATE TABLE",
+                "Unexpected end of command (expected: \"[qualified identifier]\", \"IF\")");
 
-        assertParseError(null,
-            "CREATE TABLE (a INT PRIMARY KEY), b VARCHAR)",
-            "Unexpected token: \"(\" (expected: \"[qualified identifier]\", \"IF\")");
+            assertParseError(null,
+                "CREATE TABLE tbl",
+                "Unexpected end of command (expected: \"(\")");
 
-        assertParseError(null,
-            "CREATE TABLE (a int, b varchar)",
-            "Unexpected token: \"(\" (expected: \"[qualified identifier]\", \"IF\")");
+            assertParseError(null,
+                "CREATE TABLE (a INT PRIMARY KEY), b VARCHAR)",
+                "Unexpected token: \"(\" (expected: \"[qualified identifier]\", \"IF\")");
 
-        assertParseError(null,
-            "CREATE TABLE tbl (a int, a varchar)",
-            "Column already defined: A");
+            assertParseError(null,
+                "CREATE TABLE (a int, b varchar)",
+                "Unexpected token: \"(\" (expected: \"[qualified identifier]\", \"IF\")");
 
-        assertParseError(null,
-            "CREATE TABLE tbl (a INT, b VARCHAR, a INT PRIMARY KEY)",
-            "Column already defined: A");
+            assertParseError(null,
+                "CREATE TABLE tbl (a int, a varchar)",
+                "Column already defined: A");
 
-        assertParseError(null,
-            "CREATE TABLE tbl (a INT, b VARCHAR, a date PRIMARY KEY)",
-            "Column already defined: A");
+            assertParseError(null,
+                "CREATE TABLE tbl (a INT, b VARCHAR, a INT PRIMARY KEY)",
+                "Column already defined: A");
+
+            assertParseError(null,
+                "CREATE TABLE tbl (a INT, b VARCHAR, a date PRIMARY KEY)",
+                "Column already defined: A");
+        }
+    }
+
+    /** FIXME */
+    public void testColumnNames() {
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+            assertParseError(null,
+                "CREATE TABLE tbl (_key INT)",
+                "Direct specification of _KEY and _VAL columns is forbidden");
+
+            assertParseError(null,
+                "CREATE TABLE tbl (_val INT)",
+                "Direct specification of _KEY and _VAL columns is forbidden");
+
+            assertParseError(null,
+                "CREATE TABLE tbl (a INT)",
+                "No PRIMARY KEY columns specified");
+
+            assertParseError(null,
+                "CREATE TABLE tbl (a INT PRIMARY KEY, b VARCHAR PRIMARY KEY)",
+                "Table must have at least one non PRIMARY KEY column.");
+        }
+    }
+
+    /** FIXME */
+    public void testWrapParams() {
+
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+
+            assertParseError(null,
+                "CREATE TABLE tbl (a INT PRIMARY KEY, b LONG PRIMARY KEY, c VARCHAR) NO_WRAP_KEY",
+                "WRAP_KEY cannot be false when composite primary key exists.");
+
+            assertParseError(null,
+                "CREATE TABLE tbl (a INT PRIMARY KEY, b LONG PRIMARY KEY, c VARCHAR) NO_WRAP_KEY KEY_TYPE KeyType",
+                "WRAP_KEY cannot be false when KEY_TYPE is set.");
+
+            assertParseError(null,
+                "CREATE TABLE tbl (a INT PRIMARY KEY, b LONG PRIMARY KEY, c VARCHAR, d INT) NO_WRAP_VALUE",
+                "WRAP_VALUE cannot be false when multiple non-primary key columns exist.");
+
+            assertParseError(null,
+                "CREATE TABLE tbl (a INT PRIMARY KEY, b LONG PRIMARY KEY, c VARCHAR, d INT) NO_WRAP_VALUE VALUE_TYPE ValueType",
+                "WRAP_VALUE cannot be false when VALUE_TYPE is set.");
+
+            assertParseError(null,
+                "CREATE TABLE tbl (a INT PRIMARY KEY, b LONG PRIMARY KEY, c VARCHAR, d INT) KEY_TYPE KvType VALUE_TYPE KvType",
+                "Key and value type names should be different for CREATE TABLE: KvType");
+        }
     }
 
     /** FIXME */
     public void testParams() throws Exception {
 
-        String baseCmd = "CREATE TABLE tbl (" + PK_NAME + " INT PRIMARY KEY, b VARCHAR)";
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
 
-        for (TestParamDef testParamDef : PARAM_TESTS)
-            testParameter(null, baseCmd, testParamDef, DEFAULT_PARAM_VALS);
+            String baseCmd = "CREATE TABLE tbl (" + PK_NAME + " INT PRIMARY KEY, b VARCHAR)";
+
+            for (TestParamDef testParamDef : PARAM_TESTS)
+                testParameter(null, baseCmd, testParamDef, DEFAULT_PARAM_VALS);
+        }
 
 
 //        // Base.

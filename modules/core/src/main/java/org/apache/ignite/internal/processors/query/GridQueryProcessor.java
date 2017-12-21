@@ -1378,14 +1378,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void dynamicTableCreate(String schemaName, QueryEntity entity, @Nullable String templateName,
         @Nullable String cacheName, String cacheGroup, @Nullable String dataRegion,
         String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
-        @Nullable CacheWriteSynchronizationMode writeSyncMode, Integer backups, boolean ifNotExists)
+        @Nullable CacheWriteSynchronizationMode writeSyncMode, int backups, boolean ifNotExists)
         throws IgniteCheckedException {
-
-        if (backups == null)
-            backups = 0;
-
-        if (F.isEmpty(templateName))
-            templateName = QueryUtils.TEMPLATE_PARTITIONED;
 
         CacheConfiguration<?, ?> ccfg = ctx.cache().getConfigFromTemplate(templateName);
 

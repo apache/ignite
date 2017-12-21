@@ -73,6 +73,10 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
+import static org.apache.ignite.internal.sql.SqlKeyword.KEY_TYPE;
+import static org.apache.ignite.internal.sql.SqlKeyword.VAL_TYPE;
+import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_KEY;
+import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_VALUE;
 
 /**
  * DDL statements processor.<p>
@@ -152,6 +156,7 @@ public class DdlStatementsProcessor {
 
     /** FIXME */
     private void createTable(SqlCreateTableCommand cmd) throws IgniteCheckedException {
+
         if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()) && cmd.schemaName() != null)
             throw new SchemaOperationException("CREATE TABLE can only be executed on " +
                 QueryUtils.DFLT_SCHEMA + " schema.");
@@ -164,6 +169,8 @@ public class DdlStatementsProcessor {
                     cmd.tableName());
         }
         else {
+            postProcessCreateTableCmd(cmd);
+
             QueryEntity qryEnt = toQueryEntity(cmd);
 
             CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
@@ -181,6 +188,81 @@ public class DdlStatementsProcessor {
                 cmd.cacheGroup(), cmd.dataRegionName(), cmd.affinityKey(), cmd.atomicityMode(),
                 cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists());
         }
+    }
+
+    /** FIXME */
+    private void postProcessCreateTableCmd(SqlCreateTableCommand cmd) {
+
+        if (F.isEmpty(cmd.templateName()))
+            cmd.templateName(QueryUtils.TEMPLATE_PARTITIONED);
+
+        Map<String, SqlColumn> cols = cmd.columns();
+
+        if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
+            cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase()))
+            throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
+                IgniteQueryErrorCode.PARSING);
+
+        if (F.isEmpty(cmd.primaryKeyColumnNames()))
+            throw new AssertionError("No PRIMARY KEY columns specified");
+
+        int keyColsNum = cmd.primaryKeyColumnNames().size();
+        int valColsNum = cols.size() - keyColsNum;
+
+        if (valColsNum == 0)
+            throw new IgniteSQLException("Table must have at least one non PRIMARY KEY column.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        // Process key wrapping.
+
+        Boolean wrapKey = cmd.wrapKey();
+
+        if (wrapKey != null && !wrapKey) {
+            if (keyColsNum > 1) {
+                throw new IgniteSQLException(WRAP_KEY + " cannot be false when composite primary key exists.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(cmd.keyTypeName())) {
+                throw new IgniteSQLException(WRAP_KEY + " cannot be false when " + KEY_TYPE + " is set.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+        }
+
+        boolean wrapKey0 = (cmd.wrapKey() != null && cmd.wrapKey()) || !F.isEmpty(cmd.keyTypeName()) || keyColsNum > 1;
+
+        cmd.wrapKey(wrapKey0);
+
+        // Process value wrapping.
+        Boolean wrapVal = cmd.wrapValue();
+
+        if (wrapVal != null && !wrapVal) {
+            if (valColsNum > 1) {
+                throw new IgniteSQLException(WRAP_VALUE + " cannot be false when multiple non-primary key " +
+                    "columns exist.", IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(cmd.valueTypeName())) {
+                throw new IgniteSQLException(WRAP_VALUE + " cannot be false when " + VAL_TYPE + " is set.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            cmd.wrapValue(false);
+        }
+        else
+            cmd.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+
+        if (!F.isEmpty(cmd.valueTypeName()) && F.eq(cmd.keyTypeName(), cmd.valueTypeName()))
+            throw new IgniteSQLException("Key and value type names " +
+                "should be different for CREATE TABLE: " + cmd.valueTypeName(), IgniteQueryErrorCode.PARSING);
+
+        if (cmd.affinityKey() == null) {
+            if (cmd.primaryKeyColumnNames().size() == 1 && cmd.wrapKey())
+                cmd.affinityKey(cmd.primaryKeyColumnNames().iterator().next());
+        }
+
+        if (cmd.backups() == null)
+            cmd.backups(0);
     }
 
     /** FIXME */
@@ -604,18 +686,6 @@ public class DdlStatementsProcessor {
         return res;
     }
 
-    /** FIXME */
-    private static @NotNull String getSupportedTypeName(@NotNull SqlColumnType colType) {
-        assert colType != null;
-
-        Class<?> cls = SqlColumnType.classForType(colType);
-
-        if (cls == null)
-            throw new IgniteSQLException("Unsupported column type: " + colType);
-
-        return cls.getSimpleName();
-    }
-
     /**
      * Convert this statement to query entity and do Ignite specific sanity checks on the way.
      * @return Query entity mimicking this SQL statement.
@@ -698,6 +768,18 @@ public class DdlStatementsProcessor {
         }
 
         return res;
+    }
+
+    /** FIXME */
+    private static @NotNull String getSupportedTypeName(@NotNull SqlColumnType colType) {
+        assert colType != null;
+
+        Class<?> cls = SqlColumnType.classForType(colType);
+
+        if (cls == null)
+            throw new IgniteSQLException("Unsupported column type: " + colType);
+
+        return cls.getName();
     }
 
     /**
