@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using System;
     using System.Configuration;
     using System.IO;
     using System.Text;
@@ -75,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
             };
 
-            using (var xmlReader = XmlReader.Create("Config\\Client\\IgniteClientConfiguration.xml"))
+            using (var xmlReader = XmlReader.Create(Path.Combine("Config", "Client", "IgniteClientConfiguration.xml")))
             {
                 xmlReader.MoveToContent();
 
@@ -92,7 +93,8 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestToXml()
         {
             // Empty config.
-            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<igniteClientConfiguration " +
+            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>" + Environment.NewLine +
+                            "<igniteClientConfiguration " +
                             "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection\" />",
                 new IgniteClientConfiguration().ToXml());
 
@@ -103,8 +105,8 @@ namespace Apache.Ignite.Core.Tests.Client
                 Port = 123
             };
 
-            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<igniteClientConfiguration " +
-                            "host=\"myHost\" port=\"123\" " +
+            Assert.AreEqual("<?xml version=\"1.0\" encoding=\"utf-16\"?>" + Environment.NewLine +
+                            "<igniteClientConfiguration host=\"myHost\" port=\"123\" " +
                             "xmlns=\"http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection\" />",
                 cfg.ToXml());
 
