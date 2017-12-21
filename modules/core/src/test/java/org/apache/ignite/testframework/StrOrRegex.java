@@ -5,19 +5,19 @@ import org.jetbrains.annotations.NotNull;
 import java.util.regex.Pattern;
 
 /** FIXME */
-public class StringOrPattern {
+public class StrOrRegex {
     private final String s;
     private final Pattern p;
 
     /** FIXME */
-    private StringOrPattern(@NotNull String s) {
+    private StrOrRegex(@NotNull String s) {
         assert s != null;
         this.s = s;
         this.p = null;
     }
 
     /** FIXME */
-    private StringOrPattern(@NotNull Pattern p) {
+    private StrOrRegex(@NotNull Pattern p) {
         assert p != null;
         this.s = null;
         this.p = p;
@@ -41,8 +41,16 @@ public class StringOrPattern {
     }
 
     /** FIXME */
-    public boolean isPattern() {
+    public boolean isRegex() {
         return p != null;
+    }
+
+    /** FIXME */
+    public boolean isContainedIn(String input) {
+        if (isString())
+            return input.contains(s());
+        else
+            return p().matcher(input).find();
     }
 
     @Override public String toString() {
@@ -50,27 +58,27 @@ public class StringOrPattern {
     }
 
     /** FIXME */
-    public static StringOrPattern of(String s) {
-        return new StringOrPattern(s);
+    public static StrOrRegex of(String s) {
+        return new StrOrRegex(s);
     }
 
     /** FIXME */
-    public static StringOrPattern of(Pattern p) {
-        return new StringOrPattern(p);
+    public static StrOrRegex of(Pattern p) {
+        return new StrOrRegex(p);
     }
 
     /** FIXME */
-    public static StringOrPattern ofNullable(String s) {
+    public static StrOrRegex ofNullable(String s) {
         return s == null ? null : of(s);
     }
 
     /** FIXME */
-    public static StringOrPattern ofNullable(Pattern p) {
+    public static StrOrRegex ofNullable(Pattern p) {
         return p == null ? null : of(p);
     }
 
     /** FIXME */
-    public static StringOrPattern ofPattern(String re) {
+    public static StrOrRegex ofRegex(String re) {
         return of(Pattern.compile(re));
     }
 }

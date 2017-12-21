@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 
 /**
@@ -41,6 +42,9 @@ public class SqlLexer implements SqlLexerToken {
     /** Token type. */
     private SqlLexerTokenType tokenTyp;
 
+    /** Detect and convert backslash escape sequences */
+    private final boolean convertBackslashEscapes;
+
     /**
      * Constructor.
      *
@@ -56,6 +60,8 @@ public class SqlLexer implements SqlLexerToken {
 
         for (int i = 0; i < sql.length(); i++)
             inputChars[i] = sql.charAt(i);
+
+        convertBackslashEscapes = !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_BACKSLASH_ESCAPES_DISABLED);
     }
 
     /**
@@ -129,7 +135,10 @@ public class SqlLexer implements SqlLexerToken {
 
                     break;
 
-                case '\"':
+                case '"':
+                case '\'': {
+                    StringBuilder sb = new StringBuilder(inputChars.length - pos);
+
                     while (true) {
                         if (eod()) {
                             throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
@@ -137,17 +146,40 @@ public class SqlLexer implements SqlLexerToken {
                         }
 
                         char c1 = inputChars[pos];
-
                         pos++;
 
-                        if (c1 == '\"')
-                            break;
+                        // Escaped character
+                        if (convertBackslashEscapes && c1 == '\\') {
+                            if (eod()) {
+                                throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
+                                    "Unclosed escape sequence in quoted identifier.");
+                            }
+
+                            c = convertEscSeqChar(inputChars[pos++]);
+                            sb.append(c);
+                            continue;
+                        }
+
+                        if (c1 == c) {
+                            if (!eod() && inputChars[pos] == c) { // Terminate on ending quote
+                                sb.append(c1);
+
+                                pos++;
+
+                                continue;
+                            }
+                            else
+                                break; // Terminate on ending quote
+                        }
+
+                        sb.append(c1);
                     }
 
-                    token0 = sql.substring(tokenStartPos0 + 1, pos - 1);
-                    tokenTyp0 = SqlLexerTokenType.QUOTED;
+                    token0 = sb.toString();
+                    tokenTyp0 = (c == '"') ? SqlLexerTokenType.DBL_QUOTED : SqlLexerTokenType.SGL_QUOTED;
 
                     break;
+                }
 
                 case '.':
                 case ',':
@@ -191,6 +223,25 @@ public class SqlLexer implements SqlLexerToken {
         tokenTyp = SqlLexerTokenType.EOF;
 
         return false;
+    }
+
+    /**
+     * Converts second character from escape sequence to actual character
+     *
+     * @param c The character after the backquote.
+     * @return the character which this escape sequence represents.
+     */
+    private static char convertEscSeqChar(char c) {
+        switch (c) {
+            case '0': return '\0';
+            case 'b': return '\b';
+            case 'n': return '\n';
+            case 'r': return '\r';
+            case 't': return '\t';
+            case 'Z': return '\032';
+
+            default:  return c;
+        }
     }
 
     /** {@inheritDoc} */

@@ -93,8 +93,9 @@ public final class SqlEnumParserUtils {
 
     /** FIXME */
     public static <T extends Enum<T>> SqlParseException errorEnumValue(SqlLexerToken tok, Class<T> enumCls) {
-        throw SqlParserUtils.errorUnexpectedToken(tok, "[" + enumCls.getCanonicalName()
-            + " constant, one of " + Arrays.toString(enumCls.getEnumConstants()));
+        String expectedVals = Arrays.toString(enumCls.getEnumConstants());
+        expectedVals = expectedVals.substring(1, expectedVals.length() - 1);
+        throw SqlParserUtils.errorUnexpectedToken(tok, "[one of: " + expectedVals + "]");
     }
 
     private static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls, boolean allowDflt, T defaultVal) {

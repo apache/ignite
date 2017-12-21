@@ -304,7 +304,7 @@ public final class GridTestUtils {
             call.call();
         }
         catch (Throwable e) {
-            return handleAssertThrowsException(log, cls, StringOrPattern.ofNullable(msgRe), e);
+            return handleAssertThrowsException(log, cls, StrOrRegex.ofNullable(msgRe), e);
         }
 
         throw new AssertionError("Exception has not been thrown.");
@@ -330,7 +330,7 @@ public final class GridTestUtils {
             call.call();
         }
         catch (Throwable e) {
-            return handleAssertThrowsException(log, cls, StringOrPattern.ofNullable(msg), e);
+            return handleAssertThrowsException(log, cls, StrOrRegex.ofNullable(msg), e);
         }
 
         throw new AssertionError("Exception has not been thrown.");
@@ -346,8 +346,8 @@ public final class GridTestUtils {
      *      should match provided fragment or regexp.
      * @return The throwable thrown.
      */
-    public static Throwable assertThrowsSR(@Nullable IgniteLogger log, Callable<?> call,
-        Class<? extends Throwable> cls, @Nullable StringOrPattern msgRe) {
+    public static Throwable assertThrowsRe(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable StrOrRegex msgRe) {
 
         assert call != null;
         assert cls != null;
@@ -365,7 +365,7 @@ public final class GridTestUtils {
     /** FIXME */
     @NotNull
     private static Throwable handleAssertThrowsException(@Nullable IgniteLogger log, Class<? extends Throwable> cls,
-        @Nullable StringOrPattern msgRe, Throwable e) {
+        @Nullable StrOrRegex msgRe, Throwable e) {
 
         if (cls != e.getClass()) {
             if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
@@ -377,27 +377,7 @@ public final class GridTestUtils {
             }
         }
 
-        boolean isMatching = true;
-
-        if (msgRe != null) {
-
-            if (e.getMessage() == null)
-
-                isMatching = false;
-
-            else {
-                if (msgRe.isString())
-                    isMatching = e.getMessage().contains(msgRe.s());
-
-                else if (msgRe.isPattern())
-                    isMatching = (msgRe.p()).matcher(e.getMessage()).matches();
-
-                else {
-                    assert false : "Can't handle class " + msgRe.getClass();
-                    isMatching = false;
-                }
-            }
-        }
+        boolean isMatching = (msgRe == null) || (e.getMessage() != null && msgRe.isContainedIn(e.getMessage()));
 
         if (!isMatching) {
             U.error(log, "Unexpected exception message.", e);

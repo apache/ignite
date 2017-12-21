@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.H2FallbackTempDisabler;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -97,109 +98,133 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
     /** Do test. */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOperations() {
-        executeSql("CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() +
-            ",backups=" + backups + ",affinity_key=city\"");
+        checkOperations(false);
+    }
 
-        executeSql("CREATE INDEX idx on person (city asc, name asc)");
+    /** Do test. */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testOperationsInternal() {
+        checkOperations(true);
+    }
 
-        executeSql("CREATE TABLE city (name varchar, population int, primary key (name)) WITH " +
-            "\"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() +
-            ",backups=" + backups + ",affinity_key=name\"");
+    /** Do test. */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void checkOperations(boolean useInternalCmd) {
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
+            if (useInternalCmd)
+                executeSql("CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
+                    "primary key (id, name, city)) template=" + cacheMode.name() + " atomicity=" + atomicityMode.name() +
+                    " backups=" + backups + " affinity_key=city");
+            else
+                executeSql("CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
+                    "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() +
+                    ",backups=" + backups + ",affinity_key=city\"");
 
-        executeSql("INSERT INTO city (name, population) values(?, ?), (?, ?), (?, ?)",
-            "St. Petersburg", 6000000,
-            "Boston", 2000000,
-            "London", 8000000
-        );
+            executeSql("CREATE INDEX idx on person (city asc, name asc)");
 
-        final long PERSON_COUNT = 100;
+            if (useInternalCmd)
+                executeSql("CREATE TABLE city (name varchar, population int, primary key (name)) " +
+                    "template=" + cacheMode.name() + " atomicity=" + atomicityMode.name() +
+                    " backups=" + backups + " affinity_key=name");
+            else
+                executeSql("CREATE TABLE city (name varchar, population int, primary key (name)) WITH " +
+                    "\"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() +
+                    ",backups=" + backups + ",affinity_key=name\"");
 
-        for (int i = 0; i < PERSON_COUNT; i++)
-            executeSql("INSERT INTO person (id, name, age, company, city) values (?, ?, ?, ?, ?)",
-                i,
-                "Person " + i,
-                20 + (i % 10),
-                COMPANIES.get(i % COMPANIES.size()),
-                CITIES.get(i % CITIES.size()));
+            executeSql("INSERT INTO city (name, population) values(?, ?), (?, ?), (?, ?)",
+                "St. Petersburg", 6000000,
+                "Boston", 2000000,
+                "London", 8000000
+            );
 
-        assertAllPersons(new IgniteInClosure<List<?>>() {
-            @Override public void apply(List<?> person) {
-                assertInitPerson(person);
-            }
-        });
+            final long PERSON_COUNT = 100;
 
-        long r = (Long)executeSqlSingle("SELECT COUNT(*) from Person");
+            for (int i = 0; i < PERSON_COUNT; i++)
+                executeSql("INSERT INTO person (id, name, age, company, city) values (?, ?, ?, ?, ?)",
+                    i,
+                    "Person " + i,
+                    20 + (i % 10),
+                    COMPANIES.get(i % COMPANIES.size()),
+                    CITIES.get(i % CITIES.size()));
 
-        assertEquals(PERSON_COUNT, r);
-
-        r = (Long)executeSqlSingle("SELECT COUNT(*) from Person p inner join City c on p.city = c.name");
-
-        // Berkeley is not present in City table, although 25 people have it specified as their city.
-        assertEquals(75L, r);
-
-        executeSqlSingle("UPDATE Person SET company = 'GNU', age = CASE WHEN MOD(id, 2) <> 0 THEN age + 5 ELSE " +
-            "age + 1 END WHERE company = 'ASF'");
-
-        assertAllPersons(new IgniteInClosure<List<?>>() {
-            @Override public void apply(List<?> person) {
-                int id = (Integer)person.get(0);
-
-                if (id % COMPANIES.size() == 0) {
-                    int initAge = 20 + id % 10;
-
-                    int expAge = (initAge % 2 != 0 ? initAge + 5 : initAge + 1);
-
-                    assertPerson(id, "Person " + id, expAge, "GNU", CITIES.get(id % CITIES.size()), person);
-                }
-                else
+            assertAllPersons(new IgniteInClosure<List<?>>() {
+                @Override public void apply(List<?> person) {
                     assertInitPerson(person);
-            }
-        });
-
-        executeSql("DROP INDEX idx");
-
-        // Index drop should not affect data.
-        assertAllPersons(new IgniteInClosure<List<?>>() {
-            @Override public void apply(List<?> person) {
-                int id = (Integer)person.get(0);
-
-                if (id % COMPANIES.size() == 0) {
-                    int initAge = 20 + id % 10;
-
-                    int expAge = initAge % 2 != 0 ? initAge + 5 : initAge + 1;
-
-                    assertPerson(id, "Person " + id, expAge, "GNU", CITIES.get(id % CITIES.size()), person);
                 }
-                else
-                    assertInitPerson(person);
-            }
-        });
+            });
 
-        // Let's drop all BSD folks living in Berkeley and Boston - this compares ASCII codes of 1st symbols.
-        executeSql("DELETE FROM person WHERE ASCII(company) = ASCII(city)");
+            long r = (Long)executeSqlSingle("SELECT COUNT(*) from Person");
 
-        assertAllPersons(new IgniteInClosure<List<?>>() {
-            @Override public void apply(List<?> person) {
-                String city = city(person);
+            assertEquals(PERSON_COUNT, r);
 
-                String company = company(person);
+            r = (Long)executeSqlSingle("SELECT COUNT(*) from Person p inner join City c on p.city = c.name");
 
-                assertFalse(city.charAt(0) == company.charAt(0));
-            }
-        });
+            // Berkeley is not present in City table, although 25 people have it specified as their city.
+            assertEquals(75L, r);
 
-        assertNotNull(node().cache("SQL_PUBLIC_PERSON"));
+            executeSqlSingle("UPDATE Person SET company = 'GNU', age = CASE WHEN MOD(id, 2) <> 0 THEN age + 5 ELSE " +
+                "age + 1 END WHERE company = 'ASF'");
 
-        executeSql("DROP TABLE person");
+            assertAllPersons(new IgniteInClosure<List<?>>() {
+                @Override public void apply(List<?> person) {
+                    int id = (Integer)person.get(0);
 
-        assertNull(node().cache("SQL_PUBLIC_PERSON"));
+                    if (id % COMPANIES.size() == 0) {
+                        int initAge = 20 + id % 10;
 
-        GridTestUtils.assertThrows(null, new IgniteCallable<Object>() {
-            @Override public Object call() throws Exception {
-                return executeSql("SELECT * from Person");
-            }
-        }, IgniteSQLException.class, "Failed to parse query: SELECT * from Person");
+                        int expAge = (initAge % 2 != 0 ? initAge + 5 : initAge + 1);
+
+                        assertPerson(id, "Person " + id, expAge, "GNU", CITIES.get(id % CITIES.size()), person);
+                    }
+                    else
+                        assertInitPerson(person);
+                }
+            });
+
+            executeSql("DROP INDEX idx");
+
+            // Index drop should not affect data.
+            assertAllPersons(new IgniteInClosure<List<?>>() {
+                @Override public void apply(List<?> person) {
+                    int id = (Integer)person.get(0);
+
+                    if (id % COMPANIES.size() == 0) {
+                        int initAge = 20 + id % 10;
+
+                        int expAge = initAge % 2 != 0 ? initAge + 5 : initAge + 1;
+
+                        assertPerson(id, "Person " + id, expAge, "GNU", CITIES.get(id % CITIES.size()), person);
+                    }
+                    else
+                        assertInitPerson(person);
+                }
+            });
+
+            // Let's drop all BSD folks living in Berkeley and Boston - this compares ASCII codes of 1st symbols.
+            executeSql("DELETE FROM person WHERE ASCII(company) = ASCII(city)");
+
+            assertAllPersons(new IgniteInClosure<List<?>>() {
+                @Override public void apply(List<?> person) {
+                    String city = city(person);
+
+                    String company = company(person);
+
+                    assertFalse(city.charAt(0) == company.charAt(0));
+                }
+            });
+
+            assertNotNull(node().cache("SQL_PUBLIC_PERSON"));
+
+            executeSql("DROP TABLE person");
+
+            assertNull(node().cache("SQL_PUBLIC_PERSON"));
+
+            GridTestUtils.assertThrows(null, new IgniteCallable<Object>() {
+                @Override public Object call() throws Exception {
+                    return executeSql("SELECT * from Person");
+                }
+            }, IgniteSQLException.class, "Failed to parse query: SELECT * from Person");
+        }
     }
 
     /**

@@ -22,7 +22,7 @@ import org.apache.ignite.internal.sql.param.ParamTestUtils;
 import org.apache.ignite.internal.sql.param.TestParamDef;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.StringOrPattern;
+import org.apache.ignite.testframework.StrOrRegex;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,7 +44,7 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
      * @param msg Expected error message.
      */
     protected static void assertParseError(final String schema, final String sql, String msg) {
-        assertParseError(schema, sql, StringOrPattern.of(msg));
+        assertParseError(schema, sql, StrOrRegex.of(msg));
     }
 
     /**
@@ -54,8 +54,8 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
      * @param sql SQL.
      * @param msgRe Expected error message.
      */
-    protected static void assertParseError(final String schema, final String sql, StringOrPattern msgRe) {
-        GridTestUtils.assertThrowsSR(null, new Callable<Void>() {
+    protected static void assertParseError(final String schema, final String sql, StrOrRegex msgRe) {
+        GridTestUtils.assertThrowsRe(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 new SqlParser(schema, sql).nextCommand();
 

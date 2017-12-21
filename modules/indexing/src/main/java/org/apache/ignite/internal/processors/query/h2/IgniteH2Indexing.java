@@ -1379,15 +1379,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (log.isDebugEnabled())
                 log.debug("Failed to parse SQL with native parser [qry=" + qry.getSql() + ", err=" + e + ']');
 
-            if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK))
+            if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_H2_FALLBACK_DISABLED))
                 return null;
 
-            int code = IgniteQueryErrorCode.PARSING;
+            int code;
+            String message;
 
-            if (e instanceof SqlParseException)
+            if (e instanceof SqlParseException) {
                 code = ((SqlParseException)e).code();
+                message = e.getMessage();
+            }
+            else {
+                code = IgniteQueryErrorCode.PARSING;
+                message = "Failed to parse DDL statement: " + qry.getSql() + ": " + e.getMessage();
+            }
 
-            throw new IgniteSQLException("Failed to parse DDL statement: " + qry.getSql(), code, e);
+            throw new IgniteSQLException(message, code, e);
         }
 
         // Execute.

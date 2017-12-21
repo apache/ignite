@@ -453,7 +453,10 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE = "IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE";
 
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
-    public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
+    public static final String IGNITE_SQL_PARSER_H2_FALLBACK_DISABLED = "IGNITE_SQL_PARSER_H2_FALLBACK_DISABLED";
+
+    /** Don't detect and convert backslash escape sequences in single/double-quoted strings in SQL. */
+    public static final String IGNITE_SQL_PARSER_BACKSLASH_ESCAPES_DISABLED = "IGNITE_SQL_PARSER_BACKSLASH_ESCAPES_DISABLED";
 
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";

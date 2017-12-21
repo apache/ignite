@@ -26,8 +26,11 @@ public enum SqlLexerTokenType {
     /** Standard word. */
     KEYWORD,
 
-    /** Quoted phrase. */
-    QUOTED,
+    /** Double-quoted phrase. */
+    DBL_QUOTED,
+
+    /** Single-quoted string literal */
+    SGL_QUOTED,
 
     /** Minus sign. */
     MINUS('-'),

@@ -21,7 +21,7 @@ import com.google.common.base.Optional;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.sql.SqlEnumParserUtils;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
-import org.apache.ignite.testframework.StringOrPattern;
+import org.apache.ignite.testframework.StrOrRegex;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
@@ -144,7 +144,7 @@ public final class ParamTestUtils {
     /** FIXME */
     @NotNull public static List<TestParamDef.Value<String>> makeBasicIdTestValues(
         String[] validVals, String[] invalidVals, Optional<String> dfltVal, Optional<String> missingVal,
-        StringOrPattern errorFragment) {
+        StrOrRegex errorFragment) {
 
         List<TestParamDef.Value<String>> params = new LinkedList<>();
 
@@ -193,7 +193,7 @@ public final class ParamTestUtils {
             params.add(new TestParamDef.ValidValue<>(v.toString(), v.toBoolean(), syntaxes));
 
         params.add(new TestParamDef.InvalidValue<Boolean>(BAD_BOOLEAN_VALUE,
-            StringOrPattern.ofPattern(".*Unexpected token: \"" + BAD_BOOLEAN_VALUE.toUpperCase()
+            StrOrRegex.ofRegex(".*Unexpected token: \"" + BAD_BOOLEAN_VALUE.toUpperCase()
                 + "\".*expected:.*one of.*TRUE, FALSE.*"),
             EnumSet.of(KEY_EQ_VAL)));
 

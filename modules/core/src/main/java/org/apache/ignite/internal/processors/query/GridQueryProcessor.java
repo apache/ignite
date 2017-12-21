@@ -1424,7 +1424,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (writeSyncMode != null)
             ccfg.setWriteSynchronizationMode(writeSyncMode);
 
-        ccfg.setBackups(backups == null ? 0 : backups);
+        ccfg.setBackups(backups);
 
         ccfg.setSqlSchema(schemaName);
         ccfg.setSqlEscapeAll(true);

@@ -17,16 +17,40 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.IgniteSystemProperties;
+
+/**
+ * Temporary sets {@link IgniteSystemProperties} property to specified value.
+ * Intended for use in try-with-resources.
+ *
+ * <p>Restores {@link IgniteSystemProperties} property
+ * setting in {@link IgniteSysPropTempChanger#close()} method.
+ */
 public class IgniteSysPropTempChanger implements AutoCloseable {
+    /** Property name */
     private final String name;
+    /** Old property value, null if not set */
     private final String oldVal;
 
+    /** Records {@link org.apache.ignite.IgniteSystemProperties} specified property
+     * value to restore or clearit in {@link #close()} method. Then sets it to the new value.
+     *
+     * @param name The name of the property.
+     * @param newVal The new property value to set. Specify {@code null} to clear property.
+     */
     public IgniteSysPropTempChanger(String name, String newVal) {
         this.name = name;
         this.oldVal = System.getProperty(name);
-        System.setProperty(name, newVal);
+
+        if (newVal != null)
+            System.setProperty(name, newVal);
+        else
+            System.clearProperty(name);
     }
 
+    /**
+     * Restores recorded property value or clears it if it did not exist.
+     */
     @Override public void close() {
         if (oldVal == null)
             System.clearProperty(name);

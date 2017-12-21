@@ -63,6 +63,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.INT8;
 import static org.apache.ignite.internal.sql.SqlKeyword.INTEGER;
 import static org.apache.ignite.internal.sql.SqlKeyword.KEY;
 import static org.apache.ignite.internal.sql.SqlKeyword.KEY_TYPE;
+import static org.apache.ignite.internal.sql.SqlKeyword.LONG;
 import static org.apache.ignite.internal.sql.SqlKeyword.LONGVARCHAR;
 import static org.apache.ignite.internal.sql.SqlKeyword.MEDIUMINT;
 import static org.apache.ignite.internal.sql.SqlKeyword.NCHAR;
@@ -470,6 +471,7 @@ public class SqlCreateTableCommand implements SqlCommand {
 
                 case BIGINT:
                 case INT8:
+                case LONG:
                     col = new SqlColumn(name, SqlColumnType.LONG, 0, 0, false);
 
                     break;
@@ -776,7 +778,7 @@ public class SqlCreateTableCommand implements SqlCommand {
                     }
 
                     if (affCol == null)
-                        throw error(lex.currentToken(), "Affinity key column with given name not found");
+                        throw error(lex.currentToken(), "Affinity key column with given name not found: " + val);
 
                     if (!pkColNames.contains(affCol.name()))
                         throw error(lex.currentToken(), "Affinity key column must be one of key columns: " + affCol.name());

@@ -33,6 +33,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.util.H2FallbackTempDisabler;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -139,100 +140,127 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCreateSelect() throws Exception {
-        GridTestUtils.assertThrows(null, new IgniteCallable<Object>() {
-            @Override public Object call() throws Exception {
-                sql(new ResultChecker(new Object[][] {}), "SELECT * from Person");
+        checkCreateSelect(false);
+    }
 
-                return null;
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testCreateSelectInternal() throws Exception {
+        checkCreateSelect(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void checkCreateSelect(boolean useInternalCmd) throws Exception {
+
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
+
+            GridTestUtils.assertThrows(null, new IgniteCallable<Object>() {
+                @Override public Object call() throws Exception {
+                    sql(new ResultChecker(new Object[][] {}), "SELECT * from Person");
+
+                    return null;
+                }
+            }, SQLException.class, "Failed to parse query: SELECT * from Person");
+
+            String createTableParams = useInternalCmd ?
+                "WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinity_key=city\"" :
+                "template=" + cacheMode.name() + " atomicity=" + atomicityMode.name() + " affinity_key=city";
+
+            sql(new UpdateChecker(0),
+                "CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
+                    "primary key (id, name, city)) " + createTableParams);
+
+            sql(new UpdateChecker(0), "CREATE INDEX idx on person (city asc, name asc)");
+
+            createTableParams = useInternalCmd ?
+                "WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinity_key=name\"" :
+                "template=" + cacheMode.name() + " atomicity=" + atomicityMode.name() + " affinity_key=name";
+
+            sql(new UpdateChecker(0), "CREATE TABLE city (name varchar, population int, primary key (name)) " +
+                createTableParams);
+
+            sql(new UpdateChecker(3),
+                "INSERT INTO city (name, population) values(?, ?), (?, ?), (?, ?)",
+                "St. Petersburg", 6000000,
+                "Boston", 2000000,
+                "London", 8000000
+            );
+
+            sql(new ResultColumnChecker("id", "name", "age", "comp"),
+                "SELECT id, name, age, company as comp FROM person where id < 50");
+
+            for (int i = 0; i < 100; i++) {
+                sql(new UpdateChecker(1),
+                    "INSERT INTO person (id, name, age, company, city) values (?, ?, ?, ?, ?)",
+                    i,
+                    "Person " + i,
+                    20 + (i % 10),
+                    COMPANIES.get(i % COMPANIES.size()),
+                    CITIES.get(i % CITIES.size()));
             }
-        }, SQLException.class, "Failed to parse query: SELECT * from Person");
 
-        sql(new UpdateChecker(0),
-            "CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
-                "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name()
-                + ",affinity_key=city\"");
+            final int[] cnt = {0};
 
-        sql(new UpdateChecker(0), "CREATE INDEX idx on person (city asc, name asc)");
+            sql(new ResultPredicateChecker(new IgnitePredicate<Object[]>() {
+                @Override public boolean apply(Object[] objs) {
+                    int id = ((Integer)objs[0]);
 
-        sql(new UpdateChecker(0), "CREATE TABLE city (name varchar, population int, primary key (name)) WITH " +
-            "\"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinity_key=name\"");
+                    if (id >= 50)
+                        return false;
 
-        sql(new UpdateChecker(3),
-            "INSERT INTO city (name, population) values(?, ?), (?, ?), (?, ?)",
-            "St. Petersburg", 6000000,
-            "Boston", 2000000,
-            "London", 8000000
-        );
+                    if (20 + (id % 10) != ((Integer)objs[2]))
+                        return false;
 
-        sql(new ResultColumnChecker("id", "name", "age", "comp"),
-            "SELECT id, name, age, company as comp FROM person where id < 50");
+                    if (!("Person " + id).equals(objs[1]))
+                        return false;
 
-        for (int i = 0; i < 100; i++) {
-            sql(new UpdateChecker(1),
-                "INSERT INTO person (id, name, age, company, city) values (?, ?, ?, ?, ?)",
-                i,
-                "Person " + i,
-                20 + (i % 10),
-                COMPANIES.get(i % COMPANIES.size()),
-                CITIES.get(i % CITIES.size()));
+                    ++cnt[0];
+
+                    return true;
+                }
+            }), "SELECT id, name, age FROM person where id < 50");
+
+            assert cnt[0] == 50 : "Invalid rows count";
+
+            // Berkeley is not present in City table, although 25 people have it specified as their city.
+            sql(new ResultChecker(new Object[][] {{75L}}),
+                "SELECT COUNT(*) from Person p inner join City c on p.city = c.name");
+
+            sql(new UpdateChecker(34),
+                "UPDATE Person SET company = 'New Company', age = CASE WHEN MOD(id, 2) <> 0 THEN age + 5 ELSE "
+                    + "age + 1 END WHERE company = 'ASF'");
+
+            cnt[0] = 0;
+
+            sql(new ResultPredicateChecker(new IgnitePredicate<Object[]>() {
+                @Override public boolean apply(Object[] objs) {
+                    int id = ((Integer)objs[0]);
+                    int age = ((Integer)objs[2]);
+
+                    if (id % 2 == 0) {
+                        if (age != 20 + (id % 10) + 1)
+                            return false;
+                    }
+                    else {
+                        if (age != 20 + (id % 10) + 5)
+                            return false;
+                    }
+
+                    ++cnt[0];
+
+                    return true;
+                }
+            }), "SELECT * FROM person where company = 'New Company'");
+
+            assert cnt[0] == 34 : "Invalid rows count";
+
+            sql(new UpdateChecker(0), "DROP INDEX idx");
         }
-
-        final int[] cnt = {0};
-
-        sql(new ResultPredicateChecker(new IgnitePredicate<Object[]>() {
-            @Override public boolean apply(Object[] objs) {
-                int id = ((Integer)objs[0]);
-
-                if (id >= 50)
-                    return false;
-
-                if (20 + (id % 10) != ((Integer)objs[2]))
-                    return false;
-
-                if (!("Person " + id).equals(objs[1]))
-                    return false;
-
-                ++cnt[0];
-
-                return true;
-            }
-        }), "SELECT id, name, age FROM person where id < 50");
-
-        assert cnt[0] == 50 : "Invalid rows count";
-
-        // Berkeley is not present in City table, although 25 people have it specified as their city.
-        sql(new ResultChecker(new Object[][] {{75L}}),
-            "SELECT COUNT(*) from Person p inner join City c on p.city = c.name");
-
-        sql(new UpdateChecker(34),
-            "UPDATE Person SET company = 'New Company', age = CASE WHEN MOD(id, 2) <> 0 THEN age + 5 ELSE "
-                + "age + 1 END WHERE company = 'ASF'");
-
-        cnt[0] = 0;
-
-        sql(new ResultPredicateChecker(new IgnitePredicate<Object[]>() {
-            @Override public boolean apply(Object[] objs) {
-                int id = ((Integer)objs[0]);
-                int age = ((Integer)objs[2]);
-
-                if (id % 2 == 0) {
-                    if (age != 20 + (id % 10) + 1)
-                        return false;
-                }
-                else {
-                    if (age != 20 + (id % 10) + 5)
-                        return false;
-                }
-
-                ++cnt[0];
-
-                return true;
-            }
-        }), "SELECT * FROM person where company = 'New Company'");
-
-        assert cnt[0] == 34 : "Invalid rows count";
-
-        sql(new UpdateChecker(0), "DROP INDEX idx");
     }
 
     /**

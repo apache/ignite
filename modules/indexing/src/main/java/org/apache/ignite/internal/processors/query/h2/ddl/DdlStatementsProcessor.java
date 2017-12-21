@@ -643,18 +643,14 @@ public class DdlStatementsProcessor {
             }
         }
 
-        String keyTypeName;
-        String valTypeName;
-
-        if (!F.isEmpty(cmd.valueTypeName()))
-            valTypeName = cmd.valueTypeName();
-        else
-            valTypeName = QueryUtils.createTableValueTypeName(cmd.schemaName(), cmd.tableName());
+        String valTypeName = QueryUtils.createTableValueTypeName(cmd.schemaName(), cmd.tableName());
+        String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
         if (!F.isEmpty(cmd.keyTypeName()))
             keyTypeName = cmd.keyTypeName();
-        else
-            keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
+
+        if (!F.isEmpty(cmd.valueTypeName()))
+            valTypeName = cmd.valueTypeName();
 
         boolean wrapKey = cmd.wrapKey() != null ? cmd.wrapKey() : false;
         boolean wrapValue = cmd.wrapValue() != null ? cmd.wrapValue() : true;

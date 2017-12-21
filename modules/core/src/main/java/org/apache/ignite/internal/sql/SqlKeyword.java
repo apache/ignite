@@ -147,6 +147,9 @@ public class SqlKeyword {
     /** Keyword: LONGVARCHAR. */
     public static final String LONGVARCHAR = "LONGVARCHAR";
 
+    /** Keyword: LONG. */
+    public static final String LONG = "LONG";
+
     /** Keyword: MEDIUMINT. */
     public static final String MEDIUMINT = "MEDIUMINT";
 

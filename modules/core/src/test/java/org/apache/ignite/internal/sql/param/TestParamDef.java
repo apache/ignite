@@ -19,7 +19,7 @@ package org.apache.ignite.internal.sql.param;
 
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.testframework.StringOrPattern;
+import org.apache.ignite.testframework.StrOrRegex;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -162,21 +162,21 @@ public class TestParamDef<T> {
 
         /** FIXME */
         @GridToStringInclude
-        private final StringOrPattern errorMsgFragment;
+        private final StrOrRegex errorMsgFragment;
 
         /** FIXME */
-        public InvalidValue(String cmdVal, StringOrPattern errorMsgFragment) {
+        public InvalidValue(String cmdVal, StrOrRegex errorMsgFragment) {
             this(cmdVal, errorMsgFragment, EnumSet.of(KEY_EQ_VAL, KEY_SPACE_VAL));
         }
 
         /** FIXME */
-        public InvalidValue(String cmdVal, StringOrPattern errorMsgFragment, EnumSet<Syntax> supportedSyntaxes) {
+        public InvalidValue(String cmdVal, StrOrRegex errorMsgFragment, EnumSet<Syntax> supportedSyntaxes) {
             super(cmdVal, null, supportedSyntaxes);
             this.errorMsgFragment = errorMsgFragment;
         }
 
         /** FIXME */
-        public StringOrPattern errorMsgFragment() {
+        public StrOrRegex errorMsgFragment() {
             return errorMsgFragment;
         }
 

@@ -183,7 +183,7 @@ public class SqlParserUtils {
 
                 return ((c >= 'A' && c <= 'Z') || c == '_') && !SqlKeyword.isKeyword(tok.token());
 
-            case QUOTED:
+            case DBL_QUOTED:
                 return true;
 
             default:
@@ -243,7 +243,7 @@ public class SqlParserUtils {
         SqlLexerToken nextTok = lex.lookAhead();
 
         switch (nextTok.tokenType()) {
-            case QUOTED:
+            case DBL_QUOTED:
                 if (isIdentifier && !isValidIdentifier(nextTok))
                     throw errorUnexpectedToken(nextTok, "[optionally quoted identifier " + paramDesc + "]");
 

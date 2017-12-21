@@ -38,6 +38,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.H2FallbackTempDisabler;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -532,13 +533,33 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testNotNullRestrictionReadThroughCacheStore() throws SQLException {
+        checkNotNullRestrictionReadThroughCacheStore(false);
+    }
+
+    /**
+     * Check error code for the case not null field is configured for table belonging to cache
+     * with enabled read-through cache store.
+     *
+     * @throws SQLException if failed.
+     */
+    public void testNotNullRestrictionReadThroughCacheStoreInternal() throws SQLException {
+        checkNotNullRestrictionReadThroughCacheStore(true);
+    }
+
+    /**
+     * Check error code for the case not null field is configured for table belonging to cache
+     * with enabled read-through cache store.
+     *
+     * @throws SQLException if failed.
+     */
+    public void checkNotNullRestrictionReadThroughCacheStore(final boolean useInternalCmd) throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
                 conn.setSchema("PUBLIC");
 
-                try (Statement stmt = conn.createStatement()) {
+                try (Statement stmt = conn.createStatement(); H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
                     stmt.execute("CREATE TABLE cache_store_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " +
-                        "WITH \"template=" + CACHE_STORE_TEMPLATE + "\"");
+                        (useInternalCmd ? ("WITH \"template=" + CACHE_STORE_TEMPLATE + "\"") : ("template=" + CACHE_STORE_TEMPLATE)));
                 }
             }
         }, "0A000");
@@ -551,16 +572,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testNotNullRestrictionCacheInterceptor() throws SQLException {
-        checkErrorState(new ConnClosure() {
-            @Override public void run(Connection conn) throws Exception {
-                conn.setSchema("PUBLIC");
-
-                try (Statement stmt = conn.createStatement()) {
-                    stmt.execute("CREATE TABLE cache_interceptor_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " +
-                        "WITH \"template=" + CACHE_INTERCEPTOR_TEMPLATE + "\"");
-                }
-            }
-        }, "0A000");
+        checkNotNullRestrictionCacheInterceptor(false);
     }
 
     /**
@@ -570,13 +582,23 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testNotNullRestrictionCacheInterceptorInternal() throws SQLException {
+        checkNotNullRestrictionCacheInterceptor(true);
+    }
+
+    /**
+     * Check error code for the case not null field is configured for table belonging to cache
+     * with configured cache interceptor.
+     *
+     * @throws SQLException if failed.
+     */
+    public void checkNotNullRestrictionCacheInterceptor(final boolean useInternalCmd) throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
                 conn.setSchema("PUBLIC");
 
-                try (Statement stmt = conn.createStatement(); ) {
+                try (Statement stmt = conn.createStatement(); H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
                     stmt.execute("CREATE TABLE cache_interceptor_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " +
-                        "WITH \"template=" + CACHE_INTERCEPTOR_TEMPLATE + "\"");
+                        (useInternalCmd ? ("WITH \"template=" + CACHE_INTERCEPTOR_TEMPLATE + "\"") : ("template=" + CACHE_INTERCEPTOR_TEMPLATE)));
                 }
             }
         }, "0A000");

@@ -114,7 +114,7 @@ public class SqlParser {
                     else
                         throw errorUnexpectedToken(lex, CREATE, DROP);
 
-                case QUOTED:
+                case DBL_QUOTED:
                 case MINUS:
                 case DOT:
                 case COMMA:
