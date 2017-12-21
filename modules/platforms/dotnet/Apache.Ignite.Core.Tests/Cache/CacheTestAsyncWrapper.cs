@@ -445,6 +445,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public IFieldsQueryCursor Query(SqlFieldsQuery qry)
+        {
+            return _cache.Query(qry);
+        }
+
+        /** <inheritDoc /> */
+        [Obsolete]
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
             return _cache.QueryFields(qry);
