@@ -21,6 +21,7 @@ import java.util.Random;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
@@ -43,11 +44,12 @@ public class MLPLocalTrainerTest {
             withAddedLayer(5, true, Activators.RELU).
             withAddedLayer(1, false, Activators.SIGMOID);
 
-        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(12345L), xorInputs, xorOutputs, 4);
+        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(1234L), xorInputs, xorOutputs, 4);
 
-        MLP mdl = new MLPLocalBatchTrainer().train(trainerInput);
+        MLP mdl = MLPLocalBatchTrainer.getDefault().train(trainerInput);
 
         Matrix predict = mdl.apply(xorInputs);
+
         TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-2);
     }
 

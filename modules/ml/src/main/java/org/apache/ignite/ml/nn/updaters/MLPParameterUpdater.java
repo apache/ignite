@@ -22,12 +22,13 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.nn.MLP;
-import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainerState;
 
 /**
  * Interface for classes encapsulating parameters update logic.
+ *
+ * @param <P> Type of parameters needed for this updater.
  */
-public interface MLPParameterUpdater {
+public interface MLPParameterUpdater<P extends UpdaterParams> {
     /**
      * Initializes the updater.
      *
@@ -35,16 +36,17 @@ public interface MLPParameterUpdater {
      * @param learningRate Learning rate.
      * @param loss Losses function.
      */
-    void init(MLP mlp, double learningRate, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
+    P init(MLP mlp, double learningRate, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 
     /**
-     * Update mlp parameters and return error on updated mlp.
+     * Update updater parameters.
      *
      * @param mlp Multilayer perceptron to be updated.
-     * @param trainerState State of trainer calling this updater.
+     * @param updaterParameters Updater parameters to update.
+     * @param iteration Current trainer iteration.
      * @param inputs Inputs.
      * @param groundTruth True values.
-     * @return Error on updated model.
+     * @return Updated parameters.
      */
-    double updateParamsAndCalculateError(MLP mlp, MLPLocalBatchTrainerState trainerState, Matrix inputs, Matrix groundTruth);
+    P updateParams(MLP mlp, P updaterParameters, int iteration, Matrix inputs, Matrix groundTruth);
 }

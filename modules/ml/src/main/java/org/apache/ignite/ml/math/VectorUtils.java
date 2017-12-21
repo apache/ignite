@@ -71,4 +71,30 @@ public class VectorUtils {
 
         return max;
     }
+
+    /**
+     * Performs in-place vector multiplication.
+     *
+     * @param vec1 Operand to be changed and first multiplication operand.
+     * @param vec2 Second multiplication operand.
+     * @return Updated first operand.
+     */
+    public static Vector elementWiseTimes(Vector vec1, Vector vec2) {
+        vec1.map(vec2, (a, b) -> a * b);
+
+        return vec1;
+    }
+
+    /**
+     * Performs in-place vector subtraction.
+     *
+     * @param vec1 Operand to be changed and subtracted from.
+     * @param vec2 Operand to subtract.
+     * @return Updated first operand.
+     */
+    public static Vector elementWiseMinus(Vector vec1, Vector vec2) {
+        vec1.map(vec2, (a, b) -> a - b);
+
+        return vec1;
+    }
 }

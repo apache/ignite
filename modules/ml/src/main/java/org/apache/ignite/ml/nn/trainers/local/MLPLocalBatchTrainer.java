@@ -25,17 +25,20 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.Losses;
 import org.apache.ignite.ml.nn.MLP;
 import org.apache.ignite.ml.nn.MLPLocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.updaters.MLPParameterUpdater;
 import org.apache.ignite.ml.nn.updaters.RPropUpdater;
+import org.apache.ignite.ml.nn.updaters.RPropUpdaterParams;
+import org.apache.ignite.ml.nn.updaters.UpdaterParams;
 
 /**
  * Batch trainer for MLP. This trainer is not distributed on the cluster, but input can theoretically read data from
  * Ignite cache.
  */
-public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerInput> {
+public class MLPLocalBatchTrainer<P extends UpdaterParams> implements Trainer<MLP, MLPLocalBatchTrainerInput> {
     /**
      * Default loss function.
      */
@@ -44,7 +47,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
     /**
      * Default updater supplier.
      */
-    private static final IgniteSupplier<MLPParameterUpdater> DEFAULT_UPDATER_SUPPLIER = RPropUpdater::new;
+    private static final IgniteSupplier<MLPParameterUpdater<RPropUpdaterParams>> DEFAULT_UPDATER_SUPPLIER = RPropUpdater::new;
 
     /**
      * Default error threshold.
@@ -64,7 +67,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
     /**
      * Supplier for updater function.
      */
-    private final IgniteSupplier<MLPParameterUpdater> updaterSupplier;
+    private final IgniteSupplier<MLPParameterUpdater<P>> updaterSupplier;
 
     /**
      * Error threshold.
@@ -101,7 +104,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
      * @param maxIterations Maximal iterations count.
      */
     public MLPLocalBatchTrainer(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        IgniteSupplier<MLPParameterUpdater> updaterSupplier, double learningRate, double errorThreshold, int maxIterations) {
+        IgniteSupplier<MLPParameterUpdater<P>> updaterSupplier, double learningRate, double errorThreshold, int maxIterations) {
         this.loss = loss;
         this.updaterSupplier = updaterSupplier;
         this.learningRate = learningRate;
@@ -112,8 +115,8 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
     /**
      * Constructor with default parameters.
      */
-    public MLPLocalBatchTrainer() {
-        this(DEFAULT_LOSS, DEFAULT_UPDATER_SUPPLIER, DEFAULT_LEARNING_RATE, DEFAULT_ERROR_THRESHOLD, DEFAULT_MAX_ITERATIONS);
+    public static MLPLocalBatchTrainer<RPropUpdaterParams> getDefault() {
+        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS, DEFAULT_UPDATER_SUPPLIER, DEFAULT_LEARNING_RATE, DEFAULT_ERROR_THRESHOLD, DEFAULT_MAX_ITERATIONS);
     }
 
     /** {@inheritDoc} */
@@ -122,22 +125,28 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
         MLP mlp = data.mlp();
         double err;
 
-        MLPLocalBatchTrainerState state = new MLPLocalBatchTrainerState();
-        MLPParameterUpdater updater = updaterSupplier.get();
+//        MLPLocalBatchTrainerState<P> state = new MLPLocalBatchTrainerState<>();
+        MLPParameterUpdater<P> updater = updaterSupplier.get();
 
-        updater.init(mlp, learningRate, loss);
+        P updaterParams = updater.init(mlp, learningRate, loss);
 
         while (i < maxIterations) {
-            state.setCurrentIteration(i);
-
             IgniteBiTuple<Matrix, Matrix> batch = data.getBatch();
             Matrix input = batch.get1();
             Matrix truth = batch.get2();
 
-            err = updater.updateParamsAndCalculateError(mlp, state, input, truth);
-            debug("Error: " + err);
+            updaterParams = updater.updateParams(mlp, updaterParams, i, input, truth);
 
-            state.setCurrentError(err);
+            // Update mlp with updater parameters.
+            updaterParams.updateMLP(mlp);
+
+            Matrix predicted = mlp.apply(input);
+
+            int batchSize = input.columnSize();
+
+            err = MatrixUtil.zipFoldByColumns(predicted, truth, (predCol, truthCol) -> loss.apply(truthCol).apply(predCol)).sum() / batchSize;
+
+            debug("Error: " + err);
 
             if (err < errorThreshold)
                 break;
@@ -155,7 +164,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
      * @return new trainer with the same parameters as this trainer, but with new loss.
      */
     public MLPLocalBatchTrainer withLoss(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
-        return new MLPLocalBatchTrainer(loss, updaterSupplier, learningRate, errorThreshold, maxIterations);
+        return new MLPLocalBatchTrainer<>(loss, updaterSupplier, learningRate, errorThreshold, maxIterations);
     }
 
     /**
@@ -175,7 +184,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
      * @return new trainer with the same parameters as this trainer, but with new learning rate.
      */
     public MLPLocalBatchTrainer withLearningRate(double learningRate) {
-        return new MLPLocalBatchTrainer(loss, updaterSupplier, learningRate, errorThreshold, maxIterations);
+        return new MLPLocalBatchTrainer<>(loss, updaterSupplier, learningRate, errorThreshold, maxIterations);
     }
 
     /**
@@ -185,7 +194,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
      * @return new trainer with the same parameters as this trainer, but with new error threshold.
      */
     public MLPLocalBatchTrainer withErrorThreshold(double errorThreshold) {
-        return new MLPLocalBatchTrainer(loss, updaterSupplier, learningRate, errorThreshold, maxIterations);
+        return new MLPLocalBatchTrainer<>(loss, updaterSupplier, learningRate, errorThreshold, maxIterations);
     }
 
     /**
@@ -195,7 +204,7 @@ public class MLPLocalBatchTrainer implements Trainer<MLP, MLPLocalBatchTrainerIn
      * @return new trainer with the same parameters as this trainer, but with new maximal iterations count.
      */
     public MLPLocalBatchTrainer withMaxIterations(int maxIterations) {
-        return new MLPLocalBatchTrainer(loss, updaterSupplier, learningRate, errorThreshold, maxIterations);
+        return new MLPLocalBatchTrainer<>(loss, updaterSupplier, learningRate, errorThreshold, maxIterations);
     }
 
     /**

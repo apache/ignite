@@ -19,8 +19,11 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
+import org.apache.ignite.ml.math.util.MatrixUtil;
+import org.apache.ignite.ml.nn.MLP;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.architecture.TransformationLayerArchitecture;
 
@@ -28,7 +31,7 @@ import org.apache.ignite.ml.nn.architecture.TransformationLayerArchitecture;
  * Data needed for RProp updater.
  * @see <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf</a>.
  */
-class RPropUpdaterData {
+public class RPropUpdaterParams extends Gradients {
     /**
      * Previous iteration weights updates. In original paper they are labeled with "delta w".
      */
@@ -60,21 +63,32 @@ class RPropUpdaterData {
      */
     protected Vector[] biasDeltas;
 
+    protected Matrix[] weighsUpdatesMask;
+
+    protected Vector[] biasUpdatesMask;
+
     /**
-     * Construct RPropUpdaterData.
+     * Construct RPropUpdaterParams.
      *
      * @param arch MLP architecture.
      * @param initUpdate Initial update (in original work labeled as "delta_0").
      */
-    RPropUpdaterData(MLPArchitecture arch, double initUpdate) {
-        prevIterationWeightsUpdates = new Matrix[arch.layersCount() - 1];
-        prevIterationBiasesUpdates = new Vector[arch.layersCount() - 1];
+    RPropUpdaterParams(MLPArchitecture arch, double initUpdate) {
+        super(arch.layersCount());
 
-        prevIterationWeightsDerivatives = new Matrix[arch.layersCount() - 1];
-        prevIterationBiasesDerivatives = new Vector[arch.layersCount() - 1];
+        int transformationLayersCount = arch.layersCount() - 1;
 
-        weightDeltas = new Matrix[arch.layersCount() - 1];
-        biasDeltas = new Vector[arch.layersCount() - 1];
+        prevIterationWeightsUpdates = new Matrix[transformationLayersCount];
+        prevIterationBiasesUpdates = new Vector[transformationLayersCount];
+
+        prevIterationWeightsDerivatives = new Matrix[transformationLayersCount];
+        prevIterationBiasesDerivatives = new Vector[transformationLayersCount];
+
+        weightDeltas = new Matrix[transformationLayersCount];
+        biasDeltas = new Vector[transformationLayersCount];
+
+        weighsUpdatesMask = new Matrix[transformationLayersCount];
+        biasUpdatesMask = new Vector[transformationLayersCount];
 
         for (int layer = 1; layer < arch.layersCount(); layer++) {
             TransformationLayerArchitecture curLayerArch = arch.transformationLayerArchitecture(layer);
@@ -126,7 +140,7 @@ class RPropUpdaterData {
      * @param weightsUpdates New weights updates value.
      * @return This object.
      */
-    RPropUpdaterData setPrevIterationWeightsUpdates(int layer, Matrix weightsUpdates) {
+    RPropUpdaterParams setPrevIterationWeightsUpdates(int layer, Matrix weightsUpdates) {
         prevIterationWeightsUpdates[layer - 1] = weightsUpdates;
         return this;
     }
@@ -168,7 +182,7 @@ class RPropUpdaterData {
      * @param layer Layer index.
      * @return This object.
      */
-    RPropUpdaterData setPrevIterationWeightsDerivatives(int layer, Matrix weightsDerivatives) {
+    RPropUpdaterParams setPrevIterationWeightsDerivatives(int layer, Matrix weightsDerivatives) {
         prevIterationWeightsDerivatives[layer - 1] = weightsDerivatives;
         return this;
     }
@@ -189,8 +203,45 @@ class RPropUpdaterData {
      * @param layer Layer index.
      * @return This object.
      */
-    RPropUpdaterData setPrevIterationBiasesDerivatives(int layer, Vector biasesDerivatives) {
+    RPropUpdaterParams setPrevIterationBiasesDerivatives(int layer, Vector biasesDerivatives) {
         prevIterationBiasesDerivatives[layer - 1] = biasesDerivatives;
         return this;
+    }
+
+    public Matrix weighsUpdatesMask(int layer) {
+        return weighsUpdatesMask[layer - 1];
+    }
+
+    public RPropUpdaterParams setWeighsUpdatesMask(int layer, Matrix weighsUpdatesMask) {
+        this.weighsUpdatesMask[layer - 1] = weighsUpdatesMask;
+
+        return this;
+    }
+
+    public Vector biasUpdatesMask(int layer) {
+        return biasUpdatesMask[layer - 1];
+    }
+
+    public RPropUpdaterParams setBiasUpdatesMask(int layer, Vector biasUpdatesMask) {
+        this.biasUpdatesMask[layer - 1] = biasUpdatesMask;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateMLP(MLP mlp) {
+        for (int l = 1; l < mlp.layersCount(); l++) {
+            updateWeights(mlp, l);
+            updateBiases(mlp, l);
+        }
+    }
+
+    private void updateWeights(MLP mlp, int layer) {
+        mlp.setWeights(layer, mlp.weights(layer).plus(MatrixUtil.elementWiseTimes(weighsUpdatesMask(layer).copy(), prevIterationWeightsUpdates(layer))));
+    }
+
+    private void updateBiases(MLP mlp, int layer) {
+        if (mlp.hasBiases(layer))
+            mlp.setBiases(layer, mlp.biases(layer).plus(VectorUtils.elementWiseTimes(biasUpdatesMask(layer).copy(), prevIterationBiasesUpdates(layer))));
     }
 }

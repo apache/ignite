@@ -19,16 +19,17 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.MLP;
-import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainerState;
+import org.apache.ignite.ml.nn.MLPState;
 
 /**
  * Adapter of {@link MLPParameterUpdater} for updaters performing backpropagation updates of MLP parameters.
  */
-public abstract class BackpropUpdater implements MLPParameterUpdater {
+public abstract class BackpropUpdater<P extends UpdaterParams> implements MLPParameterUpdater<P> {
     /**
      * Losses function.
      */
@@ -39,36 +40,66 @@ public abstract class BackpropUpdater implements MLPParameterUpdater {
      */
     protected double learningRate;
 
+    /**
+     * State of MLP.
+     */
+    protected MLPState mlpState;
+
+
     /** {@inheritDoc} */
-    @Override public void init(MLP mlp, double learningRate,
+    @Override public final P init(MLP mlp, double learningRate,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
         this.learningRate = learningRate;
+
+        return initParameters(mlp);
     }
 
+    protected abstract P initParameters(MLP mlp);
+
     /** {@inheritDoc} */
-    @Override public final double updateParamsAndCalculateError(MLP mlp, MLPLocalBatchTrainerState trainerState,
+    @Override public final P updateParams(MLP mlp, P updaterParams, int iteration,
         Matrix inputs, Matrix groundTruth) {
         int lastLayer = mlp.layersCount() - 1;
         int batchSize = groundTruth.columnSize();
 
-        int i = lastLayer;
+        int layer = lastLayer;
 
-        initIterationData(mlp, trainerState, learningRate, inputs);
+        initIterationData(mlp, updaterParams, iteration, learningRate, inputs);
 
-        while (i > 0) {
-            updateLayer(mlp, trainerState, i, inputs, groundTruth);
-            i--;
+        while (layer > 0) {
+            updaterParams = updateLayerData(mlp, updaterParams, layer, inputs, groundTruth);
+            layer--;
         }
 
-        Matrix predicted = mlp.apply(inputs);
-
-        return MatrixUtil.zipFoldByColumns(predicted, groundTruth, (predCol, truthCol) -> loss.apply(truthCol).apply(predCol)).sum() / batchSize;
+        return updaterParams;
     }
 
     /** {@inheritDoc} */
-    protected abstract void initIterationData(MLP mlp, MLPLocalBatchTrainerState trainerState, double learningRate, Matrix inputs);
+    protected void initIterationData(MLP mlp, P updaterParams, int iteration,  double learningRate, Matrix inputs) {
+        this.mlpState = mlp.computeState(inputs);
+    }
 
-    /** {@inheritDoc} */
-    protected abstract void updateLayer(MLP mlp, MLPLocalBatchTrainerState trainerState, int layer, Matrix inputs, Matrix groundTruth);
+    protected abstract P updateLayerData(MLP mlp, P updaterParams, int layer, Matrix inputs, Matrix groundTruth);
+
+    protected Matrix differentiateLoss(Matrix groundTruth, Matrix lastLayerOutput, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+        Matrix diff = groundTruth.like(groundTruth.rowSize(), groundTruth.columnSize());
+
+        for (int col = 0; col < groundTruth.columnSize(); col++) {
+            // TODO: IGNITE-7155 Couldn't use views here because copy on views doesn't do actual copy and all changes are propagated to original.
+            Vector gtCol = groundTruth.getCol(col);
+            Vector predCol = lastLayerOutput.getCol(col);
+            diff.assignColumn(col, loss.apply(gtCol).differential(predCol));
+        }
+
+        return diff;
+    }
+
+    protected Matrix differentiateNonlinearity(Matrix linearOut, IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
+        Matrix diff = linearOut.copy();
+
+        diff.map(nonlinearity::differential);
+
+        return diff;
+    }
 }

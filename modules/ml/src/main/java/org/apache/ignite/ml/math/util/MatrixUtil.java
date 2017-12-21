@@ -321,4 +321,30 @@ public class MatrixUtil {
 
         return res;
     }
+
+    /**
+     * Performs in-place matrix subtraction.
+     *
+     * @param mtx1 Operand to be changed and subtracted from.
+     * @param mtx2 Operand to subtract.
+     * @return Updated first operand.
+     */
+    public static Matrix elementWiseMinus(Matrix mtx1, Matrix mtx2) {
+        mtx1.map(mtx2, (a, b) -> a - b);
+
+        return mtx1;
+    }
+
+    /**
+     * Performs in-place matrix multiplication.
+     *
+     * @param mtx1 Operand to be changed and first multiplication operand.
+     * @param mtx2 Second multiplication operand.
+     * @return Updated first operand.
+     */
+    public static Matrix elementWiseTimes(Matrix mtx1, Matrix mtx2) {
+        mtx1.map(mtx2, (a, b) -> a * b);
+
+        return mtx1;
+    }
 }

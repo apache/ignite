@@ -19,11 +19,14 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.util.MatrixUtil;
+import org.apache.ignite.ml.nn.MLP;
 
 /**
  * Data needed for Nesterov parameters updater.
  */
-public class NesterovUpdaterData {
+public class NesterovUpdaterParams implements UpdaterParams {
     /**
      * Previous step weights updates.
      */
@@ -35,11 +38,11 @@ public class NesterovUpdaterData {
     protected Vector[] prevIterationBiasesUpdates;
 
     /**
-     * Construct NesterovUpdaterData.
+     * Construct NesterovUpdaterParams.
      *
      * @param layersCnt Count of layers on which update happens.
      */
-    public NesterovUpdaterData(int layersCnt) {
+    public NesterovUpdaterParams(int layersCnt) {
         prevIterationWeightsUpdates = new Matrix[layersCnt];
         prevIterationBiasesUpdates = new Vector[layersCnt];
     }
@@ -51,7 +54,7 @@ public class NesterovUpdaterData {
      * @param weightsUpdates Weights updates.
      * @return This object with updated weights updates.
      */
-    public NesterovUpdaterData setPreviousWeights(int layerIdx, Matrix weightsUpdates) {
+    public NesterovUpdaterParams setPreviousWeights(int layerIdx, Matrix weightsUpdates) {
         prevIterationWeightsUpdates[layerIdx] = weightsUpdates;
         return this;
     }
@@ -63,8 +66,16 @@ public class NesterovUpdaterData {
      * @param biasesUpdates Biases updates.
      * @return This object with updated biases updates.
      */
-    public NesterovUpdaterData setPreviousBiases(int layerIdx, Vector biasesUpdates) {
+    public NesterovUpdaterParams setPreviousBiases(int layerIdx, Vector biasesUpdates) {
         prevIterationBiasesUpdates[layerIdx] = biasesUpdates;
         return this;
+    }
+
+    @Override public void updateMLP(MLP mlp) {
+        for (int layer = 1; layer < mlp.layersCount(); layer++) {
+            MatrixUtil.elementWiseMinus(mlp.weights(layer), prevIterationWeightsUpdates[layer]);
+            if (mlp.hasBiases(layer))
+                VectorUtils.elementWiseMinus(mlp.biases(layer), prevIterationBiasesUpdates[layer]);
+        }
     }
 }
