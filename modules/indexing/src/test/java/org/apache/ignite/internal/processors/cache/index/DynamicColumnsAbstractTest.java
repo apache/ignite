@@ -54,6 +54,10 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
     /** SQL to create test table. */
     final static String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
 
+    /** SQL to create test table with additional columns to drop. */
+    final static String CREATE_SQL_4_COLS = "CREATE TABLE IF NOT EXISTS Person (id int primary key, " +
+        "name varchar, age int, city varchar)";
+
     /** SQL to drop test table. */
     final static String DROP_SQL = "DROP TABLE Person";
 
