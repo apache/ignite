@@ -17,6 +17,9 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -33,15 +36,19 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.jdbc.thin.ConnectionProperties;
+import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -82,6 +89,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setMarshaller(new BinaryMarshaller());
+
+        cfg.setGridLogger(new GridStringLogger());
 
         return cfg;
     }
@@ -900,7 +909,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Transaction cannot rollback in auto-commit mode"
+                "Transaction cannot be rolled back explicitly in auto-commit mode."
             );
 
             conn.setAutoCommit(false);
@@ -1753,6 +1762,58 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     conn.setNetworkTimeout(executor, timeout);
                 }
             });
+        }
+    }
+
+    /**
+     * Test that attempting to supply invalid nested TX mode to driver fails on the client.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testInvalidNestedTxMode() {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                DriverManager.getConnection(URL + "/?nestedTransactionsMode=invalid");
+
+                return null;
+            }
+        }, SQLException.class, "Invalid nested transactions handling mode");
+    }
+
+    /**
+     * Test that attempting to send unexpected name of nested TX mode to server on handshake yields an error.
+     * We have to do this without explicit {@link Connection} as long as there's no other way to bypass validation and
+     * supply a malformed {@link ConnectionProperties} to {@link JdbcThinTcpIo}.
+     */
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ThrowFromFinallyBlock"})
+    public void testInvalidNestedTxModeOnServerSide() throws SQLException, NoSuchMethodException,
+        IllegalAccessException, InvocationTargetException, InstantiationException, IOException {
+        ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
+
+        connProps.setHost("127.0.0.1");
+
+        connProps.nestedTxMode("invalid");
+
+        Constructor ctor = JdbcThinTcpIo.class.getDeclaredConstructor(ConnectionProperties.class);
+
+        boolean acc = ctor.isAccessible();
+
+        ctor.setAccessible(true);
+
+        final JdbcThinTcpIo io = (JdbcThinTcpIo)ctor.newInstance(connProps);
+
+        try {
+            GridTestUtils.assertThrows(null, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    io.start();
+
+                    return null;
+                }
+            }, SQLException.class, "err=Invalid nested transactions handling mode: invalid");
+        }
+        finally {
+            io.close();
+
+            ctor.setAccessible(acc);
         }
     }
 

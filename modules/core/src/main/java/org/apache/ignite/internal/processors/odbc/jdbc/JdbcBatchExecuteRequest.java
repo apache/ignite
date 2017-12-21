@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -38,6 +39,9 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     @GridToStringInclude(sensitive = true)
     private List<JdbcQuery> queries;
 
+    /** Client auto commit flag state. */
+    private boolean autoCommit;
+
     /**
      * Default constructor.
      */
@@ -48,14 +52,16 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     /**
      * @param schemaName Schema name.
      * @param queries Queries.
+     * @param autoCommit Client auto commit flag state.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries) {
+    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit) {
         super(BATCH_EXEC);
 
         assert !F.isEmpty(queries);
 
         this.schemaName = schemaName;
         this.queries = queries;
+        this.autoCommit = autoCommit;
     }
 
     /**
@@ -72,6 +78,13 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         return queries;
     }
 
+    /**
+     * @return Auto commit flag.
+     */
+    boolean autoCommit() {
+        return autoCommit;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
@@ -81,9 +94,12 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
         for (JdbcQuery q : queries)
             q.writeBinary(writer);
+
+        writer.writeBoolean(autoCommit);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
@@ -99,6 +115,16 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
             qry.readBinary(reader);
 
             queries.add(qry);
+        }
+
+        try {
+            if (reader.available() > 0)
+                autoCommit = reader.readBoolean();
+            else
+                autoCommit = true;
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException(e);
         }
     }
 

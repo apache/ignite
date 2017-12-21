@@ -17,21 +17,32 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
+import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
 import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
+import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
+import static org.apache.ignite.internal.sql.SqlKeyword.START;
+import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
+import static org.apache.ignite.internal.sql.SqlKeyword.WORK;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesOptionalKeyword;
 
 /**
  * SQL parser.
@@ -90,6 +101,16 @@ public class SqlParser {
                     SqlCommand cmd = null;
 
                     switch (lex.token()) {
+                        case BEGIN:
+                            cmd = processBegin();
+
+                            break;
+
+                        case COMMIT:
+                            cmd = processCommit();
+
+                            break;
+
                         case CREATE:
                             cmd = processCreate();
 
@@ -97,6 +118,16 @@ public class SqlParser {
 
                         case DROP:
                             cmd = processDrop();
+
+                            break;
+
+                        case ROLLBACK:
+                            cmd = processRollback();
+
+                            break;
+
+                        case START:
+                            cmd = processStart();
 
                             break;
                     }
@@ -109,7 +140,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, CREATE, DROP);
+                        throw errorUnexpectedToken(lex, BEGIN, COMMIT, CREATE, DROP, ROLLBACK, START);
 
                 case QUOTED:
                 case MINUS:
@@ -121,6 +152,30 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex);
             }
         }
+    }
+
+    /**
+     * Process BEGIN keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processBegin() {
+        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
+
+        skipIfMatchesOptionalKeyword(lex, WORK);
+
+        return new SqlBeginTransactionCommand();
+    }
+
+    /**
+     * Process COMMIT keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processCommit() {
+        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
+
+        return new SqlCommitTransactionCommand();
     }
 
     /**
@@ -177,5 +232,27 @@ public class SqlParser {
         }
 
         throw errorUnexpectedToken(lex, INDEX);
+    }
+
+    /**
+     * Process ROLLBACK keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processRollback() {
+        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
+
+        return new SqlRollbackTransactionCommand();
+    }
+
+    /**
+     * Process START keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processStart() {
+        skipIfMatchesKeyword(lex, TRANSACTION);
+
+        return new SqlBeginTransactionCommand();
     }
 }
