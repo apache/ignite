@@ -1,5 +1,5 @@
-Apache Ignite.NET Build Instructions
-====================================
+Apache Ignite.NET Build Instructions (Windows)
+==============================================
 
 Requirements:
 * Windows (XP and up), Windows Server (2008 and up), see Linux instructions below
@@ -17,10 +17,16 @@ Resulting binaries will be in bin folder, and NuGet packages in nupkg folder.
 Running built binaries: resulting "bin" folder in self contained, you can copy it anywhere and run
   bin\Apache.Ignite.exe  
   
-  
-LINUX DEVELOPMENT
 
-Ignite.NET can be built, developed, and tested on Linux, but only partially.
+Cross-Platform Support and Development (Linux, macOS)
+=====================================================
+
+Main Apache.Ignite.sln solution targets .NET 4.0 & VS 2010: we care for backwards compatibility.
+However, this does not prevent us from supporting .NET Standard 2.0 and .NET Core 2.0,
+because of ".NET Framework compatibility mode", which allows referencing any libraries
+from .NET Core 2.0 projects. So we release binaries which target .NET 4.0.
+
+Ignite.NET can be built, developed, and tested on Linux and macOS, but only partially.
 A subset of functionality and tests is available. See Apache.Ignite.DotNetCore.sln.
 
 Requirements:
