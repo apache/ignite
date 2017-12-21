@@ -224,8 +224,6 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     public void testUpdate() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7271");
-
         IgniteCache<Integer, Person> cache = grid(0).cache(CACHE_NAME);
 
         Person p = new Person(1, "John", 25);
@@ -251,8 +249,6 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     public void testDelete() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7271");
-
         IgniteCache<Integer, Person> cache = grid(0).cache(CACHE_NAME);
 
         Person p = new Person(1, "John", 25);

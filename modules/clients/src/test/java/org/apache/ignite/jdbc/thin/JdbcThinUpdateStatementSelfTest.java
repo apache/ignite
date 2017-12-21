@@ -30,8 +30,6 @@ public class JdbcThinUpdateStatementSelfTest extends JdbcThinAbstractUpdateState
      * @throws SQLException If failed.
      */
     public void testExecute() throws SQLException {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7271");
-
         conn.createStatement().execute("update Person set firstName = 'Jack' where " +
             "cast(substring(_key, 2, 1) as int) % 2 = 0");
 
@@ -43,8 +41,6 @@ public class JdbcThinUpdateStatementSelfTest extends JdbcThinAbstractUpdateState
      * @throws SQLException If failed.
      */
     public void testExecuteUpdate() throws SQLException {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7271");
-
         conn.createStatement().executeUpdate("update Person set firstName = 'Jack' where " +
                 "cast(substring(_key, 2, 1) as int) % 2 = 0");
 
