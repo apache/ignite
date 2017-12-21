@@ -22,6 +22,7 @@
 #include <string>
 
 #include "ignite/odbc/diagnostic/diagnosable.h"
+#include "ignite/odbc/socket_client.h"
 
 namespace ignite
 {
@@ -32,7 +33,7 @@ namespace ignite
             /**
              * Secure socket client.
              */
-            class SecureSocketClient
+            class SecureSocketClient : public SocketClient
             {
             public:
                 /**
@@ -41,15 +42,13 @@ namespace ignite
                  * @param certPath Certificate file path.
                  * @param keyPath Private key file path.
                  * @param caPath Certificate authority file path.
-                 * @param caDirPath Path to directory containing certificate authority files.
                  */
-                SecureSocketClient(const std::string& certPath, const std::string& keyPath, const std::string& caPath,
-                    const std::string& caDirPath);
+                SecureSocketClient(const std::string& certPath, const std::string& keyPath, const std::string& caPath);
 
                 /**
                  * Destructor.
                  */
-                ~SecureSocketClient();
+                virtual ~SecureSocketClient();
 
                 /**
                  * Establish connection with the host.
@@ -59,12 +58,12 @@ namespace ignite
                  * @param diag Diagnostics collector to use for error-reporting.
                  * @return @c true on success and @c false on fail.
                  */
-                bool Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag);
+                virtual bool Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag);
 
                 /**
                  * Close the connection.
                  */
-                void Close();
+                virtual void Close();
 
                 /**
                  * Send data using connection.
@@ -74,7 +73,7 @@ namespace ignite
                  * @return Number of bytes that have been sent on success, 
                  *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
-                int Send(const int8_t* data, size_t size, int32_t timeout);
+                virtual int Send(const int8_t* data, size_t size, int32_t timeout);
 
                 /**
                  * Receive data from established connection.
@@ -85,16 +84,13 @@ namespace ignite
                  * @return Number of bytes that have been sent on success,
                  *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
-                int Receive(int8_t* buffer, size_t size, int32_t timeout);
+                virtual int Receive(int8_t* buffer, size_t size, int32_t timeout);
 
                 /**
                  * Check if the socket is blocking or not.
                  * @return @c true if the socket is blocking and false otherwise.
                  */
-                bool IsBlocking()
-                {
-                    return true;
-                }
+                virtual bool IsBlocking() const;
 
             private:
                 /**
@@ -103,12 +99,11 @@ namespace ignite
                  * @param certPath Certificate file path.
                  * @param keyPath Private key file path.
                  * @param caPath Certificate authority file path.
-                 * @param caDirPath Path to directory containing certificate authority files.
                  * @param diag Diagnostics collector to use for error-reporting.
                  * @return New context instance on success and null-opinter on fail.
                  */
                 static void* MakeContext(const std::string& certPath, const std::string& keyPath,
-                    const std::string& caPath, const std::string& caDirPath, diagnostic::Diagnosable& diag);
+                    const std::string& caPath, diagnostic::Diagnosable& diag);
 
                 /** Certificate file path. */
                 std::string certPath;
@@ -118,9 +113,6 @@ namespace ignite
 
                 /** Certificate authority file path. */
                 std::string caPath;
-
-                /** Path to directory containing certificate authority files. */
-                std::string caDirPath;
 
                 /** SSL context. */
                 void* context;
