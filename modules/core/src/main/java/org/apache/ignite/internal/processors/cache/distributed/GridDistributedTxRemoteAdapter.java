@@ -324,18 +324,23 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
+        if (!hasWriteKey(entry.txKey()))
+            return false;
+
         try {
-            if (hasWriteKey(entry.txKey())) {
-                commitIfLocked();
+            commitIfLocked();
 
-                return true;
-            }
-        }
-        catch (IgniteCheckedException e) {
+            return true;
+        } catch (IgniteCheckedException e) {
             U.error(log, "Failed to commit remote transaction: " + this, e);
-        }
 
-        return false;
+            invalidate(true);
+            systemInvalidate(true);
+
+            rollbackRemoteTx();
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */
