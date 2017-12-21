@@ -2,7 +2,7 @@ Apache Ignite.NET Build Instructions
 ====================================
 
 Requirements:
-* Windows (XP and up), Windows Server (2008 and up)
+* Windows (XP and up), Windows Server (2008 and up), see Linux instructions below
 * Oracle JDK 7 and above
 * .NET Framework 4.0
 * PowerShell 3.0+
@@ -16,3 +16,20 @@ Resulting binaries will be in bin folder, and NuGet packages in nupkg folder.
 
 Running built binaries: resulting "bin" folder in self contained, you can copy it anywhere and run
   bin\Apache.Ignite.exe  
+  
+  
+LINUX DEVELOPMENT
+
+Ignite.NET can be built, developed, and tested on Linux, but only partially.
+A subset of functionality and tests is available. See Apache.Ignite.DotNetCore.sln.
+
+Requirements:
+* .NET Core SDK: https://www.microsoft.com/net/download/linux
+* JDK: sudo apt-get install default-jdk
+* Maven: sudo apt-get install maven
+
+Getting started:
+* Build Java. Run the command in the repository root:
+  mvn clean package -DskipTests -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
+* To execute tests from command line change to Apache.Ignite.Core.Tests.DotNetCore directory and run:
+  dotnet test
