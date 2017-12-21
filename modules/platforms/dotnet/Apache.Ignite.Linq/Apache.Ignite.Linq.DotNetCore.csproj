@@ -5,6 +5,7 @@
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<AssemblyName>Apache.Ignite.Linq</AssemblyName>
 	<RootNamespace>Apache.Ignite.Linq</RootNamespace>
+    <NoWarn>NU1701</NoWarn>
   </PropertyGroup>  
   
   <ItemGroup>
