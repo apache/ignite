@@ -308,12 +308,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         IgnitionEx.TEST_ZK = false;
-
-        if (USE_TEST_CLUSTER) {
-            zkCluster = createTestingCluster(ZK_SRVS);
-
-            zkCluster.start();
-        }
     }
 
     /**
@@ -363,6 +357,15 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        stopZkCluster();
+
+        super.afterTestsStopped();
+    }
+
+    /**
+     *
+     */
+    private void stopZkCluster() {
         if (zkCluster != null) {
             try {
                 zkCluster.close();
@@ -373,8 +376,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
             zkCluster = null;
         }
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -394,6 +395,12 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        if (USE_TEST_CLUSTER && zkCluster == null) {
+            zkCluster = createTestingCluster(ZK_SRVS);
+
+            zkCluster.start();
+        }
 
         reset();
     }
@@ -702,6 +709,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param expNodes Expected nodes number.
      * @throws Exception If failed.
      */
     private void checkTestSecuritySubject(int expNodes) throws Exception {
@@ -2499,6 +2507,42 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
            for (int j = 0; j < NODES; j++)
                assertTrue(res.get(j));
        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartNoZk() throws Exception {
+        stopZkCluster();
+
+        sesTimeout = 30_000;
+
+        zkCluster = createTestingCluster(3);
+
+        try {
+            final AtomicInteger idx = new AtomicInteger();
+
+            IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    startGrid(idx.getAndIncrement());
+
+                    return null;
+                }
+            }, 5, "start-node");
+
+            U.sleep(5000);
+
+            assertFalse(fut.isDone());
+
+            zkCluster.start();
+
+            fut.get();
+
+            waitForTopology(5);
+        }
+        finally {
+            zkCluster.start();
+        }
     }
 
     /**

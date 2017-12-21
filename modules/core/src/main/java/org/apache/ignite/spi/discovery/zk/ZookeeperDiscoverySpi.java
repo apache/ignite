@@ -72,15 +72,21 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** */
     @GridToStringInclude
+    private String zkRootPath = DFLT_ROOT_PATH;
+
+    /** */
+    @GridToStringInclude
     private String zkConnectionString;
 
     /** */
-    @GridToStringInclude
-    private int sesTimeout;
+    private long joinTimeout;
 
     /** */
     @GridToStringInclude
-    private String zkRootPath = DFLT_ROOT_PATH;
+    private long sesTimeout;
+
+    /** */
+    private boolean clientReconnectDisabled;
 
     /** */
     @GridToStringExclude
@@ -92,7 +98,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** */
     @GridToStringExclude
-    DiscoverySpiNodeAuthenticator nodeAuth;
+    private DiscoverySpiNodeAuthenticator nodeAuth;
 
     /** */
     @GridToStringExclude
@@ -123,15 +129,19 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     private IgniteLogger log;
 
     /** */
-    private boolean clientReconnectDisabled;
-
-    /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
 
+    /**
+     * @return Base path in ZK for znodes created by SPI.
+     */
     public String getZkRootPath() {
         return zkRootPath;
     }
 
+    /**
+     * @param zkRootPath Base path in ZooKeeper for znodes created by SPI.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
     public ZookeeperDiscoverySpi setZkRootPath(String zkRootPath) {
         this.zkRootPath = zkRootPath;
@@ -139,21 +149,53 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         return this;
     }
 
-    public int getSessionTimeout() {
+    /**
+     * @return ZooKeeper session timeout.
+     */
+    public long getSessionTimeout() {
         return sesTimeout;
     }
 
+    /**
+     * @param sesTimeout ZooKeeper session timeout.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    public ZookeeperDiscoverySpi setSessionTimeout(int sesTimeout) {
+    public ZookeeperDiscoverySpi setSessionTimeout(long sesTimeout) {
         this.sesTimeout = sesTimeout;
 
         return this;
     }
 
+    /**
+     * @return Cluster join timeout.
+     */
+    public long getJoinTimeout() {
+        return joinTimeout;
+    }
+
+    /**
+     * @param joinTimeout Cluster join timeout ({@code 0} means wait forever).
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public ZookeeperDiscoverySpi setJoinTimeout(long joinTimeout) {
+        this.joinTimeout = joinTimeout;
+
+        return this;
+    }
+
+    /**
+     * @return ZooKeeper connection string
+     */
     public String getZkConnectionString() {
         return zkConnectionString;
     }
 
+    /**
+     * @param zkConnectionString ZooKeeper connection string
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = false)
     public ZookeeperDiscoverySpi setZkConnectionString(String zkConnectionString) {
         this.zkConnectionString = zkConnectionString;
@@ -174,10 +216,13 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
      * Sets client reconnect disabled flag.
      *
      * @param clientReconnectDisabled Client reconnect disabled flag.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setClientReconnectDisabled(boolean clientReconnectDisabled) {
+    public ZookeeperDiscoverySpi setClientReconnectDisabled(boolean clientReconnectDisabled) {
         this.clientReconnectDisabled = clientReconnectDisabled;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -434,17 +479,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             impl.stop();
     }
 
-    /** {@inheritDoc} */
-    public Object clone() {
-        ZookeeperDiscoverySpi spi = new ZookeeperDiscoverySpi();
-
-        spi.setZkConnectionString(zkConnectionString);
-        spi.setSessionTimeout(sesTimeout);
-        spi.setClientReconnectDisabled(clientReconnectDisabled);
-
-        return spi;
-    }
-
     /**
      * @return Local node instance.
      */
@@ -482,6 +516,23 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         }
 
         return locNode;
+    }
+
+    /**
+     * Used for tests (call via reflection).
+     *
+     * @return Copy of SPI.
+     */
+    private ZookeeperDiscoverySpi cloneSpiConfiguration() {
+        ZookeeperDiscoverySpi spi = new ZookeeperDiscoverySpi();
+
+        spi.setZkRootPath(zkRootPath);
+        spi.setZkConnectionString(zkConnectionString);
+        spi.setSessionTimeout(sesTimeout);
+        spi.setJoinTimeout(joinTimeout);
+        spi.setClientReconnectDisabled(clientReconnectDisabled);
+
+        return spi;
     }
 
     /** {@inheritDoc} */

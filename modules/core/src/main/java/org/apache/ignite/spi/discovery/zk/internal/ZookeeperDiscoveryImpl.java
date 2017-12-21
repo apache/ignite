@@ -230,6 +230,13 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * @return Exception.
+     */
+    private static IgniteClientDisconnectedCheckedException disconnectError() {
+        return new IgniteClientDisconnectedCheckedException(null, "Client node disconnected.");
+    }
+
+    /**
      * @return Logger.
      */
     IgniteLogger log() {
@@ -519,13 +526,6 @@ public class ZookeeperDiscoveryImpl {
             case DISCONNECTED:
                 throw new IgniteClientDisconnectedException(null, "Client is disconnected.");
         }
-    }
-
-    /**
-     * @return Exception.
-     */
-    static IgniteClientDisconnectedCheckedException disconnectError() {
-        return new IgniteClientDisconnectedCheckedException(null, "Client node disconnected.");
     }
 
     /**

@@ -972,7 +972,9 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (!(discoverySpi instanceof TcpDiscoverySpi)) {
             try {
-                Method m = discoverySpi.getClass().getMethod("clone");
+                Method m = discoverySpi.getClass().getMethod("cloneSpiConfiguration");
+
+                m.setAccessible(true);
 
                 cfg.setDiscoverySpi((DiscoverySpi)m.invoke(discoverySpi));
 
