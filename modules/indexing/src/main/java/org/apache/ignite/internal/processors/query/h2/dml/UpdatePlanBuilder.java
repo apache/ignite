@@ -123,7 +123,7 @@ public final class UpdatePlanBuilder {
             }
         }
 
-        if (mvccEnabled) {
+        if (mvccEnabled && fieldsQuery != null) {
             if (!(fieldsQuery instanceof SqlFieldsQueryEx)) {
                 SqlFieldsQueryEx tmp = new SqlFieldsQueryEx(fieldsQuery.getSql(), false);
                 tmp.setSkipReducerOnUpdate(true);
