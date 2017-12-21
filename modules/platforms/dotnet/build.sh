@@ -17,7 +17,7 @@
 #
 
 #
-# Builds and runs .NET tests.
+# Builds Java, builds and runs .NET tests.
 #
 
 pushd .

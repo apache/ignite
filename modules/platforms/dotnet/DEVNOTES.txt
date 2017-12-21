@@ -40,8 +40,5 @@ Requirements:
 * JDK: sudo apt-get install default-jdk
 * Maven: sudo apt-get install maven
 
-Getting started:
-* Build Java. Run the command in the repository root:
-  mvn clean package -DskipTests -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
-* To execute tests from command line change to Apache.Ignite.Core.Tests.DotNetCore directory and run:
-  dotnet test
+Build Java and .NET, run tests:
+  ./build.sh
