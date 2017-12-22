@@ -412,6 +412,14 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void resetMetrics();
 
     /**
+     * Enables/disables statistics for caches cluster wide.
+     *
+     * @param caches Collection of cache names.
+     * @param enabled Statistics enabled flag.
+     */
+    public void enableStatistics(Collection<String> caches, boolean enabled);
+
+    /**
      * If local client node disconnected from cluster returns future
      * that will be completed when client reconnected.
      *

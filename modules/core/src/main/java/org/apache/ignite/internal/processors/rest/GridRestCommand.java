@@ -166,7 +166,7 @@ public enum GridRestCommand {
     CLUSTER_INACTIVE("inactive"),
 
     /** */
-    CLUSTER_CURRENT_STATE("currentState");
+    CLUSTER_CURRENT_STATE("currentstate");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

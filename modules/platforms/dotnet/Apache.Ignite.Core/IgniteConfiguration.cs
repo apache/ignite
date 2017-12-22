@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core
     using System.Linq;
     using System.Text;
     using System.Xml;
+    using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -192,6 +193,12 @@ namespace Apache.Ignite.Core
         /** */
         private bool? _isActiveOnStart;
 
+        /** Local event listeners. Stored as array to ensure index access. */
+        private LocalEventListener[] _localEventListenersInternal;
+
+        /** Map from user-defined listener to it's id. */
+        private Dictionary<object, int> _localEventListenerIds;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -208,6 +215,11 @@ namespace Apache.Ignite.Core
         public const bool DefaultIsActiveOnStart = true;
 
         /// <summary>
+        /// Default value for <see cref="RedirectJavaConsoleOutput"/> property.
+        /// </summary>
+        public const bool DefaultRedirectJavaConsoleOutput = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
         /// </summary>
         public IgniteConfiguration()
@@ -215,6 +227,7 @@ namespace Apache.Ignite.Core
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
             ClientConnectorConfigurationEnabled = DefaultClientConnectorConfigurationEnabled;
+            RedirectJavaConsoleOutput = DefaultRedirectJavaConsoleOutput;
         }
 
         /// <summary>
@@ -251,8 +264,8 @@ namespace Apache.Ignite.Core
             Debug.Assert(binaryReader != null);
             Debug.Assert(baseConfig != null);
 
-            CopyLocalProperties(baseConfig);
             Read(binaryReader);
+            CopyLocalProperties(baseConfig);
         }
 
         /// <summary>
@@ -295,17 +308,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
-            var caches = CacheConfiguration;
-
-            if (caches == null)
-                writer.WriteInt(0);
-            else
-            {
-                writer.WriteInt(caches.Count);
-
-                foreach (var cache in caches)
-                    cache.Write(writer);
-            }
+            writer.WriteCollectionRaw(CacheConfiguration);
 
             // Discovery config
             var disco = DiscoverySpi;
@@ -433,6 +436,7 @@ namespace Apache.Ignite.Core
                 memEventStorage.Write(writer);
             }
 
+#pragma warning disable 618  // Obsolete
             if (MemoryConfiguration != null)
             {
                 writer.WriteBoolean(true);
@@ -442,6 +446,7 @@ namespace Apache.Ignite.Core
             {
                 writer.WriteBoolean(false);
             }
+#pragma warning restore 618
 
             // SQL connector.
 #pragma warning disable 618  // Obsolete
@@ -470,6 +475,7 @@ namespace Apache.Ignite.Core
             writer.WriteBoolean(ClientConnectorConfigurationEnabled);
 
             // Persistence.
+#pragma warning disable 618  // Obsolete
             if (PersistentStoreConfiguration != null)
             {
                 writer.WriteBoolean(true);
@@ -479,8 +485,20 @@ namespace Apache.Ignite.Core
             {
                 writer.WriteBoolean(false);
             }
+#pragma warning restore 618
 
-            // Plugins (should be last)
+            // Data storage.
+            if (DataStorageConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                DataStorageConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            // Plugins (should be last).
             if (PluginConfigurations != null)
             {
                 var pos = writer.Stream.Position;
@@ -506,6 +524,46 @@ namespace Apache.Ignite.Core
             else
             {
                 writer.WriteInt(0);
+            }
+
+            // Local event listeners (should be last).
+            if (LocalEventListeners != null)
+            {
+                writer.WriteInt(LocalEventListeners.Count);
+
+                foreach (var listener in LocalEventListeners)
+                {
+                    ValidateLocalEventListener(listener);
+
+                    writer.WriteIntArray(listener.EventTypes.ToArray());
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+        }
+
+        /// <summary>
+        /// Validates the local event listener.
+        /// </summary>
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+        // ReSharper disable once UnusedParameter.Local
+        private static void ValidateLocalEventListener(LocalEventListener listener)
+        {
+            if (listener == null)
+            {
+                throw new IgniteException("LocalEventListeners can't contain nulls.");
+            }
+
+            if (listener.ListenerObject == null)
+            {
+                throw new IgniteException("LocalEventListener.Listener can't be null.");
+            }
+
+            if (listener.EventTypes == null || listener.EventTypes.Count == 0)
+            {
+                throw new IgniteException("LocalEventListener.EventTypes can't be null or empty.");
             }
         }
 
@@ -561,10 +619,7 @@ namespace Apache.Ignite.Core
             _queryThreadPoolSize = r.ReadIntNullable();
 
             // Cache config
-            var cacheCfgCount = r.ReadInt();
-            CacheConfiguration = new List<CacheConfiguration>(cacheCfgCount);
-            for (int i = 0; i < cacheCfgCount; i++)
-                CacheConfiguration.Add(new CacheConfiguration(r));
+            CacheConfiguration = r.ReadCollectionRaw(x => new CacheConfiguration(x));
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
@@ -629,7 +684,9 @@ namespace Apache.Ignite.Core
 
             if (r.ReadBoolean())
             {
+#pragma warning disable 618  // Obsolete
                 MemoryConfiguration = new MemoryConfiguration(r);
+#pragma warning restore 618  // Obsolete
             }
 
             // SQL.
@@ -651,7 +708,15 @@ namespace Apache.Ignite.Core
             // Persistence.
             if (r.ReadBoolean())
             {
+#pragma warning disable 618 // Obsolete
                 PersistentStoreConfiguration = new PersistentStoreConfiguration(r);
+#pragma warning restore 618
+            }
+
+            // Data storage.
+            if (r.ReadBoolean())
+            {
+                DataStorageConfiguration = new DataStorageConfiguration(r);
             }
         }
 
@@ -668,11 +733,6 @@ namespace Apache.Ignite.Core
 
             JvmInitialMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
             JvmMaxMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
-
-            // Local data (not from reader)
-            JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
-                .Single(x => string.Equals(x.ModuleName, IgniteUtils.FileJvmDll, StringComparison.OrdinalIgnoreCase))
-                .FileName;
         }
 
         /// <summary>
@@ -684,15 +744,14 @@ namespace Apache.Ignite.Core
 
             if (BinaryConfiguration != null && cfg.BinaryConfiguration != null)
             {
-                BinaryConfiguration.MergeTypes(cfg.BinaryConfiguration);
-            }
-            else if (cfg.BinaryConfiguration != null)
-            {
-                BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
+                BinaryConfiguration.CopyLocalProperties(cfg.BinaryConfiguration);
             }
 
+            SpringConfigUrl = cfg.SpringConfigUrl;
+            IgniteHome = cfg.IgniteHome;
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
+            JvmDllPath = cfg.JvmDllPath;
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleHandlers = cfg.LifecycleHandlers;
@@ -701,6 +760,24 @@ namespace Apache.Ignite.Core
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
             PluginConfigurations = cfg.PluginConfigurations;
             AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
+            PeerAssemblyLoadingMode = cfg.PeerAssemblyLoadingMode;
+            LocalEventListeners = cfg.LocalEventListeners;
+            RedirectJavaConsoleOutput = cfg.RedirectJavaConsoleOutput;
+
+            if (CacheConfiguration != null && cfg.CacheConfiguration != null)
+            {
+                var caches = cfg.CacheConfiguration.Where(x => x != null).ToDictionary(x => "_" + x.Name, x => x);
+
+                foreach (var cache in CacheConfiguration)
+                {
+                    CacheConfiguration src;
+
+                    if (cache != null && caches.TryGetValue("_" + cache.Name, out src))
+                    {
+                        cache.CopyLocalProperties(src);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -732,6 +809,7 @@ namespace Apache.Ignite.Core
         /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
         /// </summary>
         [Obsolete("Use IgniteInstanceName instead.")]
+        [XmlIgnore]
         public string GridName
         {
             get { return IgniteInstanceName; }
@@ -769,10 +847,9 @@ namespace Apache.Ignite.Core
         public string SpringConfigUrl { get; set; }
 
         /// <summary>
-        /// Path jvm.dll file. If not set, it's location will be determined
-        /// using JAVA_HOME environment variable.
-        /// If path is neither set nor determined automatically, an exception
-        /// will be thrown.
+        /// Path to jvm.dll (libjvm.so on Linux, libjvm.dylib on Mac) file.
+        /// If not set, it's location will be determined using JAVA_HOME environment variable.
+        /// If path is neither set nor determined automatically, an exception will be thrown.
         /// </summary>
         public string JvmDllPath { get; set; }
 
@@ -854,6 +931,61 @@ namespace Apache.Ignite.Core
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<int> IncludedEventTypes { get; set; }
+
+        /// <summary>
+        /// Gets or sets pre-configured local event listeners.
+        /// <para />
+        /// This is similar to calling <see cref="IEvents.LocalListen{T}(IEventListener{T},int[])"/>,
+        /// but important difference is that some events occur during startup and can be only received this way.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<LocalEventListener> LocalEventListeners { get; set; }
+
+        /// <summary>
+        /// Initializes the local event listeners collections.
+        /// </summary>
+        private void InitLocalEventListeners()
+        {
+            if (LocalEventListeners != null && _localEventListenersInternal == null)
+            {
+                _localEventListenersInternal = LocalEventListeners.ToArray();
+
+                _localEventListenerIds = new Dictionary<object, int>();
+
+                for (var i = 0; i < _localEventListenersInternal.Length; i++)
+                {
+                    var listener = _localEventListenersInternal[i];
+                    ValidateLocalEventListener(listener);
+                    _localEventListenerIds[listener.ListenerObject] = i;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the local event listeners.
+        /// </summary>
+        internal LocalEventListener[] LocalEventListenersInternal
+        {
+            get
+            {
+                InitLocalEventListeners();
+
+                return _localEventListenersInternal;
+            }
+        }
+
+        /// <summary>
+        /// Gets the local event listener ids.
+        /// </summary>
+        internal Dictionary<object, int> LocalEventListenerIds
+        {
+            get
+            {
+                InitLocalEventListeners();
+
+                return _localEventListenerIds;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the time after which a certain metric value is considered expired.
@@ -1127,8 +1259,16 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the page memory configuration.
         /// <see cref="MemoryConfiguration"/> for more details.
+        /// <para />
+        /// Obsolete, use <see cref="DataStorageConfiguration"/>.
         /// </summary>
+        [Obsolete("Use DataStorageConfiguration.")]
         public MemoryConfiguration MemoryConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the data storage configuration.
+        /// </summary>
+        public DataStorageConfiguration DataStorageConfiguration { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating how user assemblies should be loaded on remote nodes.
@@ -1258,14 +1398,17 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets or sets the persistent store configuration.
+        /// <para />
+        /// Obsolete, use <see cref="DataStorageConfiguration"/>.
         /// </summary>
+        [Obsolete("Use DataStorageConfiguration.")]
         public PersistentStoreConfiguration PersistentStoreConfiguration { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether grid should be active on start.
         /// See also <see cref="IIgnite.IsActive"/> and <see cref="IIgnite.SetActive"/>.
         /// <para />
-        /// This property is ignored when <see cref="PersistentStoreConfiguration"/> is present:
+        /// This property is ignored when <see cref="DataStorageConfiguration"/> is present:
         /// cluster is always inactive on start when Ignite Persistence is enabled.
         /// </summary>
         [DefaultValue(DefaultIsActiveOnStart)]
@@ -1279,5 +1422,21 @@ namespace Apache.Ignite.Core
         /// Gets or sets consistent globally unique node identifier which survives node restarts.
         /// </summary>
         public object ConsistentId { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether Java console output should be redirected
+        /// to <see cref="Console.Out"/> and <see cref="Console.Error"/>, respectively.
+        /// <para />
+        /// Default is <see cref="DefaultRedirectJavaConsoleOutput"/>.
+        /// <para />
+        /// Java code outputs valuable information to console. However, since that is Java console,
+        /// it is not possible to capture that output with standard .NET APIs (<see cref="Console.SetOut"/>).
+        /// As a result, many tools (IDEs, test runners) are not able to display Ignite console output in UI.
+        /// <para />
+        /// This property is enabled by default and redirects Java console output to standard .NET console.
+        /// It is recommended to disable this in production.
+        /// </summary>
+        [DefaultValue(DefaultRedirectJavaConsoleOutput)]
+        public bool RedirectJavaConsoleOutput { get; set; }
     }
 }

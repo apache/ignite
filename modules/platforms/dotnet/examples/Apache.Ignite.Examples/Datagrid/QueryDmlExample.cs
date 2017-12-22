@@ -93,9 +93,12 @@ namespace Apache.Ignite.Examples.Datagrid
                 "select emp._key, emp.name, org.name, emp.salary " +
                 "from Employee as emp, " +
                 "\"{0}\".Organization as org " +
-                "where emp.organizationId = org._key", OrganizationCacheName));
+                "where emp.organizationId = org._key", OrganizationCacheName))
+            {
+                EnableDistributedJoins = true
+            };
 
-            using (var cursor = employeeCache.QueryFields(qry))
+            using (var cursor = employeeCache.Query(qry))
             {
                 foreach (var row in cursor)
                 {
@@ -113,25 +116,25 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             // Insert organizations.
             var qry = new SqlFieldsQuery("insert into Organization (_key, name) values (?, ?)", 1, "ASF");
-            organizationCache.QueryFields(qry);
+            organizationCache.Query(qry);
 
             qry.Arguments = new object[] {2, "Eclipse"};
-            organizationCache.QueryFields(qry);
+            organizationCache.Query(qry);
 
             // Insert employees.
             qry = new SqlFieldsQuery("insert into Employee (_key, name, organizationId, salary) values (?, ?, ?, ?)");
 
             qry.Arguments = new object[] {1, "John Doe", 1, 4000};
-            employeeCache.QueryFields(qry);
+            employeeCache.Query(qry);
 
             qry.Arguments = new object[] {2, "Jane Roe", 1, 5000};
-            employeeCache.QueryFields(qry);
+            employeeCache.Query(qry);
 
             qry.Arguments = new object[] {3, "Mary Major", 2, 2000};
-            employeeCache.QueryFields(qry);
+            employeeCache.Query(qry);
 
             qry.Arguments = new object[] {4, "Richard Miles", 2, 3000};
-            employeeCache.QueryFields(qry);
+            employeeCache.Query(qry);
         }
 
         /// <summary>
@@ -142,7 +145,7 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             var qry = new SqlFieldsQuery("update Employee set salary = salary * 1.1 where organizationId = ?", 1);
 
-            employeeCache.QueryFields(qry);
+            employeeCache.Query(qry);
         }
 
         /// <summary>
@@ -156,7 +159,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 "select emp._key from Employee emp, \"{0}\".Organization org " +
                 "where org.Name != ? and org._key = emp.organizationId)", OrganizationCacheName), "ASF");
 
-            employeeCache.QueryFields(qry);
+            employeeCache.Query(qry);
         }
     }
 }

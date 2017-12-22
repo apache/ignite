@@ -973,7 +973,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         if (last || tx.isSystemInvalidate())
             tx.state(PREPARED);
 
-        if (super.onDone(res, err)) {
+        if (super.onDone(res, res == null ? err : null)) {
             // Don't forget to clean up.
             cctx.mvcc().removeVersionedFuture(this);
 
@@ -992,7 +992,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     public void complete() {
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse();
 
-        res.error(new IgniteCheckedException("Failed to prepare transaction."));
+        res.error(err != null ? err : new IgniteCheckedException("Failed to prepare transaction."));
 
         onComplete(res);
     }
@@ -1819,6 +1819,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                         GridDrType drType = cacheCtx.isDrEnabled() ? GridDrType.DR_PRELOAD : GridDrType.DR_NONE;
 
+                        cctx.database().checkpointReadLock();
+
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
@@ -1849,6 +1851,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             if (log.isDebugEnabled())
                                 log.debug("Failed to set entry initial value (entry is obsolete, " +
                                     "will retry): " + entry);
+                        }
+                        finally {
+                            cctx.database().checkpointReadUnlock();
                         }
                     }
                 }

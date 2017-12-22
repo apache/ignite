@@ -21,6 +21,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.hadoop.mapreduce.Cluster;
 import org.apache.hadoop.mapreduce.ClusterMetrics;
@@ -122,8 +123,13 @@ public class HadoopClientProtocol implements ClientProtocol {
         try {
             conf.setLong(HadoopCommonUtils.JOB_SUBMISSION_START_TS_PROPERTY, U.currentTimeMillis());
 
+            byte[] credentials = null;
+
+            if (ts != null)
+                credentials = WritableUtils.toByteArray(ts);
+
             HadoopJobStatus status = execute(HadoopProtocolSubmitJobTask.class,
-                jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf));
+                jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf, credentials));
 
             if (status == null)
                 throw new IOException("Failed to submit job (null status obtained): " + jobId);

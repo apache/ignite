@@ -230,6 +230,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** */
     private boolean isWriteThrough;
 
+    /** */
+    private boolean isValidForReading;
+
+    /** */
+    private boolean isValidForWriting;
+
     /**
      * Default constructor.
      */
@@ -307,6 +313,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isManagementEnabled = m.isManagementEnabled();
         isReadThrough = m.isReadThrough();
         isWriteThrough = m.isWriteThrough();
+        isValidForReading = m.isValidForReading();
+        isValidForWriting = m.isValidForWriting();
 
         totalPartitionsCnt = m.getTotalPartitionsCount();
         rebalancingPartitionsCnt = m.getRebalancingPartitionsCount();
@@ -342,6 +350,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isManagementEnabled = loc.isManagementEnabled();
         isReadThrough = loc.isReadThrough();
         isWriteThrough = loc.isWriteThrough();
+        isValidForReading = loc.isValidForReading();
+        isValidForWriting = loc.isValidForWriting();
 
         for (CacheMetrics e : metrics) {
             reads += e.getCacheGets();
@@ -734,6 +744,16 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingFinishTime() {
+        return rebalanceFinishTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingStartTime() {
+        return rebalanceStartTime;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isWriteBehindEnabled() {
         return isWriteBehindEnabled;
     }
@@ -811,6 +831,16 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public boolean isWriteThrough() {
         return isWriteThrough;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForReading() {
+        return isValidForReading;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForWriting() {
+        return isValidForWriting;
     }
 
     /** {@inheritDoc} */

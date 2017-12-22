@@ -17,9 +17,13 @@
 
 namespace Apache.Ignite.Core.Cache
 {
+    using System;
+
     /// <summary>
     /// Memory usage metrics.
+    /// Obsolete, use <see cref="IDataRegionMetrics"/>.
     /// </summary>
+    [Obsolete("See IDataRegionMetrics.")]
     public interface IMemoryMetrics
     {
         /// <summary>
@@ -48,7 +52,7 @@ namespace Apache.Ignite.Core.Cache
         float LargeEntriesPagesPercentage { get; }
 
         /// <summary>
-        /// Gets the page fill factor: free space to overall size ratio across all pages.
+        /// Gets the page fill factor: the percentage of used space.
         /// </summary>
         float PageFillFactor { get; }
     }

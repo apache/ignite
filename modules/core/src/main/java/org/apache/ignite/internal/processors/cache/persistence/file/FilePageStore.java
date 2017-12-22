@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -60,7 +60,7 @@ public class FilePageStore implements PageStore {
     private final byte type;
 
     /** Database configuration. */
-    protected final MemoryConfiguration dbCfg;
+    protected final DataStorageConfiguration dbCfg;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
@@ -92,7 +92,7 @@ public class FilePageStore implements PageStore {
     /**
      * @param file File.
      */
-    public FilePageStore(byte type, File file, FileIOFactory factory, MemoryConfiguration cfg) {
+    public FilePageStore(byte type, File file, FileIOFactory factory, DataStorageConfiguration cfg) {
         this.type = type;
 
         cfgFile = file;
@@ -433,7 +433,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+    @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         init();
 
         lock.readLock().lock();
@@ -450,13 +450,20 @@ public class FilePageStore implements PageStore {
             assert pageBuf.capacity() == pageSize;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
-            assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
+            assert PageIO.getType(pageBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(pageId);
+            assert PageIO.getVersion(pageBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(pageId);
 
-            int crc32 = skipCrc ? 0 : PureJavaCrc32.calcCrc32(pageBuf, pageSize);
+            if (calculateCrc && !skipCrc) {
+                assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
 
-            PageIO.setCrc(pageBuf, crc32);
+                PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
+            }
 
-            pageBuf.position(0);
+            // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
+            assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
+                    "CRC hasn't been calculated, crc=0";
+
+            assert pageBuf.position() == 0 : pageBuf.position();
 
             int len = pageSize;
 
@@ -477,6 +484,21 @@ public class FilePageStore implements PageStore {
         }
         finally {
             lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param pageBuf Page buffer.
+     * @param pageSize Page size.
+     */
+    private static int calcCrc32(ByteBuffer pageBuf, int pageSize) {
+        try {
+            pageBuf.position(0);
+
+            return PureJavaCrc32.calcCrc32(pageBuf, pageSize);
+        }
+        finally {
+            pageBuf.position(0);
         }
     }
 

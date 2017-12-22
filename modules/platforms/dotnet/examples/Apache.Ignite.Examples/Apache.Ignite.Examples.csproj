@@ -52,6 +52,8 @@
     <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ThinClient\ThinClientPutGetExample.cs" />
+    <Compile Include="ThinClient\ThinClientQueryExample.cs" />
     <Compile Include="Compute\ClosureExample.cs" />
     <Compile Include="Compute\TaskExample.cs" />
     <Compile Include="Compute\PeerAssemblyLoadingExample.cs" />

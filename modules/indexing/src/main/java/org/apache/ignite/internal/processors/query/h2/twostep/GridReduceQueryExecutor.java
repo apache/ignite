@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
@@ -67,6 +69,7 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
@@ -74,6 +77,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
@@ -85,6 +90,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionException;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Index;
@@ -129,6 +135,9 @@ public class GridReduceQueryExecutor {
 
     /** */
     private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap8<>();
+
+    /** Contexts of running DML requests. */
+    private final ConcurrentMap<Long, DistributedUpdateRun> updRuns = new ConcurrentHashMap<>();
 
     /** */
     private volatile List<GridThreadLocalTable> fakeTbls = Collections.emptyList();
@@ -197,6 +206,10 @@ public class GridReduceQueryExecutor {
                         }
                     }
                 }
+
+                for (DistributedUpdateRun r : updRuns.values())
+                    r.handleNodeLeft(nodeId);
+
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
@@ -229,6 +242,8 @@ public class GridReduceQueryExecutor {
                 onNextPage(node, (GridQueryNextPageResponse)msg);
             else if (msg instanceof GridQueryFailResponse)
                 onFail(node, (GridQueryFailResponse)msg);
+            else if (msg instanceof GridH2DmlResponse)
+                onDmlResponse(node, (GridH2DmlResponse)msg);
             else
                 processed = false;
 
@@ -385,7 +400,7 @@ public class GridReduceQueryExecutor {
 
         // Explicit partitions mapping is not applicable to replicated cache.
         if (cctx.isReplicated()) {
-            for (ClusterNode clusterNode : cctx.affinity().assignment(topVer).primaryPartitionNodes())
+            for (ClusterNode clusterNode : cctx.affinity().assignment(topVer).nodes())
                 mapping.put(clusterNode, null);
 
             return mapping;
@@ -463,35 +478,27 @@ public class GridReduceQueryExecutor {
             if (F.isEmpty(extraNodes))
                 throw new CacheException("Failed to find data nodes for cache: " + extraCacheName);
 
-            if (isReplicatedOnly && extraCctx.isReplicated()) {
-                nodes.retainAll(extraNodes);
+            boolean disjoint;
 
-                if (map.isEmpty()) {
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
+            if (extraCctx.isReplicated()) {
+                if (isReplicatedOnly) {
+                    nodes.retainAll(extraNodes);
+
+                    disjoint = map.isEmpty();
                 }
-            }
-            else if (!isReplicatedOnly && extraCctx.isReplicated()) {
-                if (!extraNodes.containsAll(nodes))
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
-            }
-            else if (!isReplicatedOnly && !extraCctx.isReplicated()) {
-                if (!extraNodes.equals(nodes))
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
+                else
+                    disjoint = !extraNodes.containsAll(nodes);
             }
             else
-                throw new IllegalStateException();
+                disjoint = !extraNodes.equals(nodes);
+
+            if (disjoint) {
+                if (isPreloadingActive(cacheIds))
+                    return null; // Retry.
+                else
+                    throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                        ", cache2=" + extraCacheName + "]");
+            }
         }
 
         return map;
@@ -546,9 +553,15 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
+            // Check if topology is changed while retrying on locked topology.
+            if (h2.serverTopologyChanged(topVer) && ctx.cache().context().lockedTopologyVersion(null) != null) {
+                throw new CacheException(new TransactionException("Server topology is changed during query " +
+                    "execution inside a transaction. It's recommended to rollback and retry transaction."));
+            }
+
             List<Integer> cacheIds = qry.cacheIds();
 
-            Collection<ClusterNode> nodes = null;
+            Collection<ClusterNode> nodes;
 
             // Explicit partition mapping for unstable topology.
             Map<ClusterNode, IntArray> partsMap = null;
@@ -575,25 +588,11 @@ public class GridReduceQueryExecutor {
             if (qry.isLocal())
                 nodes = singletonList(ctx.discovery().localNode());
             else {
-                if (isPreloadingActive(cacheIds)) {
-                    if (isReplicatedOnly)
-                        nodes = replicatedUnstableDataNodes(cacheIds);
-                    else {
-                        partsMap = partitionedUnstableDataNodes(cacheIds);
+                NodesForPartitionsResult nodesParts = nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
 
-                        if (partsMap != null) {
-                            qryMap = narrowForQuery(partsMap, parts);
-
-                            nodes = qryMap == null ? null : qryMap.keySet();
-                        }
-                    }
-                }
-                else {
-                    qryMap = stableDataNodes(isReplicatedOnly, topVer, cacheIds, parts);
-
-                    if (qryMap != null)
-                        nodes = qryMap.keySet();
-                }
+                nodes = nodesParts.nodes();
+                partsMap = nodesParts.partitionsMap();
+                qryMap = nodesParts.queryPartitionsMap();
 
                 if (nodes == null)
                     continue; // Retry.
@@ -841,6 +840,153 @@ public class GridReduceQueryExecutor {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     *
+     * @param schemaName Schema name.
+     * @param cacheIds Cache ids.
+     * @param selectQry Select query.
+     * @param params SQL parameters.
+     * @param enforceJoinOrder Enforce join order of tables.
+     * @param pageSize Page size.
+     * @param timeoutMillis Timeout.
+     * @param parts Partitions.
+     * @param isReplicatedOnly Whether query uses only replicated caches.
+     * @param cancel Cancel state.
+     * @return Update result, or {@code null} when some map node doesn't support distributed DML.
+     */
+    public UpdateResult update(
+        String schemaName,
+        List<Integer> cacheIds,
+        String selectQry,
+        Object[] params,
+        boolean enforceJoinOrder,
+        int pageSize,
+        int timeoutMillis,
+        final int[] parts,
+        boolean isReplicatedOnly,
+        GridQueryCancel cancel
+    ) {
+        AffinityTopologyVersion topVer = h2.readyTopologyVersion();
+
+        NodesForPartitionsResult nodesParts = nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
+
+        final long reqId = qryIdGen.incrementAndGet();
+
+        final GridRunningQueryInfo qryInfo = new GridRunningQueryInfo(reqId, selectQry, GridCacheQueryType.SQL_FIELDS,
+            schemaName, U.currentTimeMillis(), cancel, false);
+
+        Collection<ClusterNode> nodes = nodesParts.nodes();
+
+        if (nodes == null)
+            throw new CacheException("Failed to determine nodes participating in the update. " +
+                "Explanation (Retry update once topology recovers).");
+
+        if (isReplicatedOnly) {
+            ClusterNode locNode = ctx.discovery().localNode();
+
+            if (nodes.contains(locNode))
+                nodes = singletonList(locNode);
+            else
+                nodes = singletonList(F.rand(nodes));
+        }
+
+        for (ClusterNode n : nodes) {
+            if (!n.version().greaterThanEqual(2, 3, 0)) {
+                log.warning("Server-side DML optimization is skipped because map node does not support it. " +
+                    "Falling back to normal DML. [node=" + n.id() + ", v=" + n.version() + "].");
+
+                return null;
+            }
+        }
+
+        final DistributedUpdateRun r = new DistributedUpdateRun(nodes.size(), qryInfo);
+
+        int flags = enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
+
+        if (isReplicatedOnly)
+            flags |= GridH2QueryRequest.FLAG_REPLICATED;
+
+        GridH2DmlRequest req = new GridH2DmlRequest()
+            .requestId(reqId)
+            .topologyVersion(topVer)
+            .caches(cacheIds)
+            .schemaName(schemaName)
+            .query(selectQry)
+            .pageSize(pageSize)
+            .parameters(params)
+            .timeout(timeoutMillis)
+            .flags(flags);
+
+        updRuns.put(reqId, r);
+
+        boolean release = false;
+
+        try {
+            Map<ClusterNode, IntArray> partsMap = (nodesParts.queryPartitionsMap() != null) ?
+                nodesParts.queryPartitionsMap() : nodesParts.partitionsMap();
+
+            ExplicitPartitionsSpecializer partsSpec = (parts == null) ? null :
+                new ExplicitPartitionsSpecializer(partsMap);
+
+            final Collection<ClusterNode> finalNodes = nodes;
+
+            cancel.set(new Runnable() {
+                @Override public void run() {
+                    r.future().onCancelled();
+
+                    send(finalNodes, new GridQueryCancelRequest(reqId), null, false);
+                }
+            });
+
+            // send() logs the debug message
+            if (send(nodes, req, partsSpec, false))
+                return r.future().get();
+
+            throw new CacheException("Failed to send update request to participating nodes.");
+        }
+        catch (IgniteCheckedException | RuntimeException e) {
+            release = true;
+
+            U.error(log, "Error during update [localNodeId=" + ctx.localNodeId() + "]", e);
+
+            throw new CacheException("Failed to run update. " + e.getMessage(), e);
+        }
+        finally {
+            if (release)
+                send(nodes, new GridQueryCancelRequest(reqId), null, false);
+
+            if (!updRuns.remove(reqId, r))
+                U.warn(log, "Update run was already removed: " + reqId);
+        }
+    }
+
+    /**
+     * Process response for DML request.
+     *
+     * @param node Node.
+     * @param msg Message.
+     */
+    private void onDmlResponse(final ClusterNode node, GridH2DmlResponse msg) {
+        try {
+            long reqId = msg.requestId();
+
+            DistributedUpdateRun r = updRuns.get(reqId);
+
+            if (r == null) {
+                U.warn(log, "Unexpected dml response (will ignore). [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
+                    node.id() + ", msg=" + msg.toString() + ']');
+
+                return;
+            }
+
+            r.handleResponse(node.id(), msg);
+        }
+        catch (Exception e) {
+            U.error(log, "Error in dml response processing. [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
+                node.id() + ", msg=" + msg.toString() + ']', e);
         }
     }
 
@@ -1309,6 +1455,44 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * Evaluates nodes and nodes to partitions map given a list of cache ids, topology version and partitions.
+     *
+     * @param cacheIds Cache ids.
+     * @param topVer Topology version.
+     * @param parts Partitions array.
+     * @param isReplicatedOnly Allow only replicated caches.
+     * @return Result.
+     */
+    private NodesForPartitionsResult nodesForPartitions(List<Integer> cacheIds, AffinityTopologyVersion topVer,
+        int[] parts, boolean isReplicatedOnly) {
+        Collection<ClusterNode> nodes = null;
+        Map<ClusterNode, IntArray> partsMap = null;
+        Map<ClusterNode, IntArray> qryMap = null;
+
+        if (isPreloadingActive(cacheIds)) {
+            if (isReplicatedOnly)
+                nodes = replicatedUnstableDataNodes(cacheIds);
+            else {
+                partsMap = partitionedUnstableDataNodes(cacheIds);
+
+                if (partsMap != null) {
+                    qryMap = narrowForQuery(partsMap, parts);
+
+                    nodes = qryMap == null ? null : qryMap.keySet();
+                }
+            }
+        }
+        else {
+            qryMap = stableDataNodes(isReplicatedOnly, topVer, cacheIds, parts);
+
+            if (qryMap != null)
+                nodes = qryMap.keySet();
+        }
+
+        return new NodesForPartitionsResult(nodes, partsMap, qryMap);
+    }
+
+    /**
      * @param conn Connection.
      * @param qry Query.
      * @param explain Explain.
@@ -1403,6 +1587,9 @@ public class GridReduceQueryExecutor {
 
         for (Map.Entry<Long, ReduceQueryRun> e : runs.entrySet())
             e.getValue().disconnected(err);
+
+        for (DistributedUpdateRun r: updRuns.values())
+            r.handleDisconnect(err);
     }
 
     /**
@@ -1421,6 +1608,11 @@ public class GridReduceQueryExecutor {
                 res.add(run.queryInfo());
         }
 
+        for (DistributedUpdateRun upd: updRuns.values()) {
+            if (upd.queryInfo().longQuery(curTime, duration))
+                res.add(upd.queryInfo());
+        }
+
         return res;
     }
 
@@ -1435,6 +1627,12 @@ public class GridReduceQueryExecutor {
 
             if (run != null)
                 run.queryInfo().cancel();
+            else {
+                DistributedUpdateRun upd = updRuns.get(qryId);
+
+                if (upd != null)
+                    upd.queryInfo().cancel();
+            }
         }
     }
 
@@ -1478,11 +1676,64 @@ public class GridReduceQueryExecutor {
 
         /** {@inheritDoc} */
         @Override public Message apply(ClusterNode node, Message msg) {
-            GridH2QueryRequest rq = new GridH2QueryRequest((GridH2QueryRequest)msg);
+            if (msg instanceof GridH2QueryRequest) {
+                GridH2QueryRequest rq = new GridH2QueryRequest((GridH2QueryRequest)msg);
 
-            rq.queryPartitions(toArray(partsMap.get(node)));
+                rq.queryPartitions(toArray(partsMap.get(node)));
 
-            return rq;
+                return rq;
+            } else if (msg instanceof GridH2DmlRequest) {
+                GridH2DmlRequest rq = new GridH2DmlRequest((GridH2DmlRequest)msg);
+
+                rq.queryPartitions(toArray(partsMap.get(node)));
+
+                return rq;
+            }
+
+            return msg;
+        }
+    }
+
+    /**
+     * Result of nodes to partitions mapping for a query or update.
+     */
+    static class NodesForPartitionsResult {
+        /** */
+        final Collection<ClusterNode> nodes;
+
+        /** */
+        final Map<ClusterNode, IntArray> partsMap;
+
+        /** */
+        final Map<ClusterNode, IntArray> qryMap;
+
+        /** */
+        NodesForPartitionsResult(Collection<ClusterNode> nodes, Map<ClusterNode, IntArray> partsMap,
+            Map<ClusterNode, IntArray> qryMap) {
+            this.nodes = nodes;
+            this.partsMap = partsMap;
+            this.qryMap = qryMap;
+        }
+
+        /**
+         * @return Collection of nodes a message shall be sent to.
+         */
+        Collection<ClusterNode> nodes() {
+            return nodes;
+        }
+
+        /**
+         * @return Maps a node to partition array.
+         */
+        Map<ClusterNode, IntArray> partitionsMap() {
+            return partsMap;
+        }
+
+        /**
+         * @return Maps a node to partition array.
+         */
+        Map<ClusterNode, IntArray> queryPartitionsMap() {
+            return qryMap;
         }
     }
 }

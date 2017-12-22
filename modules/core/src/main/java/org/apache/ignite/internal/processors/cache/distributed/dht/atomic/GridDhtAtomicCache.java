@@ -38,6 +38,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -61,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -97,6 +97,7 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1560,7 +1561,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (!success)
                         break;
-                    else if (!skipVals && ctx.config().isStatisticsEnabled())
+                    else if (!skipVals && ctx.statisticsEnabled())
                         metrics0().onRead(true);
                 }
 
@@ -1699,7 +1700,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ctx.shared().database().checkpointReadLock();
 
         try {
-            ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
+            ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
 
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
@@ -3214,7 +3215,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 catch (GridDhtInvalidPartitionException ignored) {
                     // Ignore.
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException|RuntimeException e) {
+                    if(e instanceof RuntimeException && !X.hasCause(e, IgniteOutOfMemoryException.class))
+                        throw (RuntimeException)e;
+
                     IgniteCheckedException err = new IgniteCheckedException("Failed to update key on backup node: " + key, e);
 
                     if (nearRes != null)

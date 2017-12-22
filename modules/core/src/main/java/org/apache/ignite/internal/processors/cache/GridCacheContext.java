@@ -71,7 +71,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTran
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -253,6 +253,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Whether {@link EventType#EVT_CACHE_REBALANCE_STOPPED} was sent (used only for REPLICATED cache). */
     private volatile boolean rebalanceStoppedEvtSent;
+
+    /** Statistics enabled flag. */
+    private volatile boolean statisticsEnabled;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -736,10 +739,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Memory policy.
+     * @return Data region.
      */
-    public MemoryPolicy memoryPolicy() {
-        return grp.memoryPolicy();
+    public DataRegion dataRegion() {
+        return grp.dataRegion();
     }
 
     /**
@@ -2038,9 +2041,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean result = affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
 
         // When persistence is enabled, only reading from partitions with OWNING state is allowed.
-        assert !result || !ctx.cache().context().database().persistenceEnabled() ||
+        assert !result || !group().persistenceEnabled() ||
             topology().partitionState(localNodeId(), part) == OWNING :
-            "result = " + result + ", persistenceEnabled = " + ctx.cache().context().database().persistenceEnabled() +
+            "result = " + result + ", persistenceEnabled = " + group().persistenceEnabled() +
                 ", partitionState = " + topology().partitionState(localNodeId(), part);
 
         return result;
@@ -2125,6 +2128,23 @@ public class GridCacheContext<K, V> implements Externalizable {
                 builder0.affinityFieldName(fieldName);
             }
         }
+    }
+
+    /**
+     * @return Statistics enabled flag.
+     */
+    public boolean statisticsEnabled() {
+        return statisticsEnabled;
+    }
+
+    /**
+     * @param statisticsEnabled Statistics enabled flag.
+     */
+    public void statisticsEnabled(boolean statisticsEnabled) {
+        this.statisticsEnabled = statisticsEnabled;
+
+        if (isNear())
+            near().dht().context().statisticsEnabled = statisticsEnabled;
     }
 
     /** {@inheritDoc} */

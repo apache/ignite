@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly string _affKeyFieldName;
 
         /** Type structure. */
-        private volatile BinaryStructure _writerTypeStruct = BinaryStructure.CreateEmpty();
+        private volatile BinaryStructure _writerTypeStruct;
 
         /** Type structure. */
         private volatile BinaryStructure _readerTypeStructure = BinaryStructure.CreateEmpty();
@@ -230,22 +230,27 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public void UpdateWriteStructure(BinaryStructure exp, int pathIdx, 
-            IList<BinaryStructureUpdate> updates)
+        public void UpdateWriteStructure(int pathIdx, IList<BinaryStructureUpdate> updates)
         {
             lock (this)
             {
-                _writerTypeStruct = _writerTypeStruct.Merge(exp, pathIdx, updates);
+                if (_writerTypeStruct == null)
+                {
+                    // Null struct serves as an indication of a binary type that has never been sent to the cluster,
+                    // which is important for types without any fields.
+                    _writerTypeStruct = BinaryStructure.CreateEmpty();
+                }
+
+                _writerTypeStruct = _writerTypeStruct.Merge(pathIdx, updates);
             }
         }
 
         /** <inheritDoc /> */
-        public void UpdateReadStructure(BinaryStructure exp, int pathIdx, 
-            IList<BinaryStructureUpdate> updates)
+        public void UpdateReadStructure(int pathIdx, IList<BinaryStructureUpdate> updates)
         {
             lock (this)
             {
-                _readerTypeStructure = _readerTypeStructure.Merge(exp, pathIdx, updates);
+                _readerTypeStructure = _readerTypeStructure.Merge(pathIdx, updates);
             }
         }
 

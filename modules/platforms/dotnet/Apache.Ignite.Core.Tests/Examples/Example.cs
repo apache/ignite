@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         public bool NeedsTestDll { get; private set; }
 
         /** Name */
-        public string Name { get; private set; }
+        public Type ExampleType { get; private set; }
 
         /// <summary>
         /// Runs this example.
@@ -73,7 +73,8 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var examplesAsm = typeof (ClosureExample).Assembly;
 
-            var sourceFiles = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories);
+            var sourceFiles = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)
+                .Where(x => !x.Contains("dotnetcore")).ToArray();
 
             Assert.IsTrue(sourceFiles.Any());
 
@@ -92,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                     ConfigPath = GetConfigPath(sourceCode),
                     NeedsTestDll = sourceCode.Contains("-assembly="),
                     _runAction = GetRunAction(type),
-                    Name = type.Name
+                    ExampleType = type
                 };
             }
         }
@@ -102,7 +103,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         private static Action GetRunAction(Type type)
         {
-            return (Action) Delegate.CreateDelegate(typeof (Action), type.GetMethod("Main"));
+            var mainMethod = type.GetMethod("Main");
+            Assert.IsNotNull(mainMethod);
+            return (Action) Delegate.CreateDelegate(typeof (Action), mainMethod);
         }
 
         /// <summary>
@@ -119,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         public override string ToString()
         {
             // This will be displayed in TeamCity and R# test runner
-            return Name;
+            return ExampleType.Name;
         }
     }
 }

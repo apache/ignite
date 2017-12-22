@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils.BackupPostProcessingClosure;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter;
@@ -363,7 +364,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     cctx.mvcc().addFuture(this, futId);
                 }
 
-                MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer);
+                MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer,
+                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, expiryPlc, readThrough, skipVals));
 
                 GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),
@@ -397,6 +399,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             }
         }
     }
+
+
 
     /**
      * @param mappings Mappings.
@@ -487,7 +491,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         return saved;
                     }
 
-                    if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals && !affNode.isLocal())
+                    if (cctx.statisticsEnabled() && !skipVals && !affNode.isLocal())
                         cache().metrics0().onRead(false);
 
                     LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(affNode);
@@ -615,7 +619,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 if (v != null) {
-                    if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
+                    if (cctx.statisticsEnabled() && !skipVals)
                         cache().metrics0().onRead(true);
 
                     addResult(key, v, ver);
@@ -834,6 +838,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         /** Topology version on which this future was mapped. */
         private AffinityTopologyVersion topVer;
 
+        /** Post processing closure. */
+        private final BackupPostProcessingClosure postProcessingClos;
+
         /** {@code True} if remapped after node left. */
         private boolean remapped;
 
@@ -842,17 +849,19 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
          * @param keys Keys.
          * @param savedEntries Saved entries.
          * @param topVer Topology version.
+         * @param postProcessingClos Post processing closure.
          */
         MiniFuture(
             ClusterNode node,
             LinkedHashMap<KeyCacheObject, Boolean> keys,
             Map<KeyCacheObject, GridNearCacheEntry> savedEntries,
-            AffinityTopologyVersion topVer
-        ) {
+            AffinityTopologyVersion topVer,
+            BackupPostProcessingClosure postProcessingClos) {
             this.node = node;
             this.keys = keys;
             this.savedEntries = savedEntries;
             this.topVer = topVer;
+            this.postProcessingClos = postProcessingClos;
         }
 
         /**
@@ -917,17 +926,15 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 onDone(Collections.<K, V>emptyMap());
             }
             else {
-                final AffinityTopologyVersion updTopVer =
+                AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
                 cctx.affinity().affinityReadyFuture(updTopVer).listen(
                     new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
-                                fut.get();
-
                                 // Remap.
-                                map(keys.keySet(), F.t(node, keys), updTopVer);
+                                map(keys.keySet(), F.t(node, keys), fut.get());
 
                                 onDone(Collections.<K, V>emptyMap());
                             }
@@ -979,6 +986,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                     }), F.t(node, keys), topVer);
 
+                    postProcessResult(res);
+
                     // It is critical to call onDone after adding futures to compound list.
                     onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
 
@@ -1000,13 +1009,26 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             }
                         }), F.t(node, keys), readyTopVer);
 
+                        postProcessResult(res);
+
                         // It is critical to call onDone after adding futures to compound list.
                         onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
                     }
                 });
             }
-            else
+            else {
+                postProcessResult(res);
+
                 onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
+            }
+        }
+
+        /**
+         * @param res Response.
+         */
+        private void postProcessResult(final GridNearGetResponse res) {
+            if (postProcessingClos != null)
+                postProcessingClos.apply(res.entries());
         }
 
         /** {@inheritDoc} */

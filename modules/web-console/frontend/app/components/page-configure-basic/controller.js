@@ -57,7 +57,7 @@ export default class PageConfigureBasicController {
             allClusterCaches: this.getAllClusterCaches(state.configureBasic),
             cachesMenu: this.getCachesMenu(state.list.caches),
             clustersMenu: this.getClustersMenu(state.list.clusters),
-            defaultMemoryPolicy: this.getDefaultClusterMemoryPolicy(state.configureBasic.cluster),
+            defaultMemoryPolicy: this.getDefaultClusterMemoryPolicy(state.configureBasic.cluster, version),
             memorySizeInputVisible: this.getMemorySizeInputVisibility(version)
         }))
         .do((value) => this.applyValue(value));
@@ -125,8 +125,12 @@ export default class PageConfigureBasicController {
         return [...state.oldClusterCaches, ...state.newClusterCaches];
     }
 
-    getDefaultClusterMemoryPolicy(cluster) {
-        return get(cluster, 'memoryConfiguration.memoryPolicies', []).find((p) => p.name === 'default');
+    getDefaultClusterMemoryPolicy(cluster, version) {
+        if (this.Version.since(version.ignite, ['2.1.0', '2.3.0']))
+            return get(cluster, 'memoryConfiguration.memoryPolicies', []).find((p) => p.name === 'default');
+
+        return get(cluster, 'dataStorageConfiguration.defaultDataRegionConfiguration') ||
+            get(cluster, 'dataStorageConfiguration.dataRegionConfigurations', []).find((p) => p.name === 'default');
     }
 
     getMemorySizeInputVisibility(version) {
