@@ -26,13 +26,8 @@ button.btn-ignite.btn-ignite--primary(
 )
     | No clusters available
 
-button.btn-ignite.btn-ignite--primary(
-    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 1'
-)
-    | {{ $ctrl.cluster.name }}
-
 div.btn-ignite.btn-ignite--primary(
-    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1'
+    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 0'
 
     data-ng-model='$ctrl.cluster'
 
