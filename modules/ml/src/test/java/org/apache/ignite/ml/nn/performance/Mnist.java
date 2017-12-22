@@ -33,7 +33,7 @@ import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.Activators;
-import org.apache.ignite.ml.nn.Losses;
+import org.apache.ignite.ml.nn.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.SimpleMLPLocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
@@ -91,7 +91,7 @@ public class Mnist {
             ds.get2(),
             2000);
 
-        MultilayerPerceptron mdl = new MLPLocalBatchTrainer<>(Losses.MSE,
+        MultilayerPerceptron mdl = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
             () -> new RPropUpdater(0.1, 0.1, 1.2, 0.5),
             1E-7,
             200).

@@ -21,7 +21,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.nn.Losses;
+import org.apache.ignite.ml.nn.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.updaters.ParameterUpdater;
 import org.apache.ignite.ml.nn.updaters.RPropUpdater;
@@ -37,7 +37,7 @@ public class MLPLocalBatchTrainer<P extends UpdaterParams<? super MultilayerPerc
     /**
      * Default loss function.
      */
-    private static final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> DEFAULT_LOSS = Losses.MSE;
+    private static final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> DEFAULT_LOSS = LossFunctions.MSE;
 
     /**
      * Default error threshold.

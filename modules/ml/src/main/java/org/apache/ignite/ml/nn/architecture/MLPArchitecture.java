@@ -33,7 +33,7 @@ public class MLPArchitecture {
     /**
      * Construct an MLP architecture.
      *
-     * @param inputSize Size of input.
+     * @param inputSize Size of input to MLP.
      */
     public MLPArchitecture(int inputSize) {
         layers = new ArrayList<>();
@@ -123,6 +123,11 @@ public class MLPArchitecture {
         return res;
     }
 
+    /**
+     * Count of parameters in this MLP architecture.
+     *
+     * @return Parameters in this MLP architecture.
+     */
     public int parametersCount() {
         int res = 0;
 

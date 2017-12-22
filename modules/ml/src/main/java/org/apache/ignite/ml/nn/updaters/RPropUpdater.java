@@ -79,7 +79,7 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
     private final double learningRate;
 
     /**
-     * Losses function.
+     * Loss function.
      */
     protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 

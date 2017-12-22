@@ -357,6 +357,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
 
     /** {@inheritDoc} */
     public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, Matrix inputsBatch, Matrix truthBatch) {
+        // Backpropagation algorithm is used here.
         int batchSize = inputsBatch.columnSize();
         double invBatchSize = 1 / (double)batchSize;
         int lastLayer = layersCount() - 1;

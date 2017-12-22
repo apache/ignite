@@ -33,7 +33,7 @@ public interface ParameterUpdater<M, P extends UpdaterParams> {
      * Initializes the updater.
      *
      * @param mdl Model to be trained.
-     * @param loss Losses function.
+     * @param loss Loss function.
      */
     P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 

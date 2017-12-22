@@ -49,7 +49,7 @@ public class MLPTest {
     }
 
     /**
-     * Test that MLP with parameters that should produce function close to 'XOR' is close to 'XOR'.
+     * Test that MLP with parameters that should produce function close to 'XOR' is close to 'XOR' on 'XOR' domain.
      */
     @Test
     public void testXOR() {
@@ -179,7 +179,7 @@ public class MLPTest {
         double ytt = 1.0;
         Matrix truth = new DenseLocalOnHeapMatrix(new double[][] {{ytt}}).transpose();
 
-        Vector grad = mlp.differentiateByParameters(Losses.MSE, inputs, truth);
+        Vector grad = mlp.differentiateByParameters(LossFunctions.MSE, inputs, truth);
 
         // Let yt be y ground truth value.
         // d/dw1i [1 / 2 (yt - sigma(w10 * x0 + w11 * x1))^2] =

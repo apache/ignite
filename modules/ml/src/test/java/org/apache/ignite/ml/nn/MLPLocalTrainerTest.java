@@ -34,10 +34,10 @@ import org.junit.Test;
  */
 public class MLPLocalTrainerTest {
     /**
-     * Test 'XOR' operation training.
+     * Test 'XOR' operation training with RProp updater.
      */
     @Test
-    public void testXORRprop() {
+    public void testXORRProp() {
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}}, StorageConstants.ROW_STORAGE_MODE).transpose();
         Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}}, StorageConstants.ROW_STORAGE_MODE).transpose();
 
@@ -47,7 +47,7 @@ public class MLPLocalTrainerTest {
 
         SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(123567L), xorInputs, xorOutputs, 4);
 
-        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(Losses.MSE,
+        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
             RPropUpdater::new,
             0.0001,
             16000).train(trainerInput);
@@ -62,7 +62,7 @@ public class MLPLocalTrainerTest {
     }
 
     /**
-     * Test 'XOR' operation training.
+     * Test 'XOR' operation training with Nesterov updater.
      */
     @Test
     public void testXORNesterov() {
@@ -75,7 +75,7 @@ public class MLPLocalTrainerTest {
 
         SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(1234L), xorInputs, xorOutputs, 4);
 
-        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(Losses.MSE,
+        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
             () -> new NesterovUpdater(0.1, 0.7),
             0.0001,
             16000).train(trainerInput);

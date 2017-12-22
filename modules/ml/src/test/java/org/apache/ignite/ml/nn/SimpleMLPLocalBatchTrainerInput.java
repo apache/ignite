@@ -25,22 +25,55 @@ import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.util.Utils;
 
+/**
+ * Class for local batch training of {@link MultilayerPerceptron}.
+ *
+ * It is constructed from two matrices: one containing inputs of function to approximate and other containing ground truth
+ * values of this function for corresponding inputs.
+ *
+ * We fix batch size given by this input by some constant value.
+ */
 public class SimpleMLPLocalBatchTrainerInput implements LocalBatchTrainerInput<MultilayerPerceptron> {
+    /**
+     * Multilayer perceptron to be trained.
+     */
     private final MultilayerPerceptron mlp;
+
+    /**
+     * Inputs stored as columns.
+     */
     private Matrix inputs;
-    private final Matrix outputs;
+
+    /**
+     * Ground truths stored as columns.
+     */
+    private final Matrix groundTruth;
+
+    /**
+     * Size of batch returned on each step.
+     */
     private int batchSize;
 
-    public SimpleMLPLocalBatchTrainerInput(MLPArchitecture conf, Random rnd, Matrix inputs, Matrix outputs, int batchSize) {
-        this.mlp = new MultilayerPerceptron(conf, new RandomInitializer(rnd));
+    /**
+     * Construct instance of this class.
+     *
+     * @param arch Architecture of multilayer perceptron.
+     * @param rnd Random numbers generator.
+     * @param inputs Inputs stored as columns.
+     * @param groundTruth Ground truth stored as columns.
+     * @param batchSize Size of batch returned on each step.
+     */
+    public SimpleMLPLocalBatchTrainerInput(MLPArchitecture arch, Random rnd, Matrix inputs, Matrix groundTruth, int batchSize) {
+        this.mlp = new MultilayerPerceptron(arch, new RandomInitializer(rnd));
         this.inputs = inputs;
-        this.outputs = outputs;
+        this.groundTruth = groundTruth;
         this.batchSize = batchSize;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteBiTuple<Matrix, Matrix> getBatch() {
         int inputRowSize = inputs.rowSize();
-        int outputRowSize = outputs.rowSize();
+        int outputRowSize = groundTruth.rowSize();
 
         Matrix vectors = new DenseLocalOnHeapMatrix(inputRowSize, batchSize);
         Matrix labels = new DenseLocalOnHeapMatrix(outputRowSize, batchSize);
@@ -49,12 +82,13 @@ public class SimpleMLPLocalBatchTrainerInput implements LocalBatchTrainerInput<M
 
         for (int i = 0; i < batchSize; i++) {
             vectors.assignColumn(i, inputs.getCol(samples[i]));
-            labels.assignColumn(i, outputs.getCol(samples[i]));
+            labels.assignColumn(i, groundTruth.getCol(samples[i]));
         }
 
         return new IgniteBiTuple<>(vectors, labels);
     }
 
+    /** {@inheritDoc} */
     @Override public MultilayerPerceptron mdl() {
         return mlp;
     }

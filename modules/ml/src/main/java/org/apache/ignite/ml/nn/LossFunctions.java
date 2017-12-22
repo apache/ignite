@@ -24,19 +24,19 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 /**
  * Class containing popular loss functions.
  */
-public class Losses {
+public class LossFunctions {
     /**
      * Mean squared error loss function.
      */
-    public static IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> MSE = truth -> new IgniteDifferentiableVectorToDoubleFunction() {
+    public static IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> MSE = groundTruth -> new IgniteDifferentiableVectorToDoubleFunction() {
         /** {@inheritDoc} */
         @Override public Vector differential(Vector pnt) {
-            return pnt.minus(truth).divide(pnt.size());
+            return pnt.minus(groundTruth).divide(pnt.size());
         }
 
         /** {@inheritDoc} */
         @Override public Double apply(Vector vector) {
-            return truth.copy().map(vector, (a, b) -> (a - b) * (a - b)).sum() / (2 * vector.size());
+            return groundTruth.copy().map(vector, (a, b) -> (a - b) * (a - b)).sum() / (2 * vector.size());
         }
     };
 }
