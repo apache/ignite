@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,31 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
+namespace Apache.Ignite.Core.Tests.Client.Cache
+{
+    using Apache.Ignite.Core.Client.Cache;
+    using NUnit.Framework;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-/**
- * Cache put request.
- */
-public class ClientCachePutRequest extends ClientCacheKeyValueRequest {
-    /**
-     * Ctor.
-     *
-     * @param reader Reader.
-     */
-    public ClientCachePutRequest(BinaryRawReaderEx reader) {
-        super(reader);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        cache(ctx).put(key(), val());
-
-        return super.process(ctx);
+    /// <summary>
+    /// Async cache test.
+    /// </summary>
+    [TestFixture]
+    public sealed class CacheTestAsync : CacheTest
+    {
+        /** <inheritdoc /> */
+        protected override ICacheClient<TK, TV> GetClientCache<TK, TV>(string cacheName = CacheName)
+        {
+            return new CacheClientAsyncWrapper<TK, TV>(base.GetClientCache<TK, TV>(cacheName));
+        }
     }
 }
-

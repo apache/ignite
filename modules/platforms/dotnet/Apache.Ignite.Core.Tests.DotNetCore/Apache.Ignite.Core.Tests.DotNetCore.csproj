@@ -83,6 +83,8 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\TestReferenceObject.cs" Link="Cache\TestReferenceObject.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\BinaryBuilderTest.cs" Link="ThinClient\Cache\BinaryBuilderTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTest.cs" Link="ThinClient\Cache\CacheTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestAsync.cs" Link="ThinClient\Cache\CacheTestAsync.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheClientAsyncWrapper.cs" Link="ThinClient\Cache\CacheClientAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestKeepBinary.cs" Link="ThinClient\Cache\CacheTestKeepBinary.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\EmptyObject.cs" Link="ThinClient\Cache\EmptyObject.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\Person.cs" Link="ThinClient\Cache\Person.cs" />
@@ -108,6 +110,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Plugin\TestIgnitePluginException.cs" Link="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Plugin\TestIgnitePluginProvider.cs" Link="Plugin\TestIgnitePluginProvider.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Query\BinarizablePerson.cs" Link="Cache\Query\BinarizablePerson.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\TaskExtensions.cs" Link="Common\TaskExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
   </ItemGroup>
 
