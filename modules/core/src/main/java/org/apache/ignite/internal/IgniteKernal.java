@@ -285,6 +285,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private GridKernalContextImpl ctx;
 
+    /** Helper that registers MBeans */
+    @GridToStringExclude
+    private final MBeansManager mBeansMgr = new MBeansManager();
+
     /** Configuration. */
     private IgniteConfiguration cfg;
 
@@ -295,10 +299,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** */
     private String igniteInstanceName;
-
-    /** MBean names stored to be unregistered later */
-    @GridToStringExclude
-    private Set<ObjectName> mBeanNames;
 
     /** Kernal start timestamp. */
     private long startTime = U.currentTimeMillis();
@@ -1045,13 +1045,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (recon)
                 reconnectState.waitFirstReconnect();
 
-            // Register MBeans.
-            registerKernalMBean();
-            registerClusterMetricsMBeans();
-            registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc, qryExecSvc,
-                schemaExecSvc, customExecSvcs);
-
-            registerStripedExecutorMBean(stripedExecSvc);
+            // register MBeans
+            mBeansMgr.registerAllMBeans(execSvc, sysExecSvc, stripedExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc,
+                qryExecSvc, schemaExecSvc, customExecSvcs);
 
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_NODE_START);
@@ -1643,190 +1639,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /** @throws IgniteCheckedException If registration failed. */
-    private void registerKernalMBean() throws IgniteCheckedException {
-        if(U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        try {
-            ObjectName kernalMBean = U.registerMBean(
-                cfg.getMBeanServer(),
-                cfg.getIgniteInstanceName(),
-                "Kernal",
-                getClass().getSimpleName(),
-                this,
-                IgniteMXBean.class);
-
-            if (log.isDebugEnabled())
-                log.debug("Registered kernal MBean: " + kernalMBean);
-
-            mBeanNames.add(kernalMBean);
-        }
-        catch (JMException e) {
-            throw new IgniteCheckedException("Failed to register kernal MBean.", e);
-        }
-    }
-
-    /**
-     * Register instance of ClusterMetricsMBean.
-     *
-     * @param mbean MBean instance to register.
-     * @throws IgniteCheckedException If registration failed.
-     */
-    private void registerClusterMetricsMBean(ClusterMetricsMXBean mbean) throws IgniteCheckedException {
-        if(U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        try {
-            ObjectName objName = U.registerMBean(
-                cfg.getMBeanServer(),
-                cfg.getIgniteInstanceName(),
-                "Kernal",
-                mbean.getClass().getSimpleName(),
-                mbean,
-                ClusterMetricsMXBean.class);
-
-            if (log.isDebugEnabled())
-                log.debug("Registered MBean: " + objName);
-
-            mBeanNames.add(objName);
-        }
-        catch (JMException e) {
-            throw new IgniteCheckedException("Failed to register MBean: " + mbean.getClass().getSimpleName(), e);
-        }
-    }
-
-    /** @throws IgniteCheckedException If registration failed. */
-    private void registerClusterMetricsMBeans() throws IgniteCheckedException {
-        registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery()));
-        registerClusterMetricsMBean(new ClusterMetricsMXBeanImpl(cluster()));
-    }
-
-    /**
-     * @param execSvc Public executor service.
-     * @param sysExecSvc System executor service.
-     * @param p2pExecSvc P2P executor service.
-     * @param mgmtExecSvc Management executor service.
-     * @param restExecSvc Query executor service.
-     * @param schemaExecSvc Schema executor service.
-     * @param customExecSvcs
-     * @throws IgniteCheckedException If failed.
-     */
-    private void registerExecutorMBeans(ExecutorService execSvc,
-        ExecutorService sysExecSvc,
-        ExecutorService p2pExecSvc,
-        ExecutorService mgmtExecSvc,
-        ExecutorService restExecSvc,
-        ExecutorService qryExecSvc,
-        ExecutorService schemaExecSvc,
-        Map<String, ? extends ExecutorService> customExecSvcs
-    ) throws IgniteCheckedException {
-        if (U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        mBeanNames = new HashSet<>();
-
-        registerExecutorMBean(execSvc, "GridExecutionExecutor");
-        registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
-        registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
-        registerExecutorMBean(p2pExecSvc, "GridClassLoadingExecutor");
-        registerExecutorMBean(qryExecSvc, "GridQueryExecutor");
-        registerExecutorMBean(schemaExecSvc, "GridSchemaExecutor");
-
-        ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
-        if (clientCfg != null)
-            registerExecutorMBean(restExecSvc, "GridRestExecutor");
-
-        if (customExecSvcs != null) {
-            for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet()) {
-                registerExecutorMBean(entry.getValue(), entry.getKey());
-            }
-        }
-    }
-
-    /**
-     * @param exec Executor service to register.
-     * @param name Property name for executor.
-     * @throws IgniteCheckedException If registration failed.
-     */
-    private void registerExecutorMBean(ExecutorService exec, String name) throws IgniteCheckedException {
-        assert exec != null;
-        assert !U.IGNITE_MBEANS_DISABLED;
-
-        try {
-            ObjectName res = U.registerMBean(
-                cfg.getMBeanServer(),
-                cfg.getIgniteInstanceName(),
-                "Thread Pools",
-                name,
-                new ThreadPoolMXBeanAdapter(exec),
-                ThreadPoolMXBean.class);
-
-            if (log.isDebugEnabled())
-                log.debug("Registered executor service MBean: " + res);
-
-            mBeanNames.add(res);
-        }
-        catch (JMException e) {
-            throw new IgniteCheckedException("Failed to register executor service MBean [name=" + name +
-                ", exec=" + exec + ']', e);
-        }
-    }
-
-    /**
-     * @param stripedExecSvc Executor service.
-     * @throws IgniteCheckedException If registration failed.
-     */
-    private void registerStripedExecutorMBean(StripedExecutor stripedExecSvc) throws IgniteCheckedException {
-        if (stripedExecSvc == null || U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        String name = "StripedExecutor";
-
-        try {
-            ObjectName stripedExecSvcMBean = U.registerMBean(
-                cfg.getMBeanServer(),
-                cfg.getIgniteInstanceName(),
-                "Thread Pools",
-                name,
-                new StripedExecutorMXBeanAdapter(stripedExecSvc),
-                StripedExecutorMXBean.class);
-
-            if (log.isDebugEnabled())
-                log.debug("Registered executor service MBean: " + stripedExecSvcMBean);
-
-            mBeanNames.add(stripedExecSvcMBean);
-        }
-        catch (JMException e) {
-            throw new IgniteCheckedException("Failed to register executor service MBean [name="
-                + name + ", exec=" + stripedExecSvc + ']', e);
-        }
-    }
-
-    /**
-     * Unregisters given mbean.
-     *
-     * @param mbean MBean to unregister.
-     * @return {@code True} if successfully unregistered, {@code false} otherwise.
-     */
-    private boolean unregisterMBean(@NotNull ObjectName mbean) {
-        assert !U.IGNITE_MBEANS_DISABLED;
-
-        try {
-            cfg.getMBeanServer().unregisterMBean(mbean);
-
-            if (log.isDebugEnabled())
-                log.debug("Unregistered MBean: " + mbean);
-
-            return true;
-        }
-        catch (JMException e) {
-            U.error(log, "Failed to unregister MBean.", e);
-
-            return false;
-        }
-    }
-
     /**
      * @param mgr Manager to start.
      * @throws IgniteCheckedException Throw in case of any errors.
@@ -2265,10 +2077,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 cache.blockGateways();
 
             // Unregister MBeans.
-            for (ObjectName name : mBeanNames) {
-                boolean success = unregisterMBean(name);
-                errOnStop = errOnStop || !success;
-            }
+            if (!mBeansMgr.unregisterAllMBeans())
+                errOnStop = true;
 
             // Stop components in reverse order.
             for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious(); ) {
@@ -4153,6 +3963,158 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 }
             }
 
+        }
+    }
+
+    /**
+     * Class that registers and unregisters MBeans for kernal.
+     */
+    private class MBeansManager {
+
+        /** MBean names stored to be unregistered later */
+        private final Set<ObjectName> mBeanNames = new HashSet<>();
+
+        /**
+         * Registers all kernal MBeans (for kernal, metrics, thread pools).
+         *
+         * @param execSvc Executor service
+         * @param sysExecSvc System executor service
+         * @param stripedExecSvc Striped executor
+         * @param p2pExecSvc P2P executor service
+         * @param mgmtExecSvc Management executor service
+         * @param restExecSvc Reset executor service
+         * @param qryExecSvc Query executor service
+         * @param schemaExecSvc Schema executor service
+         * @param customExecSvcs Custom named executors
+         *
+         * @throws IgniteCheckedException if fails to register any of the MBeans
+         */
+        private void registerAllMBeans(
+            ExecutorService execSvc,
+            ExecutorService sysExecSvc,
+            @Nullable StripedExecutor stripedExecSvc,
+            ExecutorService p2pExecSvc,
+            ExecutorService mgmtExecSvc,
+            ExecutorService restExecSvc,
+            ExecutorService qryExecSvc,
+            ExecutorService schemaExecSvc,
+            @Nullable Map<String, ? extends ExecutorService> customExecSvcs
+        ) throws IgniteCheckedException {
+            if(U.IGNITE_MBEANS_DISABLED)
+                return;
+
+            // Kernal
+            registerMBean("Kernal", IgniteKernal.class.getSimpleName(), IgniteKernal.this, IgniteMXBean.class);
+
+            // Metrics
+            ClusterMetricsMXBean locMetricsBean = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery());
+            registerMBean("Kernal", locMetricsBean.getClass().getSimpleName(), locMetricsBean, ClusterMetricsMXBean.class);
+            ClusterMetricsMXBean metricsBean = new ClusterMetricsMXBeanImpl(cluster());
+            registerMBean("Kernal", metricsBean.getClass().getSimpleName(), metricsBean, ClusterMetricsMXBean.class);
+
+            // Executors
+            registerExecutorMBean("GridExecutionExecutor", execSvc);
+            registerExecutorMBean("GridSystemExecutor", sysExecSvc);
+            registerExecutorMBean("GridManagementExecutor", mgmtExecSvc);
+            registerExecutorMBean("GridClassLoadingExecutor", p2pExecSvc);
+            registerExecutorMBean("GridQueryExecutor", qryExecSvc);
+            registerExecutorMBean("GridSchemaExecutor", schemaExecSvc);
+
+            if (cfg.getConnectorConfiguration() != null)
+                registerExecutorMBean("GridRestExecutor", restExecSvc);
+
+            if (stripedExecSvc != null) {
+                // striped executor uses a custom adapter
+                registerMBean("Thread Pools",
+                    "StripedExecutor",
+                    new StripedExecutorMXBeanAdapter(stripedExecSvc),
+                    StripedExecutorMXBean.class);
+            }
+
+            if (customExecSvcs != null) {
+                for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet()) {
+                    registerExecutorMBean(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+
+        /**
+         * Registers a {@link ThreadPoolMXBean} for an executor.
+         *
+         * @param name name of the bean to register
+         * @param exec executor to register a bean for
+         *
+         * @throws IgniteCheckedException if registration fails.
+         */
+        private void registerExecutorMBean(String name, ExecutorService exec) throws IgniteCheckedException {
+            registerMBean("Thread Pools", name, new ThreadPoolMXBeanAdapter(exec), ThreadPoolMXBean.class);
+        }
+
+        /**
+         * Register an Ignite MBean.
+         *
+         * @param grp bean group name
+         * @param name bean name
+         * @param impl bean implementation
+         * @param itf bean interface
+         * @param <T> bean type
+         *
+         * @throws IgniteCheckedException if registration fails
+         */
+        private <T> void registerMBean(String grp, String name, T impl, @Nullable Class<T> itf) throws IgniteCheckedException {
+            assert !U.IGNITE_MBEANS_DISABLED;
+
+            try {
+                ObjectName objName = U.registerMBean(
+                    cfg.getMBeanServer(),
+                    cfg.getIgniteInstanceName(),
+                    grp, name, impl, itf);
+
+                if (log.isDebugEnabled())
+                    log.debug("Registered MBean: " + objName);
+
+                mBeanNames.add(objName);
+            }
+            catch (JMException e) {
+                throw new IgniteCheckedException("Failed to register MBean " + name, e);
+            }
+        }
+
+        /**
+         * Unregisters all previously registered MBeans.
+         *
+         * @return {@code true} if all mbeans were unregistered successfully; {@code false} otherwise.
+         */
+        private boolean unregisterAllMBeans() {
+            boolean success = true;
+            for (ObjectName name : mBeanNames) {
+                success = success && unregisterMBean(name);
+            }
+            return success;
+        }
+
+        /**
+         * Unregisters given MBean.
+         *
+         * @param mbean MBean to unregister.
+         * @return {@code true} if successfully unregistered, {@code false} otherwise.
+         */
+        private boolean unregisterMBean(@NotNull ObjectName mbean) {
+            assert !U.IGNITE_MBEANS_DISABLED;
+
+            try {
+                cfg.getMBeanServer().unregisterMBean(mbean);
+
+                if (log.isDebugEnabled())
+                    log.debug("Unregistered MBean: " + mbean);
+
+                return true;
+            }
+            catch (JMException e) {
+                U.error(log, "Failed to unregister MBean.", e);
+
+                return false;
+            }
         }
     }
 
