@@ -90,7 +90,6 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -716,7 +715,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
-        final Map<String, ? extends ExecutorService> customExecSvcs,
+        @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
         GridAbsClosure errHnd
     )
         throws IgniteCheckedException
@@ -1046,7 +1045,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 reconnectState.waitFirstReconnect();
 
             // register MBeans
-            mBeansMgr.registerAllMBeans(execSvc, sysExecSvc, stripedExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc,
+            mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
+                mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
                 qryExecSvc, schemaExecSvc, customExecSvcs);
 
             // Lifecycle bean notifications.
@@ -3977,12 +3977,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         /**
          * Registers all kernal MBeans (for kernal, metrics, thread pools).
          *
+         * @param utilityCachePool Utility cache pool
          * @param execSvc Executor service
          * @param sysExecSvc System executor service
          * @param stripedExecSvc Striped executor
          * @param p2pExecSvc P2P executor service
          * @param mgmtExecSvc Management executor service
+         * @param igfsExecSvc IGFS executor service
+         * @param dataStreamExecSvc data stream executor service
          * @param restExecSvc Reset executor service
+         * @param affExecSvc Affinity executor service
+         * @param idxExecSvc Indexing executor service
+         * @param callbackExecSvc Callback executor service
          * @param qryExecSvc Query executor service
          * @param schemaExecSvc Schema executor service
          * @param customExecSvcs Custom named executors
@@ -3990,15 +3996,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          * @throws IgniteCheckedException if fails to register any of the MBeans
          */
         private void registerAllMBeans(
-            ExecutorService execSvc,
-            ExecutorService sysExecSvc,
-            @Nullable StripedExecutor stripedExecSvc,
+            ExecutorService utilityCachePool,
+            final ExecutorService execSvc,
+            final ExecutorService svcExecSvc,
+            final ExecutorService sysExecSvc,
+            final StripedExecutor stripedExecSvc,
             ExecutorService p2pExecSvc,
             ExecutorService mgmtExecSvc,
+            ExecutorService igfsExecSvc,
+            StripedExecutor dataStreamExecSvc,
             ExecutorService restExecSvc,
+            ExecutorService affExecSvc,
+            @Nullable ExecutorService idxExecSvc,
+            IgniteStripedThreadPoolExecutor callbackExecSvc,
             ExecutorService qryExecSvc,
             ExecutorService schemaExecSvc,
-            @Nullable Map<String, ? extends ExecutorService> customExecSvcs
+            @Nullable final Map<String, ? extends ExecutorService> customExecSvcs
         ) throws IgniteCheckedException {
             if(U.IGNITE_MBEANS_DISABLED)
                 return;
@@ -4013,12 +4026,21 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerMBean("Kernal", metricsBean.getClass().getSimpleName(), metricsBean, ClusterMetricsMXBean.class);
 
             // Executors
+            registerExecutorMBean("GridUtilityCacheExecutor", utilityCachePool);
             registerExecutorMBean("GridExecutionExecutor", execSvc);
+            registerExecutorMBean("GridServicesExecutor", svcExecSvc);
             registerExecutorMBean("GridSystemExecutor", sysExecSvc);
-            registerExecutorMBean("GridManagementExecutor", mgmtExecSvc);
             registerExecutorMBean("GridClassLoadingExecutor", p2pExecSvc);
+            registerExecutorMBean("GridManagementExecutor", mgmtExecSvc);
+            registerExecutorMBean("GridIgfsExecutor", igfsExecSvc);
+            registerExecutorMBean("GridDataStreamExecutor", dataStreamExecSvc);
+            registerExecutorMBean("GridAffinityExecutor", affExecSvc);
+            registerExecutorMBean("GridCallbackExecutor", callbackExecSvc);
             registerExecutorMBean("GridQueryExecutor", qryExecSvc);
             registerExecutorMBean("GridSchemaExecutor", schemaExecSvc);
+
+            if (idxExecSvc != null)
+                registerExecutorMBean("GridIndexingExecutor", idxExecSvc);
 
             if (cfg.getConnectorConfiguration() != null)
                 registerExecutorMBean("GridRestExecutor", restExecSvc);
@@ -4046,7 +4068,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          *
          * @throws IgniteCheckedException if registration fails.
          */
-        private void registerExecutorMBean(String name, ExecutorService exec) throws IgniteCheckedException {
+        private void registerExecutorMBean(@NotNull String name, @NotNull ExecutorService exec) throws IgniteCheckedException {
             registerMBean("Thread Pools", name, new ThreadPoolMXBeanAdapter(exec), ThreadPoolMXBean.class);
         }
 
@@ -4061,7 +4083,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          *
          * @throws IgniteCheckedException if registration fails
          */
-        private <T> void registerMBean(String grp, String name, T impl, @Nullable Class<T> itf) throws IgniteCheckedException {
+        private <T> void registerMBean(@NotNull String grp, @NotNull String name,
+            @NotNull T impl, @NotNull Class<T> itf
+        ) throws IgniteCheckedException {
             assert !U.IGNITE_MBEANS_DISABLED;
 
             try {
