@@ -32,6 +32,7 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.GroupTrainerEntriesProcessorTask;
 import org.apache.ignite.ml.trainers.group.GroupTrainerKeysProcessorTask;
+import org.apache.ignite.ml.trainers.group.GroupTrainingContext;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
 
 /**
@@ -51,26 +52,44 @@ import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
  * @param <K> Type of cache keys.
  * @param <V> Type of cache values.
  * @param <I> Type of input of this chain.
- * @param <C>
  * @param <O> Type of output of this chain.
  */
-public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L>, O> extends BaseWorkersChain<I, C, O> {
-    default ComputationsChain<L, K, V, I, C, I> create() {
+public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extends BaseWorkersChain<I, GroupTrainingContext<K, V, L>, O> {
+    default ComputationsChain<L, K, V, I, I> create() {
         return (input, context) -> input;
     }
 
-    default <O1> ComputationsChain<L, K, V, I, C, O1> thenLocally(IgniteBiFunction<O, L, O1> locStep) {
-        ComputationsChain<L, K, V, O, C, O1> nextStep = (input, context) -> locStep.apply(input, context.localContext());
+    /**
+     * Add a local step to this chain.
+     *
+     * @param locStep Local step.
+     * @param <O1> Output of local step.
+     * @return Composition of this chain and local step.
+     */
+    default <O1> ComputationsChain<L, K, V, I, O1> thenLocally(IgniteBiFunction<O, L, O1> locStep) {
+        ComputationsChain<L, K, V, O, O1> nextStep = (input, context) -> locStep.apply(input, context.localContext());
         return then(nextStep);
     }
 
-    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, C, O1> thenDistributedForEntries(
+    /**
+     * Add a distributed step
+     *
+     * @param remoteCtxExtractor
+     * @param distributedWorker
+     * @param kf
+     * @param identity
+     * @param reducer
+     * @param <O1>
+     * @param <G>
+     * @return
+     */
+    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(
         IgniteBiFunction<O, L, G> remoteCtxExtractor,
         IgniteTriFunction<O, L, EntryAndContext<K, V, G>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         O1 identity,
         IgniteBinaryOperator<O1> reducer) {
-        ComputationsChain<L, K, V, O, C, O1> nextStep = (input, context) -> {
+        ComputationsChain<L, K, V, O, O1> nextStep = (input, context) -> {
             L locCtx = context.localContext();
             IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier = kf.apply(input, locCtx);
 
@@ -88,13 +107,13 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, C extends
         return then(nextStep);
     }
 
-    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, C, O1> thenDistributedForKeys(
+    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
         IgniteBiFunction<O, L, G> remoteCtxExtractor,
         IgniteTriFunction<O, L, KeyAndContext<K, G>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         O1 identity,
         IgniteBinaryOperator<O1> reducer) {
-        ComputationsChain<L, K, V, O, C, O1> nextStep = (input, context) -> {
+        ComputationsChain<L, K, V, O, O1> nextStep = (input, context) -> {
             L locCtx = context.localContext();
             IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier = kf.apply(input, locCtx);
 
@@ -112,11 +131,11 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, C extends
         return then(nextStep);
     }
 
-    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, C, O1> thenDistributedForEntries(RemoteStep<L, K, V, G, O, O1> step) {
+    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(RemoteStep<L, K, V, G, O, O1> step) {
         return thenDistributedForEntries(step::extractRemoteContext, step::distributedWorker, step::keysSupplier, step.identity(), step::reduce);
     }
 
-    default <O1 extends Serializable> ComputationsChain<L, K, V, I, C, O1> thenDistributedForKeys(
+    default <O1 extends Serializable> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
         IgniteBiFunction<O, GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         O1 identity,
@@ -125,7 +144,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, C extends
         return thenDistributedForKeys((o, lc) -> null, (o, lc, context) -> distributedWorker.apply(o, context.key()), kf, identity, reducer);
     }
 
-    default <O1 extends Serializable> ComputationsChain<L, K, V, I, C, O1> thenDistributedForKeys(
+    default <O1 extends Serializable> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
         IgniteBiFunction<O, GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         IgniteBinaryOperator<O1> reducer) {
@@ -133,8 +152,8 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, C extends
         return thenDistributedForKeys((o, lc) -> null, (o, lc, context) -> distributedWorker.apply(o, context.key()), kf, null, reducer);
     }
 
-    default ComputationsChain<L, K, V, I, C, O> thenWhile(IgniteBiPredicate<O, L> cond, ComputationsChain<L, K, V, O, C, O> chain) {
-        ComputationsChain<L, K, V, I, C, O> me = this;
+    default ComputationsChain<L, K, V, I, O> thenWhile(IgniteBiPredicate<O, L> cond, ComputationsChain<L, K, V, O, O> chain) {
+        ComputationsChain<L, K, V, I, O> me = this;
         return (input, context) -> {
             O res = me.process(input, context);
 
@@ -145,15 +164,15 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, C extends
         };
     }
 
-    default <C1, O1> ComputationsChain<L, K, V, I, C, O1> withOtherContext(IWorkersChain<O, C1, O1> newChain, C1 otherContext) {
+    default <C1, O1> ComputationsChain<L, K, V, I, O1> withOtherContext(IWorkersChain<O, C1, O1> newChain, C1 otherContext) {
         return (input, context) -> {
             O res = process(input, context);
             return newChain.process(res, otherContext);
         };
     }
 
-    default <O1> ComputationsChain<L, K, V, I, C, O1> then(ComputationsChain<L, K, V, O, C, O1> next) {
-        ComputationsChain<L, K, V, I, C, O> me = this;
+    default <O1> ComputationsChain<L, K, V, I, O1> then(ComputationsChain<L, K, V, O, O1> next) {
+        ComputationsChain<L, K, V, I, O> me = this;
         return (input, context) -> {
             O myRes = me.process(input, context);
             return next.process(myRes, context);

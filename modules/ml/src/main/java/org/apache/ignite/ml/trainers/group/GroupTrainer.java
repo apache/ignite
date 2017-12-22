@@ -30,7 +30,20 @@ import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
-public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IR extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends Distributive<K>, G> implements Trainer<M, T> {
+/**
+ * Class encapsulating synchronous distributed group training.
+ *
+ * @param <LC> Type of local context of the training.
+ * @param <K> Type of cache keys on which the training is done.
+ * @param <V> Type of cache values on which the training is done.
+ * @param <IN> Type of data returned after initializing of distributed context.
+ * @param <R> Type of result returned after training from each node.
+ * @param <I> Type of data which is fed into each training loop step and returned from it.
+ * @param <M> Type of model returned after training.
+ * @param <T> Type of input to this trainer.
+ * @param <G> Type of distributed context which is needed for forming final result which is send from each node to trainer for final model creation.
+ */
+public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends Distributive<K>, G> implements Trainer<M, T> {
     IgniteCache<GroupTrainerCacheKey<K>, V> cache;
     Ignite ignite;
 
@@ -45,11 +58,11 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IR extends 
         UUID trainingUUID = UUID.randomUUID();
         LC locCtx = initialLocalContext(data, trainingUUID);
 
-        GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, trainingUUID, new CacheContext<>(cache), ignite);
-        ComputationsChain<LC, K, V, T, GroupTrainingContext<K, V, LC>, T> chain = (i, c) -> i;
+        GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, new CacheContext<>(cache), ignite);
+        ComputationsChain<LC, K, V, T, T> chain = (i, c) -> i;
 
         M res = chain.
-            thenDistributedForKeys(this::initGlobal, (t, lc) -> () -> data.initialKeys(trainingUUID), this::reduceGlobalInitData).
+            thenDistributedForKeys(this::initDistributed, (t, lc) -> () -> data.initialKeys(trainingUUID), this::reduceDistributedInitData).
             thenLocally(this::locallyProcessInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
             thenDistributedForEntries(this::extractContextForModelCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), defaultFinalResult(), this::reduceFinalResults).
@@ -63,13 +76,13 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IR extends 
 
     protected abstract LC initialLocalContext(T data, UUID trainingUUID);
 
-    protected abstract ResultAndUpdates<IR> initGlobal(T data, GroupTrainerCacheKey<K> key);
+    protected abstract ResultAndUpdates<IN> initDistributed(T data, GroupTrainerCacheKey<K> key);
 
-    protected abstract IR reduceGlobalInitData(IR data1, IR data2);
+    protected abstract IN reduceDistributedInitData(IN data1, IN data2);
 
-    protected abstract I locallyProcessInitData(IR data, LC locCtx);
+    protected abstract I locallyProcessInitData(IN data, LC locCtx);
 
-    protected abstract ComputationsChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep();
+    protected abstract ComputationsChain<LC, K, V, I, I> trainingLoopStep();
 
     protected abstract boolean shouldContinue(I data, LC locCtx);
 

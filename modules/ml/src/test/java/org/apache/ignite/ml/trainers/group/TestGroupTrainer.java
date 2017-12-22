@@ -36,7 +36,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return new TestGroupTrainerLocalContext(data.iterCnt(), data.eachNumberCount(), data.limit(), trainingUUID);
     }
 
-    @Override protected ResultAndUpdates<Integer> initGlobal(SimpleDistributive data, GroupTrainerCacheKey<Double> key) {
+    @Override protected ResultAndUpdates<Integer> initDistributed(SimpleDistributive data, GroupTrainerCacheKey<Double> key) {
         int i = key.nodeLocalEntityIndex();
         UUID trainingUUID = key.trainingUUID();
         IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(Ignition.localIgnite());
@@ -51,7 +51,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return res;
     }
 
-    @Override protected Integer reduceGlobalInitData(Integer data1, Integer data2) {
+    @Override protected Integer reduceDistributedInitData(Integer data1, Integer data2) {
         return data1 + data2;
     }
 

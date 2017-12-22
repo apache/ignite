@@ -61,7 +61,7 @@ G, O extends Serializable, IR, X, Y> extends
         return metaoptimizer.shouldContinue(data, locCtx);
     }
 
-    @Override protected D reduceGlobalInitData(D data1, D data2) {
+    @Override protected D reduceDistributedInitData(D data1, D data2) {
         return metaoptimizer.initialReducer(data1, data2);
     }
 }
