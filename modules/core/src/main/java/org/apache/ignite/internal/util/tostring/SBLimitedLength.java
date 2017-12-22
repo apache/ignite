@@ -27,7 +27,7 @@ import java.util.Arrays;
 /**
  *
  */
-public class SBLimitedLength extends SB {
+public class SBLimitedLength extends GridStringBuilder {
     /** */
     private SBLengthLimit lenLimit;
 
