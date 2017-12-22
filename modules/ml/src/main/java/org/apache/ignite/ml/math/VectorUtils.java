@@ -18,8 +18,10 @@
 package org.apache.ignite.ml.math;
 
 import java.util.Map;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MapWrapperVector;
+import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
 /**
  * Some utils for {@link Vector}.
@@ -41,14 +43,27 @@ public class VectorUtils {
     }
 
     /**
-     * Turn number into Vector of given size with one-hot encoding.
+     * Turn number into a local Vector of given size with one-hot encoding.
      *
      * @param num Number to turn into vector.
      * @param vecSize Vector size of output vector.
      * @return One-hot encoded number.
      */
     public static Vector num2Vec(int num, int vecSize) {
-        return new DenseLocalOnHeapVector(vecSize).setX(num, 1);
+        return num2Vec(num, vecSize, false);
+    }
+
+    /**
+     * Turn number into Vector of given size with one-hot encoding.
+     *
+     * @param num Number to turn into vector.
+     * @param vecSize Vector size of output vector.
+     * @param isDistributed Flag indicating if distributed vector should be created.
+     * @return One-hot encoded number.
+     */
+    public static Vector num2Vec(int num, int vecSize, boolean isDistributed) {
+        Vector res = isDistributed ? new SparseDistributedVector(vecSize) : new DenseLocalOnHeapVector(vecSize);
+        return res.setX(num, 1);
     }
 
     /**
@@ -96,5 +111,26 @@ public class VectorUtils {
         vec1.map(vec2, (a, b) -> a - b);
 
         return vec1;
+    }
+
+    /**
+     * Zip two vectors with given binary function (i.e. apply binary function to both vector elementwise and construct vector from results).
+     * Example zipWith({0, 2, 4}, {1, 3, 5}, plus) = {0 + 1, 2 + 3, 4 + 5}.
+     * Length of result is length of shortest of vectors.
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @param f Function to zip with.
+     * @return Result of zipping.
+     */
+    public static Vector zipWith(Vector v1, Vector v2, IgniteBiFunction<Double, Double, Double> f) {
+        int size = Math.min(v1.size(), v2.size());
+
+        Vector res = v1.like(size);
+
+        for (int row = 0; row < size; row++)
+            res.setX(row, f.apply(v1.getX(row), v2.getX(row)));
+
+        return res;
     }
 }

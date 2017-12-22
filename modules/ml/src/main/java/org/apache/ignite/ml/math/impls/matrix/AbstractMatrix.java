@@ -997,6 +997,7 @@ public abstract class AbstractMatrix implements Matrix {
         return maxAmountOfCols;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "Matrix [rows=" + rowSize() + ", cols=" + columnSize() + "]";
     }

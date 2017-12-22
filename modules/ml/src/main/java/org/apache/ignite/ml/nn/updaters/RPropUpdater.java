@@ -19,6 +19,7 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.util.MatrixUtil;
@@ -118,7 +119,7 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
         Vector derSigns;
 
         if (prevGradient != null)
-            derSigns = MatrixUtil.zipWith(prevGradient, gradient, (x, y) -> Math.signum(x * y));
+            derSigns = VectorUtils.zipWith(prevGradient, gradient, (x, y) -> Math.signum(x * y));
         else
             derSigns = gradient.like(gradient.size()).assign(1.0);
 
