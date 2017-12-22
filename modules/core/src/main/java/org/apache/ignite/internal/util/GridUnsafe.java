@@ -22,6 +22,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1367,12 +1368,27 @@ public abstract class GridUnsafe {
 
     /** */
     private static long bufferAddressOffset() {
-        try {
-            return UNSAFE.objectFieldOffset(Buffer.class.getDeclaredField("address"));
-        }
-        catch (NoSuchFieldException e) {
-            throw new RuntimeException("Reflection failure: no java.nio.Buffer.address field found", e);
-        }
+        final ByteBuffer maybeDirectBuf = ByteBuffer.allocateDirect(1);
+
+        Field addrField = AccessController.doPrivileged(new PrivilegedAction<Field>() {
+            @Override public Field run() {
+                try {
+                    Field addrFld = Buffer.class.getDeclaredField("address");
+
+                    addrFld.setAccessible(true);
+
+                    if (addrFld.getLong(maybeDirectBuf) == 0)
+                        throw new RuntimeException("Direct buffers created are not direct in fact");
+
+                    return addrFld;
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Failed to get address field of java.nio.Buffer", e);
+                }
+            }
+        });
+
+        return UNSAFE.objectFieldOffset(addrField);
     }
 
     /**
