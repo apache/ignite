@@ -1,8 +1,8 @@
-Apache Ignite.NET Build Instructions
-====================================
+Apache Ignite.NET Build Instructions (Windows)
+==============================================
 
 Requirements:
-* Windows (XP and up), Windows Server (2008 and up)
+* Windows (XP and up), Windows Server (2008 and up), see Linux instructions below
 * Oracle JDK 7 and above
 * .NET Framework 4.0
 * PowerShell 3.0+
@@ -16,3 +16,37 @@ Resulting binaries will be in bin folder, and NuGet packages in nupkg folder.
 
 Running built binaries: resulting "bin" folder in self contained, you can copy it anywhere and run
   bin\Apache.Ignite.exe  
+
+
+Cross-Platform Support
+======================
+
+Main Apache.Ignite.sln solution targets .NET 4.0 & VS 2010: we care for backwards compatibility.
+
+However, this does not prevent us from supporting .NET Standard 2.0 and .NET Core 2.0,
+because of ".NET Framework compatibility mode", which allows referencing any libraries
+from .NET Core 2.0 projects. So we release binaries which target .NET 4.0, and they work
+both with .NET 4.0+ and .NET Core 2.0+.
+  
+
+Cross-Platform Development (Linux, macOS)
+========================================
+
+Ignite.NET can be built, developed, and tested on Linux and macOS, but only partially.
+A subset of functionality and tests is available. See Apache.Ignite.DotNetCore.sln.
+
+Requirements:
+* .NET Core SDK: https://www.microsoft.com/net/download/linux
+* JDK: sudo apt-get install default-jdk
+* Maven: sudo apt-get install maven
+* IDE: Not required. Rider is recommended.
+
+Getting started:
+* Build Java and .NET:
+  ./build.sh
+* Run tests:
+  cd Apache.Ignite.Core.Tests.DotNetCore
+  dotnet test
+* Run specific test:
+  dotnet test --filter CacheTest
+* IDE: Open Apache.Ignite.DotNetCore.sln
