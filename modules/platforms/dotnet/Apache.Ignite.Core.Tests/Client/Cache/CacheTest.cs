@@ -854,7 +854,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             t2.Wait();
             Assert.IsFalse(t1.IsCompleted);
 
-            t2.Wait();
+            t1.Wait();
         }
 
         /// <summary>
