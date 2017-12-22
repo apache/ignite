@@ -7,6 +7,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Copy from org.apache.ignite.testframework.GridTestUtils.
+ */
 public final class GridTestUtils {
     /**
      * Creates test-purposed SSL context factory from test key store with disabled trust manager.
@@ -26,11 +29,10 @@ public final class GridTestUtils {
     }
 
     /**
-     * Gets file representing the path passed in. First the check is made if path is absolute.
-     * If not, then the check is made if path is relative to ${IGNITE_HOME}. If both checks fail,
-     * then {@code null} is returned, otherwise file representing path is returned.
-     * <p>
-     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     * Gets file representing the path passed in. First the check is made if path is absolute. If not, then the check is
+     * made if path is relative to ${IGNITE_HOME}. If both checks fail, then {@code null} is returned, otherwise file
+     * representing path is returned. <p> See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is
+     * retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.

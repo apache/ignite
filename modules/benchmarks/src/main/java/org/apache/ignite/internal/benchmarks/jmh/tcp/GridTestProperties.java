@@ -15,25 +15,7 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Loads test properties from {@code config} folder under tests.
- * The property structure is as follows:
- * <ul>
- * <li>
- *     Default properties and log4j.xml configuration is loaded directly from
- *     {@code ${IGNITE_HOME}/modules/tests/config} folder. Default properties can be
- *     accessed via {@link #getDefaultProperties()} and {@link #getDefaultProperty(String)} methods.
- *   </li>
- * <li>
- *     User is able to override any default property and log4j configuration in
- *     {@code ${IGNITE_HOME}/modules/tests/config/${username}} folder, where {@code username}
- *     is the system user name. User properties can be accessed via {@link #getProperties()} and
- *     {@link #getProperties(String)} methods.
- *   </li>
- * <li>
- *     Any test may utilize its own sub-folder. To access configuration specific to some sub-folder
- *     use {@link #getProperties(String)} and {@link #getProperty(String, String)} methods.
- *   </li>
- * </ul>
+ * Copy from org.apache.ignite.testframework.config.GridTestProperties.
  */
 public final class GridTestProperties {
     /** */
@@ -60,7 +42,7 @@ public final class GridTestProperties {
     /** Binary marshaller compact footers property. */
     public static final String BINARY_COMPACT_FOOTERS = "binary.marshaller.compact.footers";
 
-    /** "True value" enables {@link BinaryBasicNameMapper} in {@link BinaryTypeConfiguration#getNameMapper()}  */
+    /** "True value" enables {@link BinaryBasicNameMapper} in {@link BinaryTypeConfiguration#getNameMapper()} */
     public static final String BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER = "binary.marshaller.use.simple.name.mapper";
 
     /** */
@@ -268,7 +250,7 @@ public final class GridTestProperties {
                 fileProps.load(in);
 
                 for (Map.Entry<Object, Object> prop : fileProps.entrySet())
-                    props.put((String) prop.getKey(), (String) prop.getValue());
+                    props.put((String)prop.getKey(), (String)prop.getValue());
 
                 for (Map.Entry<String, String> prop : props.entrySet())
                     prop.setValue(substituteProperties(prop.getValue()));
