@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import javax.cache.CacheException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
@@ -433,24 +432,27 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     @Override public IgniteCluster withAsync();
 
     /**
+     * // TODO: Better descr.
      * Enables Write Ahead Log for specified caches.
      *
      * @param cacheName Cache name.
      * @return Whether WAL enabled by this call.
-     * @throws CacheException If error occurs.
+     * @throws IgniteException If error occurs.
      */
     public boolean enableWal(String cacheName) throws IgniteException;
 
     /**
+     * // TODO: Better descr.
      * Disables Write Ahead Log for specified caches.
      *
      * @param cacheName Cache name.
      * @return Whether WAL disabled by this call.
-     * @throws CacheException If error occurs.
+     * @throws IgniteException If error occurs.
      */
     public boolean disableWal(String cacheName) throws IgniteException;
 
     /**
+     * // TODO: Better descr.
      * Checks if WAL enabled for this cache.
      *
      * @param cacheName Cache name.

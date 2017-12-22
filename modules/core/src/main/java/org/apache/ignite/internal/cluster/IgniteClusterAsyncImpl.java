@@ -322,7 +322,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
 
     /** {@inheritDoc} */
     @Override public boolean isWalEnabled(String cacheName) {
-        return false;
+        return cluster.isWalEnabled(cacheName);
     }
 
     /** {@inheritDoc} */
