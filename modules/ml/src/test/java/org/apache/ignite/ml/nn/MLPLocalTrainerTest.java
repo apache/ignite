@@ -23,12 +23,15 @@ import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Tracer;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.nn.updaters.NesterovUpdater;
+import org.apache.ignite.ml.nn.updaters.ParameterUpdater;
 import org.apache.ignite.ml.nn.updaters.RPropUpdater;
 import org.apache.ignite.ml.nn.updaters.SimpleGDUpdater;
+import org.apache.ignite.ml.nn.updaters.UpdaterParams;
 import org.junit.Test;
 
 /**
@@ -40,31 +43,7 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORSimpleGD() {
-        Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
-            StorageConstants.ROW_STORAGE_MODE).transpose();
-
-        Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}},
-            StorageConstants.ROW_STORAGE_MODE).transpose();
-
-        MLPArchitecture conf = new MLPArchitecture(2).
-            withAddedLayer(10, true, Activators.RELU).
-            withAddedLayer(1, false, Activators.SIGMOID);
-
-        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf,
-            new Random(123567L), xorInputs, xorOutputs, 4);
-
-        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            () -> new SimpleGDUpdater(0.3),
-            0.0001,
-            16000).train(trainerInput);
-
-        Matrix predict = mlp.apply(xorInputs);
-
-        Tracer.showAscii(predict);
-
-        X.println(xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2) + "");
-
-        TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-1);
+        xorTest(() -> new SimpleGDUpdater(0.3));
     }
 
     /**
@@ -72,6 +51,23 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORRProp() {
+        xorTest(RPropUpdater::new);
+    }
+
+    /**
+     * Test 'XOR' operation training with Nesterov updater.
+     */
+    @Test
+    public void testXORNesterov() {
+        xorTest(() -> new NesterovUpdater(0.1, 0.7));
+    }
+
+    /**
+     * Common method for testing 'XOR' with various updaters.
+     * @param updaterSupplier Updater supplier.
+     * @param <P> Updater parameters type.
+     */
+    private <P extends UpdaterParams<? super MultilayerPerceptron>> void xorTest(IgniteSupplier<ParameterUpdater<? super MultilayerPerceptron, P>> updaterSupplier) {
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
             StorageConstants.ROW_STORAGE_MODE).transpose();
 
@@ -83,10 +79,10 @@ public class MLPLocalTrainerTest {
             withAddedLayer(1, false, Activators.SIGMOID);
 
         SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf,
-            new Random(123567L), xorInputs, xorOutputs, 4);
+            new Random(1234L), xorInputs, xorOutputs, 4);
 
         MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            RPropUpdater::new,
+            updaterSupplier,
             0.0001,
             16000).train(trainerInput);
 
@@ -97,35 +93,6 @@ public class MLPLocalTrainerTest {
         X.println(xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2) + "");
 
         TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-1);
-    }
 
-    /**
-     * Test 'XOR' operation training with Nesterov updater.
-     */
-    @Test
-    public void testXORNesterov() {
-        Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
-            StorageConstants.ROW_STORAGE_MODE).transpose();
-
-        Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}},
-            StorageConstants.ROW_STORAGE_MODE).transpose();
-
-        MLPArchitecture conf = new MLPArchitecture(2).
-            withAddedLayer(10, true, Activators.RELU).
-            withAddedLayer(1, false, Activators.SIGMOID);
-
-        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(1234L),
-            xorInputs, xorOutputs, 4);
-
-        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            () -> new NesterovUpdater(0.1, 0.7),
-            0.0001,
-            16000).train(trainerInput);
-
-        Matrix predict = mlp.apply(xorInputs);
-
-        Tracer.showAscii(predict);
-
-        TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-1);
     }
 }
