@@ -26,7 +26,7 @@ public class ConstModel<T> implements Model<T, T> {
         this.c = c;
     }
 
-    @Override public T predict(T val) {
+    @Override public T apply(T val) {
         return c;
     }
 }

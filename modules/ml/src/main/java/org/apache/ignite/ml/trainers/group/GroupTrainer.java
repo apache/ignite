@@ -26,7 +26,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.trainers.Trainer;
 import org.apache.ignite.ml.trainers.group.chain.CacheContext;
-import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
+import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
@@ -46,7 +46,7 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IR extends 
         LC locCtx = initialLocalContext(data, trainingUUID);
 
         GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, trainingUUID, new CacheContext<>(cache), ignite);
-        DistributedTrainerWorkersChain<LC, K, V, T, GroupTrainingContext<K, V, LC>, T> chain = (i, c) -> i;
+        ComputationsChain<LC, K, V, T, GroupTrainingContext<K, V, LC>, T> chain = (i, c) -> i;
 
         M res = chain.
             thenDistributedForKeys(this::initGlobal, (t, lc) -> () -> data.initialKeys(trainingUUID), this::reduceGlobalInitData).
@@ -69,7 +69,7 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IR extends 
 
     protected abstract I locallyProcessInitData(IR data, LC locCtx);
 
-    protected abstract DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep();
+    protected abstract ComputationsChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep();
 
     protected abstract boolean shouldContinue(I data, LC locCtx);
 

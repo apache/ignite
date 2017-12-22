@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
@@ -41,7 +42,7 @@ public class MnistUtils {
      * @param rnd Random numbers generatror.
      * @param cnt Count of samples to read.
      * @return Stream of MNIST samples.
-     * @throws IOException In case of exception.
+     * @throws IgniteException In case of exception.
      */
     public static Stream<DenseLocalOnHeapVector> mnist(String imagesPath, String labelsPath, Random rnd, int cnt)
         throws IOException {
@@ -85,7 +86,7 @@ public class MnistUtils {
      * @param outPath Path to output path.
      * @param rnd Random numbers generator.
      * @param cnt Count of samples to read.
-     * @throws IOException In case of exception.
+     * @throws IgniteException In case of exception.
      */
     public static void asLIBSVM(String imagesPath, String labelsPath, String outPath, Random rnd, int cnt)
         throws IOException {

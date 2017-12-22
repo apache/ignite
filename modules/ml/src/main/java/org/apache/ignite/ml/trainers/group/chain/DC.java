@@ -22,18 +22,18 @@ import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
 public class DC {
     public static
-    <L extends HasTrainingUUID, K, V, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L>> DistributedTrainerWorkersChain<L, K, V, I, C, I> create() {
+    <L extends HasTrainingUUID, K, V, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L>> ComputationsChain<L, K, V, I, C, I> create() {
         return (input, context) -> input;
     }
 
     public static
-    <L extends HasTrainingUUID, K, V, G, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L>, O extends Serializable> DistributedTrainerWorkersChain<L, K, V, I, C, O> create(RemoteStep<L, K, V, G, I, O> step) {
-        DistributedTrainerWorkersChain<L, K, V, I, C, I> chain = create();
+    <L extends HasTrainingUUID, K, V, G, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L>, O extends Serializable> ComputationsChain<L, K, V, I, C, O> create(RemoteStep<L, K, V, G, I, O> step) {
+        ComputationsChain<L, K, V, I, C, I> chain = create();
         return chain.thenDistributedForEntries(step);
     }
 
     public static
-    <L extends HasTrainingUUID, V, K, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L>> DistributedTrainerWorkersChain<L, K, V, I, C, I> fromLocal() {
+    <L extends HasTrainingUUID, V, K, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L>> ComputationsChain<L, K, V, I, C, I> fromLocal() {
         return (input, context) -> input;
     }
 }

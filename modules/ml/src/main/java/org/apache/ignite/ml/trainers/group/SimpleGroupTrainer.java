@@ -22,10 +22,9 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.DC;
-import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
-import org.apache.ignite.ml.trainers.group.chain.HasCacheContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
 public abstract class SimpleGroupTrainer<LC extends HasTrainingUUID, K, V, D extends Serializable,
@@ -49,8 +48,8 @@ G, O extends Serializable, IR, X, Y> extends
 
     protected abstract ResultAndUpdates<Y> processData(X data);
 
-    @Override protected DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep() {
-        DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, O> chain = DC.create(new MetaoptimizerDistributedStep<>(metaoptimizer, this));
+    @Override protected ComputationsChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep() {
+        ComputationsChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, O> chain = DC.create(new MetaoptimizerDistributedStep<>(metaoptimizer, this));
         return chain.thenLocally(metaoptimizer::localProcessor);
     }
 

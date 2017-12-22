@@ -65,7 +65,7 @@ public class GroupTrainerTest extends GridCommonAbstractTest {
 
         ConstModel<Integer> mdl = trainer.train(new SimpleDistributive(limit, eachNumberCount, iterCnt));
         int localRes = computeLocally(limit, eachNumberCount, iterCnt);
-        assertEquals(localRes, (int)mdl.predict(10));
+        assertEquals(localRes, (int)mdl.apply(10));
     }
 
     public int computeLocally(int limit, int eacheNumerCount, int iterCnt) {

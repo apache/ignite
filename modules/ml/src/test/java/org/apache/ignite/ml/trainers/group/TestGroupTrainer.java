@@ -23,8 +23,8 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.DC;
-import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
 public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer, Double, ConstModel<Integer>, SimpleDistributive, Void> {
@@ -60,10 +60,10 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     @Override
-    protected DistributedTrainerWorkersChain<TestGroupTrainerLocalContext,
-        Double, Integer, Double, GroupTrainingContext<Double, Integer, TestGroupTrainerLocalContext>, Double> trainingLoopStep() {
+    protected ComputationsChain<TestGroupTrainerLocalContext,
+            Double, Integer, Double, GroupTrainingContext<Double, Integer, TestGroupTrainerLocalContext>, Double> trainingLoopStep() {
         // TODO: here we should explicitly create variable because we cannot infer context type, think about it.
-        DistributedTrainerWorkersChain<TestGroupTrainerLocalContext, Double, Integer, Double, GroupTrainingContext<Double, Integer, TestGroupTrainerLocalContext>, Double> chain = DC.
+        ComputationsChain<TestGroupTrainerLocalContext, Double, Integer, Double, GroupTrainingContext<Double, Integer, TestGroupTrainerLocalContext>, Double> chain = DC.
             create(new TestTrainingLoopStep());
         return chain.
             thenLocally((aDouble, context) -> {
