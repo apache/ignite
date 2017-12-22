@@ -40,5 +40,9 @@ Requirements:
 * JDK: sudo apt-get install default-jdk
 * Maven: sudo apt-get install maven
 
-Build Java and .NET, run tests:
+Getting started:
+* Build Java and .NET:
   ./build.sh
+* Run tests
+  cd Apache.Ignite.Core.Tests.DotNetCore
+  dotnet test
