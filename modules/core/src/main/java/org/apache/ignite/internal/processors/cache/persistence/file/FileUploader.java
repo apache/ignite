@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
@@ -49,6 +52,18 @@ public class FileUploader {
         FileChannel readChannel = null;
 
         try {
+            File file = new File(path.toUri().getPath());
+
+            if (!file.exists()) {
+                finishFut.onDone(
+                    new IgniteCheckedException(
+                        new FileNotFoundException(file.getAbsolutePath())
+                    )
+                );
+
+                return;
+            }
+
             readChannel = FileChannel.open(path, StandardOpenOption.READ);
 
             long written = 0;

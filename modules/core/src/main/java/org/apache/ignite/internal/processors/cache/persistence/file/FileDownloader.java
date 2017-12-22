@@ -119,6 +119,11 @@ public class FileDownloader {
             if (f.exists())
                 f.delete();
 
+            File cacheWorkDir = f.getParentFile();
+
+            if (!cacheWorkDir.exists())
+                cacheWorkDir.mkdir();
+
             writeChannel = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
 
             initFut.onDone();
@@ -138,6 +143,7 @@ public class FileDownloader {
         }
         catch (IOException ex) {
             initFut.onDone(ex);
+
             fut.onDone(ex);
         }
         finally {
@@ -159,14 +165,22 @@ public class FileDownloader {
         }
     }
 
-    public void download(long size) {
+    /**
+     *
+     */
+    public void download(long size, Throwable th) {
         try {
             initFut.get();
 
-            if (!this.size.compareAndSet(-1, size))
-                finishFut.onDone(new IgniteException("Size mismatch: " + this.size.get() + " != " + size));
-            else
-                finishFut.onDone();
+            if (th != null)
+                finishFut.onDone(th);
+            else {
+                if (!this.size.compareAndSet(-1, size))
+                    finishFut.onDone(new IgniteException("Size mismatch: " + this.size.get() + " != " + size));
+                else
+                    finishFut.onDone();
+            }
+
         }
         catch (IgniteCheckedException e) {
             finishFut.onDone(e);
