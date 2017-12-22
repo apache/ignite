@@ -69,6 +69,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 SocketReceiveBufferSize = 222,
                 SocketSendBufferSize = 333,
                 TcpNoDelay = false,
+                SocketTimeout = TimeSpan.FromSeconds(15),
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = false,

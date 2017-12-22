@@ -217,6 +217,7 @@ namespace Apache.Ignite.Core.Tests.Client
             cfg.SocketTimeout = TimeSpan.FromMilliseconds(500);
             var client = Ignition.StartClient(cfg);
             var cache = client.CreateCache<int, string>("s");
+            Assert.AreEqual(cfg.SocketTimeout, client.GetConfiguration().SocketTimeout);
 
             // Async.
             var task = cache.PutAllAsync(data);
