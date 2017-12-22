@@ -1536,7 +1536,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
         int toRead = (tmpArrBytes - tmpArrOff) >> lenShift;
         int remaining = buf.remaining() >> lenShift;
 
-        lastFinished = toRead <= buf.remaining();
+        lastFinished = toRead <= remaining;
 
         if (lastFinished) {
             readArrayLE(typeSize, off, toRead);
@@ -1562,8 +1562,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                 buf.position(pos + typeSize);
                 tmpArrOff += typeSize;
             }
-
-            tmpArrOff += buf.remaining();
 
             return null;
         }
