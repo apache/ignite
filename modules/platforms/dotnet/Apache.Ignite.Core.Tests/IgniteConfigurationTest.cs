@@ -147,7 +147,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.NetworkSendRetryCount, resCfg.NetworkSendRetryCount);
                 Assert.AreEqual(cfg.NetworkTimeout, resCfg.NetworkTimeout);
                 Assert.AreEqual(cfg.NetworkSendRetryDelay, resCfg.NetworkSendRetryDelay);
-                Assert.AreEqual(cfg.WorkDirectory.Trim('\\'), resCfg.WorkDirectory.Trim('\\'));
+                Assert.AreEqual(cfg.WorkDirectory.Trim(Path.DirectorySeparatorChar),
+                    resCfg.WorkDirectory.Trim(Path.DirectorySeparatorChar));
                 Assert.AreEqual(cfg.JvmClasspath, resCfg.JvmClasspath);
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.AreEqual(cfg.JvmDllPath, resCfg.JvmDllPath);
@@ -251,7 +252,7 @@ namespace Apache.Ignite.Core.Tests
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DataStorageConfiguration = null,
-                SpringConfigUrl = @"config\spring-test.xml",
+                SpringConfigUrl = Path.Combine("Config", "spring-test.xml"),
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
                 MetricsHistorySize = 57
             };
