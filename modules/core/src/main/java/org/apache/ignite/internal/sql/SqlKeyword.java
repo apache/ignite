@@ -168,6 +168,9 @@ public class SqlKeyword {
     /** Keyword: NUMBER. */
     public static final String NUMBER = "NUMBER";
 
+    /** Keyword: NULL. */
+    public static final String NULL = "NULL";
+
     /** Keyword: NUMERIC. */
     public static final String NUMERIC = "NUMERIC";
 

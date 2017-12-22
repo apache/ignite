@@ -27,6 +27,7 @@ import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -67,8 +68,10 @@ import static org.apache.ignite.internal.sql.SqlKeyword.LONG;
 import static org.apache.ignite.internal.sql.SqlKeyword.LONGVARCHAR;
 import static org.apache.ignite.internal.sql.SqlKeyword.MEDIUMINT;
 import static org.apache.ignite.internal.sql.SqlKeyword.NCHAR;
+import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
 import static org.apache.ignite.internal.sql.SqlKeyword.NO_WRAP_KEY;
 import static org.apache.ignite.internal.sql.SqlKeyword.NO_WRAP_VALUE;
+import static org.apache.ignite.internal.sql.SqlKeyword.NULL;
 import static org.apache.ignite.internal.sql.SqlKeyword.NUMBER;
 import static org.apache.ignite.internal.sql.SqlKeyword.NUMERIC;
 import static org.apache.ignite.internal.sql.SqlKeyword.NVARCHAR;
@@ -440,23 +443,27 @@ public class SqlCreateTableCommand implements SqlCommand {
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.KEYWORD) {
             SqlColumn col = null;
 
-            switch (lex.token()) {
+            String typTok = lex.token();
+
+            Boolean isNullable = parseNullableClause(lex);
+
+            switch (typTok) {
                 case BIT:
                 case BOOL:
                 case BOOLEAN:
-                    col = new SqlColumn(name, SqlColumnType.BOOLEAN, 0, 0, true);
+                    col = new SqlColumn(name, SqlColumnType.BOOLEAN, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
 
                 case TINYINT:
-                    col = new SqlColumn(name, SqlColumnType.BYTE, 0, 0, false);
+                    col = new SqlColumn(name, SqlColumnType.BYTE, 0, 0, (isNullable != null) ? isNullable : false);
 
                     break;
 
                 case INT2:
                 case SMALLINT:
                 case YEAR:
-                    col = new SqlColumn(name, SqlColumnType.SHORT, 0, 0, false);
+                    col = new SqlColumn(name, SqlColumnType.SHORT, 0, 0, (isNullable != null) ? isNullable : false);
 
                     break;
 
@@ -465,20 +472,20 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case INTEGER:
                 case MEDIUMINT:
                 case SIGNED:
-                    col = new SqlColumn(name, SqlColumnType.INT, 0, 0, false);
+                    col = new SqlColumn(name, SqlColumnType.INT, 0, 0, (isNullable != null) ? isNullable : false);
 
                     break;
 
                 case BIGINT:
                 case INT8:
                 case LONG:
-                    col = new SqlColumn(name, SqlColumnType.LONG, 0, 0, false);
+                    col = new SqlColumn(name, SqlColumnType.LONG, 0, 0, (isNullable != null) ? isNullable : false);
 
                     break;
 
                 case FLOAT4:
                 case REAL:
-                    col = new SqlColumn(name, SqlColumnType.FLOAT, 0, 0, false);
+                    col = new SqlColumn(name, SqlColumnType.FLOAT, 0, 0, (isNullable != null) ? isNullable : false);
 
                     break;
 
@@ -488,14 +495,14 @@ public class SqlCreateTableCommand implements SqlCommand {
                     if (matchesKeyword(next, PRECISION))
                         lex.shift();
 
-                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, false);
+                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, (isNullable != null) ? isNullable : false);
 
                     break;
                 }
 
                 case FLOAT:
                 case FLOAT8:
-                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, false);
+                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, (isNullable != null) ? isNullable : false);
 
                     break;
 
@@ -514,7 +521,7 @@ public class SqlCreateTableCommand implements SqlCommand {
                         skipToken(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
                     }
 
-                    col = new SqlColumn(name, SqlColumnType.DECIMAL, scale, precision, true);
+                    col = new SqlColumn(name, SqlColumnType.DECIMAL, scale, precision, (isNullable != null) ? isNullable : true);
 
                     break;
                 }
@@ -524,7 +531,7 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case NCHAR: {
                     int precision = parseStringPrecision(lex);
 
-                    col = new SqlColumn(name, SqlColumnType.CHAR, precision);
+                    col = new SqlColumn(name, SqlColumnType.CHAR, precision, (isNullable != null) ? isNullable : true);
 
                     break;
                 }
@@ -537,30 +544,30 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case VARCHAR_CASESENSITIVE: {
                     int precision = parseStringPrecision(lex);
 
-                    col = new SqlColumn(name, SqlColumnType.VARCHAR, precision);
+                    col = new SqlColumn(name, SqlColumnType.VARCHAR, precision, (isNullable != null) ? isNullable : true);
 
                     break;
                 }
 
                 case DATE:
-                    col = new SqlColumn(name, SqlColumnType.DATE, 0, 0, true);
+                    col = new SqlColumn(name, SqlColumnType.DATE, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
 
                 case TIME:
-                    col = new SqlColumn(name, SqlColumnType.TIME, 0, 0, true);
+                    col = new SqlColumn(name, SqlColumnType.TIME, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
 
                 case DATETIME:
                 case SMALLDATETIME:
                 case TIMESTAMP:
-                    col = new SqlColumn(name, SqlColumnType.TIMESTAMP, 0, 0, true);
+                    col = new SqlColumn(name, SqlColumnType.TIMESTAMP, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
 
                 case UUID:
-                    col = new SqlColumn(name, SqlColumnType.UUID, 0, 0, true);
+                    col = new SqlColumn(name, SqlColumnType.UUID, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
             }
@@ -568,9 +575,8 @@ public class SqlCreateTableCommand implements SqlCommand {
             if (col != null) {
                 addColumn(lex, col);
 
-                SqlLexerToken next = lex.lookAhead();
+                if (matchesKeyword(lex.lookAhead(), PRIMARY)) {
 
-                if (matchesKeyword(next, PRIMARY)) {
                     if (pkColNames != null)
                         throw error(lex, "PRIMARY KEY is already defined.");
 
@@ -588,6 +594,26 @@ public class SqlCreateTableCommand implements SqlCommand {
         }
 
         throw errorUnexpectedToken(lex, "[column_type]");
+    }
+
+    @Nullable private Boolean parseNullableClause(SqlLexer lex) {
+        Boolean isNullable = null;
+
+        if (matchesKeyword(lex.lookAhead(), NOT)) {
+
+            lex.shift();
+            skipKeyword(lex, NULL);
+
+            isNullable = false;
+
+        } else if (matchesKeyword(lex.lookAhead(), NULL)) {
+
+            lex.shift();
+
+            isNullable = true;
+        }
+
+        return isNullable;
     }
 
     /**
@@ -768,10 +794,13 @@ public class SqlCreateTableCommand implements SqlCommand {
                     SqlColumn affCol = null;
 
                     for (SqlColumn col : columns().values()) {
-                        if (col.name().equalsIgnoreCase(val)) {
+
+                        boolean isNameEqual = isQuoted ? col.name().equals(val) : col.name().equalsIgnoreCase(val);
+
+                        if (isNameEqual) {
                             if (affCol != null)
                                 throw error(lex.currentToken(),
-                                    "Ambiguous affinity column name, use single quotes for case sensitivity");
+                                    "Ambiguous affinity column name, use single quotes for case sensitivity: " + val);
 
                             affCol = col;
                         }

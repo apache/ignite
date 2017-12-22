@@ -65,6 +65,17 @@ public class SqlColumn {
      * @param name Name.
      * @param typ Type.
      * @param precision Precision.
+     */
+    public SqlColumn(String name, SqlColumnType typ, int precision, boolean isNullable) {
+        this(name, typ, 0, precision, isNullable);
+    }
+
+    /**
+     * Constructs the object.
+     *
+     * @param name Name.
+     * @param typ Type.
+     * @param precision Precision.
      * @param scale Scale.
      * @param isNullable Is nullable.
      */

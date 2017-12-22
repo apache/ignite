@@ -149,14 +149,23 @@ public class SqlLexer implements SqlLexerToken {
                         pos++;
 
                         // Escaped character
-                        if (convertBackslashEscapes && c1 == '\\') {
-                            if (eod()) {
-                                throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
-                                    "Unclosed escape sequence in quoted identifier.");
+                        if (convertBackslashEscapes && c1 == '\\' && c == '"') {
+
+                            SqlEscSeqParser escParser = new SqlEscSeqParser();
+
+                            while (true) {
+                                if (eod()) {
+                                    throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
+                                        "Unclosed escape sequence in quoted identifier.");
+                                }
+
+                                if (!escParser.accept(inputChars[pos]))
+                                    break;
+
+                                pos++;
                             }
 
-                            c = convertEscSeqChar(inputChars[pos++]);
-                            sb.append(c);
+                            sb.append(escParser.convertedStr());
                             continue;
                         }
 
@@ -223,25 +232,6 @@ public class SqlLexer implements SqlLexerToken {
         tokenTyp = SqlLexerTokenType.EOF;
 
         return false;
-    }
-
-    /**
-     * Converts second character from escape sequence to actual character
-     *
-     * @param c The character after the backquote.
-     * @return the character which this escape sequence represents.
-     */
-    private static char convertEscSeqChar(char c) {
-        switch (c) {
-            case '0': return '\0';
-            case 'b': return '\b';
-            case 'n': return '\n';
-            case 'r': return '\r';
-            case 't': return '\t';
-            case 'Z': return '\032';
-
-            default:  return c;
-        }
     }
 
     /** {@inheritDoc} */

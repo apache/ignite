@@ -558,11 +558,14 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                 conn.setSchema("PUBLIC");
 
                 try (Statement stmt = conn.createStatement(); H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
-                    stmt.execute("CREATE TABLE cache_store_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " +
-                        (useInternalCmd ? ("WITH \"template=" + CACHE_STORE_TEMPLATE + "\"") : ("template=" + CACHE_STORE_TEMPLATE)));
+                    String params = useInternalCmd
+                        ? ("template=\"" + CACHE_STORE_TEMPLATE + "\"")
+                        : ("WITH \"template=" + CACHE_STORE_TEMPLATE + "\"");
+
+                    stmt.execute("CREATE TABLE cache_store_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " + params);
                 }
             }
-        }, "0A000");
+        }, "0A000"); // useInternalCmd ? "42000" :
     }
 
     /**
@@ -597,11 +600,14 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                 conn.setSchema("PUBLIC");
 
                 try (Statement stmt = conn.createStatement(); H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
-                    stmt.execute("CREATE TABLE cache_interceptor_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " +
-                        (useInternalCmd ? ("WITH \"template=" + CACHE_INTERCEPTOR_TEMPLATE + "\"") : ("template=" + CACHE_INTERCEPTOR_TEMPLATE)));
+                    String params = useInternalCmd
+                        ? ("template=\"" + CACHE_INTERCEPTOR_TEMPLATE + "\"")
+                        : ("WITH \"template=" + CACHE_INTERCEPTOR_TEMPLATE + "\"");
+
+                    stmt.execute("CREATE TABLE cache_interceptor_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " + params);
                 }
             }
-        }, "0A000");
+        }, "0A000"); // 42000
     }
 
     /**

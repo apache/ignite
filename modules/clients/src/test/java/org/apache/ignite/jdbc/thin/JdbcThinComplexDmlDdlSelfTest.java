@@ -168,8 +168,8 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
             }, SQLException.class, "Failed to parse query: SELECT * from Person");
 
             String createTableParams = useInternalCmd ?
-                "WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinity_key=city\"" :
-                "template=" + cacheMode.name() + " atomicity=" + atomicityMode.name() + " affinity_key=city";
+                "template=\"" + cacheMode.name() + "\" atomicity=" + atomicityMode.name() + " affinity_key=city" :
+                "WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinity_key=city\"";
 
             sql(new UpdateChecker(0),
                 "CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
@@ -178,8 +178,8 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
             sql(new UpdateChecker(0), "CREATE INDEX idx on person (city asc, name asc)");
 
             createTableParams = useInternalCmd ?
-                "WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinity_key=name\"" :
-                "template=" + cacheMode.name() + " atomicity=" + atomicityMode.name() + " affinity_key=name";
+                "template=\"" + cacheMode.name() + "\" atomicity=" + atomicityMode.name() + " affinity_key=name" :
+                "WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinity_key=name\"";
 
             sql(new UpdateChecker(0), "CREATE TABLE city (name varchar, population int, primary key (name)) " +
                 createTableParams);

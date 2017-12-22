@@ -1576,24 +1576,24 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     return null;
                 }
-            }, IgniteSQLException.class, "Ambiguous affinity column name, use single quotes for case sensitivity: name");
+            }, IgniteSQLException.class, "Ambiguous affinity column name, use single quotes for case sensitivity: NAME");
 
             execute("CREATE TABLE \"E\" (\"name\" varchar, \"Name\" int, val int, primary key(\"name\", " +
-                "\"Name\")) wrap_key wrap_value affinityKey=\"Name\"");
+                "\"Name\")) wrap_key wrap_value affinity_key=\"Name\"");
 
             assertAffinityCacheConfiguration("E", "Name");
 
         }
         finally {
-            execute("drop table a");
+            execute("drop table if exists a");
 
-            execute("drop table b");
+            execute("drop table if exists b");
 
-            execute("drop table c");
+            execute("drop table if exists c");
 
-            execute("drop table d");
+            execute("drop table if exists d");
 
-            execute("drop table e");
+            execute("drop table if exists e");
         }
     }
 
