@@ -708,9 +708,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Allows to wait checkpoint finished.
+     *
      * @param reason Reason.
      */
-    public IgniteInternalFuture checkpoint(String reason) throws IgniteCheckedException {
+    public IgniteInternalFuture doCheckpoint(String reason) throws IgniteCheckedException {
         return null;
     }
 

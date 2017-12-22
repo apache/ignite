@@ -17,22 +17,20 @@
 
 package org.apache.ignite.visor.commands.tasks
 
+import java.util.UUID
+
 import org.apache.ignite._
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.internal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
+import org.apache.ignite.internal.visor.node.{VisorNodeEventsCollectorTask, VisorNodeEventsCollectorTaskArg}
+import org.apache.ignite.internal.visor.util.{VisorTaskUtils => TU}
 import org.apache.ignite.lang.IgniteUuid
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
-
-import java.util.UUID
-
-import org.apache.ignite.internal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -1217,15 +1215,13 @@ class VisorTasksCommand extends VisorConsoleCommand {
 
                 eLst.foreach(e => {
                     e.nodeIds.foreach(id => {
-                        val host = sortAddresses(ignite.cluster.node(id).addresses).headOption
-
-                        if (host.isDefined) {
-                            var eSet = hMap.getOrElse(host.get, Set.empty[VisorExecution])
+                        TU.sortAddresses(ignite.cluster.node(id).addresses).headOption.foreach(host => {
+                            var eSet = hMap.getOrElse(host, Set.empty[VisorExecution])
 
                             eSet += e
 
-                            hMap += (host.get -> eSet)
-                        }
+                            hMap += (host -> eSet)
+                        })
                     })
                 })
 
@@ -1239,11 +1235,11 @@ class VisorTasksCommand extends VisorConsoleCommand {
 
                     tasksT.maxCellWidth = 55
 
-                    tasksT #=(
+                    tasksT #= (
                         "Task Name(@), Oldest/Latest & Rate",
                         "Duration",
                         "Executions"
-                        )
+                    )
 
                     println("Tasks executed on host " + host + ":")
 
@@ -1266,7 +1262,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
 
                         val n = t.execs.size
 
-                        tasksT +=(
+                        tasksT += (
                             (
                                 t.taskNameVar,
                                 " ",
@@ -1274,12 +1270,12 @@ class VisorTasksCommand extends VisorConsoleCommand {
                                 "Latest: " + formatDateTime(t.latest),
                                 " ",
                                 "Exec. Rate: " + n + " in " + X.timeSpan2HMSM(t.timeframe)
-                                ),
+                            ),
                             (
                                 "min: " + X.timeSpan2HMSM(t.minDuration),
                                 "avg: " + X.timeSpan2HMSM(t.avgDuration),
                                 "max: " + X.timeSpan2HMSM(t.maxDuration)
-                                ),
+                            ),
                             (
                                 "Total: " + n,
                                 " ",
@@ -1288,8 +1284,8 @@ class VisorTasksCommand extends VisorConsoleCommand {
                                 "Fa: " + eE + " (" + formatInt(100 * eE / n) + "%)",
                                 "Un: " + uE + " (" + formatInt(100 * uE / n) + "%)",
                                 "Ti: " + tE + " (" + formatInt(100 * tE / n) + "%)"
-                                )
                             )
+                        )
                     })
 
                     tasksT.render()

@@ -22,7 +22,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,9 +35,6 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
     /** */
     private static final byte PREPARE = 0x02;
 
-    /** Overwrite. */
-    private static final byte OVERRIDE = 0x04;
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,8 +47,8 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
     /** Flags */
     private byte flags;
 
-    /** Cache group ids. */
-    private GridIntList grpIds;
+    /** Cache group id. */
+    private int grpId;
 
     /** Near node ID in case if near cache is being started. */
     private UUID initiatingNodeId;
@@ -61,17 +57,16 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
      * @param uid Uid.
      * @param disable Disable.
      * @param prepare Prepare.
-     * @param grpIds Group ids.
+     * @param grpId Group id.
      * @param nodeId Node id.
      */
     WalModeDynamicChangeMessage(UUID uid,
         boolean disable,
         boolean prepare,
-        boolean override,
-        GridIntList grpIds,
+        int grpId,
         UUID nodeId) {
         this.uid = uid;
-        this.grpIds = grpIds;
+        this.grpId = grpId;
         this.initiatingNodeId = nodeId;
 
         if (disable)
@@ -79,9 +74,6 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
 
         if (prepare)
             flags |= PREPARE;
-
-        if (override)
-            flags |= OVERRIDE;
     }
 
     /**
@@ -94,8 +86,8 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
     /**
      *
      */
-    public GridIntList grpIds() {
-        return grpIds;
+    public int grpId() {
+        return grpId;
     }
 
     /**
@@ -110,13 +102,6 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
      */
     public boolean prepare() {
         return (flags & PREPARE) != 0;
-    }
-
-    /**
-     *
-     */
-    public boolean override() {
-        return (flags & OVERRIDE) != 0;
     }
 
     /** {@inheritDoc} */
@@ -160,7 +145,7 @@ public class WalModeDynamicChangeMessage implements DiscoveryCustomMessage {
             "id=" + id +
             ", uid=" + uid +
             ", flags=" + flags +
-            ", grpIds=" + grpIds +
+            ", grpId=" + grpId +
             ", initiatingNodeId=" + initiatingNodeId +
             '}';
     }

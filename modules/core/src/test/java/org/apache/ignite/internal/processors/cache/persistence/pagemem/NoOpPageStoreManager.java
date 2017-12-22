@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -179,6 +180,26 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     /** {@inheritDoc} */
     @Override public boolean hasIndexStore(int grpId) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void walDisabled(int grpId, boolean disable) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean walDisabled(int grpId) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> walDisabledGroups() {
+        return null;
     }
 
     /** {@inheritDoc} */

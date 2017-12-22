@@ -122,12 +122,8 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public boolean reserved(WALPointer ptr);
 
     /**
-     * @param grpId Group id.
-     * @param disabled Disabled.
-     */
-    public void disabled(int grpId, boolean disabled);
-
-    /**
+     * Checks WAL disabled for cache group.
+     *
      * @param grpId Group id.
      */
     public boolean disabled(int grpId);

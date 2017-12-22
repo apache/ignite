@@ -147,6 +147,9 @@ public class CacheGroupContext {
     /** MXBean. */
     private CacheGroupMetricsMXBean mxBean;
 
+    /** */
+    private volatile boolean walDisabled;
+
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -159,6 +162,7 @@ public class CacheGroupContext {
      * @param freeList Free list.
      * @param reuseList Reuse list.
      * @param locStartVer Topology version when group was started on local node.
+     * @param walDisabled Wal disabled.
      */
     CacheGroupContext(
         GridCacheSharedContext ctx,
@@ -171,7 +175,8 @@ public class CacheGroupContext {
         CacheObjectContext cacheObjCtx,
         FreeList freeList,
         ReuseList reuseList,
-        AffinityTopologyVersion locStartVer) {
+        AffinityTopologyVersion locStartVer,
+        boolean walDisabled) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
@@ -187,6 +192,9 @@ public class CacheGroupContext {
         this.reuseList = reuseList;
         this.locStartVer = locStartVer;
         this.cacheType = cacheType;
+        this.walDisabled = walDisabled;
+
+        persistWalDisabled(walDisabled);
 
         ioPlc = cacheType.ioPolicy();
 
@@ -991,5 +999,31 @@ public class CacheGroupContext {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "CacheGroupContext [grp=" + cacheOrGroupName() + ']';
+    }
+
+    /**
+     *
+     */
+    public boolean walDisabled() {
+        return walDisabled;
+    }
+
+    /**
+     * @param disabled Disabled.
+     */
+    public void walDisabled(boolean disabled) {
+        assert this.walDisabled != disabled;
+
+        persistWalDisabled(disabled);
+
+        this.walDisabled = disabled;
+    }
+
+    /**
+     * @param disabled Disabled.
+     */
+    private void persistWalDisabled(boolean disabled) {
+        if (shared().pageStore() != null)
+            shared().pageStore().walDisabled(grpId, disabled);
     }
 }

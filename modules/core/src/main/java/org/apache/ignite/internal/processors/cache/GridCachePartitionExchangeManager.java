@@ -454,10 +454,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             else if (customMsg instanceof WalModeDynamicChangeMessage) {
                 WalModeDynamicChangeMessage msg = (WalModeDynamicChangeMessage)customMsg;
 
-                cctx.cache().onWalModeDynamicChangeMessageEvent(msg);
-
-                // We have to finish all operations to gain consistence state before starting checkpoints.
-                if (msg.needExchange()) {
+                if (cctx.cache().onWalModeDynamicChangeMessageEvent(msg) && msg.needExchange()) {
                     exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
                     exchFut = exchangeFuture(exchId, evt, cache, null, null);
@@ -677,6 +674,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().removeHandler(false, 0, GridDhtPartitionsSingleMessage.class);
         cctx.io().removeHandler(false, 0, GridDhtPartitionsFullMessage.class);
         cctx.io().removeHandler(false, 0, GridDhtPartitionsSingleRequest.class);
+        cctx.io().removeHandler(false, 0, WalModeDynamicChangeAckMessage.class);
 
         stopErr = cctx.kernalContext().clientDisconnected() ?
             new IgniteClientDisconnectedCheckedException(cctx.kernalContext().cluster().clientReconnectFuture(),

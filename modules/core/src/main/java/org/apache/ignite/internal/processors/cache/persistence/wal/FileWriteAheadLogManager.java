@@ -70,6 +70,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
@@ -85,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -254,9 +254,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** Environment failure. */
     private volatile Throwable envFailed;
-
-    /** Disabled grps. */
-    private final GridIntList disabledGrps = new GridIntList();
 
     /**
      * Positive (non-0) value indicates WAL can be archived even if not complete<br>
@@ -781,22 +778,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void disabled(int grpId, boolean disabled) {
-        synchronized (disabledGrps) {
-            if (!disabled)
-                disabledGrps.removeValue(0, grpId);
-            else {
-                if (!disabledGrps.contains(grpId))
-                    disabledGrps.add(grpId);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
-        synchronized (disabledGrps) {
-            return disabledGrps.contains(grpId);
-        }
+        CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
+
+        return ctx != null && ctx.walDisabled();
     }
 
     /**

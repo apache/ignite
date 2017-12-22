@@ -92,7 +92,7 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
         IgniteDataStreamer<Integer, HeavyValue> dataLdr = node.dataStreamer(c.getName());
 
         if (disableWal)
-            node.cluster().disableWal(Collections.singleton(c.getName()));
+            node.cluster().disableWal(c.getName());
 
         for (int i = 0; i < SIZE; i++) {
             if (i % 100_000 == 0)
@@ -109,7 +109,7 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
             throw new RuntimeException("Loading failed.");
 
         if(disableWal)
-            node.cluster().enableWal(Collections.singleton(c.getName()));
+            node.cluster().enableWal(c.getName());
 
         System.out.println("Loaded ... " + new Date().toString());
     }
