@@ -182,15 +182,15 @@ public class MLPTest {
         Vector grad = mlp.differentiateByParameters(LossFunctions.MSE, inputs, truth);
 
         // Let yt be y ground truth value.
-        // d/dw1i [1 / 2 (yt - sigma(w10 * x0 + w11 * x1))^2] =
-        // (yt - sigma(w10 * x0 + w11 * x1)) * (-1) * (sigma(w10 * x0 + w11 * x1)) * (1 - sigma(w10 * x0 + w11 * x1)) * xi =
+        // d/dw1i [2 * (yt - sigma(w10 * x0 + w11 * x1))^2] =
+        // 2 * (yt - sigma(w10 * x0 + w11 * x1)) * (-1) * (sigma(w10 * x0 + w11 * x1)) * (1 - sigma(w10 * x0 + w11 * x1)) * xi =
         // let z = sigma(w10 * x0 + w11 * x1)
-        // - (yt - z) * (z) * (1 - z) * xi.
+        // - 2* (yt - z) * (z) * (1 - z) * xi.
 
         IgniteTriFunction<Double, Vector, Vector, Vector> partialDer = (yt, w, x) -> {
             Double z = Activators.SIGMOID.apply(w.dot(x));
 
-            return x.copy().map(xi -> -(yt - z) * z * (1 - z) * xi);
+            return x.copy().map(xi -> -2 * (yt - z) * z * (1 - z) * xi);
         };
 
         Vector weightsVec = mlp.weights(1).getRow(0);

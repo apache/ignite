@@ -234,6 +234,17 @@ public class MatrixUtil {
         return res;
     }
 
+    /**
+     * Zip two vectors with given tri-function taking as third argument position in vector
+     * (i.e. apply binary function to both vector elementwise and construct vector from results).
+     * Example zipWith({200, 400, 600}, {100, 300, 500}, plusAndMultiplyByIndex) = {(200 + 100) * 0, (400 + 300) * 1, (600 + 500) * 3}.
+     * Length of result is length of shortest of vectors.
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @param f Function to zip with.
+     * @return Result of zipping.
+     */
     public static Vector zipWith(Vector v1, Vector v2, IgniteTriFunction<Double, Double, Integer, Double> f) {
         int size = Math.min(v1.size(), v2.size());
 
