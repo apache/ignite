@@ -77,22 +77,16 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
     }
 
     /**
-     *
      * @param cctx Cache context.
+     * @param mvccCrd Mvcc coordinator.
+     * @param mvccVer Mvcc version.
      */
-    public MvccQueryTracker(GridCacheContext cctx, MvccVersion mvccVer, AffinityTopologyVersion topVer)
-        throws IgniteCheckedException {
+    public MvccQueryTracker(GridCacheContext cctx, MvccCoordinator mvccCrd, MvccVersion mvccVer) {
         assert cctx.mvccEnabled() : cctx.name();
 
         this.cctx = cctx;
         this.mvccVer = mvccVer;
-
-        MvccCoordinator mvccCrd0 = cctx.affinity().mvccCoordinator(topVer);
-
-        if(mvccCrd0 == null)
-            throw MvccProcessor.noCoordinatorError(topVer);
-
-        mvccCrd = mvccCrd0;
+        this.mvccCrd = mvccCrd;
 
         canRemap = false;
         lsnr = NO_OP_LSNR;
