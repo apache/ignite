@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 /**
  * Interface for models which are smooth functions of their parameters.
  */
-public interface SmoothParametrized {
+public interface SmoothParametrized<M> {
     /**
      * Compose function in the following way: feed output of this model as input to second argument to loss function.
      * After that we have a function g of three arguments: input, ground truth, parameters.
@@ -53,7 +53,7 @@ public interface SmoothParametrized {
      *
      * @param vector Parameters vector.
      */
-    void setParameters(Vector vector);
+    M setParameters(Vector vector);
 
     /**
      * Get count of parameters of this model.

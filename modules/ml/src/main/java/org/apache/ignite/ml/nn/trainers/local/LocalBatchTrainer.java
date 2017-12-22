@@ -95,7 +95,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends Update
             updaterParams = updater.updateParams(mdl, updaterParams, i, input, truth);
 
             // Update mdl with updater parameters.
-            updaterParams.update(mdl);
+            mdl = updaterParams.update(mdl);
 
             Matrix predicted = mdl.apply(input);
 
@@ -172,7 +172,6 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends Update
      * @param msg Message.
      */
     private void debug(String msg) {
-        System.out.println(msg);
         if (log != null && log.isDebugEnabled())
             log.debug(msg);
     }

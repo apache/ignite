@@ -41,7 +41,7 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 /**
  * Class encapsulating logic of multilayer perceptron.
  */
-public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParametrized {
+public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron> {
     /**
      * This MLP architecture.
      */
@@ -420,7 +420,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
     }
 
     /** {@inheritDoc} */
-    public void setParameters(Vector vector) {
+    public MultilayerPerceptron setParameters(Vector vector) {
         int off = 0;
 
         for (int l = 1; l < layersCount(); l++) {
@@ -436,6 +436,8 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
                 layer.biases = readRes1.get2();
             }
         }
+
+        return this;
     }
 
     /** {@inheritDoc} */

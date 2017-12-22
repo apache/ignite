@@ -20,7 +20,10 @@ package org.apache.ignite.ml.nn.updaters;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
-public class SimpleGDParams<T extends SmoothParametrized> implements UpdaterParams<T> {
+/**
+ * Parameters for {@link SimpleGDUpdater}.
+ */
+public class SimpleGDParams implements UpdaterParams<SmoothParametrized> {
     /**
      * Gradient.
      */
@@ -54,8 +57,8 @@ public class SimpleGDParams<T extends SmoothParametrized> implements UpdaterPara
     }
 
     /** {@inheritDoc} */
-    @Override public void update(T mlp) {
-        Vector params = mlp.parameters();
-        mlp.setParameters(params.plus(gradient.times(learningRate)));
+    @Override public <M extends SmoothParametrized> M update(M obj) {
+        Vector params = obj.parameters();
+        return (M)obj.setParameters(params.plus(gradient.times(learningRate)));
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.nn;
 
 import java.util.Random;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
@@ -56,7 +57,7 @@ public class MLPLocalTrainerTest {
 
         Tracer.showAscii(predict);
 
-        System.out.println(xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2));
+        X.println(xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2) + "");
 
         TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-1);
     }

@@ -59,8 +59,8 @@ public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> 
     }
 
     /** {@inheritDoc} */
-    @Override public void update(SmoothParametrized mlp) {
-        Vector parameters = mlp.parameters();
-        mlp.setParameters(parameters.minus(prevIterationUpdates));
+    @Override public <M extends SmoothParametrized> M update(M obj) {
+        Vector parameters = obj.parameters();
+        return (M)obj.setParameters(parameters.minus(prevIterationUpdates));
     }
 }

@@ -113,8 +113,8 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
     }
 
     /** {@inheritDoc} */
-    @Override public void update(SmoothParametrized mlp) {
+    @Override public <M extends SmoothParametrized> M update(M obj) {
         Vector updatesToAdd = VectorUtils.elementWiseTimes(updatesMask.copy(), prevIterationUpdates);
-        mlp.setParameters(mlp.parameters().plus(updatesToAdd));
+        return (M)obj.setParameters(obj.parameters().plus(updatesToAdd));
     }
 }
