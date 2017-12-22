@@ -27,6 +27,9 @@ class ZkIgnitePaths {
     static final String PATH_SEPARATOR = "/";
 
     /** */
+    static final byte CLIENT_NODE_FLAG_MASK = 0x01;
+
+    /** */
     private static final int UUID_LEN = 36;
 
     /** Directory to store joined node data. */
@@ -181,6 +184,28 @@ class ZkIgnitePaths {
     }
 
     /**
+     * @param prefix Node unique path prefix.
+     * @param node Node.
+     * @return Path.
+     */
+    String aliveNodePathForCreate(String prefix, ZookeeperClusterNode node) {
+        byte flags = 0;
+
+        if (node.isClient())
+            flags |= CLIENT_NODE_FLAG_MASK;
+
+        return aliveNodesDir + "/" + prefix + ":" + node.id() + ":" + encodeFlags(flags) + "|";
+    }
+
+    /**
+     * @param path Alive node zk path.
+     * @return {@code True} if node is client.
+     */
+    static boolean aliveClientNode(String path) {
+        return (aliveFlags(path) & CLIENT_NODE_FLAG_MASK) != 0;
+    }
+
+    /**
      * @param path Alive node zk path.
      * @return Node ID.
      */
@@ -193,7 +218,7 @@ class ZkIgnitePaths {
      * @return Node ID.
      */
     static UUID aliveNodeId(String path) {
-        // <uuid prefix>:<node id>|<alive seq>
+        // <uuid prefix>:<node id>:<flags>|<alive seq>
         int startIdx = ZkIgnitePaths.UUID_LEN + 1;
 
         String idStr = path.substring(startIdx, startIdx + ZkIgnitePaths.UUID_LEN);
@@ -318,5 +343,34 @@ class ZkIgnitePaths {
      */
     String distributedFutureResultPath(UUID id) {
         return evtsPath + "/fr-" + id;
+    }
+
+    /**
+     * @param flags Flags.
+     * @return Flags string.
+     */
+    private static String encodeFlags(byte flags) {
+        int intVal = flags + 128;
+
+        String str = Integer.toString(intVal, 16);
+
+        if (str.length() == 1)
+            str = '0' + str;
+
+        assert str.length() == 2  : str;
+
+        return str;
+    }
+
+    /**
+     * @param path Alive node zk path.
+     * @return Flags.
+     */
+    private static byte aliveFlags(String path) {
+        int startIdx = path.lastIndexOf(':') + 1;
+
+        String flagsStr = path.substring(startIdx, startIdx + 2);
+
+        return (byte)(Integer.parseInt(flagsStr, 16) - 128);
     }
 }

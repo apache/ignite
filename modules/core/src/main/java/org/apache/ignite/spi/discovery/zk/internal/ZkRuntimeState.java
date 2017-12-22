@@ -49,7 +49,7 @@ class ZkRuntimeState {
     int joinDataPartCnt;
 
     /** */
-    IgniteSpiTimeoutObject joinTimeoutObj;
+    IgniteSpiTimeoutObject joinErrTimeoutObj;
 
     /** */
     long gridStartTime;

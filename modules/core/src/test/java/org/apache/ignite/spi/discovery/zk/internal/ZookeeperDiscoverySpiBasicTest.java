@@ -1216,13 +1216,13 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentStartStop2_EventsThrottle() throws Exception {
-        System.setProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_MAX_EVTS, "1");
+        System.setProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS, "1");
 
         try {
             concurrentStartStop(5);
         }
         finally {
-            System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_MAX_EVTS);
+            System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS);
         }
     }
 
@@ -2507,6 +2507,25 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
            for (int j = 0; j < NODES; j++)
                assertTrue(res.get(j));
        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientStartNoServers() throws Exception {
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                client = true;
+
+                startGrid(0);
+
+                return null;
+            }
+        });
+
+        waitSpi(getTestIgniteInstanceName(0));
+
+        fut.get();
     }
 
     /**

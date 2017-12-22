@@ -105,10 +105,10 @@ public class ZookeeperDiscoveryImpl {
     static final String IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD = "IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD";
 
     /** */
-    static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_EVTS = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_EVTS";
+    static final String IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS = "IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS";
 
     /** */
-    private static final String IGNITE_ZOOKEEPER_DISCOVERY_EVTS_THROTTLE = "IGNITE_ZOOKEEPER_DISCOVERY_EVTS_THROTTLE";
+    private static final String IGNITE_ZOOKEEPER_DISCOVERY_SPI_EVTS_THROTTLE = "IGNITE_ZOOKEEPER_DISCOVERY_SPI_EVTS_THROTTLE";
 
     /** */
     final ZookeeperDiscoverySpi spi;
@@ -211,7 +211,7 @@ public class ZookeeperDiscoveryImpl {
         this.spi = spi;
         this.igniteInstanceName = igniteInstanceName;
         this.connectString = spi.getZkConnectionString();
-        this.sesTimeout = spi.getSessionTimeout();
+        this.sesTimeout = (int)spi.getSessionTimeout();
         this.log = log.getLogger(getClass());
         this.locNode = locNode;
         this.lsnr = lsnr;
@@ -462,7 +462,7 @@ public class ZookeeperDiscoveryImpl {
         try {
             locNode.onClientDisconnected(newId);
 
-            joinTopology0(true, rtState.joined);
+            joinTopology(true, rtState.joined);
         }
         catch (Exception e) {
             U.error(log, "Failed to reconnect: " + e, e);
@@ -649,10 +649,12 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * Starts join procedure and waits for {@link EventType#EVT_NODE_JOINED} event for local node.
+     *
      * @throws InterruptedException If interrupted.
      */
-    public void joinTopology() throws InterruptedException {
-        joinTopology0(false, false);
+    public void startJoinAndWait() throws InterruptedException {
+        joinTopology(false, false);
 
         for (;;) {
             try {
@@ -680,46 +682,62 @@ public class ZookeeperDiscoveryImpl {
      *    in this case (need produce EVT_CLIENT_NODE_RECONNECTED event).
      * @throws InterruptedException If interrupted.
      */
-    private void joinTopology0(boolean reconnect, boolean prevJoined) throws InterruptedException {
-        IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
-
-        if (internalLsnr != null)
-            internalLsnr.beforeJoin(locNode, log);
-
-        if (locNode.isClient() && reconnect)
-            locNode.setAttributes(spi.getSpiContext().nodeAttributes());
-
-        marshalCredentialsOnJoin(locNode);
-
-        rtState = new ZkRuntimeState(prevJoined);
-
-        DiscoveryDataBag discoDataBag = new DiscoveryDataBag(locNode.id());
-
-        exchange.collect(discoDataBag);
-
-        ZkJoiningNodeData joinData = new ZkJoiningNodeData(locNode, discoDataBag.joiningNodeData());
-
-        byte[] joinDataBytes;
+    private void joinTopology(boolean reconnect, boolean prevJoined) throws InterruptedException {
+        if (!busyLock.enterBusy())
+            return;
 
         try {
-            joinDataBytes = marshalZip(joinData);
-        }
-        catch (Exception e) {
-            throw new IgniteSpiException("Failed to marshal joining node data", e);
-        }
+            IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
 
-        try {
-            rtState.zkClient = new ZookeeperClient(igniteInstanceName,
-                log,
-                connectString,
-                sesTimeout,
-                new ConnectionLossListener());
-        }
-        catch (Exception e) {
-            throw new IgniteSpiException("Failed to create Zookeeper client", e);
-        }
+            if (internalLsnr != null)
+                internalLsnr.beforeJoin(locNode, log);
 
-        startJoin(joinDataBytes);
+            if (locNode.isClient() && reconnect)
+                locNode.setAttributes(spi.getSpiContext().nodeAttributes());
+
+            marshalCredentialsOnJoin(locNode);
+
+            synchronized (stateMux) {
+                if (connState == ConnectionState.STOPPED)
+                    return;
+
+                connState = ConnectionState.STARTED;
+            }
+
+            ZkRuntimeState rtState = this.rtState = new ZkRuntimeState(prevJoined);
+
+            DiscoveryDataBag discoDataBag = new DiscoveryDataBag(locNode.id());
+
+            exchange.collect(discoDataBag);
+
+            ZkJoiningNodeData joinData = new ZkJoiningNodeData(locNode, discoDataBag.joiningNodeData());
+
+            byte[] joinDataBytes;
+
+            try {
+                joinDataBytes = marshalZip(joinData);
+            }
+            catch (Exception e) {
+                throw new IgniteSpiException("Failed to marshal joining node data", e);
+            }
+
+            try {
+                rtState.zkClient = new ZookeeperClient(
+                    igniteInstanceName,
+                    log,
+                    connectString,
+                    sesTimeout,
+                    new ConnectionLossListener());
+            }
+            catch (Exception e) {
+                throw new IgniteSpiException("Failed to create Zookeeper client", e);
+            }
+
+            startJoin(rtState, joinDataBytes);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
@@ -879,18 +897,13 @@ public class ZookeeperDiscoveryImpl {
      * @param joinDataBytes Joining node data.
      * @throws InterruptedException If interrupted.
      */
-    private void startJoin(final byte[] joinDataBytes) throws InterruptedException {
-        if (!busyLock.enterBusy())
-            return;
-
+    private void startJoin(ZkRuntimeState rtState, final byte[] joinDataBytes) throws InterruptedException {
         try {
             long startTime = System.currentTimeMillis();
 
             initZkNodes();
 
             String prefix = UUID.randomUUID().toString();
-
-            final ZkRuntimeState rtState = this.rtState;
 
             rtState.init(new ZkWatcher(rtState), new AliveNodeDataWatcher(rtState));
 
@@ -923,7 +936,7 @@ public class ZookeeperDiscoveryImpl {
             rtState.locNodeZkPath = zkClient.createSequential(
                 prefix,
                 zkPaths.aliveNodesDir,
-                zkPaths.aliveNodesDir + "/" + prefix + ":" + locNode.id() + "|",
+                zkPaths.aliveNodePathForCreate(prefix, locNode),
                 null,
                 EPHEMERAL_SEQUENTIAL);
 
@@ -942,22 +955,29 @@ public class ZookeeperDiscoveryImpl {
             As a minor optimization do not start watch join data immediately, but only if do not receive
             join event after some timeout.
              */
-            rtState.joinTimeoutObj = new CheckJoinStateTimeoutObject(
-                joinDataPath,
-                rtState);
+            CheckJoinErrorWatcher joinErrorWatcher = new CheckJoinErrorWatcher(5000, joinDataPath, rtState);
 
-            zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback(rtState));
+            rtState.joinErrTimeoutObj = joinErrorWatcher.timeoutObj;
+
+            if (!locNode.isClient())
+                zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback(rtState));
 
             zkClient.getDataAsync(zkPaths.evtsPath, rtState.watcher, rtState.watcher);
 
-            spi.getSpiContext().addTimeoutObject(rtState.joinTimeoutObj);
+            spi.getSpiContext().addTimeoutObject(rtState.joinErrTimeoutObj);
+
+            if (locNode.isClient() && spi.getJoinTimeout() > 0) {
+                if (!rtState.prevJoined) {
+                    JoinTimeoutObject joinTimeoutObj = new JoinTimeoutObject(spi.getJoinTimeout());
+
+                    spi.getSpiContext().addTimeoutObject(joinTimeoutObj);
+                }
+            }
         }
         catch (IgniteCheckedException | ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
         }
         finally {
-            busyLock.leaveBusy();
-
             connStartLatch.countDown();
         }
     }
@@ -1053,48 +1073,67 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
-    private class CheckJoinStateTimeoutObject extends ZkAbstractWatcher
-        implements IgniteSpiTimeoutObject, AsyncCallback.DataCallback {
-        /** */
-        private final IgniteUuid id = IgniteUuid.randomUuid();
-
-        /** */
-        private final long endTime = System.currentTimeMillis() + 5000;
-
-        /** */
-        private final String joinDataPath;
-
+    private class JoinTimeoutObject extends ZkTimeoutObject {
         /**
-         * @param joinDataPath Node joined data path.
-         * @param rtState State.
+         * @param timeout Timeout.
          */
-        CheckJoinStateTimeoutObject(String joinDataPath, ZkRuntimeState rtState) {
-            super(rtState, ZookeeperDiscoveryImpl.this);
-
-            this.joinDataPath = joinDataPath;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long endTime() {
-            return endTime;
+        JoinTimeoutObject(long timeout) {
+            super(timeout);
         }
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            if (rtState.errForClose != null || rtState.joined)
+            if (rtState.joined)
                 return;
 
-            synchronized (stateMux) {
-                if (connState != ConnectionState.STARTED)
-                    return;
-            }
+            runInWorkerThread(new Runnable() {
+                @Override public void run() {
+                    synchronized (stateMux) {
+                        if (connState == ConnectionState.STOPPED)
+                            return;
 
-            rtState.zkClient.getDataAsync(joinDataPath, this, this);
+                        connState = ConnectionState.STOPPED;
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     *
+     */
+    private class CheckJoinErrorWatcher extends ZkAbstractWatcher implements AsyncCallback.DataCallback {
+        /** */
+        private final String joinDataPath;
+
+        /** */
+        private ZkTimeoutObject timeoutObj;
+
+        /**
+         * @param timeout Timeout.
+         * @param joinDataPath0 Node joined data path.
+         * @param rtState0 State.
+         */
+        CheckJoinErrorWatcher(long timeout, String joinDataPath0, ZkRuntimeState rtState0) {
+            super(rtState0, ZookeeperDiscoveryImpl.this);
+
+            this.joinDataPath = joinDataPath0;
+
+            timeoutObj = new ZkTimeoutObject(timeout) {
+                @Override public void onTimeout() {
+                    if (rtState.errForClose != null || rtState.joined)
+                        return;
+
+                    synchronized (stateMux) {
+                        if (connState != ConnectionState.STARTED)
+                            return;
+                    }
+
+                    rtState.zkClient.getDataAsync(joinDataPath,
+                        CheckJoinErrorWatcher.this,
+                        CheckJoinErrorWatcher.this);
+                }
+            };
         }
 
         /** {@inheritDoc} */
@@ -1338,7 +1377,7 @@ public class ZookeeperDiscoveryImpl {
 
         int newEvts = 0;
 
-        final int MAX_NEW_EVTS = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_MAX_EVTS, 100);
+        final int MAX_NEW_EVTS = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS, 100);
 
         List<ZookeeperClusterNode> failedNodes = null;
 
@@ -1419,7 +1458,7 @@ public class ZookeeperDiscoveryImpl {
      *
      */
     private void throttleNewEventsGeneration() {
-        long delay = IgniteSystemProperties.getLong(IGNITE_ZOOKEEPER_DISCOVERY_EVTS_THROTTLE, 0);
+        long delay = IgniteSystemProperties.getLong(IGNITE_ZOOKEEPER_DISCOVERY_SPI_EVTS_THROTTLE, 0);
 
         if (delay > 0) {
             if (log.isInfoEnabled())
@@ -1852,7 +1891,7 @@ public class ZookeeperDiscoveryImpl {
      */
     @SuppressWarnings("unchecked")
     private void newClusterStarted(int locInternalId) throws Exception {
-        spi.getSpiContext().removeTimeoutObject(rtState.joinTimeoutObj);
+        spi.getSpiContext().removeTimeoutObject(rtState.joinErrTimeoutObj);
 
         cleanupPreviousClusterData();
 
@@ -1874,11 +1913,6 @@ public class ZookeeperDiscoveryImpl {
             rtState.joinDataPartCnt);
 
         final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
-
-        synchronized (stateMux) {
-            if (connState == ConnectionState.DISCONNECTED)
-                connState = ConnectionState.STARTED;
-        }
 
         lsnr.onDiscovery(EventType.EVT_NODE_JOINED,
             1L,
@@ -2354,7 +2388,7 @@ public class ZookeeperDiscoveryImpl {
         if (log.isInfoEnabled())
             log.info("Local join event data: " + evtData + ']');
 
-        spi.getSpiContext().removeTimeoutObject(rtState.joinTimeoutObj);
+        spi.getSpiContext().removeTimeoutObject(rtState.joinErrTimeoutObj);
 
         String path = zkPaths.joinEventDataPathForJoined(evtData.eventId());
 
@@ -2388,11 +2422,6 @@ public class ZookeeperDiscoveryImpl {
         rtState.top.addNode(locNode);
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
-
-        synchronized (stateMux) {
-            if (connState == ConnectionState.DISCONNECTED)
-                connState = ConnectionState.STARTED;
-        }
 
         lsnr.onDiscovery(evtData.eventType(),
             evtData.topologyVersion(),

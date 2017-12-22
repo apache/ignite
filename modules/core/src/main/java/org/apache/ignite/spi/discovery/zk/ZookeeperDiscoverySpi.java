@@ -445,7 +445,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             internalLsnr);
 
         try {
-            impl.joinTopology();
+            impl.startJoinAndWait();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -519,7 +519,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     }
 
     /**
-     * Used for tests (call via reflection).
+     * Used in tests (called via reflection).
      *
      * @return Copy of SPI.
      */
