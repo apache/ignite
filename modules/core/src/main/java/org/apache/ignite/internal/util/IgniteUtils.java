@@ -3084,7 +3084,7 @@ public abstract class IgniteUtils {
 
     /** */
     private static GridPlainInClosure<ByteBuffer> directByteBufferCleaner() {
-        if (IgniteSystemProperties.getString("java.version", "").startsWith("1.8")) {
+        if (majorJavaVersion(jdkVer) < 9) {
             final Method cleanerMtd;
             final Method cleanMtd;
 
