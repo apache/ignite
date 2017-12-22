@@ -531,7 +531,7 @@ BOOST_AUTO_TEST_CASE(TestConnectionSsl)
     Connect(connectString.str());
 
     InsertTestStrings(10, false);
-    InsertTestBatch(11, 20, 9);
+    InsertTestBatch(11, 2000, 1989);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
