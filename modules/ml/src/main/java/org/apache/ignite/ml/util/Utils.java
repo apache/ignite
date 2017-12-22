@@ -60,7 +60,7 @@ public class Utils {
     }
 
     /**
-     * Select k distinct integers from range [0, n).
+     * Select k distinct integers from range [0, n) with reservoir sampling: https://en.wikipedia.org/wiki/Reservoir_sampling.
      * @param n Number specifying left end of range of integers to pick values from.
      * @param k Count specifying how many integers should be picked.
      * @return Array containing k distinct integers from range [0, n);
