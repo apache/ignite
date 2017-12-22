@@ -42,6 +42,9 @@ public class HadoopIgfsSecondaryFileSystemPositionedReadable implements IgfsSeco
     /** Buffer size. */
     private final int bufSize;
 
+    /** Synchronization mutex. */
+    private final Object mux = new Object();
+
     /** Actual input stream. */
     private FSDataInputStream in;
 
@@ -69,34 +72,38 @@ public class HadoopIgfsSecondaryFileSystemPositionedReadable implements IgfsSeco
 
     /** Get input stream. */
     private PositionedReadable in() throws IOException {
-        if (opened) {
-            if (err != null)
-                throw err;
-        }
-        else {
-            opened = true;
-
-            try {
-                in = fs.open(path, bufSize);
-
-                if (in == null)
-                    throw new IOException("Failed to open input stream (file system returned null): " + path);
+        synchronized (mux) {
+            if (opened) {
+                if (err != null)
+                    throw err;
             }
-            catch (IOException e) {
-                err = e;
+            else {
+                opened = true;
 
-                throw err;
+                try {
+                    in = fs.open(path, bufSize);
+
+                    if (in == null)
+                        throw new IOException("Failed to open input stream (file system returned null): " + path);
+                }
+                catch (IOException e) {
+                    err = e;
+
+                    throw err;
+                }
             }
-        }
 
-        return in;
+            return in;
+        }
     }
 
     /**
      * Close wrapped input stream in case it was previously opened.
      */
     @Override public void close() {
-        U.closeQuiet(in);
+        synchronized (mux) {
+            U.closeQuiet(in);
+        }
     }
 
     /** {@inheritDoc} */

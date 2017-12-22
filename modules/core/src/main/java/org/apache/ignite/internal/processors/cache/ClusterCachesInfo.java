@@ -1147,6 +1147,8 @@ class ClusterCachesInfo {
                     desc0.receivedFromStartVersion(desc.receivedFromStartVersion());
                     desc0.clientCacheStartVersion(desc.clientCacheStartVersion());
 
+                    desc0.cacheConfiguration().setStatisticsEnabled(cfg.isStatisticsEnabled());
+
                     desc = desc0;
                 }
 
