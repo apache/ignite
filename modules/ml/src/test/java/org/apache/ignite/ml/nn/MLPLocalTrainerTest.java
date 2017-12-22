@@ -28,12 +28,45 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.nn.updaters.NesterovUpdater;
 import org.apache.ignite.ml.nn.updaters.RPropUpdater;
+import org.apache.ignite.ml.nn.updaters.SimpleGDUpdater;
 import org.junit.Test;
 
 /**
  * Tests for {@link MLPLocalBatchTrainer}.
  */
 public class MLPLocalTrainerTest {
+    /**
+     * Test 'XOR' operation training with RProp updater.
+     */
+    @Test
+    public void testXORSimpleGD() {
+        Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
+            StorageConstants.ROW_STORAGE_MODE).transpose();
+
+        Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}},
+            StorageConstants.ROW_STORAGE_MODE).transpose();
+
+        MLPArchitecture conf = new MLPArchitecture(2).
+            withAddedLayer(10, true, Activators.RELU).
+            withAddedLayer(1, false, Activators.SIGMOID);
+
+        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf,
+            new Random(123567L), xorInputs, xorOutputs, 4);
+
+        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
+            () -> new SimpleGDUpdater(0.3),
+            0.0001,
+            16000).train(trainerInput);
+
+        Matrix predict = mlp.apply(xorInputs);
+
+        Tracer.showAscii(predict);
+
+        X.println(xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2) + "");
+
+        TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-1);
+    }
+
     /**
      * Test 'XOR' operation training with RProp updater.
      */
