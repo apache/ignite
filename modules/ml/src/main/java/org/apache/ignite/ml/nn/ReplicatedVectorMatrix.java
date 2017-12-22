@@ -185,7 +185,6 @@ class ReplicatedVectorMatrix implements Matrix {
 
     /** {@inheritDoc} */
     private Vector swap(int idx1, int idx2) {
-        // TODO: clone here.
         double val = vector.getX(idx1);
 
         vector.setX(idx1, vector.getX(idx2));
@@ -211,8 +210,7 @@ class ReplicatedVectorMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public Matrix assign(Matrix mtx) {
-        // TODO: should probably clone here.
-        return mtx;
+        return mtx.copy();
     }
 
     /** {@inheritDoc} */
@@ -394,13 +392,11 @@ class ReplicatedVectorMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public Matrix plus(double x) {
-        // TODO: Implement
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public Matrix plus(Matrix mtx) {
-        // TODO: Implement
         throw new UnsupportedOperationException();
     }
 
@@ -489,10 +485,8 @@ class ReplicatedVectorMatrix implements Matrix {
             return new ReplicatedVectorMatrix(row, replicationCnt, false);
 
         }
-        else {
-            // TODO: Implement
+        else
             throw new UnsupportedOperationException();
-        }
     }
 
     /** {@inheritDoc} */
@@ -560,13 +554,11 @@ class ReplicatedVectorMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO: Implement
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO: Implement
         throw new UnsupportedOperationException();
     }
 
