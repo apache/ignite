@@ -480,7 +480,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
-                        Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
+                        Collection<IgniteTxEntry> entries = near() || cctx.snapshot().needTxReadLogging() ? allEntries() : writeEntries();
 
                         List<DataEntry> dataEntries = null;
 
@@ -563,7 +563,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
                                             if (!near() && cacheCtx.group().persistenceEnabled() &&
-                                                op != NOOP && op != RELOAD && op != READ) {
+                                                op != NOOP && op != RELOAD && (op != READ || cctx.snapshot().needTxReadLogging())) {
                                                 if (dataEntries == null)
                                                     dataEntries = new ArrayList<>(entries.size());
 
