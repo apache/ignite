@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the string collection.
         /// </summary>
-        public static ICollection<string> ReadStringCollection(this IBinaryRawReader reader)
+        public static List<string> ReadStringCollection(this IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
