@@ -1806,6 +1806,11 @@
                                 <xs:documentation>Threads that generate dirty pages too fast during ongoing checkpoint will be throttled.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="walCompactionEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>If true, system will filter and compress WAL archive in background. Compressed WAL archive gets automatically decompressed on demand.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                         <xs:attribute name="pageSize" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>Size of the memory page.</xs:documentation>
@@ -1824,6 +1829,11 @@
                         <xs:attribute name="concurrencyLevel" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>Number of concurrent segments in Ignite internal page mapping tables.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walAutoArchiveAfterInactivity" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -2124,6 +2134,11 @@
                 <xs:annotation>
                     <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>
                 </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="redirectJavaConsoleOutput" type="xs:boolean">
+              <xs:annotation>
+                <xs:documentation>Whether Java console output should be redirected to Console.Out and Console.Error.</xs:documentation>
+              </xs:annotation>
             </xs:attribute>
         </xs:complexType>
     </xs:element>

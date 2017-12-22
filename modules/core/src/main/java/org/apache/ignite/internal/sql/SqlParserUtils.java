@@ -71,7 +71,7 @@ public class SqlParserUtils {
     }
 
     /**
-     * Skip commr or right parenthesis.
+     * Skip comma or right parenthesis.
      *
      * @param lex Lexer.
      * @return {@code True} if right parenthesis is found.
@@ -91,22 +91,35 @@ public class SqlParserUtils {
     }
 
     /**
-     * Parse integer value.
+     * Parse integer value (positive or negative).
      *
      * @param lex Lexer.
      * @return Integer value.
      */
     public static int parseInt(SqlLexer lex) {
+        int sign = 1;
+
+        if (lex.lookAhead().tokenType() == SqlLexerTokenType.MINUS) {
+            sign = -1;
+
+            lex.shift();
+        }
+
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             try {
-                return Integer.parseInt(lex.token());
+                long val = sign * Long.parseLong(lex.token());
+
+                if (val >= Integer.MIN_VALUE && val <= Integer.MAX_VALUE)
+                    return (int)val;
+
+                // Fall through.
             }
             catch (NumberFormatException e) {
-                // No-op.
+                // Fall through.
             }
         }
 
-        throw errorUnexpectedToken(lex, "[number]");
+        throw errorUnexpectedToken(lex, "[integer]");
     }
 
     /**
@@ -117,7 +130,7 @@ public class SqlParserUtils {
      * @return Name.
      */
     public static String parseIdentifier(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isVaildIdentifier(lex))
+        if (lex.shift() && isValidIdentifier(lex))
             return lex.token();
 
         throw errorUnexpectedToken(lex, "[identifier]", additionalExpTokens);
@@ -131,14 +144,14 @@ public class SqlParserUtils {
      * @return Qualified name.
      */
     public static SqlQualifiedName parseQualifiedIdentifier(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isVaildIdentifier(lex)) {
+        if (lex.shift() && isValidIdentifier(lex)) {
             SqlQualifiedName res = new SqlQualifiedName();
 
             String first = lex.token();
 
-            SqlLexerToken nextToken = lex.lookAhead();
+            SqlLexerToken nextTok = lex.lookAhead();
 
-            if (nextToken.tokenType() == SqlLexerTokenType.DOT) {
+            if (nextTok.tokenType() == SqlLexerTokenType.DOT) {
                 lex.shift();
 
                 String second = parseIdentifier(lex);
@@ -158,7 +171,7 @@ public class SqlParserUtils {
      * @param token Token.
      * @return {@code True} if we are standing on possible identifier.
      */
-    public static boolean isVaildIdentifier(SqlLexerToken token) {
+    public static boolean isValidIdentifier(SqlLexerToken token) {
         switch (token.tokenType()) {
             case DEFAULT:
                 char c = token.tokenFirstChar();

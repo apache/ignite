@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Resource;
@@ -59,6 +60,11 @@ namespace Apache.Ignite.Core
         /// Default configuration section name.
         /// </summary>
         public const string ConfigurationSectionName = "igniteConfiguration";
+
+        /// <summary>
+        /// Default configuration section name.
+        /// </summary>
+        public const string ClientConfigurationSectionName = "igniteClientConfiguration";
 
         /** */
         private static readonly object SyncRoot = new object();
@@ -170,26 +176,41 @@ namespace Apache.Ignite.Core
         /// <returns>Started Ignite.</returns>
         public static IIgnite StartFromApplicationConfiguration(string sectionName, string configPath)
         {
+            var section = GetConfigurationSection<IgniteConfigurationSection>(sectionName, configPath);
+
+            if (section.IgniteConfiguration == null)
+            {
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' in file '{2}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
+            }
+
+            return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
+        /// Gets the configuration section.
+        /// </summary>
+        private static T GetConfigurationSection<T>(string sectionName, string configPath)
+            where T : ConfigurationSection
+        {
             IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
             IgniteArgumentCheck.NotNullOrEmpty(configPath, "configPath");
 
             var fileMap = GetConfigMap(configPath);
             var config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);
 
-            var section = config.GetSection(sectionName) as IgniteConfigurationSection;
+            var section = config.GetSection(sectionName) as T;
 
             if (section == null)
+            {
                 throw new ConfigurationErrorsException(
                     string.Format("Could not find {0} with name '{1}' in file '{2}'",
-                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
+                        typeof(T).Name, sectionName, configPath));
+            }
 
-            if (section.IgniteConfiguration == null)
-                throw new ConfigurationErrorsException(
-                    string.Format("{0} with name '{1}' in file '{2}' is defined in <configSections>, " +
-                                  "but not present in configuration.",
-                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
-
-            return Start(section.IgniteConfiguration);
+            return section;
         }
 
         /// <summary>
@@ -209,7 +230,7 @@ namespace Apache.Ignite.Core
         /// Starts Ignite with given configuration.
         /// </summary>
         /// <returns>Started Ignite.</returns>
-        public static unsafe IIgnite Start(IgniteConfiguration cfg)
+        public static IIgnite Start(IgniteConfiguration cfg)
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
@@ -226,11 +247,10 @@ namespace Apache.Ignite.Core
                 CheckServerGc(cfg, log);
 
                 // 2. Create context.
-                IgniteUtils.LoadDlls(cfg.JvmDllPath, log);
+                JvmDll.Load(cfg.JvmDllPath, log);
 
-                var cbs = new UnmanagedCallbacks(log);
-
-                IgniteManager.CreateJvmContext(cfg, cbs, log);
+                var cbs = IgniteManager.CreateJvmContext(cfg, log);
+                var env = cbs.Jvm.AttachCurrentThread();
                 log.Debug("JVM started.");
 
                 var gridName = cfg.IgniteInstanceName;
@@ -248,8 +268,8 @@ namespace Apache.Ignite.Core
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null);
-
+                    UU.IgnitionStart(env, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null, cbs.IgniteId,
+                        cfg.RedirectJavaConsoleOutput);
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
@@ -268,7 +288,7 @@ namespace Apache.Ignite.Core
 
                     return node;
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     // 1. Perform keys cleanup.
                     string name = _startup.Name;
@@ -283,7 +303,7 @@ namespace Apache.Ignite.Core
 
                     // 2. Stop Ignite node if it was started.
                     if (interopProc != null)
-                        UU.IgnitionStop(interopProc.Target.Context, gridName, true);
+                        UU.IgnitionStop(gridName, true);
 
                     // 3. Throw error further (use startup error if exists because it is more precise).
                     if (_startup.Error != null)
@@ -293,7 +313,14 @@ namespace Apache.Ignite.Core
                             _startup.Error);
                     }
 
-                    throw;
+                    var jex = ex as JavaException;
+
+                    if (jex == null)
+                    {
+                        throw;
+                    }
+
+                    throw ExceptionUtils.GetException(null, jex);
                 }
                 finally
                 {
@@ -456,7 +483,7 @@ namespace Apache.Ignite.Core
         /// <param name="stream">Stream.</param>
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
             Justification = "PlatformJniTarget is passed further")]
-        internal static void OnStart(IUnmanagedTarget interopProc, IBinaryStream stream)
+        internal static void OnStart(GlobalRef interopProc, IBinaryStream stream)
         {
             try
             {
@@ -543,6 +570,7 @@ namespace Apache.Ignite.Core
                     {
                         Assembly assembly = Assembly.LoadFrom(s);
 
+                        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                         if (assembly != null)
                             continue;
                     }
@@ -741,13 +769,81 @@ namespace Apache.Ignite.Core
         /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
         /// </summary>
         /// <param name="clientConfiguration">The client configuration.</param>
-        /// <returns>Ignite instance.</returns>
+        /// <returns>Ignite client instance.</returns>
         public static IIgniteClient StartClient(IgniteClientConfiguration clientConfiguration)
         {
             IgniteArgumentCheck.NotNull(clientConfiguration, "clientConfiguration");
             IgniteArgumentCheck.NotNull(clientConfiguration.Host, "clientConfiguration.Host");
 
             return new IgniteClient(clientConfiguration);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteClientConfiguration"/> from application configuration
+        /// <see cref="IgniteClientConfigurationSection"/> with <see cref="ClientConfigurationSectionName"/>
+        /// name and connects Ignite lightweight (thin) client to an Ignite node.
+        /// <para />
+        /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
+        /// </summary>
+        /// <returns>Ignite client instance.</returns>
+        public static IIgniteClient StartClient()
+        {
+            // ReSharper disable once IntroduceOptionalParameters.Global
+            return StartClient(ClientConfigurationSectionName);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteClientConfiguration" /> from application configuration
+        /// <see cref="IgniteClientConfigurationSection" /> with specified name and connects
+        /// Ignite lightweight (thin) client to an Ignite node.
+        /// <para />
+        /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
+        /// </summary>
+        /// <param name="sectionName">Name of the configuration section.</param>
+        /// <returns>Ignite client instance.</returns>
+        public static IIgniteClient StartClient(string sectionName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
+
+            var section = ConfigurationManager.GetSection(sectionName) as IgniteClientConfigurationSection;
+
+            if (section == null)
+            {
+                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'.",
+                    typeof(IgniteClientConfigurationSection).Name, sectionName));
+            }
+
+            if (section.IgniteClientConfiguration == null)
+            {
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteClientConfigurationSection).Name, sectionName));
+            }
+
+            return StartClient(section.IgniteClientConfiguration);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteConfiguration" /> from application configuration
+        /// <see cref="IgniteConfigurationSection" /> with specified name and starts Ignite.
+        /// </summary>
+        /// <param name="sectionName">Name of the section.</param>
+        /// <param name="configPath">Path to the configuration file.</param>
+        /// <returns>Started Ignite.</returns>
+        public static IIgniteClient StartClient(string sectionName, string configPath)
+        {
+            var section = GetConfigurationSection<IgniteClientConfigurationSection>(sectionName, configPath);
+
+            if (section.IgniteClientConfiguration == null)
+            {
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' in file '{2}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteClientConfigurationSection).Name, sectionName, configPath));
+            }
+
+            return StartClient(section.IgniteClientConfiguration);
         }
 
         /// <summary>

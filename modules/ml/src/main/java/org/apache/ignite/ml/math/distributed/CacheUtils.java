@@ -41,7 +41,11 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.ml.math.KeyMapper;
-import org.apache.ignite.ml.math.distributed.keys.MatrixCacheKey;
+import org.apache.ignite.ml.math.distributed.keys.DataStructureCacheKey;
+import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
+import org.apache.ignite.ml.math.distributed.keys.impl.MatrixBlockKey;
+import org.apache.ignite.ml.math.distributed.keys.impl.VectorBlockKey;
+import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
@@ -49,7 +53,8 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
-import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
+import org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry;
+import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
 
 /**
  * Distribution-related misc. support.
@@ -106,7 +111,7 @@ public class CacheUtils {
      * @param <K> Key type.
      * @return Cluster group for given key.
      */
-    public static <K> ClusterGroup groupForKey(String cacheName, K k) {
+    protected static <K> ClusterGroup getClusterGroupForGivenKey(String cacheName, K k) {
         return ignite().cluster().forNode(ignite().affinity(cacheName).mapKeyToNode(k));
     }
 
@@ -144,15 +149,15 @@ public class CacheUtils {
         Collection<Double> subSums = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
             V v = ce.entry().getValue();
 
-            double sum = 0.0;
+            double sum;
 
             if (v instanceof Map) {
                 Map<Integer, Double> map = (Map<Integer, Double>)v;
 
                 sum = sum(map.values());
             }
-            else if (v instanceof BlockEntry) {
-                BlockEntry be = (BlockEntry)v;
+            else if (v instanceof MatrixBlockEntry) {
+                MatrixBlockEntry be = (MatrixBlockEntry)v;
 
                 sum = be.sum();
             }
@@ -218,8 +223,8 @@ public class CacheUtils {
 
                 min = Collections.min(map.values());
             }
-            else if (v instanceof BlockEntry) {
-                BlockEntry be = (BlockEntry)v;
+            else if (v instanceof MatrixBlockEntry) {
+                MatrixBlockEntry be = (MatrixBlockEntry)v;
 
                 min = be.minValue();
             }
@@ -255,8 +260,8 @@ public class CacheUtils {
 
                 max = Collections.max(map.values());
             }
-            else if (v instanceof BlockEntry) {
-                BlockEntry be = (BlockEntry)v;
+            else if (v instanceof MatrixBlockEntry) {
+                MatrixBlockEntry be = (MatrixBlockEntry)v;
 
                 max = be.maxValue();
             }
@@ -339,8 +344,8 @@ public class CacheUtils {
                     e.setValue(mapper.apply(e.getValue()));
 
             }
-            else if (v instanceof BlockEntry) {
-                BlockEntry be = (BlockEntry)v;
+            else if (v instanceof MatrixBlockEntry) {
+                MatrixBlockEntry be = (MatrixBlockEntry)v;
 
                 be.map(mapper);
             }
@@ -358,10 +363,16 @@ public class CacheUtils {
      */
     private static <K> IgnitePredicate<K> sparseKeyFilter(UUID matrixUuid) {
         return key -> {
-            if (key instanceof MatrixCacheKey)
-                return ((MatrixCacheKey)key).matrixId().equals(matrixUuid);
+            if (key instanceof DataStructureCacheKey)
+                return ((DataStructureCacheKey)key).dataStructureId().equals(matrixUuid);
             else if (key instanceof IgniteBiTuple)
                 return ((IgniteBiTuple<Integer, UUID>)key).get2().equals(matrixUuid);
+            else if (key instanceof MatrixBlockKey)
+                return ((MatrixBlockKey)key).dataStructureId().equals(matrixUuid);
+            else if (key instanceof RowColMatrixKey)
+                return ((RowColMatrixKey)key).dataStructureId().equals(matrixUuid);
+            else if (key instanceof VectorBlockKey)
+                return ((VectorBlockKey)key).dataStructureId().equals(matrixUuid);
             else
                 throw new UnsupportedOperationException();
         };
@@ -373,7 +384,7 @@ public class CacheUtils {
      * @param <K> Cache key object type.
      * @param <V> Cache value object type.
      */
-    public static <K, V> void foreach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun) {
+    private static <K, V> void foreach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun) {
         foreach(cacheName, fun, null);
     }
 
@@ -384,7 +395,7 @@ public class CacheUtils {
      * @param <K> Cache key object type.
      * @param <V> Cache value object type.
      */
-    public static <K, V> void foreach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun,
+    protected static <K, V> void foreach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun,
         IgnitePredicate<K> keyFilter) {
         bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
@@ -596,6 +607,18 @@ public class CacheUtils {
         return totalRes.stream().reduce(defRes, accumulator);
     }
 
+    /**
+     * Distributed version of fold operation. This method also applicable to sparse zeroes.
+     *
+     * @param cacheName Cache name.
+     * @param ignite ignite
+     * @param acc Accumulator
+     * @param supp supplier
+     * @param entriesGen entries generator
+     * @param comb combiner
+     * @param zeroValSupp Zero value supplier.
+     * @return aggregated result
+     */
     public static <K, V, A, W> A reduce(String cacheName, Ignite ignite,
         IgniteTriFunction<W, Cache.Entry<K, V>, A, A> acc,
         IgniteSupplier<W> supp,
@@ -619,9 +642,22 @@ public class CacheUtils {
         return totalRes.stream().reduce(defRes, comb);
     }
 
-    public static <K, V, A, W> A reduce(String cacheName, IgniteTriFunction<W, Cache.Entry<K, V>, A, A> acc,
+    /**
+     * Distributed version of fold operation.
+     *
+     * @param cacheName Cache name.
+     * @param acc Accumulator
+     * @param supp supplier
+     * @param entriesGen entries generator
+     * @param comb combiner
+     * @param zeroValSupp Zero value supplier
+     * @return aggregated result
+     */
+    public static <K, V, A, W> A reduce(String cacheName,
+        IgniteTriFunction<W, Cache.Entry<K, V>, A, A> acc,
         IgniteSupplier<W> supp,
-        IgniteSupplier<Iterable<Cache.Entry<K, V>>> entriesGen, IgniteBinaryOperator<A> comb,
+        IgniteSupplier<Iterable<Cache.Entry<K, V>>> entriesGen,
+        IgniteBinaryOperator<A> comb,
         IgniteSupplier<A> zeroValSupp) {
         return reduce(cacheName, Ignition.localIgnite(), acc, supp, entriesGen, comb, zeroValSupp);
     }
@@ -636,6 +672,7 @@ public class CacheUtils {
 
     /**
      * Broadcast runnable to data nodes of given cache.
+     *
      * @param cacheName Cache name.
      * @param run Runnable.
      */
@@ -654,6 +691,7 @@ public class CacheUtils {
 
     /**
      * Broadcast callable to data nodes of given cache.
+     *
      * @param cacheName Cache name.
      * @param ignite Ignite instance.
      * @param call Callable to broadcast.
@@ -662,5 +700,35 @@ public class CacheUtils {
      */
     public static <A> Collection<A> bcast(String cacheName, Ignite ignite, IgniteCallable<A> call) {
         return ignite.compute(ignite.cluster().forDataNodes(cacheName)).broadcast(call);
+    }
+
+    /**
+     * @param vectorUuid Matrix UUID.
+     * @param mapper Mapping {@link IgniteFunction}.
+     */
+    @SuppressWarnings("unchecked")
+    public static <K, V> void sparseMapForVector(UUID vectorUuid, IgniteDoubleFunction<V> mapper, String cacheName) {
+        A.notNull(vectorUuid, "vectorUuid");
+        A.notNull(cacheName, "cacheName");
+        A.notNull(mapper, "mapper");
+
+        foreach(cacheName, (CacheEntry<K, V> ce) -> {
+            K k = ce.entry().getKey();
+
+            V v = ce.entry().getValue();
+
+            if (v instanceof VectorBlockEntry) {
+                VectorBlockEntry entry = (VectorBlockEntry)v;
+
+                for (int i = 0; i < entry.size(); i++)
+                    entry.set(i, (Double)mapper.apply(entry.get(i)));
+
+                ce.cache().put(k, (V)entry);
+            }
+            else {
+                V mappingRes = mapper.apply((Double)v);
+                ce.cache().put(k, mappingRes);
+            }
+        }, sparseKeyFilter(vectorUuid));
     }
 }

@@ -348,7 +348,13 @@ public final class FileInput implements ByteBufferBackedDataInput {
 
         /** {@inheritDoc} */
         @Override public int skipBytes(int n) throws IOException {
-            throw new UnsupportedOperationException();
+            ensure(n);
+
+            int skipped = Math.min(buf.remaining(), n);
+
+            buf.position(buf.position() + skipped);
+
+            return skipped;
         }
 
         /**

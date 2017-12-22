@@ -2029,7 +2029,7 @@ select new {
 // is equal to 3 minutes per derived class used by the base class +
 // 3 minutes per member of a derived class used by the base class.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Class shouldn't be too deep in inheritance tree</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Class shouldn't be too deep in inheritance tree</Name>
         
 warnif count > 0 from t in JustMyCode.Types 
 where t.IsClass
@@ -2347,7 +2347,8 @@ warnif count > 0
 from t in JustMyCode.Types.Where(t =>
    !t.IsStatic && !t.IsInterface &&
    !t.IsEnumeration && !t.IsDelegate &&
-   !t.IsGeneratedByCompiler)
+   !t.IsGeneratedByCompiler &&
+   !t.FullName.Contains(".Jni."))
 
 let methodsThatCanBeMadeStatic = 
    from m in t.InstanceMethods
@@ -2477,7 +2478,7 @@ select new {
       <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[//<Name>Avoid the Singleton pattern</Name>
 warnif count > 0
 from t in Application.Types
-where !t.IsStatic && !t.IsAbstract && (t.IsClass || t.IsStructure)
+where !t.IsStatic && !t.IsAbstract && (t.IsClass || t.IsStructure) && t.Name != "Jvm" && t.Name != "JvmDll"
 
 // All ctors of a singleton are private
 where t.Constructors.Where(ctor => !ctor.IsPrivate).Count() == 0
@@ -5641,7 +5642,8 @@ from f in JustMyCode.Fields where
    !f.IsEnumValue &&  // The IL code never explicitly uses enumeration value.
     f.Name != "value__"  && // Field named 'value__' are relative to enumerations and the IL code never explicitly uses them.
    !f.HasAttribute("NDepend.Attributes.IsNotDeadCodeAttribute".AllowNoMatch()) &&
-   !f.IsGeneratedByCompiler
+   !f.IsGeneratedByCompiler &&
+   !f.ParentType.Name.StartsWith("Jvm")
    // If you don't want to link NDepend.API.dll, you can use your own IsNotDeadCodeAttribute
    // and adapt the source code of this rule.
 select new {
@@ -7216,7 +7218,7 @@ select new {
 //<HowToFix>
 // *Pascal Case* the names of matched types.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods name should begin with an Upper character</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods name should begin with an Upper character</Name>
 warnif count > 0 
 from m in JustMyCode.Methods where 
   !m.NameLike (@"^[A-Z]") && 

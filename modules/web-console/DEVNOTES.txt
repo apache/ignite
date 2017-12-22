@@ -1,29 +1,26 @@
-Ignite Web Console Instructions
-======================================
-
-How to deploy locally:
-
+Ignite Web Console Build Instructions
+=====================================
 1. Install locally MongoDB (version >=3.2.x) follow instructions from site http://docs.mongodb.org/manual/installation.
 2. Install locally NodeJS (version >=6.5.x) using installer from site https://nodejs.org/en/download/current for your OS.
-3. Change directory to '$IGNITE_HOME/modules/web-console/backend' and
+3. Change directory to '/modules/web-console/backend' and
  run "npm install --no-optional" for download backend dependencies.
-4. Change directory to '$IGNITE_HOME/modules/web-console/frontend' and
+4. Change directory to '/modules/web-console/frontend' and
  run "npm install --no-optional" for download frontend dependencies.
 5. Build ignite-web-agent module follow instructions from 'modules/web-console/web-agent/README.txt'.
-6. Copy ignite-web-agent-<version>.zip from '$IGNITE_HOME/modules/web-console/web-agent/target'
- to '$IGNITE_HOME/modules/web-console/backend/agent_dists' folder.
+6. Copy ignite-web-agent-<version>.zip from '/modules/web-console/web-agent/target'
+ to '/modules/web-console/backend/agent_dists' folder.
 
-Steps 1 - 6 should be executed once.
+Steps 1 - 4 should be executed once.
 
-How to run console in development mode:
-
+Ignite Web Console Run In Development Mode
+==========================================
 1. Configure MongoDB to run as service or in terminal change dir to $MONGO_INSTALL_DIR/server/3.2/bin
   and start MongoDB by executing "mongod".
 
-2. In new terminal change directory to '$IGNITE_HOME/modules/web-console/backend'.
+2. In new terminal change directory to '/modules/web-console/backend'.
    If needed run "npm install --no-optional" (if dependencies changed) and run "npm start" to start backend.
 
-3. In new terminal change directory to '$IGNITE_HOME/modules/web-console/frontend'.
+3. In new terminal change directory to '/modules/web-console/frontend'.
   If needed run "npm install --no-optional" (if dependencies changed) and start webpack in development mode "npm run dev".
 
 4. In browser open: http://localhost:9000
@@ -33,3 +30,11 @@ How to migrate model:
 1. Model will be upgraded on first start.
 2. To downgrade model execute in terminal following command: "./node_modules/.bin/migrate down <migration-name> -d <dbConnectionUri>".
    Example: "./node_modules/.bin/migrate down add_index -d mongodb://localhost/console".
+
+
+Ignite Web Console Direct-Install Maven Build Instructions
+==========================================================
+To build direct-install archive from sources run following command in Ignite project root folder:
+"mvn clean package -pl :ignite-web-agent,:ignite-web-console -am -P web-console -DskipTests=true -DskipClientDocs -Dmaven.javadoc.skip=true"
+
+Assembled archive can be found here: `/modules/web-console/target/ignite-web-console-direct-install-*.zip`.

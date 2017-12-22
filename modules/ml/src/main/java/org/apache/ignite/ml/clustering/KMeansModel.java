@@ -21,8 +21,8 @@ import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.KMeansModelFormat;
-import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
 
 /**
  * This class encapsulates result of clusterization.
@@ -65,7 +65,7 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
      *
      * @param vec Vector.
      */
-    public Integer predict(Vector vec) {
+    public Integer apply(Vector vec) {
         int res = -1;
         double minDist = Double.POSITIVE_INFINITY;
 
@@ -109,6 +109,5 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
 
         return distance.equals(that.distance) && Arrays.deepEquals(centers, that.centers);
     }
-
 
 }

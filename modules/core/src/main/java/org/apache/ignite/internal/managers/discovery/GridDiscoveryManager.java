@@ -1065,6 +1065,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nm.setTotalRejectedJobs(jm.getTotalRejectedJobs());
                 nm.setTotalCancelledJobs(jm.getTotalCancelledJobs());
                 nm.setTotalExecutedJobs(jm.getTotalExecutedJobs());
+                nm.setTotalJobsExecutionTime(jm.getTotalJobsExecutionTime());
                 nm.setMaximumJobWaitTime(jm.getMaximumJobWaitTime());
                 nm.setCurrentJobWaitTime(jm.getCurrentJobWaitTime());
                 nm.setAverageJobWaitTime(jm.getAverageJobWaitTime());
@@ -1146,7 +1147,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 Map<Integer, CacheMetrics> metrics = null;
 
                 for (GridCacheAdapter<?, ?> cache : caches) {
-                    if (cache.configuration().isStatisticsEnabled() &&
+                    if (cache.context().statisticsEnabled() &&
                         cache.context().started() &&
                         cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0) {
                         if (metrics == null)
@@ -1392,16 +1393,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @throws IgniteCheckedException If failed to get the version.
      */
     private int nodeJavaMajorVersion(ClusterNode node) throws IgniteCheckedException {
-        try {
-            // The format is identical for Oracle JDK, OpenJDK and IBM JDK.
-            return Integer.parseInt(node.<String>attribute("java.version").split("\\.")[1]);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to get java major version (unknown 'java.version' format) [ver=" +
-                node.<String>attribute("java.version") + "]", e);
+        String verStr = node.<String>attribute("java.version");
 
-            return 0;
+        int res = U.majorJavaVersion(verStr);
+
+        if (res == 0) {
+            U.error(log, "Failed to get java major version (unknown 'java.version' format) [ver=" +
+                node.<String>attribute("java.version") + "]");
         }
+
+        return res;
     }
 
     /**
