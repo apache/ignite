@@ -83,7 +83,9 @@ public class MLPArchitecture {
      */
     public MLPArchitecture withAddedLayer(int neuronsCnt, boolean hasBias, IgniteDifferentiableDoubleToDoubleFunction f) {
         ArrayList<LayerArchitecture> newLayers = new ArrayList<>(layers);
+
         newLayers.add(new TransformationLayerArchitecture(neuronsCnt, hasBias, f));
+
         return new MLPArchitecture(newLayers);
     }
 

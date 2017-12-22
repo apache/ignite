@@ -61,11 +61,11 @@ class ReplicatedVectorMatrix implements Matrix {
      *
      * @param vector Vector to replicate.
      * @param replicationCnt Count of replications.
-     * @param asColumn Should vector be replicated as a column or as a row.
+     * @param asCol Should vector be replicated as a column or as a row.
      */
-    ReplicatedVectorMatrix(Vector vector, int replicationCnt, boolean asColumn) {
+    ReplicatedVectorMatrix(Vector vector, int replicationCnt, boolean asCol) {
         this.vector = vector;
-        this.asCol = asColumn;
+        this.asCol = asCol;
         this.replicationCnt = replicationCnt;
     }
 

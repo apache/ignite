@@ -46,14 +46,15 @@ public class SimpleGDUpdater implements ParameterUpdater<SmoothParametrized, Sim
     }
 
     /** {@inheritDoc} */
-    @Override public SimpleGDParams init(SmoothParametrized mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+    @Override public SimpleGDParams init(SmoothParametrized mlp,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
         return new SimpleGDParams(mlp.parametersCount(), learningRate);
     }
 
     /** {@inheritDoc} */
-    @Override public SimpleGDParams updateParams(SmoothParametrized mlp, SimpleGDParams updaterParameters, int iteration, Matrix inputs,
-        Matrix groundTruth) {
+    @Override public SimpleGDParams updateParams(SmoothParametrized mlp, SimpleGDParams updaterParameters,
+        int iteration, Matrix inputs, Matrix groundTruth) {
         return new SimpleGDParams(mlp.differentiateByParameters(loss, inputs, groundTruth), learningRate);
     }
 }

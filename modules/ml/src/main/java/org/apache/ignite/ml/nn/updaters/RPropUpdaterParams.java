@@ -48,14 +48,14 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
     /**
      * Construct RPropUpdaterParams.
      *
-     * @param paramsCount Parameters count.
+     * @param paramsCnt Parameters count.
      * @param initUpdate Initial update (in original work labeled as "delta_0").
      */
-    RPropUpdaterParams(int paramsCount, double initUpdate) {
-        prevIterationUpdates = new DenseLocalOnHeapVector(paramsCount);
-        prevIterationGradient = new DenseLocalOnHeapVector(paramsCount);
-        deltas = new DenseLocalOnHeapVector(paramsCount).assign(initUpdate);
-        updatesMask = new DenseLocalOnHeapVector(paramsCount);
+    RPropUpdaterParams(int paramsCnt, double initUpdate) {
+        prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt);
+        prevIterationGradient = new DenseLocalOnHeapVector(paramsCnt);
+        deltas = new DenseLocalOnHeapVector(paramsCnt).assign(initUpdate);
+        updatesMask = new DenseLocalOnHeapVector(paramsCnt);
     }
 
     /**
@@ -126,6 +126,7 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <M extends SmoothParametrized> M update(M obj) {
         Vector updatesToAdd = VectorUtils.elementWiseTimes(updatesMask.copy(), prevIterationUpdates);
         return (M)obj.setParameters(obj.parameters().plus(updatesToAdd));

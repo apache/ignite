@@ -75,8 +75,11 @@ public class Mnist {
 
         Properties props = loadMNISTProperties();
 
-        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), samplesCntCnt);
-        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), 10_000);
+        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(props.getProperty(PROP_TRAINING_IMAGES),
+            props.getProperty(PROP_TRAINING_LABELS), new Random(123L), samplesCntCnt);
+
+        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(props.getProperty(PROP_TEST_IMAGES),
+            props.getProperty(PROP_TEST_LABELS), new Random(123L), 10_000);
 
         IgniteBiTuple<Matrix, Matrix> ds = createDataset(trainingMnistStream, samplesCntCnt, featCnt);
         IgniteBiTuple<Matrix, Matrix> testDs = createDataset(testMnistStream, 10000, featCnt);
@@ -92,7 +95,7 @@ public class Mnist {
             2000);
 
         MultilayerPerceptron mdl = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            () -> new RPropUpdater(0.1, 0.1, 1.2, 0.5),
+            () -> new RPropUpdater(0.1, 1.2, 0.5),
             1E-7,
             200).
             train(input);

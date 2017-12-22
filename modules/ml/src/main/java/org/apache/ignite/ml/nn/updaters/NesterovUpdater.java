@@ -52,15 +52,16 @@ public class NesterovUpdater implements ParameterUpdater<SmoothParametrized, Nes
     }
 
     /** {@inheritDoc} */
-    @Override public NesterovUpdaterParams init(SmoothParametrized mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+    @Override public NesterovUpdaterParams init(SmoothParametrized mdl,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
 
         return new NesterovUpdaterParams(mdl.parametersCount());
     }
 
     /** {@inheritDoc} */
-    @Override public NesterovUpdaterParams updateParams(SmoothParametrized mdl, NesterovUpdaterParams updaterParameters, int iteration,
-        Matrix inputs, Matrix groundTruth) {
+    @Override public NesterovUpdaterParams updateParams(SmoothParametrized mdl, NesterovUpdaterParams updaterParameters,
+        int iteration, Matrix inputs, Matrix groundTruth) {
 
         if (iteration > 0) {
             Vector curParams = mdl.parameters();

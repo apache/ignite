@@ -26,13 +26,14 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
  * Class encapsulating RProp algorithm.
+ *
  * @see <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf</a>.
  */
 public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropUpdaterParams> {
     /**
      * Default initial update.
      */
-    private static double DFLT_INIT_UPDATE = 0.5;
+    private static double DFLT_INIT_UPDATE = 0.1;
 
     /**
      * Default acceleration rate.
@@ -43,11 +44,6 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
      * Default deacceleration rate.
      */
     private static double DFLT_DEACCELERATION_RATE = 0.5;
-
-    /**
-     * Default learning rate.
-     */
-    private static double DFLT_LEARNING_RATE = 0.1;
 
     /**
      * Initial update.
@@ -75,11 +71,6 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
     private final static double UPDATE_MIN = 1E-6;
 
     /**
-     * Learning rate.
-     */
-    private final double learningRate;
-
-    /**
      * Loss function.
      */
     protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
@@ -91,8 +82,7 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
      * @param accelerationRate Acceleration rate.
      * @param deaccelerationRate Deacceleration rate.
      */
-    public RPropUpdater(double learningRate, double initUpdate, double accelerationRate, double deaccelerationRate) {
-        this.learningRate = learningRate;
+    public RPropUpdater(double initUpdate, double accelerationRate, double deaccelerationRate) {
         this.initUpdate = initUpdate;
         this.accelerationRate = accelerationRate;
         this.deaccelerationRate = deaccelerationRate;
@@ -102,18 +92,19 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
      * Construct RPropUpdater with default parameters.
      */
     public RPropUpdater() {
-        this(DFLT_LEARNING_RATE, DFLT_INIT_UPDATE, DFLT_ACCELERATION_RATE, DFLT_DEACCELERATION_RATE);
+        this(DFLT_INIT_UPDATE, DFLT_ACCELERATION_RATE, DFLT_DEACCELERATION_RATE);
     }
 
     /** {@inheritDoc} */
-    @Override public RPropUpdaterParams init(SmoothParametrized mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+    @Override public RPropUpdaterParams init(SmoothParametrized mdl,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
-        return new RPropUpdaterParams(mdl.parametersCount(), learningRate);
+        return new RPropUpdaterParams(mdl.parametersCount(), initUpdate);
     }
 
     /** {@inheritDoc} */
-    @Override public RPropUpdaterParams updateParams(SmoothParametrized mdl, RPropUpdaterParams updaterParams, int iteration, Matrix inputs,
-        Matrix groundTruth) {
+    @Override public RPropUpdaterParams updateParams(SmoothParametrized mdl, RPropUpdaterParams updaterParams,
+        int iteration, Matrix inputs, Matrix groundTruth) {
         Vector gradient = mdl.differentiateByParameters(loss, inputs, groundTruth);
         Vector prevGradient = updaterParams.prevIterationGradient();
         Vector derSigns;

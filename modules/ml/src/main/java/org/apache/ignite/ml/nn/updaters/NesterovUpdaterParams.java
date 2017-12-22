@@ -59,6 +59,7 @@ public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> 
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <M extends SmoothParametrized> M update(M obj) {
         Vector parameters = obj.parameters();
         return (M)obj.setParameters(parameters.minus(prevIterationUpdates));

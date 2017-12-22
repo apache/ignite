@@ -40,8 +40,10 @@ public class TransformationLayerArchitecture extends LayerArchitecture {
      * @param hasBias Flag indicating presence of bias in layer.
      * @param activationFunction Activation function for layer.
      */
-    public TransformationLayerArchitecture(int neuronsCnt, boolean hasBias, IgniteDifferentiableDoubleToDoubleFunction activationFunction) {
+    public TransformationLayerArchitecture(int neuronsCnt, boolean hasBias,
+        IgniteDifferentiableDoubleToDoubleFunction activationFunction) {
         super(neuronsCnt);
+
         this.hasBias = hasBias;
         this.activationFunction = activationFunction;
     }

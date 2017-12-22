@@ -57,6 +57,7 @@ public class SimpleGDParams implements UpdaterParams<SmoothParametrized> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <M extends SmoothParametrized> M update(M obj) {
         Vector params = obj.parameters();
         return (M)obj.setParameters(params.plus(gradient.times(learningRate)));

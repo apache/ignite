@@ -33,11 +33,13 @@ import org.apache.ignite.ml.nn.updaters.UpdaterParams;
  *
  * @param <P> Parameter updater parameters.
  */
-public class MLPLocalBatchTrainer<P extends UpdaterParams<? super MultilayerPerceptron>> extends LocalBatchTrainer<MultilayerPerceptron, P> {
+public class MLPLocalBatchTrainer<P extends UpdaterParams<? super MultilayerPerceptron>>
+    extends LocalBatchTrainer<MultilayerPerceptron, P> {
     /**
      * Default loss function.
      */
-    private static final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> DEFAULT_LOSS = LossFunctions.MSE;
+    private static final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> DEFAULT_LOSS =
+        LossFunctions.MSE;
 
     /**
      * Default error threshold.
@@ -71,6 +73,6 @@ public class MLPLocalBatchTrainer<P extends UpdaterParams<? super MultilayerPerc
      * @return MLPLocalBatchTrainer with default parameters.
      */
     public static MLPLocalBatchTrainer<RPropUpdaterParams> getDefault() {
-        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS,  RPropUpdater::new, DEFAULT_ERROR_THRESHOLD, DEFAULT_MAX_ITERATIONS);
+        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS, RPropUpdater::new, DEFAULT_ERROR_THRESHOLD, DEFAULT_MAX_ITERATIONS);
     }
 }

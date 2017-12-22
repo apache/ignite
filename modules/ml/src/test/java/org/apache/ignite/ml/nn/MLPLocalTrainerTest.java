@@ -39,14 +39,18 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORRProp() {
-        Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}}, StorageConstants.ROW_STORAGE_MODE).transpose();
-        Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}}, StorageConstants.ROW_STORAGE_MODE).transpose();
+        Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
+            StorageConstants.ROW_STORAGE_MODE).transpose();
+
+        Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}},
+            StorageConstants.ROW_STORAGE_MODE).transpose();
 
         MLPArchitecture conf = new MLPArchitecture(2).
             withAddedLayer(10, true, Activators.RELU).
             withAddedLayer(1, false, Activators.SIGMOID);
 
-        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(123567L), xorInputs, xorOutputs, 4);
+        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf,
+            new Random(123567L), xorInputs, xorOutputs, 4);
 
         MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
             RPropUpdater::new,
@@ -67,14 +71,18 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORNesterov() {
-        Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}}, StorageConstants.ROW_STORAGE_MODE).transpose();
-        Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}}, StorageConstants.ROW_STORAGE_MODE).transpose();
+        Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
+            StorageConstants.ROW_STORAGE_MODE).transpose();
+
+        Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}},
+            StorageConstants.ROW_STORAGE_MODE).transpose();
 
         MLPArchitecture conf = new MLPArchitecture(2).
             withAddedLayer(10, true, Activators.RELU).
             withAddedLayer(1, false, Activators.SIGMOID);
 
-        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(1234L), xorInputs, xorOutputs, 4);
+        SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(1234L),
+            xorInputs, xorOutputs, 4);
 
         MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
             () -> new NesterovUpdater(0.1, 0.7),

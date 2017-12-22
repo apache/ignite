@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains neural networks algorithms.
+ * Contains neural networks and related classes.
  */
 package org.apache.ignite.ml.nn;

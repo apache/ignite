@@ -30,10 +30,10 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.nn.initializers.MLPInitializer;
-import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.architecture.TransformationLayerArchitecture;
+import org.apache.ignite.ml.nn.initializers.MLPInitializer;
+import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.updaters.SmoothParametrized;
 
 import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
@@ -356,7 +356,8 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
     }
 
     /** {@inheritDoc} */
-    public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, Matrix inputsBatch, Matrix truthBatch) {
+    public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
+        Matrix inputsBatch, Matrix truthBatch) {
         // Backpropagation algorithm is used here.
         int batchSize = inputsBatch.columnSize();
         double invBatchSize = 1 / (double)batchSize;
@@ -368,7 +369,8 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
 
         for (int layer = lastLayer; layer > 0; layer--) {
             Matrix z = mlpState.linearOutput(layer).copy();
-            Matrix dSigmaDz = differentiateNonlinearity(z, architecture().transformationLayerArchitecture(layer).activationFunction());
+            Matrix dSigmaDz = differentiateNonlinearity(z,
+                architecture().transformationLayerArchitecture(layer).activationFunction());
 
             if (layer == lastLayer) {
                 Matrix sigma = mlpState.activatorsOutput(lastLayer).copy();
@@ -425,7 +427,10 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
 
         for (int l = 1; l < layersCount(); l++) {
             MLPLayer layer = layers.get(l - 1);
-            IgniteBiTuple<Integer, Matrix> readRes = readFromVector(vector, layer.weights.rowSize(), layer.weights.columnSize(), off);
+
+            IgniteBiTuple<Integer, Matrix> readRes = readFromVector(vector, layer.weights.rowSize(),
+                layer.weights.columnSize(), off);
+
             off = readRes.get1();
             layer.weights = readRes.get2();
 

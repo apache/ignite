@@ -35,7 +35,8 @@ import org.apache.ignite.ml.nn.updaters.UpdaterParams;
  * Batch trainer. This trainer is not distributed on the cluster, but input can theoretically read data from
  * Ignite cache.
  */
-public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends UpdaterParams<? super M>> implements Trainer<M, LocalBatchTrainerInput<M>> {
+public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends UpdaterParams<? super M>>
+    implements Trainer<M, LocalBatchTrainerInput<M>> {
     /**
      * Supplier for updater function.
      */
@@ -101,7 +102,8 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends Update
 
             int batchSize = input.columnSize();
 
-            err = MatrixUtil.zipFoldByColumns(predicted, truth, (predCol, truthCol) -> loss.apply(truthCol).apply(predCol)).sum() / batchSize;
+            err = MatrixUtil.zipFoldByColumns(predicted, truth, (predCol, truthCol) ->
+                loss.apply(truthCol).apply(predCol)).sum() / batchSize;
 
             debug("Error: " + err);
 

@@ -114,7 +114,9 @@ public class VectorUtils {
     }
 
     /**
-     * Zip two vectors with given binary function (i.e. apply binary function to both vector elementwise and construct vector from results).
+     * Zip two vectors with given binary function
+     * (i.e. apply binary function to both vector elementwise and construct vector from results).
+     *
      * Example zipWith({0, 2, 4}, {1, 3, 5}, plus) = {0 + 1, 2 + 3, 4 + 5}.
      * Length of result is length of shortest of vectors.
      *
