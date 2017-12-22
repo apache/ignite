@@ -20,20 +20,40 @@ package org.apache.ignite.ml.nn.updaters;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
-public class Gradients<T extends SmoothParametrized> implements UpdaterParams<T> {
+public class SimpleGDParams<T extends SmoothParametrized> implements UpdaterParams<T> {
+    /**
+     * Gradient.
+     */
     private Vector gradient;
+
+    /**
+     * Learning rate.
+     */
     private double learningRate;
 
-    public Gradients(int paramsCount, double learningRate) {
-        gradient = new DenseLocalOnHeapVector(paramsCount);
+    /**
+     * Construct instance of this class.
+     *
+     * @param paramsCnt Count of parameters.
+     * @param learningRate Learning rate.
+     */
+    public SimpleGDParams(int paramsCnt, double learningRate) {
+        gradient = new DenseLocalOnHeapVector(paramsCnt);
         this.learningRate = learningRate;
     }
 
-    public Gradients(Vector gradient, double learningRate) {
+    /**
+     * Construct instance of this class.
+     *
+     * @param gradient Gradient.
+     * @param learningRate Learning rate.
+     */
+    public SimpleGDParams(Vector gradient, double learningRate) {
         this.gradient = gradient;
         this.learningRate = learningRate;
     }
 
+    /** {@inheritDoc} */
     @Override public void update(T mlp) {
         Vector params = mlp.parameters();
         mlp.setParameters(params.plus(gradient.times(learningRate)));

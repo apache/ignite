@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 /**
  * Simple gradient descent parameters updater.
  */
-public class SimpleGDUpdater implements ParameterUpdater<SmoothParametrized, Gradients> {
+public class SimpleGDUpdater implements ParameterUpdater<SmoothParametrized, SimpleGDParams> {
     /**
      * Learning rate.
      */
@@ -46,14 +46,14 @@ public class SimpleGDUpdater implements ParameterUpdater<SmoothParametrized, Gra
     }
 
     /** {@inheritDoc} */
-    @Override public Gradients init(SmoothParametrized mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+    @Override public SimpleGDParams init(SmoothParametrized mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
-        return new Gradients(mlp.parametersCount(), learningRate);
+        return new SimpleGDParams(mlp.parametersCount(), learningRate);
     }
 
     /** {@inheritDoc} */
-    @Override public Gradients updateParams(SmoothParametrized mlp, Gradients updaterParameters, int iteration, Matrix inputs,
+    @Override public SimpleGDParams updateParams(SmoothParametrized mlp, SimpleGDParams updaterParameters, int iteration, Matrix inputs,
         Matrix groundTruth) {
-        return new Gradients(mlp.differentiateByParameters(loss, inputs, groundTruth), learningRate);
+        return new SimpleGDParams(mlp.differentiateByParameters(loss, inputs, groundTruth), learningRate);
     }
 }

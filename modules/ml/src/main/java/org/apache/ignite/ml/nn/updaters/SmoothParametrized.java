@@ -27,15 +27,17 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  */
 public interface SmoothParametrized {
     /**
-     * Compose function in the following way: feed output of this model as input to second argument to loss.
-     * After that we have a function of three arguments: input, ground truth, parameters.
-     * If we fix ground truths values and inputs, we get function of one argument: parameters vector.
+     * Compose function in the following way: feed output of this model as input to second argument to loss function.
+     * After that we have a function g of three arguments: input, ground truth, parameters.
+     * If we consider function
+     * h(w) = 1 / M sum_{i=1}^{M} g(w, input_i, groundTruth_i),
+     * where M is number of entries in batch, we get function of one argument: parameters vector w.
      * This function is being differentiated.
      *
      * @param loss Loss function.
      * @param inputsBatch Batch of inputs.
      * @param truthBatch Batch of ground truths.
-     * @return
+     * @return Gradient of h at current point in parameters space.
      */
     Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, Matrix inputsBatch, Matrix truthBatch);
 

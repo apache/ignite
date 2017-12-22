@@ -543,6 +543,13 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         return diff;
     }
 
+    /**
+     * Differentiate nonlinearity.
+     *
+     * @param linearOut Linear output of current layer.
+     * @param nonlinearity Nonlinearity of current layer.
+     * @return Gradients matrix.
+     */
     private Matrix differentiateNonlinearity(Matrix linearOut, IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
         Matrix diff = linearOut.copy();
 
