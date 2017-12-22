@@ -728,8 +728,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             super.checkRegionEvictionProperties(regCfg, dbCfg);
 
         if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
-            U.warn(log, "Page eviction mode for [" + regCfg.getName() + "] memory region is ignored " +
-                "because Ignite Native Persistence is enabled");
+            U.warn(log, "Page eviction mode set for [" + regCfg.getName() + "] data region will be ignored " +
+                " because the oldest pages are evicted automatically when Ignite Persistence is enabled.");
     }
 
     /** {@inheritDoc} */
