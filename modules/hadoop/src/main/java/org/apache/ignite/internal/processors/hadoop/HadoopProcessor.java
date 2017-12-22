@@ -65,6 +65,9 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        if (U.majorJavaVersion(U.jdkVersion()) > 8)
+            throw new IgniteCheckedException("Java version 9 and above is not supported.");
+
         if (ctx.isDaemon())
             return;
 
