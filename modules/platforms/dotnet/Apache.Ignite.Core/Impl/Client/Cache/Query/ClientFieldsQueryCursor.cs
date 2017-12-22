@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
@@ -64,16 +65,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <summary>
         /// Reads the columns.
         /// </summary>
-        internal static string[] ReadColumns(IBinaryRawReader reader)
+        internal static List<string> ReadColumns(IBinaryRawReader reader)
         {
-            var res = new string[reader.ReadInt()];
-
-            for (var i = 0; i < res.Length; i++)
-            {
-                res[i] = reader.ReadString();
-            }
-
-            return res;
+            return reader.ReadStringCollection();
         }
     }
 }

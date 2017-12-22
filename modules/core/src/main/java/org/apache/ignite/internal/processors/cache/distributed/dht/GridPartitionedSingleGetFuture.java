@@ -454,7 +454,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 }
 
                 if (v != null) {
-                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                    if (!skipVals && cctx.statisticsEnabled())
                         cctx.cache().metrics0().onRead(true);
 
                     if (!skipVals)
@@ -469,7 +469,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
                 // Entry not found, complete future with null result if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
-                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                    if (!skipVals && cctx.statisticsEnabled())
                         colocated.metrics0().onRead(false);
 
                     if (skipVals)
