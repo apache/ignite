@@ -2457,8 +2457,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         discoWrk.addEvent(EVT_NODE_SEGMENTED,
                             AffinityTopologyVersion.NONE,
                             node,
-                            createDiscoCache(AffinityTopologyVersion.NONE, null, node, locNodeOnlyTop),
-                            locNodeOnlyTop,
+                            createDiscoCache(
+                                AffinityTopologyVersion.NONE,
+                                ctx.state().clusterState(),
+                                node,
+                                locNodeOnlyTop
+                            ), locNodeOnlyTop,
                             null);
 
                         lastSegChkRes.set(false);
