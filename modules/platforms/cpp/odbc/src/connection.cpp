@@ -132,8 +132,6 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            // "c:/work/ssl/client_full.pem", "c:/work/ssl/client_full.pem", "c:/work/ssl/ca.pem"
-
             if (cfg.GetSslMode() != "disable")
                 socket.reset(new ssl::SecureSocketClient(cfg.GetSslCertFile(), cfg.GetSslKeyFile(), cfg.GetSslCaFile()));
             else
