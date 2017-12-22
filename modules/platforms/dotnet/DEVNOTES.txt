@@ -39,6 +39,7 @@ Requirements:
 * .NET Core SDK: https://www.microsoft.com/net/download/linux
 * JDK: sudo apt-get install default-jdk
 * Maven: sudo apt-get install maven
+* IDE: Not required. Rider is recommended.
 
 Getting started:
 * Build Java and .NET:
@@ -48,3 +49,4 @@ Getting started:
   dotnet test
 * Run specific test:
   dotnet test --filter CacheTest
+* IDE: Open Apache.Ignite.DotNetCore.sln
