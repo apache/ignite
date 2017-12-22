@@ -28,7 +28,7 @@ class ZkInternalJoinErrorMessage implements ZkInternalMessage {
     transient boolean notifyNode = true;
 
     /** */
-    final int nodeInternalId;
+    final long nodeInternalId;
 
     /** */
     final String err;
@@ -37,7 +37,7 @@ class ZkInternalJoinErrorMessage implements ZkInternalMessage {
      * @param nodeInternalId Joining node internal ID.
      * @param err Error message.
      */
-    ZkInternalJoinErrorMessage(int nodeInternalId, String err) {
+    ZkInternalJoinErrorMessage(long nodeInternalId, String err) {
         this.nodeInternalId = nodeInternalId;
         this.err = err;
     }

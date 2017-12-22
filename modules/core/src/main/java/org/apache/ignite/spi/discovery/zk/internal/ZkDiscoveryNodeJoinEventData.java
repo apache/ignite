@@ -28,7 +28,7 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
     private static final long serialVersionUID = 0L;
 
     /** */
-    final int joinedInternalId;
+    final long joinedInternalId;
 
     /** */
     final UUID nodeId;
@@ -61,7 +61,7 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
     ZkDiscoveryNodeJoinEventData(long evtId,
         long topVer,
         UUID nodeId,
-        int joinedInternalId,
+        long joinedInternalId,
         UUID joinDataPrefixId,
         int joinDataPartCnt,
         int dataForJoinedPartCnt,

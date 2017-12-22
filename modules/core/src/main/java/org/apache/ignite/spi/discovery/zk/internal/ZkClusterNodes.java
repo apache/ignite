@@ -33,7 +33,7 @@ public class ZkClusterNodes {
     final ConcurrentSkipListMap<Long, ZookeeperClusterNode> nodesByOrder = new ConcurrentSkipListMap<>();
 
     /** */
-    final ConcurrentSkipListMap<Integer, ZookeeperClusterNode> nodesByInternalId = new ConcurrentSkipListMap<>();
+    final ConcurrentSkipListMap<Long, ZookeeperClusterNode> nodesByInternalId = new ConcurrentSkipListMap<>();
 
     /** */
     final ConcurrentHashMap<UUID, ZookeeperClusterNode> nodesById = new ConcurrentHashMap<>();
@@ -84,7 +84,7 @@ public class ZkClusterNodes {
      * @param internalId Node internal ID.
      * @return Removed node.
      */
-    ZookeeperClusterNode removeNode(int internalId) {
+    ZookeeperClusterNode removeNode(long internalId) {
         ZookeeperClusterNode node = nodesByInternalId.remove(internalId);
 
         assert node != null : internalId;

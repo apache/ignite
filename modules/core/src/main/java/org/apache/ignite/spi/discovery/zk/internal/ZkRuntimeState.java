@@ -43,13 +43,16 @@ class ZkRuntimeState {
     ZookeeperClient zkClient;
 
     /** */
-    int internalOrder;
+    long internalOrder;
 
     /** */
     int joinDataPartCnt;
 
     /** */
-    IgniteSpiTimeoutObject joinErrTimeoutObj;
+    ZkTimeoutObject joinErrTimeoutObj;
+
+    /** */
+    ZkTimeoutObject joinTimeoutObj;
 
     /** */
     long gridStartTime;

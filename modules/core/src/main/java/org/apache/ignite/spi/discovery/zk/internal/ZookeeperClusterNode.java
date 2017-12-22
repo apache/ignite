@@ -55,7 +55,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
     private Serializable consistentId;
 
     /** */
-    private int internalId;
+    private long internalId;
 
     /** */
     private long order;
@@ -258,14 +258,14 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
     /**
      * @return Internal ID corresponds to Zookeeper sequential node.
      */
-    int internalId() {
+    long internalId() {
         return internalId;
     }
 
     /**
      * @param internalId Internal ID corresponds to Zookeeper sequential node.
      */
-    void internalId(int internalId) {
+    void internalId(long internalId) {
         this.internalId = internalId;
     }
 

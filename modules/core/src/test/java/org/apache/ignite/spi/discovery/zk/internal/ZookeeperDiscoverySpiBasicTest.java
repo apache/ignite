@@ -148,7 +148,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private boolean testCommSpi;
 
     /** */
-    private int sesTimeout;
+    private long sesTimeout;
+
+    /** */
+    private long joinTimeout;
 
     /** */
     private ConcurrentHashMap<String, ZookeeperDiscoverySpi> spis = new ConcurrentHashMap<>();
@@ -188,6 +191,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             cfg.setConsistentId(igniteInstanceName);
 
         ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+
+        if (joinTimeout != 0)
+            zkSpi.setJoinTimeout(joinTimeout);
 
         zkSpi.setSessionTimeout(sesTimeout > 0 ? sesTimeout : 10_000);
 
@@ -2510,9 +2516,52 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testStartNoServers_FailOnTimeout() {
+        joinTimeout = 3000;
+
+        client = true;
+
+        long start = System.currentTimeMillis();
+
+        Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(0);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        assertTrue(System.currentTimeMillis() >= start + joinTimeout);
+
+        IgniteSpiException spiErr = X.cause(err, IgniteSpiException.class);
+
+        assertNotNull(spiErr);
+        assertTrue(spiErr.getMessage().contains("Failed to connect to cluster within configured timeout"));
+    }
+
+    /**
      * @throws Exception If failed.
      */
-    public void testClientStartNoServers() throws Exception {
+    public void testStartNoServer_WaitForServers1() throws Exception {
+        startNoServer_WaitForServers(0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartNoServer_WaitForServers2() throws Exception {
+        startNoServer_WaitForServers(10_000);
+    }
+
+    /**
+     * @param joinTimeout Join timeout.
+     * @throws Exception If failed.
+     */
+    private void startNoServer_WaitForServers(long joinTimeout) throws Exception {
+        this.joinTimeout = joinTimeout;
+
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 client = true;
@@ -2525,7 +2574,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         waitSpi(getTestIgniteInstanceName(0));
 
+        startGrid(1);
+
         fut.get();
+
+        waitForTopology(2);
     }
 
     /**

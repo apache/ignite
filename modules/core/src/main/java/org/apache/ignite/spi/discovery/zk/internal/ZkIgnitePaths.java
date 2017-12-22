@@ -177,7 +177,7 @@ class ZkIgnitePaths {
      * @param path Alive node zk path.
      * @return Node internal ID.
      */
-    static int aliveInternalId(String path) {
+    static long aliveInternalId(String path) {
         int idx = path.lastIndexOf('|');
 
         return Integer.parseInt(path.substring(idx + 1));

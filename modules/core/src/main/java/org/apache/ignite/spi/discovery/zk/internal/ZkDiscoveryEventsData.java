@@ -40,23 +40,44 @@ class ZkDiscoveryEventsData implements Serializable {
     long topVer;
 
     /** */
-    long gridStartTime;
+    long maxInternalOrder;
 
     /** */
-    TreeMap<Long, ZkDiscoveryEventData> evts;
+    final long startInternalOrder;
+
+    /** */
+    final long gridStartTime;
+
+    /** */
+    final TreeMap<Long, ZkDiscoveryEventData> evts;
 
     /** */
     private UUID commErrFutId;
 
     /**
+     * @param startInternalOrder First
      * @param topVer Current topology version.
      * @param gridStartTime Cluster start time.
      * @param evts Events history.
      */
-    ZkDiscoveryEventsData(long gridStartTime, long topVer, TreeMap<Long, ZkDiscoveryEventData> evts) {
+    ZkDiscoveryEventsData(
+        long startInternalOrder,
+        long gridStartTime,
+        long topVer,
+        TreeMap<Long, ZkDiscoveryEventData> evts)
+    {
+        this.startInternalOrder = startInternalOrder;
         this.gridStartTime = gridStartTime;
         this.topVer = topVer;
         this.evts = evts;
+    }
+
+    /**
+     * @param node Joined node.
+     */
+    void onNodeJoin(ZookeeperClusterNode node) {
+        if (node.internalId() > maxInternalOrder)
+            maxInternalOrder = node.internalId();
     }
 
     /**

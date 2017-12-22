@@ -45,7 +45,7 @@ abstract class ZkDiscoveryEventData implements Serializable {
     private final long topVer;
 
     /** */
-    private transient Set<Integer> remainingAcks;
+    private transient Set<Long> remainingAcks;
 
     /** */
     int flags;
@@ -101,7 +101,7 @@ abstract class ZkDiscoveryEventData implements Serializable {
     /**
      * @return Remaining acks.
      */
-    Set<Integer> remainingAcks() {
+    Set<Long> remainingAcks() {
         return remainingAcks;
     }
 
@@ -110,7 +110,7 @@ abstract class ZkDiscoveryEventData implements Serializable {
      * @param ackEvtId Last event ID processed on node.
      * @return {@code True} if all nodes processed event.
      */
-    boolean onAckReceived(Integer nodeInternalId, long ackEvtId) {
+    boolean onAckReceived(Long nodeInternalId, long ackEvtId) {
         assert remainingAcks != null;
 
         if (ackEvtId >= evtId)

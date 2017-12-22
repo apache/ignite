@@ -30,6 +30,9 @@ abstract class ZkTimeoutObject implements IgniteSpiTimeoutObject {
     /** */
     private final long endTime;
 
+    /** */
+    volatile boolean cancelled;
+
     /**
      * @param timeout Timeout.
      */

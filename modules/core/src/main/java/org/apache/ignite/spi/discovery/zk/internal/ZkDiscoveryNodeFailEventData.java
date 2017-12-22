@@ -27,14 +27,14 @@ class ZkDiscoveryNodeFailEventData extends ZkDiscoveryEventData {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private int failedNodeInternalId;
+    private long failedNodeInternalId;
 
     /**
      * @param evtId Event ID.
      * @param topVer Topology version.
      * @param failedNodeInternalId Failed node ID.
      */
-    ZkDiscoveryNodeFailEventData(long evtId, long topVer, int failedNodeInternalId) {
+    ZkDiscoveryNodeFailEventData(long evtId, long topVer, long failedNodeInternalId) {
         super(evtId, EventType.EVT_NODE_FAILED, topVer);
 
         this.failedNodeInternalId = failedNodeInternalId;
@@ -43,7 +43,7 @@ class ZkDiscoveryNodeFailEventData extends ZkDiscoveryEventData {
     /**
      * @return Failed node ID.
      */
-    int failedNodeInternalId() {
+    long failedNodeInternalId() {
         return failedNodeInternalId;
     }
 
