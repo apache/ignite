@@ -1717,8 +1717,8 @@ public class GridCacheUtils {
         final AffinityTopologyVersion topVer,
         final IgniteLogger log,
         final GridCacheContext cctx,
-        final @Nullable KeyCacheObject key,
-        final @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        @Nullable final KeyCacheObject key,
+        @Nullable final IgniteCacheExpiryPolicy expiryPlc,
         boolean readThrough,
         boolean skipVals
     ) {
@@ -1730,6 +1730,8 @@ public class GridCacheUtils {
             private void process(KeyCacheObject key, CacheObject val, GridCacheVersion ver, GridDhtCacheAdapter colocated) {
                 while (true) {
                     GridCacheEntryEx entry = null;
+
+                    cctx.shared().database().checkpointReadLock();
 
                     try {
                         entry = colocated.entryEx(key, topVer);
@@ -1760,6 +1762,8 @@ public class GridCacheUtils {
                     finally {
                         if (entry != null)
                             cctx.evicts().touch(entry, topVer);
+
+                        cctx.shared().database().checkpointReadUnlock();
                     }
                 }
             }
