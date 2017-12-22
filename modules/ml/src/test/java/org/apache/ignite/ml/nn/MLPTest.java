@@ -182,7 +182,7 @@ public class MLPTest {
         Vector grad = mlp.differentiateByParameters(LossFunctions.MSE, inputs, truth);
 
         // Let yt be y ground truth value.
-        // d/dw1i [2 * (yt - sigma(w10 * x0 + w11 * x1))^2] =
+        // d/dw1i [(yt - sigma(w10 * x0 + w11 * x1))^2] =
         // 2 * (yt - sigma(w10 * x0 + w11 * x1)) * (-1) * (sigma(w10 * x0 + w11 * x1)) * (1 - sigma(w10 * x0 + w11 * x1)) * xi =
         // let z = sigma(w10 * x0 + w11 * x1)
         // - 2* (yt - z) * (z) * (1 - z) * xi.
