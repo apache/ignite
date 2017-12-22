@@ -1684,7 +1684,8 @@ public class PlatformConfigurationUtils {
                 .setSystemRegionInitialSize(in.readLong())
                 .setSystemRegionMaxSize(in.readLong())
                 .setPageSize(in.readInt())
-                .setConcurrencyLevel(in.readInt());
+                .setConcurrencyLevel(in.readInt())
+                .setWalAutoArchiveAfterInactivity(in.readLong());
 
         int cnt = in.readInt();
 
@@ -1780,6 +1781,7 @@ public class PlatformConfigurationUtils {
             w.writeLong(cfg.getSystemRegionMaxSize());
             w.writeInt(cfg.getPageSize());
             w.writeInt(cfg.getConcurrencyLevel());
+            w.writeLong(cfg.getWalAutoArchiveAfterInactivity());
 
             if (cfg.getDataRegionConfigurations() != null) {
                 w.writeInt(cfg.getDataRegionConfigurations().length);
