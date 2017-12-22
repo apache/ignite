@@ -76,7 +76,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
-import sun.nio.ch.DirectBuffer;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -1021,7 +1020,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     private void copyInBuffer(long absPtr, ByteBuffer buf) {
         if (buf.isDirect()) {
-            long tmpPtr = ((DirectBuffer)buf).address();
+            long tmpPtr = GridUnsafe.bufferAddress(buf);
 
             GridUnsafe.copyMemory(absPtr + PAGE_OVERHEAD, tmpPtr, pageSize());
 
