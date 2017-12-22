@@ -452,17 +452,17 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @param v Vector to read from.
      * @param rows Count of rows of matrix to read.
      * @param cols Count of columns of matrix to read.
-     * @param offset Start read position.
+     * @param off Start read position.
      * @return New offset position which is last matrix entry position + 1.
      */
-    private IgniteBiTuple<Integer, Matrix> readFromVector(Vector v, int rows, int cols, int offset) {
+    private IgniteBiTuple<Integer, Matrix> readFromVector(Vector v, int rows, int cols, int off) {
         Matrix mtx = new DenseLocalOnHeapMatrix(rows, cols);
 
         int size = rows * cols;
         for (int i = 0; i < size; i++)
-            mtx.setX(i / cols, i % cols, v.getX(offset + i));
+            mtx.setX(i / cols, i % cols, v.getX(off + i));
 
-        return new IgniteBiTuple<>(offset + size, mtx);
+        return new IgniteBiTuple<>(off + size, mtx);
     }
 
     /**
@@ -470,16 +470,16 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      *
      * @param v Vector to read from.
      * @param size Size of vector to read.
-     * @param offset Start read position.
+     * @param off Start read position.
      * @return New offset position which is last read vector entry position + 1.
      */
-    private IgniteBiTuple<Integer, Vector> readFromVector(Vector v, int size, int offset) {
+    private IgniteBiTuple<Integer, Vector> readFromVector(Vector v, int size, int off) {
         Vector vec = new DenseLocalOnHeapVector(size);
 
         for (int i = 0; i < size; i++)
-            vec.setX(i, v.getX(offset + i));
+            vec.setX(i, v.getX(off + i));
 
-        return new IgniteBiTuple<>(offset + size, vec);
+        return new IgniteBiTuple<>(off + size, vec);
     }
 
     /**
@@ -487,11 +487,10 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      *
      * @param vec Vector to write into.
      * @param mtx Matrix to write.
-     * @param offset Start write position.
+     * @param off Start write position.
      * @return New offset position which is last written entry position + 1.
      */
-    private int writeToVector(Vector vec, Matrix mtx, int offset) {
-        int off = offset;
+    private int writeToVector(Vector vec, Matrix mtx, int off) {
         int rows = mtx.rowSize();
         int cols = mtx.columnSize();
 
@@ -510,12 +509,10 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      *
      * @param vec Vector to write into.
      * @param v Vector to write.
-     * @param offset Start write position.
+     * @param off Start write position.
      * @return New offset position which is last written entry position + 1.
      */
-    private int writeToVector(Vector vec, Vector v, int offset) {
-        int off = offset;
-
+    private int writeToVector(Vector vec, Vector v, int off) {
         for (int i = 0; i < v.size(); i++) {
             vec.setX(off, v.getX(i));
             off++;

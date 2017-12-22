@@ -40,6 +40,9 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
      */
     protected Vector deltas;
 
+    /**
+     * Updates mask (values by which update is multiplied).
+     */
     protected Vector updatesMask;
 
     /**
@@ -102,10 +105,20 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
         return this;
     }
 
+    /**
+     * Get updates mask (values by which update is multiplied).
+     *
+     * @return Updates mask (values by which update is multiplied).
+     */
     public Vector updatesMask() {
         return updatesMask;
     }
 
+    /**
+     * Set updates mask (values by which update is multiplied).
+     *
+     * @param updatesMask New updatesMask.
+     */
     public RPropUpdaterParams setUpdatesMask(Vector updatesMask) {
         this.updatesMask = updatesMask;
 
