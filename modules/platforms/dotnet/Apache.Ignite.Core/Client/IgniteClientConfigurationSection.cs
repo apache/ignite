@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core
+namespace Apache.Ignite.Core.Client
 {
     using System.Configuration;
     using System.Text;
@@ -25,15 +25,12 @@ namespace Apache.Ignite.Core
     /// <summary>
     /// Ignite configuration section for app.config and web.config files.
     /// </summary>
-    public class IgniteConfigurationSection : ConfigurationSection
+    public class IgniteClientConfigurationSection : ConfigurationSection
     {
         /// <summary>
-        /// Gets or sets the ignite configuration.
+        /// Gets the Ignite client configuration.
         /// </summary>
-        /// <value>
-        /// The ignite configuration.
-        /// </value>
-        public IgniteConfiguration IgniteConfiguration { get; private set; }
+        public IgniteClientConfiguration IgniteClientConfiguration { get; private set; }
 
         /// <summary>
         /// Reads XML from the configuration file.
@@ -43,7 +40,8 @@ namespace Apache.Ignite.Core
         {
             IgniteArgumentCheck.NotNull(reader, "reader");
 
-            IgniteConfiguration = IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(reader);
+            IgniteClientConfiguration = IgniteConfigurationXmlSerializer
+                .Deserialize<IgniteClientConfiguration>(reader);
         }
 
         /// <summary>
@@ -64,14 +62,16 @@ namespace Apache.Ignite.Core
             IgniteArgumentCheck.NotNull(parentElement, "parentElement");
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            if (IgniteConfiguration == null)
+            if (IgniteClientConfiguration == null)
+            {
                 return string.Format("<{0} />", name);
+            }
 
             var sb = new StringBuilder();
 
             using (var xmlWriter = XmlWriter.Create(sb))
             {
-                IgniteConfigurationXmlSerializer.Serialize(IgniteConfiguration, xmlWriter, name);
+                IgniteConfigurationXmlSerializer.Serialize(IgniteClientConfiguration, xmlWriter, name);
 
                 return sb.ToString();
             }
