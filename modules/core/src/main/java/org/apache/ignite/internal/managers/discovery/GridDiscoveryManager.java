@@ -1394,8 +1394,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     private int nodeJavaMajorVersion(ClusterNode node) throws IgniteCheckedException {
         try {
+            // Support for new Java version format
             // The format is identical for Oracle JDK, OpenJDK and IBM JDK.
-            return Integer.parseInt(node.<String>attribute("java.version").split("\\.")[1]);
+            int javaMajorVersion = Integer.parseInt(node.<String>attribute("java.version").split("\\.")[0]);
+
+            if (javaMajorVersion >= 9)
+                return javaMajorVersion;
+            else
+                return Integer.parseInt(node.<String>attribute("java.version").split("\\.")[1]);
         }
         catch (Exception e) {
             U.error(log, "Failed to get java major version (unknown 'java.version' format) [ver=" +
