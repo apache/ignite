@@ -63,6 +63,9 @@ namespace Apache.Ignite.Core.Tests.DotNetCore.Common
             // 2) Note that System.Configuration.ConfigurationManager NuGet package has to be installed.
             var configPath = Path.Combine(Path.GetDirectoryName(GetType().Assembly.Location), "app.config");
 
+            // Force test classpath.
+            TestUtils.GetTestConfiguration();
+
             using (var ignite = Ignition.StartFromApplicationConfiguration("igniteConfiguration", configPath))
             {
                 var cache = ignite.GetCache<int, int>(ignite.GetCacheNames().Single());
