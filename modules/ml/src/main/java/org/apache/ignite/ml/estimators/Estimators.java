@@ -29,7 +29,7 @@ public class Estimators {
     /** Simple implementation of mean squared error estimator. */
     public static <T, V> IgniteTriFunction<Model<T, V>, Stream<IgniteBiTuple<T, V>>, Function<V, Double>, Double> MSE() {
         return (model, stream, f) -> stream.mapToDouble(dp -> {
-            double diff = f.apply(dp.get2()) - f.apply(model.predict(dp.get1()));
+            double diff = f.apply(dp.get2()) - f.apply(model.apply(dp.get1()));
             return diff * diff;
         }).average().orElse(0);
     }
@@ -41,7 +41,7 @@ public class Estimators {
 
             long cnt = stream.
                 peek((ib) -> total.incrementAndGet()).
-                filter(dp -> !model.predict(dp.get1()).equals(dp.get2())).
+                filter(dp -> !model.apply(dp.get1()).equals(dp.get2())).
                 count();
 
             return (double)cnt / total.get();
