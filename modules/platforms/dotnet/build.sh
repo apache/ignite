@@ -17,12 +17,13 @@
 #
 
 #
-# Builds Java, builds and runs .NET tests.
+# Builds Java and .NET
 #
 
 pushd .
 cd ../../..
-mvn clean package -DskipTests -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
+mvn clean package -DskipTests -Dmaven.javadoc.skip=true -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
 popd
+
 cd Apache.Ignite.Core.Tests.DotNetCore
-dotnet test
+dotnet build
