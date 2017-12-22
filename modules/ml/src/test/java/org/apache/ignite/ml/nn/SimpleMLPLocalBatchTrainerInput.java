@@ -25,7 +25,7 @@ import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.util.Utils;
 
-public class SimpleMLPLocalBatchTrainerInput implements MLPLocalBatchTrainerInput<MultilayerPerceptron> {
+public class SimpleMLPLocalBatchTrainerInput implements LocalBatchTrainerInput<MultilayerPerceptron> {
     private final MultilayerPerceptron mlp;
     private Matrix inputs;
     private final Matrix outputs;

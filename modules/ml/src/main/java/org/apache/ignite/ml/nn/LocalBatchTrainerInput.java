@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.Matrix;
 /**
  * Interface for classes containing input parameters for LocalBatchTrainer.
  */
-public interface MLPLocalBatchTrainerInput<M> {
+public interface LocalBatchTrainerInput<M> {
     /**
      * Get next batch in form of matrix of inputs and matrix of outputs.
      *

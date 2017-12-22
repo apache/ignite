@@ -356,7 +356,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
     }
 
     /** {@inheritDoc} */
-    public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> f, Matrix inputsBatch, Matrix truthBatch) {
+    public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, Matrix inputsBatch, Matrix truthBatch) {
         int batchSize = inputsBatch.columnSize();
         double invBatchSize = 1 / (double)batchSize;
         int lastLayer = layersCount() - 1;
@@ -371,7 +371,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
 
             if (layer == lastLayer) {
                 Matrix sigma = mlpState.activatorsOutput(lastLayer).copy();
-                Matrix dLossDSigma = differentiateLoss(truthBatch, sigma, f);
+                Matrix dLossDSigma = differentiateLoss(truthBatch, sigma, loss);
                 dz = elementWiseTimes(dLossDSigma, dSigmaDz);
             }
             else {
@@ -393,10 +393,17 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         return paramsAsVector(layersParameters);
     }
 
+    /** {@inheritDoc} */
     public Vector parameters() {
         return paramsAsVector(layers);
     }
 
+    /**
+     * Flatten this MLP parameters as vector.
+     *
+     * @param layersParams List of layers parameters.
+     * @return This MLP parameters as vector.
+     */
     protected Vector paramsAsVector(List<MLPLayer> layersParams) {
         int off = 0;
         Vector res = new DenseLocalOnHeapVector(architecture().parametersCount());
@@ -411,12 +418,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         return res;
     }
 
-    /**
-     * Set this MLP parameters from vector encoding them.
-     *
-     * @param vector
-     * @return
-     */
+    /** {@inheritDoc} */
     public void setParameters(Vector vector) {
         int off = 0;
 
@@ -440,7 +442,17 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         return architecture().parametersCount();
     }
 
-    protected IgniteBiTuple<Integer, Matrix> readFromVector(Vector v, int rows, int cols, int offset) {
+    /**
+     * Read matrix with given dimensions from vector starting with offset and return new offset position
+     * which is last matrix entry position + 1.
+     *
+     * @param v Vector to read from.
+     * @param rows Count of rows of matrix to read.
+     * @param cols Count of columns of matrix to read.
+     * @param offset Start read position.
+     * @return New offset position which is last matrix entry position + 1.
+     */
+    private IgniteBiTuple<Integer, Matrix> readFromVector(Vector v, int rows, int cols, int offset) {
         Matrix mtx = new DenseLocalOnHeapMatrix(rows, cols);
 
         int size = rows * cols;
@@ -450,7 +462,15 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         return new IgniteBiTuple<>(offset + size, mtx);
     }
 
-    protected IgniteBiTuple<Integer, Vector> readFromVector(Vector v, int size, int offset) {
+    /**
+     * Read vector of given size from vector and return new offset position which is last read vector entry position + 1.
+     *
+     * @param v Vector to read from.
+     * @param size Size of vector to read.
+     * @param offset Start read position.
+     * @return New offset position which is last read vector entry position + 1.
+     */
+    private IgniteBiTuple<Integer, Vector> readFromVector(Vector v, int size, int offset) {
         Vector vec = new DenseLocalOnHeapVector(size);
 
         for (int i = 0; i < size; i++)
@@ -459,7 +479,15 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         return new IgniteBiTuple<>(offset + size, vec);
     }
 
-    protected int writeToVector(Vector vec, Matrix mtx, int offset) {
+    /**
+     * Write matrix into vector starting from offset and return new offset position which is last written entry position + 1.
+     *
+     * @param vec Vector to write into.
+     * @param mtx Matrix to write.
+     * @param offset Start write position.
+     * @return New offset position which is last written entry position + 1.
+     */
+    private int writeToVector(Vector vec, Matrix mtx, int offset) {
         int off = offset;
         int rows = mtx.rowSize();
         int cols = mtx.columnSize();
@@ -474,7 +502,15 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         return off;
     }
 
-    protected int writeToVector(Vector vec, Vector v, int offset) {
+    /**
+     * Write vector into vector starting from offset and return new offset position which is last written entry position + 1.
+     *
+     * @param vec Vector to write into.
+     * @param v Vector to write.
+     * @param offset Start write position.
+     * @return New offset position which is last written entry position + 1.
+     */
+    private int writeToVector(Vector vec, Vector v, int offset) {
         int off = offset;
 
         for (int i = 0; i < v.size(); i++) {
@@ -485,7 +521,16 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         return off;
     }
 
-    protected Matrix differentiateLoss(Matrix groundTruth, Matrix lastLayerOutput, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+    /**
+     * Differentiate loss.
+     *
+     * @param groundTruth Ground truth values.
+     * @param lastLayerOutput Last layer output.
+     * @param loss Loss function.
+     * @return Gradients matrix.
+     */
+    private Matrix differentiateLoss(Matrix groundTruth, Matrix lastLayerOutput,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         Matrix diff = groundTruth.like(groundTruth.rowSize(), groundTruth.columnSize());
 
         for (int col = 0; col < groundTruth.columnSize(); col++) {
@@ -498,7 +543,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         return diff;
     }
 
-    protected Matrix differentiateNonlinearity(Matrix linearOut, IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
+    private Matrix differentiateNonlinearity(Matrix linearOut, IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
         Matrix diff = linearOut.copy();
 
         diff.map(nonlinearity::differential);

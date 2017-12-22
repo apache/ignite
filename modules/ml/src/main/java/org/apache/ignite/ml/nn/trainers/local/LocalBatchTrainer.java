@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.MatrixUtil;
-import org.apache.ignite.ml.nn.MLPLocalBatchTrainerInput;
+import org.apache.ignite.ml.nn.LocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.updaters.ParameterUpdater;
 import org.apache.ignite.ml.nn.updaters.UpdaterParams;
 
@@ -35,7 +35,7 @@ import org.apache.ignite.ml.nn.updaters.UpdaterParams;
  * Batch trainer. This trainer is not distributed on the cluster, but input can theoretically read data from
  * Ignite cache.
  */
-public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends UpdaterParams<? super M>> implements Trainer<M, MLPLocalBatchTrainerInput<M>> {
+public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends UpdaterParams<? super M>> implements Trainer<M, LocalBatchTrainerInput<M>> {
     /**
      * Supplier for updater function.
      */
@@ -78,7 +78,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends Update
     }
 
     /** {@inheritDoc} */
-    @Override public M train(MLPLocalBatchTrainerInput<M> data) {
+    @Override public M train(LocalBatchTrainerInput<M> data) {
         int i = 0;
         M mdl = data.mdl();
         double err;

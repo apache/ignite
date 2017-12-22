@@ -22,9 +22,41 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
+/**
+ * Interface for models which are smooth functions of their parameters.
+ */
 public interface SmoothParametrized {
-    Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> f, Matrix inputsBatch, Matrix truthBatch);
+    /**
+     * Compose function in the following way: feed output of this model as input to second argument to loss.
+     * After that we have a function of three arguments: input, ground truth, parameters.
+     * If we fix ground truths values and inputs, we get function of one argument: parameters vector.
+     * This function is being differentiated.
+     *
+     * @param loss Loss function.
+     * @param inputsBatch Batch of inputs.
+     * @param truthBatch Batch of ground truths.
+     * @return
+     */
+    Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, Matrix inputsBatch, Matrix truthBatch);
+
+    /**
+     * Get parameters vector.
+     *
+     * @return Parameters vector.
+     */
     Vector parameters();
+
+    /**
+     * Set parameters.
+     *
+     * @param vector Parameters vector.
+     */
     void setParameters(Vector vector);
+
+    /**
+     * Get count of parameters of this model.
+     *
+     * @return Count of parameters of this model.
+     */
     int parametersCount();
 }
