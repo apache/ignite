@@ -37,10 +37,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -294,49 +296,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     private String igniteInstanceName;
 
-    /** */
+    /** MBean names stored to be unregistered later */
     @GridToStringExclude
-    private ObjectName kernalMBean;
-
-    /** */
-    @GridToStringExclude
-    private ObjectName locNodeMBean;
-
-    /** */
-    @GridToStringExclude
-    private ObjectName allNodesMBean;
-
-    /** */
-    @GridToStringExclude
-    private ObjectName pubExecSvcMBean;
-
-    /** */
-    @GridToStringExclude
-    private ObjectName sysExecSvcMBean;
-
-    /** */
-    @GridToStringExclude
-    private ObjectName mgmtExecSvcMBean;
-
-    /** */
-    @GridToStringExclude
-    private ObjectName p2PExecSvcMBean;
-
-    /** */
-    @GridToStringExclude
-    private ObjectName restExecSvcMBean;
-
-    /** */
-    @GridToStringExclude
-    private ObjectName qryExecSvcMBean;
-
-    /** */
-    @GridToStringExclude
-    private ObjectName schemaExecSvcMBean;
-
-    /** */
-    @GridToStringExclude
-    private ObjectName stripedExecSvcMBean;
+    private Set<ObjectName> mBeanNames;
 
     /** Kernal start timestamp. */
     private long startTime = U.currentTimeMillis();
@@ -1687,7 +1649,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return;
 
         try {
-            kernalMBean = U.registerMBean(
+            ObjectName kernalMBean = U.registerMBean(
                 cfg.getMBeanServer(),
                 cfg.getIgniteInstanceName(),
                 "Kernal",
@@ -1697,10 +1659,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (log.isDebugEnabled())
                 log.debug("Registered kernal MBean: " + kernalMBean);
+
+            mBeanNames.add(kernalMBean);
         }
         catch (JMException e) {
-            kernalMBean = null;
-
             throw new IgniteCheckedException("Failed to register kernal MBean.", e);
         }
     }
@@ -1711,14 +1673,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param mbean MBean instance to register.
      * @throws IgniteCheckedException If registration failed.
      */
-    private ObjectName registerClusterMetricsMBean(ClusterMetricsMXBean mbean) throws IgniteCheckedException {
+    private void registerClusterMetricsMBean(ClusterMetricsMXBean mbean) throws IgniteCheckedException {
         if(U.IGNITE_MBEANS_DISABLED)
-            return null;
-
-        ObjectName objName;
+            return;
 
         try {
-            objName = U.registerMBean(
+            ObjectName objName = U.registerMBean(
                 cfg.getMBeanServer(),
                 cfg.getIgniteInstanceName(),
                 "Kernal",
@@ -1729,7 +1689,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (log.isDebugEnabled())
                 log.debug("Registered MBean: " + objName);
 
-            return objName;
+            mBeanNames.add(objName);
         }
         catch (JMException e) {
             throw new IgniteCheckedException("Failed to register MBean: " + mbean.getClass().getSimpleName(), e);
@@ -1738,8 +1698,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** @throws IgniteCheckedException If registration failed. */
     private void registerClusterMetricsMBeans() throws IgniteCheckedException {
-        locNodeMBean = registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery()));
-        allNodesMBean = registerClusterMetricsMBean(new ClusterMetricsMXBeanImpl(cluster()));
+        registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery()));
+        registerClusterMetricsMBean(new ClusterMetricsMXBeanImpl(cluster()));
     }
 
     /**
@@ -1763,21 +1723,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     ) throws IgniteCheckedException {
         if (U.IGNITE_MBEANS_DISABLED)
             return;
-        pubExecSvcMBean = registerExecutorMBean(execSvc, "GridExecutionExecutor");
-        sysExecSvcMBean = registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
-        mgmtExecSvcMBean = registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
-        p2PExecSvcMBean = registerExecutorMBean(p2pExecSvc, "GridClassLoadingExecutor");
-        qryExecSvcMBean = registerExecutorMBean(qryExecSvc, "GridQueryExecutor");
-        schemaExecSvcMBean = registerExecutorMBean(schemaExecSvc, "GridSchemaExecutor");
+
+        mBeanNames = new HashSet<>();
+
+        registerExecutorMBean(execSvc, "GridExecutionExecutor");
+        registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
+        registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
+        registerExecutorMBean(p2pExecSvc, "GridClassLoadingExecutor");
+        registerExecutorMBean(qryExecSvc, "GridQueryExecutor");
+        registerExecutorMBean(schemaExecSvc, "GridSchemaExecutor");
 
         ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
-
         if (clientCfg != null)
-            restExecSvcMBean = registerExecutorMBean(restExecSvc, "GridRestExecutor");
+            registerExecutorMBean(restExecSvc, "GridRestExecutor");
 
         if (customExecSvcs != null) {
             for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet()) {
-                schemaExecSvcMBean = registerExecutorMBean(entry.getValue(), entry.getKey());
+                registerExecutorMBean(entry.getValue(), entry.getKey());
             }
         }
     }
@@ -1785,10 +1747,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * @param exec Executor service to register.
      * @param name Property name for executor.
-     * @return Name for created MBean.
      * @throws IgniteCheckedException If registration failed.
      */
-    private ObjectName registerExecutorMBean(ExecutorService exec, String name) throws IgniteCheckedException {
+    private void registerExecutorMBean(ExecutorService exec, String name) throws IgniteCheckedException {
         assert exec != null;
         assert !U.IGNITE_MBEANS_DISABLED;
 
@@ -1804,7 +1765,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (log.isDebugEnabled())
                 log.debug("Registered executor service MBean: " + res);
 
-            return res;
+            mBeanNames.add(res);
         }
         catch (JMException e) {
             throw new IgniteCheckedException("Failed to register executor service MBean [name=" + name +
@@ -1823,7 +1784,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         String name = "StripedExecutor";
 
         try {
-            stripedExecSvcMBean = U.registerMBean(
+            ObjectName stripedExecSvcMBean = U.registerMBean(
                 cfg.getMBeanServer(),
                 cfg.getIgniteInstanceName(),
                 "Thread Pools",
@@ -1833,6 +1794,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (log.isDebugEnabled())
                 log.debug("Registered executor service MBean: " + stripedExecSvcMBean);
+
+            mBeanNames.add(stripedExecSvcMBean);
         }
         catch (JMException e) {
             throw new IgniteCheckedException("Failed to register executor service MBean [name="
@@ -1846,10 +1809,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param mbean MBean to unregister.
      * @return {@code True} if successfully unregistered, {@code false} otherwise.
      */
-    private boolean unregisterMBean(@Nullable ObjectName mbean) {
-        if (mbean == null)
-            return true;
-
+    private boolean unregisterMBean(@NotNull ObjectName mbean) {
         assert !U.IGNITE_MBEANS_DISABLED;
 
         try {
@@ -2305,20 +2265,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 cache.blockGateways();
 
             // Unregister MBeans.
-            if (!(
-                unregisterMBean(pubExecSvcMBean) &
-                    unregisterMBean(sysExecSvcMBean) &
-                    unregisterMBean(mgmtExecSvcMBean) &
-                    unregisterMBean(p2PExecSvcMBean) &
-                    unregisterMBean(kernalMBean) &
-                    unregisterMBean(locNodeMBean) &
-                    unregisterMBean(allNodesMBean) &
-                    unregisterMBean(restExecSvcMBean) &
-                    unregisterMBean(qryExecSvcMBean) &
-                    unregisterMBean(schemaExecSvcMBean) &
-                    unregisterMBean(stripedExecSvcMBean)
-            ))
-                errOnStop = false;
+            for (ObjectName name : mBeanNames) {
+                boolean success = unregisterMBean(name);
+                errOnStop = errOnStop || !success;
+            }
 
             // Stop components in reverse order.
             for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious(); ) {
