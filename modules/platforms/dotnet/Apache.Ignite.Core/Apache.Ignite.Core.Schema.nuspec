@@ -48,5 +48,6 @@ More info on Apache Ignite.NET: https://apacheignite-net.readme.io/
     <files>
         <!-- Other files should go to Content folder to be automatically included in project. -->
         <file src="IgniteConfigurationSection.xsd" target="content" />
+        <file src="IgniteClientConfigurationSection.xsd" target="content" />
     </files>
 </package>
