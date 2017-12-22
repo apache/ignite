@@ -812,6 +812,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 }
 
                 if (e != null) {
+                    ctx.shared().database().checkpointReadLock();
+
                     try {
                         cacheVal = e.peek(modes.heap, modes.offheap, topVer, plc);
                     }
@@ -823,6 +825,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     }
                     finally {
                         ctx0.evicts().touch(e, null);
+
+                        ctx.shared().database().checkpointReadUnlock();
                     }
                 }
 
@@ -2038,7 +2042,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                             try {
                                                 ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
+                                            }
+                                            catch (IgniteCheckedException e) {
+                                                // Wrap errors (will be unwrapped).
+                                                throw new GridClosureException(e);
+                                            }
 
+                                            ctx.shared().database().checkpointReadLock();
+
+                                            try {
                                                 entry = entryEx(key);
 
                                                 entry.unswap();
@@ -2082,6 +2094,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             catch (IgniteCheckedException e) {
                                                 // Wrap errors (will be unwrapped).
                                                 throw new GridClosureException(e);
+                                            }
+                                            finally {
+                                                ctx.shared().database().checkpointReadUnlock();
                                             }
                                         }
                                     }
@@ -4436,6 +4451,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
+        ctx.shared().database().checkpointReadLock();
+
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
@@ -4449,6 +4466,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to clearLocally entry for key: " + key, ex);
+        }
+        finally {
+            ctx.shared().database().checkpointReadUnlock();
         }
 
         return false;
