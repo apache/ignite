@@ -123,7 +123,7 @@ public class DistributedRegressionModelExample {
                 Tracer.showAscii(val);
 
                 System.out.println(">>> Trained model prediction results:");
-                Tracer.showAscii(mdl.predict(val));
+                Tracer.showAscii(mdl.apply(val));
             });
 
             igniteThread.start();
