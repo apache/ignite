@@ -17,29 +17,8 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-
 /**
  * Interface for models which are smooth functions of their parameters.
  */
 public interface SmoothParametrized<M extends SmoothParametrized<M>> extends BaseSmoothParametrized<M> {
-    /** {@inheritDoc} */
-    Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        Matrix inputsBatch, Matrix truthBatch);
-
-    /** {@inheritDoc} */
-    Vector parameters();
-
-    /** {@inheritDoc} */
-    M setParameters(Vector vector);
-
-    /**
-     * Get count of parameters of this model.
-     *
-     * @return Count of parameters of this model.
-     */
-    int parametersCount();
 }
