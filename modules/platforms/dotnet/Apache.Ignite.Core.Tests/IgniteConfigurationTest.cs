@@ -36,7 +36,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Tests.Plugin;
@@ -315,7 +314,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestDefaultSpi()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DiscoverySpi =
                     new TcpDiscoverySpi
@@ -325,10 +324,7 @@ namespace Apache.Ignite.Core.Tests
                         JoinTimeout = TimeSpan.MaxValue,
                         NetworkTimeout = TimeSpan.MaxValue,
                         SocketTimeout = TimeSpan.MaxValue
-                    },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                Localhost = "127.0.0.1"
+                    }
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -348,16 +344,14 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestInvalidTimeouts()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DiscoverySpi =
                     new TcpDiscoverySpi
                     {
                         AckTimeout = TimeSpan.FromMilliseconds(-5),
-                        JoinTimeout = TimeSpan.MinValue,
-                    },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
+                        JoinTimeout = TimeSpan.MinValue
+                    }
             };
 
             Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
@@ -397,7 +391,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                WorkDirectory = IgniteUtils.GetTempDirectoryName()
+                WorkDirectory = TestUtils.GetTempDirectoryName()
             };
 
             using (Ignition.Start(cfg))
@@ -442,16 +436,13 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="ipFinder2">The ip finder2.</param>
         private static void TestIpFinders(TcpDiscoveryIpFinderBase ipFinder, TcpDiscoveryIpFinderBase ipFinder2)
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DiscoverySpi =
                     new TcpDiscoverySpi
                     {
                         IpFinder = ipFinder
-                    },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                Localhost = "127.0.0.1"
+                    }
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -648,7 +639,7 @@ namespace Apache.Ignite.Core.Tests
         private static IgniteConfiguration GetCustomConfig()
         {
             // CacheConfiguration is not tested here - see CacheConfigurationTest
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DiscoverySpi = new TcpDiscoverySpi
                 {
@@ -683,8 +674,6 @@ namespace Apache.Ignite.Core.Tests
                 NetworkTimeout = TimeSpan.FromMinutes(10),
                 NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
                 WorkDirectory = Path.GetTempPath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 Localhost = "127.0.0.1",
                 IsDaemon = false,
                 IsLateAffinityAssignment = false,
@@ -807,7 +796,7 @@ namespace Apache.Ignite.Core.Tests
                         PersistenceEnabled = false,
                         MetricsRateTimeInterval = TimeSpan.FromMinutes(2),
                         MetricsSubIntervalCount = 6,
-                        SwapPath = IgniteUtils.GetTempDirectoryName(),
+                        SwapPath = TestUtils.GetTempDirectoryName(),
                         CheckpointPageBufferSize = 28 * 1024 * 1024
                     },
                     DataRegionConfigurations = new[]
@@ -824,7 +813,7 @@ namespace Apache.Ignite.Core.Tests
                             PersistenceEnabled = false,
                             MetricsRateTimeInterval = TimeSpan.FromMinutes(3),
                             MetricsSubIntervalCount = 7,
-                            SwapPath = IgniteUtils.GetTempDirectoryName()
+                            SwapPath = TestUtils.GetTempDirectoryName()
                         }
                     }
                 }

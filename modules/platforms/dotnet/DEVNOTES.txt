@@ -43,6 +43,8 @@ Requirements:
 Getting started:
 * Build Java and .NET:
   ./build.sh
-* Run tests
+* Run tests:
   cd Apache.Ignite.Core.Tests.DotNetCore
   dotnet test
+* Run specific test:
+  dotnet test --filter CacheTest
