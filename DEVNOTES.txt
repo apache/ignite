@@ -4,20 +4,20 @@ Ignite Fabric Maven Build Instructions
 
 2) Compile and install:
 
-	mvn clean install -Pall-java,all-scala,licenses -DskipTests
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
    or if you have built Apache Ignite.NET on the first step use following command:
    (Note that 'doxygen' should be installed before running this command.)
 
-	mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
 
 3) Javadoc generation (optional):
 
-	mvn initialize -Pjavadoc
+        mvn initialize -Pjavadoc
 
 4) Assembly Apache Ignite fabric:
 
-	mvn initialize -Prelease
+        mvn initialize -Prelease
 
 Look for apache-ignite-fabric-<version>-bin.zip in ./target/bin directory.
 
@@ -28,20 +28,20 @@ Ignite Fabric with LGPL Maven Build Instructions
 
 2) Compile and install:
 
-	mvn clean install -Pall-java,all-scala,licenses -DskipTests
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
    or if you have built Apache Ignite.NET on the first step use following command:
    (Note that 'doxygen' should be installed before running this command.)
 
-	mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
 
 3) Javadoc generation with LGPL (optional):
 
-	mvn initialize -Pjavadoc,lgpl
+        mvn initialize -Pjavadoc,lgpl
 
 4) Assembly Apache Ignite fabric with LGPL dependencies:
 
-	mvn initialize -Prelease,lgpl -Dignite.edition=fabric-lgpl
+        mvn initialize -Prelease,lgpl -Dignite.edition=fabric-lgpl
 
    Look for apache-ignite-fabric-lgpl-<version>-bin.zip in ./target/bin directory.
 
@@ -50,17 +50,17 @@ Ignite Hadoop Accelerator Maven Build Instructions
 ==================================================
 1) Compile and install:
 
-	mvn clean install -Pall-java,all-scala,licenses -DskipTests
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
    Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
    Use 'spark.version' parameter to build ignite-spark module for a specific Spark version. Version should be >= 2.0.0.
    For example:
 
-	mvn clean install -Pall-java,all-scala,licenses -DskipTests -Dhadoop.version=2.4.2 -Dspark.version=2.1.1
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests -Dhadoop.version=2.4.2 -Dspark.version=2.1.1
 
 2) Assembly Hadoop Accelerator:
 
-	mvn initialize -Prelease -Dignite.edition=hadoop
+        mvn initialize -Prelease -Dignite.edition=hadoop
 
    Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory. Resulting binary
    assembly will also include integration module for Apache Spark.
@@ -77,23 +77,23 @@ Apache Ignite RPM Package Build Instructions
 ============================================
 1) Install dependencies
 
-	yum install -y rpmdevtools rpm-build
+        yum install -y rpmdevtools rpm-build
 
 2) Create directory layout
 
-	rpmdev-setuptree
+        rpmdev-setuptree
 
 3) Copy build specification and additional sources required for build
 
-	cp -rfv packaging/rpm/* ~/rpmbuild
+        cp -rfv packaging/rpm/* ~/rpmbuild
 
 4) Copy built binary from target/bin to sources directory
 
-	cp -rfv target/bin/apache-ignite-<version>-bin.zip ~/rpmbuild/SOURCES/apache-ignite.zip
+        cp -rfv target/bin/apache-ignite-<version>-bin.zip ~/rpmbuild/SOURCES/apache-ignite.zip
 
 5) Run build process
 
-	rpmbuild -bb ~/rpmbuild/SPECS/apache-ignite.spec
+        rpmbuild -bb ~/rpmbuild/SPECS/apache-ignite.spec
 
    NOTE: to build also SRPM package, run with -ba flag instead
 
@@ -104,13 +104,13 @@ Install and Run Apache Ignite from RPM
 ======================================
 1) Install package
 
-	yum localinstall -y apache-ignite-<version>.rpm
+        yum localinstall -y apache-ignite-<version>.rpm
 
 2) Start Apache Ignite service
 
-	systemctl start apache-ignite
+        systemctl start apache-ignite
 
-3) See logs in /var/log/apache-ignite or execute journalctl -qe
+3) See logs in /var/log/apache-ignite or execute journalctl -xe
 
 
 Ignite Release Instructions
@@ -118,8 +118,8 @@ Ignite Release Instructions
 1) Use your people.apache.org/keys/committer/<username>.asc key to generate KEYS file.
    Download https://dist.apache.org/repos/dist/release/ignite/KEYS and append you key using commands:
 
-	gpg --list-sigs <keyname> >> KEYS
-	gpg --armor --export <keyname> >> KEYS
+        gpg --list-sigs <keyname> >> KEYS
+        gpg --armor --export <keyname> >> KEYS
 
    Upload modified KEYS file.
 
@@ -140,19 +140,19 @@ Ignite Release Instructions
 
    3.1) Deploy Ignite to maven repository, prepares sources and fabric edition binaries.
 
-		mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=fabric -DskipTests
+                mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=fabric -DskipTests
 
    3.2) Javadoc generation:
 
-		mvn initialize -Pjavadoc
+                mvn initialize -Pjavadoc
 
    3.3) Assembly Apache Ignite Fabric:
 
-		mvn initialize -Prelease
+                mvn initialize -Prelease
 
    3.4) Assembly Hadoop Accelerator:
 
-		mvn initialize -Prelease -Dignite.edition=hadoop
+                mvn initialize -Prelease -Dignite.edition=hadoop
 
    NOTE: Binary artifact name can be changed by setting additional property -Dignite.zip.pattern. Binary artifact will be
    created inside /target/bin folder when release profile is used.
@@ -183,14 +183,14 @@ JCache TCK compliance
 ======================
 To test compliance with JCache TCK use:
 
-	mvn test -P-release,jcache-tck -pl :ignite-core -am
+        mvn test -P-release,jcache-tck -pl :ignite-core -am
 
 
 Ignite Mesos Maven Build Instructions
 =====================================
 
-	cd ./modules/mesos
-	mvn clean package
+        cd ./modules/mesos
+        mvn clean package
 
 Look for ignite-mesos-<version>.jar in ./target directory.
 
@@ -198,8 +198,8 @@ Look for ignite-mesos-<version>.jar in ./target directory.
 Ignite Yarn Maven Build Instructions
 ====================================
 
-	cd ./modules/yarn
-	mvn clean package
+        cd ./modules/yarn
+        mvn clean package
 
 Look for ignite-yarn-<version>.jar in ./target directory.
 
@@ -208,7 +208,7 @@ Run tests
 =========
 To run tests locally use:
 
-	mvn clean test -U -Plgpl,examples,-clean-libs,-release -Dmaven.test.failure.ignore=true -DfailIfNoTests=false -Dtest=%TEST_PATTERN%
+        mvn clean test -U -Plgpl,examples,-clean-libs,-release -Dmaven.test.failure.ignore=true -DfailIfNoTests=false -Dtest=%TEST_PATTERN%
 
 For example, %TEST_PATTERN% can be 'org.apache.ignite.testsuites.IgniteBasicTestSuite' or 'GridCacheLocalAtomicFullApiSelfTest#testGet'
 
@@ -217,7 +217,7 @@ Apache RAT Instructions
 =======================
 To check license headers use:
 
-	mvn clean validate -Pcheck-licenses
+        mvn clean validate -Pcheck-licenses
 
 For more information (e.g. exclude list) see "check-licenses" profile in "parent/pom.xml".
 
@@ -225,6 +225,7 @@ For more information (e.g. exclude list) see "check-licenses" profile in "parent
 Useful Release Commands
 =======================
 ZIP:
-	zip -r9 apache-ignite-X.X.X-src.zip apache-ignite-X.X.X-src
+        zip -r9 apache-ignite-X.X.X-src.zip apache-ignite-X.X.X-src
 GPG:
-	gpg --armor --output apache-ignite-X.X.X-src.zip.asc --detach-sig apache-ignite-X.X.X-src.zip
+        gpg --armor --output apache-ignite-X.X.X-src.zip.asc --detach-sig apache-ignite-X.X.X-src.zip
+
