@@ -188,6 +188,10 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
 
         checkEscapeSeq("\"\\xff \"", "\u00ff ");
 
+        checkInvalidEscapeSeq("\"\\uf\"", StrOrRegex.of("Character cannot be part of escape sequence: '\"'"));
+        checkInvalidEscapeSeq("\"\\uff\"", StrOrRegex.of("Character cannot be part of escape sequence: '\"'"));
+        checkInvalidEscapeSeq("\"\\ufff\"", StrOrRegex.of("Character cannot be part of escape sequence: '\"'"));
+
         checkEscapeSeq("\"\\uffff \"", "\uffff" + " ");
         checkEscapeSeq("\"\\ufffff \"", "\uffff" + "f ");
         checkEscapeSeq("\"\\uffffff \"", "\uffff" + "ff ");

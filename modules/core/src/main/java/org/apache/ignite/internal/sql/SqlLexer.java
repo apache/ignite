@@ -161,21 +161,21 @@ public class SqlLexer implements SqlLexerToken {
 
                                 c1 = inputChars[pos];
 
-                                SqlEscSeqParser.Result result = escParser.accept(c1);
+                                SqlEscSeqParser.Mode mode = escParser.accept(c1);
 
-                                if (result == SqlEscSeqParser.Result.END_ACCEPTED) {
+                                if (mode == SqlEscSeqParser.Mode.FINISHED_ACCEPTED) {
                                     pos++;
                                     break;
                                 }
 
-                                if (result == SqlEscSeqParser.Result.END_REJECTED)
+                                if (mode == SqlEscSeqParser.Mode.FINISHED_REJECTED)
                                     break;
 
-                                if (result == SqlEscSeqParser.Result.ERROR)
+                                if (mode == SqlEscSeqParser.Mode.ERROR)
                                     throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
                                         "Character cannot be part of escape sequence: '" + c1 + "'");
 
-                                assert result == SqlEscSeqParser.Result.NEED_MORE_INPUT;
+                                assert mode == SqlEscSeqParser.Mode.PROCESSING;
 
                                 pos++;
                             }

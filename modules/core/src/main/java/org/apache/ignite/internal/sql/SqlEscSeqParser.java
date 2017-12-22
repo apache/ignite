@@ -5,10 +5,10 @@ import org.apache.ignite.IgniteIllegalStateException;
 /** FIXME */
 public class SqlEscSeqParser {
 
-    public static final int ESCAPED_CHAR_RADIX_SENTINEL = -1;
+    public static final int SINGLE_CHAR_RADIX = -1;
 
     /** FIXME */
-    private enum Mode {
+    public enum Mode {
         /** FIXME */
         START,
         /** FIXME */
@@ -19,18 +19,6 @@ public class SqlEscSeqParser {
         FINISHED_REJECTED,
         /** FIXME */
         ERROR
-    }
-
-    /** FIXME */
-    public enum Result {
-        /** FIXME */
-        NEED_MORE_INPUT,
-        /** FIXME */
-        END_ACCEPTED,
-        /** FIXME */
-        END_REJECTED,
-        /** FIXME */
-        ERROR,
     }
 
     /** FIXME */
@@ -54,30 +42,14 @@ public class SqlEscSeqParser {
     }
 
     /** FIXME */
-    public Result accept(char c) {
+    public Mode accept(char c) {
 
         if(mode == Mode.START)
             acceptPrefix(c);
         else
             acceptValueChar(c);
 
-        switch (mode) {
-            case START:
-            case PROCESSING:
-                return Result.NEED_MORE_INPUT;
-
-            case ERROR:
-                return Result.ERROR;
-
-            case FINISHED_ACCEPTED:
-                return Result.END_ACCEPTED;
-
-            case FINISHED_REJECTED:
-                return Result.END_REJECTED;
-
-            default:
-                throw new IgniteIllegalStateException("Internal error");
-        }
+        return mode;
     }
 
     /** FIXME */
@@ -101,7 +73,11 @@ public class SqlEscSeqParser {
                 radix = 16;
                 break;
 
-            case 'u': case 'U':
+            // Upper-case 'U' is intentionally not supported (as in Postgres),
+            // because in Java we don't support anything beyond Basic Multilingual Plane
+            // because characters above it (with codepoints >= 0x10000, supplementary ones, surrogates)
+            // are complex to handle. We still allow the surrogates.
+            case 'u':
                 minLen = 4;
                 maxLen = 4;
                 radix = 16;
@@ -110,7 +86,7 @@ public class SqlEscSeqParser {
             default:
                 minLen = 1;
                 maxLen = 1;
-                radix = ESCAPED_CHAR_RADIX_SENTINEL;
+                radix = SINGLE_CHAR_RADIX;
                 acceptValueChar(c);
         }
     }
@@ -121,26 +97,35 @@ public class SqlEscSeqParser {
 
         if (mode == Mode.PROCESSING) {
 
-            if (radix != ESCAPED_CHAR_RADIX_SENTINEL && !isValidDigit(c)) {
+            if (radix != SINGLE_CHAR_RADIX && !isValidDigit(c)) {
 
-                if (inputLen < minLen)
-                    mode = Mode.ERROR;
-                else
+                if (inputLen >= minLen && isValidUnicodeInput())
                     mode = Mode.FINISHED_REJECTED;
+                else
+                    mode = Mode.ERROR;
 
                 return;
             }
         }
 
         if (inputLen >= maxLen || !isValidInput(c)) {
-            mode = Mode.FINISHED_REJECTED;
+            if (isValidUnicodeInput())
+                mode = Mode.FINISHED_REJECTED;
+            else
+                mode = Mode.ERROR;
+
             return;
         }
 
         input.append(c);
 
-        if (input.length() >= maxLen)
-            mode = Mode.FINISHED_ACCEPTED;
+        if (input.length() >= maxLen) {
+
+            if (isValidUnicodeInput())
+                mode = Mode.FINISHED_ACCEPTED;
+            else
+                mode = Mode.ERROR;
+        }
     }
 
     /** FIXME */
@@ -161,15 +146,24 @@ public class SqlEscSeqParser {
         return true;
     }
 
+    private boolean isValidUnicodeInput() {
+        if (radix != 16)
+            return true;
+
+        int codePnt = Integer.parseInt(input.toString(), radix);
+
+        return Character.isValidCodePoint(codePnt);
+    }
+
     /** FIXME */
     public String convertedStr() {
         if (mode != Mode.FINISHED_ACCEPTED && mode != Mode.FINISHED_REJECTED)
             throw new IgniteIllegalStateException("Internal error");
 
-        if (radix == ESCAPED_CHAR_RADIX_SENTINEL)
+        if (radix == SINGLE_CHAR_RADIX)
             return Character.toString(convertEscSeqChar(input.charAt(0)));
         else
-            return Character.toString((char) Integer.parseInt(input.toString(), radix));
+            return new String(Character.toChars(Integer.parseInt(input.toString(), radix)));
     }
 
     /**
