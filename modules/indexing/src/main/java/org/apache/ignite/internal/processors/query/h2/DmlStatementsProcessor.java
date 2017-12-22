@@ -367,7 +367,7 @@ public class DmlStatementsProcessor {
             boolean implicit = (tx == null);
 
             if (implicit)
-                tx = idx.txStart(cctx, fieldsQry.getTimeout(), true);
+                tx = idx.txStart(cctx, fieldsQry.getTimeout(), false);
 
             IgniteCheckedException ex = null;
 
