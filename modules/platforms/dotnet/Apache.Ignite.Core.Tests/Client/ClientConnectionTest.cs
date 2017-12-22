@@ -225,8 +225,10 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual(SocketError.TimedOut, ((SocketException) aex.GetBaseException()).SocketErrorCode);
 
             // Sync (reconnect for clean state).
+            Ignition.StopAll(true);
+            Ignition.Start(TestUtils.GetTestConfiguration());
             client = Ignition.StartClient(cfg);
-            cache = client.GetCache<int, string>("s");
+            cache = client.CreateCache<int, string>("s");
             var ex = Assert.Throws<SocketException>(() => cache.PutAll(data));
             Assert.AreEqual(SocketError.TimedOut, ex.SocketErrorCode);
         }

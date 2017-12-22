@@ -81,6 +81,7 @@ namespace Apache.Ignite.Core.Client
             SocketSendBufferSize = cfg.SocketSendBufferSize;
             SocketReceiveBufferSize = cfg.SocketReceiveBufferSize;
             TcpNoDelay = cfg.TcpNoDelay;
+            SocketTimeout = cfg.SocketTimeout;
 
             if (cfg.BinaryConfiguration != null)
             {
