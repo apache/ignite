@@ -19,12 +19,10 @@ package org.apache.ignite.ml.math.util;
 
 import java.util.List;
 import org.apache.ignite.internal.util.GridArgumentCheck;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;

@@ -28,7 +28,8 @@ public class LossFunctions {
     /**
      * Mean squared error loss function.
      */
-    public static IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> MSE = groundTruth -> new IgniteDifferentiableVectorToDoubleFunction() {
+    public static IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> MSE = groundTruth ->
+        new IgniteDifferentiableVectorToDoubleFunction() {
         /** {@inheritDoc} */
         @Override public Vector differential(Vector pnt) {
             double multiplier = 2.0 / pnt.size();

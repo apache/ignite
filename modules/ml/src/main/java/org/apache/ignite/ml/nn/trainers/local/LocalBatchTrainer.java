@@ -130,8 +130,8 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends Update
      * @param updaterSupplier New updater supplier.
      * @return new trainer with the same parameters as this trainer, but with new updater supplier.
      */
-    public LocalBatchTrainer withUpdater(IgniteSupplier<ParameterUpdater> updaterSupplier) {
-        return new LocalBatchTrainer(loss, updaterSupplier, errorThreshold, maxIterations);
+    public LocalBatchTrainer withUpdater(IgniteSupplier<ParameterUpdater<? super M, P>> updaterSupplier) {
+        return new LocalBatchTrainer<>(loss, updaterSupplier, errorThreshold, maxIterations);
     }
 
     /**
