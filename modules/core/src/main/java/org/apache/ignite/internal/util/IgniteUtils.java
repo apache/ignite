@@ -3084,20 +3084,7 @@ public abstract class IgniteUtils {
 
     /** */
     private static GridPlainInClosure<ByteBuffer> directByteBufferCleaner() {
-        if (!IgniteSystemProperties.getString("java.version", "").startsWith("1.8")) {
-            try {
-                final Method cleaner = Unsafe.class.getMethod("invokeCleaner", ByteBuffer.class);
-
-                return new GridPlainInClosure<ByteBuffer>() {
-                    @Override public void apply(ByteBuffer buf) {
-                        GridUnsafe.invoke(cleaner, buf);
-                    }
-                };
-            }
-            catch (NoSuchMethodException e) {
-                throw new RuntimeException("Reflection failure: no sun.misc.Unsafe.invokeCleaner() method found", e);
-            }
-        } else {
+        if (IgniteSystemProperties.getString("java.version", "").startsWith("1.8")) {
             final Method cleanerMtd;
             final Method cleanMtd;
 
@@ -3125,6 +3112,19 @@ public abstract class IgniteUtils {
                     }
                 }
             };
+        } else {
+            try {
+                final Method cleaner = Unsafe.class.getMethod("invokeCleaner", ByteBuffer.class);
+
+                return new GridPlainInClosure<ByteBuffer>() {
+                    @Override public void apply(ByteBuffer buf) {
+                        GridUnsafe.invoke(cleaner, buf);
+                    }
+                };
+            }
+            catch (NoSuchMethodException e) {
+                throw new RuntimeException("Reflection failure: no sun.misc.Unsafe.invokeCleaner() method found", e);
+            }
         }
     }
 
