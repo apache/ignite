@@ -25,14 +25,14 @@ import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.util.Utils;
 
-public class SimpleMLPLocalBatchTrainerInput implements MLPLocalBatchTrainerInput {
-    private final MLP mlp;
+public class SimpleMLPLocalBatchTrainerInput implements MLPLocalBatchTrainerInput<MultilayerPerceptron> {
+    private final MultilayerPerceptron mlp;
     private Matrix inputs;
     private final Matrix outputs;
     private int batchSize;
 
     public SimpleMLPLocalBatchTrainerInput(MLPArchitecture conf, Random rnd, Matrix inputs, Matrix outputs, int batchSize) {
-        this.mlp = new MLP(conf, new RandomInitializer(rnd));
+        this.mlp = new MultilayerPerceptron(conf, new RandomInitializer(rnd));
         this.inputs = inputs;
         this.outputs = outputs;
         this.batchSize = batchSize;
@@ -55,7 +55,7 @@ public class SimpleMLPLocalBatchTrainerInput implements MLPLocalBatchTrainerInpu
         return new IgniteBiTuple<>(vectors, labels);
     }
 
-    @Override public MLP mlp() {
+    @Override public MultilayerPerceptron mdl() {
         return mlp;
     }
 }

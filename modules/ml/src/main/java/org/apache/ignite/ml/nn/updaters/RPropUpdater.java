@@ -22,13 +22,12 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.util.MatrixUtil;
-import org.apache.ignite.ml.nn.MLP;
 
 /**
  * Class encapsulating RProp algorithm.
  * @see <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf</a>.
  */
-public class RPropUpdater implements MLPParameterUpdater<RPropUpdaterParams> {
+public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropUpdaterParams> {
     /**
      * Default initial update.
      */
@@ -106,15 +105,15 @@ public class RPropUpdater implements MLPParameterUpdater<RPropUpdaterParams> {
     }
 
     /** {@inheritDoc} */
-    @Override public RPropUpdaterParams init(MLP mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+    @Override public RPropUpdaterParams init(SmoothParametrized mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
-        return new RPropUpdaterParams(mlp.architecture(), learningRate);
+        return new RPropUpdaterParams(mdl.parametersCount(), learningRate);
     }
 
     /** {@inheritDoc} */
-    @Override public RPropUpdaterParams updateParams(MLP mlp, RPropUpdaterParams updaterParams, int iteration, Matrix inputs,
+    @Override public RPropUpdaterParams updateParams(SmoothParametrized mdl, RPropUpdaterParams updaterParams, int iteration, Matrix inputs,
         Matrix groundTruth) {
-        Vector gradient = mlp.differentiateByParameters(loss, inputs, groundTruth);
+        Vector gradient = mdl.differentiateByParameters(loss, inputs, groundTruth);
         Vector prevGradient = updaterParams.prevIterationGradient();
         Vector derSigns;
 

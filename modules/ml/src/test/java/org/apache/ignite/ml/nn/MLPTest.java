@@ -39,7 +39,7 @@ public class MLPTest {
     public void testSimpleMLPPrediction() {
         MLPArchitecture conf = new MLPArchitecture(1).withAddedLayer(1, false, Activators.SIGMOID);
 
-        MLP mlp = new MLP(conf, new MLPConstInitializer(1));
+        MultilayerPerceptron mlp = new MultilayerPerceptron(conf, new MLPConstInitializer(1));
 
         int input = 2;
 
@@ -57,7 +57,7 @@ public class MLPTest {
             withAddedLayer(2, true, Activators.SIGMOID).
             withAddedLayer(1, true, Activators.SIGMOID);
 
-        MLP mlp = new MLP(conf, new MLPConstInitializer(1, 2));
+        MultilayerPerceptron mlp = new MultilayerPerceptron(conf, new MLPConstInitializer(1, 2));
 
         mlp.setWeights(1, new DenseLocalOnHeapMatrix(new double[][] {{20.0, 20.0}, {-20.0, -20.0}}));
         mlp.setBiases(1, new DenseLocalOnHeapVector(new double[] {-10.0, 30.0}));
@@ -86,17 +86,17 @@ public class MLPTest {
             withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID).
             withAddedLayer(secondLayerNeuronsCnt, false, Activators.SIGMOID);
 
-        MLP mlp = new MLP(conf, initer);
+        MultilayerPerceptron mlp = new MultilayerPerceptron(conf, initer);
 
         MLPArchitecture mlpLayer1Conf = new MLPArchitecture(4).
             withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID);
         MLPArchitecture mlpLayer2Conf = new MLPArchitecture(firstLayerNeuronsCnt).
             withAddedLayer(secondLayerNeuronsCnt, false, Activators.SIGMOID);
 
-        MLP mlp1 = new MLP(mlpLayer1Conf, initer);
-        MLP mlp2 = new MLP(mlpLayer2Conf, initer);
+        MultilayerPerceptron mlp1 = new MultilayerPerceptron(mlpLayer1Conf, initer);
+        MultilayerPerceptron mlp2 = new MultilayerPerceptron(mlpLayer2Conf, initer);
 
-        MLP stackedMLP = mlp1.add(mlp2);
+        MultilayerPerceptron stackedMLP = mlp1.add(mlp2);
 
         Matrix predict = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());
         Matrix stackedPredict = stackedMLP.apply(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());
@@ -144,9 +144,10 @@ public class MLPTest {
             withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID).
             withAddedLayer(secondLayerNeurons, true, Activators.SIGMOID);
 
-        MLP mlp = new MLP(conf, new MLPConstInitializer(100, 200));
+        MultilayerPerceptron mlp = new MultilayerPerceptron(conf, new MLPConstInitializer(100, 200));
 
-        Assert.assertEquals(paramsVector, mlp.setParameters(paramsVector).parameters());
+        mlp.setParameters(paramsVector);
+        Assert.assertEquals(paramsVector, mlp.parameters());
 
         Assert.assertEquals(mlp.weights(1), firstLayerWeights);
         Assert.assertEquals(mlp.weights(2), secondLayerWeights);
@@ -167,7 +168,7 @@ public class MLPTest {
         MLPArchitecture conf = new MLPArchitecture(inputSize).
             withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID);
 
-        MLP mlp = new MLP(conf);
+        MultilayerPerceptron mlp = new MultilayerPerceptron(conf);
 
         mlp.setWeight(1, 0, 0, w10);
         mlp.setWeight(1, 1, 0, w11);

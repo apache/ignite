@@ -20,14 +20,12 @@ package org.apache.ignite.ml.nn.updaters;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.nn.MLP;
-import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 
 /**
  * Data needed for RProp updater.
  * @see <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf</a>.
  */
-public class RPropUpdaterParams implements UpdaterParams {
+public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
     /**
      * Previous iteration weights updates. In original paper they are labeled with "delta w".
      */
@@ -47,11 +45,10 @@ public class RPropUpdaterParams implements UpdaterParams {
     /**
      * Construct RPropUpdaterParams.
      *
-     * @param arch MLP architecture.
+     * @param paramsCount Parameters count.
      * @param initUpdate Initial update (in original work labeled as "delta_0").
      */
-    RPropUpdaterParams(MLPArchitecture arch, double initUpdate) {
-        int paramsCount = arch.parametersCount();
+    RPropUpdaterParams(int paramsCount, double initUpdate) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCount);
         prevIterationGradient = new DenseLocalOnHeapVector(paramsCount);
         deltas = new DenseLocalOnHeapVector(paramsCount).assign(initUpdate);
@@ -116,7 +113,7 @@ public class RPropUpdaterParams implements UpdaterParams {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateMLP(MLP mlp) {
+    @Override public void update(SmoothParametrized mlp) {
         Vector updatesToAdd = VectorUtils.elementWiseTimes(updatesMask.copy(), prevIterationUpdates);
         mlp.setParameters(mlp.parameters().plus(updatesToAdd));
     }

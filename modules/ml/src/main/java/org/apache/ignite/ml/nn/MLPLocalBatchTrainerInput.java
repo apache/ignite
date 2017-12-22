@@ -19,21 +19,22 @@ package org.apache.ignite.ml.nn;
 
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 
 /**
- * Interface for classes containing input parameters for {@link MLPLocalBatchTrainer}
+ * Interface for classes containing input parameters for LocalBatchTrainer.
  */
-public interface MLPLocalBatchTrainerInput {
+public interface MLPLocalBatchTrainerInput<M> {
     /**
      * Get next batch in form of matrix of inputs and matrix of outputs.
+     *
      * @return Next batch.
      */
     IgniteBiTuple<Matrix, Matrix> getBatch();
 
     /**
-     * MLP to train.
-     * @return MLP to train.
+     * Model to train.
+     *
+     * @return Model to train.
      */
-    MLP mlp();
+    M mdl();
 }

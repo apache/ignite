@@ -26,6 +26,7 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.nn.updaters.NesterovUpdater;
+import org.apache.ignite.ml.nn.updaters.RPropUpdater;
 import org.junit.Test;
 
 /**
@@ -36,7 +37,7 @@ public class MLPLocalTrainerTest {
      * Test 'XOR' operation training.
      */
     @Test
-    public void testXOR() {
+    public void testXORRprop() {
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}}, StorageConstants.ROW_STORAGE_MODE).transpose();
         Matrix xorOutputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}}, StorageConstants.ROW_STORAGE_MODE).transpose();
 
@@ -46,11 +47,16 @@ public class MLPLocalTrainerTest {
 
         SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(123567L), xorInputs, xorOutputs, 4);
 
-        MLP mdl = MLPLocalBatchTrainer.getDefault().train(trainerInput);
+        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(Losses.MSE,
+            RPropUpdater::new,
+            0.0001,
+            16000).train(trainerInput);
 
-        Matrix predict = mdl.apply(xorInputs);
+        Matrix predict = mlp.apply(xorInputs);
 
         Tracer.showAscii(predict);
+
+        System.out.println(xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2));
 
         TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 1E-2);
     }
@@ -69,12 +75,12 @@ public class MLPLocalTrainerTest {
 
         SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf, new Random(1234L), xorInputs, xorOutputs, 4);
 
-        MLP mdl = new MLPLocalBatchTrainer<>(Losses.MSE,
+        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(Losses.MSE,
             () -> new NesterovUpdater(0.1, 0.7),
             0.0001,
             16000).train(trainerInput);
 
-        Matrix predict = mdl.apply(xorInputs);
+        Matrix predict = mlp.apply(xorInputs);
 
         Tracer.showAscii(predict);
 

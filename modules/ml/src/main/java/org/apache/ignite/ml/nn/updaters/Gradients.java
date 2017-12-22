@@ -19,9 +19,8 @@ package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.nn.MLP;
 
-public class Gradients implements UpdaterParams {
+public class Gradients<T extends SmoothParametrized> implements UpdaterParams<T> {
     private Vector gradient;
     private double learningRate;
 
@@ -35,7 +34,7 @@ public class Gradients implements UpdaterParams {
         this.learningRate = learningRate;
     }
 
-    @Override public void updateMLP(MLP mlp) {
+    @Override public void update(T mlp) {
         Vector params = mlp.parameters();
         mlp.setParameters(params.plus(gradient.times(learningRate)));
     }

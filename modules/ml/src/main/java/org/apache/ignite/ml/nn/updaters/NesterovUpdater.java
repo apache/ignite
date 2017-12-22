@@ -21,12 +21,11 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.nn.MLP;
 
 /**
  * Class encapsulating Nesterov algorithm for MLP parameters update.
  */
-public class NesterovUpdater implements MLPParameterUpdater<NesterovUpdaterParams> {
+public class NesterovUpdater implements ParameterUpdater<SmoothParametrized, NesterovUpdaterParams> {
     /**
      * Learning rate.
      */
@@ -52,21 +51,23 @@ public class NesterovUpdater implements MLPParameterUpdater<NesterovUpdaterParam
         this.momentum = momentum;
     }
 
-    @Override public NesterovUpdaterParams init(MLP mlp, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+    /** {@inheritDoc} */
+    @Override public NesterovUpdaterParams init(SmoothParametrized mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
 
-        return new NesterovUpdaterParams(mlp.architecture().parametersCount());
+        return new NesterovUpdaterParams(mdl.parametersCount());
     }
 
-    @Override public NesterovUpdaterParams updateParams(MLP mlp, NesterovUpdaterParams updaterParameters, int iteration,
+    /** {@inheritDoc} */
+    @Override public NesterovUpdaterParams updateParams(SmoothParametrized mdl, NesterovUpdaterParams updaterParameters, int iteration,
         Matrix inputs, Matrix groundTruth) {
 
         if (iteration > 0) {
-            Vector curParams = mlp.parameters();
-            mlp.setParameters(curParams.minus(updaterParameters.prevIterationUpdates().times(momentum)));
+            Vector curParams = mdl.parameters();
+            mdl.setParameters(curParams.minus(updaterParameters.prevIterationUpdates().times(momentum)));
         }
 
-        Vector gradient = mlp.differentiateByParameters(loss, inputs, groundTruth);
+        Vector gradient = mdl.differentiateByParameters(loss, inputs, groundTruth);
         updaterParameters.setPreviousUpdates(updaterParameters.prevIterationUpdates().plus(gradient.times(learningRate)));
 
         return updaterParameters;

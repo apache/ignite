@@ -34,13 +34,14 @@ import org.apache.ignite.ml.nn.initializers.MLPInitializer;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.architecture.TransformationLayerArchitecture;
+import org.apache.ignite.ml.nn.updaters.SmoothParametrized;
 
 import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 
 /**
  * Class encapsulating logic of multilayer perceptron.
  */
-public class MLP implements Model<Matrix, Matrix> {
+public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParametrized {
     /**
      * This MLP architecture.
      */
@@ -54,7 +55,7 @@ public class MLP implements Model<Matrix, Matrix> {
     /**
      * MLP which is 'below' this MLP (i.e. below output goes to this MLP as input).
      */
-    protected MLP below;
+    protected MultilayerPerceptron below;
 
     /**
      * Construct MLP from given architecture and parameters initializer.
@@ -62,7 +63,7 @@ public class MLP implements Model<Matrix, Matrix> {
      * @param arch Architecture.
      * @param initializer Parameters initializer.
      */
-    public MLP(MLPArchitecture arch, MLPInitializer initializer) {
+    public MultilayerPerceptron(MLPArchitecture arch, MLPInitializer initializer) {
         layers = new ArrayList<>(arch.layersCount() + 1);
         architecture = arch;
         below = null;
@@ -75,7 +76,7 @@ public class MLP implements Model<Matrix, Matrix> {
      *
      * @param arch Architecture.
      */
-    public MLP(MLPArchitecture arch) {
+    public MultilayerPerceptron(MLPArchitecture arch) {
         layers = new ArrayList<>(arch.layersCount() + 1);
         architecture = arch;
         below = null;
@@ -112,7 +113,7 @@ public class MLP implements Model<Matrix, Matrix> {
      * @param above MLP to be above.
      * @param below MLP to be below.
      */
-    protected MLP(MLP above, MLP below) {
+    protected MultilayerPerceptron(MultilayerPerceptron above, MultilayerPerceptron below) {
         this.layers = above.layers;
         this.architecture = above.architecture;
         this.below = below;
@@ -189,8 +190,8 @@ public class MLP implements Model<Matrix, Matrix> {
      * @param above Added MLP.
      * @return New MLP where this MLP output is fed as input to added MLP.
      */
-    public MLP add(MLP above) {
-        return new MLP(above, this);
+    public MultilayerPerceptron add(MultilayerPerceptron above) {
+        return new MultilayerPerceptron(above, this);
     }
 
     /**
@@ -243,7 +244,7 @@ public class MLP implements Model<Matrix, Matrix> {
      * @param bias New values for biases.
      * @return This MLP with updated biases.
      */
-    public MLP setBiases(int layerIdx, Vector bias) {
+    public MultilayerPerceptron setBiases(int layerIdx, Vector bias) {
         biases(layerIdx).assign(bias);
 
         return this;
@@ -257,7 +258,7 @@ public class MLP implements Model<Matrix, Matrix> {
      * @param val New value of bias.
      * @return This MLP with updated biases.
      */
-    public MLP setBias(int layerIdx, int neuronIdx, double val) {
+    public MultilayerPerceptron setBias(int layerIdx, int neuronIdx, double val) {
         // Should be transformation layer.
         assert layerIdx > 0;
         assert architecture.transformationLayerArchitecture(layerIdx).hasBias();
@@ -289,7 +290,7 @@ public class MLP implements Model<Matrix, Matrix> {
      * @param weights New values for weights.
      * @return This MLP with updated weights.
      */
-    public MLP setWeights(int layerIdx, Matrix weights) {
+    public MultilayerPerceptron setWeights(int layerIdx, Matrix weights) {
         weights(layerIdx).assign(weights);
 
         return this;
@@ -304,7 +305,7 @@ public class MLP implements Model<Matrix, Matrix> {
      * @param val New value of weight.
      * @return This MLP with updated weights.
      */
-    public MLP setWeight(int layerIdx, int fromNeuron, int toNeuron, double val) {
+    public MultilayerPerceptron setWeight(int layerIdx, int fromNeuron, int toNeuron, double val) {
         // Should be transformation layer.
         assert layerIdx > 0;
 
@@ -354,6 +355,7 @@ public class MLP implements Model<Matrix, Matrix> {
         return architecture;
     }
 
+    /** {@inheritDoc} */
     public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> f, Matrix inputsBatch, Matrix truthBatch) {
         int batchSize = inputsBatch.columnSize();
         double invBatchSize = 1 / (double)batchSize;
@@ -415,7 +417,7 @@ public class MLP implements Model<Matrix, Matrix> {
      * @param vector
      * @return
      */
-    public MLP setParameters(Vector vector) {
+    public void setParameters(Vector vector) {
         int off = 0;
 
         for (int l = 1; l < layersCount(); l++) {
@@ -431,8 +433,11 @@ public class MLP implements Model<Matrix, Matrix> {
                 layer.biases = readRes1.get2();
             }
         }
+    }
 
-        return this;
+    /** {@inheritDoc} */
+    @Override public int parametersCount() {
+        return architecture().parametersCount();
     }
 
     protected IgniteBiTuple<Integer, Matrix> readFromVector(Vector v, int rows, int cols, int offset) {

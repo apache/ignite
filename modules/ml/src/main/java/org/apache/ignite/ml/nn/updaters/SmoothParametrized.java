@@ -17,6 +17,14 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
-public interface UpdaterParams<M> {
-    void update(M mdl);
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+
+public interface SmoothParametrized {
+    Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> f, Matrix inputsBatch, Matrix truthBatch);
+    Vector parameters();
+    void setParameters(Vector vector);
+    int parametersCount();
 }

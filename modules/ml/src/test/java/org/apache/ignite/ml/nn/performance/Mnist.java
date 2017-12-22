@@ -34,7 +34,7 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.Losses;
-import org.apache.ignite.ml.nn.MLP;
+import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.SimpleMLPLocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
@@ -89,13 +89,13 @@ public class Mnist {
             new Random(),
             ds.get1(),
             ds.get2(),
-
             2000);
 
-        MLP mdl = new MLPLocalBatchTrainer<>(Losses.MSE,
+        MultilayerPerceptron mdl = new MLPLocalBatchTrainer<>(Losses.MSE,
             () -> new RPropUpdater(0.1, 0.1, 1.2, 0.5),
             1E-7,
-            200).train(input);
+            200).
+            train(input);
 
         X.println("Training started");
         long before = System.currentTimeMillis();

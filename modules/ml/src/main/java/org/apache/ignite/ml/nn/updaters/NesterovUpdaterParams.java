@@ -18,16 +18,12 @@
 package org.apache.ignite.ml.nn.updaters;
 
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.util.MatrixUtil;
-import org.apache.ignite.ml.nn.MLP;
 
 /**
  * Data needed for Nesterov parameters updater.
  */
-public class NesterovUpdaterParams implements UpdaterParams {
+public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> {
     /**
      * Previous step weights updates.
      */
@@ -63,7 +59,7 @@ public class NesterovUpdaterParams implements UpdaterParams {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateMLP(MLP mlp) {
+    @Override public void update(SmoothParametrized mlp) {
         Vector parameters = mlp.parameters();
         mlp.setParameters(parameters.minus(prevIterationUpdates));
     }
