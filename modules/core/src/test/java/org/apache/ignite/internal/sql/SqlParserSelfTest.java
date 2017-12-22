@@ -157,14 +157,45 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
 
     /** FIXME */
     public void testEscapeSeqs() {
-        checkEscapeSeq("\"\\0\"", "\0");
         checkEscapeSeq("\"\\b\"", "\b");
         checkEscapeSeq("\"\\f\"", "\f");
         checkEscapeSeq("\"\\n\"", "\n");
         checkEscapeSeq("\"\\t\"", "\t");
-        checkEscapeSeq("\"\\\\\"", "\\");
         checkEscapeSeq("\"\\r\"", "\r");
         checkEscapeSeq("\"\\Z\"", "\032");
+        checkEscapeSeq("\"\\\\\"", "\\");
+
+        checkEscapeSeq("\"\\0\"", "\0");
+        checkEscapeSeq("\"\\0 \"", "\0 ");
+        checkEscapeSeq("\"\\7 \"", "\7 ");
+        checkEscapeSeq("\"\\78\"", "\78");
+        checkEscapeSeq("\"\\377\"", "" + '\377');
+        checkEscapeSeq("\"\\477\"", "" + '\47' + '7');
+        checkEscapeSeq("\"\\0078\"", "\78");
+        checkEscapeSeq("\"\\008\"", "\08");
+        checkEscapeSeq("\"\\08\"", "\08");
+
+        checkEscapeSeq("\"\\8\"", "8");
+
+        checkInvalidEscapeSeq("\"\\x\"", StrOrRegex.of("Character cannot be part of escape sequence: '\"'"));
+
+        checkEscapeSeq("\"\\x0\"", "\0");
+        checkEscapeSeq("\"\\x0 \"", "\0 ");
+        checkEscapeSeq("\"\\x00 \"", "\0 ");
+        checkEscapeSeq("\"\\x0g\"", "\0g");
+
+        checkInvalidEscapeSeq("\"\\xg\"", StrOrRegex.of("Character cannot be part of escape sequence: 'g'"));
+
+        checkEscapeSeq("\"\\xff \"", "\u00ff ");
+
+        checkEscapeSeq("\"\\uffff \"", "\uffff" + " ");
+        checkEscapeSeq("\"\\ufffff \"", "\uffff" + "f ");
+        checkEscapeSeq("\"\\uffffff \"", "\uffff" + "ff ");
+
+        checkInvalidEscapeSeq("\"\\ug\"", StrOrRegex.of("Character cannot be part of escape sequence: 'g'"));
+        checkInvalidEscapeSeq("\"\\ufg\"", StrOrRegex.of("Character cannot be part of escape sequence: 'g'"));
+        checkInvalidEscapeSeq("\"\\uffg\"", StrOrRegex.of("Character cannot be part of escape sequence: 'g'"));
+        checkInvalidEscapeSeq("\"\\ufffg\"", StrOrRegex.of("Character cannot be part of escape sequence: 'g'"));
     }
 
     /** FIXME */
@@ -173,5 +204,17 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
 
         assertEquals(lex.lookAhead().tokenType(), SqlLexerTokenType.DBL_QUOTED);
         assertEquals(lex.lookAhead().token(), convertedToken);
+    }
+
+    private void checkInvalidEscapeSeq(String sql, StrOrRegex errorMsg) {
+        final SqlLexer lex = new SqlLexer(sql);
+
+        GridTestUtils.assertThrowsRe(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                assertEquals(lex.lookAhead().tokenType(), SqlLexerTokenType.DBL_QUOTED);
+
+                return null;
+            }
+        }, SqlParseException.class, errorMsg);
     }
 }

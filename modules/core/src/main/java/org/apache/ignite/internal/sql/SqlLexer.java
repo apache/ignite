@@ -159,8 +159,23 @@ public class SqlLexer implements SqlLexerToken {
                                         "Unclosed escape sequence in quoted identifier.");
                                 }
 
-                                if (!escParser.accept(inputChars[pos]))
+                                c1 = inputChars[pos];
+
+                                SqlEscSeqParser.Result result = escParser.accept(c1);
+
+                                if (result == SqlEscSeqParser.Result.END_ACCEPTED) {
+                                    pos++;
                                     break;
+                                }
+
+                                if (result == SqlEscSeqParser.Result.END_REJECTED)
+                                    break;
+
+                                if (result == SqlEscSeqParser.Result.ERROR)
+                                    throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
+                                        "Character cannot be part of escape sequence: '" + c1 + "'");
+
+                                assert result == SqlEscSeqParser.Result.NEED_MORE_INPUT;
 
                                 pos++;
                             }
