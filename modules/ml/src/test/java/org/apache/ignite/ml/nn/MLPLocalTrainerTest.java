@@ -39,7 +39,7 @@ import org.junit.Test;
  */
 public class MLPLocalTrainerTest {
     /**
-     * Test 'XOR' operation training with RProp updater.
+     * Test 'XOR' operation training with {@link SimpleGDUpdater} updater.
      */
     @Test
     public void testXORSimpleGD() {
@@ -47,7 +47,7 @@ public class MLPLocalTrainerTest {
     }
 
     /**
-     * Test 'XOR' operation training with RProp updater.
+     * Test 'XOR' operation training with {@link RPropUpdater}.
      */
     @Test
     public void testXORRProp() {
@@ -55,7 +55,7 @@ public class MLPLocalTrainerTest {
     }
 
     /**
-     * Test 'XOR' operation training with Nesterov updater.
+     * Test 'XOR' operation training with {@link NesterovUpdater}.
      */
     @Test
     public void testXORNesterov() {
