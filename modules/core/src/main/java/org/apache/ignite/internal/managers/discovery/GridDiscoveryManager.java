@@ -57,7 +57,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.failure.IgniteFailureCause;
+import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.failure.IgniteFailureProcessor;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridComponent;
@@ -95,7 +95,6 @@ import org.apache.ignite.internal.util.lang.GridTuple6;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -108,7 +107,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
@@ -156,7 +154,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.SERVICE_PERMISSIONS_SINCE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
-import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
  * Discovery SPI manager.
@@ -2659,7 +2656,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 U.error(log, "Failed to disconnect discovery SPI.", e);
             }
 
-            IgniteFailureProcessor.INSTANCE.processFailure(ctx, IgniteFailureCause.Type.SEGMENTATION);
+            IgniteFailureProcessor.INSTANCE.processFailure(ctx, IgniteFailureType.SEGMENTATION);
         }
 
         /** {@inheritDoc} */

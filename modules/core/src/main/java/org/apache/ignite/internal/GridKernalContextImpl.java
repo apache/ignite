@@ -36,7 +36,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.IgniteFailureCause;
+import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -365,7 +365,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private GridKernalGateway gw;
 
     /** Failure type. */
-    private volatile IgniteFailureCause.Type failureType;
+    private volatile IgniteFailureType failureType;
 
     /** Network segmented flag. */
     private volatile boolean segFlag;
@@ -854,12 +854,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public void failure(IgniteFailureCause.Type type) {
+    @Override public void failure(IgniteFailureType type) {
         this.failureType = type;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFailureCause.Type failure() {
+    @Override public IgniteFailureType failure() {
         return failureType;
     }
 

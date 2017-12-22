@@ -18,48 +18,12 @@
 package org.apache.ignite.failure;
 
 /**
- *
+ * Enumeration of Ignite failure types.
  */
-public class IgniteFailureCause {
-    /** Type. */
-    private final Type type;
+public enum IgniteFailureType {
+    /** Segmentation. */
+    SEGMENTATION,
 
-    /** Cause. */
-    private final Throwable cause;
-
-    /**
-     * @param type Type.
-     * @param cause Cause.
-     */
-    public IgniteFailureCause(Type type, Throwable cause) {
-        assert type != null;
-
-        this.type = type;
-        this.cause = cause;
-    }
-
-    /**
-     *
-     */
-    public Type type() {
-        return type;
-    }
-
-    /**
-     *
-     */
-    public Throwable cause() {
-        return cause;
-    }
-
-    /**
-     * Enumeration of IgniteFailureCause types.
-     */
-    public enum Type {
-        /** Segmentation. */
-        SEGMENTATION,
-
-        /** Exchange worker stop. */
-        EXCHANGE_WORKER_STOP,
-    }
+    /** Exchange worker stop. */
+    EXCHANGE_WORKER_STOP,
 }

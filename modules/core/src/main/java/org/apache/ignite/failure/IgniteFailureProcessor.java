@@ -34,7 +34,7 @@ public class IgniteFailureProcessor {
      * @param type Type.
      * @param cause Cause.
      */
-    public void processFailure(GridKernalContext ctx, IgniteFailureCause.Type type, Throwable cause) {
+    public void processFailure(GridKernalContext ctx, IgniteFailureType type, Throwable cause) {
         assert type != null;
 
         IgniteFailureHandler hnd = ctx.config().getIgniteFailureHandler();
@@ -42,7 +42,7 @@ public class IgniteFailureProcessor {
         if (hnd == null)
             hnd = IgniteFailureHandler.DFLT_HND;
 
-        final IgniteFailureAction act = hnd.onFailure(ctx, new IgniteFailureCause(type, cause));
+        final IgniteFailureAction act = hnd.onFailure(ctx, type, cause);
 
         final IgniteLogger log = ctx.log(getClass());
 
@@ -70,12 +70,12 @@ public class IgniteFailureProcessor {
      * @param ctx Context.
      * @param type Type.
      */
-    public void processFailure(GridKernalContext ctx, IgniteFailureCause.Type type) {
+    public void processFailure(GridKernalContext ctx, IgniteFailureType type) {
         processFailure(ctx, type, null);
     }
 
     /** Restarts JVM. */
-    private void restartJvm(final GridKernalContext ctx, final IgniteFailureCause.Type type) {
+    private void restartJvm(final GridKernalContext ctx, final IgniteFailureType type) {
         new Thread(
             new Runnable() {
                 @Override public void run() {
@@ -88,7 +88,7 @@ public class IgniteFailureProcessor {
     }
 
     /** Stops local node. */
-    private void stopNode(final GridKernalContext ctx, final IgniteFailureCause.Type type) {
+    private void stopNode(final GridKernalContext ctx, final IgniteFailureType type) {
         new Thread(
             new Runnable() {
                 @Override public void run() {

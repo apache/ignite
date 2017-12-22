@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.IgniteFailureCause;
+import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
@@ -453,11 +453,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc}
      * @param type*/
-    @Override public void failure(IgniteFailureCause.Type type) {
+    @Override public void failure(IgniteFailureType type) {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFailureCause.Type failure() {
+    @Override public IgniteFailureType failure() {
         return null;
     }
 

@@ -33,5 +33,5 @@ public interface IgniteFailureHandler {
      * @param cause Cause.
      * @return IgniteFailureAction value.
      */
-    public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureCause cause);
+    public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureType type, Throwable cause);
 }

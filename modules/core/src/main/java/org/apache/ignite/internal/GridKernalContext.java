@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.IgniteFailureCause;
+import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -425,14 +425,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @param type Type.
      */
-    public void failure(IgniteFailureCause.Type type);
+    public void failure(IgniteFailureType type);
 
     /**
      * Gets Ignite failure type.
      *
      * @return Ignite failure type, if it was happen, or {@code null} otherwise.
      */
-    public IgniteFailureCause.Type failure();
+    public IgniteFailureType failure();
 
     /**
      * Print grid kernal memory stats (sizes of internal structures, etc.).

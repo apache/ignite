@@ -67,7 +67,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.failure.IgniteFailureCause;
+import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -2522,10 +2522,10 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                final IgniteFailureCause.Type failure = grid0.context().failure();
+                final IgniteFailureType failure = grid0.context().failure();
 
                 state = failure == null ? STOPPED :
-                    failure == IgniteFailureCause.Type.SEGMENTATION ? STOPPED_ON_SEGMENTATION : STOPPED_ON_FAILURE;
+                    failure == IgniteFailureType.SEGMENTATION ? STOPPED_ON_SEGMENTATION : STOPPED_ON_FAILURE;
 
                 grid = null;
 

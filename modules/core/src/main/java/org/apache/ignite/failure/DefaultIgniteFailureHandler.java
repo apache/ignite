@@ -24,8 +24,8 @@ import org.apache.ignite.internal.GridKernalContext;
  */
 public class DefaultIgniteFailureHandler implements IgniteFailureHandler {
     /** {@inheritDoc} */
-    @Override public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureCause cause) {
-        switch (cause.type()) {
+    @Override public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureType type, Throwable cause) {
+        switch (type) {
             case SEGMENTATION:
                 return IgniteFailureAction.forSegmentation(ctx.config().getSegmentationPolicy());
 
@@ -33,7 +33,7 @@ public class DefaultIgniteFailureHandler implements IgniteFailureHandler {
                 return IgniteFailureAction.STOP;
 
             default:
-                assert false : "Unsupported Ignite failure type: " + cause.type();
+                assert false : "Unsupported Ignite failure type: " + type;
 
                 return IgniteFailureAction.STOP;
         }
