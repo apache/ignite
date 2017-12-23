@@ -76,7 +76,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return locCtx.cnt() < locCtx.maxCnt();
     }
 
-    @Override protected Void extractContextForModelCreation(Double data, TestGroupTrainerLocalContext locCtx) {
+    @Override protected Void extractContextForFinalResultCreation(Double data, TestGroupTrainerLocalContext locCtx) {
         // No context is needed.
         return null;
     }
