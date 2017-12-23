@@ -224,6 +224,10 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
                     return executeSql("SELECT * from Person");
                 }
             }, IgniteSQLException.class, "Failed to parse query: SELECT * from Person");
+
+        }
+        finally {
+            executeSql("DROP TABLE city");
         }
     }
 

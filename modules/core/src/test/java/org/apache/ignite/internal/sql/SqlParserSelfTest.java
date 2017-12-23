@@ -203,13 +203,14 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
     }
 
     /** FIXME */
-    private void checkEscapeSeq(String sql, String convertedToken) {
+    private void checkEscapeSeq(String sql, String convertedTok) {
         SqlLexer lex = new SqlLexer(sql);
 
         assertEquals(lex.lookAhead().tokenType(), SqlLexerTokenType.DBL_QUOTED);
-        assertEquals(lex.lookAhead().token(), convertedToken);
+        assertEquals(lex.lookAhead().token(), convertedTok);
     }
 
+    /** FIXME */
     private void checkInvalidEscapeSeq(String sql, StrOrRegex errorMsg) {
         final SqlLexer lex = new SqlLexer(sql);
 

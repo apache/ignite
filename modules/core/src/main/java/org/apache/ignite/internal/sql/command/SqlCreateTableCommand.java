@@ -456,14 +456,14 @@ public class SqlCreateTableCommand implements SqlCommand {
                     break;
 
                 case TINYINT:
-                    col = new SqlColumn(name, SqlColumnType.BYTE, 0, 0, (isNullable != null) ? isNullable : false);
+                    col = new SqlColumn(name, SqlColumnType.BYTE, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
 
                 case INT2:
                 case SMALLINT:
                 case YEAR:
-                    col = new SqlColumn(name, SqlColumnType.SHORT, 0, 0, (isNullable != null) ? isNullable : false);
+                    col = new SqlColumn(name, SqlColumnType.SHORT, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
 
@@ -472,20 +472,20 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case INTEGER:
                 case MEDIUMINT:
                 case SIGNED:
-                    col = new SqlColumn(name, SqlColumnType.INT, 0, 0, (isNullable != null) ? isNullable : false);
+                    col = new SqlColumn(name, SqlColumnType.INT, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
 
                 case BIGINT:
                 case INT8:
                 case LONG:
-                    col = new SqlColumn(name, SqlColumnType.LONG, 0, 0, (isNullable != null) ? isNullable : false);
+                    col = new SqlColumn(name, SqlColumnType.LONG, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
 
                 case FLOAT4:
                 case REAL:
-                    col = new SqlColumn(name, SqlColumnType.FLOAT, 0, 0, (isNullable != null) ? isNullable : false);
+                    col = new SqlColumn(name, SqlColumnType.FLOAT, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
 
@@ -495,14 +495,14 @@ public class SqlCreateTableCommand implements SqlCommand {
                     if (matchesKeyword(next, PRECISION))
                         lex.shift();
 
-                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, (isNullable != null) ? isNullable : false);
+                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
                 }
 
                 case FLOAT:
                 case FLOAT8:
-                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, (isNullable != null) ? isNullable : false);
+                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, (isNullable != null) ? isNullable : true);
 
                     break;
 
