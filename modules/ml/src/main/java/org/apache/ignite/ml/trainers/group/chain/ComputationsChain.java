@@ -102,7 +102,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
             IgniteSupplier<G> extractor = Functions.outputSupplier(Functions.curry(remoteCtxExtractor).apply(input)).apply(locCtx);
             IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<O1>> dWorker = Functions.curry(distributedWorker).apply(input).apply(locCtx);
 
-            return ignite.compute(grp).execute(new GroupTrainerEntriesProcessorTask<>(trainingUUID, extractor, dWorker, keysSupplier, identity, reducer, cacheName, input, ignite), null);
+            return ignite.compute(grp).execute(new GroupTrainerEntriesProcessorTask<>(trainingUUID, extractor, dWorker, keysSupplier, reducer, identity, cacheName, ignite), null);
         };
         return then(nextStep);
     }
@@ -126,7 +126,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
             IgniteSupplier<G> extractor = Functions.outputSupplier(Functions.curry(remoteCtxExtractor).apply(input)).apply(locCtx);
             IgniteFunction<KeyAndContext<K, G>, ResultAndUpdates<O1>> dWorker = Functions.curry(distributedWorker).apply(input).apply(locCtx);
 
-            return ignite.compute(grp).execute(new GroupTrainerKeysProcessorTask<>(trainingUUID, extractor, dWorker, keysSupplier, identity, reducer, cacheName, input, ignite), null);
+            return ignite.compute(grp).execute(new GroupTrainerKeysProcessorTask<>(trainingUUID, extractor, dWorker, keysSupplier, reducer, identity, cacheName, ignite), null);
         };
         return then(nextStep);
     }

@@ -23,10 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
@@ -35,68 +33,124 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
-import org.apache.ignite.ml.math.functions.IgniteF7;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class GroupTrainerBaseProcessorTask<K, S, V, G, T, U extends Serializable> extends ComputeTaskAdapter<Void, U> {
-    protected final IgniteSupplier<G> contextExtractor;
+/**
+ * Base task for group trainer.
+ *
+ * @param <K> Type of cache keys of cache used for training.
+ * @param <V> Type of cache values of cache used for training.
+ * @param <C> Type of context (common part of data needed for computation).
+ * @param <T> Type of arguments of workers.
+ * @param <R> Type of computation result.
+ */
+public abstract class GroupTrainerBaseProcessorTask<K, V, C, T, R extends Serializable> extends ComputeTaskAdapter<Void, R> {
+    /**
+     * Context supplier.
+     */
+    protected final IgniteSupplier<C> ctxSupplier;
+
+    /**
+     * UUID of training.
+     */
     protected final UUID trainingUUID;
-    protected IgniteFunction<T, ResultAndUpdates<U>> worker;
-    protected final U identity;
-    // TODO: Also use this reducer on local steps.
-    protected final IgniteBinaryOperator<U> reducer;
+
+    /**
+     * Worker.
+     */
+    protected IgniteFunction<T, ResultAndUpdates<R>> worker;
+
+    /**
+     * Reducer used for reducing of computations on specified keys.
+     */
+    protected final IgniteBinaryOperator<R> reducer;
+
+    /**
+     * Identity for reducer.
+     */
+    protected final R identity;
+
+    /**
+     * Name of cache on which training is done.
+     */
     protected final String cacheName;
-    protected final S data;
+
+    /**
+     * Supplier of keys on which worker should be executed.
+     */
     protected final IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier;
-    protected final IgniteCache<GroupTrainerCacheKey, V> cache;
+
+    /**
+     * Ignite instance.
+     */
     protected final Ignite ignite;
 
+    /**
+     * Construct an instance of this class with specified parameters.
+     *
+     * @param trainingUUID UUID of training.
+     * @param ctxSupplier Supplier of context.
+     * @param worker Function calculated on each of specified keys.
+     * @param keysSupplier Supplier of keys on which training is done.
+     * @param reducer Reducer used for reducing results of computation performed on each of specified keys.
+     * @param identity Identity for reducer.
+     * @param cacheName Name of cache on which training is done.
+     * @param ignite Ignite instance.
+     */
     public GroupTrainerBaseProcessorTask(UUID trainingUUID,
-        IgniteSupplier<G> ctxExtractor,
-        IgniteFunction<T, ResultAndUpdates<U>> remoteWorker,
+        IgniteSupplier<C> ctxSupplier,
+        IgniteFunction<T, ResultAndUpdates<R>> worker,
         IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier,
-        U identity,
-        IgniteBinaryOperator<U> reducer,
+        IgniteBinaryOperator<R> reducer, R identity,
         String cacheName,
-        S data,
         Ignite ignite) {
         this.trainingUUID = trainingUUID;
-        this.contextExtractor = ctxExtractor;
-        this.worker = remoteWorker;
+        this.ctxSupplier = ctxSupplier;
+        this.worker = worker;
         this.keysSupplier = keysSupplier;
         this.identity = identity;
         this.reducer = reducer;
         this.cacheName = cacheName;
-        this.cache = ignite.getOrCreateCache(cacheName);
-        this.data = data;
         this.ignite = ignite;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Void arg) throws IgniteException {
         Map<ComputeJob, ClusterNode> res = new HashMap<>();
 
-        for (ClusterNode node : subgrid)
-            res.put(createJob(), node);
+        for (ClusterNode node : subgrid) {
+            BaseLocalProcessorJob<K, V, T, R> job = createJob();
+            res.put(job, node);
+        }
 
         return res;
     }
 
-    protected abstract BaseLocalProcessorJob<K, V, T, U> createJob();
-
-    @Override
-    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
         return super.result(res, rcvd);
     }
 
-    @Nullable @Override
-    public U reduce(List<ComputeJobResult> results) throws IgniteException {
-        return results.stream().map(res -> (U)res.getData()).filter(Objects::nonNull).reduce(reducer).orElse(identity);
+    /** {@inheritDoc} */
+    @Nullable @Override public R reduce(List<ComputeJobResult> results) throws IgniteException {
+        return results.stream().map(res -> (R)res.getData()).filter(Objects::nonNull).reduce(reducer).orElse(identity);
     }
 
+    /**
+     * Create job for execution on subgrid.
+     *
+     * @return Job for execution on subgrid.
+     */
+    protected abstract BaseLocalProcessorJob<K, V, T, R> createJob();
+
+    /**
+     * Get affinity function of cache on which training is done.
+     *
+     * @return Affinity function of cache on which training is done.
+     */
     protected Affinity<GroupTrainerCacheKey> affinity() {
         return ignite.affinity(cacheName);
     }

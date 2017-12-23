@@ -18,40 +18,47 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.compute.ComputeJobResultPolicy;
-import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
-import org.jetbrains.annotations.Nullable;
 
-public class GroupTrainerEntriesProcessorTask<K, S, V, G, U extends Serializable> extends GroupTrainerBaseProcessorTask<K, S, V, G, EntryAndContext<K, V, G>, U> {
+/**
+ * Task for processing entries of cache used for training.
+ *
+ * @param <K> Type of cache keys of cache used for training.
+ * @param <V> Type of cache values of cache used for training.
+ * @param <C> Type of context (common part of data needed for computation).
+ * @param <R> Type of computation result.
+ */
+public class GroupTrainerEntriesProcessorTask<K, V, C, R extends Serializable> extends GroupTrainerBaseProcessorTask<K, V, C, EntryAndContext<K, V, C>, R> {
+    /**
+     * Construct instance of this class with given parameters.
+     *
+     * @param trainingUUID UUID of training.
+     * @param ctxSupplier Supplier of context.
+     * @param worker Function calculated on each of specified keys.
+     * @param keysSupplier Supplier of keys on which training is done.
+     * @param reducer Reducer used for reducing results of computation performed on each of specified keys.
+     * @param identity Identity for reducer.
+     * @param cacheName Name of cache on which training is done.
+     * @param ignite Ignite instance.
+     */
     public GroupTrainerEntriesProcessorTask(UUID trainingUUID,
-        IgniteSupplier<G> ctxExtractor,
-        IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<U>> remoteWorker,
+        IgniteSupplier<C> ctxSupplier,
+        IgniteFunction<EntryAndContext<K, V, C>, ResultAndUpdates<R>> worker,
         IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier,
-        U identity,
-        IgniteBinaryOperator<U> reducer,
+        IgniteBinaryOperator<R> reducer, R identity,
         String cacheName,
-        S data,
         Ignite ignite) {
-        super(trainingUUID, ctxExtractor, remoteWorker, keysSupplier, identity, reducer, cacheName, data, ignite);
+        super(trainingUUID, ctxSupplier, worker, keysSupplier, reducer, identity, cacheName, ignite);
     }
 
-    @Override protected BaseLocalProcessorJob<K, V, EntryAndContext<K, V, G>, U> createJob() {
-        return new LocalEntriesProcessorJob<>(contextExtractor, worker, keysSupplier, identity, reducer, trainingUUID, cacheName);
+    /** {@inheritDoc} */
+    @Override protected BaseLocalProcessorJob<K, V, EntryAndContext<K, V, C>, R> createJob() {
+        return new LocalEntriesProcessorJob<>(ctxSupplier, worker, keysSupplier, identity, reducer, trainingUUID, cacheName);
     }
 }
