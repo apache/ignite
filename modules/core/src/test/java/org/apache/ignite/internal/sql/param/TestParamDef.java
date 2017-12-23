@@ -226,15 +226,25 @@ public class TestParamDef<T> {
         }
     }
 
-    /** FIXME */
+    /** Specifies a correct value of the parameter. */
     public static class ValidValue<T> extends SpecifiedValue<T> {
 
-        /** FIXME */
+        /** Constructs a correct value of the parameter with the default list of supported syntaxes
+         * ({@link Syntax#KEY_EQ_VAL} and {@link Syntax#KEY_SPACE_VAL}).
+         *
+         * @param cmdVal Value to specify in the SQL command.
+         * @param fldVal Value to check in the corresponding field of the {@link SqlCommand} subclass.
+         */
         public ValidValue(String cmdVal, T fldVal) {
             this(cmdVal, fldVal, EnumSet.of(KEY_EQ_VAL, KEY_SPACE_VAL));
         }
 
-        /** FIXME */
+        /** Constructs a correct value of the parameter.
+         *
+         * @param cmdVal Value to specify in the SQL command.
+         * @param fldVal Value to check in the corresponding field of the {@link SqlCommand} subclass.
+         * @param supportedSyntaxes in which kinds of {@link Syntax} this value is supported.
+         */
         public ValidValue(String cmdVal, T fldVal, EnumSet<Syntax> supportedSyntaxes) {
             super(cmdVal, fldVal, supportedSyntaxes);
         }
