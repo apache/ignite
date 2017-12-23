@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.sql.param;
 
+import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 
@@ -27,19 +28,26 @@ import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_EQ_VA
 import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_SPACE_VAL;
 import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.VAL;
 
-/** FIXME */
+/** Defines a parameter to test in {@link org.apache.ignite.internal.sql} tests.*/
 public class TestParamDef<T> {
 
-    /** FIXME */
+    /** The parameter name in SQL command. */
     private final String cmdParamName;
-    /** FIXME */
+    /** The parameter field name in {@link SqlCommand} subclass. */
     private final String fldName;
-    /** FIXME */
+    /** The parameter field class in {@link SqlCommand} subclass. */
     private final Class<T> fldCls;
-    /** FIXME */
+    /** Parameter values to test. */
     private final List<Value<T>> testValues;
 
-    /** FIXME */
+    /**
+     * Creates a tested parameter definition.
+     *
+     * @param cmdParamName The parameter name in SQL command.
+     * @param fldName The parameter field name in {@link SqlCommand} subclass.
+     * @param fldCls The parameter field class in {@link SqlCommand} subclass.
+     * @param testValues Parameter values to test.
+     */
     public TestParamDef(String cmdParamName, String fldName, Class<T> fldCls, List<Value<T>> testValues) {
         this.cmdParamName = cmdParamName;
         this.fldName = fldName;
@@ -47,22 +55,32 @@ public class TestParamDef<T> {
         this.testValues = testValues;
     }
 
-    /** FIXME */
+    /**
+     * Returns the parameter name in SQL command.
+     * @return The parameter name in SQL command.
+     */
     public String cmdParamName() {
         return cmdParamName;
     }
 
-    /** FIXME */
+    /**
+     * Returns the parameter field name in {@link SqlCommand} subclass.
+     * @return The parameter field name in {@link SqlCommand} subclass.
+     */
     public String cmdFieldName() {
         return fldName;
     }
 
-    /** FIXME */
+    /** Returns the parameter field class in {@link SqlCommand} subclass.
+     * @return The parameter field class in {@link SqlCommand} subclass.
+     */
     public Class<?> fieldClass() {
         return fldCls;
     }
 
-    /** FIXME */
+    /** Returns arameter values to test.
+     * @return Parameter values to test.
+     */
     public List<Value<T>> testValues() {
         return testValues;
     }
@@ -91,42 +109,48 @@ public class TestParamDef<T> {
         KEY_SPACE_VAL
     }
 
-    /** FIXME */
+    /** A base class for tested parameter value definition. */
     public abstract static class Value<T> {
 
-        /** FIXME */
+        /** Field value in {@link SqlCommand} subclass. */
         @GridToStringInclude
         private final T fldVal;
 
-        /** FIXME */
+        /** In which kinds of {@link Syntax} this value is supported. */
         @GridToStringInclude
         private EnumSet<Syntax> supportedSyntaxes;
 
-        /** FIXME */
-        @GridToStringInclude
-        private boolean isValidWithoutKey;
-
-        /** FIXME */
+        /** Constructs tested parameter value definition.
+         *
+         * @param fldVal Field value in {@link SqlCommand} subclass.
+         * @param supportedSyntaxes In which kinds of {@link Syntax} this value is supported.
+         */
         public Value(T fldVal, EnumSet<Syntax> supportedSyntaxes) {
             this.fldVal = fldVal;
             this.supportedSyntaxes = supportedSyntaxes;
         }
 
-        /** FIXME */
+        /**
+         * Returns field value in {@link SqlCommand} subclass.
+         * @return Field value in {@link SqlCommand} subclass.
+         */
         public T fieldValue() {
             return fldVal;
         }
 
-        /** FIXME */
+        /**
+         * Returns in which kinds of {@link Syntax} this value is supported.
+         * @return In which kinds of {@link Syntax} this value is supported.
+         */
         public EnumSet<Syntax> supportedSyntaxes() {
             return supportedSyntaxes;
         }
     }
 
-    /** FIXME */
+    /** A value for a missing parameter case (when parameter is not specified in the command). */
     public static class MissingValue<T> extends Value<T> {
 
-        /** FIXME */
+        /** Creates a value for a missing parameter case (when parameter is not specified in the command). */
         public MissingValue(T fldVal) {
             super(fldVal, EnumSet.of(VAL));
         }
@@ -137,44 +161,61 @@ public class TestParamDef<T> {
         }
     }
 
-    /** FIXME */
+    /** A base class for the case when the parameter is specified (correctly or not). */
     public abstract static class SpecifiedValue<T> extends Value<T> {
 
-        /** FIXME */
+        /** The value specified in SQL command. */
         @GridToStringInclude
         private final String cmdVal;
 
-        /** FIXME */
+        /** Creates a value for the case when the parameter is specified (correctly or not). */
         public SpecifiedValue(String cmdVal, T fldVal, EnumSet<Syntax> supportedSyntaxes) {
             super(fldVal, supportedSyntaxes);
             this.cmdVal = cmdVal;
         }
 
-        /** FIXME */
+        /**
+         * Returns the value to specify in SQL command.
+         * @return the value to specify in SQL command. */
         public String cmdValue() {
             return cmdVal;
         }
     }
 
-    /** FIXME */
+    /** An incorrect value of the parameter. */
     public static class InvalidValue<T> extends SpecifiedValue<T> {
 
-        /** FIXME */
+        /** An error message fragment to look for in the exception message. */
         @GridToStringInclude
         private final String errorMsgFragment;
 
-        /** FIXME */
+        /**
+         * Constructs an incorrect value of the parameter with the default list of supported syntaxes
+         * ({@link Syntax#KEY_EQ_VAL} and {@link Syntax#KEY_SPACE_VAL}).
+         *
+         * @param cmdVal value to specify in SQL command.
+         * @param errorMsgFragment an error message fragment to look for in the exception message.
+         */
         public InvalidValue(String cmdVal, String errorMsgFragment) {
             this(cmdVal, errorMsgFragment, EnumSet.of(KEY_EQ_VAL, KEY_SPACE_VAL));
         }
 
-        /** FIXME */
+        /**
+         * Constructs an incorrect value of the parameter.
+         *
+         * @param cmdVal value to specify in SQL command.
+         * @param errorMsgFragment an error message fragment to look for in the exception message.
+         * @param supportedSyntaxes in which kinds of {@link Syntax} this value is supported.
+         */
         public InvalidValue(String cmdVal, String errorMsgFragment, EnumSet<Syntax> supportedSyntaxes) {
             super(cmdVal, null, supportedSyntaxes);
             this.errorMsgFragment = errorMsgFragment;
         }
 
-        /** FIXME */
+        /**
+         * Returns an error message fragment to look for in the exception message.
+         * @return an error message fragment to look for in the exception message.
+         */
         public String errorMsgFragment() {
             return errorMsgFragment;
         }

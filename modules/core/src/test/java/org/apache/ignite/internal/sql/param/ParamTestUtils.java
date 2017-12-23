@@ -21,6 +21,8 @@ import com.google.common.base.Optional;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.sql.SqlEnumParserUtils;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.sql.SqlKeyword;
+import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
@@ -33,15 +35,20 @@ import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_SPACE
 import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_WITH_OPT_NO;
 import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.VAL;
 
-/** FIXME */
+/** Contains utilily methods for testing SQL parameters. */
 public final class ParamTestUtils {
 
-    /** FIXME */
+    /** A string to test bad boolean value parameter. Side note: purple smurfs don't play ping-pong. */
     private static final String BAD_BOOLEAN_VALUE = "Gnip_gnop";
 
-    /** FIXME */
+    /** Creates SQL statement with given parameters.
+     *
+     * @param cmdPrefix Main command to add parameters to.
+     * @param params Parameters to add with values and options.
+     * @return SQL string with command and parameters.
+     */
     @SuppressWarnings("unchecked")
-    @NotNull public static <T> String makeSqlWithParams(String cmdPrefix, TestParamDef.DefValPair ... params) {
+    @NotNull public static String makeSqlWithParams(String cmdPrefix, TestParamDef.DefValPair ... params) {
         StringBuilder sb = new StringBuilder();
 
         sb.append(cmdPrefix);
@@ -52,7 +59,12 @@ public final class ParamTestUtils {
         return sb.toString();
     }
 
-    /** FIXME */
+    /**
+     * Creates string representation of parameter + value + options.
+     *
+     * @param param The parameter + value + options to convert to string.
+     * @return The resulting SQL fragment with the parameter.
+     */
     @SuppressWarnings("unchecked")
     @NotNull public static <T> String makeParamStr(TestParamDef.DefValPair<T> param) {
 
@@ -89,7 +101,16 @@ public final class ParamTestUtils {
         }
     }
 
-    /** FIXME */
+    /**
+     * Creates a basic list of values to test string parameter with.
+     *
+     * @param dfltVal The default value to test (when parameter is specified with {@link SqlKeyword#DEFAULT} value
+     *      or empty if the default value shall not be tested.
+     * @param missingVal What value to expect if the parameter is missing.
+     * Empty if the missing value shall not be tested.
+     * @param testValues String values to test.
+     * @return List of parameter value definitions.
+     */
     @NotNull public static List<TestParamDef.Value<String>> makeBasicStrTestValues(Optional<String> dfltVal,
         Optional<String> missingVal, String... testValues) {
 
@@ -111,7 +132,16 @@ public final class ParamTestUtils {
         return params;
     }
 
-    /** FIXME */
+    /**
+     * Creates a basic list of values to test enum parameter with.
+     *
+     * @param cls The enum class.
+     * @param dfltVal The default value to test (when parameter is specified with {@link SqlKeyword#DEFAULT} value
+     *      or empty if the default value shall not be tested.
+     * @param missingVal What value to expect if the parameter is missing.
+     *      Empty if the missing value shall not be tested.
+     * @return List of parameter value definitions.
+     */
     @NotNull public static <T extends Enum<T>> List<TestParamDef.Value<T>> makeBasicEnumTestValues(Class<T> cls,
         Optional<T> dfltVal, Optional<T> missingVal) {
 
@@ -132,7 +162,18 @@ public final class ParamTestUtils {
         return params;
     }
 
-    /** FIXME */
+    /**
+     * Creates a boolean parameter definition with basic list of values to test boolean parameter with.
+     *
+     * @param cmdParamName The parameter keyword.
+     * @param fldName The corresponding field name in the {@link SqlCommand} subclass.
+     * @param fldCls The corresponding field class in the {@link SqlCommand} subclass.
+     * @param dfltVal The default value to test (when parameter is specified with {@link SqlKeyword#DEFAULT} value
+     *      or empty if the default value shall not be tested.
+     * @param missingVal What value to expect if the parameter is missing.
+     *      Empty if the missing value shall not be tested.
+     * @return List of parameter value definitions.
+     */
     @NotNull public static <T extends Enum<T>> TestParamDef<T> makeBasicEnumDef(String cmdParamName,
         String fldName, Class<T> fldCls, Optional<T> dfltVal, Optional<T> missingVal) {
 
@@ -140,7 +181,17 @@ public final class ParamTestUtils {
             ParamTestUtils.makeBasicEnumTestValues(fldCls, dfltVal, missingVal));
     }
 
-    /** FIXME */
+    /**
+     * Creates a basic list of values to test identifier parameter with.
+     *
+     * @param dfltVal The default value to test (when parameter is specified with {@link SqlKeyword#DEFAULT} value
+     *      or empty if the default value shall not be tested.
+     * @param missingVal What value to expect if the parameter is missing.
+     *      Empty if the missing value shall not be tested.
+     * @param errorFragment What fragment (string or regex) to expect in the exception
+     *      if the parameter value is not a valid identifier.
+     * @return List of parameter value definitions.
+     */
     @NotNull public static List<TestParamDef.Value<String>> makeBasicIdTestValues(
         String[] validVals, String[] invalidVals, Optional<String> dfltVal, Optional<String> missingVal,
         String errorFragment) {
@@ -166,7 +217,17 @@ public final class ParamTestUtils {
         return params;
     }
 
-    /** FIXME */
+    /**
+     * Creates a boolean parameter definition with basic list of values to test boolean parameter with.
+     *
+     * @param trueKeyword The keyword that specifies true value.
+     * @param fldName The corresponding field name in the {@link SqlCommand} subclass.
+     * @param dfltVal The default value to test (when parameter is specified with {@link SqlKeyword#DEFAULT} value
+     *      or empty if the default value shall not be tested.
+     * @param missingVal What value to expect if the parameter is missing.
+     *      Empty if the missing value shall not be tested.
+     * @return List of parameter value definitions.
+     */
     @NotNull public static TestParamDef<Boolean> makeBasicBoolDef(String trueKeyword, String falseKeyword,
         String fldName, Optional<Boolean> dfltVal, Optional<Boolean> missingVal) {
 
@@ -174,7 +235,15 @@ public final class ParamTestUtils {
             ParamTestUtils.makeBoolTestValues(dfltVal, missingVal));
     }
 
-    /** FIXME */
+    /**
+     * Creates a basic list of values to test boolean parameter with.
+     *
+     * @param dfltVal The default value to test (when parameter is specified with {@link SqlKeyword#DEFAULT} value
+     *      or empty if the default value shall not be tested.
+     * @param missingVal What value to expect if the parameter is missing.
+     *      Empty if the missing value shall not be tested.
+     * @return List of parameter value definitions.
+     */
     @NotNull public static List<TestParamDef.Value<Boolean>> makeBoolTestValues(
         Optional<Boolean> dfltVal, Optional<Boolean> missingVal) {
 
@@ -199,7 +268,7 @@ public final class ParamTestUtils {
         return params;
     }
 
-    /** FIXME */
+    /** Prevents instance creation. */
     private ParamTestUtils() {
         // Prevent instance creation
     }
