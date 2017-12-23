@@ -25,7 +25,6 @@ import org.apache.ignite.internal.sql.command.SqlCreateTableCommand;
 import org.apache.ignite.internal.sql.param.ParamTestUtils;
 import org.apache.ignite.internal.sql.param.TestParamDef;
 import org.apache.ignite.internal.util.H2FallbackTempDisabler;
-import org.apache.ignite.testframework.StrOrRegex;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -96,9 +95,9 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
                 new TestParamDef.ValidIdentityValue<>(1),
                 new TestParamDef.ValidIdentityValue<>(Integer.MAX_VALUE),
                 new TestParamDef.InvalidValue<Integer>("-1",
-                    StrOrRegex.of("Number of backups should be positive")),
+                    "Number of backups should be positive"),
                 new TestParamDef.InvalidValue<Integer>(Integer.toString(Integer.MIN_VALUE),
-                    StrOrRegex.of("Number of backups should be positive"))
+                    "Number of backups should be positive")
         )));
 
         PARAM_TESTS.add(ParamTestUtils.makeBasicEnumDef(ATOMICITY, "atomicityMode", CacheAtomicityMode.class,
@@ -121,7 +120,7 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
                 new TestParamDef.ValidValue<>('"' + PK_NAME + '"', PK_NAME.toUpperCase()),
                 new TestParamDef.ValidIdentityValue<>(PK_NAME.toUpperCase()),
                 new TestParamDef.InvalidValue<String>(WRONG_PK_NAME,
-                    StrOrRegex.of("Affinity key column with given name not found"))
+                    "Affinity key column with given name not found")
             )));
 
         PARAM_TESTS.add(new TestParamDef<>(CACHE_NAME, "cacheName", String.class,
@@ -137,12 +136,12 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
         PARAM_TESTS.add(new TestParamDef<>(KEY_TYPE, "keyTypeName", String.class,
             ParamTestUtils.makeBasicIdTestValues(GOOD_IDS, BAD_IDS,
                 Optional.<String>fromNullable(null), Optional.<String>fromNullable(null),
-                StrOrRegex.of("optionally quoted identifier key type"))));
+                "optionally quoted identifier key type")));
 
         PARAM_TESTS.add(new TestParamDef<>(VAL_TYPE, "valueTypeName", String.class,
             ParamTestUtils.makeBasicIdTestValues(GOOD_IDS, BAD_IDS,
                 Optional.<String>fromNullable(null), Optional.<String>fromNullable(null),
-                StrOrRegex.of("optionally quoted identifier value type"))));
+                "optionally quoted identifier value type")));
 
         PARAM_TESTS.add(ParamTestUtils.makeBasicBoolDef(WRAP_KEY, NO_WRAP_KEY, "wrapKey",
             Optional.<Boolean>fromNullable(null), Optional.<Boolean>fromNullable(null)));

@@ -67,7 +67,6 @@ import org.apache.ignite.internal.util.H2FallbackTempDisabler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.StrOrRegex;
 import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.DataType;
 
@@ -818,7 +817,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testNegativeBackups() {
         assertCreateTableWithParamsThrows("bAckUPs = -5  ",
-            StrOrRegex.of("\"BACKUPS\" cannot be negative: -5"), false);
+            "\"BACKUPS\" cannot be negative: -5", false);
     }
 
     /**
@@ -826,7 +825,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testNegativeBackupsInternal() {
         assertCreateTableWithParamsThrows("bAckUPs = -5  ",
-            StrOrRegex.of("Number of backups should be positive [val=-5]"), true);
+            "Number of backups should be positive [val=-5]", true);
     }
 
     /**
@@ -834,7 +833,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyBackups() {
         assertCreateTableWithParamsThrows(" bAckUPs =  ",
-            StrOrRegex.of("Parameter value cannot be empty: BACKUPS"), false);
+            "Parameter value cannot be empty: BACKUPS", false);
     }
 
     /**
@@ -842,7 +841,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyBackupsInternal() {
         assertCreateTableWithParamsThrows(" bAckUPs =  ",
-            StrOrRegex.of("Unexpected end of command (expected: \"[integer]\")"), true);
+            "Unexpected end of command (expected: \"[integer]\"", true);
     }
 
     /**
@@ -850,7 +849,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyAtomicity() {
         assertCreateTableWithParamsThrows("AtomicitY=  ",
-            StrOrRegex.of("Parameter value cannot be empty: ATOMICITY"), false);
+            "Parameter value cannot be empty: ATOMICITY", false);
     }
 
     /**
@@ -858,7 +857,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyAtomicityInternal() {
         assertCreateTableWithParamsThrows("AtomicitY=  ",
-            StrOrRegex.ofRegex("Unexpected end of command.*expected:.*one of.*TRANSACTIONAL, ATOMIC"), true);
+            "re:Unexpected end of command.*expected:.*one of.*TRANSACTIONAL, ATOMIC", true);
     }
 
     /**
@@ -866,7 +865,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testInvalidAtomicity() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
-            StrOrRegex.of("Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL or ATOMIC): InvalidValue"), false);
+            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL or ATOMIC): InvalidValue", false);
     }
 
     /**
@@ -874,7 +873,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testInvalidAtomicityInternal() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
-            StrOrRegex.ofRegex("Unexpected token:.*INVALIDVALUE.*expected:.*one of.*TRANSACTIONAL, ATOMIC"), true);
+            "re:Unexpected token:.*INVALIDVALUE.*expected:.*one of.*TRANSACTIONAL, ATOMIC", true);
     }
 
     /**
@@ -882,7 +881,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyCacheGroup() {
         assertCreateTableWithParamsThrows("cache_group=",
-            StrOrRegex.of("Parameter value cannot be empty: CACHE_GROUP"), false);
+            "Parameter value cannot be empty: CACHE_GROUP", false);
     }
 
     /**
@@ -890,7 +889,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyCacheGroupInternal() {
         assertCreateTableWithParamsThrows("cache_group=",
-            StrOrRegex.ofRegex("Unexpected end of command.*expected:.*optionally quoted cache group name"),
+            "re:Unexpected end of command.*expected:.*optionally quoted cache group name",
             true);
     }
 
@@ -899,7 +898,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyWriteSyncMode() {
         assertCreateTableWithParamsThrows("write_synchronization_mode=",
-            StrOrRegex.of("Parameter value cannot be empty: WRITE_SYNCHRONIZATION_MODE"), false);
+            "Parameter value cannot be empty: WRITE_SYNCHRONIZATION_MODE", false);
     }
 
     /**
@@ -907,7 +906,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyWriteSyncModeInternal() {
         assertCreateTableWithParamsThrows("write_synchronization_mode=",
-            StrOrRegex.ofRegex(" Unexpected end of command.*expected.*one of.*FULL_SYNC, FULL_ASYNC, PRIMARY_SYNC"),
+            "re: Unexpected end of command.*expected.*one of.*FULL_SYNC, FULL_ASYNC, PRIMARY_SYNC",
             true);
     }
 
@@ -916,8 +915,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testInvalidWriteSyncMode() {
         assertCreateTableWithParamsThrows("write_synchronization_mode=invalid",
-            StrOrRegex.of("Invalid value of \"WRITE_SYNCHRONIZATION_MODE\" parameter " +
-                "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): invalid"), false);
+            "Invalid value of \"WRITE_SYNCHRONIZATION_MODE\" parameter " +
+                "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): invalid", false);
     }
 
     /**
@@ -925,7 +924,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testInvalidWriteSyncModeInternal() {
         assertCreateTableWithParamsThrows("write_synchronization_mode=invalid",
-            StrOrRegex.ofRegex("Unexpected token:.*INVALID.*expected:.*one of.*FULL_SYNC, FULL_ASYNC, PRIMARY_SYNC"),
+            "re:Unexpected token:.*INVALID.*expected:.*one of.*FULL_SYNC, FULL_ASYNC, PRIMARY_SYNC",
             true);
     }
 
@@ -1428,13 +1427,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
             // Empty region name.
             if (useInternalCmd)
-                GridTestUtils.assertThrowsRe(log, new Callable<Void>() {
+                GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         execute("CREATE TABLE TEST_DATA_REGION (name varchar primary key, code int) data_region=");
 
                         return null;
                     }
-                }, IgniteSQLException.class, StrOrRegex.ofRegex("Unexpected end of command.*expected.*optionally quoted data region"));
+                }, IgniteSQLException.class, "re:Unexpected end of command.*expected.*optionally quoted data region");
             else
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -2254,8 +2253,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param useInternalCmd
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void assertCreateTableWithParamsThrows(final String params, StrOrRegex expErrMsg, final boolean useInternalCmd) {
-        GridTestUtils.assertThrowsRe(null, new Callable<Object>() {
+    private void assertCreateTableWithParamsThrows(final String params, String expErrMsg, final boolean useInternalCmd) {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 createTableWithParams(params, useInternalCmd);
 

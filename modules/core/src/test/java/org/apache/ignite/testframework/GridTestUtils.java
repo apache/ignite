@@ -290,34 +290,9 @@ public final class GridTestUtils {
      * @param log Logger (optional).
      * @param call Callable.
      * @param cls Exception class.
-     * @param msgRe Optional exception message regexp. If not null, the exception message
-     *      should match provided regexp.
-     * @return Thrown throwable.
-     */
-    public static Throwable assertThrowsRe(@Nullable IgniteLogger log, Callable<?> call,
-        Class<? extends Throwable> cls, @Nullable Pattern msgRe) {
-
-        assert call != null;
-        assert cls != null;
-
-        try {
-            call.call();
-        }
-        catch (Throwable e) {
-            return handleAssertThrowsException(log, cls, StrOrRegex.ofNullable(msgRe), e);
-        }
-
-        throw new AssertionError("Exception has not been thrown.");
-    }
-
-    /**
-     * Checks whether callable throws expected exception or not.
-     *
-     * @param log Logger (optional).
-     * @param call Callable.
-     * @param cls Exception class.
      * @param msg Exception message (optional). If provided exception message
-     *      and this message should be equal.
+     *      and this message should be equal. If message starts with "re:", the rest of
+     *      string is interpreted as regular expression that should occur somewhere in the exception message.
      * @return Thrown throwable.
      */
     public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
@@ -330,33 +305,7 @@ public final class GridTestUtils {
             call.call();
         }
         catch (Throwable e) {
-            return handleAssertThrowsException(log, cls, StrOrRegex.ofNullable(msg), e);
-        }
-
-        throw new AssertionError("Exception has not been thrown.");
-    }
-
-    /**
-     * Checks whether callable throws expected exception or not.
-     *
-     * @param log Logger (optional).
-     * @param call Callable.
-     * @param cls Exception class.
-     * @param msgRe Optional exception message fragment or regexp. If not null, the exception message
-     *      should match provided fragment or regexp.
-     * @return The throwable thrown.
-     */
-    public static Throwable assertThrowsRe(@Nullable IgniteLogger log, Callable<?> call,
-        Class<? extends Throwable> cls, @Nullable StrOrRegex msgRe) {
-
-        assert call != null;
-        assert cls != null;
-
-        try {
-            call.call();
-        }
-        catch (Throwable e) {
-            return handleAssertThrowsException(log, cls, msgRe, e);
+            return handleAssertThrowsException(log, cls, msg, e);
         }
 
         throw new AssertionError("Exception has not been thrown.");
@@ -365,7 +314,7 @@ public final class GridTestUtils {
     /** FIXME */
     @NotNull
     private static Throwable handleAssertThrowsException(@Nullable IgniteLogger log, Class<? extends Throwable> cls,
-        @Nullable StrOrRegex msgRe, Throwable e) {
+        @Nullable String msgStrOrRe, Throwable e) {
 
         if (cls != e.getClass()) {
             if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
@@ -377,12 +326,13 @@ public final class GridTestUtils {
             }
         }
 
-        boolean isMatching = (msgRe == null) || (e.getMessage() != null && msgRe.isContainedIn(e.getMessage()));
+        boolean isMatching = (msgStrOrRe == null) ||
+            (e.getMessage() != null && matchesStrOrRegex(msgStrOrRe, e.getMessage()));
 
         if (!isMatching) {
             U.error(log, "Unexpected exception message.", e);
 
-            fail("Exception message is not as expected [expected=" + msgRe + ", actual="
+            fail("Exception message is not as expected [expected=" + msgStrOrRe + ", actual="
                 + e.getMessage() + ']', e);
         }
 
@@ -394,6 +344,23 @@ public final class GridTestUtils {
             X.println("Caught expected exception: " + e.getMessage());
 
         return e;
+    }
+
+    /**
+     * Checks if the first parameter (string or regex) contains in the second parameter string.
+     *
+     * <p>If the first parameter starts with {@code re:} (case-sensitive), it is interpreted as regular expression
+     * ({@link Pattern}), otherwise as a plain string.</p>
+     *
+     * @param needle String to search for (optionally prefixed with {@code re:} to denote a regular expression).
+     * @param hayStack The string where the search is performed.
+     * @return true if the needle parameter occurs in the haystack parameter.
+     */
+    public static boolean matchesStrOrRegex(@NotNull String needle, @NotNull String hayStack) {
+        if (needle.startsWith("re:"))
+            return (Pattern.compile(needle.substring(3))).matcher(hayStack).find();
+        else
+            return hayStack.contains(needle);
     }
 
     /**

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.StrOrRegex;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.Callable;
@@ -71,14 +70,14 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
 
         final SqlLexer lex2 = new SqlLexer("'''''");
 
-        GridTestUtils.assertThrowsRe(log, new Callable<Void>() {
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 assertEquals(lex2.lookAhead().tokenType(), SqlLexerTokenType.KEYWORD);
                 assertEquals(lex2.lookAhead().token(), "''");
 
                 return null;
             }
-        }, SqlParseException.class, StrOrRegex.of("Unclosed quoted identifier."));
+        }, SqlParseException.class, "Unclosed quoted identifier.");
     }
 
     public void testDoubleQuotes() {
@@ -124,14 +123,14 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
 
         final SqlLexer lex2 = new SqlLexer("\"\"\"\"\"");
 
-        GridTestUtils.assertThrowsRe(log, new Callable<Void>() {
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 assertEquals(lex2.lookAhead().tokenType(), SqlLexerTokenType.KEYWORD);
                 assertEquals(lex2.lookAhead().token(), "\"\"");
 
                 return null;
             }
-        }, SqlParseException.class, StrOrRegex.of("Unclosed quoted identifier."));
+        }, SqlParseException.class, "Unclosed quoted identifier.");
 
         final SqlLexer lex3 = new SqlLexer("\"quoted \\\"\" text\"");
 
@@ -145,14 +144,14 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
 
         lex3.shift();
 
-        GridTestUtils.assertThrowsRe(log, new Callable<Void>() {
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 assertEquals(lex3.lookAhead().tokenType(), SqlLexerTokenType.KEYWORD);
                 assertEquals(lex3.lookAhead().token(), "text");
 
                 return null;
             }
-        }, SqlParseException.class, StrOrRegex.of("Unclosed quoted identifier."));
+        }, SqlParseException.class, "Unclosed quoted identifier.");
     }
 
     /** FIXME */
@@ -177,29 +176,29 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
 
         checkEscapeSeq("\"\\8\"", "8");
 
-        checkInvalidEscapeSeq("\"\\x\"", StrOrRegex.of("Character cannot be part of escape sequence: '\"'"));
+        checkInvalidEscapeSeq("\"\\x\"", "Character cannot be part of escape sequence: '\"'");
 
         checkEscapeSeq("\"\\x0\"", "\0");
         checkEscapeSeq("\"\\x0 \"", "\0 ");
         checkEscapeSeq("\"\\x00 \"", "\0 ");
         checkEscapeSeq("\"\\x0g\"", "\0g");
 
-        checkInvalidEscapeSeq("\"\\xg\"", StrOrRegex.of("Character cannot be part of escape sequence: 'g'"));
+        checkInvalidEscapeSeq("\"\\xg\"", "Character cannot be part of escape sequence: 'g'");
 
         checkEscapeSeq("\"\\xff \"", "\u00ff ");
 
-        checkInvalidEscapeSeq("\"\\uf\"", StrOrRegex.of("Character cannot be part of escape sequence: '\"'"));
-        checkInvalidEscapeSeq("\"\\uff\"", StrOrRegex.of("Character cannot be part of escape sequence: '\"'"));
-        checkInvalidEscapeSeq("\"\\ufff\"", StrOrRegex.of("Character cannot be part of escape sequence: '\"'"));
+        checkInvalidEscapeSeq("\"\\uf\"", "Character cannot be part of escape sequence: '\"'");
+        checkInvalidEscapeSeq("\"\\uff\"", "Character cannot be part of escape sequence: '\"'");
+        checkInvalidEscapeSeq("\"\\ufff\"", "Character cannot be part of escape sequence: '\"'");
 
         checkEscapeSeq("\"\\uffff \"", "\uffff" + " ");
         checkEscapeSeq("\"\\ufffff \"", "\uffff" + "f ");
         checkEscapeSeq("\"\\uffffff \"", "\uffff" + "ff ");
 
-        checkInvalidEscapeSeq("\"\\ug\"", StrOrRegex.of("Character cannot be part of escape sequence: 'g'"));
-        checkInvalidEscapeSeq("\"\\ufg\"", StrOrRegex.of("Character cannot be part of escape sequence: 'g'"));
-        checkInvalidEscapeSeq("\"\\uffg\"", StrOrRegex.of("Character cannot be part of escape sequence: 'g'"));
-        checkInvalidEscapeSeq("\"\\ufffg\"", StrOrRegex.of("Character cannot be part of escape sequence: 'g'"));
+        checkInvalidEscapeSeq("\"\\ug\"", "Character cannot be part of escape sequence: 'g'");
+        checkInvalidEscapeSeq("\"\\ufg\"", "Character cannot be part of escape sequence: 'g'");
+        checkInvalidEscapeSeq("\"\\uffg\"", "Character cannot be part of escape sequence: 'g'");
+        checkInvalidEscapeSeq("\"\\ufffg\"", "Character cannot be part of escape sequence: 'g'");
     }
 
     /** FIXME */
@@ -211,10 +210,10 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
     }
 
     /** FIXME */
-    private void checkInvalidEscapeSeq(String sql, StrOrRegex errorMsg) {
+    private void checkInvalidEscapeSeq(String sql, String errorMsg) {
         final SqlLexer lex = new SqlLexer(sql);
 
-        GridTestUtils.assertThrowsRe(log, new Callable<Void>() {
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 assertEquals(lex.lookAhead().tokenType(), SqlLexerTokenType.DBL_QUOTED);
 
