@@ -732,8 +732,8 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
 
             executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR NOT NULL) "
-                        + (useInternalCmd ? "WITH \"atomicity=" + atomicityMode.name() + "\""
-                                          : "atomicity=" + atomicityMode.name() + ""));
+                        + (useInternalCmd ? "atomicity=" + atomicityMode.name() + ""
+                                          : "WITH \"atomicity=" + atomicityMode.name() + "\""));
 
             GridTestUtils.assertThrows(log(), new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -753,6 +753,8 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
             result = executeSql("SELECT id, name FROM test ORDER BY id");
 
             assertEquals(3, result.size());
+        } finally {
+            executeSql("DROP TABLE test");
         }
     }
 
@@ -949,7 +951,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
-                        "template=" + CACHE_READ_THROUGH);
+                        "template=\"" + CACHE_READ_THROUGH + "\"");
                 }
             }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
         }
@@ -977,7 +979,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
-                        "WITH \"template=" + CACHE_INTERCEPTOR + "\"");
+                        " template=\"" + CACHE_INTERCEPTOR + "\"");
                 }
             }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
         }
@@ -1004,7 +1006,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
 
-            executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) template=" + CACHE_READ_THROUGH);
+            executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) template=\"" + CACHE_READ_THROUGH + "\"");
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -1034,7 +1036,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
 
-            executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) template=" + CACHE_INTERCEPTOR);
+            executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) template=\"" + CACHE_INTERCEPTOR + "\"");
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
