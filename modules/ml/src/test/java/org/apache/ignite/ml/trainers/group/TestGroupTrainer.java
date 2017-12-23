@@ -61,9 +61,9 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
 
     @Override
     protected ComputationsChain<TestGroupTrainerLocalContext,
-            Double, Integer, Double, GroupTrainingContext<Double, Integer, TestGroupTrainerLocalContext>, Double> trainingLoopStep() {
+            Double, Integer, Double, Double> trainingLoopStep() {
         // TODO: here we should explicitly create variable because we cannot infer context type, think about it.
-        ComputationsChain<TestGroupTrainerLocalContext, Double, Integer, Double, GroupTrainingContext<Double, Integer, TestGroupTrainerLocalContext>, Double> chain = DC.
+        ComputationsChain<TestGroupTrainerLocalContext, Double, Integer, Double, Double> chain = DC.
             create(new TestTrainingLoopStep());
         return chain.
             thenLocally((aDouble, context) -> {

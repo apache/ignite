@@ -19,8 +19,6 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,12 +26,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
 public abstract class BaseLocalProcessorJob<K, V, T, O extends Serializable> implements ComputeJob {
     protected final O identity;
@@ -71,7 +67,7 @@ public abstract class BaseLocalProcessorJob<K, V, T, O extends Serializable> imp
 
         ResultAndUpdates<O> totalRes = ResultAndUpdates.sum(reducer, identity, resultsAndUpdates);
 
-        totalRes.processUpdates(ignite());
+        totalRes.applyUpdates(ignite());
 
         return totalRes.result();
     }

@@ -25,27 +25,75 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 
+/**
+ * Class containing result of computation and updates which should be made for caches.
+ * Purpose of this class is mainly performance optimization: suppose we have multiple computations which run in parallel
+ * and do some updates to caches. It is more efficient to collect all changes from all this computations and perform them
+ * in batch.
+ *
+ * @param <R> Type of computation result.
+ */
 public class ResultAndUpdates<R> {
+    /**
+     * Result of computation.
+     */
     private R res;
+
+    /**
+     * Updates in the form cache name -> (key -> new value).
+     */
     private Map<String, Map> updates = new ConcurrentHashMap<>();
 
+    /**
+     * Construct an instance of this class.
+     *
+     * @param res Computation result.
+     */
     public ResultAndUpdates(R res) {
         this.res = res;
     }
 
+    /**
+     * Construct an instance of this class.
+     *
+     * @param res Computation result.
+     * @param updates Map of updates in the form cache name -> (key -> new value).
+     */
     ResultAndUpdates(R res, Map<String, Map> updates) {
         this.res = res;
         this.updates = updates;
     }
 
+    /**
+     * Construct an empty result.
+     *
+     * @param <R> Result type.
+     * @return Empty result.
+     */
     public static <R> ResultAndUpdates<R> empty() {
         return new ResultAndUpdates<>(null);
     }
 
+    /**
+     * Construct {@link ResultAndUpdates} object from given result.
+     *
+     * @param res Result of computation.
+     * @param <R> Type of result of computation.
+     * @return ResultAndUpdates object.
+     */
     public static <R> ResultAndUpdates<R> of(R res) {
         return new ResultAndUpdates<>(res);
     }
 
+    /**
+     * Add a cache update to this object.
+     *
+     * @param cache Cache to be updated.
+     * @param key Key of cache to be updated.
+     * @param val New value.
+     * @param <K> Type of key of cache to be updated.
+     * @param <V> New value.
+     */
     public <K, V> void update(IgniteCache<K, V> cache, K key, V val) {
         String name = cache.getName();
 
@@ -53,10 +101,24 @@ public class ResultAndUpdates<R> {
         updates.get(name).put(key, val);
     }
 
+    /**
+     * Get result of computation.
+     *
+     * @return Result of computation.
+     */
     public R result() {
         return res;
     }
 
+    /**
+     * Sum collection of ResultAndUpdate into one: results are reduced by specified binary operator and updates are merged.
+     *
+     * @param op Binary operator used to combine computation results.
+     * @param identity Identity for op.
+     * @param resultsAndUpdates ResultAndUpdates to be combined with.
+     * @param <R> Type of computation result.
+     * @return Sum of collection ResultAndUpdate objects.
+     */
     static <R> ResultAndUpdates<R> sum(IgniteBinaryOperator<R> op, R identity, Collection<ResultAndUpdates<R>> resultsAndUpdates) {
         Map<String, Map> allUpdates = new HashMap<>();
 
@@ -73,16 +135,32 @@ public class ResultAndUpdates<R> {
         return new ResultAndUpdates<>(res, allUpdates);
     }
 
+    /**
+     * Get updates map.
+     *
+     * @return Updates map.
+     */
     public Map<String, Map> updates() {
         return updates;
     }
 
+    /**
+     * Set updates map.
+     *
+     * @param updates New updates map.
+     * @return This object.
+     */
     ResultAndUpdates<R> setUpdates(Map<String, Map> updates) {
         this.updates = updates;
         return this;
     }
 
-    void processUpdates(Ignite ignite) {
+    /**
+     * Apply updates to caches.
+     *
+     * @param ignite Ignite instance.
+     */
+    void applyUpdates(Ignite ignite) {
         for (Map.Entry<String, Map> entry : updates.entrySet()) {
             IgniteCache<Object, Object> cache = ignite.getOrCreateCache(entry.getKey());
 
