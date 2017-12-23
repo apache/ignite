@@ -19,19 +19,48 @@ package org.apache.ignite.ml.trainers.group.chain;
 
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
+/**
+ * Class containing key and remote context (see explanation of remote context in {@link ComputationsChain}).
+ *
+ * @param <K> Cache key type.
+ * @param <C> Remote context.
+ */
 public class KeyAndContext<K, C> {
+    /**
+     * Key of group trainer.
+     */
     private GroupTrainerCacheKey<K> key;
+
+    /**
+     * Remote context.
+     */
     private C context;
 
+    /**
+     * Construct instance of this class.
+     *
+     * @param key Cache key.
+     * @param context Remote context.
+     */
     public KeyAndContext(GroupTrainerCacheKey<K> key, C context) {
         this.key = key;
         this.context = context;
     }
 
+    /**
+     * Get group trainer cache key.
+     *
+     * @return Group trainer cache key.
+     */
     public GroupTrainerCacheKey<K> key() {
         return key;
     }
 
+    /**
+     * Get remote context.
+     *
+     * @return Remote context.
+     */
     public C context() {
         return context;
     }

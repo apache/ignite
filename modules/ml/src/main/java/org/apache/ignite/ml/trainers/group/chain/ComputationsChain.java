@@ -40,12 +40,12 @@ import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
  * Chain is meant in the sense that output of each non-final computation is fed as input to next computation.
  * Chain is basically a bi-function from context and input to output, context is separated from input
  * because input is specific to each individual step and context is something which is convenient to have access to in each of steps.
- * Context is separated into two parts: local context and cache context.
+ * Context is separated into two parts: local context and remote context.
  * There are two kinds of computations: local and distributed.
  * Local steps are just functions from two arguments: input and local context.
  * Distributed steps are more sophisticated, but basically can be thought as functions of form
- * localContext -> (function of cache context -> output), locally we fix local context and get function
- * (function of cache context -> output) which is executed distributed.
+ * localContext -> (function of remote context -> output), locally we fix local context and get function
+ * (function of remote context -> output) which is executed distributed.
  * Chains are composable through 'then' method.
  *
  * @param <L> Type of local context.
@@ -54,7 +54,7 @@ import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
  * @param <I> Type of input of this chain.
  * @param <O> Type of output of this chain.
  */
-public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extends BaseWorkersChain<I, GroupTrainingContext<K, V, L>, O> {
+public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extends BaseComputationsChain<I, GroupTrainingContext<K, V, L>, O> {
     default ComputationsChain<L, K, V, I, I> create() {
         return (input, context) -> input;
     }
@@ -164,7 +164,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
         };
     }
 
-    default <C1, O1> ComputationsChain<L, K, V, I, O1> withOtherContext(IWorkersChain<O, C1, O1> newChain, C1 otherContext) {
+    default <C1, O1> ComputationsChain<L, K, V, I, O1> withOtherContext(IComputationsChain<O, C1, O1> newChain, C1 otherContext) {
         return (input, context) -> {
             O res = process(input, context);
             return newChain.process(res, otherContext);

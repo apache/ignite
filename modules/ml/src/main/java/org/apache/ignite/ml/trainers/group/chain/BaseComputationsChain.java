@@ -17,25 +17,7 @@
 
 package org.apache.ignite.ml.trainers.group.chain;
 
-//@FunctionalInterface
-public interface IWorkersChain<I, C, O> extends BaseWorkersChain<I, C, O> {
-    default IWorkersChain<I, C, O> embed(O val) {
-        return (input, context) -> val;
-    }
-
-    default <C1, O1> IWorkersChain<I, C, O1> withOtherContext(IWorkersChain<O, C1, O1> newChain, C1 otherContext) {
-        return (input, context) -> {
-            O res = process(input, context);
-            return newChain.process(res, otherContext);
-        };
-    }
-
-
-    default <O1, T extends IWorkersChain<O, C, O1>> IWorkersChain<I, C, O1> then(T next) {
-        IWorkersChain<I, C, O> me = this;
-        return (input, context) -> {
-            O myRes = me.process(input, context);
-            return next.process(myRes, context);
-        };
-    }
+@FunctionalInterface
+public interface BaseComputationsChain<I, C, O> {
+    O process(I input, C context);
 }
