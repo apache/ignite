@@ -20,12 +20,13 @@ package org.apache.ignite.internal.sql.command;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.sql.SqlEnumParserUtils;
+import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerToken;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -179,7 +180,7 @@ public class SqlCreateTableCommand implements SqlCommand {
     @GridToStringInclude
     private String dataRegionName;
 
-    /** FIXME */
+    /** Set of already parsed parameters for duplicate checking.*/
     private Set<String> parsedParams = new HashSet<>();
 
     /**
@@ -405,7 +406,9 @@ public class SqlCreateTableCommand implements SqlCommand {
     }
 
     /**
-     * @param lex Lexer.
+     * Parses columns and constraints list.
+     *
+     * @param lex The lexer.
      */
     private void parseColumnAndConstraintList(SqlLexer lex) {
         if (!lex.shift() || lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT)
@@ -420,7 +423,9 @@ public class SqlCreateTableCommand implements SqlCommand {
     }
 
     /**
-     * @param lex Lexer.
+     * Parses column or constraint.
+     *
+     * @param lex The lexer.
      */
     private void parseColumnOrConstraint(SqlLexer lex) {
         SqlLexerToken next = lex.lookAhead();
@@ -435,7 +440,9 @@ public class SqlCreateTableCommand implements SqlCommand {
     }
 
     /**
-     * @param lex Lexer.
+     * Parses column definition and adds it to column list and primary key list.
+     *
+     * @param lex The lexer.
      */
     private void parseColumn(SqlLexer lex) {
         String name = parseIdentifier(lex);
@@ -445,25 +452,27 @@ public class SqlCreateTableCommand implements SqlCommand {
 
             String typTok = lex.token();
 
-            Boolean isNullable = parseNullableClause(lex);
+            Boolean nullableOpt = parseNullableClause(lex);
+
+            boolean isNullable = (nullableOpt != null) ? nullableOpt : true;
 
             switch (typTok) {
                 case BIT:
                 case BOOL:
                 case BOOLEAN:
-                    col = new SqlColumn(name, SqlColumnType.BOOLEAN, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.BOOLEAN, 0, 0, isNullable);
 
                     break;
 
                 case TINYINT:
-                    col = new SqlColumn(name, SqlColumnType.BYTE, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.BYTE, 0, 0, isNullable);
 
                     break;
 
                 case INT2:
                 case SMALLINT:
                 case YEAR:
-                    col = new SqlColumn(name, SqlColumnType.SHORT, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.SHORT, 0, 0, isNullable);
 
                     break;
 
@@ -472,20 +481,20 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case INTEGER:
                 case MEDIUMINT:
                 case SIGNED:
-                    col = new SqlColumn(name, SqlColumnType.INT, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.INT, 0, 0, isNullable);
 
                     break;
 
                 case BIGINT:
                 case INT8:
                 case LONG:
-                    col = new SqlColumn(name, SqlColumnType.LONG, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.LONG, 0, 0, isNullable);
 
                     break;
 
                 case FLOAT4:
                 case REAL:
-                    col = new SqlColumn(name, SqlColumnType.FLOAT, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.FLOAT, 0, 0, isNullable);
 
                     break;
 
@@ -495,14 +504,14 @@ public class SqlCreateTableCommand implements SqlCommand {
                     if (matchesKeyword(next, PRECISION))
                         lex.shift();
 
-                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, isNullable);
 
                     break;
                 }
 
                 case FLOAT:
                 case FLOAT8:
-                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, isNullable);
 
                     break;
 
@@ -521,7 +530,7 @@ public class SqlCreateTableCommand implements SqlCommand {
                         skipToken(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
                     }
 
-                    col = new SqlColumn(name, SqlColumnType.DECIMAL, scale, precision, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.DECIMAL, scale, precision, isNullable);
 
                     break;
                 }
@@ -531,7 +540,7 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case NCHAR: {
                     int precision = parseStringPrecision(lex);
 
-                    col = new SqlColumn(name, SqlColumnType.CHAR, precision, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.CHAR, precision, isNullable);
 
                     break;
                 }
@@ -544,30 +553,30 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case VARCHAR_CASESENSITIVE: {
                     int precision = parseStringPrecision(lex);
 
-                    col = new SqlColumn(name, SqlColumnType.VARCHAR, precision, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.VARCHAR, precision, isNullable);
 
                     break;
                 }
 
                 case DATE:
-                    col = new SqlColumn(name, SqlColumnType.DATE, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.DATE, 0, 0, isNullable);
 
                     break;
 
                 case TIME:
-                    col = new SqlColumn(name, SqlColumnType.TIME, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.TIME, 0, 0, isNullable);
 
                     break;
 
                 case DATETIME:
                 case SMALLDATETIME:
                 case TIMESTAMP:
-                    col = new SqlColumn(name, SqlColumnType.TIMESTAMP, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.TIMESTAMP, 0, 0, isNullable);
 
                     break;
 
                 case UUID:
-                    col = new SqlColumn(name, SqlColumnType.UUID, 0, 0, (isNullable != null) ? isNullable : true);
+                    col = new SqlColumn(name, SqlColumnType.UUID, 0, 0, isNullable);
 
                     break;
             }
@@ -596,6 +605,12 @@ public class SqlCreateTableCommand implements SqlCommand {
         throw errorUnexpectedToken(lex, "[column_type]");
     }
 
+    /**
+     * Parses optional NULL and NOT NULL clauses in column definition.
+     *
+     * @param lex The lexer
+     * @return null, if the clause is not found, true if NULL is specified, false if NOT NULL is specified.
+     */
     @Nullable private Boolean parseNullableClause(SqlLexer lex) {
         Boolean isNullable = null;
 
@@ -617,7 +632,10 @@ public class SqlCreateTableCommand implements SqlCommand {
     }
 
     /**
-     * @param col Column.
+     * Adds column definition to the list of columns.
+     *
+     * @param lex The lexer.
+     * @param col The column.
      */
     private void addColumn(SqlLexer lex, SqlColumn col) {
         if (cols == null)
@@ -630,7 +648,9 @@ public class SqlCreateTableCommand implements SqlCommand {
     }
 
     /**
-     * @param lex Lexer.
+     * Parses primary key constraint.
+     *
+     * @param lex The lexer.
      */
     private void parsePrimaryKeyConstraint(SqlLexer lex) {
         if (pkColNames != null)
@@ -655,7 +675,7 @@ public class SqlCreateTableCommand implements SqlCommand {
     }
 
     /**
-     * Parse precision for CHAR and VARCHAR types.
+     * Parses precision for CHAR and VARCHAR types.
      *
      * @param lex Lexer.
      * @return Precision.
@@ -677,7 +697,9 @@ public class SqlCreateTableCommand implements SqlCommand {
     }
 
     /**
-     * @param lex Lexer.
+     * Parses parameter section of the command and updates the internal state.
+     *
+     * @param lex The lexer.
      */
     private void parseParametersSection(SqlLexer lex) {
 
@@ -700,7 +722,12 @@ public class SqlCreateTableCommand implements SqlCommand {
         }
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#TEMPLATE} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseTemplate(final SqlLexer lex) {
 
         return SqlParserUtils.tryParseStringParam(lex, TEMPLATE, "template name" , parsedParams, false, true,
@@ -714,7 +741,13 @@ public class SqlCreateTableCommand implements SqlCommand {
             }
         );
     }
-    /** FIXME */
+
+    /**
+     * Tries to parse {@link SqlKeyword#BACKUPS} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseBackups(final SqlLexer lex) {
 
         return SqlParserUtils.tryParseIntParam(lex, BACKUPS, parsedParams, true,
@@ -735,7 +768,12 @@ public class SqlCreateTableCommand implements SqlCommand {
             });
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#ATOMICITY} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseAtomicity(final SqlLexer lex) {
 
         return SqlEnumParserUtils.tryParseEnumParam(lex, ATOMICITY, CacheAtomicityMode.class, parsedParams, true,
@@ -749,7 +787,12 @@ public class SqlCreateTableCommand implements SqlCommand {
             });
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#WRITE_SYNCHRONIZATION_MODE} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseWriteSyncMode(final SqlLexer lex) {
 
         return SqlEnumParserUtils.tryParseEnumParam(lex, WRITE_SYNCHRONIZATION_MODE, CacheWriteSynchronizationMode.class,
@@ -763,7 +806,12 @@ public class SqlCreateTableCommand implements SqlCommand {
             });
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#CACHE_GROUP} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseCacheGroup(final SqlLexer lex) {
 
         return SqlParserUtils.tryParseStringParam(lex, CACHE_GROUP, "cache group name" , parsedParams,
@@ -780,7 +828,12 @@ public class SqlCreateTableCommand implements SqlCommand {
         );
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#AFFINITY_KEY} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseAffinityKey(final SqlLexer lex) {
 
         return SqlParserUtils.tryParseStringParam(lex, AFFINITY_KEY, "affinity key", parsedParams,
@@ -818,7 +871,12 @@ public class SqlCreateTableCommand implements SqlCommand {
         );
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#CACHE_NAME} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseCacheName(SqlLexer lex) {
 
         return SqlParserUtils.tryParseStringParam(lex, CACHE_NAME, "cache name" , parsedParams,
@@ -835,7 +893,12 @@ public class SqlCreateTableCommand implements SqlCommand {
         );
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#DATA_REGION} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseDataRegion(final SqlLexer lex) {
 
         return SqlParserUtils.tryParseStringParam(lex, DATA_REGION, "data region" , parsedParams,
@@ -850,7 +913,12 @@ public class SqlCreateTableCommand implements SqlCommand {
         );
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#KEY_TYPE} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseKeyType(final SqlLexer lex) {
 
         return SqlParserUtils.tryParseStringParam(lex, KEY_TYPE, "key type" , parsedParams,
@@ -867,7 +935,12 @@ public class SqlCreateTableCommand implements SqlCommand {
         );
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#VAL_TYPE} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseValueType(final SqlLexer lex) {
 
         return SqlParserUtils.tryParseStringParam(lex, VAL_TYPE, "value type" , parsedParams,
@@ -884,7 +957,12 @@ public class SqlCreateTableCommand implements SqlCommand {
         );
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#WRAP_KEY} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseWrapKey(final SqlLexer lex) {
 
         return tryParseBoolean(lex, WRAP_KEY, NO_WRAP_KEY, parsedParams,true,
@@ -897,7 +975,12 @@ public class SqlCreateTableCommand implements SqlCommand {
             });
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse {@link SqlKeyword#WRAP_VALUE} option and updates the command fields.
+     *
+     * @return true if the option found and parsed successfully, false if not found.
+     * @throws SqlParseException in case of parse failure.
+     */
     private boolean tryParseWrapValue(final SqlLexer lex) {
 
         return tryParseBoolean(lex, WRAP_VALUE, NO_WRAP_VALUE, parsedParams, true,
@@ -913,15 +996,5 @@ public class SqlCreateTableCommand implements SqlCommand {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SqlCreateTableCommand.class, this);
-    }
-
-    /**
-     * Check that param with mandatory value has it specified.
-     * @param name Param name.
-     * @param val Param value to check.
-     */
-    private static void ensureNonEmptyVal(SqlLexerToken tok, String name, String val) {
-        if (F.isEmpty(val))
-            throw error(tok, "Parameter value cannot be empty: [name=\"" + name + "\"]");
     }
 }

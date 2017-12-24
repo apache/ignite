@@ -156,26 +156,26 @@ public class SqlLexer implements SqlLexerToken {
                             while (true) {
                                 if (eod()) {
                                     throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
-                                        "Unclosed escape sequence in quoted identifier.");
+                                        "Nonterminated escape sequence in quoted identifier.");
                                 }
 
                                 c1 = inputChars[pos];
 
-                                SqlEscSeqParser.Mode mode = escParser.accept(c1);
+                                SqlEscSeqParser.State state = escParser.accept(c1);
 
-                                if (mode == SqlEscSeqParser.Mode.FINISHED_ACCEPTED) {
+                                if (state == SqlEscSeqParser.State.FINISHED_CHAR_ACCEPTED) {
                                     pos++;
                                     break;
                                 }
 
-                                if (mode == SqlEscSeqParser.Mode.FINISHED_REJECTED)
+                                if (state == SqlEscSeqParser.State.FINISHED_CHAR_REJECTED)
                                     break;
 
-                                if (mode == SqlEscSeqParser.Mode.ERROR)
+                                if (state == SqlEscSeqParser.State.ERROR)
                                     throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
                                         "Character cannot be part of escape sequence: '" + c1 + "'");
 
-                                assert mode == SqlEscSeqParser.Mode.PROCESSING;
+                                assert state == SqlEscSeqParser.State.PROCESSING;
 
                                 pos++;
                             }
@@ -185,7 +185,7 @@ public class SqlLexer implements SqlLexerToken {
                         }
 
                         if (c1 == c) {
-                            if (!eod() && inputChars[pos] == c) { // Terminate on ending quote
+                            if (!eod() && inputChars[pos] == c) { // Process doubled quotes
                                 sb.append(c1);
 
                                 pos++;

@@ -19,62 +19,70 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.IgniteIllegalStateException;
 
-/** FIXME */
+/** Parses SQL escape sequences and converts them to string. */
 public class SqlEscSeqParser {
 
-    public static final int SINGLE_CHAR_RADIX = -1;
+    /** Sentinel value for the case of single character escape sequence (like {@code \n} or {@code \t}). */
+    private static final int SINGLE_CHAR_RADIX = -1;
 
-    /** FIXME */
-    public enum Mode {
-        /** FIXME */
+    /** Current parser state. */
+    public enum State {
+        /** Just started, haven't read even a single value character */
         START,
-        /** FIXME */
+        /** In the middle of processing of escape sequence. */
         PROCESSING,
-        /** FIXME */
-        FINISHED_ACCEPTED,
-        /** FIXME */
-        FINISHED_REJECTED,
-        /** FIXME */
+        /** Escape sequence finished, the last character was accepted. */
+        FINISHED_CHAR_ACCEPTED,
+        /** Escape sequence finished, the last character was rejected. */
+        FINISHED_CHAR_REJECTED,
+        /** Error in the escape sequence has encountered. */
         ERROR
     }
 
-    /** FIXME */
-    private Mode mode;
+    /** Parser state. */
+    private State state;
 
-    /** FIXME */
+    /** Minimal length of the sequence. */
     private int minLen;
 
-    /** FIXME */
+    /** Maximal length of the sequence. */
     private int maxLen;
 
-    /** FIXME */
+    /** Radix of character number. Can be also {@link #SINGLE_CHAR_RADIX}. */
     private int radix;
 
-    /** FIXME */
+    /** Parser input sequence. */
     private final StringBuffer input = new StringBuffer();
 
-    /** FIXME */
+    /** Creates a parser in {@link State#START} state. */
     public SqlEscSeqParser() {
-        mode = Mode.START;
+        state = State.START;
     }
 
-    /** FIXME */
-    public Mode accept(char c) {
+    /**
+     * Feeds a next character to the parser.
+     *
+     * @param c The character.
+     * @return The new state of the parser. See {@link State} for details. */
+    public State accept(char c) {
 
-        if(mode == Mode.START)
+        if(state == State.START)
             acceptPrefix(c);
         else
             acceptValueChar(c);
 
-        return mode;
+        return state;
     }
 
-    /** FIXME */
+    /**
+     * Processes the first character of the escape sequence and defines min/max length, the radix and so on.
+     * @param c The character.
+     */
     private void acceptPrefix(char c) {
-        if (mode != Mode.START)
+        if (state != State.START)
             throw new IgniteIllegalStateException("Internal error");
 
-        mode = Mode.PROCESSING;
+        state = State.PROCESSING;
 
         switch (c) {
             case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
@@ -108,18 +116,21 @@ public class SqlEscSeqParser {
         }
     }
 
-    /** FIXME */
+    /**
+     * Processes the character starting from the second one.
+     * @param c The character.
+     */
     private void acceptValueChar(char c) {
         int inputLen = input.length();
 
-        if (mode == Mode.PROCESSING) {
+        if (state == State.PROCESSING) {
 
             if (radix != SINGLE_CHAR_RADIX && !isValidDigit(c)) {
 
                 if (inputLen >= minLen && isValidUnicodeInput())
-                    mode = Mode.FINISHED_REJECTED;
+                    state = State.FINISHED_CHAR_REJECTED;
                 else
-                    mode = Mode.ERROR;
+                    state = State.ERROR;
 
                 return;
             }
@@ -127,9 +138,9 @@ public class SqlEscSeqParser {
 
         if (inputLen >= maxLen || !isValidInput(c)) {
             if (isValidUnicodeInput())
-                mode = Mode.FINISHED_REJECTED;
+                state = State.FINISHED_CHAR_REJECTED;
             else
-                mode = Mode.ERROR;
+                state = State.ERROR;
 
             return;
         }
@@ -139,13 +150,13 @@ public class SqlEscSeqParser {
         if (input.length() >= maxLen) {
 
             if (isValidUnicodeInput())
-                mode = Mode.FINISHED_ACCEPTED;
+                state = State.FINISHED_CHAR_ACCEPTED;
             else
-                mode = Mode.ERROR;
+                state = State.ERROR;
         }
     }
 
-    /** FIXME */
+    /** Checks if the character is a valid digit in the current {@link #radix}. */
     private boolean isValidDigit(char c) {
         if (radix < 10)
             return c >= '0' && c < ('0' + radix);
@@ -155,7 +166,15 @@ public class SqlEscSeqParser {
                 (c >= 'A' && c < 'A' + (radix - 10));
     }
 
-    /** FIXME */
+    /**
+     * Checks if {@link #input} plus the current character constitutes a valid input.
+     *
+     * <p>Currently is used to silently reject octal characters \400..\777</p>.
+     *
+     * @param c The character being processed
+     * @return true if the input is valid, false if not and the processing of escape sequence should cease before
+     *      the current character.
+     */
     private boolean isValidInput(char c) {
         if (radix == 8 && input.length() == 2 && input.charAt(0) >= '4')
             return false;
@@ -163,6 +182,11 @@ public class SqlEscSeqParser {
         return true;
     }
 
+    /**
+     * Checks if {@link #input} represents a valid Unicode codepoint.
+     *
+     * @return true if the input is valid Unicode codepoint, false if not.
+     */
     private boolean isValidUnicodeInput() {
         if (radix != 16)
             return true;
@@ -172,9 +196,13 @@ public class SqlEscSeqParser {
         return Character.isValidCodePoint(codePnt);
     }
 
-    /** FIXME */
+    /**
+     * Converts the input to the string it encodes.
+     *
+     * @return The string decoded from the escape sequence.
+     */
     public String convertedStr() {
-        if (mode != Mode.FINISHED_ACCEPTED && mode != Mode.FINISHED_REJECTED)
+        if (state != State.FINISHED_CHAR_ACCEPTED && state != State.FINISHED_CHAR_REJECTED)
             throw new IgniteIllegalStateException("Internal error");
 
         if (radix == SINGLE_CHAR_RADIX)
@@ -184,7 +212,7 @@ public class SqlEscSeqParser {
     }
 
     /**
-     * Converts second character from escape sequence to actual character
+     * Converts the second character from one-character escape sequence to the actual character.
      *
      * @param c The character after the backquote.
      * @return the character which this escape sequence represents.
