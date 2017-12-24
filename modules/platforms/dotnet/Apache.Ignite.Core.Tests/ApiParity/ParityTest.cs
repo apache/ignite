@@ -95,8 +95,10 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /// </summary>
         private static string GetFullPath(string javaFilePath)
         {
+            javaFilePath = javaFilePath.Replace('\\', Path.DirectorySeparatorChar);
+
             var path = Path.Combine(IgniteHome.Resolve(null), javaFilePath);
-            Assert.IsTrue(File.Exists(path));
+            Assert.IsTrue(File.Exists(path), path);
 
             return path;
         }
