@@ -56,6 +56,8 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.MetadataStorage.MAX_IDX_NAME_LEN;
+
 /**
  * H2 Index over {@link BPlusTree}.
  */
@@ -101,9 +103,18 @@ public class H2TreeIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        name = (tbl.rowDescriptor() == null ? "" : tbl.rowDescriptor().type().typeId() + "_") + name;
+        if (tbl.rowDescriptor() != null) {
+            int typeId = cctx.binaryMarshaller()
+                ? tbl.rowDescriptor().type().typeId()
+                : tbl.rowDescriptor().type().valueClass().hashCode();
+
+            name = String.format("%d_%s", typeId, name);
+        }
 
         name = BPlusTree.treeName(name, "H2Tree");
+
+        if (name.length() > MAX_IDX_NAME_LEN)
+            name = name.substring(name.length() - MAX_IDX_NAME_LEN);
 
         if (cctx.affinityNode()) {
             inlineIdxs = getAvailableInlineColumns(cols);
