@@ -440,6 +440,8 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
 
     /**
      * Create DirectByteBufferStream for reading from {@code buff}.
+     *
+     * @return read stream.
      */
     private DirectByteBufferStream readStream() {
         DirectByteBufferStream readStream = new DirectByteBufferStreamImplV2(new MessageFactory() {
