@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import org.apache.ignite.IgniteSystemProperties;
@@ -96,6 +98,11 @@ public abstract class GridUnsafe {
 
     /** */
     public static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
+
+    /**
+     * {@code java.nio.Buffer.address} field offset.
+     */
+    private static final long DIRECT_BUF_ADDR_OFF = bufferAddressOffset();
 
     /**
      * Ensure singleton.
@@ -1368,6 +1375,31 @@ public abstract class GridUnsafe {
         }
     }
 
+    /** */
+    private static long bufferAddressOffset() {
+        final ByteBuffer maybeDirectBuf = ByteBuffer.allocateDirect(1);
+
+        Field addrField = AccessController.doPrivileged(new PrivilegedAction<Field>() {
+            @Override public Field run() {
+                try {
+                    Field addrFld = Buffer.class.getDeclaredField("address");
+
+                    addrFld.setAccessible(true);
+
+                    if (addrFld.getLong(maybeDirectBuf) == 0)
+                        throw new RuntimeException("Direct buffers created are not direct in fact");
+
+                    return addrFld;
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Failed to get address field of java.nio.Buffer", e);
+                }
+            }
+        });
+
+        return UNSAFE.objectFieldOffset(addrField);
+    }
+
     /**
      * @param obj Object.
      * @param off Offset.
@@ -1677,6 +1709,6 @@ public abstract class GridUnsafe {
      * @return Buffer memory address.
      */
     public static long bufferAddress(ByteBuffer buf) {
-        return ((DirectBuffer)buf).address();
+        return UNSAFE.getLong(buf, DIRECT_BUF_ADDR_OFF);
     }
 }
