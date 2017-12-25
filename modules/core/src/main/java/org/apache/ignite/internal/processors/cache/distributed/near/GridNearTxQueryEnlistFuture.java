@@ -527,6 +527,8 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
+            // Clean up.
+            cctx.mvcc().removeVersionedFuture(this);
 
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);

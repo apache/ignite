@@ -130,6 +130,9 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
      *
      */
     public void onQueryDone() {
+        if (lsnr == NO_OP_LSNR)
+            return;
+
         MvccCoordinator mvccCrd0 = null;
         MvccVersion mvccVer0 = null;
 

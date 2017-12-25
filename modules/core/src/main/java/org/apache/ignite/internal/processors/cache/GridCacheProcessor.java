@@ -206,6 +206,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Template configuration add futures. */
     private ConcurrentMap<String, IgniteInternalFuture> pendingTemplateFuts = new ConcurrentHashMap<>();
 
+    /** Enable/disable cache statistics futures. */
+    private ConcurrentMap<UUID, EnableStatisticsFuture> enableStatisticsFuts = new ConcurrentHashMap<>();
+
     /** */
     private ClusterCachesInfo cachesInfo;
 
@@ -310,6 +313,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return msg0;
         }
+        else if (msg instanceof CacheStatisticsModeChangeMessage) {
+            CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
+
+            if (msg0.initial())
+                return new CacheStatisticsModeChangeTask(msg0);
+        }
 
         return null;
     }
@@ -345,6 +354,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ClientCacheUpdateTimeout task0 = (ClientCacheUpdateTimeout)task;
 
             sharedCtx.affinity().sendClientCacheChangesMessage(task0);
+        }
+        else if (task instanceof CacheStatisticsModeChangeTask) {
+            CacheStatisticsModeChangeTask task0 = (CacheStatisticsModeChangeTask)task;
+
+            processStatisticsModeChange(task0.message());
         }
         else
             U.warn(log, "Unsupported custom exchange task: " + task);
@@ -978,6 +992,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (IgniteInternalFuture fut : pendingTemplateFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
 
+        for (EnableStatisticsFuture fut : enableStatisticsFuts.values())
+            fut.onDone(err);
+
         for (CacheGroupContext grp : cacheGrps.values())
             grp.onDisconnected(reconnectFut);
 
@@ -1414,6 +1431,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             affMgr
         );
 
+        cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
+
         cacheCtx.cacheObjectContext(cacheObjCtx);
 
         GridCacheAdapter cache = null;
@@ -1543,6 +1562,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 pluginMgr,
                 affMgr
             );
+
+            cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -2391,6 +2412,71 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Cache statistics flag change message received.
+     *
+     * @param msg Message.
+     */
+    public void onCacheStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
+        assert msg != null;
+
+        if (msg.initial()) {
+            EnableStatisticsFuture fut = enableStatisticsFuts.get(msg.requestId());
+
+            if (fut != null && !cacheNames().containsAll(msg.caches())) {
+                fut.onDone(new IgniteCheckedException("One or more cache descriptors not found [caches="
+                    + caches + ']'));
+
+                return;
+            }
+
+            for (String cacheName : msg.caches()) {
+                DynamicCacheDescriptor desc = cachesInfo.registeredCaches().get(cacheName);
+
+                if (desc != null) {
+                    if (desc.cacheConfiguration().isStatisticsEnabled() != msg.enabled()) {
+                        desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
+
+                        try {
+                            ctx.cache().saveCacheConfiguration(desc);
+                        }
+                        catch (IgniteCheckedException e) {
+                            log.error("Error while saving cache configuration to disk, cfg = "
+                                + desc.cacheConfiguration(), e);
+                        }
+                    }
+                }
+                else
+                    log.warning("Failed to change cache descriptor configuration, cache not found [cacheName="
+                        + cacheName + ']');
+            }
+        }
+        else {
+            EnableStatisticsFuture fut = enableStatisticsFuts.get(msg.requestId());
+
+            if (fut != null)
+                fut.onDone();
+        }
+    }
+
+    /**
+     * Cache statistics flag change task processed by exchange worker.
+     *
+     * @param msg Message.
+     */
+    public void processStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
+        assert msg != null;
+
+        for (String cacheName : msg.caches()) {
+            IgniteInternalCache<Object, Object> cache = cache(cacheName);
+
+            if (cache != null)
+                cache.context().statisticsEnabled(msg.enabled());
+            else
+                log.warning("Failed to change cache configuration, cache not found [cacheName=" + cacheName + ']');
+        }
+    }
+
+    /**
      * @return {@code True} if need locally start all existing caches on client node start.
      */
     private boolean startAllCachesOnClientStart() {
@@ -2917,6 +3003,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Save cache configuration to persistent store if necessary.
+     *
+     * @param desc Cache descriptor.
+     */
+    public void saveCacheConfiguration(DynamicCacheDescriptor desc) throws IgniteCheckedException {
+        assert desc != null;
+
+        if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
+            CU.isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration())) {
+            StoredCacheData data = toStoredData(desc);
+
+            sharedCtx.pageStore().storeCacheData(data, true);
+        }
+    }
+
+    /**
      * Form a {@link StoredCacheData} with all data to correctly restore cache params when its configuration
      * is read from page store. Essentially, this method takes from {@link DynamicCacheDescriptor} all that's
      * needed to start cache correctly, leaving out everything else.
@@ -3072,6 +3174,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);
+
+        if (msg instanceof CacheStatisticsModeChangeMessage)
+            onCacheStatisticsModeChange((CacheStatisticsModeChangeMessage)msg);
 
         return false;
     }
@@ -3620,6 +3725,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (IgniteInternalFuture fut : pendingTemplateFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
+
+        for (EnableStatisticsFuture fut : enableStatisticsFuts.values())
+            fut.onDone(err);
     }
 
     /**
@@ -4004,6 +4112,48 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Enable/disable statistics globally for the caches
+     *
+     * @param caches Collection of cache names.
+     * @param enabled Statistics enabled flag.
+     */
+    public void enableStatistics(Collection<String> caches, boolean enabled) throws IgniteCheckedException {
+        assert caches != null;
+
+        Collection<String> globalCaches = new ArrayList<>(caches.size());
+
+        if (!cacheNames().containsAll(caches))
+            throw new IgniteCheckedException("One or more cache descriptors not found [caches=" + caches + ']');
+
+        for (String cacheName : caches) {
+            IgniteInternalCache cache = cache(cacheName);
+
+            if (cache == null)
+                throw new IgniteCheckedException("Cache not found [cacheName=" + cacheName + ']');
+
+            cache.context().statisticsEnabled(enabled);
+
+            if (!cache.context().isLocal())
+                globalCaches.add(cacheName);
+        }
+
+        if (globalCaches.isEmpty())
+            return;
+
+        UUID reqId = UUID.randomUUID();
+
+        EnableStatisticsFuture fut = new EnableStatisticsFuture(reqId);
+
+        enableStatisticsFuts.put(reqId, fut);
+
+        CacheStatisticsModeChangeMessage msg = new CacheStatisticsModeChangeMessage(reqId, globalCaches, enabled);
+
+        ctx.grid().context().discovery().sendCustomEvent(msg);
+
+        fut.get();
+    }
+
+    /**
      * @param obj Object to clone.
      * @return Object copy.
      * @throws IgniteCheckedException If failed.
@@ -4206,6 +4356,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     addRemovedItemsCleanupTask(timeout);
                 }
             }, true);
+        }
+    }
+
+    /**
+     * Enable statistics future.
+     */
+    private class EnableStatisticsFuture extends GridFutureAdapter<Void> {
+        /** */
+        private UUID id;
+
+        /**
+         * @param id Future ID.
+         */
+        private EnableStatisticsFuture(UUID id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
+            // Make sure to remove future before completion.
+            enableStatisticsFuts.remove(id, this);
+
+            return super.onDone(res, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(EnableStatisticsFuture.class, this);
         }
     }
 }
