@@ -130,7 +130,7 @@ public class LabeledDataset implements Serializable {
 
         data = new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++)
-            data[i] = new LabeledVector(getVector(colSize, isDistributed), null);
+            data[i] = new LabeledVector<>(getVector(colSize, isDistributed), null);
 
     }
 
@@ -173,7 +173,7 @@ public class LabeledDataset implements Serializable {
         data = new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++){
 
-            data[i] = new LabeledVector(getVector(colSize, isDistributed), lbs[i]);
+            data[i] = new LabeledVector<>(getVector(colSize, isDistributed), lbs[i]);
             for (int j = 0; j < colSize; j++) {
                 try {
                     data[i].features().set(j, mtx[i][j]);
@@ -346,7 +346,7 @@ public class LabeledDataset implements Serializable {
 
                 LabeledVector[] data = new LabeledVector[vectors.size()];
                 for (int i = 0; i < vectors.size(); i++)
-                    data[i] = new LabeledVector(vectors.get(i), labels.get(i));
+                    data[i] = new LabeledVector<>(vectors.get(i), labels.get(i));
 
                 return new LabeledDataset(data, colSize);
             }
