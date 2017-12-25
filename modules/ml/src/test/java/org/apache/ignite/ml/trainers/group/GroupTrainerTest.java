@@ -22,6 +22,9 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ * Test of {@link GroupTrainer}.
+ */
 public class GroupTrainerTest extends GridCommonAbstractTest {
     /** Count of nodes. */
     private static final int NODE_COUNT = 4;
@@ -60,19 +63,19 @@ public class GroupTrainerTest extends GridCommonAbstractTest {
         TestGroupTrainer trainer = new TestGroupTrainer(ignite);
 
         int limit = 5;
-        int eachNumberCount = 3;
+        int eachNumCnt = 3;
         int iterCnt = 2;
 
-        ConstModel<Integer> mdl = trainer.train(new SimpleDistributive(limit, eachNumberCount, iterCnt));
-        int localRes = computeLocally(limit, eachNumberCount, iterCnt);
+        ConstModel<Integer> mdl = trainer.train(new SimpleGroupTrainerInput(limit, eachNumCnt, iterCnt));
+        int localRes = computeLocally(limit, eachNumCnt, iterCnt);
         assertEquals(localRes, (int)mdl.apply(10));
     }
 
-    public int computeLocally(int limit, int eacheNumerCount, int iterCnt) {
+    public int computeLocally(int limit, int eachNumCnt, int iterCnt) {
         Map<GroupTrainerCacheKey<Double>, Integer> m = new HashMap<>();
 
         for (int i = 0; i < limit; i++) {
-            for (int j = 0; j < eacheNumerCount; j++)
+            for (int j = 0; j < eachNumCnt; j++)
                 m.put(new GroupTrainerCacheKey<>(i, (double)j, null), i);
         }
 

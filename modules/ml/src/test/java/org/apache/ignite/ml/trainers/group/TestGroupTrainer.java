@@ -27,16 +27,16 @@ import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
-public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer, Double, ConstModel<Integer>, SimpleDistributive, Void> {
+public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer, Double, ConstModel<Integer>, SimpleGroupTrainerInput, Void> {
     public TestGroupTrainer(Ignite ignite) {
         super(TestGroupTrainingCache.getOrCreate(ignite), ignite);
     }
 
-    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleDistributive data, UUID trainingUUID) {
+    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleGroupTrainerInput data, UUID trainingUUID) {
         return new TestGroupTrainerLocalContext(data.iterCnt(), data.eachNumberCount(), data.limit(), trainingUUID);
     }
 
-    @Override protected ResultAndUpdates<Integer> initDistributed(SimpleDistributive data, GroupTrainerCacheKey<Double> key) {
+    @Override protected ResultAndUpdates<Integer> initDistributed(SimpleGroupTrainerInput data, GroupTrainerCacheKey<Double> key) {
         long i = key.nodeLocalEntityIndex();
         UUID trainingUUID = key.trainingUUID();
         IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(Ignition.localIgnite());

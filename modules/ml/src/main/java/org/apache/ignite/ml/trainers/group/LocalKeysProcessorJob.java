@@ -65,7 +65,11 @@ public class LocalKeysProcessorJob<K, V, C, R extends Serializable> extends Base
         return selectLocalKeys().map(k -> new KeyAndContext<>(k, ctx));
     }
 
-    // TODO: do it more optimally.
+    /**
+     * Get subset of keys provided by keySupplier which are mapped to node on which code is executed.
+     *
+     * @return Subset of keys provided by keySupplier which are mapped to node on which code is executed.
+     */
     private Stream<GroupTrainerCacheKey<K>> selectLocalKeys() {
         return keySupplier.get().
             filter(k -> affinity().mapKeyToNode(k).isLocal()).

@@ -29,7 +29,7 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
 public abstract class MetaoptimizerGroupTrainer<LC extends HasTrainingUUID, K, V, D extends Serializable,
 R extends Serializable, I extends Serializable,
-M extends Model, T extends Distributive<K>,
+M extends Model, T extends GroupTrainerInput<K>,
 G, O extends Serializable, IR, X, Y> extends
     GroupTrainer<LC, K, V, D, R, I, M, T, G> {
     private Metaoptimizer<IR, LC, X, Y, I, D, O> metaoptimizer;

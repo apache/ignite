@@ -161,13 +161,6 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
         };
     }
 
-    default <C1, O1> ComputationsChain<L, K, V, I, O1> withOtherContext(IComputationsChain<O, C1, O1> newChain, C1 otherContext) {
-        return (input, context) -> {
-            O res = process(input, context);
-            return newChain.process(res, otherContext);
-        };
-    }
-
     default <O1> ComputationsChain<L, K, V, I, O1> then(ComputationsChain<L, K, V, O, O1> next) {
         ComputationsChain<L, K, V, I, O> me = this;
         return (input, context) -> {

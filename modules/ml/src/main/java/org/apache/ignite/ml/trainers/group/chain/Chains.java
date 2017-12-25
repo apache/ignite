@@ -19,20 +19,39 @@ package org.apache.ignite.ml.trainers.group.chain;
 
 import java.io.Serializable;
 
+/**
+ * Class containing methods creating {@link ComputationsChain}.
+ */
 public class Chains {
+    /**
+     * Create computation chain consisting of one returning its input as output.
+     *
+     * @param <L> Type of local context of created chain.
+     * @param <K> Type of keys of cache used in computation chain.
+     * @param <V> Type of values of cache used in computation chain.
+     * @param <I> Type of input to computation chain.
+     * @return Computation chain consisting of one returning its input as output.
+     */
     public static
     <L extends HasTrainingUUID, K, V, I> ComputationsChain<L, K, V, I, I> create() {
         return (input, context) -> input;
     }
 
+    /**
+     * Create {@link ComputationsChain} from {@link DistributedStep}.
+     *
+     * @param step Distributed chain step.
+     * @param <L> Type of local context of created chain.
+     * @param <K> Type of keys of cache used in computation chain.
+     * @param <V> Type of values of cache used in computation chain.
+     * @param <C> Type of context used by worker in {@link DistributedStep}.
+     * @param <I> Type of input to computation chain.
+     * @param <O> Type of output of computation chain.
+     * @return Computation created from {@link DistributedStep}.
+     */
     public static
-    <L extends HasTrainingUUID, K, V, G, I, O extends Serializable> ComputationsChain<L, K, V, I, O> create(DistributedStep<L, K, V, G, I, O> step) {
+    <L extends HasTrainingUUID, K, V, C, I, O extends Serializable> ComputationsChain<L, K, V, I, O> create(DistributedStep<L, K, V, C, I, O> step) {
         ComputationsChain<L, K, V, I, I> chain = create();
         return chain.thenDistributedForEntries(step);
-    }
-
-    public static
-    <L extends HasTrainingUUID, V, K, I> ComputationsChain<L, K, V, I, I> fromLocal() {
-        return (input, context) -> input;
     }
 }

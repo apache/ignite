@@ -21,14 +21,14 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class SimpleDistributive implements Distributive<Double> {
+public class SimpleGroupTrainerInput implements GroupTrainerInput<Double> {
     private int limit;
     private int eachNumberCount;
     private int iterCnt;
 
-    public SimpleDistributive(int limit, int eachNumberCount, int iterCnt) {
+    public SimpleGroupTrainerInput(int limit, int eachNumCnt, int iterCnt) {
         this.limit = limit;
-        this.eachNumberCount = eachNumberCount;
+        this.eachNumberCount = eachNumCnt;
         this.iterCnt = iterCnt;
     }
 

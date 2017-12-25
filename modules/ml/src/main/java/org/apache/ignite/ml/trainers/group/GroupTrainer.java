@@ -48,7 +48,7 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * @param <T> Type of input to this trainer.
  * @param <G> Type of distributed context which is needed for forming final result which is send from each node to trainer for final model creation.
  */
-public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends Distributive<K>, G> implements Trainer<M, T> {
+public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends GroupTrainerInput<K>, G> implements Trainer<M, T> {
     /**
      * Cache on which training is performed. For example it can be cache of neural networks.
      */

@@ -20,6 +20,17 @@ package org.apache.ignite.ml.trainers.group;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-public interface Distributive<K> {
+/**
+ * Interface for inputs fot {@link GroupTrainer}.
+ *
+ * @param <K> Types of cache keys used for group training.
+ */
+public interface GroupTrainerInput<K> {
+    /**
+     * Get stream of keys used for initialization of {@link GroupTrainer}.
+     *
+     * @param trainingUUID UUID of training.
+     * @return Stream of keys used for initialization of {@link GroupTrainer}.
+     */
     Stream<GroupTrainerCacheKey<K>> initialKeys(UUID trainingUUID);
 }
