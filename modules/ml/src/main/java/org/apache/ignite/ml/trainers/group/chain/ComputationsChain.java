@@ -53,7 +53,17 @@ import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
  * @param <I> Type of input of this chain.
  * @param <O> Type of output of this chain.
  */
-public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extends BaseComputationsChain<I, GroupTrainingContext<K, V, L>, O> {
+@FunctionalInterface
+public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
+    /**
+     * Process given input and {@link GroupTrainingContext}.
+     *
+     * @param input Computation chain input.
+     * @param ctx {@link GroupTrainingContext}.
+     * @return Result of processing input and context.
+     */
+    O process(I input, GroupTrainingContext<K, V, L> ctx);
+
     default ComputationsChain<L, K, V, I, I> create() {
         return (input, context) -> input;
     }
@@ -71,26 +81,35 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
     }
 
     /**
-     * Add a distributed step
+     * Add a distributed step which works in the following way:
+     * 1. get input of previous chain step and local context.
+     * 2. create supplier of keys of cache used for training.
+     * 3. on each node_n
+     * 3.1. get context object.
+     * 3.2. for each entry_i e located on node_n with key_i from stream supplied by keysSupplier compute worker((context, entry_i)) and get
+     * (cachesUpdates_i, result_i).
+     * 3.3. for all i on node_n merge cacheUpdates_i and apply them.
+     * 3.4. for all i on node_n, reduce result_i into result_n.
+     * 4. get all result_n, reduce them into result and return result.
      *
-     * @param remoteCtxExtractor
-     * @param worker
-     * @param kf
-     * @param identity
-     * @param reducer
-     * @param <O1>
-     * @param <G>
-     * @return
+     * @param <O1> Type of worker output.
+     * @param <G> Type of context used by worker.
+     * @param workerCtxExtractor Extractor of context for worker.
+     * @param worker Function computed on each entry of cache used for training. Second argument is context:
+     * common part of data which is independent from key.
+     * @param ks Function from chain input and local context to supplier of keys for worker.
+     * @param reducer Function used for reducing results of worker.
+     * @param identity Identity for reducer.
+     * @return Combination of this chain and distributed step specified by given parameters.
      */
     default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(
-        IgniteBiFunction<O, L, G> remoteCtxExtractor,
+        IgniteBiFunction<O, L, G> workerCtxExtractor,
         IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<O1>> worker,
-        IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
-        O1 identity,
-        IgniteBinaryOperator<O1> reducer) {
+        IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> ks,
+        IgniteBinaryOperator<O1> reducer, O1 identity) {
         ComputationsChain<L, K, V, O, O1> nextStep = (input, context) -> {
             L locCtx = context.localContext();
-            IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier = kf.apply(input, locCtx);
+            IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier = ks.apply(input, locCtx);
 
             Ignite ignite = context.ignite();
             UUID trainingUUID = context.localContext().trainingUUID();
@@ -98,15 +117,37 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
             ClusterGroup grp = ignite.cluster().forDataNodes(cacheName);
 
             // Apply first argument locally because it is common for all nodes.
-            IgniteSupplier<G> extractor = Functions.outputSupplier(Functions.curry(remoteCtxExtractor).apply(input)).apply(locCtx);
+            IgniteSupplier<G> extractor = Functions.outputSupplier(Functions.curry(workerCtxExtractor).apply(input)).apply(locCtx);
 
             return ignite.compute(grp).execute(new GroupTrainerEntriesProcessorTask<>(trainingUUID, extractor, worker, keysSupplier, reducer, identity, cacheName, ignite), null);
         };
         return then(nextStep);
     }
 
+    /**
+     * Add a distributed step which works in the following way:
+     * 1. get input of previous chain step and local context.
+     * 2. create supplier of keys of cache used for training.
+     * 3. on each node_n
+     * 3.1. get context object.
+     * 3.2. for each entry_i e located on node_n with key_i from stream supplied by keysSupplier compute worker((context, entry_i)) and get
+     * (cachesUpdates_i, result_i).
+     * 3.3. for all i on node_n merge cacheUpdates_i and apply them.
+     * 3.4. for all i on node_n, reduce result_i into result_n.
+     * 4. get all result_n, reduce them into result and return result.
+     *
+     * @param <O1> Type of worker output.
+     * @param <G> Type of context used by worker.
+     * @param workerCtxSupplier Supplier of context for worker.
+     * @param worker Function computed on each entry of cache used for training. Second argument is context:
+     * common part of data which is independent from key.
+     * @param ks Function from chain input and local context to supplier of keys for worker.
+     * @param reducer Function used for reducing results of worker.
+     * @param identity Identity for reducer.
+     * @return Combination of this chain and distributed step specified by given parameters.
+     */
     default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
-        IgniteBiFunction<O, L, G> remoteCtxExtractor,
+        IgniteBiFunction<O, L, G> workerCtxExtractor,
         IgniteFunction<KeyAndContext<K, G>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         O1 identity,
@@ -121,7 +162,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
             ClusterGroup grp = ignite.cluster().forDataNodes(cacheName);
 
             // Apply first argument locally because it is common for all nodes.
-            IgniteSupplier<G> extractor = Functions.outputSupplier(Functions.curry(remoteCtxExtractor).apply(input)).apply(locCtx);
+            IgniteSupplier<G> extractor = Functions.outputSupplier(Functions.curry(workerCtxExtractor).apply(input)).apply(locCtx);
 
             return ignite.compute(grp).execute(new GroupTrainerKeysProcessorTask<>(trainingUUID, extractor, distributedWorker, keysSupplier, reducer, identity, cacheName, ignite), null);
         };
@@ -129,7 +170,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
     }
 
     default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(DistributedStep<L, K, V, G, O, O1> step) {
-        return thenDistributedForEntries(step::extractRemoteContext, step::worker, step::keysSupplier, step.identity(), step::reduce);
+        return thenDistributedForEntries(step::extractRemoteContext, step::worker, step::keysSupplier, step::reduce, step.identity());
     }
 
     default <O1 extends Serializable> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
@@ -161,6 +202,14 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
         };
     }
 
+    /**
+     * Combine two this chain to other: feed this chain as input to other, pass same context as second argument to both chains
+     * process method.
+     *
+     * @param next Next chain.
+     * @param <O1> Type of next chain output.
+     * @return Combined chain.
+     */
     default <O1> ComputationsChain<L, K, V, I, O1> then(ComputationsChain<L, K, V, O, O1> next) {
         ComputationsChain<L, K, V, I, O> me = this;
         return (input, context) -> {

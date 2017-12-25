@@ -84,7 +84,7 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends 
             thenDistributedForKeys(this::initDistributed, (t, lc) -> () -> data.initialKeys(trainingUUID), this::reduceDistributedInitData).
             thenLocally(this::locallyProcessInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
-            thenDistributedForEntries(this::extractContextForFinalResultCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), defaultFinalResult(), this::reduceFinalResults).
+            thenDistributedForEntries(this::extractContextForFinalResultCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), this::reduceFinalResults, defaultFinalResult()).
             thenLocally(this::mapFinalResult).
             process(data, ctx);
 

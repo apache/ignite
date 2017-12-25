@@ -94,6 +94,7 @@ public class ResultAndUpdates<R> {
      * @param <K> Type of key of cache to be updated.
      * @param <V> New value.
      */
+    @SuppressWarnings("unchecked")
     public <K, V> void update(IgniteCache<K, V> cache, K key, V val) {
         String name = cache.getName();
 
@@ -119,6 +120,7 @@ public class ResultAndUpdates<R> {
      * @param <R> Type of computation result.
      * @return Sum of collection ResultAndUpdate objects.
      */
+    @SuppressWarnings("unchecked")
     static <R> ResultAndUpdates<R> sum(IgniteBinaryOperator<R> op, R identity, Collection<ResultAndUpdates<R>> resultsAndUpdates) {
         Map<String, Map> allUpdates = new HashMap<>();
 

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-import org.apache.ignite.lang.IgniteBiTuple;
-
 /**
  * Class encapsulating logic of group training in {@link MetaoptimizerGroupTrainer}, which is adapter of
  * {@link GroupTrainer}.

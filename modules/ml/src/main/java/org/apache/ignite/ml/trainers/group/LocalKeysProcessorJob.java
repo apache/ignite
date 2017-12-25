@@ -20,7 +20,6 @@ package org.apache.ignite.ml.trainers.group;
 import java.io.Serializable;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
