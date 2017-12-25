@@ -20,15 +20,16 @@ package org.apache.ignite.ml.trainers.group;
 import java.io.Serializable;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.trainers.group.chain.DistributedStep;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
-class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable, IR, X, Y, D extends Serializable> implements org.apache.ignite.ml.trainers.group.chain.RemoteStep<L,K,V,G,I,O> {
+class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable, IR, X, Y, D extends Serializable> implements DistributedStep<L,K,V,G,I,O> {
     private final Metaoptimizer<IR, L, X, Y, I, D, O> metaoptimizer;
-    private final SimpleGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, IR, X, Y> trainer;
+    private final MetaoptimizerGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, IR, X, Y> trainer;
 
     public MetaoptimizerDistributedStep(Metaoptimizer<IR, L, X, Y, I, D, O> metaoptimizer,
-        SimpleGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, IR, X, Y> trainer) {
+        MetaoptimizerGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, IR, X, Y> trainer) {
         this.metaoptimizer = metaoptimizer;
         this.trainer = trainer;
     }
@@ -38,7 +39,7 @@ class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends
     }
 
     @Override
-    public ResultAndUpdates<O> distributedWorker(I input, L locCtx, EntryAndContext<K, V, G> entryAndContext) {
+    public ResultAndUpdates<O> worker(I input, L locCtx, EntryAndContext<K, V, G> entryAndContext) {
         X apply = trainer.extractDataToProcessInTrainingLoop(entryAndContext);
         metaoptimizer.distributedPreprocess(input, apply);
         ResultAndUpdates<Y> res = trainer.processData(apply);

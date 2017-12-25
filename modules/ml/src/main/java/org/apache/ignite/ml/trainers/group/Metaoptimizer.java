@@ -19,6 +19,18 @@ package org.apache.ignite.ml.trainers.group;
 
 import org.apache.ignite.lang.IgniteBiTuple;
 
+/**
+ * Class encapsulating logic of group training in {@link MetaoptimizerGroupTrainer}, which is adapter of
+ * {@link GroupTrainer}.
+ *
+ * @param <IR>
+ * @param <LC>
+ * @param <X>
+ * @param <Y>
+ * @param <I>
+ * @param <D>
+ * @param <O>
+ */
 public interface Metaoptimizer<IR, LC, X, Y, I, D, O> {
     D initialDistributedPostProcess(IR res);
 

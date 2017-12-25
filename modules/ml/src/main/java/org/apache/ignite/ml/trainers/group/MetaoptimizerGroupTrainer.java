@@ -23,18 +23,18 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
-import org.apache.ignite.ml.trainers.group.chain.DC;
+import org.apache.ignite.ml.trainers.group.chain.Chains;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
-public abstract class SimpleGroupTrainer<LC extends HasTrainingUUID, K, V, D extends Serializable,
+public abstract class MetaoptimizerGroupTrainer<LC extends HasTrainingUUID, K, V, D extends Serializable,
 R extends Serializable, I extends Serializable,
 M extends Model, T extends Distributive<K>,
 G, O extends Serializable, IR, X, Y> extends
     GroupTrainer<LC, K, V, D, R, I, M, T, G> {
     private Metaoptimizer<IR, LC, X, Y, I, D, O> metaoptimizer;
 
-    public SimpleGroupTrainer(
+    public MetaoptimizerGroupTrainer(
         IgniteCache<GroupTrainerCacheKey<K>, V> cache,
         Ignite ignite) {
         super(cache, ignite);
@@ -48,8 +48,8 @@ G, O extends Serializable, IR, X, Y> extends
 
     protected abstract ResultAndUpdates<Y> processData(X data);
 
-    @Override protected ComputationsChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep() {
-        ComputationsChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, O> chain = DC.create(new MetaoptimizerDistributedStep<>(metaoptimizer, this));
+    @Override protected ComputationsChain<LC, K, V, I, I> trainingLoopStep() {
+        ComputationsChain<LC, K, V, I, O> chain = Chains.create(new MetaoptimizerDistributedStep<>(metaoptimizer, this));
         return chain.thenLocally(metaoptimizer::localProcessor);
     }
 

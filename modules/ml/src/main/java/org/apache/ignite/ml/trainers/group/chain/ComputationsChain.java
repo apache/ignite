@@ -131,8 +131,8 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
         return then(nextStep);
     }
 
-    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(RemoteStep<L, K, V, G, O, O1> step) {
-        return thenDistributedForEntries(step::extractRemoteContext, step::distributedWorker, step::keysSupplier, step.identity(), step::reduce);
+    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(DistributedStep<L, K, V, G, O, O1> step) {
+        return thenDistributedForEntries(step::extractRemoteContext, step::worker, step::keysSupplier, step.identity(), step::reduce);
     }
 
     default <O1 extends Serializable> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(

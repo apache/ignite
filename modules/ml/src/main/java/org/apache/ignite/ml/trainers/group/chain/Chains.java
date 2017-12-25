@@ -17,9 +17,22 @@
 
 package org.apache.ignite.ml.trainers.group.chain;
 
-import org.apache.ignite.Ignite;
+import java.io.Serializable;
 
-public interface HasCacheContext<K, V> {
-    CacheContext<K, V> cacheContext();
-    Ignite ignite();
+public class Chains {
+    public static
+    <L extends HasTrainingUUID, K, V, I> ComputationsChain<L, K, V, I, I> create() {
+        return (input, context) -> input;
+    }
+
+    public static
+    <L extends HasTrainingUUID, K, V, G, I, O extends Serializable> ComputationsChain<L, K, V, I, O> create(DistributedStep<L, K, V, G, I, O> step) {
+        ComputationsChain<L, K, V, I, I> chain = create();
+        return chain.thenDistributedForEntries(step);
+    }
+
+    public static
+    <L extends HasTrainingUUID, V, K, I> ComputationsChain<L, K, V, I, I> fromLocal() {
+        return (input, context) -> input;
+    }
 }

@@ -23,10 +23,27 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
 
-public interface RemoteStep<L, K, V, G, I, O extends Serializable> {
-    G extractRemoteContext(I input, L locCtx);
+/**
+ * Class encapsulating logic of distributed step in {@link ComputationsChain}.
+ *
+ * @param <L> Local context.
+ * @param <K> Type of keys of cache used for group training.
+ * @param <V> Type of values of cache used for group training.
+ * @param <C> Context used by worker.
+ * @param <I> Type of input to this step.
+ * @param <O> Type of output of this step.
+ */
+public interface DistributedStep<L, K, V, C, I, O extends Serializable> {
+    /**
+     * Extracts context used by worker.
+     *
+     * @param input Input.
+     * @param locCtx Local context.
+     * @return Context used by worker.
+     */
+    C extractRemoteContext(I input, L locCtx);
 
-    ResultAndUpdates<O> distributedWorker(I input, L locCtx, EntryAndContext<K, V, G> entryAndContext);
+    ResultAndUpdates<O> worker(I input, L locCtx, EntryAndContext<K, V, C> entryAndCtx);
 
     IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier(I input, L locCtx);
 

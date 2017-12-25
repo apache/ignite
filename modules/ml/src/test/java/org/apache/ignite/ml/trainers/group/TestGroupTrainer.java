@@ -24,7 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
-import org.apache.ignite.ml.trainers.group.chain.DC;
+import org.apache.ignite.ml.trainers.group.chain.Chains;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
 public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer, Double, ConstModel<Integer>, SimpleDistributive, Void> {
@@ -37,16 +37,16 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     @Override protected ResultAndUpdates<Integer> initDistributed(SimpleDistributive data, GroupTrainerCacheKey<Double> key) {
-        int i = key.nodeLocalEntityIndex();
+        long i = key.nodeLocalEntityIndex();
         UUID trainingUUID = key.trainingUUID();
         IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(Ignition.localIgnite());
 
-        int sum = i * data.eachNumberCount();
+        long sum = i * data.eachNumberCount();
 
-        ResultAndUpdates<Integer> res = ResultAndUpdates.of(sum);
+        ResultAndUpdates<Integer> res = ResultAndUpdates.of((int)sum);
 
         for (int j = 0; j < data.eachNumberCount(); j++)
-            res.update(cache, new GroupTrainerCacheKey<>(i, (double)j, trainingUUID), i);
+            res.update(cache, new GroupTrainerCacheKey<>(i, (double)j, trainingUUID), (int)i);
 
         return res;
     }
@@ -63,7 +63,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     protected ComputationsChain<TestGroupTrainerLocalContext,
             Double, Integer, Double, Double> trainingLoopStep() {
         // TODO: here we should explicitly create variable because we cannot infer context type, think about it.
-        ComputationsChain<TestGroupTrainerLocalContext, Double, Integer, Double, Double> chain = DC.
+        ComputationsChain<TestGroupTrainerLocalContext, Double, Integer, Double, Double> chain = Chains.
             create(new TestTrainingLoopStep());
         return chain.
             thenLocally((aDouble, context) -> {

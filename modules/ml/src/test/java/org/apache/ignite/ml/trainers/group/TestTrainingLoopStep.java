@@ -21,15 +21,15 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
-import org.apache.ignite.ml.trainers.group.chain.RemoteStep;
+import org.apache.ignite.ml.trainers.group.chain.DistributedStep;
 
-public class TestTrainingLoopStep implements RemoteStep<TestGroupTrainerLocalContext, Double, Integer, Void, Double, Double> {
+public class TestTrainingLoopStep implements DistributedStep<TestGroupTrainerLocalContext, Double, Integer, Void, Double, Double> {
     @Override public Void extractRemoteContext(Double input, TestGroupTrainerLocalContext locCtx) {
         // No context is needed.
         return null;
     }
 
-    @Override public ResultAndUpdates<Double> distributedWorker(Double input, TestGroupTrainerLocalContext locCtx,
+    @Override public ResultAndUpdates<Double> worker(Double input, TestGroupTrainerLocalContext locCtx,
         EntryAndContext<Double, Integer, Void> entryAndContext) {
         Integer oldVal = entryAndContext.entry().getValue();
         double v = oldVal * oldVal;

@@ -20,11 +20,15 @@ package org.apache.ignite.ml.trainers.group;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.trainers.group.chain.CacheContext;
-import org.apache.ignite.ml.trainers.group.chain.HasCacheContext;
-import org.apache.ignite.ml.trainers.group.chain.HasLocalContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
-public class GroupTrainingContext<K, V, L extends HasTrainingUUID> implements HasCacheContext<GroupTrainerCacheKey<K>, V>, HasLocalContext<L> {
+/**
+ *
+ * @param <K>
+ * @param <V>
+ * @param <L>
+ */
+public class GroupTrainingContext<K, V, L extends HasTrainingUUID> {
     private L localContext;
     private CacheContext<GroupTrainerCacheKey<K>, V> cacheContext;
     private Ignite ignite;
@@ -40,15 +44,15 @@ public class GroupTrainingContext<K, V, L extends HasTrainingUUID> implements Ha
         return new GroupTrainingContext<>(localContext, newCtx, ignite);
     }
 
-    @Override public L localContext() {
+    public L localContext() {
         return localContext;
     }
 
-    @Override public CacheContext<GroupTrainerCacheKey<K>, V> cacheContext() {
+    public CacheContext<GroupTrainerCacheKey<K>, V> cacheContext() {
         return cacheContext;
     }
 
-    @Override public Ignite ignite() {
+    public Ignite ignite() {
         return ignite;
     }
 }
