@@ -33,14 +33,14 @@ public class SqlLexer implements SqlLexerToken {
     /** Current position. */
     private int pos;
 
-    /** Current token start. */
-    private int tokenPos;
+    /** Current tok start. */
+    private int tokPos;
 
-    /** Current token. */
-    private String token;
+    /** Current tok. */
+    private String tok;
 
     /** Token type. */
-    private SqlLexerTokenType tokenTyp;
+    private SqlLexerTokenType tokTyp;
 
     /** Detect and convert backslash escape sequences */
     private final boolean convertBackslashEscapes;
@@ -65,50 +65,50 @@ public class SqlLexer implements SqlLexerToken {
     }
 
     /**
-     * Get next token without lexer state change.
+     * Get next tok without lexer state change.
      *
-     * @return Next token.
+     * @return Next tok.
      */
     public SqlLexerToken lookAhead() {
         int pos0  = pos;
-        String token0 = token;
-        int tokenPos0 = tokenPos;
-        SqlLexerTokenType tokenTyp0 = tokenTyp;
+        String tok0 = tok;
+        int tokPos0 = tokPos;
+        SqlLexerTokenType tokTyp0 = tokTyp;
 
         try {
             if (shift())
-                return new SqlLexerLookAheadToken(sql, token, tokenPos, tokenTyp);
+                return new SqlLexerLookAheadToken(sql, tok, tokPos, tokTyp);
             else
-                return new SqlLexerLookAheadToken(sql, null, tokenPos, SqlLexerTokenType.EOF);
+                return new SqlLexerLookAheadToken(sql, null, tokPos, SqlLexerTokenType.EOF);
         }
         finally {
             pos = pos0;
-            token = token0;
-            tokenPos = tokenPos0;
-            tokenTyp = tokenTyp0;
+            tok = tok0;
+            tokPos = tokPos0;
+            tokTyp = tokTyp0;
         }
     }
 
     /**
-     * Gets the current token as SqlLexerToken object.
+     * Gets the current tok as SqlLexerToken object.
      *
-     * @return The current token object.
+     * @return The current tok object.
      */
     public SqlLexerToken currentToken() {
-        return new SqlLexerLookAheadToken(sql, token, tokenPos, tokenTyp);
+        return new SqlLexerLookAheadToken(sql, tok, tokPos, tokTyp);
     }
 
     /**
      * Shift lexer to the next position.
      *
-     * @return {@code True} if next token was found, {@code false} in case of end-of-file.
+     * @return {@code True} if next tok was found, {@code false} in case of end-of-file.
      */
     public boolean shift() {
         while (!eod()) {
-            int tokenStartPos0 = pos;
+            int tokStartPos0 = pos;
 
-            String token0 = null;
-            SqlLexerTokenType tokenTyp0 = null;
+            String tok0 = null;
+            SqlLexerTokenType tokTyp0 = null;
 
             char c = inputChars[pos++];
 
@@ -129,8 +129,8 @@ public class SqlLexer implements SqlLexerToken {
                     }
                     else {
                         // Minus.
-                        token0 = "-";
-                        tokenTyp0 = SqlLexerTokenType.MINUS;
+                        tok0 = "-";
+                        tokTyp0 = SqlLexerTokenType.MINUS;
                     }
 
                     break;
@@ -141,7 +141,7 @@ public class SqlLexer implements SqlLexerToken {
 
                     while (true) {
                         if (eod()) {
-                            throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
+                            throw new SqlParseException(sql, tokStartPos0, IgniteQueryErrorCode.PARSING,
                                 "Unclosed quoted identifier.");
                         }
 
@@ -155,7 +155,7 @@ public class SqlLexer implements SqlLexerToken {
 
                             while (true) {
                                 if (eod()) {
-                                    throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
+                                    throw new SqlParseException(sql, tokStartPos0, IgniteQueryErrorCode.PARSING,
                                         "Nonterminated escape sequence in quoted identifier.");
                                 }
 
@@ -172,7 +172,7 @@ public class SqlLexer implements SqlLexerToken {
                                     break;
 
                                 if (state == SqlEscSeqParser.State.ERROR)
-                                    throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
+                                    throw new SqlParseException(sql, tokStartPos0, IgniteQueryErrorCode.PARSING,
                                         "Character cannot be part of escape sequence: '" + c1 + "'");
 
                                 assert state == SqlEscSeqParser.State.PROCESSING;
@@ -199,8 +199,8 @@ public class SqlLexer implements SqlLexerToken {
                         sb.append(c1);
                     }
 
-                    token0 = sb.toString();
-                    tokenTyp0 = (c == '"') ? SqlLexerTokenType.DBL_QUOTED : SqlLexerTokenType.SGL_QUOTED;
+                    tok0 = sb.toString();
+                    tokTyp0 = (c == '"') ? SqlLexerTokenType.DBL_QUOTED : SqlLexerTokenType.SGL_QUOTED;
 
                     break;
                 }
@@ -211,8 +211,8 @@ public class SqlLexer implements SqlLexerToken {
                 case '(':
                 case ')':
                 case '=':
-                    token0 = Character.toString(c);
-                    tokenTyp0 = SqlLexerTokenType.forChar(c);
+                    tok0 = Character.toString(c);
+                    tokTyp0 = SqlLexerTokenType.forChar(c);
 
                     break;
 
@@ -229,22 +229,22 @@ public class SqlLexer implements SqlLexerToken {
                         pos++;
                     }
 
-                    token0 = sql.substring(tokenStartPos0, pos).toUpperCase();
-                    tokenTyp0 = SqlLexerTokenType.KEYWORD;
+                    tok0 = sql.substring(tokStartPos0, pos).toUpperCase();
+                    tokTyp0 = SqlLexerTokenType.KEYWORD;
             }
 
-            if (tokenTyp0 != null) {
-                token = token0;
-                tokenPos = tokenStartPos0;
-                tokenTyp = tokenTyp0;
+            if (tokTyp0 != null) {
+                tok = tok0;
+                tokPos = tokStartPos0;
+                tokTyp = tokTyp0;
 
                 return true;
             }
         }
 
-        token = null;
-        tokenPos = pos;
-        tokenTyp = SqlLexerTokenType.EOF;
+        tok = null;
+        tokPos = pos;
+        tokTyp = SqlLexerTokenType.EOF;
 
         return false;
     }
@@ -256,24 +256,24 @@ public class SqlLexer implements SqlLexerToken {
 
     /** {@inheritDoc} */
     public String token() {
-        return token;
+        return tok;
     }
 
     /** {@inheritDoc} */
     public char tokenFirstChar() {
-        assert tokenTyp != SqlLexerTokenType.EOF;
+        assert tokTyp != SqlLexerTokenType.EOF;
 
-        return token.charAt(0);
+        return tok.charAt(0);
     }
 
     /** {@inheritDoc} */
     public int tokenPosition() {
-        return tokenPos;
+        return tokPos;
     }
 
     /** {@inheritDoc} */
     public SqlLexerTokenType tokenType() {
-        return tokenTyp;
+        return tokTyp;
     }
 
     /**

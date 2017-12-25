@@ -168,6 +168,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
         return cols != null ? cols : Collections.<SqlIndexColumn>emptySet();
     }
 
+    /** Parameters, which are already parsed (for duplicate checking). */
     private Set<String> parsedParams = new HashSet<>();
 
     /** {@inheritDoc} */
@@ -226,9 +227,9 @@ public class SqlCreateIndexCommand implements SqlCommand {
         String name = parseIdentifier(lex);
         boolean desc = false;
 
-        SqlLexerToken nextToken = lex.lookAhead();
+        SqlLexerToken nextTok = lex.lookAhead();
 
-        if (matchesKeyword(nextToken, ASC) || matchesKeyword(nextToken, DESC)) {
+        if (matchesKeyword(nextTok, ASC) || matchesKeyword(nextTok, DESC)) {
             lex.shift();
 
             if (matchesKeyword(lex, DESC))

@@ -131,7 +131,7 @@ public final class SqlEnumParserUtils {
      * @return Parsed enum value.
      * @throws SqlParseException When the value is not recognized.
      */
-    private static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls, boolean allowDflt, T defaultVal) {
+    private static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls, boolean allowDflt, T dfltVal) {
 
         ParsedEnum<T> val = parseEnumIfSpecified(lex, enumCls, allowDflt);
 
@@ -141,7 +141,7 @@ public final class SqlEnumParserUtils {
 
             case DEFAULT:
                 if (allowDflt)
-                    return defaultVal;
+                    return dfltVal;
 
                 assert false : "Internal error";
 
@@ -162,6 +162,7 @@ public final class SqlEnumParserUtils {
      * @param allowDflt Allow specifying {@link SqlKeyword#DEFAULT} value.
      * @return Parse result.
      */
+    @SuppressWarnings("unchecked")
     private static <T extends Enum<T>> ParsedEnum<T> parseEnumIfSpecified(SqlLexer lex, Class<T> enumCls,
         boolean allowDflt) {
 
@@ -205,7 +206,7 @@ public final class SqlEnumParserUtils {
             /** Parameter value is default. */
             DEFAULT,
             /** Error encountered when parsing the enum. */
-            ERROR;
+            ERROR
         }
 
         /** Error singleton value of {@link ParsedEnum}. */
@@ -221,7 +222,7 @@ public final class SqlEnumParserUtils {
         private final Outcome outcome;
 
         /** The parsed value (when {@link Outcome} == {@link Outcome#PARSED}). */
-        private final T value;
+        private final T val;
 
         /**
          * Creates a enum parsing result for the case when {@link Outcome} != {@link Outcome#PARSED}).
@@ -229,7 +230,7 @@ public final class SqlEnumParserUtils {
          */
         private ParsedEnum(Outcome outcome) {
             this.outcome = outcome;
-            this.value = null;
+            this.val = null;
         }
 
         /**
@@ -239,7 +240,7 @@ public final class SqlEnumParserUtils {
          */
         private ParsedEnum(T val) {
             this.outcome = Outcome.PARSED;
-            this.value = val;
+            this.val = val;
         }
 
         /**
@@ -256,7 +257,7 @@ public final class SqlEnumParserUtils {
          */
         public T value() {
             assert outcome == Outcome.PARSED;
-            return value;
+            return val;
         }
 
         /**

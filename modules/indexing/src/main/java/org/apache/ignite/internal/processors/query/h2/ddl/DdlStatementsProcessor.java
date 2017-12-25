@@ -84,10 +84,10 @@ import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_VALUE;
  */
 public class DdlStatementsProcessor {
     /** Kernal context. */
-    GridKernalContext ctx;
+    private GridKernalContext ctx;
 
     /** Indexing. */
-    IgniteH2Indexing idx;
+    private IgniteH2Indexing idx;
 
     /**
      * Initialize message handlers and this' fields needed for further operation.
@@ -728,7 +728,6 @@ public class DdlStatementsProcessor {
 
         for (SqlColumn col : cmd.columns().values()) {
 
-            // "[B", not "byte[]" -- ???
             res.addQueryField(col.name(), getSupportedTypeName(col.type()), null);
 
             if (!col.isNullable()) {
@@ -749,7 +748,7 @@ public class DdlStatementsProcessor {
             valTypeName = cmd.valueTypeName();
 
         boolean wrapKey = cmd.wrapKey() != null ? cmd.wrapKey() : false;
-        boolean wrapValue = cmd.wrapValue() != null ? cmd.wrapValue() : true;
+        boolean wrapVal = cmd.wrapValue() != null ? cmd.wrapValue() : true;
 
         if (wrapKey)
             res.setKeyFields(cmd.primaryKeyColumnNames());
@@ -763,7 +762,7 @@ public class DdlStatementsProcessor {
 
         res.setKeyType(keyTypeName);
 
-        if (!wrapValue) {
+        if (!wrapVal) {
             SqlColumn valCol = null;
 
             for (Map.Entry<String, SqlColumn> e : cmd.columns().entrySet()) {
@@ -799,17 +798,15 @@ public class DdlStatementsProcessor {
     /**
      * Returns Java class name for a supported {@link SqlColumnType}.
      *
-     * @param colType The column type.
+     * @param colTyp The column type.
      * @return The Java type string.
      * @throws IgniteSQLException if this type has no Java representation.
      */
-    private static @NotNull String getSupportedTypeName(@NotNull SqlColumnType colType) {
-        assert colType != null;
-
-        Class<?> cls = SqlColumnType.classForType(colType);
+    private static @NotNull String getSupportedTypeName(@NotNull SqlColumnType colTyp) {
+        Class<?> cls = SqlColumnType.classForType(colTyp);
 
         if (cls == null)
-            throw new IgniteSQLException("Unsupported column type: " + colType);
+            throw new IgniteSQLException("Unsupported column type: " + colTyp);
 
         return cls.getName();
     }

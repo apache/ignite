@@ -29,15 +29,15 @@ public interface SqlCommand {
      * @param lex Lexer.
      * @return This instance.
      */
-    public SqlCommand parse(SqlLexer lex);
+    SqlCommand parse(SqlLexer lex);
 
     /**
      * @return Schema name.
      */
-    public String schemaName();
+    String schemaName();
 
     /**
      * @param schemaName Schema name.
      */
-    public void schemaName(String schemaName);
+    void schemaName(String schemaName);
 }

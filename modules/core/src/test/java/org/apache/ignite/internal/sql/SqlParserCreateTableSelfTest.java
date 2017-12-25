@@ -21,17 +21,13 @@ import com.google.common.base.Optional;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.sql.command.SqlCreateTableCommand;
 import org.apache.ignite.internal.sql.param.ParamTestUtils;
 import org.apache.ignite.internal.sql.param.TestParamDef;
 import org.apache.ignite.internal.util.H2FallbackTempDisabler;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.AFFINITY_KEY;
 import static org.apache.ignite.internal.sql.SqlKeyword.ATOMICITY;
@@ -156,6 +152,7 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     private static List<TestParamDef.DefValPair<?>> createDefaultParamVals(List<TestParamDef<?>> paramTests) {
+
         List<TestParamDef.DefValPair<?>> defParamVals = new LinkedList<>();
 
         for (TestParamDef<?> def : paramTests) {
@@ -181,10 +178,8 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
 
     /**
      * Tests for base CREATE TABLE command.
-     *
-     * @throws Exception If failed.
      */
-    public void testBasicSyntax() throws Exception {
+    public void testBasicSyntax() {
 
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
 
@@ -248,7 +243,7 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws AssertionError If failed.
      */
-    public void testParams() throws Exception {
+    public void testParams() {
 
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
 
