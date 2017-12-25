@@ -564,8 +564,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testMetadataUpdate() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7258");
-
         startGrids(5);
 
         Ignite ignite3 = grid(3);
