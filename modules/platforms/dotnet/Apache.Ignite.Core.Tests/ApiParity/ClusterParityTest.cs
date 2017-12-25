@@ -38,7 +38,11 @@
         /** Members that are missing on .NET side and should be added in future. */
         private static readonly string[] MissingMembers =
         {
-            "enableStatistics"  // IGNITE-7276
+            "enableStatistics",  // IGNITE-7276
+            
+            // IGNITE-7301
+            "active",
+            "setBaselineTopology"
         };
 
         /// <summary>
