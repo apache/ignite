@@ -306,8 +306,7 @@ public abstract class IgniteUtils {
     public static final String DFLT_USER_VERSION = "0";
 
     /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
-    // TODO IGNITE-6743: change to Consumer<ByteBuffer> when Java 8 comes.
-    public static final GridPlainInClosure<ByteBuffer> DIRECT_BYTE_BUFFER_CLEANER = directByteBufferCleaner();
+    public static final DirectBufCleaner DIRECT_BYTE_BUFFER_CLEANER;
 
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
     private static final ConcurrentMap<String, IgniteBiTuple<Class<?>, Collection<Field>>> p2pFields =
@@ -784,6 +783,10 @@ public abstract class IgniteUtils {
             else if ("toString".equals(mtd.getName()))
                 toStringMtd = mtd;
         }
+
+        DIRECT_BYTE_BUFFER_CLEANER = majorJavaVersion(IgniteUtils.jdkVer) < 9
+            ? new DirectBufCleanerJRE8()
+            : new DirectBufCleanerJRE9();
     }
 
     /**
@@ -3076,56 +3079,7 @@ public abstract class IgniteUtils {
     public static void cleanDirectBuffer(ByteBuffer buf) {
         assert buf.isDirect();
 
-        try {
-            DIRECT_BYTE_BUFFER_CLEANER.apply(buf);
-        }
-        catch (IgniteCheckedException ignored) {}
-    }
-
-    /** */
-    private static GridPlainInClosure<ByteBuffer> directByteBufferCleaner() {
-        if (majorJavaVersion(jdkVer) < 9) {
-            final Method cleanerMtd;
-            final Method cleanMtd;
-
-            try {
-                cleanerMtd = Class.forName("sun.nio.ch.DirectBuffer").getMethod("cleaner");
-
-            } catch (ClassNotFoundException | NoSuchMethodException e) {
-                throw new RuntimeException("Reflection failure: no sun.nio.ch.DirectBuffer.cleaner() method found", e);
-            }
-
-            try {
-                cleanMtd = Class.forName("sun.misc.Cleaner").getMethod("clean");
-            }
-            catch (ClassNotFoundException | NoSuchMethodException e) {
-                throw new RuntimeException("Reflection failure: no sun.misc.Cleaner.clean() method found", e);
-            }
-
-            return new GridPlainInClosure<ByteBuffer>() {
-                @Override public void apply(ByteBuffer buf) throws IgniteCheckedException {
-                    try {
-                        cleanMtd.invoke(cleanerMtd.invoke(buf));
-                    }
-                    catch (IllegalAccessException | InvocationTargetException e) {
-                        throw new RuntimeException("Failed to invoke direct buffer cleaner", e);
-                    }
-                }
-            };
-        } else {
-            try {
-                final Method cleaner = Unsafe.class.getMethod("invokeCleaner", ByteBuffer.class);
-
-                return new GridPlainInClosure<ByteBuffer>() {
-                    @Override public void apply(ByteBuffer buf) {
-                        GridUnsafe.invoke(cleaner, buf);
-                    }
-                };
-            }
-            catch (NoSuchMethodException e) {
-                throw new RuntimeException("Reflection failure: no sun.misc.Unsafe.invokeCleaner() method found", e);
-            }
-        }
+        DIRECT_BYTE_BUFFER_CLEANER.clean(buf);
     }
 
     /**
