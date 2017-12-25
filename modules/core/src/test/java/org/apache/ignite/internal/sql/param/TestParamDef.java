@@ -229,7 +229,8 @@ public class TestParamDef<T> {
     /** Specifies a correct value of the parameter. */
     public static class ValidValue<T> extends SpecifiedValue<T> {
 
-        /** Constructs a correct value of the parameter with the default list of supported syntaxes
+        /**
+         * Constructs a correct value of the parameter with the default list of supported syntaxes
          * ({@link Syntax#KEY_EQ_VAL} and {@link Syntax#KEY_SPACE_VAL}).
          *
          * @param cmdVal Value to specify in the SQL command.
@@ -255,40 +256,75 @@ public class TestParamDef<T> {
         }
     }
 
-    /** FIXME */
+    /** Specifies a correct value where the field contents are equal to the string in the SQL command. */
     public static class ValidIdentityValue<T> extends ValidValue<T> {
 
-        /** FIXME */
+        /**
+         * Constructs a correct value where the field contents are equal to the string in the SQL command.
+         *
+         * @param val The value.
+         */
         public ValidIdentityValue(T val) {
             super(val.toString(), val);
         }
 
-        /** FIXME */
+        /**
+         * Constructs a correct value where the field contents are equal to the string in the SQL command
+         * with the default list of supported syntaxes
+         * ({@link Syntax#KEY_EQ_VAL} and {@link Syntax#KEY_SPACE_VAL}).
+         *
+         * @param val The value.
+         * @param supportedSyntaxes in which kinds of {@link Syntax} this value is supported.
+         */
         public ValidIdentityValue(T val, EnumSet<Syntax> supportedSyntaxes) {
             super(val.toString(), val, supportedSyntaxes);
         }
     }
 
-    /** FIXME */
+    /**
+     * This class specifies which concrete pair of parameter/value we are testing against and allows to define some
+     * options. Currently it is the {@link Syntax} we are going to test.
+     */
     public static class DefValPair<T> {
+        /** Parameter definition. */
         private final TestParamDef<T> def;
+        /** Parameter value to test. */
         private final Value<T> val;
+        /** Parameter syntax to test. */
         private final Syntax syntax;
 
+        /**
+         * Creates a concrete pair of parameter/value we are testing against.
+         * @param def Parameter definition.
+         * @param val Parameter value to test.
+         * @param syntax  Parameter syntax to test.
+         */
         public DefValPair(TestParamDef<T> def, Value<T> val, Syntax syntax) {
             this.def = def;
             this.val = val;
             this.syntax = syntax;
         }
 
+        /**
+         * Retuns parameter definition.
+         * @return Parameter definition.
+         */
         public TestParamDef<T> def() {
             return def;
         }
 
+        /**
+         * Returns parameter value to test.
+         * @return Parameter value to test.
+         */
         public Value<T> val() {
             return val;
         }
 
+        /**
+         * Returns parameter syntax to test.
+         * @return parameter syntax to test.
+         */
         public Syntax syntax() {
             return syntax;
         }

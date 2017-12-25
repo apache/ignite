@@ -22,6 +22,7 @@ import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlLexerToken;
 import org.apache.ignite.internal.sql.SqlParserUtils;
+import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -268,7 +269,13 @@ public class SqlCreateIndexCommand implements SqlCommand {
         }
     }
 
-    /** FIXME */
+    /**
+     * If PARALLEL parameter goes next, parses it.
+     *
+     * @param lex The lexer.
+     * @return True if we realy met the PARALLEL parameter.
+     * @throws SqlParseException in case of syntax or value error.
+     */
     private boolean tryParseParallel(final SqlLexer lex) {
 
         return SqlParserUtils.tryParseIntParam(lex, PARALLEL, parsedParams, false, new SqlParserUtils.Setter<Integer>() {
@@ -284,7 +291,13 @@ public class SqlCreateIndexCommand implements SqlCommand {
         });
     }
 
-    /** FIXME */
+    /**
+     * If INLINE_SIZE parameter goes next, parses it.
+     *
+     * @param lex The lexer.
+     * @return True if we realy met the INLINE_SIZE parameter.
+     * @throws SqlParseException in case of syntax or value error.
+     */
     private boolean tryParseInlineSize(final SqlLexer lex) {
 
         return SqlParserUtils.tryParseIntParam(lex, INLINE_SIZE, parsedParams, true, new SqlParserUtils.Setter<Integer>() {

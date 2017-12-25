@@ -24,10 +24,28 @@ import java.util.Set;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 
-/** FIXME */
+/** The class contains various methods for parsing enum-based SQL options. */
 public final class SqlEnumParserUtils {
 
-    /** FIXME */
+    /**
+     * Tries to parse enum parameter, if exists.
+     *
+     * <p>The parameter can be defined in one of the following ways:
+     * {@code keyword <space> value},
+     * {@code keyword=value}, and
+     * {@code value}.
+     *
+     * <p>The values are taken from enum class. If {@code allowDflt} is true,
+     * {@link SqlKeyword#DEFAULT} value is permitted.
+     *
+     * @param lex The lexer.
+     * @param keyword The keyword, which prefixes
+     * @param enumCls The enum class.
+     * @param parsedParams The parameters, which has been already parsed for duplicate checking. If provided,
+     *      a duplicate parameter is not allowed.
+     * @param allowDflt Allow {@link SqlKeyword#DEFAULT} as the possible value.
+     * @param setter A closure/lambda that is called with the value to set and some options.
+     */
     public static <T extends Enum<T>> boolean tryParseEnumParam(SqlLexer lex, String keyword, Class<T> enumCls,
         @Nullable Set<String> parsedParams, boolean allowDflt, SqlParserUtils.Setter<T> setter) {
 
@@ -82,22 +100,13 @@ public final class SqlEnumParserUtils {
     }
 
     /** FIXME */
-    public static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls) {
-        return parseEnum(lex, enumCls, true, null);
-    }
-
-    /** FIXME */
-    public static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls, T defaultVal) {
-        return parseEnum(lex, enumCls, true, defaultVal);
-    }
-
-    /** FIXME */
     public static <T extends Enum<T>> SqlParseException errorEnumValue(SqlLexerToken tok, Class<T> enumCls) {
         String expectedVals = Arrays.toString(enumCls.getEnumConstants());
         expectedVals = expectedVals.substring(1, expectedVals.length() - 1);
         throw SqlParserUtils.errorUnexpectedToken(tok, "[one of: " + expectedVals + "]");
     }
 
+    /** FIXME */
     private static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls, boolean allowDflt, T defaultVal) {
 
         ParsedEnum<T> val = parseEnumIfSpecified(lex, enumCls, allowDflt);

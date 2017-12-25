@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.Callable;
 
-/** FIXME */
+/** A set of tests for the common SqlParser syntax, regardless of specific commands. */
 public class SqlParserSelfTest extends GridCommonAbstractTest {
 
-    /** FIXME */
-    public void testSingleQuotess() {
+    /** Verifies that single quotes are handled correctly. */
+    public void testSingleQuotes() {
 
         SqlLexer lex = new SqlLexer("'quoted text'");
 
@@ -80,6 +81,7 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
         }, SqlParseException.class, "Unclosed quoted identifier.");
     }
 
+    /** Verifies that double quotes are handled correctly. */
     public void testDoubleQuotes() {
         SqlLexer lex = new SqlLexer("\"quoted text\"");
 
@@ -154,7 +156,7 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
         }, SqlParseException.class, "Unclosed quoted identifier.");
     }
 
-    /** FIXME */
+    /** Verifies that escape sequences are handled correctly. */
     public void testEscapeSeqs() {
         checkEscapeSeq("\"\\b\"", "\b");
         checkEscapeSeq("\"\\f\"", "\f");
@@ -201,7 +203,11 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
         checkInvalidEscapeSeq("\"\\ufffg\"", "Character cannot be part of escape sequence: 'g'");
     }
 
-    /** FIXME */
+    /**
+     * Checks that an escape sequence in handled correctly.
+     * @param sql SQL part with a double-quoted string.
+     * @param convertedTok A string to which this double-quoted token should be converted to by SQL parser.
+     */
     private void checkEscapeSeq(String sql, String convertedTok) {
         SqlLexer lex = new SqlLexer(sql);
 
@@ -209,7 +215,12 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
         assertEquals(lex.lookAhead().token(), convertedTok);
     }
 
-    /** FIXME */
+    /**
+     * Checks that parsing an escape sequence terminates with an exception.
+     * @param sql SQL part with a double-quoted string.
+     * @param errorMsg Error message to expect (see
+     *      {@link GridTestUtils#assertThrows(IgniteLogger, Callable, Class, String)} for details).
+     */
     private void checkInvalidEscapeSeq(String sql, String errorMsg) {
         final SqlLexer lex = new SqlLexer(sql);
 

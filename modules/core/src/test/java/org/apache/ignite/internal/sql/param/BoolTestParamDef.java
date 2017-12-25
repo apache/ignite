@@ -19,19 +19,19 @@ package org.apache.ignite.internal.sql.param;
 
 import java.util.List;
 
-/** FIXME */
+/** A boolean test parameter definition. Boolean parameters have additional syntax compared to enum parameters. */
 public class BoolTestParamDef extends TestParamDef<Boolean> {
 
-    /** FIXME */
+    /** A keyword for false value of parameter (e.g., LOGGING/NOLOGGING). */
     private final String falseKeyword;
 
     /**
-     * FIXME
+     * Creates a boolean test parameter definition.
      *
-     * @param trueKeyword
-     * @param falseKeyword
-     * @param fldName
-     * @param testValues
+     * @param trueKeyword Keyword for true value of parameter.
+     * @param falseKeyword Keyword for false value of parameter.
+     * @param fldName Field name in the target class.
+     * @param testValues Values to test.
      */
     public BoolTestParamDef(String trueKeyword, String falseKeyword, String fldName, List<Value<Boolean>> testValues) {
         super(trueKeyword, fldName, Boolean.class, testValues);
@@ -39,7 +39,10 @@ public class BoolTestParamDef extends TestParamDef<Boolean> {
         this.falseKeyword = falseKeyword;
     }
 
-    /** FIXME */
+    /**
+     * Returns a keyword for false value of parameter (e.g., LOGGING/NOLOGGING).
+     * @return A keyword for false value of parameter.
+     */
     public String falseKeyword() {
         return falseKeyword;
     }
