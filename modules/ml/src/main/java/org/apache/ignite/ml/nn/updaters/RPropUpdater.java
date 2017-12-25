@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 /**
  * Class encapsulating RProp algorithm.
  * <p>
- * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf</a>.</p>
+ * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
 public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropUpdaterParams> {
     /**
