@@ -8,6 +8,9 @@ import org.apache.ignite.ml.math.Vector;
 public class SimpleUpdater implements Updater {
 
     /** */
+    private static final long serialVersionUID = 6417716224818162225L;
+
+    /** */
     private final double learningRate;
 
     /** */

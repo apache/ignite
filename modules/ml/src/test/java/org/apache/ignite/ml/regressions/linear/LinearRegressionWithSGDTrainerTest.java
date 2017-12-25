@@ -1,6 +1,5 @@
 package org.apache.ignite.ml.regressions.linear;
 
-import java.io.FileNotFoundException;
 import java.util.Scanner;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.Trainer;
@@ -16,39 +15,45 @@ import org.junit.Test;
  */
 public class LinearRegressionWithSGDTrainerTest {
 
-    /** */
+    /**
+     * Test trainer on regression model y = 2 * x.
+     */
     @Test
     public void testTrainWithoutIntercept() {
-        Trainer<LinearRegressionModel, Matrix> tr = new LinearRegressionWithSGDTrainer(100, 1.0, 1e-10);
+        Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionWithSGDTrainer(100, false, 1e-10);
         Matrix data = new DenseLocalOnHeapMatrix(new double[][] {
             {2.0, 1.0},
             {4.0, 2.0}
         });
-        LinearRegressionModel model = tr.train(data);
+        LinearRegressionModel model = trainer.train(data);
         TestUtils.assertEquals(4, model.apply(new DenseLocalOnHeapVector(new double[] {2})), 1e-10);
         TestUtils.assertEquals(6, model.apply(new DenseLocalOnHeapVector(new double[] {3})), 1e-10);
         TestUtils.assertEquals(8, model.apply(new DenseLocalOnHeapVector(new double[] {4})), 1e-10);
     }
 
-    /** */
+    /**
+     * Test trainer on regression model y = -1 * x + 1.
+     */
     @Test
     public void testTrainWithIntercept() {
-        Trainer<LinearRegressionModel, Matrix> tr = new LinearRegressionWithSGDTrainer(100, 1.0, 1e-10);
+        Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionWithSGDTrainer(100, false, 1e-10);
         Matrix data = new DenseLocalOnHeapMatrix(new double[][] {
             {1.0, 0.0},
             {0.0, 1.0}
         });
-        LinearRegressionModel model = tr.train(data);
+        LinearRegressionModel model = trainer.train(data);
         TestUtils.assertEquals(0.5, model.apply(new DenseLocalOnHeapVector(new double[] {0.5})), 1e-10);
         TestUtils.assertEquals(2, model.apply(new DenseLocalOnHeapVector(new double[] {-1})), 1e-10);
         TestUtils.assertEquals(-1, model.apply(new DenseLocalOnHeapVector(new double[] {2})), 1e-10);
     }
 
-    /** */
+    /**
+     * Test trainer on diabetes dataset.
+     */
     @Test
-    public void testTrainOnDiabetesDataset() throws FileNotFoundException {
-        Matrix data = loadDataset("datasets/regression/diabetes.csv", 442, 11);
-        Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionWithSGDTrainer(100_000, 1.0, 1e-10);
+    public void testTrainOnDiabetesDataset() {
+        Matrix data = loadDataset("datasets/regression/diabetes.csv", 442, 10);
+        Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionWithSGDTrainer(100_000, false, 1e-10);
         LinearRegressionModel model = trainer.train(data);
         Vector expectedWeights = new DenseLocalOnHeapVector(new double[] {
             -10.01219782, -239.81908937, 519.83978679, 324.39042769, -792.18416163,
@@ -60,12 +65,14 @@ public class LinearRegressionWithSGDTrainerTest {
         TestUtils.assertEquals("Wrong intercept", expectedIntercept, model.getIntercept(), 1e-5);
     }
 
-    /** */
+    /**
+     * Test trainer on boston dataset.
+     */
     @Test
     @Ignore
-    public void testTrainOnBostonDataset() throws FileNotFoundException {
-        Matrix data = loadDataset("datasets/regression/boston.csv", 506, 14);
-        Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionWithSGDTrainer(100_000, 1.0, 1e-10);
+    public void testTrainOnBostonDataset() {
+        Matrix data = loadDataset("datasets/regression/boston.csv", 506, 13);
+        Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionWithSGDTrainer(100_000, false, 1e-10);
         LinearRegressionModel model = trainer.train(data);
         Vector expectedWeights = new DenseLocalOnHeapVector(new double[] {
             -1.07170557e-01,   4.63952195e-02,   2.08602395e-02, 2.68856140e+00,  -1.77957587e+01,   3.80475246e+00,
@@ -74,13 +81,72 @@ public class LinearRegressionWithSGDTrainerTest {
         });
         double expectedIntercept = 36.4911032804;
 
-        TestUtils.assertEquals("Wrong weights", expectedWeights, model.getWeights(), 1e-5);
-        TestUtils.assertEquals("Wrong intercept", expectedIntercept, model.getIntercept(), 1e-5);
+        TestUtils.assertEquals("Wrong weights", expectedWeights, model.getWeights(), 1e-4);
+        TestUtils.assertEquals("Wrong intercept", expectedIntercept, model.getIntercept(), 1e-4);
     }
 
-    /** */
-    private Matrix loadDataset(String fileName, int nobs, int nvars) throws FileNotFoundException {
-        double[][] matrix = new double[nobs][nvars];
+    /**
+     * Tests trainer on artificial dataset with 10 observations described by 1 feature.
+     */
+    @Test
+    public void testTrainOnArtificialDataset10x1() {
+        ArtificialRegressionDatasets.Dataset dataset = ArtificialRegressionDatasets.regression10x1;
+        Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionWithSGDTrainer(100_000, false, 1e-10);
+        LinearRegressionModel model = trainer.train(dataset.getData());
+
+        TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), 1e-5);
+        TestUtils.assertEquals("Wrong intercept", dataset.getExpectedIntercept(), model.getIntercept(), 1e-5);
+    }
+
+    /**
+     * Tests trainer on artificial dataset with 10 observations described by 5 features.
+     */
+    @Test
+    public void testTrainOnArtificialDataset10x5() {
+        ArtificialRegressionDatasets.Dataset dataset = ArtificialRegressionDatasets.regression10x5;
+        Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionWithSGDTrainer(100_000, false, 1e-10);
+        LinearRegressionModel model = trainer.train(dataset.getData());
+
+        TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), 1e-5);
+        TestUtils.assertEquals("Wrong intercept", dataset.getExpectedIntercept(), model.getIntercept(), 1e-5);
+    }
+
+    /**
+     * Tests trainer on artificial dataset with 100 observations described by 5 features.
+     */
+    @Test
+    public void testTrainOnArtificialDataset100x5() {
+        ArtificialRegressionDatasets.Dataset dataset = ArtificialRegressionDatasets.regression100x5;
+        Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionWithSGDTrainer(100_000, false, 1e-10);
+        LinearRegressionModel model = trainer.train(dataset.getData());
+
+        TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), 1e-5);
+        TestUtils.assertEquals("Wrong intercept", dataset.getExpectedIntercept(), model.getIntercept(), 1e-5);
+    }
+
+    /**
+     * Tests trainer on artificial dataset with 100 observations described by 10 features.
+     */
+    @Test
+    public void testTrainOnArtificialDataset100x10() {
+        ArtificialRegressionDatasets.Dataset dataset = ArtificialRegressionDatasets.regression100x10;
+        Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionWithSGDTrainer(100_000, false, 1e-10);
+        LinearRegressionModel model = trainer.train(dataset.getData());
+
+        TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), 1e-5);
+        TestUtils.assertEquals("Wrong intercept", dataset.getExpectedIntercept(), model.getIntercept(), 1e-5);
+    }
+
+    /**
+     * Loads dataset file and returns corresponding matrix.
+     *
+     * @param fileName Dataset file name
+     * @param nobs Number of observations
+     * @param nvars Number of features
+     * @return Data matrix
+     */
+    private Matrix loadDataset(String fileName, int nobs, int nvars) {
+        double[][] matrix = new double[nobs][nvars + 1];
         Scanner scanner = new Scanner(this.getClass().getClassLoader().getResourceAsStream(fileName));
         int i = 0;
         while (scanner.hasNextLine()) {

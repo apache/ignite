@@ -1,6 +1,6 @@
 package org.apache.ignite.ml.optimization;
 
-import org.apache.ignite.lang.IgniteBiTuple;
+import java.util.Random;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 
@@ -25,10 +25,9 @@ public class GradientDescent {
     private int maxIterations = 1000;
 
     /**
-     * Fraction of the data used on every gradient descent step as a batch. If batch fraction is less than 1 stochastic
-     * gradient descent is used.
+     * Flag which reflects if stochastic gradient descent will be used.
      */
-    private double batchFraction = 1.0;
+    private boolean stochastic = false;
 
     /**
      * Convergence tolerance is condition which decides iteration termination.
@@ -63,15 +62,11 @@ public class GradientDescent {
     /**
      * Sets batch fraction.
      *
-     * @param batchFraction Fraction of the data used on every gradient descent step as a batch
+     * @param stochastic Flag which reflects if stochastic gradient descent will be used
      * @return This gradient descent instance
      */
-    public GradientDescent withBatchFraction(double batchFraction) {
-        if (batchFraction <= 0 || batchFraction > 1) {
-            throw new IllegalArgumentException("Fraction for batch SGD must be in range (0, 1] but got "
-                + batchFraction);
-        }
-        this.batchFraction = batchFraction;
+    public GradientDescent withStochastic(boolean stochastic) {
+        this.stochastic = stochastic;
         return this;
     }
 
@@ -100,10 +95,10 @@ public class GradientDescent {
     public Vector optimize(Matrix inputs, Vector groundTruth, Vector initialWeights) {
         Vector weights = initialWeights, oldWeights = null, oldGradient = null;
         for (int iteration = 0; iteration < maxIterations; iteration++) {
-            IgniteBiTuple<Matrix, Vector> batch = batch(inputs, groundTruth, iteration);
-            Vector gradient = lossGradient.compute(batch.get1(), batch.get2(), weights);
+            Batch batch = computeBatch(inputs, groundTruth);
+            Vector gradient = lossGradient.compute(batch.getInputs(), batch.getGroundTruth(), weights);
             Vector newWeights = updater.compute(oldWeights, oldGradient, weights, gradient, iteration);
-            if (newWeights.minus(weights).kNorm(2.0) <= convergenceTol) {
+            if (isConverged(weights, newWeights)) {
                 return newWeights;
             }
             else {
@@ -116,43 +111,68 @@ public class GradientDescent {
     }
 
     /**
-     * Extracts subset of inputs and ground truth parameters in accordance with specified batch fraction.
+     * Tests if gradient descent process converged.
+     *
+     * @param weights Weights
+     * @param newWeights New weights
+     * @return {@code true} if process has converged, otherwise {@code false}
+     */
+    private boolean isConverged(Vector weights, Vector newWeights) {
+        if (convergenceTol == 0) {
+            return false;
+        }
+        else {
+            double solutionVectorDiff = weights.minus(newWeights).kNorm(2.0);
+            return solutionVectorDiff < convergenceTol * Math.max(newWeights.kNorm(2.0), 1.0);
+        }
+    }
+
+    /**
+     * Extracts subset of inputs and ground truth parameters in accordance with {@code stochastic} flag.
      *
      * @param inputs Inputs parameters of loss function
      * @param groundTruth Ground truth parameters of loss function
-     * @param iteration Number of current iteration
      * @return Batch with inputs and ground truth parameters
      */
-    IgniteBiTuple<Matrix, Vector> batch(Matrix inputs, Vector groundTruth, int iteration) {
+    private Batch computeBatch(Matrix inputs, Vector groundTruth) {
         Matrix batchInputs = inputs;
         Vector batchGroundTruth = groundTruth;
-        if (batchFraction != 1.0) {
-            int batchSize = (int)(inputs.rowSize() * batchFraction);
-            batchSize = batchSize == 0 ? 1 : batchSize;
-            int nvars = inputs.columnSize();
-            int nobs = inputs.rowSize();
-            batchInputs = inputs.like(batchSize, nvars);
-            batchGroundTruth = groundTruth.like(batchSize);
-            int from = (batchSize * iteration) % nobs;
-            int to = (from + batchSize) % nobs;
-            if (to > from) {
-                for (int i = 0; i < batchSize; i++) {
-                    batchInputs.assignRow(i, inputs.getRow(from + i));
-                    batchGroundTruth.set(i, groundTruth.get(from + i));
-                }
-            }
-            else {
-                int i = 0;
-                for (; i < nobs - from; i++) {
-                    batchInputs.assignRow(i, inputs.getRow(from + i));
-                    batchGroundTruth.set(i, groundTruth.get(from + i));
-                }
-                for (; i < batchSize; i++) {
-                    batchInputs.assignRow(i, inputs.getRow(i - nobs + from));
-                    batchGroundTruth.set(i, groundTruth.get(i - nobs + from));
-                }
-            }
+        if (stochastic && inputs.rowSize() > 0) {
+            Random random = new Random();
+            int index = random.nextInt(inputs.rowSize());
+            batchInputs = batchInputs.like(1, batchInputs.columnSize());
+            batchGroundTruth = batchGroundTruth.like(1);
+            batchInputs.assignRow(0, inputs.getRow(index));
+            batchGroundTruth.set(0, groundTruth.get(index));
         }
-        return new IgniteBiTuple<>(batchInputs, batchGroundTruth);
+        return new Batch(batchInputs, batchGroundTruth);
+    }
+
+    /**
+     * Batch which encapsulates subset in input data (inputs and ground truth).
+     */
+    private static class Batch {
+
+        /** */
+        private final Matrix inputs;
+
+        /** */
+        private final Vector groundTruth;
+
+        /** */
+        public Batch(Matrix inputs, Vector groundTruth) {
+            this.inputs = inputs;
+            this.groundTruth = groundTruth;
+        }
+
+        /** */
+        public Matrix getInputs() {
+            return inputs;
+        }
+
+        /** */
+        public Vector getGroundTruth() {
+            return groundTruth;
+        }
     }
 }

@@ -7,6 +7,9 @@ import org.apache.ignite.ml.math.Vector;
  */
 public class BarzilaiBorweinUpdater implements Updater {
 
+    /** */
+    private static final long serialVersionUID = 5046575099408708472L;
+
     /**
      * Learning rate used on the first iteration.
      */

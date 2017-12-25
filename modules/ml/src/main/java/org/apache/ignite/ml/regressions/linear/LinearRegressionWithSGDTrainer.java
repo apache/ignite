@@ -8,6 +8,8 @@ import org.apache.ignite.ml.math.impls.vector.FunctionVector;
 import org.apache.ignite.ml.optimization.BarzilaiBorweinUpdater;
 import org.apache.ignite.ml.optimization.GradientDescent;
 import org.apache.ignite.ml.optimization.LeastSquaresGradientFunction;
+import org.apache.ignite.ml.optimization.SimpleUpdater;
+import org.apache.ignite.ml.optimization.Updater;
 
 /**
  * Linear regression trainer based on gradient descent algorithm.
@@ -25,11 +27,12 @@ public class LinearRegressionWithSGDTrainer implements Trainer<LinearRegressionM
     }
 
     /** */
-    public LinearRegressionWithSGDTrainer(int maxIterations, double batchFraction, double convergenceTol) {
-        this(new GradientDescent(new LeastSquaresGradientFunction(), new BarzilaiBorweinUpdater())
+    public LinearRegressionWithSGDTrainer(int maxIterations, boolean stochastic, double convergenceTol) {
+        Updater updater = stochastic ? new SimpleUpdater(0.01) : new BarzilaiBorweinUpdater();
+        this.gradientDescent = new GradientDescent(new LeastSquaresGradientFunction(), updater)
             .withMaxIterations(maxIterations)
-            .withBatchFraction(batchFraction)
-            .withConvergenceTol(convergenceTol));
+            .withStochastic(stochastic)
+            .withConvergenceTol(convergenceTol);
     }
 
     /**
