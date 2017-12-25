@@ -346,7 +346,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             }
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || mvccCrd != null || queryMapped;
+        assert !tx.txState().mvccEnabled(cctx) || tx.mvccInfo() != null || mvccCrd != null;
 
         tx.transactionNodes(txMapping.transactionNodes());
 

@@ -1373,29 +1373,38 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             tx = txStart(cctx, 0);
 
         if (tx != null) {
-            MvccProcessor mvccProc = cctx.shared().coordinators();
-            MvccCoordinator crd = mvccProc.currentCoordinator();
+            try {
+                tx.addActiveCache(cctx, false);
 
-            assert crd != null : tx.topologyVersion();
+                MvccProcessor mvccProc = cctx.shared().coordinators();
+                MvccCoordinator crd = mvccProc.currentCoordinator();
 
-            if (tx.mvccInfo() == null) {
-                if (crd.nodeId().equals(cctx.localNodeId())) {
-                    tx.mvccInfo(new MvccTxInfo(crd.nodeId(), mvccProc.requestTxCounterOnCoordinator(tx)));
+                assert crd != null : tx.topologyVersion();
 
+                if (tx.mvccInfo() == null) {
+                    if (crd.nodeId().equals(cctx.localNodeId())) {
+                        tx.mvccInfo(new MvccTxInfo(crd.nodeId(), mvccProc.requestTxCounterOnCoordinator(tx)));
+
+                        return new MvccQueryTracker(cctx, crd, tx.mvccInfo().version());
+                    }
+                    else {
+                        try {
+                            return mvccProc.requestTxCounter(crd, new MvccTxResponseListener(tx), tx.nearXidVersion())
+                                .chain(new MvccVersionToTrackerProcessor(cctx)).get();
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new CacheException(e);
+                        }
+                    }
+                }
+                else
                     return new MvccQueryTracker(cctx, crd, tx.mvccInfo().version());
-                }
-                else {
-                    try {
-                        return mvccProc.requestTxCounter(crd, new MvccTxResponseListener(tx), tx.nearXidVersion())
-                            .chain(new MvccVersionToTrackerProcessor(cctx)).get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new CacheException(e);
-                    }
-                }
             }
-            else
-                return new MvccQueryTracker(cctx, crd, tx.mvccInfo().version());
+            catch (IgniteCheckedException e) {
+                tx.setRollbackOnly();
+
+                throw new CacheException(e);
+            }
         }
 
         final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
