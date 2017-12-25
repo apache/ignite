@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -298,6 +299,12 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                         }
                     }).get(FUT_TIMEOUT);
 
+                    assertTrue(GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return tx.state() == ROLLED_BACK;
+                        }
+                    }, getTestTimeout()));
+
                     assertEquals(ROLLED_BACK, tx.state());
 
                     assertFalse(cache.containsKey(1));
@@ -442,6 +449,12 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                         }
                     }, TransactionTimeoutException.class);
 
+                    assertTrue(GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return tx.state() == ROLLED_BACK;
+                        }
+                    }, getTestTimeout()));
+
                     assertEquals(ROLLED_BACK, tx.state());
 
                     tx.close();
@@ -475,6 +488,12 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                             return null;
                         }
                     }, TransactionTimeoutException.class);
+
+                    assertTrue(GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return tx.state() == ROLLED_BACK;
+                        }
+                    }, getTestTimeout()));
 
                     assertEquals(ROLLED_BACK, tx.state());
 
