@@ -1,13 +1,16 @@
 package org.apache.ignite.ml.regressions.linear;
 
 import java.io.Serializable;
+import org.apache.ignite.ml.Exportable;
+import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModelFormat;
 
 /**
  * Simple linear regression model which predicts result Y as a linear combination of input variables: Y = b * X.
  */
-public class LinearRegressionModel implements Model<Vector, Double>, Serializable {
+public class LinearRegressionModel implements Model<Vector, Double>, Exportable<LinearRegressionModel>, Serializable {
 
     /** */
     private static final long serialVersionUID = -105984600091550226L;
@@ -39,5 +42,12 @@ public class LinearRegressionModel implements Model<Vector, Double>, Serializabl
     /** */
     public double getIntercept() {
         return intercept;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public <P> void saveModel(Exporter<LinearRegressionModel, P> exporter, P path) {
+        exporter.save(this, path);
     }
 }
