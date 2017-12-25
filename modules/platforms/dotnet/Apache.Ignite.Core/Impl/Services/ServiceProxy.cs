@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#if !NETCOREAPP2_0
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
@@ -71,3 +72,4 @@ namespace Apache.Ignite.Core.Impl.Services
         }
     }
 }
+#endif

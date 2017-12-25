@@ -1831,6 +1831,11 @@
                                 <xs:documentation>Number of concurrent segments in Ignite internal page mapping tables.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="walAutoArchiveAfterInactivity" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="pluginConfigurations" minOccurs="0">

@@ -1,0 +1,208 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<xs:schema id="IgniteClientConfigurationSection"
+    targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection"
+    elementFormDefault="qualified"
+    xmlns="http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection"
+    xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="igniteClientConfiguration">
+        <xs:annotation>
+            <xs:documentation>Ignite thin client configuration root.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="binaryConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Binary configuration.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="typeConfigurations" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Type configurations.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="binaryTypeConfiguration" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="nameMapper" minOccurs="0">
+                                                        <xs:annotation>
+                                                            <xs:documentation>Name mapper for the given type.</xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:attribute name="type" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="idMapper" minOccurs="0">
+                                                        <xs:annotation>
+                                                            <xs:documentation>ID mapper for the given type. When it is necessary to resolve class (field) ID, then this property will be checked first. Otherwise, ID will be hash code of the class (field) simple name in lower case.</xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:attribute name="type" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="serializer" minOccurs="0">
+                                                        <xs:annotation>
+                                                            <xs:documentation>
+                                                                Serializer for the given type. If not provided and class implements IBinarizable then its custom logic will be used. If not provided and class doesn't implement IBinarizable then all fields of the class except of those with [NotSerialized] attribute will be serialized with help of reflection.
+                                                            </xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:attribute name="type" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                                <xs:attribute name="typeName" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Fully qualified type name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="affinityKeyFieldName" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Affinity key field name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="keepDeserialized" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>
+                                                            Keep deserialized flag. If set to non-null value, overrides default value set in BinaryTypeConfiguration.
+                                                        </xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="isEnum" type="xs:boolean">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Whether this instance describes an enum type.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="types" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Assembly-qualified type names (Type.AssemblyQualifiedName) for binarizable types. Shorthand for creating BinaryTypeConfiguration.
+                                    </xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="nameMapper" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Default name mapper.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="idMapper" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Default ID mapper.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="serializer" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Default serializer.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                        <xs:attribute name="keepDeserialized" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Default keep deserialized flag.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="compactFooter" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Compact footer flag.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+            </xs:all>
+            <xs:attribute name="host" type="xs:string" use="required">
+                <xs:annotation>
+                    <xs:documentation>Host to connect to, required property.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="port" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Target port.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="socketSendBufferSize" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Size of the socket send buffer. When set to 0, operating system default is used.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="socketReceiveBufferSize" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Size of the socket receive buffer. When set to 0, operating system default is used.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="tcpNoDelay" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Value for TCP_NODELAY socket option.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="socketTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Socket operation timeout. Zero or negative for infinite timeout.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

@@ -109,7 +109,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(true);
+            IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+
+            cache.enableStatistics(true);
         }
     }
 
@@ -121,7 +123,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(false);
+            IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+
+            cache.enableStatistics(false);
         }
 
         IgniteCache<Object, Object> jcache = grid(0).cache(DEFAULT_CACHE_NAME);
@@ -244,9 +248,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.removeAll(keys);
 
-        float averageRemoveTime = cache.localMetrics().getAverageRemoveTime();
+        float averageRmvTime = cache.localMetrics().getAverageRemoveTime();
 
-        assert averageRemoveTime >= 0;
+        assert averageRmvTime >= 0;
     }
 
     /**
