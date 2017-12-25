@@ -64,6 +64,7 @@ public class LinearRegressionWithSGDTrainer implements Trainer<LinearRegressionM
      * @return Inputs matrix
      */
     private Matrix extractInputs(Matrix data) {
+        data = data.copy();
         data.assignColumn(0, new FunctionVector(data.rowSize(), row -> 1.0));
         return data;
     }
