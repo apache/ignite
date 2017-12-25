@@ -18,56 +18,70 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
-public class LocalEntriesProcessorJob<K, V, G, O extends Serializable> extends BaseLocalProcessorJob<K, V, EntryAndContext<K, V, G>, O> {
-    private final IgniteSupplier<G> contextExtractor;
+/**
+ * {@link BaseLocalProcessorJob} specified to entry processing.
+ *
+ * @param <K> Type of cache used for group training.
+ * @param <V> Type of values used for group training.
+ * @param <C> Type of context.
+ * @param <R> Type of result returned by worker.
+ */
+public class LocalEntriesProcessorJob<K, V, C, R extends Serializable> extends BaseLocalProcessorJob<K, V, EntryAndContext<K, V, C>, R> {
+    /**
+     * Supplier of context for worker.
+     */
+    private final IgniteSupplier<C> ctxSupplier;
 
-    public LocalEntriesProcessorJob(IgniteSupplier<G> contextExtractor,
-        IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<O>> worker,
+    /**
+     * Construct an instance of this class.
+     *
+     * @param ctxSupplier Supplier for context for worker.
+     * @param worker Worker.
+     * @param keySupplier Supplier of keys.
+     * @param reducer Reducer.
+     * @param identity Identity for reducer.
+     * @param trainingUUID UUID for training.
+     * @param cacheName Name of cache used for training.
+     */
+    public LocalEntriesProcessorJob(IgniteSupplier<C> ctxSupplier,
+        IgniteFunction<EntryAndContext<K, V, C>, ResultAndUpdates<R>> worker,
         IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keySupplier,
-        O identity,
-        IgniteBinaryOperator<O> reducer,
+        IgniteBinaryOperator<R> reducer, R identity,
         UUID trainingUUID, String cacheName) {
-        super(worker, keySupplier, identity, reducer, trainingUUID, cacheName);
-        this.contextExtractor = contextExtractor;
+        super(worker, keySupplier, reducer, identity, trainingUUID, cacheName);
+        this.ctxSupplier = ctxSupplier;
     }
 
-    @Override protected Stream<EntryAndContext<K, V, G>> toProcess() {
-        G ctx = contextExtractor.get();
-        cache = ignite().getOrCreateCache(cacheName);
+    /** {@inheritDoc} */
+    @Override protected Stream<EntryAndContext<K, V, C>> toProcess() {
+        C ctx = ctxSupplier.get();
 
         return selectLocalEntries().
             //parallel().
             map(e -> new EntryAndContext<>(e, ctx));
     }
 
-    // TODO: do it more optimally.
+    /**
+     * Select entries for processing by worker.
+     *
+     * @return Entries for processing by worker.
+     */
     private Stream<Map.Entry<GroupTrainerCacheKey<K>, V>> selectLocalEntries() {
         Set<GroupTrainerCacheKey<K>> keys = keySupplier.get().
             filter(k -> affinity().mapKeyToNode(k).isLocal()).
             filter(k -> k.trainingUUID().equals(trainingUUID)).
             collect(Collectors.toSet());
 
-        return cache.getAll(keys).entrySet().stream();
-    }
-
-    private Affinity<GroupTrainerCacheKey> affinity() {
-        return ignite().affinity(cacheName);
+        return cache().getAll(keys).entrySet().stream();
     }
 }

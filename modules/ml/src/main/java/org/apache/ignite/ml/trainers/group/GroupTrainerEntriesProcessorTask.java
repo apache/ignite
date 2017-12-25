@@ -59,6 +59,6 @@ public class GroupTrainerEntriesProcessorTask<K, V, C, R extends Serializable> e
 
     /** {@inheritDoc} */
     @Override protected BaseLocalProcessorJob<K, V, EntryAndContext<K, V, C>, R> createJob() {
-        return new LocalEntriesProcessorJob<>(ctxSupplier, worker, keysSupplier, identity, reducer, trainingUUID, cacheName);
+        return new LocalEntriesProcessorJob<>(ctxSupplier, worker, keysSupplier, reducer, identity, trainingUUID, cacheName);
     }
 }

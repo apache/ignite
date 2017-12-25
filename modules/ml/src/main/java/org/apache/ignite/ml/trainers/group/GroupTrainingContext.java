@@ -58,25 +58,40 @@ public class GroupTrainingContext<K, V, L extends HasTrainingUUID> {
     }
 
     /**
-     * Construct
+     * Construct new training context with same parameters but with new cache.
      *
-     * @param otherCache
-     * @param <K1>
-     * @param <V1>
-     * @return
+     * @param newCache New cache.
+     * @param <K1> Type of keys of new cache.
+     * @param <V1> Type of values of new cache.
+     * @return New training context with same parameters but with new cache.
      */
-    public <K1, V1> GroupTrainingContext<K1, V1, L> withCache(IgniteCache<GroupTrainerCacheKey<K1>, V1> otherCache) {
-        return new GroupTrainingContext<>(locCtx, otherCache, ignite);
+    public <K1, V1> GroupTrainingContext<K1, V1, L> withCache(IgniteCache<GroupTrainerCacheKey<K1>, V1> newCache) {
+        return new GroupTrainingContext<>(locCtx, newCache, ignite);
     }
 
+    /**
+     * Get local context.
+     *
+     * @return Local context.
+     */
     public L localContext() {
         return locCtx;
     }
 
+    /**
+     * Get cache used for training.
+     *
+     * @return Cache used for training.
+     */
     public IgniteCache<GroupTrainerCacheKey<K>, V> cache() {
         return cache;
     }
 
+    /**
+     * Get ignite instance.
+     *
+     * @return Ignite instance.
+     */
     public Ignite ignite() {
         return ignite;
     }

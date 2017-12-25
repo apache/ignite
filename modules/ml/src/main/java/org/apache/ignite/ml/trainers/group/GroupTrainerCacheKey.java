@@ -22,10 +22,10 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 
 /**
  * Class used as a key for caches on which {@link GroupTrainer} works.
- * It is a triple: (nodeLocalEntityIndex, trainingUUID, data);
+ * Structurally it is a triple: (nodeLocalEntityIndex, trainingUUID, data);
  * nodeLocalEntityIndex is used to map key to node;
  * trainingUUID is id of training;
- * data is some custom data stored in this key, for example if we want to store on one node three neural networks
+ * data is some custom data stored in this key, for example if we want to store three neural networks on one node
  * for training with training UUID == trainingUUID, we can use keys
  * (1, trainingUUID, networkIdx1), (1, trainingUUID, networkIdx2), (1, trainingUUID, networkIdx3).
  *

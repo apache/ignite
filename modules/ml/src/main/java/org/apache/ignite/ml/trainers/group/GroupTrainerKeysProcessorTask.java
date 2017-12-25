@@ -58,6 +58,6 @@ public class GroupTrainerKeysProcessorTask<K, C, R extends Serializable> extends
 
     /** {@inheritDoc} */
     @Override protected BaseLocalProcessorJob<K, Object, KeyAndContext<K, C>, R> createJob() {
-        return new LocalKeysProcessorJob<>(ctxSupplier, worker, keysSupplier, identity, reducer, trainingUUID, cacheName);
+        return new LocalKeysProcessorJob<>(ctxSupplier, worker, keysSupplier, reducer, identity, trainingUUID, cacheName);
     }
 }

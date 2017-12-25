@@ -20,20 +20,51 @@ package org.apache.ignite.ml.trainers.group.chain;
 import java.util.Map;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
+/**
+ * Entry of cache used for group training and context.
+ * This class is used as input for workers of distributed steps of {@link ComputationsChain}.
+ *
+ * @param <K> Type of cache keys used for training.
+ * @param <V> Type of cache values used for training.
+ * @param <C> Type of context.
+ */
 public class EntryAndContext<K, V, C> {
+    /**
+     * Entry of cache used for training.
+     */
     private Map.Entry<GroupTrainerCacheKey<K>, V> entry;
-    private C context;
 
-    public EntryAndContext(Map.Entry<GroupTrainerCacheKey<K>, V> entry, C context) {
+    /**
+     * Context.
+     */
+    private C ctx;
+
+    /**
+     * Construct instance of this class.
+     *
+     * @param entry Entry of cache used for training.
+     * @param ctx Context.
+     */
+    public EntryAndContext(Map.Entry<GroupTrainerCacheKey<K>, V> entry, C ctx) {
         this.entry = entry;
-        this.context = context;
+        this.ctx = ctx;
     }
 
+    /**
+     * Get entry of cache used for training.
+     *
+     * @return Entry of cache used for training.
+     */
     public Map.Entry<GroupTrainerCacheKey<K>, V> entry() {
         return entry;
     }
 
+    /**
+     * Get context.
+     *
+     * @return Context.
+     */
     public C context() {
-        return context;
+        return ctx;
     }
 }
