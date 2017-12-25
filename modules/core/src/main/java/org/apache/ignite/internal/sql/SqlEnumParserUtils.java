@@ -75,13 +75,13 @@ public final class SqlEnumParserUtils {
                     else {
                         assert false : "Internal error";
 
-                        throw errorEnumValue(lex.lookAhead(), enumCls);
+                        throw errorInEnumValue(lex.lookAhead(), enumCls, allowDflt);
                     }
 
                 default:
                     assert val.isError() || val.isMissing() : val;
 
-                    throw errorEnumValue(lex.lookAhead(), enumCls);
+                    throw errorInEnumValue(lex.lookAhead(), enumCls, allowDflt);
             }
         }
         else {
@@ -99,14 +99,38 @@ public final class SqlEnumParserUtils {
         return true;
     }
 
-    /** FIXME */
-    public static <T extends Enum<T>> SqlParseException errorEnumValue(SqlLexerToken tok, Class<T> enumCls) {
-        String expectedVals = Arrays.toString(enumCls.getEnumConstants());
-        expectedVals = expectedVals.substring(1, expectedVals.length() - 1);
-        throw SqlParserUtils.errorUnexpectedToken(tok, "[one of: " + expectedVals + "]");
+    /**
+     * Creates an exception to throw when value supplied in SQL does not correspond to any of the enum values.
+     * The exception message contains the list of possible values.
+     *
+     * @param tok Token to supply to {@link SqlParseException} constructor.
+     * @param enumCls The enum class.
+     * @param allowDflt Add 'DEFAULT' keyword to the list of possible values.
+     * @param <T> The enum class.
+     * @return {@link SqlParseException} to throw.
+     */
+    public static <T extends Enum<T>> SqlParseException errorInEnumValue(SqlLexerToken tok, Class<T> enumCls,
+        boolean allowDflt) {
+
+        String expVals = Arrays.toString(enumCls.getEnumConstants());
+
+        expVals = expVals.substring(1, expVals.length() - 1);
+
+        if (allowDflt)
+            expVals += ", " + SqlKeyword.DEFAULT;
+
+        return SqlParserUtils.errorUnexpectedToken(tok, "[one of: " + expVals + "]");
     }
 
-    /** FIXME */
+    /**
+     * Parses enum value.
+     *
+     * @param lex The lexer.
+     * @param enumCls The enum class.
+     * @param allowDflt Allow specifying {@link SqlKeyword#DEFAULT} value.
+     * @return Parsed enum value.
+     * @throws SqlParseException When the value is not recognized.
+     */
     private static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls, boolean allowDflt, T defaultVal) {
 
         ParsedEnum<T> val = parseEnumIfSpecified(lex, enumCls, allowDflt);
@@ -121,16 +145,23 @@ public final class SqlEnumParserUtils {
 
                 assert false : "Internal error";
 
-                throw errorEnumValue(lex.lookAhead(), enumCls);
+                throw errorInEnumValue(lex.lookAhead(), enumCls, allowDflt);
 
             default:
                 assert val.isError() || val.isMissing();
 
-                throw errorEnumValue(lex.lookAhead(), enumCls);
+                throw errorInEnumValue(lex.lookAhead(), enumCls, allowDflt);
         }
     }
 
-    /** FIXME */
+    /**
+     * Parses enum value.
+     *
+     * @param lex The lexer.
+     * @param enumCls The enum class.
+     * @param allowDflt Allow specifying {@link SqlKeyword#DEFAULT} value.
+     * @return Parse result.
+     */
     private static <T extends Enum<T>> ParsedEnum<T> parseEnumIfSpecified(SqlLexer lex, Class<T> enumCls,
         boolean allowDflt) {
 
@@ -159,74 +190,103 @@ public final class SqlEnumParserUtils {
         }
     }
 
-    /** FIXME */
+    /**
+     * Represents result of parsing an enum parameter.
+     *
+     * <p>When {@link Outcome} is {@link Outcome#PARSED}, contains the parsed value.</p>
+     * */
     public static class ParsedEnum<T extends Enum<T>> {
-        /** FIXME */
+        /** Parsing outcome. */
         public enum Outcome {
-            /** FIXME */
+            /** Parameter is missing. */
             MISSING,
-            /** FIXME */
+            /** Parameter has been parsed. */
             PARSED,
-            /** FIXME */
+            /** Parameter value is default. */
             DEFAULT,
-            /** FIXME */
+            /** Error encountered when parsing the enum. */
             ERROR;
         }
 
-        /** FIXME */
+        /** Error singleton value of {@link ParsedEnum}. */
         public final static ParsedEnum ERROR = new ParsedEnum(Outcome.ERROR);
 
-        /** FIXME */
+        /** Default singleton value of {@link ParsedEnum}. */
         public final static ParsedEnum DEFAULT = new ParsedEnum(Outcome.DEFAULT);
 
-        /** FIXME */
+        /** Missing singleton value of {@link ParsedEnum}. */
         public final static ParsedEnum MISSING = new ParsedEnum(Outcome.MISSING);
 
-        /** FIXME */
+        /** The outcome of the parsing. */
         private final Outcome outcome;
 
-        /** FIXME */
+        /** The parsed value (when {@link Outcome} == {@link Outcome#PARSED}). */
         private final T value;
 
-        /** FIXME */
+        /**
+         * Creates a enum parsing result for the case when {@link Outcome} != {@link Outcome#PARSED}).
+         * @param outcome The outcome of parsing.
+         */
         private ParsedEnum(Outcome outcome) {
             this.outcome = outcome;
             this.value = null;
         }
 
-        /** FIXME */
-        private ParsedEnum(T value) {
+        /**
+         * Creates a enum parsing result for the case when a valid value has been parsed
+         * ({@link Outcome} == {@link Outcome#PARSED}).
+         * @param val The parsed value.
+         */
+        private ParsedEnum(T val) {
             this.outcome = Outcome.PARSED;
-            this.value = value;
+            this.value = val;
         }
 
-        /** FIXME */
+        /**
+         * Returns the outcome of the parsing.
+         * @return the outcome of the parsing.
+         */
         public Outcome outcome() {
             return outcome;
         }
 
-        /** FIXME */
+        /**
+         * Returns the parsed value (or asserts if this is not a valid {@link Outcome}).
+         * @return The parsed value.
+         */
         public T value() {
             assert outcome == Outcome.PARSED;
             return value;
         }
 
-        /** FIXME */
+        /**
+         * Returns whether the parameter was missing.
+         * @return true if parameter was missing.
+         */
         public boolean isMissing() {
             return outcome == Outcome.MISSING;
         }
 
-        /** FIXME */
+        /**
+         * Returns whether there was an error parsing the parameter.
+         * @return true if there was an error parsing the parameter.
+         */
         public boolean isError() {
             return outcome == Outcome.ERROR;
         }
 
-        /** FIXME */
+        /**
+         * Returns whether the {@link SqlKeyword#DEFAULT} value of parameter was specified.
+         * @return true if the {@link SqlKeyword#DEFAULT} value of parameter was specified.
+         */
         public boolean isDefault() {
             return outcome == Outcome.DEFAULT;
         }
 
-        /** FIXME */
+        /**
+         * Returns whether a valid value of parameter has been parsed.
+         * @return true if a valid value of parameter has been parsed.
+         */
         public boolean isValue() {
             return outcome == Outcome.PARSED;
         }
@@ -239,7 +299,24 @@ public final class SqlEnumParserUtils {
         }
     }
 
-    /** FIXME */
+    /**
+     * Parses a boolean parameter. Recognizes several syntaxes.
+     *
+     * <p>Syntaxes:
+     * <ul>
+     *   <li>{@code trueKeyword} alone (e.g., "{@code LOGGING}"),
+     *   <li>{@code falseKeyword} alone (e.g., "{@code NOLOGGING}"),
+     *   <li>{@code trueKeyword=value} (e.g., {@code LOGGING=YES}, {@code LOGGING=FALSE}, {@code LOGGING=DEFAULT}).
+     * </ul></p>
+     *
+     * @param lex The lexer.
+     * @param trueKeyword Keyword for true value (if used alone) or {@code keyword=value} syntax.
+     * @param falseKeyword Keyword for false value (shall be used alone).
+     * @param parsedParams Parsed parameter list for duplicate checking. No duplicate checking performed
+     *      if null is supplied.
+     * @param allowDflt Allow {@code DEFAULT} keyword to be used instead of boolean value.
+     * @param setter A closure/lambda to call to record the parsed value.
+     */
     public static boolean tryParseBoolean(SqlLexer lex, String trueKeyword, String falseKeyword,
         @Nullable Set<String> parsedParams, boolean allowDflt, SqlParserUtils.Setter<Boolean> setter) {
 
@@ -280,7 +357,7 @@ public final class SqlEnumParserUtils {
     }
 
     /**
-     * Parses a boolean value allownig additional values defined in {@link BooleanEnum} and possible default value.
+     * Parses a boolean value allowing additional values defined in {@link BooleanEnum} and possible default value.
      *
      * @param lex The lexer.
      * @param allowDflt Allow {@code DEFAULT} keyword to be used instead of boolean value.

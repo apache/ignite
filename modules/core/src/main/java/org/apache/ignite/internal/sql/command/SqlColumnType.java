@@ -66,7 +66,12 @@ public enum SqlColumnType {
     /** UUID. */
     UUID;
 
-    /** FIXME */
+    /**
+     * Returns a class that represents given {@link SqlColumnType}.
+     *
+     * @param typ The type.
+     * @return The Java class or null if this type is not yet handled.
+     */
     public static @Nullable Class<?> classForType(@NotNull SqlColumnType typ) {
         switch (typ) {
             case BOOLEAN:

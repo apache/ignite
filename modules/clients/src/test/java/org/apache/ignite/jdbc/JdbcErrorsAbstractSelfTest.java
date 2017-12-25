@@ -565,7 +565,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     stmt.execute("CREATE TABLE cache_store_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " + params);
                 }
             }
-        }, "0A000"); // useInternalCmd ? "42000" :
+        }, "0A000");
     }
 
     /**
@@ -607,7 +607,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     stmt.execute("CREATE TABLE cache_interceptor_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " + params);
                 }
             }
-        }, "0A000"); // 42000
+        }, "0A000");
     }
 
     /**
