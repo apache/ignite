@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.lang.GridPlainInClosure;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 import sun.misc.Unsafe;
@@ -1669,5 +1672,20 @@ public abstract class GridUnsafe {
      */
     public static long bufferAddress(ByteBuffer buf) {
         return ((DirectBuffer)buf).address();
+    }
+
+    /**
+     * Invokes some method on {@code sun.misc.Unsafe} instance.
+     *
+     * @param mtd Method.
+     * @param args Arguments.
+     */
+    public static Object invoke(Method mtd, Object... args) {
+        try {
+            return mtd.invoke(UNSAFE, args);
+        }
+        catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Unsafe invocation failed", e);
+        }
     }
 }
