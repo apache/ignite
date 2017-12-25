@@ -52,9 +52,8 @@ public class GradientDescent {
      * @return This gradient descent instance
      */
     public GradientDescent withMaxIterations(int maxIterations) {
-        if (maxIterations < 0) {
+        if (maxIterations < 0)
             throw new IllegalArgumentException("Number of iterations must be non-negative but got " + maxIterations);
-        }
         this.maxIterations = maxIterations;
         return this;
     }
@@ -77,9 +76,8 @@ public class GradientDescent {
      * @return This gradient descent instance
      */
     public GradientDescent withConvergenceTol(double convergenceTol) {
-        if (convergenceTol < 0) {
+        if (convergenceTol < 0)
             throw new IllegalArgumentException("Convergence tolerance must be non-negative but got " + convergenceTol);
-        }
         this.convergenceTol = convergenceTol;
         return this;
     }
@@ -98,9 +96,8 @@ public class GradientDescent {
             Batch batch = computeBatch(inputs, groundTruth);
             Vector gradient = lossGradient.compute(batch.getInputs(), batch.getGroundTruth(), weights);
             Vector newWeights = updater.compute(oldWeights, oldGradient, weights, gradient, iteration);
-            if (isConverged(weights, newWeights)) {
+            if (isConverged(weights, newWeights))
                 return newWeights;
-            }
             else {
                 oldGradient = gradient;
                 oldWeights = weights;
@@ -118,9 +115,8 @@ public class GradientDescent {
      * @return {@code true} if process has converged, otherwise {@code false}
      */
     private boolean isConverged(Vector weights, Vector newWeights) {
-        if (convergenceTol == 0) {
+        if (convergenceTol == 0)
             return false;
-        }
         else {
             double solutionVectorDiff = weights.minus(newWeights).kNorm(2.0);
             return solutionVectorDiff < convergenceTol * Math.max(newWeights.kNorm(2.0), 1.0);

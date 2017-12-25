@@ -26,9 +26,8 @@ public class BarzilaiBorweinUpdater implements Updater {
 
     /** */
     private double computeLearningRate(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient) {
-        if (oldWeights == null || oldGradient == null) {
+        if (oldWeights == null || oldGradient == null)
             return INITIAL_LEARNING_RATE;
-        }
         else {
             Vector gradientDiff = gradient.minus(oldGradient);
             return weights.minus(oldWeights).dot(gradientDiff) / Math.pow(gradientDiff.kNorm(2.0), 2.0);
