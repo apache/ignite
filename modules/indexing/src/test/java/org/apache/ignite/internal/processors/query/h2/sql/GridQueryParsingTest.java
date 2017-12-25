@@ -634,8 +634,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertParseThrows("create table Person (id int as age * 2 primary key, age int) WITH \"template=cache\"",
             IgniteSQLException.class, "Computed columns are not supported [colName=ID]");
 
-        assertParseThrows("create table Person (id int primary key, age int default 5) WITH \"template=cache\"",
-            IgniteSQLException.class, "DEFAULT expressions are not supported [colName=AGE]");
+        assertParseThrows("create table Person (id int primary key, age int, " +
+                "ts TIMESTAMP default CURRENT_TIMESTAMP()) WITH \"template=cache\"",
+            IgniteSQLException.class, "Non-constant DEFAULT expressions are not supported [colName=TS]");
 
         assertParseThrows("create table Int (_key int primary key, _val int) WITH \"template=cache\"",
             IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
