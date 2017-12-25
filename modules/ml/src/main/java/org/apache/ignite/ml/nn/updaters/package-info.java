@@ -15,13 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.dml;
-
-import org.apache.ignite.internal.util.lang.GridPlainClosure;
-
 /**
- * Operand for fast UPDATE or DELETE (single item operation that does not involve any SELECT).
+ * <!-- Package description. -->
+ * Contains parameters updaters.
  */
-public interface FastUpdateArgument extends GridPlainClosure<Object[], Object> {
-    // No-op.
-}
+package org.apache.ignite.ml.nn.updaters;

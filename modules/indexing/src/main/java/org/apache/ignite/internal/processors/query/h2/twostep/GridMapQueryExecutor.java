@@ -547,12 +547,15 @@ public class GridMapQueryExecutor {
 
                     qryIdx++;
                 }
-            }
-            finally {
-                GridH2QueryContext.clearThreadLocal();
 
-                if (distributedJoinMode == OFF)
-                    qctx.clearContext(false);
+                // All request results are in the memory in result set already, so it's ok to release partitions.
+                if (!lazy)
+                    releaseReservations();
+            }
+            catch (Throwable e){
+                releaseReservations();
+
+                throw e;
             }
         }
         catch (Throwable e) {
@@ -583,6 +586,20 @@ public class GridMapQueryExecutor {
                 for (int i = 0; i < reserved.size(); i++)
                     reserved.get(i).release();
             }
+        }
+    }
+
+    /**
+     * Releases reserved partitions.
+     */
+    private void releaseReservations() {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if (qctx != null) { // No-op if already released.
+            GridH2QueryContext.clearThreadLocal();
+
+            if (qctx.distributedJoinMode() == OFF)
+                qctx.clearContext(false);
         }
     }
 
@@ -801,8 +818,13 @@ public class GridMapQueryExecutor {
         if (last) {
             res.close();
 
-            if (qr.isAllClosed())
+            if (qr.isAllClosed()) {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
+
+                // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
+                if (MapQueryLazyWorker.currentWorker() != null)
+                    releaseReservations();
+            }
         }
 
         try {

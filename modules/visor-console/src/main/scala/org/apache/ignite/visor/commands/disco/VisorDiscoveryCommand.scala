@@ -117,9 +117,7 @@ class VisorDiscoveryCommand extends VisorConsoleCommand {
      * Prints discovery events fired during last two minutes.
      */
     def disco(args: String) {
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             val fs = argValue("t", argLst)

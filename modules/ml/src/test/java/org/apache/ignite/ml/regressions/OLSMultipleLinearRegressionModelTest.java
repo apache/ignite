@@ -48,6 +48,6 @@ public class OLSMultipleLinearRegressionModelTest {
         OLSMultipleLinearRegressionModel mdl = trainer.train(data);
 
         TestUtils.assertEquals(new double[] {0d, 0d, 0d, 0d, 0d, 0d},
-            val.minus(mdl.predict(val)).getStorage().data(), 1e-13);
+            val.minus(mdl.apply(val)).getStorage().data(), 1e-13);
     }
 }
