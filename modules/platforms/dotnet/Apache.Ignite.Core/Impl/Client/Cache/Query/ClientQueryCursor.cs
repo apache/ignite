@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 {
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Binary;
