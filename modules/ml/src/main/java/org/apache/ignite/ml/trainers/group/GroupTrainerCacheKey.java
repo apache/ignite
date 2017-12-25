@@ -117,9 +117,9 @@ public class GroupTrainerCacheKey<K> {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = nodeLocalEntityIndex != null ? nodeLocalEntityIndex.hashCode() : 0;
-        result = 31 * result + (trainingUUID != null ? trainingUUID.hashCode() : 0);
-        result = 31 * result + (data != null ? data.hashCode() : 0);
-        return result;
+        int res = nodeLocalEntityIndex != null ? nodeLocalEntityIndex.hashCode() : 0;
+        res = 31 * res + (trainingUUID != null ? trainingUUID.hashCode() : 0);
+        res = 31 * res + (data != null ? data.hashCode() : 0);
+        return res;
     }
 }

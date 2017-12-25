@@ -19,37 +19,62 @@ package org.apache.ignite.ml.trainers.group;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.ml.trainers.group.chain.CacheContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
 /**
+ * Context for group training.
  *
- * @param <K>
- * @param <V>
- * @param <L>
+ * @param <K> Type of keys of cache used for group training.
+ * @param <V> Type of values of cache used for group training.
+ * @param <L> Type of local context used for training.
  */
 public class GroupTrainingContext<K, V, L extends HasTrainingUUID> {
-    private L localContext;
-    private CacheContext<GroupTrainerCacheKey<K>, V> cacheContext;
+    /**
+     * Local context.
+     */
+    private L locCtx;
+
+    /**
+     * Cache used for training.
+     */
+    private IgniteCache<GroupTrainerCacheKey<K>, V> cache;
+
+    /**
+     * Ignite instance.
+     */
     private Ignite ignite;
 
-    public GroupTrainingContext(L locCtx, CacheContext<GroupTrainerCacheKey<K>, V> cacheCtx, Ignite ignite) {
-        this.localContext = locCtx;
-        this.cacheContext = cacheCtx;
+    /**
+     * Construct instance of this class.
+     *
+     * @param locCtx Local context.
+     * @param cache Information about cache used for training.
+     * @param ignite Ignite instance.
+     */
+    public GroupTrainingContext(L locCtx, IgniteCache<GroupTrainerCacheKey<K>, V> cache, Ignite ignite) {
+        this.locCtx = locCtx;
+        this.cache = cache;
         this.ignite = ignite;
     }
 
-    public <K1, V1> GroupTrainingContext<K1, V1, L> withOtherCache(IgniteCache<GroupTrainerCacheKey<K1>, V1> otherCache) {
-        CacheContext<GroupTrainerCacheKey<K1>, V1> newCtx = new CacheContext<>(otherCache);
-        return new GroupTrainingContext<>(localContext, newCtx, ignite);
+    /**
+     * Construct
+     *
+     * @param otherCache
+     * @param <K1>
+     * @param <V1>
+     * @return
+     */
+    public <K1, V1> GroupTrainingContext<K1, V1, L> withCache(IgniteCache<GroupTrainerCacheKey<K1>, V1> otherCache) {
+        return new GroupTrainingContext<>(locCtx, otherCache, ignite);
     }
 
     public L localContext() {
-        return localContext;
+        return locCtx;
     }
 
-    public CacheContext<GroupTrainerCacheKey<K>, V> cacheContext() {
-        return cacheContext;
+    public IgniteCache<GroupTrainerCacheKey<K>, V> cache() {
+        return cache;
     }
 
     public Ignite ignite() {

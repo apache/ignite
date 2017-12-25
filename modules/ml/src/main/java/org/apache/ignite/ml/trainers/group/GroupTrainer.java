@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.trainers.Trainer;
-import org.apache.ignite.ml.trainers.group.chain.CacheContext;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
@@ -78,7 +77,7 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends 
         UUID trainingUUID = UUID.randomUUID();
         LC locCtx = initialLocalContext(data, trainingUUID);
 
-        GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, new CacheContext<>(cache), ignite);
+        GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, cache, ignite);
         ComputationsChain<LC, K, V, T, T> chain = (i, c) -> i;
 
         M res = chain.

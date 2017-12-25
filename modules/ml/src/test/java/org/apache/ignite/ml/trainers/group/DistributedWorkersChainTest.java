@@ -28,7 +28,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.trainers.group.chain.CacheContext;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
@@ -72,9 +71,8 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
     public void testId() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
 
-        CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheC = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
         UUID trainingUUID = UUID.randomUUID();
-        Integer res = chain.process(1, new GroupTrainingContext<>(new TestLocalContext(0, trainingUUID), cacheC, ignite));
+        Integer res = chain.process(1, new GroupTrainingContext<>(new TestLocalContext(0, trainingUUID), TestGroupTrainingCache.getOrCreate(ignite), ignite));
 
         Assert.assertEquals(1L, (long)res);
     }
@@ -82,7 +80,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
     public void testSimpleLocal() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
 
-        CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheCtx = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
+        IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(ignite);
         int init = 1;
         int initLocCtxData = 0;
         UUID trainingUUID = UUID.randomUUID();
@@ -90,7 +88,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
 
         Integer res = chain.
             thenLocally((prev, lc) -> prev + 1).
-            process(init, new GroupTrainingContext<>(locCtx, cacheCtx, ignite));
+            process(init, new GroupTrainingContext<>(locCtx, cache, ignite));
 
         Assert.assertEquals(init + 1, (long)res);
         Assert.assertEquals(initLocCtxData, locCtx.data());
@@ -99,7 +97,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
     public void testChainLocal() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
 
-        CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheCtx = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
+        IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(ignite);
         int init = 1;
         int initLocCtxData = 0;
         UUID trainingUUID = UUID.randomUUID();
@@ -108,7 +106,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Integer res = chain.
             thenLocally((prev, lc) -> prev + 1).
             thenLocally((prev, lc) -> prev * 5).
-            process(init, new GroupTrainingContext<>(locCtx, cacheCtx, ignite));
+            process(init, new GroupTrainingContext<>(locCtx, cache, ignite));
 
         Assert.assertEquals((init + 1) * 5, (long)res);
         Assert.assertEquals(initLocCtxData, locCtx.data());
@@ -116,7 +114,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
 
     public void testChangeLocalContext() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
-        CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheCtx = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
+        IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(ignite);
         int init = 1;
         int newData = 10;
         UUID trainingUUID = UUID.randomUUID();
@@ -124,7 +122,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
 
         Integer res = chain.
             thenLocally((prev, lc) -> { lc.setData(newData); return prev;}).
-            process(init, new GroupTrainingContext<>(locCtx, cacheCtx, ignite));
+            process(init, new GroupTrainingContext<>(locCtx, cache, ignite));
 
         Assert.assertEquals(newData, locCtx.data());
         Assert.assertEquals(init, res.intValue());
@@ -132,7 +130,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
 
     public void testDistributed() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
-        CacheContext<GroupTrainerCacheKey<Double>, Integer> cacheCtx = new CacheContext<>(TestGroupTrainingCache.getOrCreate(ignite));
+        IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(ignite);
         int init = 1;
         UUID trainingUUID = UUID.randomUUID();
         TestLocalContext locCtx = new TestLocalContext(0, trainingUUID);
@@ -145,15 +143,14 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
 
         Stream<GroupTrainerCacheKey<Double>> keys = m.keySet().stream();
 
-        IgniteCache<GroupTrainerCacheKey<Double>, Integer> testCache = TestGroupTrainingCache.getOrCreate(ignite);
-        testCache.putAll(m);
+        cache.putAll(m);
 
         IgniteBiFunction<Integer, TestLocalContext, IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>>> function = (o, l) -> (() -> keys);
         IgniteBinaryOperator<Integer> max = Integer::max;
 
         Integer res = chain.
             thenDistributedForEntries((integer, context) -> null, this::readAndIncrement, function, Integer.MIN_VALUE, max).
-            process(init, new GroupTrainingContext<>(locCtx, cacheCtx, ignite));
+            process(init, new GroupTrainingContext<>(locCtx, cache, ignite));
 
         int localMax = m.values().stream().max(Comparator.comparingInt(i -> i)).orElse(Integer.MIN_VALUE);
 
@@ -162,7 +159,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         for (GroupTrainerCacheKey<Double> key : m.keySet())
             m.compute(key, (k, v) -> v + 1);
 
-        assertMapEqualsCache(m, testCache);
+        assertMapEqualsCache(m, cache);
     }
 
     private ResultAndUpdates<Integer> readAndIncrement(EntryAndContext<Double, Integer, Void> ec) {

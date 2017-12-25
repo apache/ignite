@@ -38,8 +38,7 @@ class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends
         return trainer.extractRemoteContext(input, locCtx);
     }
 
-    @Override
-    public ResultAndUpdates<O> worker(EntryAndContext<K, V, G> entryAndContext) {
+    @Override public ResultAndUpdates<O> worker(EntryAndContext<K, V, G> entryAndContext) {
         X apply = trainer.extractDataToProcessInTrainingLoop(entryAndContext);
         metaoptimizer.distributedPreprocess(apply);
         ResultAndUpdates<Y> res = trainer.processData(apply);

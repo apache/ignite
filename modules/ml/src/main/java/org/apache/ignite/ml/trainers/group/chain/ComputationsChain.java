@@ -28,7 +28,6 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.GroupTrainerEntriesProcessorTask;
 import org.apache.ignite.ml.trainers.group.GroupTrainerKeysProcessorTask;
@@ -95,7 +94,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
 
             Ignite ignite = context.ignite();
             UUID trainingUUID = context.localContext().trainingUUID();
-            String cacheName = context.cacheContext().cacheName();
+            String cacheName = context.cache().getName();
             ClusterGroup grp = ignite.cluster().forDataNodes(cacheName);
 
             // Apply first argument locally because it is common for all nodes.
@@ -118,7 +117,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
 
             Ignite ignite = context.ignite();
             UUID trainingUUID = context.localContext().trainingUUID();
-            String cacheName = context.cacheContext().cacheName();
+            String cacheName = context.cache().getName();
             ClusterGroup grp = ignite.cluster().forDataNodes(cacheName);
 
             // Apply first argument locally because it is common for all nodes.

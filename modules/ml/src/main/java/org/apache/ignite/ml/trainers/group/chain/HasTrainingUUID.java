@@ -19,6 +19,13 @@ package org.apache.ignite.ml.trainers.group.chain;
 
 import java.util.UUID;
 
+/**
+ * Interface for classes which contain UUID of training.
+ */
 public interface HasTrainingUUID {
+    /**
+     * Get training UUID.
+     * @return Training UUID.
+     */
     UUID trainingUUID();
 }
