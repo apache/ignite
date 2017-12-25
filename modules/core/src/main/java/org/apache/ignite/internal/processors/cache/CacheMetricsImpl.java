@@ -766,34 +766,39 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ccfg != null && ccfg.isManagementEnabled();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalPartitionsCount() {
-        int res = 0;
-
+    /**
+     *
+     */
+    public PartitionsMetrics getPartitionsMetrics() {
         if (cctx.isLocal())
-            return res;
+            return new PartitionsMetrics(0, 0);
+
+        int owningCnt = 0;
+        int movingCnt = 0;
 
         for (GridDhtLocalPartition part : cctx.topology().localPartitions()) {
-            if (part.state() == GridDhtPartitionState.OWNING || part.state() == GridDhtPartitionState.MOVING)
-                res++;
+            switch (part.state()) {
+                case OWNING:
+                    owningCnt++;
+
+                    break;
+
+                case MOVING:
+                    movingCnt++;
+            }
         }
 
-        return res;
+        return new PartitionsMetrics(owningCnt + movingCnt, movingCnt);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalPartitionsCount() {
+        return getPartitionsMetrics().totalPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
-        int res = 0;
-
-        if (cctx.isLocal())
-            return res;
-
-        for (GridDhtLocalPartition part : cctx.topology().localPartitions()) {
-            if (part.state() == GridDhtPartitionState.MOVING)
-                res++;
-        }
-
-        return res;
+        return getPartitionsMetrics().rebalancingPartitionsCount();
     }
 
     /** {@inheritDoc} */
@@ -950,5 +955,39 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsImpl.class, this);
+    }
+
+    /**
+     * Partitions metrics holder class.
+     */
+    public static class PartitionsMetrics {
+        /** Total partitions count. */
+        private final int totalPartsCnt;
+
+        /** Rebalancing partitions count. */
+        private final int rebalancingPartsCnt;
+
+        /**
+         * @param totalPartitionsCnt Total partitions count.
+         * @param rebalancingPartitionsCnt Rebalancing partitions count.
+         */
+        public PartitionsMetrics(int totalPartitionsCnt, int rebalancingPartitionsCnt) {
+            this.totalPartsCnt = totalPartitionsCnt;
+            this.rebalancingPartsCnt = rebalancingPartitionsCnt;
+        }
+
+        /**
+         * Total partitions count.
+         */
+        public int totalPartitionsCount() {
+            return totalPartsCnt;
+        }
+
+        /**
+         * Rebalancing partitions count
+         */
+        public int rebalancingPartitionsCount() {
+            return rebalancingPartsCnt;
+        }
     }
 }
